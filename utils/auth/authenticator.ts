@@ -60,7 +60,7 @@ export function createAuthenticator<User = unknown>(
   async function isAuthenticated(request: Request) {
     let session = await sessionStorage.get(getHeader(request, "cookie"));
     let user: User | null = session.get(sessionKey) ?? null;
-    console.log("AUTHENTICATED USER", user);
+    console.log("AUTHENTICATED USER", session.data, user);
     if (user) {
       return user;
     }

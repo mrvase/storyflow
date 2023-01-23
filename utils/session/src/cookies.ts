@@ -64,7 +64,9 @@ export const createCookie = (
       for (let secret of secrets) {
         let unsignedValue = await unsign(value, secret);
         if (unsignedValue !== false) {
-          return decodeData(unsignedValue);
+          const decoded = decodeData(unsignedValue);
+          console.log("DECODED", unsignedValue, decoded);
+          return decoded;
         }
       }
 
