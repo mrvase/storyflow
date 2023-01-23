@@ -7,7 +7,7 @@ import { User } from "./types";
 
 export const config = {
   matcher:
-    "/((?!index|public|static|api|_next|favicon.ico|sw.js|login|logout|registrer|bruger|verify|priser).+)",
+    "/((?!index|public|static|api|_next|favicon.ico|sw.js|login|logout|registrer|bruger|verify|priser|dashboard\\/assets|dashboard\\/favicon.ico).+)",
 };
 
 const sessionStorage = createSessionStorage({
@@ -16,10 +16,6 @@ const sessionStorage = createSessionStorage({
 
 export default async function middleware(req: NextRequest) {
   const org = req.nextUrl.pathname.split("/")[1];
-
-  if (req.nextUrl.pathname.startsWith("/dashboard/assets")) {
-    return;
-  }
 
   const auth = createAuthenticator<User>([], sessionStorage);
 
