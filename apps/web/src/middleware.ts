@@ -2,6 +2,7 @@ import { createAuthenticator } from "@storyflow/auth";
 import { createSessionStorage } from "@storyflow/session/src/sessionStorageEdge";
 import { NextResponse } from "next/server";
 import { NextRequest } from "next/server";
+import { cookieOptions } from "./server/cookieOptions";
 import { User } from "./types";
 
 export const config = {
@@ -10,14 +11,7 @@ export const config = {
 };
 
 const sessionStorage = createSessionStorage({
-  cookie: {
-    name: "__session",
-    httpOnly: process.env.NODE_ENV === "production",
-    path: "/",
-    sameSite: process.env.NODE_ENV === "production" ? "lax" : false,
-    secrets: [process.env.SECRET_KEY as string],
-    secure: process.env.NODE_ENV === "production",
-  },
+  cookie: cookieOptions,
 });
 
 export default async function middleware(req: NextRequest) {
@@ -29,7 +23,7 @@ export default async function middleware(req: NextRequest) {
 
   const user = await auth.isAuthenticated(req);
 
-  console.log("MIDDLEWARE USER", org, user);
+  console.log("MIDDLEWARE USER", org, user, cookieOptions);
 
   if (user) {
     const result = user.organizations.find((el) => el.slug === org);

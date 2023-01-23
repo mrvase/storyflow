@@ -80,6 +80,7 @@ const verify: VerifyFunction<User> = async ({
 };
 
 import { createTransport } from "nodemailer";
+import { cookieOptions } from "./cookieOptions";
 
 const options = {
   server: {
@@ -138,14 +139,7 @@ const emailStrategy = createEmailStrategy({
 });
 
 const sessionStorage = createSessionStorage({
-  cookie: {
-    name: "__session",
-    httpOnly: process.env.NODE_ENV === "production",
-    path: "/",
-    sameSite: process.env.NODE_ENV === "production" ? "lax" : false,
-    secrets: [process.env.SECRET_KEY as string],
-    secure: process.env.NODE_ENV === "production",
-  },
+  cookie: cookieOptions,
 });
 
 export const authenticator = createAuthenticator<User>(
