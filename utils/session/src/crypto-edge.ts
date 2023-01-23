@@ -22,6 +22,8 @@ export const unsign = async (signed: string, secret: string) => {
   let signature = byteStringToUint8Array(atob(hash));
   let valid = await crypto.subtle.verify("HMAC", key, signature, data);
 
+  console.log("UNSIGNING", signed, secret, valid);
+
   return valid ? value : false;
 };
 
