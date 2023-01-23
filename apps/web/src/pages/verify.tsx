@@ -9,8 +9,6 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
   let user: User | null = null;
 
-  console.log("VERIFY", next, token);
-
   if (token) {
     user = unwrap(
       await api.users.verifyLink.mutation.call(

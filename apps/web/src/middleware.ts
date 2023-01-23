@@ -1,39 +1,41 @@
 import { createAuthenticator } from "@storyflow/auth";
+import { createSessionStorage } from "@storyflow/session/src/sessionStorageEdge";
 import { NextResponse } from "next/server";
 import { NextRequest } from "next/server";
-import { authOptions } from "./server/authOptions";
+import { cookieOptions } from "./server/cookieOptions";
 import { User } from "./types";
 
 export const config = {
   matcher:
-    "/((?!public|static|api|_next|login|logout|registrer|bruger|verify|dashboard|favicon.ico|sw.js).+)",
+    "/((?!public|static|api|_next|favicon.ico|sw.js|login|logout|registrer|bruger|verify|priser).+)",
 };
+
+const sessionStorage = createSessionStorage({
+  cookie: cookieOptions,
+});
 
 export default async function middleware(req: NextRequest) {
   const org = req.nextUrl.pathname.split("/")[1];
 
-  const requestHeaders = new Headers(req.headers);
+  if (req.nextUrl.pathname.startsWith("/dashboard/assets")) {
+    return;
+  }
 
-  const auth = createAuthenticator<User>([], authOptions);
+  const auth = createAuthenticator<User>([], sessionStorage);
 
   const user = await auth.isAuthenticated(req);
-
-  console.log("MIDDLEWARE USER", org, user);
 
   if (user) {
     const result = user.organizations.find((el) => el.slug === org);
 
     if (result && "permissions" in result && result.permissions !== false) {
+      const requestHeaders = new Headers(req.headers);
       requestHeaders.set("x-dashboard", "true");
-
-      const res = NextResponse.next({
+      return NextResponse.rewrite(new URL(`/dashboard/index.html`, req.url), {
         request: {
           headers: requestHeaders,
         },
       });
-
-      console.log("SUCCESS");
-      return res;
     } else if (!result || !("permissions" in result)) {
       return NextResponse.redirect(new URL(`/verify?next=${org}`, req.url));
     }

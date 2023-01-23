@@ -1,4 +1,4 @@
-import { createSessionStorage } from "@storyflow/session";
+import { SessionStorage } from "@storyflow/session";
 import { AuthenticateOptions, Strategy } from "./strategy";
 import type { Request, Response } from "./strategy";
 import { success } from "@storyflow/result";
@@ -25,25 +25,13 @@ export type Authenticator<User> = ReturnType<typeof createAuthenticator<User>>;
 
 export function createAuthenticator<User = unknown>(
   strategies: Strategy<User, any, any>[],
-  options: AuthenticatorOptions
+  sessionStorage: SessionStorage
 ) {
-  const sessionStorage = createSessionStorage({
-    cookie: {
-      name: "__session",
-      httpOnly: true,
-      path: "/",
-      sameSite: "lax",
-      secrets: [options.secret],
-      secure: process.env.NODE_ENV === "production",
-      ...options.cookie,
-    },
-  });
+  const sessionKey = "user";
 
   const strategyMap = new Map<string, Strategy<User, any, any>>(
     strategies.map((el) => [el.name, el])
   );
-
-  const { sessionKey = "user" } = options;
 
   function use(strategy: Strategy<User, any, any>, name?: string) {
     strategyMap.set(name ?? strategy.name, strategy);
@@ -72,7 +60,6 @@ export function createAuthenticator<User = unknown>(
   async function isAuthenticated(request: Request) {
     let session = await sessionStorage.get(getHeader(request, "cookie"));
     let user: User | null = session.get(sessionKey) ?? null;
-    console.log("AUTHENTICATED USER", user);
     if (user) {
       return user;
     }

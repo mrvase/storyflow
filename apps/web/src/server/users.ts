@@ -90,8 +90,6 @@ export const api = createAPI({
             slug,
           });
 
-        console.log("org", slug, organization);
-
         if (!organization) {
           return error({ message: "Organization does not exist" });
         }
@@ -109,7 +107,6 @@ export const api = createAPI({
             { request: req, response: res },
             createCallback({
               slug,
-              name: organization.name,
               db: organization.db,
               permissions: {},
             })
@@ -130,7 +127,6 @@ export const api = createAPI({
             { request: req, response: res },
             createCallback({
               slug,
-              name: organization.name,
               db: organization.db,
               permissions: {}, // orgUser.values["abcd"] ?? false,
             })
@@ -158,8 +154,7 @@ export const api = createAPI({
         });
       },
       async mutation({ next, email }, ctx) {
-        console.log("AUTHENTICATE?");
-        return await authenticator.authenticate(
+        const result = await authenticator.authenticate(
           "email-link",
           {
             response: ctx.res,
@@ -174,6 +169,29 @@ export const api = createAPI({
             }),
           }
         );
+        return result;
+      },
+    }),
+
+    register: createProcedure({
+      schema() {
+        return z.object({
+          name: z.string(),
+          email: z.string(),
+        });
+      },
+      async mutation({ email, name }, ctx) {
+        return await authenticator.authenticate(
+          "email-link",
+          {
+            response: ctx.res,
+            request: ctx.req,
+          },
+          {
+            email,
+            register: name,
+          }
+        );
       },
     }),
 
@@ -182,7 +200,6 @@ export const api = createAPI({
         return z.string();
       },
       async mutation(token, { req, res }) {
-        console.log("ABOUT TO VERIFY", token);
         return await authenticator.authenticate(
           "email-link",
           {

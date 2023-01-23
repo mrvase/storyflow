@@ -1,6 +1,5 @@
 import type { CookieParseOptions, CookieSerializeOptions } from "cookie";
 import { parse, serialize } from "cookie";
-import { decodeCookieValue, encodeCookieValue } from "./crypto-edge";
 
 export interface CookieSignatureOptions {
   secrets?: string[];
@@ -23,8 +22,60 @@ export interface Cookie {
 
 export const createCookie = (
   name: string,
-  cookieOptions: CookieOptions = {}
+  cookieOptions: CookieOptions = {},
+  {
+    sign,
+    unsign,
+  }: {
+    sign: (val: string, secret: string) => Promise<string>;
+    unsign: (val: string, secret: string) => Promise<string | false>;
+  }
 ): Cookie => {
+  function encodeData(value: any): string {
+    return btoa(JSON.stringify(value)); // btoa(JSON.stringify(value));
+  }
+
+  function decodeData(value: string): any {
+    try {
+      return JSON.parse(atob(value)); // atob(value)
+    } catch (error) {
+      console.error(error);
+      return {};
+    }
+  }
+
+  async function encodeCookieValue(
+    value: any,
+    secrets: string[]
+  ): Promise<string> {
+    let encoded = encodeData(value);
+
+    if (secrets.length > 0) {
+      encoded = await sign(encoded, secrets[0]);
+    }
+
+    return encoded;
+  }
+
+  async function decodeCookieValue(
+    value: string,
+    secrets: string[]
+  ): Promise<any> {
+    if (secrets.length > 0) {
+      for (let secret of secrets) {
+        let unsignedValue = await unsign(value, secret);
+        if (unsignedValue !== false) {
+          const decoded = decodeData(unsignedValue);
+          return decoded;
+        }
+      }
+
+      return null;
+    }
+
+    return decodeData(value);
+  }
+
   let { secrets, ...options } = {
     secrets: [],
     path: "/",

@@ -3,5 +3,5 @@ export { createAuthorizer } from "./authorizer";
 export { createEmailStrategy } from "./email";
 
 export type { AuthenticatorOptions } from "./authenticator";
-export type { VerifyFunction, SendEmailFunction } from "./email";
+export type { VerifyFunction, SendEmailOptions } from "./email";
 export * from "./strategy";

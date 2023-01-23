@@ -11,10 +11,7 @@ const authOptionsDev: AuthenticatorOptions = {
 
 const authOptionsProd: AuthenticatorOptions = {
   secret: process.env.SECRET_KEY as string,
-  cookie: {
-    sameSite: true,
-    httpOnly: true,
-  },
+  cookie: {},
   sessionKey: "user",
 };
 

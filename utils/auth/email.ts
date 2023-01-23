@@ -8,27 +8,26 @@ import { error, success } from "@storyflow/result";
 import crypto from "crypto-js";
 import { getHeader } from "./authenticator";
 
-export type VerifyParams = {
+export type Payload = {
   email: string;
+  invite?: string;
+  register?: string; // name
+};
+
+export type VerifyParams = Payload & {
   stage: "submitted" | "verified";
 };
 
-export type LinkPayload = {
-  email: string;
+export type LinkPayload = Payload & {
   date: string;
 };
 
-export type SendEmailOptions<User> = {
-  email: string;
+export type SendEmailOptions<User> = Payload & {
   link: string;
   user?: User | null;
 };
 
 export type VerifyFunction<User> = StrategyVerifyCallback<User, VerifyParams>;
-
-export type SendEmailFunction<User> = (
-  options: SendEmailOptions<User>
-) => Promise<void>;
 
 function getDomainURL(request: Request): string {
   const origin = getHeader(request, "origin");
@@ -49,21 +48,21 @@ export function createEmailStrategy<User>({
   sessionLinkKey = "auth:link",
 }: {
   verify: VerifyFunction<User>;
-  sendEmail: SendEmailFunction<User>;
+  sendEmail: (options: SendEmailOptions<User>) => Promise<void>;
   secret: string;
   verificationUrl?: string;
   linkExpirationTime?: number;
   sessionLinkKey?: string;
-}): Strategy<User, VerifyParams, { email: string }> {
+}): Strategy<User, VerifyParams, Payload> {
   const name = "email-link";
 
   async function createLink(
-    email: string,
+    payload_: Payload,
     domain: string,
     params?: Record<string, string>
   ): Promise<string> {
     const payload: LinkPayload = {
-      email,
+      ...payload_,
       date: new Date().toISOString(),
     };
     const stringToEncrypt = JSON.stringify(payload);
@@ -158,18 +157,18 @@ export function createEmailStrategy<User>({
   async function validateLink(linkCode: string, sessionLink: string) {
     const sessionLinkCode = getLinkCode(sessionLink);
 
-    let email: string;
+    let payload: Payload;
     let date: string;
 
     try {
       const decryptedString = await decrypt(linkCode);
-      ({ date, email } = JSON.parse(decryptedString) as LinkPayload);
+      ({ date, ...payload } = JSON.parse(decryptedString) as LinkPayload);
     } catch (error: unknown) {
       console.error(error);
       throw new Error("Sign in link invalid. Please request a new one. [1]");
     }
 
-    if (typeof email !== "string") {
+    if (typeof payload.email !== "string") {
       throw new TypeError(
         "Sign in link invalid. Please request a new one. [2]"
       );
@@ -197,12 +196,12 @@ export function createEmailStrategy<User>({
       throw new Error("Magic link expired. Please request a new one. [5]");
     }
 
-    return email;
+    return payload;
   }
 
   const authenticate: AuthenticateCallback<
     User,
-    { email: string; params?: Record<string, string> } | { token: string }
+    (Payload & { params?: Record<string, string> }) | { token: string }
   > = async function ({ request, response }, sessionStorage, options) {
     const session = await sessionStorage.get(getHeader(request, "cookie"));
 
@@ -210,7 +209,8 @@ export function createEmailStrategy<User>({
 
     if ("email" in options) {
       // get the email address from the request body
-      const email = options.email;
+      const { params, ...payload } = options;
+      const { email } = payload;
 
       // if it doesn't have an email address,
       if (!email || typeof email !== "string") {
@@ -223,31 +223,23 @@ export function createEmailStrategy<User>({
         }
 
         const user = await verify({
-          email,
+          ...payload,
           stage: "submitted",
         }).catch(() => null);
 
-        console.log("SEND USER", user);
-
         if (!user) {
-          console.log("CREATING LINK 1");
           throw new Error("Could not send email.");
         }
-        console.log("CREATING LINK 2");
 
         const domain = getDomainURL(request);
 
-        console.log("CREATING LINK 3");
-
-        const link = await createLink(email, domain, options.params);
+        const link = await createLink(payload, domain, params);
 
         await sendEmail({
-          email,
+          ...payload,
           link,
           user: user,
         });
-
-        console.log("LINK", link);
 
         session.set(sessionLinkKey, await encrypt(link));
         const cookie = await sessionStorage.commit(session);
@@ -268,8 +260,8 @@ export function createEmailStrategy<User>({
     try {
       const link = session.get(sessionLinkKey) ?? "";
       const decrypted = await decrypt(link);
-      const email = await validateLink(options.token, decrypted);
-      const user = await verify({ email, stage: "verified" });
+      const payload = await validateLink(options.token, decrypted);
+      const user = await verify({ ...payload, stage: "verified" });
 
       // remove the magic link from the session
       session.unset(sessionLinkKey);
