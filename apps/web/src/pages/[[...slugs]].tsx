@@ -1,7 +1,11 @@
-import { GetStaticPropsContext } from "next";
+import {
+  GetServerSideProps,
+  GetServerSidePropsContext,
+  GetStaticPropsContext,
+} from "next";
 import Link from "next/link";
 
-export const getStaticProps = async (ctx: GetStaticPropsContext) => {
+export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
   const { slugs: _slugs } = ctx.params as any;
 
   const slugs = _slugs ?? [];
@@ -16,12 +20,14 @@ export const getStaticProps = async (ctx: GetStaticPropsContext) => {
   return { props: {} };
 };
 
+/*
 export const getStaticPaths = () => {
   return {
     paths: [],
     fallback: "blocking",
   };
 };
+*/
 
 export default function Page() {
   return (
