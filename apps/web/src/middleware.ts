@@ -7,7 +7,7 @@ import { User } from "./types";
 
 export const config = {
   matcher:
-    "/((?!public|static|api|_next|favicon.ico|sw.js|login|logout|registrer|bruger|verify|priser).+)",
+    "/((?!index|public|static|api|_next|favicon.ico|sw.js|login|logout|registrer|bruger|verify|priser).+)",
 };
 
 const sessionStorage = createSessionStorage({
@@ -39,6 +39,8 @@ export default async function middleware(req: NextRequest) {
     } else if (!result || !("permissions" in result)) {
       return NextResponse.redirect(new URL(`/verify?next=${org}`, req.url));
     }
+  } else {
+    return NextResponse.redirect(new URL(`/login?next=${org}`, req.url));
   }
   // will redirect to login from [slug] if no page is found.
 }
