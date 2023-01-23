@@ -256,10 +256,8 @@ export function createQueue<Operation extends DefaultOperation>(
       primary: listeners.size === 0,
     });
     listeners.set(listener, tracker);
-    // console.log("%cLISTENERS ADD", "background:#ff0", key, listeners.size);
     return () => {
       listeners.delete(listener);
-      // console.log("%cLISTENERS REMOVE", "background:#ff0", key, listeners.size);
     };
   }
 

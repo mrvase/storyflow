@@ -227,17 +227,11 @@ export function createEmailStrategy<User>({
           stage: "submitted",
         }).catch(() => null);
 
-        console.log("SEND USER", user);
-
         if (!user) {
-          console.log("CREATING LINK 1");
           throw new Error("Could not send email.");
         }
-        console.log("CREATING LINK 2");
 
         const domain = getDomainURL(request);
-
-        console.log("CREATING LINK 3");
 
         const link = await createLink(payload, domain, params);
 
@@ -246,8 +240,6 @@ export function createEmailStrategy<User>({
           link,
           user: user,
         });
-
-        console.log("LINK", link);
 
         session.set(sessionLinkKey, await encrypt(link));
         const cookie = await sessionStorage.commit(session);

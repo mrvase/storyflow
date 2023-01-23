@@ -90,8 +90,6 @@ export const api = createAPI({
             slug,
           });
 
-        console.log("org", slug, organization);
-
         if (!organization) {
           return error({ message: "Organization does not exist" });
         }
@@ -171,7 +169,6 @@ export const api = createAPI({
             }),
           }
         );
-        console.log("NEW COOKIE", ctx.res.getHeader("Set-Cookie"));
         return result;
       },
     }),
@@ -203,7 +200,6 @@ export const api = createAPI({
         return z.string();
       },
       async mutation(token, { req, res }) {
-        console.log("ABOUT TO VERIFY", token);
         return await authenticator.authenticate(
           "email-link",
           {

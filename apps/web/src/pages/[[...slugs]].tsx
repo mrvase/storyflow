@@ -10,7 +10,7 @@ export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
 
   const slugs = _slugs ?? [];
 
-  if (slugs[0] !== "pricing" && slugs[0] !== undefined) {
+  if (slugs[0] !== "priser" && slugs[0] !== undefined) {
     return {
       redirect: {
         destination: `/login?next=${slugs[0]}`,

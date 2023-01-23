@@ -19,8 +19,6 @@ const verify: VerifyFunction<User> = async ({
 }) => {
   const client = await clientPromise;
 
-  console.log("VERIFYING", stage, email, register, invite);
-
   const login = !register && !invite;
 
   const shouldVerify = stage === "verified" || login;

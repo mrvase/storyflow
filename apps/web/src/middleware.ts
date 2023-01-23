@@ -7,7 +7,7 @@ import { User } from "./types";
 
 export const config = {
   matcher:
-    "/((?!public|static|api|_next|login|logout|registrer|bruger|verify|dashboard|favicon.ico|sw.js).+)",
+    "/((?!public|static|api|_next|favicon.ico|sw.js|login|logout|registrer|bruger|verify|priser).+)",
 };
 
 const sessionStorage = createSessionStorage({
@@ -17,6 +17,10 @@ const sessionStorage = createSessionStorage({
 export default async function middleware(req: NextRequest) {
   const org = req.nextUrl.pathname.split("/")[1];
 
+  if (req.nextUrl.pathname.startsWith("/dashboard/assets")) {
+    return;
+  }
+
   const auth = createAuthenticator<User>([], sessionStorage);
 
   const user = await auth.isAuthenticated(req);
@@ -25,20 +29,13 @@ export default async function middleware(req: NextRequest) {
     const result = user.organizations.find((el) => el.slug === org);
 
     if (result && "permissions" in result && result.permissions !== false) {
-      return NextResponse.rewrite(new URL(`/dashboard/index.html`, req.url));
       const requestHeaders = new Headers(req.headers);
-      /*
       requestHeaders.set("x-dashboard", "true");
-
-      const res = NextResponse.next({
+      return NextResponse.rewrite(new URL(`/dashboard/index.html`, req.url), {
         request: {
           headers: requestHeaders,
         },
       });
-
-
-      return res;
-      */
     } else if (!result || !("permissions" in result)) {
       return NextResponse.redirect(new URL(`/verify?next=${org}`, req.url));
     }
