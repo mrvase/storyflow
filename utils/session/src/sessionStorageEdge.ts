@@ -1,7 +1,7 @@
 import { CookieParseOptions, CookieSerializeOptions } from "cookie";
 import { Cookie, CookieOptions, createCookie, isCookie } from "./cookies";
 import { createSession, Session } from "./session";
-import { sign, unsign } from "./crypto-node";
+import { sign, unsign } from "./crypto-edge";
 
 export interface SessionStorage {
   get(

@@ -20,6 +20,7 @@ importers:
       '@sfrpc/types': workspace:*
       '@storyflow/auth': workspace:*
       '@storyflow/result': workspace:*
+      '@storyflow/session': workspace:*
       '@types/node': ^17.0.12
       '@types/nodemailer': ^6.4.7
       '@types/qs': ^6.9.7
@@ -47,6 +48,7 @@ importers:
       '@sfrpc/server': link:../../rpc/server
       '@storyflow/auth': link:../../utils/auth
       '@storyflow/result': link:../../utils/result
+      '@storyflow/session': link:../../utils/session
       '@vitejs/plugin-react': 3.0.1_vite@4.0.4
       admin-panel: link:../../cms/admin-panel
       api: link:../../cms/api

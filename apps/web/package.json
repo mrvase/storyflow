@@ -14,6 +14,7 @@
     "@sfrpc/server": "workspace:*",
     "@storyflow/auth": "workspace:*",
     "@storyflow/result": "workspace:*",
+    "@storyflow/session": "workspace:*",
     "@vitejs/plugin-react": "^3.0.1",
     "admin-panel": "workspace:*",
     "api": "workspace:*",

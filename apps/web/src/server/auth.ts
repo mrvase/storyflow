@@ -5,8 +5,8 @@ import {
   SendEmailOptions,
   VerifyFunction,
 } from "@storyflow/auth";
+import { createSessionStorage } from "@storyflow/session";
 import type { User } from "../types";
-import { authOptions } from "./authOptions";
 import clientPromise from "./mongo";
 
 const USER_ID = "abcd";
@@ -137,9 +137,20 @@ const emailStrategy = createEmailStrategy({
   verificationUrl: "/verify",
 });
 
+const sessionStorage = createSessionStorage({
+  cookie: {
+    name: "__session",
+    httpOnly: process.env.NODE_ENV === "production",
+    path: "/",
+    sameSite: process.env.NODE_ENV === "production" ? "lax" : false,
+    secrets: [process.env.SECRET_KEY as string],
+    secure: process.env.NODE_ENV === "production",
+  },
+});
+
 export const authenticator = createAuthenticator<User>(
   [emailStrategy],
-  authOptions
+  sessionStorage
 );
 
 export const authorizer = createAuthorizer(authenticator);

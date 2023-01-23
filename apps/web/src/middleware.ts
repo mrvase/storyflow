@@ -1,7 +1,7 @@
 import { createAuthenticator } from "@storyflow/auth";
+import { createSessionStorage } from "@storyflow/session/src/sessionStorageEdge";
 import { NextResponse } from "next/server";
 import { NextRequest } from "next/server";
-import { authOptions } from "./server/authOptions";
 import { User } from "./types";
 
 export const config = {
@@ -9,12 +9,23 @@ export const config = {
     "/((?!public|static|api|_next|login|logout|registrer|bruger|verify|dashboard|favicon.ico|sw.js).+)",
 };
 
+const sessionStorage = createSessionStorage({
+  cookie: {
+    name: "__session",
+    httpOnly: process.env.NODE_ENV === "production",
+    path: "/",
+    sameSite: process.env.NODE_ENV === "production" ? "lax" : false,
+    secrets: [process.env.SECRET_KEY as string],
+    secure: process.env.NODE_ENV === "production",
+  },
+});
+
 export default async function middleware(req: NextRequest) {
   const org = req.nextUrl.pathname.split("/")[1];
 
   const requestHeaders = new Headers(req.headers);
 
-  const auth = createAuthenticator<User>([], authOptions);
+  const auth = createAuthenticator<User>([], sessionStorage);
 
   const user = await auth.isAuthenticated(req);
 
