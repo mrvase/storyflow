@@ -8,8 +8,6 @@ import Link from "next/link";
 export const getServerSideProps = async (ctx: GetServerSidePropsContext) => {
   const { slugs: _slugs } = ctx.params as any;
 
-  console.log("x-dashboard:", ctx.req.headers["x-dashboard"]);
-
   const slugs = _slugs ?? [];
 
   if (slugs[0] !== "pricing" && slugs[0] !== undefined) {

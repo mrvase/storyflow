@@ -25,7 +25,9 @@ export default async function middleware(req: NextRequest) {
     const result = user.organizations.find((el) => el.slug === org);
 
     if (result && "permissions" in result && result.permissions !== false) {
+      return NextResponse.rewrite(new URL(`/dashboard/index.html`, req.url));
       const requestHeaders = new Headers(req.headers);
+      /*
       requestHeaders.set("x-dashboard", "true");
 
       const res = NextResponse.next({
@@ -34,7 +36,9 @@ export default async function middleware(req: NextRequest) {
         },
       });
 
+
       return res;
+      */
     } else if (!result || !("permissions" in result)) {
       return NextResponse.redirect(new URL(`/verify?next=${org}`, req.url));
     }
