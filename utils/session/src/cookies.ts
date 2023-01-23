@@ -32,13 +32,14 @@ export const createCookie = (
   }
 ): Cookie => {
   function encodeData(value: any): string {
-    return Buffer.from(JSON.stringify(value)).toString("base64"); // btoa(JSON.stringify(value));
+    return btoa(JSON.stringify(value)); // btoa(JSON.stringify(value));
   }
 
   function decodeData(value: string): any {
     try {
-      return JSON.parse(Buffer.from(value, "base64").toString()); // atob(value)
+      return JSON.parse(atob(value)); // atob(value)
     } catch (error) {
+      console.error(error);
       return {};
     }
   }
