@@ -17,24 +17,15 @@ const sessionStorage = createSessionStorage({
 export default async function middleware(req: NextRequest) {
   const org = req.nextUrl.pathname.split("/")[1];
 
-  const requestHeaders = new Headers(req.headers);
-
   const auth = createAuthenticator<User>([], sessionStorage);
 
   const user = await auth.isAuthenticated(req);
-
-  console.log(
-    "MIDDLEWARE USER",
-    org,
-    user,
-    cookieOptions,
-    req.headers.get("cookie")
-  );
 
   if (user) {
     const result = user.organizations.find((el) => el.slug === org);
 
     if (result && "permissions" in result && result.permissions !== false) {
+      const requestHeaders = new Headers(req.headers);
       requestHeaders.set("x-dashboard", "true");
 
       const res = NextResponse.next({
@@ -43,7 +34,6 @@ export default async function middleware(req: NextRequest) {
         },
       });
 
-      console.log("SUCCESS");
       return res;
     } else if (!result || !("permissions" in result)) {
       return NextResponse.redirect(new URL(`/verify?next=${org}`, req.url));

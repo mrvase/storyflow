@@ -1,4 +1,5 @@
 module.exports = {
+  /*
   async rewrites() {
     return {
       beforeFiles: [
@@ -15,6 +16,7 @@ module.exports = {
       ],
     };
   },
+  */
   experimental: {
     appDir: true,
   },
