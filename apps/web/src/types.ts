@@ -1,4 +1,4 @@
-export type Organization = { slug: string; name: string } & (
+export type Organization = { slug: string } & (
   | { db: string; permissions: Record<string, any> | false }
   | {}
 );

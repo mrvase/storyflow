@@ -1,10 +1,22 @@
 import Link from "next/link";
+import { client } from "../client";
 
 export default function Page() {
+  const register = async (email: string, name: string) => {
+    const result = await client.users.register.mutation({ email, name });
+  };
+
   return (
     <div className="absolute inset-0 bg-gray-900 text-white flex">
       <div className="w-full max-w-lg flex items-center">
-        <div className="w-full px-12 flex flex-col gap-24">
+        <form
+          onSubmit={(ev) => {
+            ev.preventDefault();
+            const data = new FormData(ev.currentTarget);
+            register(data.get("email") as string, data.get("name") as string);
+          }}
+          className="w-full px-12 flex flex-col gap-24"
+        >
           <h1 className="text-4xl text-gray-200">Opret bruger</h1>
           <div className="w-full flex flex-col gap-12">
             <div>
@@ -38,7 +50,7 @@ export default function Page() {
               </Link>
             </div>
           </div>
-        </div>
+        </form>
       </div>
       <div className="w-full h-full bg-gradient-to-br from-fuchsia-600 to-pink-600 flex items-center">
         <div className="flex-col px-24">

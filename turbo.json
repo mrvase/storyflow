@@ -7,7 +7,16 @@
     },
     "web#build": {
       "dependsOn": ["^build"],
-      "env": ["NODE_ENV", "MONGO_URL", "SECRET_KEY"],
+      "env": [
+        "NODE_ENV",
+        "MONGO_URL",
+        "SECRET_KEY",
+        "EMAIL_SERVER_HOST",
+        "EMAIL_SERVER_PORT",
+        "EMAIL_SERVER_USER",
+        "EMAIL_SERVER_PASS",
+        "EMAIL_FROM"
+      ],
       "outputs": [".next/**"]
     },
     "lint": {

@@ -109,7 +109,6 @@ export const api = createAPI({
             { request: req, response: res },
             createCallback({
               slug,
-              name: organization.name,
               db: organization.db,
               permissions: {},
             })
@@ -130,7 +129,6 @@ export const api = createAPI({
             { request: req, response: res },
             createCallback({
               slug,
-              name: organization.name,
               db: organization.db,
               permissions: {}, // orgUser.values["abcd"] ?? false,
             })
@@ -158,7 +156,6 @@ export const api = createAPI({
         });
       },
       async mutation({ next, email }, ctx) {
-        console.log("AUTHENTICATE?");
         return await authenticator.authenticate(
           "email-link",
           {
@@ -172,6 +169,28 @@ export const api = createAPI({
                 next,
               },
             }),
+          }
+        );
+      },
+    }),
+
+    register: createProcedure({
+      schema() {
+        return z.object({
+          name: z.string(),
+          email: z.string(),
+        });
+      },
+      async mutation({ email, name }, ctx) {
+        return await authenticator.authenticate(
+          "email-link",
+          {
+            response: ctx.res,
+            request: ctx.req,
+          },
+          {
+            email,
+            register: name,
           }
         );
       },
