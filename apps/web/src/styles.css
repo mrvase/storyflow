@@ -1,0 +1,4 @@
+@config "../tailwind.next.config.js";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

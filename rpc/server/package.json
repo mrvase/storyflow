@@ -1,0 +1,22 @@
+{
+  "name": "@sfrpc/server",
+  "private": true,
+  "version": "0.0.0",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "scripts": {},
+  "devDependencies": {
+    "@sfrpc/types": "workspace:*",
+    "@storyflow/result": "workspace:*",
+    "@types/qs": "^6.9.7",
+    "qs": "^6.11.0",
+    "tsconfig": "workspace:*",
+    "typescript": "^4.9.4",
+    "zod": "^3.20.2"
+  },
+  "peerDependencies": {
+    "@storyflow/result": "workspace:*",
+    "qs": "^6.11.0",
+    "zod": "^3.20.2"
+  }
+}

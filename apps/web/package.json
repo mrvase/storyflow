@@ -3,25 +3,40 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "vite build && (next dev & vite dev)",
+    "build": "vite build & next build",
+    "build:vite": "vite build",
     "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
+    "@sfrpc/client": "workspace:*",
+    "@sfrpc/server": "workspace:*",
+    "@storyflow/auth": "workspace:*",
+    "@storyflow/result": "workspace:*",
+    "@vitejs/plugin-react": "^3.0.1",
+    "admin-panel": "workspace:*",
+    "api": "workspace:*",
+    "mongodb": "^4.13.0",
     "next": "^13.1.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "ui": "workspace:*"
+    "vite": "^4.0.4",
+    "zod": "^3.20.2"
   },
   "devDependencies": {
     "@babel/core": "^7.0.0",
-    "eslint-config-custom": "workspace:*",
-    "eslint": "7.32.0",
-    "tsconfig": "workspace:*",
+    "@sfrpc/types": "workspace:*",
     "@types/node": "^17.0.12",
+    "@types/qs": "^6.9.7",
     "@types/react": "^18.0.22",
     "@types/react-dom": "^18.0.7",
-    "typescript": "^4.5.3"
+    "autoprefixer": "^10.4.13",
+    "eslint": "7.32.0",
+    "eslint-config-custom": "workspace:*",
+    "postcss": "^8.4.21",
+    "tailwindcss": "^3.2.4",
+    "tsconfig": "workspace:*",
+    "typescript": "^4.9.4"
   }
 }
