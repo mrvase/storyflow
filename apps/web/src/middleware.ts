@@ -23,7 +23,13 @@ export default async function middleware(req: NextRequest) {
 
   const user = await auth.isAuthenticated(req);
 
-  console.log("MIDDLEWARE USER", org, user, cookieOptions);
+  console.log(
+    "MIDDLEWARE USER",
+    org,
+    user,
+    cookieOptions,
+    req.headers.get("cookie")
+  );
 
   if (user) {
     const result = user.organizations.find((el) => el.slug === org);
