@@ -156,7 +156,7 @@ export const api = createAPI({
         });
       },
       async mutation({ next, email }, ctx) {
-        return await authenticator.authenticate(
+        const reuslt = await authenticator.authenticate(
           "email-link",
           {
             response: ctx.res,
@@ -171,6 +171,8 @@ export const api = createAPI({
             }),
           }
         );
+        console.log("NEW COOKIE", ctx.res.getHeader("cookie"));
+        return reuslt;
       },
     }),
 
