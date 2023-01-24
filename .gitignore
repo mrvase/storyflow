@@ -31,3 +31,6 @@ yarn-error.log*
 
 # turbo
 .turbo
+
+public/dashboard/index.html
+public/dashboard/assets
