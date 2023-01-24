@@ -2,6 +2,7 @@ import { unwrap } from "@storyflow/result";
 import React from "react";
 import { useClient } from "./client";
 import { DocumentId } from "@storyflow/backend/types";
+import { useOrganisationSlug } from "./users";
 
 const IdContext = React.createContext<{
   getArticleId: () => Promise<DocumentId>;
@@ -9,9 +10,13 @@ const IdContext = React.createContext<{
 } | null>(null);
 
 export function IdGenerator({ children }: { children: React.ReactNode }) {
+  const slug = useOrganisationSlug();
+
+  const getName = (name: string) => `${slug}:${name}`;
+
   const getValue = (name: string): string[] => {
     if (typeof window === "undefined") return [];
-    const ls = localStorage.getItem(name);
+    const ls = localStorage.getItem(getName(name));
     if (!ls) return [];
     return JSON.parse(ls);
   };
@@ -19,13 +24,16 @@ export function IdGenerator({ children }: { children: React.ReactNode }) {
   const popValue = (name: string) => {
     const newValue = getValue(name);
     const [id] = newValue.splice(0, 1);
-    localStorage.setItem(name, JSON.stringify(newValue));
+    localStorage.setItem(getName(name), JSON.stringify(newValue));
     return id;
   };
 
   const addValues = (name: string, values: string[]) => {
     const newValue = getValue(name);
-    localStorage.setItem(name, JSON.stringify([...newValue, ...values]));
+    localStorage.setItem(
+      getName(name),
+      JSON.stringify([...newValue, ...values])
+    );
   };
 
   const promises = React.useRef({

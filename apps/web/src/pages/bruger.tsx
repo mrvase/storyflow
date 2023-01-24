@@ -34,6 +34,7 @@ export default function Page({ user }: { user: User }) {
         <div className="grid grid-cols-2 gap-12">
           {user.organizations.map(({ slug }) => (
             <a
+              key={slug}
               href={`/${slug}`}
               className="rounded-lg bg-white/10 p-10 font-light text-2xl"
             >

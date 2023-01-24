@@ -1,11 +1,11 @@
 import { RenderPage } from "@storyflow/react";
 import { fetchPage } from "@storyflow/server";
-import { GetServerSideProps } from "next";
+import { GetStaticProps } from "next";
 
-export const getServerSideProps: GetServerSideProps = async (ctx) => {
-  const { slug } = ctx.query;
+export const getStaticProps: GetStaticProps = async (ctx) => {
+  const slugs = ctx.params?.slugs;
 
-  const url = Array.isArray(slug) ? slug.join("/") : "";
+  const url = Array.isArray(slugs) ? slugs.join("/") : "";
 
   if (url.indexOf(".") >= 0) {
     return { props: {} };
@@ -13,6 +13,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
 
   const data = await fetchPage(url);
 
+  /*
   const redirect = data.find((el) => el?.redirect !== null);
 
   if (redirect) {
@@ -23,11 +24,19 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
       },
     };
   }
+  */
 
   return {
     props: {
       data,
     },
+  };
+};
+
+export const getStaticPaths = () => {
+  return {
+    paths: [],
+    fallback: "blocking",
   };
 };
 
