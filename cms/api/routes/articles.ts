@@ -522,7 +522,7 @@ export const articles = createRoute({
         };
       })();
 
-      const insertsPromise = Promise.all(
+      const insertsPromise: Promise<DBDocument[]> = Promise.all(
         input.reduce(
           (acc, { folder, actions }) =>
             actions.reduce((acc, action) => {
@@ -558,7 +558,7 @@ export const articles = createRoute({
 
       const inserts = await insertsPromise;
 
-      const removes = input.reduce((acc, { folder, actions }) => {
+      const removes: string[] = input.reduce((acc, { folder, actions }) => {
         actions.forEach((action) => {
           if (action.type !== "insert") {
             acc.push(action.id);
@@ -576,25 +576,58 @@ export const articles = createRoute({
         console.log("ERROR", err);
       }
 
-      const result = await Promise.all([
+      /*
+      
+      */
+
+      /* TODO: mongo 5.1
+      db
+        .aggregate([
+          { $documents: inserts },
+          ...createStages([]),
+          createUnsetStage(),
+          { $merge: "articles" },
+        ])
+        .next()
+        .then(() => ({ acknowledged: true }))
+      */
+
+      const result: { acknowledged: boolean }[] = await Promise.all([
         ...(inserts.length
-          ? [
-              db
-                .aggregate([
-                  { $documents: inserts },
+          ? inserts.map((insert) =>
+              db.collection("articles").updateOne(
+                { id: insert.id },
+                [
+                  {
+                    $set: {
+                      id: insert.id,
+                      folder: insert.folder,
+                      config: { $literal: insert.config },
+                      values: { $literal: insert.values },
+                      compute: { $literal: insert.compute },
+                      version: insert.version,
+                    },
+                  },
                   ...createStages([]),
                   createUnsetStage(),
-                  { $merge: "articles" },
-                ])
-                .next()
-                .then(() => ({ acknowledged: true })),
-            ]
+                ],
+                {
+                  upsert: true,
+                }
+              )
+            )
           : []),
         ...(removes.length
           ? [db.collection("articles").deleteMany({ id: { $in: removes } })]
           : []),
-        client.del(...removes),
+        client
+          .del(...removes)
+          .then((number) => ({ acknowledged: number === removes.length })),
       ]);
+
+      /**
+       * TODO: Should run updates since references can be made before save
+       */
 
       return success(
         result.every((el) =>

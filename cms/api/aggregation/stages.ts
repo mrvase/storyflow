@@ -112,6 +112,14 @@ const createCalculationStage = (
     {
       $set: {
         compute: {
+          $reverseArray: $doc.compute,
+        },
+      },
+    },
+    /*
+    {
+      $set: {
+        compute: {
           $sortArray: {
             input: $doc.compute,
             sortBy: {
@@ -121,6 +129,7 @@ const createCalculationStage = (
         },
       },
     },
+    */
     // purging and spreading imports of updates
     {
       $set: {
@@ -196,14 +205,10 @@ const createCalculationStage = (
     },
     {
       $set: {
-        compute: {
-          $sortArray: {
-            input: $doc.compute,
-            sortBy: {
-              depth: -1,
-            },
-          },
-        },
+        compute: $.sortArray(
+          $doc.compute as (ComputationBlock & { depth: number })[],
+          { depth: -1 }
+        ),
       },
     },
     // deduplicate imports of updates

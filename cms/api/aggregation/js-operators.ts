@@ -201,7 +201,7 @@ export const operators: Operators<any> = {
   objectToArray(object) {
     return Object.entries(object).map(([k, v]) => ({
       k: k as keyof typeof object,
-      v: v as typeof object[keyof typeof object],
+      v: v as (typeof object)[keyof typeof object],
     }));
   },
   substrBytes(string, start, length) {
@@ -234,5 +234,19 @@ export const operators: Operators<any> = {
   },
   max(numbers) {
     return Math.max(...numbers);
+  },
+  sortArray(input, sortBy) {
+    let array = [...input];
+    const compare = (a: any, b: any, order: 1 | -1) => {
+      if (order === 1) {
+        return a > b;
+      } else {
+        return a < b;
+      }
+    };
+    Object.entries(sortBy).forEach(([key, value]) => {
+      array.sort((a, b) => (compare(a[key], b[key], value!) ? 1 : -1));
+    });
+    return array;
   },
 };

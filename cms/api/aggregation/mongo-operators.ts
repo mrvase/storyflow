@@ -34,7 +34,7 @@ export const operators: Operators<any> = {
       $map: {
         input: arr,
         as: ref,
-        in: stringifyProxies(callback(elementProxy as typeof arr[number])),
+        in: stringifyProxies(callback(elementProxy as (typeof arr)[number])),
       },
     } as unknown as Array<ReturnType<typeof callback>>;
   },
@@ -56,7 +56,7 @@ export const operators: Operators<any> = {
             in: stringifyProxies(
               callback(
                 accumulatorProxy as typeof initialValue,
-                currentProxy as typeof arr[number]
+                currentProxy as (typeof arr)[number]
               )
             ),
           },
@@ -87,7 +87,7 @@ export const operators: Operators<any> = {
                 in: stringifyProxies({
                   v: callback(
                     accumulatorProxy.v as typeof initialValue,
-                    currentProxy as typeof arr[number],
+                    currentProxy as (typeof arr)[number],
                     accumulatorProxy.i as number
                   ),
                   i: { $add: [0, accumulatorProxy.i, 1] },
@@ -166,7 +166,7 @@ export const operators: Operators<any> = {
           cond: callback(createProxy(ref)),
         },
       },
-    } as unknown as typeof arr[number];
+    } as unknown as (typeof arr)[number];
   },
   eq(val1, val2) {
     return {
@@ -195,7 +195,7 @@ export const operators: Operators<any> = {
   concatArrays(...arrays) {
     return {
       $concatArrays: arrays,
-    } as unknown as typeof arrays[number];
+    } as unknown as (typeof arrays)[number];
   },
   mergeObjects(a, b, c) {
     return {
@@ -203,13 +203,13 @@ export const operators: Operators<any> = {
     } as unknown as typeof a & typeof b & typeof c;
   },
   first(arr) {
-    return { $first: arr } as unknown as typeof arr[number];
+    return { $first: arr } as unknown as (typeof arr)[number];
   },
   last(arr) {
-    return { $last: arr } as unknown as typeof arr[number];
+    return { $last: arr } as unknown as (typeof arr)[number];
   },
   at(arr, index) {
-    return { $arrayElemAt: [arr, index] } as unknown as typeof arr[number];
+    return { $arrayElemAt: [arr, index] } as unknown as (typeof arr)[number];
   },
   anyElementTrue(arr) {
     return { $anyElementTrue: arr } as unknown as boolean;
@@ -277,7 +277,7 @@ export const operators: Operators<any> = {
   setUnion(...arrays) {
     return {
       $setUnion: arrays,
-    } as unknown as typeof arrays[number];
+    } as unknown as (typeof arrays)[number];
   },
   size(arr) {
     return {
@@ -297,7 +297,7 @@ export const operators: Operators<any> = {
         input,
         field,
       },
-    } as unknown as typeof input[typeof field];
+    } as unknown as (typeof input)[typeof field];
   },
   switch() {
     const createObj = <U>(branches: any[]): SwitchObject<U> => ({
@@ -413,6 +413,51 @@ export const operators: Operators<any> = {
     return {
       $max: numbers,
     } as unknown as number;
+  },
+  sortArray(input, sortBy) {
+    /* TODO: mongo 5.2
+    return {
+      $sortArray: { input, sortBy }
+    }
+    */
+    const [key, order] = Object.entries(sortBy)[0];
+    return operators.reduce(
+      input,
+      (sorted, cur) => {
+        return operators
+          .define()
+          .let({
+            search: operators.reduce(
+              sorted,
+              (acc, check) => {
+                return operators.cond(
+                  operators.and(
+                    operators.gt(cur[key], check[key]),
+                    operators.not(acc.found)
+                  ),
+                  () => ({
+                    found: true,
+                    result: operators.concatArrays(acc.result, [cur, check]),
+                  }),
+                  () => ({
+                    found: acc.found,
+                    result: operators.concatArrays(acc.result, [check]),
+                  })
+                );
+              },
+              { found: false, result: [] as typeof input }
+            ),
+          })
+          .return(({ search }) =>
+            operators.cond(
+              search.found,
+              () => search.result,
+              () => operators.concatArrays(search.result, [cur])
+            )
+          );
+      },
+      [] as typeof input
+    );
   },
 };
 

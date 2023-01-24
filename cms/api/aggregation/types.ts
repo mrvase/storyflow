@@ -127,6 +127,10 @@ export type Operators<DocumentType extends Record<string, any>> = {
     options: string
   ) => { match: string; idx: number; captures: string[] }[];
   replaceOne: (input: string, find: string, replacement: string) => string;
+  sortArray: <T extends Record<string, any>>(
+    input: T[],
+    sortBy: Partial<Record<keyof T, 1 | -1>>
+  ) => T[];
   /*
   literal: <T>(val: T) => T;
   reverseArray: <T extends any[]>(arr: T) => T;
