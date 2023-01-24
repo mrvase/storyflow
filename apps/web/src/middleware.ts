@@ -47,8 +47,12 @@ export default async function middleware(req: NextRequest) {
     });
   }
 
-  if (page === "login" && user) {
-    return NextResponse.redirect(new URL(`/bruger`, req.url));
+  if (page === "login") {
+    if (user) {
+      return NextResponse.redirect(new URL(`/bruger`, req.url));
+    }
+
+    return;
   }
 
   if (user) {
