@@ -60,6 +60,61 @@ export const api = createAPI({
     }),
     */
 
+    createOrganization: createProcedure({
+      middleware(ctx) {
+        return ctx.use(user);
+      },
+      schema() {
+        return z.object({ slug: z.string(), admin: z.string().optional() });
+      },
+      async mutation({ slug, admin }, { user }) {
+        if (user.email !== "martin@rvase.dk") {
+          return error({ message: "Access denied", status: 401 });
+        }
+
+        const client = await clientPromise;
+        const db = `${slug}-${Math.random().toString(36).slice(2, 6)}`;
+
+        await Promise.all([
+          client
+            .db(db)
+            .collection("counters")
+            .insertMany([
+              { name: "folders", counter: 0 },
+              { name: "articles", counter: 0 },
+            ]),
+          client
+            .db(db)
+            .collection("folders")
+            .insertMany([
+              {
+                id: "----",
+                label: "Hjem",
+                type: "root",
+                children: [],
+              },
+              {
+                id: "---0",
+                label: "Skabeloner",
+                type: "templates",
+                children: [],
+              },
+            ]),
+          ,
+          client
+            .db("cms")
+            .collection("organizations")
+            .insertOne({
+              slug,
+              db,
+              admin: admin || "martin@rvase.dk",
+            }),
+        ]);
+
+        return success(slug);
+      },
+    }),
+
     verifyOrganization: createProcedure({
       schema() {
         return z.object({
@@ -97,7 +152,7 @@ export const api = createAPI({
         const createCallback = (org: Organization) => (user: User) => ({
           ...user,
           organizations: [
-            ...user.organizations.filter((el) => el.slug === slug),
+            ...user.organizations.filter((el) => el.slug !== slug),
             org,
           ],
         });
@@ -150,10 +205,11 @@ export const api = createAPI({
       schema() {
         return z.object({
           next: z.string().optional(),
+          invite: z.string().optional(),
           email: z.string(),
         });
       },
-      async mutation({ next, email }, ctx) {
+      async mutation({ next, email, invite }, ctx) {
         const result = await authenticator.authenticate(
           "email-link",
           {
@@ -162,6 +218,7 @@ export const api = createAPI({
           },
           {
             email,
+            ...(invite && { invite }),
             ...(next && {
               params: {
                 next,

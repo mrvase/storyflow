@@ -105,7 +105,7 @@ const sendEmail = async ({
   let text = `Log ind med linket: ${link}`;
 
   if (invite) {
-    text = `Du er blevet inviteret til at få adgang til Storyflow Studio. Log ind med linket: ${link}`;
+    text = `Du er blevet inviteret til at få adgang til storyflow.dk/${invite}. Log ind med linket: ${link}`;
   }
 
   if (register) {
