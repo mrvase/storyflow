@@ -9,10 +9,12 @@
   },
   "dependencies": {
     "@sfrpc/client": "workspace:*",
+    "@storyflow/core": "workspace:*",
     "@storyflow/dnd": "workspace:*",
     "@storyflow/result": "workspace:*",
     "@storyflow/router": "workspace:*",
     "@storyflow/state": "workspace:*",
+    "shared": "workspace:*",
     "swr": "^2.0.1",
     "qs": "^6.11.0"
   },

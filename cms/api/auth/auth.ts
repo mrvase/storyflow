@@ -6,10 +6,7 @@ import {
   VerifyFunction,
 } from "@storyflow/auth";
 import { createSessionStorage } from "@storyflow/session";
-import type { User } from "../types";
-import clientPromise from "./mongo";
-
-const USER_ID = "abcd";
+import clientPromise from "../mongo/mongoClient";
 
 const verify: VerifyFunction<User> = async ({
   email,
@@ -63,6 +60,8 @@ const verify: VerifyFunction<User> = async ({
       throw new Error("User does not exist");
     }
 
+    console.log("VERIFIED USER", user);
+
     return {
       email,
       name: user.name ?? "",
@@ -78,7 +77,8 @@ const verify: VerifyFunction<User> = async ({
 };
 
 import { createTransport } from "nodemailer";
-import { cookieOptions } from "./cookieOptions";
+import { cookieOptions } from "../cookie-options";
+import { User } from "./types";
 
 const options = {
   server: {
@@ -98,7 +98,7 @@ const sendEmail = async ({
   register,
   link,
   user,
-}: SendEmailOptions<User>) => {
+}: SendEmailOptions<{ email: string; name: string }>) => {
   console.log("SENDING EMAIL", { email, link, user });
   const transport = createTransport(options.server);
 

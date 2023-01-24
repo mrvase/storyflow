@@ -1,7 +1,7 @@
-import { isSuccess, unwrap } from "@storyflow/result";
+import { unwrap } from "@storyflow/result";
 import { GetServerSideProps } from "next";
-import { api } from "../server/users";
 import { User } from "../types";
+import { api } from "api/auth";
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const token = ctx.query.token as string | undefined;

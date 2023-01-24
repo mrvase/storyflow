@@ -1,6 +1,6 @@
 import { MongoClient } from "mongodb";
 
-const MONGO_URL = process.env.MONGO_URL;
+const MONGO_URL = process.env.MONGO_URL as string; // "mongodb://127.0.0.1:27017";
 
 const uri = `${MONGO_URL}?retryWrites=true&w=majority` as string; // your mongodb connection string
 

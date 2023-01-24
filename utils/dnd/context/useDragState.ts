@@ -1,6 +1,6 @@
-import { useRegister } from "@mrvase/utils/hooks";
 import React from "react";
 import { Draggable, Identifier, List, Rect } from "../types";
+import useRegister from "./useRegister";
 
 type Item = any;
 

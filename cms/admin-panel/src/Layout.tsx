@@ -1,14 +1,15 @@
 import { Link, useLocation } from "@storyflow/router";
-import { SWRClient } from "./client";
+import { useFolders } from "./folders/folders-context";
 
 export function Layout() {
   const { pathname } = useLocation();
 
-  const { data: user } = SWRClient.articles.getArticle.useQuery(pathname);
+  const folders = useFolders();
 
   return (
     <div className="bg-gray-900">
-      {user} <Link to={`${pathname}/test`}>videre</Link>
+      FOLDERS: {JSON.stringify(folders)}
+      <Link to={`${pathname}/test`}>videre</Link>
     </div>
   );
 }
