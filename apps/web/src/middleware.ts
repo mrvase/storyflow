@@ -2,12 +2,12 @@ import { createAuthenticator } from "@storyflow/auth";
 import { createSessionStorage } from "@storyflow/session/src/sessionStorageEdge";
 import { NextResponse } from "next/server";
 import { NextRequest } from "next/server";
-import { cookieOptions } from "./server/cookieOptions";
+import { cookieOptions } from "api/cookie-options";
 import { User } from "./types";
 
 export const config = {
   matcher:
-    "/((?!index|public|static|api|_next|favicon.ico|sw.js|login|logout|opret-org|registrer|bruger|verify|priser|dashboard\\/assets|dashboard\\/favicon.ico).+)",
+    "/((?!index|public|static|api|_next|favicon.ico|sw.js|login|logout|opret-org|registrer|bruger|builder|verify|priser|dashboard\\/assets|dashboard\\/favicon.ico).+)",
 };
 
 const sessionStorage = createSessionStorage({

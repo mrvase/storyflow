@@ -1,1 +1,1 @@
-export { handler as default } from "../../../server/users";
+export { handler as default } from "api/auth";

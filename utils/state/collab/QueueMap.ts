@@ -50,22 +50,22 @@ export function createQueueMap<
   return {
     get: (document: string, key: string) => {
       const queue = queues.get(getId(document, key));
-      debug("QUEUE MAP", ...queues.keys());
+      debug("QUEUE MAP", queues.keys());
       return queue as any;
     },
     set: (document, key, queue) => {
       queues.set(getId(document, key), queue as any);
-      debug("QUEUE MAP", ...queues.keys());
+      debug("QUEUE MAP", queues.keys());
     },
     delete: (document, key) => {
       queues.delete(getId(document, key));
-      debug("QUEUE MAP", ...queues.keys());
+      debug("QUEUE MAP", queues.keys());
     },
     syncEach: (callback, options) => {
       queues.forEach((queue, key) =>
         queue.sync((pkg) => callback(pkg, splitId(key)), options)
       );
-      debug("QUEUE MAP", ...queues.keys());
+      debug("QUEUE MAP", queues.keys());
     },
     purge: () => {
       Array.from(queues.entries()).forEach(([id, queue]) => {
@@ -73,7 +73,7 @@ export function createQueueMap<
           queues.delete(id);
         }
       });
-      debug("QUEUE MAP", ...queues.keys());
+      debug("QUEUE MAP", queues.keys());
     },
   };
 }

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import React from "react";
 import { client } from "../client";
-import { api } from "../server/users";
+import { api } from "api/auth";
 
 export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
   const user = await api.users.getUser.query.call({ context: { req, res } });

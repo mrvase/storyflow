@@ -1,7 +1,6 @@
-import React, { useId } from "react";
+import React from "react";
 import { DndContext } from "../context/DragDropContext";
 import type { CanReceive, OnChange } from "../types";
-import { createKey } from "../utils";
 import { useDragArea } from "./useDragArea";
 
 export type ListContextType = {

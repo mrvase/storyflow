@@ -1,5 +1,5 @@
 import { GetServerSideProps } from "next";
-import { api } from "../server/users";
+import { api } from "api/auth";
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   await api.users.logout.mutation.call({

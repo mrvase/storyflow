@@ -31,3 +31,6 @@ yarn-error.log*
 
 # turbo
 .turbo
+
+apps/web/public/dashboard
+!apps/web/public/dashboard/favicon.ico
