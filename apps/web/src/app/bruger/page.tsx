@@ -1,7 +1,7 @@
 import Link from "next/link";
 export default function Page({ searchParams }: { searchParams?: any }) {
   const { name, email, orgs: orgs_ } = searchParams;
-  const orgs = orgs_ === "" ? [] : orgs_.split(",");
+  const orgs = orgs_ === "" ? [] : orgs_?.split(",") ?? [];
 
   return (
     <div className="absolute inset-0 bg-gray-900 text-white flex">
