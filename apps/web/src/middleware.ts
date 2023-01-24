@@ -7,7 +7,7 @@ import { User } from "./types";
 
 export const config = {
   matcher:
-    "/((?!index|public|static|api|_next|favicon.ico|sw.js|login|logout|registrer|bruger|verify|priser|dashboard\\/assets|dashboard\\/favicon.ico).+)",
+    "/((?!index|public|static|api|_next|favicon.ico|sw.js|logout|registrer|verify|priser|dashboard\\/assets|dashboard\\/favicon.ico).+)",
 };
 
 const sessionStorage = createSessionStorage({
@@ -15,14 +15,44 @@ const sessionStorage = createSessionStorage({
 });
 
 export default async function middleware(req: NextRequest) {
-  const org = req.nextUrl.pathname.split("/")[1];
+  const page = req.nextUrl.pathname.split("/")[1];
 
   const auth = createAuthenticator<User>([], sessionStorage);
 
   const user = await auth.isAuthenticated(req);
 
+  if (page === "bruger") {
+    if (!user) {
+      return NextResponse.redirect(new URL(`/login`, req.url));
+    }
+
+    if (req.headers.has("x-rewritten")) {
+      return;
+    }
+
+    const url = new URL(req.nextUrl);
+    url.searchParams.set("email", user.email);
+    url.searchParams.set("name", user.name);
+    url.searchParams.set(
+      "orgs",
+      user.organizations.map((el) => el.slug).join(",")
+    );
+
+    const requestHeaders = new Headers(req.headers);
+    requestHeaders.set("x-rewritten", "true");
+    return NextResponse.rewrite(url.toString(), {
+      request: {
+        headers: requestHeaders,
+      },
+    });
+  }
+
+  if (page === "login" && user) {
+    return NextResponse.redirect(new URL(`/bruger`, req.url));
+  }
+
   if (user) {
-    const result = user.organizations.find((el) => el.slug === org);
+    const result = user.organizations.find((el) => el.slug === page);
 
     if (result && "permissions" in result && result.permissions !== false) {
       const requestHeaders = new Headers(req.headers);
@@ -33,10 +63,10 @@ export default async function middleware(req: NextRequest) {
         },
       });
     } else if (!result || !("permissions" in result)) {
-      return NextResponse.redirect(new URL(`/verify?next=${org}`, req.url));
+      return NextResponse.redirect(new URL(`/verify?next=${page}`, req.url));
     }
   } else {
-    return NextResponse.redirect(new URL(`/login?next=${org}`, req.url));
+    return NextResponse.redirect(new URL(`/login?next=${page}`, req.url));
   }
   // will redirect to login from [slug] if no page is found.
 }
