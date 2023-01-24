@@ -32,5 +32,5 @@ yarn-error.log*
 # turbo
 .turbo
 
-public/dashboard/index.html
-public/dashboard/assets
+apps/web/public/dashboard
+!apps/web/public/dashboard/favicon.ico
