@@ -7,7 +7,7 @@ import { User } from "./types";
 
 export const config = {
   matcher:
-    "/((?!index|public|static|api|_next|favicon.ico|sw.js|login|logout|registrer|bruger|verify|priser|dashboard\\/assets|dashboard\\/favicon.ico).+)",
+    "/((?!index|public|static|api|_next|favicon.ico|sw.js|login|logout|opret-org|registrer|bruger|verify|priser|dashboard\\/assets|dashboard\\/favicon.ico).+)",
 };
 
 const sessionStorage = createSessionStorage({

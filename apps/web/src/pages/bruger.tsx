@@ -30,18 +30,14 @@ export default function Page({ user }: { user: User }) {
       <div className="w-full h-full bg-gradient-to-br from-fuchsia-600 to-pink-600 flex flex-col gap-24 px-12 py-24">
         <h1 className="text-4xl text-gray-200">Dine projekter</h1>
         <div className="grid grid-cols-2 gap-12">
-          <a
-            href="/kfs"
-            className="rounded-lg bg-white/10 p-10 font-light text-2xl"
-          >
-            Kristeligt Forbund for Studerende
-          </a>
-          <a
-            href="/kfs"
-            className="rounded-lg bg-white/10 p-10 font-light text-2xl"
-          >
-            Forlaget Semper
-          </a>
+          {user.organizations.map(({ slug }) => (
+            <a
+              href={`/${slug}`}
+              className="rounded-lg bg-white/10 p-10 font-light text-2xl"
+            >
+              /{slug}
+            </a>
+          ))}
         </div>
       </div>
       <div className="w-full max-w-lg flex items-center">
