@@ -1,30 +1,36 @@
-import { GetStaticProps } from "next";
-import Link from "next/link";
+import { RenderPage } from "@storyflow/react";
+import { fetchPage } from "@storyflow/server";
+import { GetServerSideProps } from "next";
 
-export const getStaticProps: GetStaticProps = async (ctx) => {
-  const { slugs: _slugs } = ctx.params as any;
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const { slug } = ctx.query;
 
-  const slugs = _slugs ?? [];
+  const url = Array.isArray(slug) ? slug.join("/") : "";
 
-  if (slugs[0] !== "priser" && slugs[0] !== undefined) {
+  if (url.indexOf(".") >= 0) {
+    return { props: {} };
+  }
+
+  const data = await fetchPage(url);
+
+  const redirect = data.find((el) => el?.redirect !== null);
+
+  if (redirect) {
     return {
-      notFound: true,
+      redirect: {
+        destination: `/${redirect.redirect}`,
+        permanent: false,
+      },
     };
   }
-  return { props: {} };
-};
 
-export const getStaticPaths = () => {
   return {
-    paths: [],
-    fallback: "blocking",
+    props: {
+      data,
+    },
   };
 };
 
-export default function Page() {
-  return (
-    <div>
-      <Link href="/login">Log ind</Link>
-    </div>
-  );
+export default function Component({ data }: { data: any }) {
+  return <RenderPage data={data} />;
 }

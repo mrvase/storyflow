@@ -19,7 +19,9 @@ importers:
       '@sfrpc/server': workspace:*
       '@sfrpc/types': workspace:*
       '@storyflow/auth': workspace:*
+      '@storyflow/react': workspace:*
       '@storyflow/result': workspace:*
+      '@storyflow/server': workspace:*
       '@storyflow/session': workspace:*
       '@types/node': ^17.0.12
       '@types/qs': ^6.9.7
@@ -46,7 +48,9 @@ importers:
       '@sfrpc/client': link:../../rpc/client
       '@sfrpc/server': link:../../rpc/server
       '@storyflow/auth': link:../../utils/auth
+      '@storyflow/react': link:../../packages/react
       '@storyflow/result': link:../../utils/result
+      '@storyflow/server': link:../../packages/server
       '@storyflow/session': link:../../utils/session
       '@vitejs/plugin-react': 3.0.1_vite@4.0.4
       admin-panel: link:../../cms/admin-panel
@@ -213,6 +217,46 @@ importers:
     devDependencies:
       eslint: 7.32.0
       eslint-config-custom: link:../../setup/eslint-config-custom
+      tsconfig: link:../../setup/tsconfig
+      typescript: 4.9.4
+
+  packages/react:
+    specifiers:
+      '@storyflow/frontend': workspace:*
+      '@types/react': ^18.0.17
+      '@types/react-dom': ^18.0.6
+      eslint: ^7.32.0
+      eslint-config-custom: workspace:*
+      react: ^18.2.0
+      react-dom: ^18.2.0
+      tsconfig: workspace:*
+      typescript: ^4.9.4
+    dependencies:
+      '@storyflow/frontend': link:../frontend
+    devDependencies:
+      '@types/react': 18.0.27
+      '@types/react-dom': 18.0.10
+      eslint: 7.32.0
+      eslint-config-custom: link:../../setup/eslint-config-custom
+      react: 18.2.0
+      react-dom: 18.2.0_react@18.2.0
+      tsconfig: link:../../setup/tsconfig
+      typescript: 4.9.4
+
+  packages/server:
+    specifiers:
+      '@storyflow/backend': workspace:*
+      eslint: ^7.32.0
+      eslint-config-custom: workspace:*
+      mongodb: ^4.13.0
+      tsconfig: workspace:*
+      typescript: ^4.9.4
+    dependencies:
+      '@storyflow/backend': link:../backend
+    devDependencies:
+      eslint: 7.32.0
+      eslint-config-custom: link:../../setup/eslint-config-custom
+      mongodb: 4.13.0
       tsconfig: link:../../setup/tsconfig
       typescript: 4.9.4
 
