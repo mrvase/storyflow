@@ -1,4 +1,4 @@
-import { FieldConfig, DocumentConfig } from "@storyflow/core/types";
+import { FieldConfig, DocumentConfig } from "@storyflow/backend/types";
 
 const getTemplateFieldId = (id: string) => {
   return id.slice(4);

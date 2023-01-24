@@ -1,5 +1,5 @@
 import React from "react";
-import type { ClientConfig } from "@storyflow/core/types";
+import type { ClientConfig } from "@storyflow/frontend/types";
 
 const ClientConfigContext = React.createContext<ClientConfig | null>(null);
 

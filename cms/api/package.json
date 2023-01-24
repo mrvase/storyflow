@@ -10,7 +10,7 @@
   "dependencies": {
     "@sfrpc/server": "workspace:*",
     "@storyflow/auth": "workspace:*",
-    "@storyflow/core": "workspace:*",
+    "@storyflow/backend": "workspace:*",
     "@storyflow/result": "workspace:*",
     "@storyflow/session": "workspace:*",
     "@storyflow/state": "workspace:*",

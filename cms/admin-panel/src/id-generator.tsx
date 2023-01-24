@@ -1,7 +1,7 @@
 import { unwrap } from "@storyflow/result";
 import React from "react";
 import { useClient } from "./client";
-import { DocumentId } from "@storyflow/core/types";
+import { DocumentId } from "@storyflow/backend/types";
 
 const IdContext = React.createContext<{
   getArticleId: () => Promise<DocumentId>;

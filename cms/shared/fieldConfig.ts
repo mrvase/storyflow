@@ -1,8 +1,8 @@
 import { createSpliceTransformer } from "./splice-transform";
 import { inputConfig } from "./inputConfig";
 import { ComputationOp, targetTools } from "./operations";
-import { getNestedChild } from "@storyflow/core";
-import { Computation, FieldType, FunctionName } from "@storyflow/core/types";
+import { getNestedChild } from "@storyflow/backend/traverse";
+import { Computation, FieldType, FunctionName } from "@storyflow/backend/types";
 import { tools } from "./editor-tools";
 
 const getArrayMethods = (operation: ComputationOp) => {

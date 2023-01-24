@@ -9,7 +9,7 @@ import {
   Operator,
   FlatFieldImport,
   DocumentId,
-} from "@storyflow/core/types";
+} from "@storyflow/backend/types";
 
 type Accummulator = {
   value: FlatComputation[];

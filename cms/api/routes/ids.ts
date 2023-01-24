@@ -3,7 +3,7 @@ import { success } from "@storyflow/result";
 import { z } from "zod";
 import clientPromise from "../mongo/mongoClient";
 import { globals } from "../middleware/globals";
-import { createIdFromNumber } from "@storyflow/core";
+import { createIdFromNumber } from "@storyflow/backend/ids";
 import { Db } from "mongodb";
 
 export const COUNTER_OFFSET = 100;

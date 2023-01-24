@@ -14,7 +14,7 @@ import {
   EditorComputation,
   FlatComputationRecord,
   TemplateFieldId,
-} from "@storyflow/core/types";
+} from "@storyflow/backend/types";
 import { ModifyResult, ObjectId, WithId } from "mongodb";
 import clientPromise from "../mongo/mongoClient";
 import { globals } from "../middleware/globals";
@@ -33,7 +33,7 @@ import {
 } from "shared/editor-computation";
 import { AnyOp, targetTools } from "shared/operations";
 import { createComputationTransformer, fieldConfig } from "shared/fieldConfig";
-import { modifyNestedChild } from "@storyflow/core";
+import { modifyNestedChild } from "@storyflow/backend/traverse";
 import { inputConfig } from "shared/inputConfig";
 import {
   flattenComputation,
@@ -41,12 +41,12 @@ import {
   getComputationRecord,
   getFlatComputationRecord,
   restoreComputation,
-} from "@storyflow/core";
+} from "@storyflow/backend/flatten";
 import {
   getDocumentId,
   getTemplateFieldId,
   isTemplateField,
-} from "@storyflow/core";
+} from "@storyflow/backend/ids";
 import {
   createCachedStage,
   createStages,
@@ -54,7 +54,7 @@ import {
   Update,
 } from "../aggregation/stages";
 import util from "util";
-import { LABEL_ID } from "@storyflow/core";
+import { LABEL_ID } from "@storyflow/backend/templates";
 
 export const removeObjectId = <T extends { _id: any }>({
   _id,

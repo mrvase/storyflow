@@ -5,7 +5,7 @@ import {
   FieldId,
   FlatComputation,
   Value,
-} from "@storyflow/core/types";
+} from "@storyflow/backend/types";
 import { calculate } from "./calculate";
 import { operators } from "./mongo-operators";
 

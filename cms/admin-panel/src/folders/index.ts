@@ -5,6 +5,8 @@ import {
   useFolders,
 } from "./folders-context";
 
+export { useFolders } from "./folders-context";
+
 export const useFolder = (folderId?: string) => {
   const ctx = useFolders();
   return ctx.folders?.find((el) =>

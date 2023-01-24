@@ -1,5 +1,5 @@
-import { symb } from "@storyflow/core";
-import { EditorComputation } from "@storyflow/core/types";
+import { symb } from "@storyflow/backend/symb";
+import { EditorComputation } from "@storyflow/backend/types";
 import { matchNonEscapedCharacter } from "./matchNonEscapedCharacter";
 
 function getType(value: EditorComputation[number] | undefined) {

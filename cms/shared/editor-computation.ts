@@ -7,7 +7,7 @@ import {
   Placeholder,
   TemplateFieldId,
   Value,
-} from "@storyflow/core/types";
+} from "@storyflow/backend/types";
 import { tools } from "./editor-tools";
 
 type DBElement = Computation[number];

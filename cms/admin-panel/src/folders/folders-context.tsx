@@ -1,4 +1,4 @@
-import { DBFolder, DocumentId, FolderChild } from "@storyflow/core/types";
+import { DBFolder, DocumentId, FolderChild } from "@storyflow/backend/types";
 import { createQueue } from "@storyflow/state";
 import React from "react";
 import { SWRClient } from "../client";

@@ -3,7 +3,7 @@ import {
   EditorComputation,
   FieldId,
   FlatComputation,
-} from "@storyflow/core/types";
+} from "@storyflow/backend/types";
 import { ComputationOp } from "./operations";
 import { tools } from "./editor-tools";
 import { encodeEditorComputation } from "./editor-computation";

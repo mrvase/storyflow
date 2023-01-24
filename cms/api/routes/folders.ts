@@ -1,7 +1,7 @@
 import { createProcedure, createRoute } from "@sfrpc/server";
 import { success } from "@storyflow/result";
 import { z } from "zod";
-import { DBFolder, DocumentId, FolderChild } from "@storyflow/core/types";
+import { DBFolder, DocumentId, FolderChild } from "@storyflow/backend/types";
 import { ObjectId } from "mongodb";
 import clientPromise from "../mongo/mongoClient";
 import { globals } from "../middleware/globals";

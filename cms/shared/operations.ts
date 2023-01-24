@@ -3,7 +3,7 @@ import {
   DocumentConfigItem,
   Filter,
   FieldType,
-} from "@storyflow/core/types";
+} from "@storyflow/backend/types";
 
 type GetKeyFromValue<Record extends { [key: string]: any }, Value> = keyof {
   [K in keyof Record as Value extends Record[K] ? K : never]: any;

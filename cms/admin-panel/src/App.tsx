@@ -6,7 +6,7 @@ import { ClientConfigProvider } from "./client-config";
 import { FieldFocusProvider } from "./field-focus";
 import { FoldersProvider } from "./folders/folders-context";
 import { IdGenerator } from "./id-generator";
-import { Layout } from "./Layout";
+import Layout from "./layout/components/Layout";
 import { Preload } from "./preload";
 import { CollabProvider } from "./state/collaboration";
 
