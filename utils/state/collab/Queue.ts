@@ -90,7 +90,7 @@ export const handleServerPackageArray = <Operation extends DefaultOperation>(
       return [null, nullGroup];
     }
 
-    const max = Math.max(...numberedGroups.keys());
+    const max = Math.max(...Array.from(numberedGroups.keys()));
     return [max, numberedGroups.get(max)!];
   }
 };

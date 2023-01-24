@@ -94,7 +94,7 @@ const optimisticUpdate = (ps: DBFolder[], input: FolderOperation[]) => {
     });
   });
 
-  const newList = [...ps, ...inserts.values()];
+  const newList = [...ps, ...Array.from(inserts.values())];
 
   Array.from(updates.values(), ({ id, label, template, children }) => {
     const index = newList.findIndex((el) => el.id === id)!;
