@@ -20,12 +20,12 @@ import {
 import { WithId } from "mongodb";
 import clientPromise from "./mongo/mongoClient";
 
-async function fetchSinglePage(url: string) {
+async function fetchSinglePage(url: string, db: string) {
   const client = await clientPromise;
 
   console.time("DOCUMENT");
   const article = await client
-    .db("semper-4ljs")
+    .db(db)
     .collection("articles")
     .findOne<DBDocument>({
       [`values.${URL_ID}`]:
@@ -126,14 +126,14 @@ function fetchFetcher(fetcher: Fetcher): Promise<NestedDocument[]> {
   );
 }
 
-export async function fetchPage(url: string) {
+export async function fetchPage(url: string, db: string) {
   const slugs = url === "" ? [""] : [""].concat(url.split("/"));
 
   console.time("e");
   const pages = await Promise.all(
     slugs.map((_, i, arr) => {
       const path = arr.slice(1, i + 1).join("/");
-      return fetchSinglePage(path).then(async (doc) => {
+      return fetchSinglePage(path, db).then(async (doc) => {
         if (!doc) return null;
 
         const blocks: ComputationBlock[] = [
@@ -160,7 +160,10 @@ export async function fetchPage(url: string) {
             fieldId,
             computation,
             blocks,
-            fetchFetcher
+            {
+              fetch: fetchFetcher,
+              libraries: [],
+            }
           );
         };
 

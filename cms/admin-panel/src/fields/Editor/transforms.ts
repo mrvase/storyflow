@@ -52,13 +52,15 @@ import {
   splitByNonEscapedCharacter,
 } from "shared/matchNonEscapedCharacter";
 import { EditorComputation, LayoutElement } from "@storyflow/backend/types";
-import { ClientConfig } from "@storyflow/frontend/types";
+import { ClientConfig, LibraryConfig } from "@storyflow/frontend/types";
+import { getConfigFromType } from "../../client-config";
 
 export const isInlineElement = (
-  config: ClientConfig,
+  libraries: LibraryConfig[],
   element: LayoutElement
 ): boolean => {
-  const result = Boolean(config.components[element.type]?.isInline);
+  const config = getConfigFromType(element.type, libraries);
+  const result = Boolean(config?.isInline);
   return result;
 };
 
@@ -372,7 +374,7 @@ export const $getPointFromIndex = (
 
 export const getNodesFromComputation = (
   compute: EditorComputation,
-  config: ClientConfig
+  libraries: LibraryConfig[]
 ) => {
   let bold = false;
   let italic = false;
@@ -425,7 +427,7 @@ export const getNodesFromComputation = (
       const node = $createParameterNode(`${el[0]}`);
       acc.push(node);
     } else if (tools.isLayoutElement(el)) {
-      if (isInlineElement(config, el)) {
+      if (isInlineElement(libraries, el)) {
         const node = $createInlineLayoutElementNode(el);
         acc.push(node);
       } else {
@@ -454,14 +456,14 @@ export const getNodesFromComputation = (
 
 export function $initializeEditor(
   initialState: EditorComputation,
-  config: ClientConfig
+  libraries: LibraryConfig[]
 ): void {
   const root = $getRoot();
 
   if (root.isEmpty()) {
     const isBlockElement = (el: EditorComputation[number]) => {
       return (
-        (tools.isLayoutElement(el) && !isInlineElement(config, el)) ||
+        (tools.isLayoutElement(el) && !isInlineElement(libraries, el)) ||
         tools.isNestedDocument(el) ||
         tools.isFetcher(el) ||
         tools.isImport(el, "document")
@@ -506,7 +508,7 @@ export function $initializeEditor(
         computation = isHeading
           ? tools.slice(computation, 1 + isHeading.length)
           : computation;
-        const nodes = getNodesFromComputation(computation, config);
+        const nodes = getNodesFromComputation(computation, libraries);
         paragraphNode.append(...nodes);
         root.append(paragraphNode);
       }

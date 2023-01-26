@@ -108,3 +108,7 @@ a {
 .focus-container:has(.focus-permanent) .focus-bg {
   opacity: 1;
 }
+
+.auto-complete::after {
+  content: attr(data-value);
+}

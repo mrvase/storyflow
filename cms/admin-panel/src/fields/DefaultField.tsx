@@ -24,7 +24,6 @@ import {
   NestedDocument,
   Value,
   FieldId,
-  DocumentId,
   FieldImport,
 } from "@storyflow/backend/types";
 import { useArticlePageContext } from "../articles/ArticlePage";
@@ -49,7 +48,11 @@ import { extendPath } from "@storyflow/backend/extendPath";
 import { Fetcher, Filter } from "@storyflow/backend/types";
 import { tools } from "shared/editor-tools";
 import { stringifyPath, usePathContext } from "./FieldContainer";
-import { useClientConfig } from "../client-config";
+import {
+  getConfigFromType,
+  getTypeFromConfig,
+  useClientConfig,
+} from "../client-config";
 import {
   $createParagraphNode,
   $getRoot,
@@ -730,7 +733,7 @@ function RenderLayoutElement({
 }) {
   const element = path.split(".").slice(-1)[0]; // e
 
-  const { components } = useClientConfig();
+  const { libraries } = useClientConfig();
 
   const initialElement = React.useMemo(() => {
     if (!element) return;
@@ -742,7 +745,7 @@ function RenderLayoutElement({
     );
   }, [path, initialValue]);
 
-  const initialProps = components[type as "Element"]?.props ?? [];
+  const initialProps = getConfigFromType(type, libraries)?.props ?? [];
 
   return (
     <RenderNestedFields
@@ -847,11 +850,9 @@ function RenderNestedFields({
   id: FieldId;
   path: string;
   values: Record<string, Computation>;
-  template: (
-    | { arg: number; label: string }
-    | { id: string; label: string }
-    | { name: string; label: string }
-  )[];
+  template:
+    | ({ arg: number; label: string } | { id: string; label: string })[]
+    | readonly { name: string; label: string }[];
 }) {
   const { path: fullPath } = usePathContext();
   const isActive = stringifyPath(fullPath) === path;
@@ -1024,7 +1025,7 @@ function Menu({
     }
   }, [isFocused]);
 
-  const components = useClientConfig().components;
+  const { libraries } = useClientConfig();
 
   return (
     <div
@@ -1099,9 +1100,7 @@ function Menu({
                   {
                     label: "Link",
                     Icon: LinkIcon,
-                    onClick() {
-                      addLayoutElement.dispatch("Link");
-                    },
+                    onClick() {},
                   },
                 ].map(({ Icon, onClick }) => (
                   <Button
@@ -1137,14 +1136,21 @@ function Menu({
             </div>
             <div className="overflow-y-auto mt-2 no-scrollbar h-[8.5rem]">
               <div className="flex flex-col gap-2">
-                {Object.entries(components).map(([key, { label }]) => (
-                  <Button
-                    onClick={(ev) => {
-                      addLayoutElement.dispatch(key);
-                    }}
-                  >
-                    {label ?? key}
-                  </Button>
+                {libraries.map((library) => (
+                  <React.Fragment key={library.name}>
+                    {Object.values(library.components).map((comp) => (
+                      <Button
+                        onClick={(ev) => {
+                          addLayoutElement.dispatch({
+                            name: comp.name,
+                            library: library.name,
+                          });
+                        }}
+                      >
+                        {comp.label}
+                      </Button>
+                    ))}
+                  </React.Fragment>
                 ))}
               </div>
             </div>

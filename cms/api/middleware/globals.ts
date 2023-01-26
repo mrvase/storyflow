@@ -1,6 +1,6 @@
 import { MiddlewareContext } from "@sfrpc/server";
 import { error, isError, unwrap } from "@storyflow/result";
-import { authorizer } from "../auth/auth";
+import { authorizer } from "../users/auth";
 
 import { cors as corsFactory } from "./cors";
 
@@ -29,6 +29,7 @@ const user = async ({ req, client }: MiddlewareContext) => {
 
   return {
     user,
+    slug: organization.slug,
     dbName: organization.db,
   };
 };

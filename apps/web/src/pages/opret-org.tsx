@@ -3,7 +3,7 @@ import { GetServerSideProps } from "next";
 import React from "react";
 import { client } from "../client";
 import { User } from "../types";
-import { api } from "api/auth";
+import { api } from "api/users";
 
 export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
   const user = await api.users.getUser.query.call({ context: { req, res } });

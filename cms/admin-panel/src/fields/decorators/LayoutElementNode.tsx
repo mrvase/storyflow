@@ -15,7 +15,7 @@ import { caretClasses } from "./caret";
 import { LayoutElement } from "@storyflow/backend/types";
 import { ParentPropContext } from "../DefaultField";
 import { usePathContext } from "../FieldContainer";
-import { useClientConfig } from "../../client-config";
+import { getConfigFromType, useClientConfig } from "../../client-config";
 
 function LayoutElementDecorator({
   value,
@@ -31,7 +31,9 @@ function LayoutElementDecorator({
 
   const selectClick = React.useRef(false);
 
-  const component = useClientConfig().components[value.type];
+  const { libraries } = useClientConfig();
+
+  const config = getConfigFromType(value.type, libraries);
 
   return (
     <div className="py-0.5">
@@ -53,7 +55,7 @@ function LayoutElementDecorator({
           if (isSelected && !selectClick.current) {
             goToPath({
               id: value.id,
-              label: component.label ?? value.type,
+              label: config?.label ?? value.type,
               // type: value.type,
               parentProp: parentProp,
             });
@@ -61,7 +63,7 @@ function LayoutElementDecorator({
           selectClick.current = false;
         }}
       >
-        {component.label ?? value.type}
+        {config?.label ?? value.type}
         {/*<button className="group h-full px-2 hover:bg-white/5 flex-center gap-1 rounded cursor-default transition-colors">
           {component.label ?? value.type}{" "}
           <ChevronDownIcon className="w-3 h-3 opacity-0 group-hover:opacity-75 transition-opacity" />

@@ -93,7 +93,6 @@ export default function FolderGrid({
         remove: index,
       };
     });
-    console.log("ACTIONS", actions, result);
     mutate({
       type: "reorder",
       children: result,
@@ -107,7 +106,6 @@ export default function FolderGrid({
       canReceive={{
         link: () => "ignore",
         move: ({ type }) => {
-          console.log("MOVING", type);
           return type === "folders" ? "accept" : "ignore";
         },
       }}
@@ -120,7 +118,6 @@ export default function FolderGrid({
         ))}
         <DropShadow>
           {(item) => {
-            console.log("RENDERING", item);
             return <FolderItem index={folders.length} folder={item} />;
           }}
         </DropShadow>

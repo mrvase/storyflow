@@ -1,4 +1,3 @@
-import React from "react";
 import { ExtendPath, usePath } from "./contexts";
 import { dispatchers } from "./events";
 import RenderElement from "./RenderElement";
@@ -58,12 +57,15 @@ export default function RenderComponent({
       })}
       {value.length === 0 && (
         <div
-          onClick={() =>
+          onClick={() => {
+            /*
             dispatchers.createComponent.dispatch({
               path,
-              type: "",
+              name: "",
+              library: "",
             })
-          }
+            */
+          }}
           style={{
             position: "relative",
             zIndex: 2, // above click tracker

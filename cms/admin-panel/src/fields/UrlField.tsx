@@ -122,8 +122,6 @@ export default function UrlField({
 
   const url = getUrlStringFromValue(id, output);
 
-  console.log("OUTPUT", output, url);
-
   const actions = useCollab().mutate<ComputationOp>(
     id.slice(0, 4),
     id.slice(4)
@@ -252,7 +250,6 @@ export default function UrlField({
     return queue.register(({ forEach }) => {
       singular(() => {
         const result = cache(forEach, (prev, { operation }) => {
-          console.log(operation);
           return inputConfig.getNextState(
             prev as Computation,
             operation

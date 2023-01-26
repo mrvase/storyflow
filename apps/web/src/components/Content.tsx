@@ -1,13 +1,8 @@
 import { cms } from "@storyflow/react";
+import { Component, ComponentConfig } from "@storyflow/react/config";
 
-export const Content = {
-  component: ({ content, backgroundColor }: any) => {
-    return (
-      <cms.div className="p-20" style={{ backgroundColor }}>
-        {content}
-      </cms.div>
-    );
-  },
+export const ContentType = {
+  name: "sf/content",
   label: "Indhold",
   props: [
     {
@@ -22,4 +17,12 @@ export const Content = {
     },
   ],
   isDefault: true,
-};
+} as const satisfies ComponentConfig;
+
+export const Content = (({ content, backgroundColor }) => {
+  return (
+    <cms.div className="p-20" style={{ backgroundColor }}>
+      {content}
+    </cms.div>
+  );
+}) satisfies Component<typeof ContentType>;

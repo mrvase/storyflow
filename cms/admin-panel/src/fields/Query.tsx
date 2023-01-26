@@ -132,11 +132,9 @@ const useSelectedToken = (callback: (token: TokenString) => void) => {
 
         if (!$isNodeSelection(selection)) return;
         const nodes = selection.getNodes();
-        console.log("SELECITON", nodes);
         if (nodes.length !== 1) return;
         const [node] = nodes;
 
-        console.log("SELECITON", node);
         if (!$isTokenNode(node)) return;
 
         return {
@@ -361,7 +359,7 @@ export function Query({
   const [selected, setSelected] = React.useState(0);
 
   const editor = useEditorContext();
-  const config = useClientConfig();
+  const { libraries } = useClientConfig();
 
   React.useEffect(() => {
     setSelected(0);
@@ -486,7 +484,7 @@ export function Query({
     const success = await new Promise<boolean>((resolve) => {
       editor.update(
         () => {
-          const newNode = getNodesFromComputation(insert, config)[0];
+          const newNode = getNodesFromComputation(insert, libraries)[0];
           const selection = $getSelection();
 
           if (!$isRangeSelection(selection) || !selection.isCollapsed()) {
@@ -569,7 +567,7 @@ export function Query({
                 node,
                 startIndex,
                 remove,
-                getNodesFromComputation(insert, config)
+                getNodesFromComputation(insert, libraries)
               );
             } catch (err) {
               console.error(err);
@@ -725,23 +723,34 @@ function QueryComponents({
   selected: number;
   insertBlock: (comp: EditorComputation) => void;
 }) {
-  const config = useClientConfig();
-  const components = Object.entries(config.components);
+  const { libraries } = useClientConfig();
+  const options = libraries
+    .map((library) =>
+      Object.values(library.components).map((component) => ({
+        ...component,
+        libraryName: library.name,
+        libraryLabel: library.label,
+      }))
+    )
+    .flat(1);
 
   const filtered = query
-    ? components.filter(
-        ([key, { label }]) =>
-          key.toLowerCase().startsWith(query.toLowerCase()) ||
-          (label && label.toLowerCase().startsWith(query.toLowerCase()))
+    ? options.filter(({ label }) =>
+        label.toLowerCase().startsWith(query.toLowerCase())
       )
-    : components;
+    : options;
 
   const current = selected < 0 ? selected : selected % filtered.length;
 
   useOnEnter(() => {
-    const type = filtered[current][0];
-    if (type) {
-      insertBlock([createComponent(type, config)]);
+    const config = filtered[current];
+    if (config) {
+      insertBlock([
+        createComponent(config.name, {
+          library: config.libraryName,
+          libraries,
+        }),
+      ]);
     }
   }, [query, selected]);
 
@@ -750,13 +759,15 @@ function QueryComponents({
       {filtered.map((el, index) => (
         <Option
           onEnter={() => {
-            insertBlock([createComponent(el[0], config)]);
+            insertBlock([
+              createComponent(el.name, { library: el.libraryName, libraries }),
+            ]);
           }}
           isSelected={index === current}
           Icon={CubeIcon}
-          secondaryText={markMatchingString(el[0], query)}
+          secondaryText={markMatchingString(el.name, query)}
         >
-          {markMatchingString(el[1].label ?? el[0], query)}
+          {markMatchingString(el.label, query)}
         </Option>
       ))}
     </>

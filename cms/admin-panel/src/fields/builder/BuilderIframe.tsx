@@ -3,6 +3,7 @@ import {
   createEventsFromIframeToCMS,
 } from "@storyflow/frontend/events";
 import React from "react";
+import { useClientConfig } from "../../client-config";
 import { useBranchIsFocused } from "../../layout/components/Branch";
 import { createKey } from "../../utils/createKey";
 
@@ -67,18 +68,20 @@ export default function BuilderIframe() {
   const ctx = React.useContext(IframeContext);
   if (!ctx) throw new Error("useContext cannot find IframeContext.Provider");
 
+  const { builderUrl } = useClientConfig();
+
   const { id } = useBranchIsFocused();
 
-  // <RenderPage id={id /* this prop should be removed later */} />;
   return React.useMemo(
-    () => (
-      <iframe
-        ref={ctx.iframeRef}
-        src={`http://localhost:3000/builder?uniqueId=${ctx.uniqueId}`}
-        className="w-full h-full"
-        data-select={id}
-      />
-    ),
-    [id]
+    () =>
+      builderUrl ? (
+        <iframe
+          ref={ctx.iframeRef}
+          src={`${builderUrl}?uniqueId=${ctx.uniqueId}`}
+          className="w-full h-full"
+          data-select={id}
+        />
+      ) : null,
+    [id, builderUrl]
   );
 }

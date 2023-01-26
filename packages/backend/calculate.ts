@@ -327,7 +327,6 @@ export const calculate = (
             const value = getState(`${id}.${el.id}` as FieldId) ?? [];
             acc.value.push(value);
           } else if (Array.isArray(el)) {
-            console.log("HERE HERE 1", el);
             acc.value.push([el[0]]);
           } else {
             acc.value.push([el]);

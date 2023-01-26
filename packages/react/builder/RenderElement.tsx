@@ -1,6 +1,5 @@
 import { PathSegment, PropConfig, ValueArray } from "@storyflow/frontend/types";
 import React from "react";
-import { getComponents } from "../src/ComponentRecord";
 import {
   AddPathSegment,
   ExtendPath,
@@ -15,6 +14,7 @@ import {
 } from "./focus";
 import { useValue } from "../builder/RenderBuilder";
 import RenderComponent from "./RenderComponent";
+import { getComponentByConfig } from "../config";
 
 const calculateProp = (config: PropConfig, prop: any) => {
   if (config.type === "children" && prop.length > 0) {
@@ -39,16 +39,26 @@ export default function RenderElement({
 }) {
   const path = usePath();
 
+  if (type === "Text") {
+    // we want to select parent element;
+    return <p>{propsFromProps!.text[0] as string}</p>;
+  }
+
   const uncomputedProps =
     propsFromProps ?? (useValue(path) as Record<string, ValueArray>);
 
-  const componentConfig = getComponents()[type];
-  const Component = componentConfig.component;
+  const result = getComponentByConfig(type);
+
+  if (!result) {
+    return null;
+  }
+
+  const [Component, config] = result;
 
   const props = React.useMemo(
     () =>
       Object.fromEntries(
-        componentConfig.props.map((config) => [
+        config.props.map((config) => [
           config.name,
           calculateProp(config, uncomputedProps[config.name] ?? []),
         ])
@@ -95,7 +105,7 @@ export default function RenderElement({
   const segment = React.useMemo(
     (): PathSegment => ({
       id: path.split(".").slice(-1)[0],
-      label: componentConfig.label ?? type,
+      label: config.label ?? type,
       parentProp: parentProp
         ? {
             label: parentProp.label,
@@ -105,11 +115,6 @@ export default function RenderElement({
     }),
     [path, type]
   );
-
-  if (type === "Text") {
-    // we want to select parent element;
-    return <Component {...props} />;
-  }
 
   return (
     <AddPathSegment segment={segment}>

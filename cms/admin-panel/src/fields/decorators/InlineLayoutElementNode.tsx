@@ -15,7 +15,7 @@ import { caretClasses } from "./caret";
 import { LayoutElement } from "@storyflow/backend/types";
 import { ParentPropContext } from "../DefaultField";
 import { usePathContext } from "../FieldContainer";
-import { useClientConfig } from "../../client-config";
+import { getConfigFromType, useClientConfig } from "../../client-config";
 
 function InlineLayoutElementDecorator({
   value,
@@ -31,7 +31,8 @@ function InlineLayoutElementDecorator({
 
   const selectClick = React.useRef(false);
 
-  const component = useClientConfig().components[value.type];
+  const { libraries } = useClientConfig();
+  const config = getConfigFromType(value.type, libraries);
 
   return (
     <span
@@ -52,14 +53,14 @@ function InlineLayoutElementDecorator({
         if (isSelected && !selectClick.current) {
           goToPath({
             id: value.id,
-            label: component.label ?? value.type,
+            label: config?.label ?? value.type,
             parentProp: parentProp,
           });
         }
         selectClick.current = false;
       }}
     >
-      {component.label ?? value.type}
+      {config?.label ?? value.type}
     </span>
   );
 }

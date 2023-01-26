@@ -43,8 +43,16 @@ import {
   LayoutElement,
   TemplateFieldId,
 } from "@storyflow/backend/types";
-import { ClientConfig } from "@storyflow/frontend/types";
-import { useClientConfig } from "../../client-config";
+import {
+  ClientConfig,
+  ComponentConfig,
+  LibraryConfig,
+} from "@storyflow/frontend/types";
+import {
+  getComponentType,
+  getConfigFromType,
+  useClientConfig,
+} from "../../client-config";
 import { $isLayoutElementNode } from "../decorators/LayoutElementNode";
 import { $isDocumentNode } from "../decorators/DocumentNode";
 import { useFieldConfig } from "../../state/documentConfig";
@@ -53,23 +61,34 @@ import { useArticleIdGenerator } from "../../id-generator";
 import { operators } from "@storyflow/backend/types";
 import { $isHeadingNode } from "../../editor/react/HeadingNode";
 
-export const getDefaultComponent = (config: ClientConfig) => {
-  return Object.entries(config.components).find(
-    ([, value]) => value.isDefault
-  )?.[0];
-};
-
 export const createComponent = (
-  typeArg: string | null,
-  config: ClientConfig
+  name: string,
+  option:
+    | { library: string; config: ComponentConfig }
+    | { library: string; libraries: LibraryConfig[] }
 ): LayoutElement => {
-  const type = typeArg ?? getDefaultComponent(config) ?? "Text";
-  const props = config.components[type].props ?? {};
+  let config: ComponentConfig | undefined;
+
+  const type = getComponentType(option.library, name);
+
+  if ("libraries" in option) {
+    config = getConfigFromType(type, option.libraries);
+  } else {
+    config = option.config;
+  }
+
+  if (!config) {
+    return {
+      id: createId(1),
+      type,
+      props: {},
+    };
+  }
 
   return {
     id: createId(1),
     type,
-    props: Object.fromEntries(props.map(({ name }) => [name, []])),
+    props: Object.fromEntries(config.props.map(({ name }) => [name, []])),
   };
 };
 
@@ -118,7 +137,7 @@ export const spliceTextWithNodes = (
 async function insertComputation(
   editor: LexicalEditor,
   insert: EditorComputation,
-  config: ClientConfig,
+  libraries: LibraryConfig[],
   push?: (ops: ComputationOp["ops"]) => void
 ) {
   return await new Promise<boolean>((resolve) => {
@@ -188,7 +207,7 @@ async function insertComputation(
               node,
               startPoint.offset,
               endPoint.offset - startPoint.offset,
-              getNodesFromComputation(insert, config)
+              getNodesFromComputation(insert, libraries)
             );
           } catch (err) {
             console.error(err);
@@ -237,7 +256,7 @@ function useEditorEvents({
   const editor = useEditorContext();
   const isFocused = useIsFocusedContext();
 
-  const config = useClientConfig();
+  const { libraries } = useClientConfig();
 
   const fieldId = useFieldId();
   const [fieldConfig, setFieldConfig] = useFieldConfig(fieldId);
@@ -247,7 +266,7 @@ function useEditorEvents({
   React.useEffect(() => {
     if (isFocused) {
       const addBlockElement = (computation: EditorComputation) => {
-        const node = getNodesFromComputation(computation, config)[0];
+        const node = getNodesFromComputation(computation, libraries)[0];
         const selection = $getSelection();
         if (!selection) return;
         const nodes = selection.getNodes();
@@ -293,7 +312,7 @@ function useEditorEvents({
             },
           ];
 
-          insertComputation(editor, insert, config, push);
+          insertComputation(editor, insert, libraries, push);
         }),
 
         addDocumentImport.subscribe(async ({ documentId, templateId }) => {
@@ -304,17 +323,16 @@ function useEditorEvents({
               },
             ]);
           });
-          console.log("DOC", templateId, fieldConfig);
           if (templateId && !fieldConfig?.template) {
             setFieldConfig("template", templateId);
           }
         }),
 
-        addLayoutElement.subscribe(async (type) => {
-          const component = createComponent(type ?? null, config);
+        addLayoutElement.subscribe(async ({ library, name }) => {
+          const component = createComponent(name, { library, libraries });
           const computation: EditorComputation = [component];
-          if (isInlineElement(config, component)) {
-            insertComputation(editor, computation, config, push);
+          if (isInlineElement(libraries, component)) {
+            insertComputation(editor, computation, libraries, push);
           } else {
             editor.update(() => {
               addBlockElement(computation);
@@ -336,7 +354,7 @@ function useEditorEvents({
         })
       );
     }
-  }, [editor, config, isFocused]);
+  }, [editor, libraries, isFocused]);
 }
 
 export function useMathMode({
@@ -349,7 +367,7 @@ export function useMathMode({
   const state = React.useState(false);
   const [mathMode] = state;
 
-  const config = useClientConfig();
+  const { libraries } = useClientConfig();
 
   React.useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -398,7 +416,7 @@ export function useMathMode({
 
       const insert = (compute: EditorComputation) => {
         event.preventDefault();
-        insertComputation(editor, compute, config, push);
+        insertComputation(editor, compute, libraries, push);
       };
 
       if (mathMode) {
@@ -433,7 +451,7 @@ export function useMathMode({
         next.addEventListener("keydown", onKeyDown);
       }
     });
-  }, [editor, config, mathMode]);
+  }, [editor, libraries, mathMode]);
 
   return state;
 }

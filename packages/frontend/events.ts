@@ -1,4 +1,4 @@
-import { Path, SharedComponentRecord } from "./types";
+import { Path } from "./types";
 
 /**
  * TODO temporarily using ordinary events.
@@ -16,12 +16,13 @@ export const createEventsFromIframeToCMS = () => {
       state.id = id;
       state.target = win;
     },
-    rendered: createIframeEvent<SharedComponentRecord>("rendered", state),
+    rendered: createIframeEvent("rendered", state),
     unrendered: createIframeEvent("unrendered", state),
     selection: createIframeEvent<Path>("selection", state),
     createComponent: createIframeEvent<{
       path: string;
-      type: string;
+      name: string;
+      library: string;
     }>("create-component", state),
     changeComponent: createIframeEvent<string>("change-component", state),
   };

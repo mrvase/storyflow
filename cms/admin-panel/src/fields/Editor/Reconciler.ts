@@ -24,7 +24,7 @@ import {
   Computation,
   FunctionName,
 } from "@storyflow/backend/types";
-import { ClientConfig } from "@storyflow/frontend/types";
+import { ClientConfig, LibraryConfig } from "@storyflow/frontend/types";
 import {
   $clearEditor,
   $getComputation,
@@ -52,7 +52,7 @@ export function Reconciler({
 }) {
   const editor = useEditorContext();
 
-  const config = useClientConfig();
+  const { libraries } = useClientConfig();
 
   React.useEffect(() => {
     const cache = createQueueCache(initialValue);
@@ -83,7 +83,7 @@ export function Reconciler({
       });
 
       if (newOps.length > 0) {
-        reconcile(editor, result, newOps, config);
+        reconcile(editor, result, newOps, libraries);
       }
 
       if (update) {
@@ -92,7 +92,7 @@ export function Reconciler({
         setValue(() => decoded);
       }
     });
-  }, [editor, config]);
+  }, [editor, libraries]);
 
   React.useEffect(() => {
     return editor.registerUpdateListener(
@@ -131,7 +131,7 @@ function reconcile(
   editor: LexicalEditor,
   value: EditorComputation,
   actions: InferAction<ComputationOp>[],
-  config: ClientConfig
+  libraries: LibraryConfig[]
 ) {
   editor.update(
     () => {
@@ -146,7 +146,7 @@ function reconcile(
 
       /** UPDATE CONTENT */
       $clearEditor();
-      $initializeEditor(value, config);
+      $initializeEditor(value, libraries);
 
       /** UPDATE SELECTION */
       if (
