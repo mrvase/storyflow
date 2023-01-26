@@ -54,7 +54,7 @@ import {
   Update,
 } from "../aggregation/stages";
 import util from "util";
-import { LABEL_ID } from "@storyflow/backend/templates";
+import { LABEL_ID, URL_ID } from "@storyflow/backend/templates";
 
 export const removeObjectId = <T extends { _id: any }>({
   _id,
@@ -982,6 +982,57 @@ export const articles = createRoute({
       }
 
       return error({ message: "did not succeed" });
+    },
+  }),
+  revalidate: createProcedure({
+    middleware(ctx) {
+      return ctx.use(globals);
+    },
+    schema() {
+      return z.object({ domain: z.string(), revalidateUrl: z.string() });
+    },
+    async mutation({ domain, revalidateUrl }, { dbName }) {
+      const db = (await clientPromise).db(dbName);
+      const lastBuildCounter = await db
+        .collection<{ name: string; counter: number }>("counters")
+        .findOneAndUpdate(
+          {
+            name: "build",
+          },
+          {
+            $set: {
+              counter: Date.now(),
+            },
+          },
+          {
+            upsert: true,
+            returnDocument: "before",
+          }
+        );
+
+      const lastBuild = lastBuildCounter?.value?.counter ?? 0;
+
+      const articles = await db
+        .collection("articles")
+        .find({
+          [`values.${URL_ID}`]: { $exists: true },
+        })
+        .toArray();
+
+      const urls = articles.map((el) => el.values[URL_ID][0]);
+
+      console.log(urls, revalidateUrl);
+
+      // const paths = urls.map((el) => `/${el.replace("://", "").split("/")[1]}`);
+
+      const result = await fetch(revalidateUrl, {
+        body: JSON.stringify(urls),
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      // check update timestamp
     },
   }),
 });
