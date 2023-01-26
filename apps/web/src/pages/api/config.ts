@@ -22,12 +22,11 @@ export default async function handler(
     res.setHeader("Access-Control-Allow-Credentials", "true");
     res.setHeader("Access-Control-Allow-Origin", req.headers.origin);
   }
-  res
-    .status(200)
-    .json(
-      createConfig({
-        builderUrl: "http://localhost:3000/builder",
-        libraries: [config],
-      })
-    );
+  res.status(200).json(
+    createConfig({
+      builderUrl: `${process.env.BASE_URL as string}/builder`,
+      revalidateUrl: `${process.env.BASE_URL as string}/api/revalidate`,
+      libraries: [config],
+    })
+  );
 }

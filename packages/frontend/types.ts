@@ -37,6 +37,7 @@ export type Library<Config extends LibraryConfig = LibraryConfig> = {
 
 export type ClientConfig = {
   builderUrl: string;
+  revalidateUrl: string;
   libraries: LibraryConfig[];
 };
 

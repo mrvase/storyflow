@@ -141,7 +141,7 @@ export function FieldPage({
             isHorizontal ? "w-2" : "h-2"
           )}
         >
-          <div className="absolute inset-0 flex-center">
+          <div className="absolute z-10 inset-0 flex-center">
             <div
               className={cl(
                 "w-20 h-20 p-2 shrink-0 flex flex-wrap gap-4 bg-gray-800 rounded-lg",
