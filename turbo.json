@@ -9,6 +9,7 @@
       "dependsOn": ["^build"],
       "env": [
         "NODE_ENV",
+        "BASE_URL",
         "MONGO_URL",
         "SECRET_KEY",
         "EMAIL_SERVER_HOST",
