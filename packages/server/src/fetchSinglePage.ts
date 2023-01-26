@@ -151,6 +151,7 @@ export async function fetchSinglePage(
     return await calculateFlatComputationAsync(fieldId, computation, blocks, {
       fetch: (fetcher) => fetchFetcher(fetcher, db),
       libraries,
+      slug: db.split("-").slice(0, -1).join("-"),
     });
   };
 

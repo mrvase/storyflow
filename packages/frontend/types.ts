@@ -76,6 +76,11 @@ export type ValueArray = (
 
 type PropTypes = {
   string: string;
+  image: {
+    url: string;
+    width: number;
+    height: number;
+  };
   number: number;
   boolean: boolean;
   children: any[];
