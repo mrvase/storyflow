@@ -710,17 +710,19 @@ export const articles = createRoute({
     async mutation(id, { dbName }) {
       const db = (await clientPromise).db(dbName);
 
-      const article = (await db
-        .collection("articles")
-        .findOne({ id })) as WithId<DBDocument>;
+      const [article, histories] = await Promise.all([
+        db.collection("articles").findOne({ id }) as Promise<
+          WithId<DBDocument>
+        >,
+        (client.lrange(id, 0, -1) as Promise<ServerPackageArray<any>>).then(
+          (res) => sortHistories(res)
+        ),
+        // clientConfig
+      ]);
 
       if (!article) {
         return error({ message: "No article found" });
       }
-
-      const histories = sortHistories(
-        (await client.lrange(article.id, 0, -1)) as ServerPackageArray<any>
-      );
 
       let documentConfig = article.config;
       const computationRecord = getComputationRecord(article);

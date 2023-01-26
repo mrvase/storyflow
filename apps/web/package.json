@@ -15,8 +15,8 @@
     "@storyflow/auth": "workspace:*",
     "@storyflow/react": "workspace:*",
     "@storyflow/result": "workspace:*",
-    "@storyflow/session": "workspace:*",
     "@storyflow/server": "workspace:*",
+    "@storyflow/session": "workspace:*",
     "@vitejs/plugin-react": "^3.0.1",
     "admin-panel": "workspace:*",
     "api": "workspace:*",
@@ -25,6 +25,7 @@
     "nodemailer": "^6.9.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
+    "server-only": "^0.0.1",
     "vite": "^4.0.4",
     "zod": "^3.20.2"
   },

@@ -18,9 +18,12 @@ type CMSComponentType = {
   element: Component<{ as: keyof JSX.IntrinsicElements }>;
 };
 
+const useRenderContextServer =
+  typeof window === "undefined" ? undefined : useRenderContext;
+
 /* Can be used for e.g. the Next.js Link component, if it is the parent element of the component */
 export const CMSElement = ({ children }: { children: React.ReactElement }) => {
-  const props = useRenderContext()?.(children.props);
+  const props = useRenderContextServer?.()?.(children.props);
   return React.cloneElement(children, props);
 };
 
@@ -29,7 +32,7 @@ export const cms = new Proxy({} as CMSComponentType, {
     if (!(prop in target)) {
       target[prop as "div"] = React.forwardRef<any, React.ComponentProps<any>>(
         (props, ref) => {
-          const { as, ...rest } = useRenderContext()?.(props) ?? props;
+          const { as, ...rest } = useRenderContextServer?.()?.(props) ?? props;
           const Tag = prop === "element" ? as : prop;
           return <Tag ref={ref} {...rest} />;
         }

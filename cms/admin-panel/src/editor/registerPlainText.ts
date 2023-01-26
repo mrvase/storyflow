@@ -142,7 +142,6 @@ export function registerPlainText(
     editor.registerCommand<InputEvent | string>(
       CONTROLLED_TEXT_INSERTION_COMMAND,
       (eventOrText) => {
-        console.log("CONTROLLED INSERT", eventOrText);
         const selection = $getSelection();
 
         if (!$isRangeSelection(selection)) {

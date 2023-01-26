@@ -7,7 +7,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { ComputationOp, targetTools } from "shared//operations";
 import { createComponent } from "../Editor/ContentPlugin";
-import { useClientConfig } from "../../client-config";
+import { getInfoFromType, useClientConfig } from "../../client-config";
 import { useCollab } from "../../state/collaboration";
 
 export default function Actions({
@@ -15,20 +15,18 @@ export default function Actions({
   index,
   type,
   parentPath,
-  defaultComponent,
 }: {
   id: string;
   index: number | undefined;
   type: string | undefined;
   parentPath?: string;
-  defaultComponent: string | undefined;
 }) {
   const { push } = useCollab().mutate<ComputationOp>(
     id.slice(0, 4),
     id.slice(4, 16)
   );
 
-  const config = useClientConfig();
+  const { libraries } = useClientConfig();
 
   return (
     <Content.Buttons>
@@ -38,7 +36,8 @@ export default function Actions({
           ev.preventDefault();
         }}
         onClick={() => {
-          if (!defaultComponent || typeof index !== "number") return;
+          if (!type || typeof index !== "number") return;
+          const { name, library } = getInfoFromType(type);
           push({
             target: targetTools.stringify({
               field: "default",
@@ -50,7 +49,7 @@ export default function Actions({
             ops: [
               {
                 index,
-                insert: [createComponent(type ?? defaultComponent, config)],
+                insert: [createComponent(name, { library, libraries })],
               },
             ],
           });
@@ -63,7 +62,8 @@ export default function Actions({
           ev.preventDefault();
         }}
         onClick={() => {
-          if (!defaultComponent || typeof index !== "number") return;
+          if (!type || typeof index !== "number") return;
+          const { name, library } = getInfoFromType(type);
           push({
             target: targetTools.stringify({
               field: "default",
@@ -75,7 +75,7 @@ export default function Actions({
             ops: [
               {
                 index: index + 1,
-                insert: [createComponent(type ?? defaultComponent, config)],
+                insert: [createComponent(name, { library, libraries })],
               },
             ],
           });

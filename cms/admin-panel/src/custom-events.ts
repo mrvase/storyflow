@@ -9,7 +9,7 @@ export const addDocumentImport = createEvent<{
   documentId: string;
   templateId: string | undefined;
 }>("add-document-import");
-export const addLayoutElement = createEvent<string | undefined>(
+export const addLayoutElement = createEvent<{ name: string; library: string }>(
   "add-layout-element"
 );
 export const addNestedDocument = createEvent("add-nested-document");
@@ -30,7 +30,7 @@ export function createEvent<T = undefined>(
   */
 
   return {
-    dispatch: (...args: T extends undefined ? [] : [T]) => {
+    dispatch: (...args: T extends undefined ? [] : [options: T]) => {
       (target ?? document).dispatchEvent(
         new CustomEvent(name, {
           detail: args[0],

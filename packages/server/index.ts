@@ -1,1 +1,1 @@
-export { fetchPage } from "./src/fetchPage";
+export { fetchSinglePage } from "./src/fetchSinglePage";

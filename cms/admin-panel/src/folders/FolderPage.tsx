@@ -224,7 +224,6 @@ function AddFolderDialog({
           ev.preventDefault();
           const data = new FormData(ev.target as HTMLFormElement);
           const id = await generateId();
-          console.log(Object.fromEntries(data.entries()));
           mutate({
             type: "reorder",
             children: [

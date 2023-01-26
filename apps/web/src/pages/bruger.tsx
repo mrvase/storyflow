@@ -2,13 +2,11 @@ import { isError, unwrap } from "@storyflow/result";
 import { GetServerSideProps } from "next";
 import Link from "next/link";
 import React from "react";
-import { api } from "api/auth";
+import { api } from "api/users";
 import { User } from "../types";
 
 export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
   const user = await api.users.getUser.query.call({ context: { req, res } });
-
-  console.log("USER", user);
 
   if (isError(user)) {
     return {

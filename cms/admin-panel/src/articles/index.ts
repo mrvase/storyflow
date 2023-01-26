@@ -277,7 +277,6 @@ export const useSaveArticle = (folder: string) => {
         if (!result) {
           return ps;
         }
-        console.log("RESULT", result);
         return {
           ...ps,
           article: result,

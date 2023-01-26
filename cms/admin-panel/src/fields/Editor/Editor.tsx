@@ -88,13 +88,13 @@ export default function Editor({
   transform?: FunctionName;
   children?: React.ReactNode;
 }) {
-  const config = useClientConfig();
+  const { libraries } = useClientConfig();
 
   return (
     <EditorProvider
       initialConfig={editorConfig}
       initialize={() => {
-        $initializeEditor(initialValue ?? [], config);
+        $initializeEditor(initialValue ?? [], libraries);
       }}
     >
       <ContentPlugin id={id} />

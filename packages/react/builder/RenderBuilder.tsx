@@ -1,5 +1,4 @@
 import React from "react";
-import { SharedComponentRecord } from "../src/types";
 import {
   BuilderSelectionProvider,
   ExtendPath,
@@ -7,11 +6,8 @@ import {
 } from "./contexts";
 import { dispatchers, listeners } from "./events";
 import RenderComponent from "./RenderComponent";
-import { ComponentRecord, getComponents } from "../src/ComponentRecord";
 import { RenderContext } from "../src/RenderContext";
 import { useCMSElement } from "./useCMSElement";
-import { Preview } from "./Preview";
-import ReactDOM from "react-dom";
 import { getSiblings } from "./focus";
 import { Path, ValueArray } from "@storyflow/frontend/types";
 
@@ -174,17 +170,6 @@ export const useObjectKey = () => {
 
 const objectKey = useObjectKey();
 
-const removeComponentFunctions = (
-  config: ComponentRecord
-): SharedComponentRecord => {
-  return Object.fromEntries(
-    Object.entries(config).map(([key, { props, label, isDefault }]) => [
-      key,
-      { props, isDefault, label },
-    ])
-  );
-};
-
 export function RenderBuilder() {
   const root = useFullValue();
 
@@ -199,16 +184,8 @@ export function RenderBuilder() {
     // unrender makes sure that initial state is passed again on HMR.
     // timeout makes sure that the unrender and render events are not
     // registered in the same render cycle in the CMS
-    setTimeout(
-      () =>
-        dispatchers.rendered.dispatch(
-          removeComponentFunctions(getComponents())
-        ),
-      10
-    );
-    return () => {
-      dispatchers.unrendered.dispatch();
-    };
+    setTimeout(() => dispatchers.rendered.dispatch(), 5);
+    return () => dispatchers.unrendered.dispatch();
   }, []);
 
   React.useEffect(() => {
@@ -251,7 +228,6 @@ export function RenderBuilder() {
           </Frame>
         </RenderContext.Provider>
       </BuilderSelectionProvider>
-      <RenderPreviewEffect />
     </>
   );
 }
@@ -286,9 +262,11 @@ const Frame = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
+/*
 function RenderPreviewEffect() {
   const [ref, setRef] = React.useState<HTMLElement | null>(null);
   React.useEffect(() => setRef(document.body), []);
 
   return ref ? ReactDOM.createPortal(<Preview />, ref) : null;
 }
+*/

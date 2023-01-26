@@ -2,18 +2,16 @@ import React from "react";
 import { cms } from "./CMSElement";
 
 const OutletContext = React.createContext<{
-  outlet: React.ReactElement;
+  outlet: React.ReactNode;
   register: () => void;
 } | null>(null);
 
 export function OutletProvider({
   children,
   outlet,
-  path,
 }: {
   children: React.ReactNode;
-  outlet: React.ReactElement;
-  path: string;
+  outlet: React.ReactNode;
 }) {
   const [found, register] = React.useReducer(() => true, false);
   const [mounted, registerMount] = React.useReducer(() => true, false);

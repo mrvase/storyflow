@@ -211,3 +211,10 @@ export interface DBFolder {
   template?: DocumentId;
   children: FolderChild[];
 }
+
+export interface Settings {
+  domains: {
+    id: string;
+    configUrl: string;
+  }[];
+}

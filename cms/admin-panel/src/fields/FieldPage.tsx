@@ -2,7 +2,6 @@ import {
   createEventsFromCMSToIframe,
   createEventsFromIframeToCMS,
 } from "@storyflow/frontend/events";
-import { SharedComponentRecord } from "@storyflow/frontend/types";
 import cl from "clsx";
 import React from "react";
 import BuilderIframe, {
@@ -30,26 +29,26 @@ import { useCollab } from "../state/collaboration";
 import { useArticlePageContext } from "../articles/ArticlePage";
 import { Client, useClient } from "../client";
 
-const useBuilderComponents = ({
+const useBuilderRendered = ({
   listeners,
 }: {
   listeners: ReturnType<typeof createEventsFromIframeToCMS>;
 }) => {
-  const [components, setComponents] = React.useState<SharedComponentRecord>();
+  const [rendered, setRendered] = React.useState<boolean>(false);
 
   React.useLayoutEffect(() => {
     return listeners.rendered.subscribe((config) => {
-      setComponents(config);
+      setRendered(true);
     });
   }, []);
 
   React.useLayoutEffect(() => {
     return listeners.unrendered.subscribe(() => {
-      setComponents(undefined);
+      setRendered(false);
     });
   }, []);
 
-  return components;
+  return rendered;
 };
 
 const useCreateComponent = ({
@@ -59,9 +58,9 @@ const useCreateComponent = ({
   listeners: ReturnType<typeof createEventsFromIframeToCMS>;
   push: any;
 }) => {
-  const config = useClientConfig();
+  const { libraries } = useClientConfig();
   React.useEffect(() => {
-    return listeners.createComponent.subscribe(({ path, type }) => {
+    return listeners.createComponent.subscribe(({ path, name, library }) => {
       push({
         target: targetTools.stringify({
           field: "default",
@@ -71,12 +70,12 @@ const useCreateComponent = ({
         ops: [
           {
             index: 0,
-            insert: [createComponent(null, config)],
+            insert: [createComponent(name, { library, libraries })],
           },
         ],
       });
     });
-  }, [config]);
+  }, [libraries]);
 };
 
 export function FieldPage({
@@ -92,7 +91,7 @@ export function FieldPage({
 }) {
   const listeners = useIframeListeners();
   const dispatchers = useIframeDispatchers();
-  const rendered = Boolean(useBuilderComponents({ listeners }));
+  const rendered = useBuilderRendered({ listeners });
 
   const { push } = useCollab().mutate<ComputationOp>(
     id.slice(0, 4),
@@ -142,7 +141,7 @@ export function FieldPage({
             isHorizontal ? "w-2" : "h-2"
           )}
         >
-          <div className="absolute inset-0 flex-center">
+          <div className="absolute z-10 inset-0 flex-center">
             <div
               className={cl(
                 "w-20 h-20 p-2 shrink-0 flex flex-wrap gap-4 bg-gray-800 rounded-lg",
@@ -292,7 +291,6 @@ function PropagateStatePlugin({
       });
       if (updateEntries.length) {
         const updates = Object.fromEntries(updateEntries);
-        // console.log("NEW", updates);
         dispatchers.update.dispatch(updates);
       }
     }

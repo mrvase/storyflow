@@ -40,7 +40,6 @@ export function BuilderProvider({
 
   React.useEffect(() => {
     if (type === "c") {
-      console.log("LOADED");
       onLoad?.();
     }
   }, [type]);

@@ -133,7 +133,6 @@ function SaveButton({
           await collab.sync(true);
           const result = await saveArticle(id);
           setIsLoading(false);
-          console.log("SAVED", result);
         }}
         className={isModified ? "text-amber-300" : "text-green-300"}
       />
