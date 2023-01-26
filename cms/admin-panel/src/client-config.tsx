@@ -52,6 +52,7 @@ export function useClientConfig(key?: string): ClientConfig {
   return (
     (key ? ctx[key] : Object.values(ctx)[0]) ?? {
       builderUrl: "",
+      revalidateUrl: "",
       libraries: [defaultLibrary],
     }
   );
@@ -107,6 +108,7 @@ export function ClientConfigProvider({
             id,
             {
               builderUrl: config.builderUrl,
+              revalidateUrl: config.revalidateUrl,
               libraries: [defaultLibrary, ...config.libraries],
             },
           ] as [string, ClientConfig];
