@@ -1,6 +1,7 @@
 import React from "react";
 import { APIToClient, createClient, createSWRClient } from "@sfrpc/client";
 import type { API } from "api";
+import type { BucketAPI } from "api/bucket";
 import type {} from "@sfrpc/types";
 import type {} from "@storyflow/result";
 import useSWR, { useSWRConfig } from "swr";
@@ -10,7 +11,7 @@ import { useContextWithError } from "./utils/contextError";
 const QueryContext = React.createContext<Record<string, any>>({});
 export const useQueryContext = () => React.useContext(QueryContext);
 
-export type Client = APIToClient<API>;
+export type Client = APIToClient<API & BucketAPI>;
 
 const ClientContext = React.createContext<Client | null>(null);
 export const useClient = () => useContextWithError(ClientContext, "Client");
@@ -28,7 +29,7 @@ export function QueryContextProvider({
   const queryCtx = React.useMemo(() => ({ slug }), [slug]);
 
   const clientCtx = React.useMemo(
-    () => createClient<API>(url, queryCtx),
+    () => createClient<API & BucketAPI>(url, queryCtx),
     [queryCtx]
   );
 
@@ -45,6 +46,7 @@ const SWRCache = new Map();
 export const provider = () => SWRCache;
 
 // export const client = createClient<API>();
+
 export const SWRClient = createSWRClient<API>(
   url,
   useSWR,

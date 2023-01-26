@@ -56,7 +56,7 @@ import { useAppFolders } from "../folders";
 import { tools } from "shared/editor-tools";
 import { ComputationOp } from "shared/operations";
 import { useGlobalState } from "../state/state";
-import { getFileType } from "../utils/file";
+import { getFileType, getImageSize, getVideoSize } from "../utils/file";
 import { createComponent, spliceTextWithNodes } from "./Editor/ContentPlugin";
 import {
   $getComputation,
@@ -66,6 +66,9 @@ import {
   $isBlockNode,
   getNodesFromComputation,
 } from "./Editor/transforms";
+import { useFiles } from "../files";
+import { Spinner } from "../elements/Spinner";
+import { useOrganisationSlug } from "../users";
 
 type TextOps = [{ index: number; insert: [string]; remove?: 0 }];
 
@@ -1105,36 +1108,14 @@ function QueryFiles({
   };
   insertComputation: (computation: EditorComputation) => void;
 }) {
+  const slug = useOrganisationSlug();
+
   const searchQuery = query.match(/\"([^\"]*)/)?.[1] ?? query;
 
-  const options = [
-    {
-      file: "test.png",
-      label: "Testbillede",
-    },
-    {
-      file: "test.png",
-      label: "Testbillede",
-    },
-    {
-      file: "test.png",
-      label: "Testbillede",
-    },
-    {
-      file: "test.png",
-      label: "Testbillede",
-    },
-    {
-      file: "test.png",
-      label: "Testbillede",
-    },
-    {
-      file: "test.png",
-      label: "Testbillede",
-    },
-  ];
+  const [files, upload] = useFiles();
 
   const [label, setLabel] = React.useState("");
+
   const [{ file, preview }, { onChange, dragEvents, resetFile }] = useFileInput(
     (label: string) => {
       if (!query) setLabel(label);
@@ -1144,17 +1125,18 @@ function QueryFiles({
 
   const previewOption = preview ? 1 : 0;
 
-  const optionsLength = options.length + 1 + previewOption;
+  const optionsLength = files.length + 1 + previewOption;
 
   const current = selected < 0 ? selected : selected % optionsLength;
 
   useOnEnter(() => {
     const offset = 1 + previewOption;
-    const option = options[offset + current];
+    const option = files[offset + current];
+    console.log("OPTION", option, files, offset, current);
     if (option) {
-      insertComputation([[option.file as TokenString]]);
+      insertComputation([[option.name as TokenString]]);
     }
-  }, [query, selected]);
+  }, [query, files, previewOption, current]);
 
   const initialCurrent = React.useRef<number | null>(current);
 
@@ -1165,6 +1147,8 @@ function QueryFiles({
       initialCurrent.current = null; // stop blocking at initialCurrent
     }
   }, [current]);
+
+  const [isUploading, setIsUploading] = React.useState(false);
 
   return (
     <div className="flex items-start gap-3 overflow-x-auto no-scrollbar p-[1px] -m-[1px]">
@@ -1178,9 +1162,28 @@ function QueryFiles({
           onMouseDown={(ev) => {
             ev.preventDefault();
           }}
-          onClick={(ev) => {
+          onClick={async (ev) => {
             if (preview) {
               ev.preventDefault();
+              if (!file) return;
+              const type = getFileType(file.type);
+              if (!type) return;
+              setIsUploading(true);
+              let size: {
+                width?: number;
+                height?: number;
+                size?: number;
+              } | null = {
+                size: file.size,
+              };
+              if (["image", "video"].includes(type)) {
+                const measure = type === "image" ? getImageSize : getVideoSize;
+                size = await measure(preview);
+              }
+              const name = await upload(file, query || label, size);
+              resetFile();
+              insertComputation([[name as TokenString]]);
+              setIsUploading(false);
             } else {
               holdActions.hold();
             }
@@ -1192,7 +1195,7 @@ function QueryFiles({
             className="absolute w-0 h-0 opacity-0"
             onChange={onChange}
           />
-          <div className="w-full aspect-[4/3] flex-center mb-2">
+          <div className="relative w-full aspect-[4/3] flex-center mb-2">
             {preview ? (
               <img
                 src={preview}
@@ -1201,6 +1204,15 @@ function QueryFiles({
             ) : (
               <span className="text-gray-300 text-opacity-75">Tilføj fil</span>
             )}
+
+            <div
+              className={cl(
+                "absolute inset-0 bg-black/50 flex-center transition-opacity",
+                isUploading ? "opacity-100" : "opacity-0"
+              )}
+            >
+              {isUploading && <Spinner />}
+            </div>
           </div>
           <div className="truncate w-full">
             {query || label || "Ingen label"}
@@ -1226,7 +1238,7 @@ function QueryFiles({
           </div>
         )}
       </div>
-      {options.map(({ file, label }, index) => (
+      {files.map(({ name, label }, index) => (
         <div
           className={cl(
             "rounded bg-[#ffffff05] p-3 hover:bg-gray-700 transition-colors text-sm text-center w-52 shrink-0",
@@ -1234,12 +1246,13 @@ function QueryFiles({
           )}
           onMouseDown={(ev) => {
             ev.preventDefault();
+            insertComputation([[name as TokenString]]);
           }}
           data-image-preview={`${index + 1 + previewOption}`}
         >
           <div className="w-full aspect-[4/3] flex-center mb-2">
             <img
-              src={`/${file}`}
+              src={`https://awss3stack-mybucket15d133bf-1wx5fzxzweii4.s3.eu-west-1.amazonaws.com/${slug}/${name}`}
               className="max-w-full max-h-full w-auto h-auto"
             />
           </div>
