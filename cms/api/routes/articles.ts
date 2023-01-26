@@ -991,7 +991,7 @@ export const articles = createRoute({
     schema() {
       return z.object({ domain: z.string(), revalidateUrl: z.string() });
     },
-    async mutation({ domain, revalidateUrl }, { dbName }) {
+    async query({ domain, revalidateUrl }, { dbName }) {
       const db = (await clientPromise).db(dbName);
       const lastBuildCounter = await db
         .collection<{ name: string; counter: number }>("counters")
@@ -1019,18 +1019,22 @@ export const articles = createRoute({
         })
         .toArray();
 
-      const urls = articles.map((el) => el.values[URL_ID][0]);
+      const urls = articles.map((el) => el.values[URL_ID][0] as string);
 
       console.log(urls, revalidateUrl);
 
       // const paths = urls.map((el) => `/${el.replace("://", "").split("/")[1]}`);
 
+      /*
       const result = await fetch(revalidateUrl, {
         body: JSON.stringify(urls),
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
       });
+      */
+
+      return success(urls);
 
       // check update timestamp
     },

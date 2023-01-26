@@ -22,18 +22,24 @@ export default async function handler(
     res.setHeader("Access-Control-Allow-Origin", req.headers.origin);
   }
 
-  const paths = req.body;
+  if (req.method === "POST") {
+    const paths = req.body as string[];
 
-  console.log("PATHS", paths);
+    console.log("PATHS", paths);
 
-  try {
-    // This should be the actual path not a rewritten path
-    // e.g. for "/blog/[slug]" this should be "/blog/post-1"
-    await res.revalidate("/");
-    return res.json({ revalidated: true });
-  } catch (err) {
-    // If there was an error, Next.js will continue
-    // to show the last successfully generated page
-    return res.status(500).send("Error revalidating");
+    try {
+      // This should be the actual path not a rewritten path
+      // e.g. for "/blog/[slug]" this should be "/blog/post-1"
+      paths.forEach(async (path) => {
+        await res.revalidate(path);
+      });
+      return res.json({ revalidated: true });
+    } catch (err) {
+      // If there was an error, Next.js will continue
+      // to show the last successfully generated page
+      return res.status(500).send("Error revalidating");
+    }
   }
+
+  return res.status(200).end();
 }

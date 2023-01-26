@@ -33,6 +33,7 @@ import { getConfig } from "shared/fieldConfig";
 import { URL_ID } from "@storyflow/backend/templates";
 import { useClient } from "../client";
 import { useClientConfig } from "../client-config";
+import { unwrap } from "@storyflow/result";
 
 const AppPageContext = React.createContext<{
   addArticleWithUrl: (parentUrl: { id: FieldId; value: Computation }) => void;
@@ -200,17 +201,26 @@ export default function AppPage({
         }
         buttons={
           <Content.Buttons>
-            <Content.Button
-              icon={ArrowPathIcon}
-              onClick={async () => {
-                if (config.revalidateUrl) {
-                  const result = await client.articles.revalidate.mutation({
-                    domain: "",
-                    revalidateUrl: config.revalidateUrl,
-                  });
-                }
-              }}
-            />
+            {config.revalidateUrl && (
+              <Content.Button
+                icon={ArrowPathIcon}
+                onClick={async () => {
+                  if (config.revalidateUrl) {
+                    const urls = await client.articles.revalidate.query({
+                      domain: "",
+                      revalidateUrl: config.revalidateUrl,
+                    });
+                    await fetch(config.revalidateUrl, {
+                      body: JSON.stringify(
+                        unwrap(urls, []).map((el) => `/${el}`)
+                      ),
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                    });
+                  }
+                }}
+              />
+            )}
             <Content.Button icon={TrashIcon} onClick={() => handleDelete()} />
             <Content.Button
               icon={PlusIcon}
