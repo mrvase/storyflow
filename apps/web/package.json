@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "vite build && (next dev & vite dev)",
-    "build": "vite build & next build",
+    "build": "vite build && next build",
     "build:vite": "vite build",
     "start": "next start",
     "lint": "next lint"
