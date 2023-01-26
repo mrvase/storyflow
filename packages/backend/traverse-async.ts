@@ -12,7 +12,10 @@ import {
   NestedDocument,
   Value,
 } from "./types";
-import type { Library, LibraryConfig } from "@storyflow/frontend/types";
+import type { LibraryConfig } from "@storyflow/frontend/types";
+
+const BUCKET_NAME = "awss3stack-mybucket15d133bf-1wx5fzxzweii4";
+const BUCKET_REGION = "eu-west-1";
 
 const getConfigFromType = (type: string, libraries: LibraryConfig[]) => {
   const [library, name] = type.split(":");
@@ -27,6 +30,19 @@ const getConfigFromType = (type: string, libraries: LibraryConfig[]) => {
   return result;
 };
 
+const getImageObject = (name: string, slug: string) => {
+  const url = `https://${BUCKET_NAME}.s3.${BUCKET_REGION}.amazonaws.com/${slug}/${name}`;
+
+  const width = name ? parseInt(name.split("-")[1] ?? "0", 10) : 0;
+  const height = name ? parseInt(name.split("-")[2] ?? "0", 10) : 0;
+
+  return {
+    url,
+    width,
+    height,
+  };
+};
+
 export const traverseFlatComputationAsync = async (
   value: FlatComputation,
   compute: ComputationBlock[],
@@ -34,6 +50,7 @@ export const traverseFlatComputationAsync = async (
   options: {
     fetch: (fetcher: Fetcher) => Promise<NestedDocument[]>;
     libraries: LibraryConfig[];
+    slug: string;
   }
 ): Promise<Computation> => {
   const result = await Promise.all(
@@ -57,7 +74,11 @@ export const traverseFlatComputationAsync = async (
             )!;
             const result = await callback(computation);
             const value =
-              type === "children" ? { $children: result } : result[0];
+              type === "children"
+                ? { $children: result }
+                : type === "image"
+                ? getImageObject(result[0] as string, options.slug)
+                : result[0];
             return [name, value];
           })
         );
@@ -114,6 +135,7 @@ export const calculateFlatComputationAsync = async (
   options: {
     fetch: (fetcher: Fetcher) => Promise<NestedDocument[]>;
     libraries: LibraryConfig[];
+    slug: string;
   }
 ): Promise<Value[]> => {
   const computation = await traverseFlatComputationAsync(

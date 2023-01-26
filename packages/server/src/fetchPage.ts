@@ -163,6 +163,7 @@ export async function fetchPage(url: string, db: string) {
             {
               fetch: fetchFetcher,
               libraries: [],
+              slug: "",
             }
           );
         };
