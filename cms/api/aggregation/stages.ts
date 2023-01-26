@@ -130,6 +130,35 @@ const createCalculationStage = (
       },
     },
     */
+    // Setting values before the relevant template fields might be introduced
+    // as imports of imports (e.g. front page url being imported by sub-page,
+    // and reimported by front page to create menu). Imports of imports
+    // do not have a "result", and produces null.
+    {
+      $set: {
+        values: $.mergeObjects(
+          $.reduce(
+            $doc.compute,
+            (acc, el) =>
+              $.cond(
+                $.and(
+                  $.eq($.substrBytes(el.id, 0, 4), $doc.id),
+                  $.ne($.substrBytes(el.id, 0, 4), $.substrBytes(el.id, 4, 4))
+                ),
+                () =>
+                  $.mergeObjects(
+                    acc,
+                    $.arrayToObject([
+                      [$.substrBytes(el.id, 4, 12), (el as any).result],
+                    ])
+                  ),
+                () => acc
+              ),
+            $doc.values
+          )
+        ),
+      },
+    },
     // purging and spreading imports of updates
     {
       $set: {
@@ -223,31 +252,6 @@ const createCalculationStage = (
               () => $.concatArrays(acc, [cur])
             ),
           [] as ComputationBlock[]
-        ),
-      },
-    },
-    {
-      $set: {
-        values: $.mergeObjects(
-          $.reduce(
-            $doc.compute,
-            (acc, el) =>
-              $.cond(
-                $.and(
-                  $.eq($.substrBytes(el.id, 0, 4), $doc.id),
-                  $.ne($.substrBytes(el.id, 0, 4), $.substrBytes(el.id, 4, 4))
-                ),
-                () =>
-                  $.mergeObjects(
-                    acc,
-                    $.arrayToObject([
-                      [$.substrBytes(el.id, 4, 12), (el as any).result],
-                    ])
-                  ),
-                () => acc
-              ),
-            $doc.values
-          )
         ),
       },
     },
