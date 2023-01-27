@@ -152,7 +152,13 @@ async function insertComputation(
         const startPoint = isBefore ? anchor : focus;
         const endPoint = isBefore ? focus : anchor;
 
-        const startNode = startPoint.getNode();
+        let startNode = startPoint.getNode();
+
+        if ($isRootNode(startNode) && startNode.getTextContent() === "") {
+          const root = startNode;
+          startNode = $createParagraphNode();
+          root.append(startNode);
+        }
 
         if (selection.isCollapsed() && !$isTextNode(startNode)) {
           const placementNode = startNode.getChildAtIndex(startPoint.offset);
