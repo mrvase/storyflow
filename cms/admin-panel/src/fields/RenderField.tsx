@@ -11,7 +11,7 @@ import { useContextWithError } from "../utils/contextError";
 import DefaultField from "./DefaultField";
 import FieldContainer from "./FieldContainer";
 import UrlField from "./UrlField";
-import { ServerPackageArray } from "@storyflow/state";
+import { ServerPackage } from "@storyflow/state";
 
 const FieldIdContext = React.createContext<FieldId | null>(null);
 export const useFieldId = () => useContextWithError(FieldIdContext, "FieldId");
@@ -32,7 +32,8 @@ export type FieldProps<T extends FieldType> = {
   id: FieldId;
   value: Computation;
   fieldConfig: FieldConfig<T>;
-  history: ServerPackageArray<FieldOperation[T]>;
+  version: number;
+  history: ServerPackage<FieldOperation[T]>[];
 };
 
 export function RenderField<T extends FieldType>({
@@ -41,13 +42,15 @@ export function RenderField<T extends FieldType>({
   fieldConfig,
   history,
   index,
+  version,
   dragHandleProps,
 }: {
   id: FieldId;
   value: Computation;
   fieldConfig: FieldConfig<T>;
   index: number;
-  history: ServerPackageArray<FieldOperation[T]>;
+  version: number;
+  history: ServerPackage<FieldOperation[T]>[];
   dragHandleProps?: any;
 }) {
   const Component = getComponent(fieldConfig.type);
@@ -64,6 +67,7 @@ export function RenderField<T extends FieldType>({
           <Component
             {...{
               id,
+              version,
               value,
               fieldConfig,
               history,

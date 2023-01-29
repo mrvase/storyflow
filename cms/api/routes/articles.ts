@@ -20,11 +20,9 @@ import clientPromise from "../mongo/mongoClient";
 import { globals } from "../middleware/globals";
 import { Redis } from "@upstash/redis";
 import {
-  handleServerPackageArray,
+  filterServerPackages,
   ServerPackage,
-  ServerPackageArray,
   unwrapServerPackage,
-  VersionPackage,
 } from "@storyflow/state";
 import { setFieldConfig } from "shared/getFieldConfig";
 import {
@@ -47,12 +45,7 @@ import {
   getTemplateFieldId,
   isTemplateField,
 } from "@storyflow/backend/ids";
-import {
-  createCachedStage,
-  createStages,
-  createUnsetStage,
-  Update,
-} from "../aggregation/stages";
+import { createStages, Update } from "../aggregation/stages";
 import util from "util";
 import { LABEL_ID, URL_ID } from "@storyflow/backend/templates";
 
@@ -89,13 +82,13 @@ const removeProps = <T extends object, P extends string[]>(
   return newObject;
 };
 
-const getHistoriesFromIds = async (keys: string[]) => {
+const getHistoriesFromIds = async (slug: string, keys: string[]) => {
   if (keys.length === 0) return {};
 
   let getPipeline = client.pipeline();
 
   keys.forEach((key) => {
-    getPipeline.lrange(key, 0, -1);
+    getPipeline.lrange(`${slug}:${key}`, 0, -1);
   });
 
   const result = await getPipeline.exec();
@@ -103,19 +96,18 @@ const getHistoriesFromIds = async (keys: string[]) => {
   const object = Object.fromEntries(
     result.map((value, index) => [
       `${keys[index]}`,
-      (value ?? []) as ServerPackageArray<any>,
+      (value ?? []) as ServerPackage<any>[],
     ])
   );
 
   return object;
 };
 
-const resetHistory = async (id: string, version: number) => {
+const resetHistory = async (slug: string, id: string) => {
   const pipeline = client.pipeline();
-  const VERSION = ["VERSION", version];
   try {
-    pipeline.del(id);
-    pipeline.lpush(id, JSON.stringify(VERSION));
+    pipeline.del(`${slug}:${id}`);
+    // pipeline.lpush(id, JSON.stringify(VERSION));
     return await pipeline.exec();
   } catch (err) {
     console.log(err);
@@ -123,20 +115,18 @@ const resetHistory = async (id: string, version: number) => {
 };
 
 const sortHistories = (
-  array: ServerPackageArray<any>
-): Record<string, ServerPackageArray<any>> => {
-  const VERSION = array[0] as VersionPackage;
-  return array.slice(1).reduce(
-    (acc: Record<string, ServerPackageArray<any>>, cur) => {
+  array: ServerPackage<any>[]
+): Record<string, ServerPackage<any>[]> => {
+  return array
+    .slice(1)
+    .reduce((acc: Record<string, ServerPackage<any>[]>, cur) => {
       if (!acc[cur[0]]) {
-        acc[cur[0]] = [VERSION];
+        acc[cur[0]] = [];
       }
       const a = acc[cur[0]];
       a.push(cur as never);
       return acc;
-    },
-    { VERSION: [VERSION] }
-  );
+    }, {});
 };
 
 /*
@@ -177,7 +167,6 @@ const ZodTemplateItem = z.lazy(() =>
 export const ZodServerPackage = <T extends z.ZodType>(Operation: T) =>
   z.tuple([
     z.string(), // key
-    z.number().nullable(), // version
     z.union([z.string(), z.number()]).nullable(), // clientId
     z.number(), // previous
     z.array(Operation),
@@ -222,7 +211,7 @@ export const articles = createRoute({
         )
       );
     },
-    async mutation(input) {
+    async mutation(input, { slug }) {
       try {
         let pipeline: ReturnType<typeof client.pipeline> | null = null;
 
@@ -232,7 +221,10 @@ export const articles = createRoute({
             if (!pipeline) {
               pipeline = client.pipeline();
             }
-            pipeline.rpush(key, ...array.map((el) => JSON.stringify(el)));
+            pipeline.rpush(
+              `${slug}:${key}`,
+              ...array.map((el) => JSON.stringify(el))
+            );
           }
         });
 
@@ -245,7 +237,7 @@ export const articles = createRoute({
         let keys = Object.keys(input);
 
         if (keys.length) {
-          histories = await getHistoriesFromIds(Object.keys(input));
+          histories = await getHistoriesFromIds(slug, Object.keys(input));
         }
 
         const result = modifyValues(histories, (array) => sortHistories(array));
@@ -332,7 +324,7 @@ export const articles = createRoute({
     schema() {
       return z.string();
     },
-    async query(id, { dbName }) {
+    async query(id, { dbName, slug }) {
       const db = (await clientPromise).db(dbName);
 
       const article = await db
@@ -344,7 +336,11 @@ export const articles = createRoute({
       }
 
       const histories = sortHistories(
-        (await client.lrange(article.id, 0, -1)) as ServerPackageArray<any>
+        (await client.lrange(
+          `${slug}:${article.id}`,
+          0,
+          -1
+        )) as ServerPackage<any>[]
       );
 
       return success({
@@ -448,7 +444,6 @@ export const articles = createRoute({
                 type: z.literal("insert"),
                 id: z.string(),
                 label: z.string(),
-                version: z.number(),
                 values: z.record(z.string(), z.array(z.any())),
                 compute: z.array(
                   z.object({ id: z.string(), value: z.array(z.any()) })
@@ -463,7 +458,7 @@ export const articles = createRoute({
         })
       );
     },
-    async mutation(input, { dbName }) {
+    async mutation(input, { dbName, slug }) {
       const db = (await clientPromise).db(dbName);
 
       const getValues = async (
@@ -530,7 +525,7 @@ export const articles = createRoute({
                 const doc: DBDocument = {
                   id: action.id as DocumentId,
                   folder,
-                  version: action.version,
+                  versions: {},
                   config: [],
                   compute: action.compute as ComputationBlock[],
                   values: action.values,
@@ -569,9 +564,7 @@ export const articles = createRoute({
 
       // TODO - should not reset. There should be a "null" stage for version history
       try {
-        await Promise.all(
-          inserts.map(({ id, version }) => resetHistory(id, version))
-        );
+        await Promise.all(inserts.map(({ id }) => resetHistory(slug, id)));
       } catch (err) {
         console.log("ERROR", err);
       }
@@ -605,11 +598,10 @@ export const articles = createRoute({
                       config: { $literal: insert.config },
                       values: { $literal: insert.values },
                       compute: { $literal: insert.compute },
-                      version: insert.version,
+                      version: {},
                     },
                   },
                   ...createStages([]),
-                  createUnsetStage(),
                 ],
                 {
                   upsert: true,
@@ -646,11 +638,10 @@ export const articles = createRoute({
         z.object({
           id: z.string(),
           folder: z.string(),
-          version: z.number(),
         })
       );
     },
-    async mutation(input, { dbName }) {
+    async mutation(input, { dbName, slug }) {
       const db = (await clientPromise).db(dbName);
 
       // let shortId = input.shortId ?? (await getShortIds("articles", 1, db))[0];
@@ -662,12 +653,11 @@ export const articles = createRoute({
         values: {},
         compute: [],
         imports: [],
+        versions: {},
       }));
 
       try {
-        await Promise.all(
-          articles.map(({ id, version }) => resetHistory(id, version))
-        );
+        await Promise.all(articles.map(({ id }) => resetHistory(slug, id)));
       } catch (err) {
         console.log("ERROR", err);
       }
@@ -707,16 +697,16 @@ export const articles = createRoute({
     schema() {
       return z.string();
     },
-    async mutation(id, { dbName }) {
+    async mutation(id, { dbName, slug }) {
       const db = (await clientPromise).db(dbName);
 
       const [article, histories] = await Promise.all([
         db.collection("articles").findOne({ id }) as Promise<
           WithId<DBDocument>
         >,
-        (client.lrange(id, 0, -1) as Promise<ServerPackageArray<any>>).then(
-          (res) => sortHistories(res)
-        ),
+        (
+          client.lrange(`${slug}:${id}`, 0, -1) as Promise<ServerPackage<any>[]>
+        ).then((res) => sortHistories(res)),
         // clientConfig
       ]);
 
@@ -731,11 +721,14 @@ export const articles = createRoute({
 
       const updatedFieldsIds: Set<FieldId> = new Set();
 
-      Object.entries(histories).map(([id, history]) => {
-        if (id === "VERSION") return;
+      const versions = article.versions ?? {};
 
+      Object.entries(histories).map(([id, history]) => {
         if (id === article.id) {
-          documentConfig = transformDocumentConfig(documentConfig, history);
+          const templateVersion = article.versions?.[article.id] ?? 0;
+          const pkgs = filterServerPackages(templateVersion, history);
+          documentConfig = transformDocumentConfig(documentConfig, pkgs);
+          versions[article.id] = templateVersion + pkgs.length;
           return;
         }
 
@@ -744,7 +737,11 @@ export const articles = createRoute({
         const initialValue: Computation | undefined =
           computationRecord[fieldId];
 
-        const [, pkgs] = handleServerPackageArray(history);
+        const fieldVersion = article.versions?.[id as TemplateFieldId] ?? 0;
+
+        const pkgs = filterServerPackages(fieldVersion, history);
+
+        versions[id as TemplateFieldId] = fieldVersion + pkgs.length;
 
         if (pkgs.length > 0) {
           const value = transformField(initialValue, pkgs);
@@ -870,8 +867,6 @@ export const articles = createRoute({
 
       const { compute, values } = getSortedValues(id as DocumentId, flatData);
 
-      const version = Date.now();
-
       const derivatives: Update[] = [];
 
       drefArticles.forEach((doc) => {
@@ -916,13 +911,11 @@ export const articles = createRoute({
               values: { $literal: values }, // uses $literal to do hard replace (otherwise: merges old with new values)
               compute,
               config: documentConfig,
-              version,
+              versions,
               cached,
             },
           },
-          ...createStages([], derivatives),
-          ...(cached.length ? [createCachedStage()] : []),
-          createUnsetStage(),
+          ...createStages([], derivatives, { cache: Boolean(cached.length) }),
         ],
         {
           returnDocument: "after",
@@ -973,10 +966,10 @@ export const articles = createRoute({
             "compute.id": { $in: updates.map((el) => el.id) },
             id: { $ne: id },
           },
-          [...createStages(updates, derivatives), createUnsetStage()]
+          [...createStages(updates, derivatives)]
         );
 
-        await resetHistory(id, version);
+        await resetHistory(slug, id);
 
         return success(removeObjectId(result1.value!) as DBDocument);
       }
@@ -1282,13 +1275,11 @@ const transformField = (
 
 const transformDocumentConfig = (
   config: DBDocument["config"],
-  history: ServerPackageArray<AnyOp>
+  history: ServerPackage<AnyOp>[]
 ) => {
   let newConfig = [...config];
 
-  const [, pkgs] = handleServerPackageArray(history);
-
-  pkgs.forEach((pkg) => {
+  history.forEach((pkg) => {
     unwrapServerPackage(pkg).operations.forEach((operation) => {
       if (targetTools.isOperation(operation, "document-config")) {
         operation.ops.forEach((action) => {

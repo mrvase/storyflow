@@ -1,10 +1,6 @@
 export { onInterval } from "./interval";
 export { createQueueMap, syncQueueMap } from "./QueueMap";
-export {
-  createQueue,
-  createQueueTracker,
-  handleServerPackageArray,
-} from "./Queue";
+export { createQueue, createQueueTracker } from "./Queue";
 
 export type { QueueMap } from "./QueueMap";
 export type {
@@ -21,12 +17,10 @@ export { withOnlyLatestListener } from "./withOnlyLatestListener";
 export type { WithOnlyLatestListener } from "./withOnlyLatestListener";
 */
 
-export { unwrapServerPackage, createServerPackage } from "./utils";
+export {
+  unwrapServerPackage,
+  createServerPackage,
+  filterServerPackages,
+} from "./utils";
 
-export type {
-  ServerPackage,
-  ServerPackageArray,
-  VersionPackage,
-  WithMetaData,
-  DefaultOperation,
-} from "./types";
+export type { ServerPackage, WithMetaData, DefaultOperation } from "./types";

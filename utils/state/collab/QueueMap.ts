@@ -1,7 +1,7 @@
 import { isError, Result, unwrap } from "@storyflow/result";
 import { createChangeDebugger } from "./debug";
 import { Queue } from "./Queue";
-import { DefaultOperation, ServerPackage, ServerPackageArray } from "./types";
+import { DefaultOperation, ServerPackage } from "./types";
 import { createPromise, unwrapServerPackage } from "./utils";
 
 export interface QueueMap<
@@ -25,7 +25,7 @@ export interface QueueMap<
         key: string;
         document: string;
       }
-    ) => Promise<false | ServerPackageArray<Operation>>,
+    ) => Promise<false | ServerPackage<Operation>[]>,
     options?: {
       force?: boolean;
     }
@@ -83,7 +83,7 @@ export async function syncQueueMap<Operation extends DefaultOperation>(
   mutation: (
     input: Record<string, Record<string, ServerPackage<Operation>>>
   ) => Promise<
-    Result<Record<string, Record<string, ServerPackageArray<Operation>>>>
+    Result<Record<string, Record<string, ServerPackage<Operation>[]>>>
   >,
   options: {
     force?: boolean;
@@ -92,7 +92,7 @@ export async function syncQueueMap<Operation extends DefaultOperation>(
   const promises: {
     document: string;
     promise: ReturnType<
-      typeof createPromise<ServerPackageArray<Operation> | false>
+      typeof createPromise<ServerPackage<Operation>[] | false>
     >;
     pkg: ServerPackage<Operation>;
   }[] = [];
@@ -101,7 +101,7 @@ export async function syncQueueMap<Operation extends DefaultOperation>(
     pkg: ServerPackage<Operation>,
     ctx: { document: string }
   ) => {
-    const promise = createPromise<ServerPackageArray<Operation> | false>();
+    const promise = createPromise<ServerPackage<Operation>[] | false>();
     promises.push({
       document: ctx.document,
       promise,
@@ -131,7 +131,7 @@ export async function syncQueueMap<Operation extends DefaultOperation>(
     } else {
       const doc = unwrap(result)[document];
       const pkgs = doc[unwrapServerPackage(pkg).key];
-      promise.resolve(pkgs ?? doc["VERSION"]);
+      promise.resolve(pkgs ?? []);
     }
   });
 

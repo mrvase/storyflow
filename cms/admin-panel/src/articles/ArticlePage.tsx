@@ -5,6 +5,7 @@ import { useOnLoadHandler } from "../layout/onLoadHandler";
 import { DropShadow, Sortable, useSortableItem } from "@storyflow/dnd";
 import {
   createFieldId,
+  getTemplateFieldId,
   minimizeId,
   replaceDocumentId,
 } from "@storyflow/backend/ids";
@@ -18,6 +19,7 @@ import {
   FieldConfig,
   HeadingConfig,
   TemplateDocument,
+  TemplateFieldId,
 } from "@storyflow/backend/types";
 import { ArticleContent } from "./ArticleContent";
 import useIsFocused from "../utils/useIsFocused";
@@ -36,7 +38,7 @@ import { TEMPLATES, URL_ID } from "@storyflow/backend/templates";
 import { FieldType } from "@storyflow/backend/types";
 import { getComputationRecord } from "@storyflow/backend/flatten";
 import { useCollab } from "../state/collaboration";
-import { ServerPackageArray } from "@storyflow/state";
+import { ServerPackage } from "@storyflow/state";
 
 const ArticlePageContext = React.createContext<{
   id: string;
@@ -47,6 +49,11 @@ export const useArticlePageContext = () => {
   const ctx = React.useContext(ArticlePageContext);
   if (!ctx) throw new Error("ArticlePageContext.Provider not found.");
   return ctx;
+};
+
+const getVersionKey = (versions?: Record<TemplateFieldId, number>) => {
+  if (!versions) return -1;
+  return Object.values(versions).reduce((a, c) => a + c, 0);
 };
 
 export default function ArticlePage({
@@ -71,7 +78,7 @@ export default function ArticlePage({
 
   useOnLoadHandler(Boolean(article), onLoad);
 
-  const isModified = Object.keys(histories ?? {}).length > 1; // there is always VERSION
+  const isModified = Object.keys(histories ?? {}).length > 0;
 
   const ctx = React.useMemo(
     () => ({ id, imports: article?.compute ?? [] }),
@@ -83,7 +90,7 @@ export default function ArticlePage({
   return (
     <ArticlePageContext.Provider value={ctx}>
       <ArticleContent
-        version={article?.version}
+        version={getVersionKey(article?.versions)}
         id={id}
         variant={type === "t" ? "template" : undefined}
         folder={article?.folder}
@@ -120,7 +127,7 @@ const Page = ({
   histories,
 }: {
   article: DBDocument;
-  histories: Record<string, ServerPackageArray<DocumentConfigOp | PropertyOp>>;
+  histories: Record<string, ServerPackage<DocumentConfigOp | PropertyOp>[]>;
 }) => {
   const folder = useFolder(article.folder);
 
@@ -135,7 +142,7 @@ const Page = ({
         <GetArticle id={templateId}>
           {(article) => (
             <RenderTemplate
-              key={owner.version} // for rerendering
+              key={getVersionKey(owner.versions)} // for rerendering
               id={article.id}
               owner={owner.id}
               values={{
@@ -144,18 +151,18 @@ const Page = ({
               }}
               config={article.config}
               histories={histories}
-              version={owner.version}
+              versions={owner.versions}
             />
           )}
         </GetArticle>
       )}
       <RenderTemplate
-        key={owner.version} // for rerendering
+        key={getVersionKey(owner.versions)} // for rerendering
         id={owner.id}
         owner={owner.id}
         values={getComputationRecord(owner)}
         config={owner.config}
-        version={owner.version}
+        versions={owner.versions}
         histories={histories}
       />
     </div>
@@ -167,7 +174,7 @@ function RenderTemplate({
   owner,
   values,
   config: initialConfig,
-  version,
+  versions,
   histories,
   index = null,
 }: {
@@ -175,18 +182,18 @@ function RenderTemplate({
   owner: DocumentId;
   values: ComputationRecord;
   config: DBDocument["config"];
-  version: number;
-  histories: Record<string, ServerPackageArray<AnyOp>>;
+  versions?: DBDocument["versions"];
+  histories: Record<string, ServerPackage<AnyOp>[]>;
   index?: number | null;
 }) {
   const isMain = id === owner;
 
   const template = isMain
-    ? useDocumentConfig(
-        owner,
-        initialConfig,
-        histories[owner] ?? [["VERSION", version]]
-      )
+    ? useDocumentConfig(owner, {
+        config: initialConfig,
+        history: histories[owner] ?? [],
+        version: versions?.[owner] ?? 0,
+      })
     : initialConfig;
 
   const { push } = isMain
@@ -281,6 +288,7 @@ function RenderTemplate({
           index={index}
           row={fieldRef}
           values={values}
+          versions={versions}
           histories={histories}
         />
       );
@@ -291,13 +299,13 @@ function RenderTemplate({
         <GetArticle id={fieldRef.template} key={fieldRef.template}>
           {(article) => (
             <RenderTemplate
-              key={version} // for rerendering
+              key={getVersionKey(versions)} // for rerendering
               id={article.id}
               owner={owner}
               values={{ ...values, ...getComputationRecord(article) }}
               config={article.config}
               histories={histories}
-              version={version}
+              versions={versions}
               index={index}
             />
           )}
@@ -330,7 +338,8 @@ function RenderTemplate({
           ...fieldRef,
           id: fieldId,
         })}
-        history={histories[fieldId.slice(4, 16)] ?? [["VERSION", version]]}
+        version={versions?.[getTemplateFieldId(fieldId)] ?? 0}
+        history={histories[getTemplateFieldId(fieldId)] ?? []}
         index={index}
         dragHandleProps={dragHandleProps}
       />
@@ -401,12 +410,14 @@ function RenderRow({
   index,
   row,
   values,
+  versions,
   histories,
 }: {
   index: number;
   row: FieldConfig[];
   values: ComputationRecord;
-  histories: Record<string, ServerPackageArray<AnyOp>>;
+  versions: DBDocument["versions"];
+  histories: Record<string, ServerPackage<AnyOp>[]>;
 }) {
   const { dragHandleProps, ref, state } = useSortableItem({
     id: row[0].id,
@@ -441,7 +452,8 @@ function RenderRow({
               id={fieldRef.id}
               value={value}
               fieldConfig={fieldRef}
-              history={histories[fieldRef.id.slice(4, 16)]}
+              version={versions?.[getTemplateFieldId(fieldRef.id)] ?? 0}
+              history={histories[getTemplateFieldId(fieldRef.id)]}
               index={index}
               dragHandleProps={dragHandleProps}
             />

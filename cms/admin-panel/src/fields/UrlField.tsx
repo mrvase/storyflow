@@ -95,6 +95,7 @@ const useRelatedPages = (articleId: DocumentId, initialUrl: string) => {
 export default function UrlField({
   id,
   value,
+  version,
   fieldConfig,
   history,
 }: FieldProps<"url">) {
@@ -241,7 +242,7 @@ export default function UrlField({
       .getOrAddQueue(id.slice(0, 4), id.slice(4), {
         transform: (a) => a,
       })
-      .initialize(history ?? []);
+      .initialize(version, history ?? []);
 
     const cache = createQueueCache(
       encodeEditorComputation(initialValue, getConfig("url").transform)

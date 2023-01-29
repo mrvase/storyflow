@@ -183,7 +183,7 @@ export interface DBDocument {
   config: DocumentConfig;
   values: ValueRecord<TemplateFieldId>;
   compute: ComputationBlock[];
-  version: number;
+  versions?: Record<TemplateFieldId | DocumentId, number>;
 }
 
 export type PropConfig = {

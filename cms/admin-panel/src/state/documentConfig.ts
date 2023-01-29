@@ -1,4 +1,3 @@
-import { handleServerPackageArray, ServerPackageArray } from "@storyflow/state";
 import React from "react";
 import { DocumentConfig, FieldConfig, FieldId } from "@storyflow/backend/types";
 import { useCollab } from "./collaboration";
@@ -8,6 +7,7 @@ import { createPurger, createStaticStore } from "./StaticStore";
 import { useSingular } from "./state";
 import { useArticle, useArticleTemplate } from "../articles";
 import { getTemplateDocumentId } from "@storyflow/backend/ids";
+import { ServerPackage } from "@storyflow/state";
 
 export const labels = createStaticStore(new Map<string, string | undefined>());
 
@@ -25,12 +25,15 @@ export const templatesPurger = createPurger((key: string) => {
 
 export const useDocumentConfig = (
   templateId: string, // template id
-  initialConfig: DocumentConfig,
-  initialHistory: ServerPackageArray<DocumentConfigOp | PropertyOp>
+  data: {
+    config: DocumentConfig;
+    history?: ServerPackage<DocumentConfigOp | PropertyOp>[];
+    version?: number;
+  }
 ) => {
   const [config, setConfig] = configs.useKey(templateId);
-  if (!config && initialConfig) {
-    setConfig(initialConfig);
+  if (!config && data.config) {
+    setConfig(data.config);
   }
 
   React.useEffect(() => {
@@ -46,7 +49,7 @@ export const useDocumentConfig = (
   const refreshed = React.useRef(false);
 
   let refreshOnVersionChange = React.useCallback((version: number | null) => {
-    if (version !== initialVersion) {
+    if (version !== data.version) {
       if (!refreshed.current) {
         mutate();
         refreshed.current = true;
@@ -55,8 +58,6 @@ export const useDocumentConfig = (
     }
     return false;
   }, []); // does not need dependency since it is unmounted on version change
-
-  const [initialVersion] = handleServerPackageArray(initialHistory);
 
   const singular = useSingular(templateId);
 
@@ -67,7 +68,7 @@ export const useDocumentConfig = (
       .getOrAddQueue<DocumentConfigOp | PropertyOp>(templateId, templateId, {
         transform: (pkgs) => pkgs,
       })
-      .initialize(initialHistory ?? []);
+      .initialize(data.version ?? 0, data.history ?? []);
 
     return queue.register(({ forEach, version }) => {
       singular(() => {
@@ -78,7 +79,7 @@ export const useDocumentConfig = (
         let sheetUpdate = false;
         const updatedLabels = new Map<string, string>();
 
-        let newTemplate = [...initialConfig];
+        let newTemplate = [...data.config];
 
         forEach(({ operation }) => {
           if (targetTools.isOperation(operation, "document-config")) {
@@ -115,7 +116,7 @@ export const useDocumentConfig = (
     });
   }, []);
 
-  return config ?? initialConfig;
+  return config ?? data.config;
 };
 
 export function useFieldConfig(

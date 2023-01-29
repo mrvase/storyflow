@@ -249,6 +249,7 @@ const useDefaultState = ({ initialValue, path, history }: { initialValue: DBComp
 export default function DefaultField({
   id,
   fieldConfig,
+  version,
   history,
   value,
 }: FieldProps<"default" | "slug">) {
@@ -277,7 +278,7 @@ export default function DefaultField({
         transform: createComputationTransformer(initialValue),
         mergeable: 500,
       })
-      .initialize(history ?? []);
+      .initialize(version, history ?? []);
   }, []);
 
   const [config] = useFieldConfig(id);
@@ -1102,8 +1103,9 @@ function Menu({
                     Icon: LinkIcon,
                     onClick() {},
                   },
-                ].map(({ Icon, onClick }) => (
+                ].map(({ label, Icon, onClick }) => (
                   <Button
+                    key={label}
                     className="grow shrink basis-0 justify-center"
                     onClick={onClick}
                   >
@@ -1140,6 +1142,7 @@ function Menu({
                   <React.Fragment key={library.name}>
                     {Object.values(library.components).map((comp) => (
                       <Button
+                        key={library.name + comp.name}
                         onClick={(ev) => {
                           addLayoutElement.dispatch({
                             name: comp.name,

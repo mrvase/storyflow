@@ -1,5 +1,5 @@
-import { isError, unwrap } from "@storyflow/result";
-import { createQueue, unwrapServerPackage } from "@storyflow/state";
+import { unwrap } from "@storyflow/result";
+import { createQueue } from "@storyflow/state";
 import React from "react";
 import { Client, SWRClient, useCache } from "../client";
 import {
@@ -15,7 +15,7 @@ import {
   TemplateRef,
   TemplateFieldId,
 } from "@storyflow/backend/types";
-import { pushAndRetry, retryOnError } from "../utils/retryOnError";
+import { pushAndRetry } from "../utils/retryOnError";
 import { useGlobalState } from "../state/state";
 import { computeFieldId } from "@storyflow/backend/ids";
 import {
@@ -29,7 +29,6 @@ type ArticleListMutation =
       type: "insert";
       id: string;
       label: string;
-      version: number;
       values: ValueRecord;
       compute: { id: string; value: FlatComputation }[];
     }
@@ -47,7 +46,7 @@ let int: { current: ReturnType<typeof setInterval> | null } = { current: null };
 
 const queue = createQueue<ArticleListOperation>("articles", {
   clientId: null,
-}).initialize([]);
+}).initialize(0, []);
 
 const getArticleFromInsert = (
   folder: string,
@@ -57,7 +56,7 @@ const getArticleFromInsert = (
   return {
     id: action.id as DocumentId,
     folder,
-    version: action.version,
+    versions: {},
     values: action.values,
     compute: action.compute as ComputationBlock[],
     config: [],
@@ -280,9 +279,7 @@ export const useSaveArticle = (folder: string) => {
         return {
           ...ps,
           article: result,
-          histories: {
-            VERSION: [["VERSION", result.version]],
-          },
+          histories: {},
         };
       });
     },
