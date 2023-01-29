@@ -16,6 +16,10 @@ export type Update = ComputationBlock & {
   _imports: (ComputationBlock & { depth: number })[];
 };
 
+type Options = {
+  cache?: boolean;
+};
+
 const queryArrayProp = <T extends Array<object>>(
   doc: T
 ): T extends Array<infer Element>
@@ -34,10 +38,12 @@ const createCalculationStage = (
       updates: Update[];
       derivatives: Update[];
       statics: ComputationBlock[];
+      cached: string[];
     }
   >,
   updates: Update[],
-  derivatives: Update[]
+  derivatives: Update[],
+  options: Options = {}
 ) => {
   return $.useDocument(($doc) => [
     {
@@ -159,6 +165,28 @@ const createCalculationStage = (
         ),
       },
     },
+    ...(options.cache
+      ? [
+          {
+            $set: {
+              cached: $.map($doc.cached, (id) =>
+                $.getField(
+                  $.ifNull(
+                    $.find(
+                      $doc.compute as (ComputationBlock & {
+                        result: Value[];
+                      })[],
+                      (el) => $.eq(el.id, id)
+                    ),
+                    { result: [] as Value[] }
+                  ),
+                  "result"
+                )
+              ),
+            },
+          },
+        ]
+      : []),
     // purging and spreading imports of updates
     {
       $set: {
@@ -255,12 +283,30 @@ const createCalculationStage = (
         ),
       },
     },
+    {
+      $unset: [
+        "updates",
+        "derivatives",
+        "statics",
+        "compute.result",
+        "compute.imports",
+        "compute.function",
+        "compute._imports",
+        "compute.depth",
+      ],
+    },
   ]);
 };
 
-export const createStages = (updates: Update[], derivatives: Update[] = []) => {
-  return createCalculationStage(operators, updates, derivatives);
+export const createStages = (
+  updates: Update[],
+  derivatives: Update[] = [],
+  options?: Options
+) => {
+  return createCalculationStage(operators, updates, derivatives, options);
 };
+
+/*
 
 export const createCachedStage = () => {
   const $: Operators<
@@ -296,3 +342,4 @@ export const createUnsetStage = () => ({
     "compute.depth",
   ],
 });
+*/

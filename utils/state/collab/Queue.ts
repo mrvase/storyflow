@@ -1,17 +1,10 @@
 import { batch } from "../state/State";
 import { createChangeDebugger } from "./debug";
-import {
-  DefaultOperation,
-  ServerPackage,
-  ServerPackageArray,
-  WithMetaData,
-} from "./types";
+import { DefaultOperation, ServerPackage, WithMetaData } from "./types";
 import {
   createServerPackage,
-  createTimer,
+  filterServerPackages,
   unwrapServerPackage,
-  isVersionPackage,
-  unwrapVersion,
 } from "./utils";
 
 const randomClientId = Math.random().toString(36).slice(2, 10);
@@ -49,51 +42,18 @@ export interface Queue<Operation extends DefaultOperation> {
   sync: (
     callback: (
       pkg: ServerPackage<Operation>
-    ) => Promise<ServerPackageArray<Operation> | false>,
+    ) => Promise<ServerPackage<Operation>[] | false>,
     options?: {
       force?: boolean;
     }
   ) => void;
   isInactive: () => boolean;
   forEach: QueueForEach<Operation>;
-  initialize: (initialHistory: ServerPackageArray<Operation>) => this;
+  initialize: (
+    initialVersion: number,
+    initialHistory: ServerPackage<Operation>[]
+  ) => this;
 }
-
-export const handleServerPackageArray = <Operation extends DefaultOperation>(
-  pkgs: ServerPackageArray<Operation>
-): [version: number | null, packages: ServerPackage<Operation>[]] => {
-  const [versionPkg, ...rest] = pkgs;
-  if (!versionPkg) {
-    return [null, []];
-  }
-
-  if (isVersionPackage(versionPkg)) {
-    const version = unwrapVersion(versionPkg);
-    return [version, rest.filter((pkg) => unwrapVersion(pkg) === version)];
-  } else {
-    const nullGroup = [] as ServerPackage<Operation>[];
-    const numberedGroups = new Map<number, ServerPackage<Operation>[]>();
-
-    [versionPkg, ...rest].forEach((pkg) => {
-      const version = unwrapVersion(pkg);
-      if (version === null) {
-        nullGroup.push(pkg);
-      } else {
-        numberedGroups.set(
-          version,
-          (numberedGroups.get(version) ?? []).concat([pkg])
-        );
-      }
-    });
-
-    if (numberedGroups.size === 0) {
-      return [null, nullGroup];
-    }
-
-    const max = Math.max(...Array.from(numberedGroups.keys()));
-    return [max, numberedGroups.get(max)!];
-  }
-};
 
 export function createQueueTracker<Operation extends DefaultOperation>() {
   const handled = {
@@ -157,23 +117,24 @@ export function createQueue<Operation extends DefaultOperation>(
     shared: transform([]),
     posted: [] as Operation[],
     queue: [] as Operation[],
-    version: null as number | null,
+    version: 0 as number,
     initialized: false,
     // mergeIndex: 0
   };
 
-  function initialize(initialHistory: ServerPackageArray<Operation>) {
-    const [initialVersion, initialShared] =
-      handleServerPackageArray(initialHistory);
-    if (initialVersion !== state.version || initialVersion === null) {
-      state.shared = transform(initialShared);
-      state.posted = [];
-      state.queue = [];
-      state.version = initialVersion;
-      state.initialized = true;
-      // state.mergeIndex = 0;
-      console.log("INITIALIZED", key, state);
-    }
+  const getIndex = () => state.version + state.shared.length;
+
+  function initialize(
+    initialVersion: number,
+    initialHistory: ServerPackage<Operation>[]
+  ) {
+    const initialShared = filterServerPackages(initialVersion, initialHistory);
+    state.shared = transform(initialShared);
+    state.posted = [];
+    state.queue = [];
+    state.version = initialVersion;
+    state.initialized = true;
+    console.log("INITIALIZED", key, state);
     return queue;
   }
 
@@ -262,14 +223,16 @@ export function createQueue<Operation extends DefaultOperation>(
   }
 
   function _pull(packages: ServerPackage<Operation>[]) {
-    const index = state.shared.length;
+    const sharedLength = state.shared.length;
 
-    debug("PULL", key, packages.length, index);
+    debug("PULL", key, packages.length, sharedLength);
 
-    if (packages.length === index && index > 0) {
+    if (packages.length === sharedLength && sharedLength > 0) {
       // no changes
       return;
     }
+
+    const index = getIndex();
 
     /*
     the posted ones are still in state.posted, so
@@ -286,7 +249,7 @@ export function createQueue<Operation extends DefaultOperation>(
         // TODO jeg antager vel her, at det er min pakke, der er kommet på som den næste?
         // skal jeg ikke først filtrere min shared og modtaget shared til kun at inkludere egne packages
         // og så sammenligne min shared index + 1 med modtaget shared index.
-        pkg.index === state.shared.length
+        pkg.index === index
       );
     });
 
@@ -303,7 +266,6 @@ export function createQueue<Operation extends DefaultOperation>(
       packages.concat([
         createServerPackage({
           key,
-          version: state.version,
           clientId,
           index,
           operations: state.queue,
@@ -324,7 +286,7 @@ export function createQueue<Operation extends DefaultOperation>(
   async function sync(
     callback: (
       pkg: ServerPackage<Operation>
-    ) => Promise<ServerPackageArray<Operation> | false>,
+    ) => Promise<ServerPackage<Operation>[] | false>,
     options: {
       force?: boolean;
     } = {}
@@ -342,9 +304,8 @@ export function createQueue<Operation extends DefaultOperation>(
 
     const newServerPackage = createServerPackage({
       key,
-      version: state.version,
       clientId,
-      index: state.shared.length,
+      index: getIndex(),
       operations: state.posted,
     });
 
@@ -354,12 +315,8 @@ export function createQueue<Operation extends DefaultOperation>(
       console.log("RETRACT", key);
       _retract();
     } else {
-      const [version, packages] = handleServerPackageArray(result);
-      if (version === state.version) {
-        _pull(packages);
-      } else {
-        // wait for new initialization
-      }
+      const packages = filterServerPackages(state.version ?? 0, result);
+      _pull(packages);
     }
   }
 
@@ -441,7 +398,7 @@ export function createQueue<Operation extends DefaultOperation>(
             operation,
             clientId,
             key,
-            index: state.shared.length,
+            index: getIndex(),
             operationIndex,
             serverPackageIndex: null,
           },
@@ -457,7 +414,7 @@ export function createQueue<Operation extends DefaultOperation>(
             operation,
             clientId,
             key,
-            index: state.shared.length,
+            index: getIndex(),
             operationIndex: state.posted.length + operationIndex,
             serverPackageIndex: null,
           },

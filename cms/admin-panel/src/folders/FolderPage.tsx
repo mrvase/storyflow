@@ -325,7 +325,6 @@ function AddTemplateDialog({
                 type: "insert",
                 id,
                 label: (data.get("label") as string) ?? "",
-                version: Date.now(),
                 compute: [],
                 values: {},
               },

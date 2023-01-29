@@ -1,9 +1,4 @@
-import {
-  DefaultOperation,
-  ServerPackage,
-  VersionPackage,
-  WithMetaData,
-} from "./types";
+import { DefaultOperation, ServerPackage, WithMetaData } from "./types";
 
 export const createPromise = <T>() => {
   let props: {
@@ -18,6 +13,14 @@ export const createPromise = <T>() => {
   return promise;
 };
 
+export function filterServerPackages<T extends DefaultOperation>(
+  version: number,
+  pkgs: ServerPackage<T>[]
+) {
+  return pkgs.filter((el) => unwrapServerPackage(el).index >= version);
+}
+
+/*
 export function createTimer() {
   let time = Date.now();
   let getDelta = () => Date.now() - time;
@@ -28,33 +31,21 @@ export function createTimer() {
     trigger,
   };
 }
-
-export function isVersionPackage(
-  pkg: VersionPackage | ServerPackage<any>
-): pkg is VersionPackage {
-  return pkg[PKG_KEY] === "VERSION";
-}
+*/
 
 const PKG_KEY = 0;
-const PKG_VERSION = 1;
-const PKG_CLIENT = 2;
-const PKG_INDEX = 3;
-const PKG_OPERATIONS = 4;
-
-export function unwrapVersion(pkg: VersionPackage | ServerPackage<any>) {
-  return pkg[PKG_VERSION];
-}
+const PKG_CLIENT = 1;
+const PKG_INDEX = 2;
+const PKG_OPERATIONS = 3;
 
 export function createServerPackage<Operation extends DefaultOperation>(data: {
   key: string;
-  version: number | null;
   clientId: string | number | null;
   index: number;
   operations: Operation[];
 }) {
   return Object.values({
     [PKG_KEY]: data.key,
-    [PKG_VERSION]: data.version,
     [PKG_CLIENT]: data.clientId,
     [PKG_INDEX]: data.index,
     [PKG_OPERATIONS]: data.operations,
@@ -66,7 +57,6 @@ export function unwrapServerPackage<Operation extends DefaultOperation>(
 ) {
   return {
     key: pkg[PKG_KEY],
-    version: pkg[PKG_VERSION],
     clientId: pkg[PKG_CLIENT],
     index: pkg[PKG_INDEX],
     operations: pkg[PKG_OPERATIONS],

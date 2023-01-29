@@ -18,6 +18,7 @@ const createTemplate = (
   return {
     id,
     values: {},
+    versions: {},
     compute: [],
     config: fields.map((el) => {
       if (Array.isArray(el)) {

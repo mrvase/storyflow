@@ -24,7 +24,7 @@ export type FolderOperation = {
 
 const queue = createQueue<FolderOperation>("folders", {
   clientId: null,
-}).initialize([]);
+}).initialize(0, []);
 
 const FoldersContext = React.createContext<{
   folders: DBFolder[] | undefined;
