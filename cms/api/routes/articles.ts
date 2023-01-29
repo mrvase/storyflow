@@ -117,16 +117,14 @@ const resetHistory = async (slug: string, id: string) => {
 const sortHistories = (
   array: ServerPackage<any>[]
 ): Record<string, ServerPackage<any>[]> => {
-  return array
-    .slice(1)
-    .reduce((acc: Record<string, ServerPackage<any>[]>, cur) => {
-      if (!acc[cur[0]]) {
-        acc[cur[0]] = [];
-      }
-      const a = acc[cur[0]];
-      a.push(cur as never);
-      return acc;
-    }, {});
+  return array.reduce((acc: Record<string, ServerPackage<any>[]>, cur) => {
+    if (!acc[cur[0]]) {
+      acc[cur[0]] = [];
+    }
+    const a = acc[cur[0]];
+    a.push(cur as never);
+    return acc;
+  }, {});
 };
 
 /*
@@ -710,6 +708,11 @@ export const articles = createRoute({
         // clientConfig
       ]);
 
+      console.log(
+        "history",
+        util.inspect(histories, { depth: null, colors: true })
+      );
+
       if (!article) {
         return error({ message: "No article found" });
       }
@@ -738,15 +741,13 @@ export const articles = createRoute({
           computationRecord[fieldId];
 
         const fieldVersion = article.versions?.[id as TemplateFieldId] ?? 0;
-
         const pkgs = filterServerPackages(fieldVersion, history);
-
-        versions[id as TemplateFieldId] = fieldVersion + pkgs.length;
 
         if (pkgs.length > 0) {
           const value = transformField(initialValue, pkgs);
           computationRecord[fieldId] = value;
           updatedFieldsIds.add(fieldId);
+          versions[id as TemplateFieldId] = fieldVersion + pkgs.length;
         }
       });
 
