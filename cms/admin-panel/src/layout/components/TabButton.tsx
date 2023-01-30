@@ -1,6 +1,7 @@
 import cl from "clsx";
 import {
   ComputerDesktopIcon,
+  DocumentDuplicateIcon,
   DocumentIcon,
   FolderIcon,
   HomeIcon,
@@ -48,6 +49,14 @@ export default function TabButton({
       return (
         <>
           <DocumentIcon className="w-4 h-4 mr-2" />
+          {label}
+        </>
+      );
+    }
+    if (type === "template") {
+      return (
+        <>
+          <DocumentDuplicateIcon className="w-4 h-4 mr-2" />
           {label}
         </>
       );

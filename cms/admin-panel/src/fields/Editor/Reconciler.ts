@@ -9,10 +9,7 @@ import {
 import React from "react";
 import { useClientConfig } from "../../client-config";
 import $createRangeSelection from "../../editor/createRangeSelection";
-import {
-  useEditorContext,
-  useIsFocusedContext,
-} from "../../editor/react/EditorProvider";
+import { useEditorContext } from "../../editor/react/EditorProvider";
 import { getComputationDiff } from "../../editor/utils/getComputationDiff";
 import { decodeEditorComputation } from "shared/editor-computation";
 import { tools } from "shared/editor-tools";
@@ -24,7 +21,7 @@ import {
   Computation,
   FunctionName,
 } from "@storyflow/backend/types";
-import { ClientConfig, LibraryConfig } from "@storyflow/frontend/types";
+import { LibraryConfig } from "@storyflow/frontend/types";
 import {
   $clearEditor,
   $getComputation,

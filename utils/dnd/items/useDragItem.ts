@@ -30,7 +30,7 @@ export default function useDragItem<
 >(props: {
   id: string;
   type: string;
-  item?: T;
+  item?: T | (() => T);
   canReceive: CanReceive;
   onChange: OnChange;
 }): Omit<UseDraggableReturn<Element>, "dragHandleProps">;
@@ -40,7 +40,7 @@ export default function useDragItem<
 >(props: {
   id?: string;
   type: string;
-  item?: T;
+  item?: T | (() => T);
   mode: "move" | "link";
 }): UseDraggableReturn<Element>;
 export default function useDragItem<
@@ -56,7 +56,7 @@ export default function useDragItem<
 }: {
   id?: string;
   type: string;
-  item?: T;
+  item?: T | (() => T);
   canReceive?: CanReceive;
   onChange?: OnChange;
   mode?: "move" | "link";

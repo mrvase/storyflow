@@ -1,10 +1,5 @@
 import { Path } from "./types";
 
-/**
- * TODO temporarily using ordinary events.
- * should then receive window as parent/iframe, not document.
- */
-
 export const createEventsFromIframeToCMS = () => {
   let state = {
     target: null as Window | null,

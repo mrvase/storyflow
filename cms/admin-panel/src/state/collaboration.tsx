@@ -18,6 +18,7 @@ import { AnyOp } from "shared/operations";
 import { clone } from "../utils/clone";
 import { useContextWithError } from "../utils/contextError";
 import { useClient } from "../client";
+import { useSubject } from "./useSubject";
 
 export type QueueStrategy<Operation extends DefaultOperation> = {
   transform: QueueTransformStrategy<Operation>;
@@ -45,29 +46,6 @@ export function CollabProvider({ children }: { children: React.ReactNode }) {
   return (
     <CollabContext.Provider value={collab}>{children}</CollabContext.Provider>
   );
-}
-
-function useSubject<Payload>(initialState: Payload) {
-  const subs = new Set<(payload: Payload) => void>();
-  const register = (callback: (payload: Payload) => void) => {
-    subs.add(callback);
-    return () => {
-      subs.delete(callback);
-    };
-  };
-
-  let snapshot = initialState;
-
-  const notify = (payload: Payload) => {
-    snapshot = payload;
-    subs.forEach((f) => f(payload));
-  };
-
-  return [register, notify, snapshot] as [
-    typeof register,
-    typeof notify,
-    Payload
-  ];
 }
 
 function createDocumentCollaboration(
@@ -120,13 +98,13 @@ function createDocumentCollaboration(
   } => {
     return {
       push(op, noTracking) {
-        emitMutation(document);
         const queue = queues.get<Operation>(document, key)!;
         if (noTracking) {
-          console.log("NO TRACKER");
-          queue.push(op);
+          const changed = queue.push(op);
+          if (changed) emitMutation(document);
         } else {
-          queue.push(op, tracker);
+          const changed = queue.push(op, tracker);
+          if (changed) emitMutation(document);
         }
       },
       undo(state) {

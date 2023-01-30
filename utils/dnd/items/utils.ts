@@ -31,13 +31,13 @@ export const createDragHandleProps = <Element extends HTMLElement>({
   ref,
   identifier,
   events,
-  item,
+  item: item_,
 }: {
   mode: "move" | "link" | null;
   ref: React.MutableRefObject<Element | null>;
   identifier: Identifier;
   events: DnDContextType["events"];
-  item: Item;
+  item: Item | (() => Item);
 }) =>
   !mode
     ? undefined
@@ -65,6 +65,9 @@ export const createDragHandleProps = <Element extends HTMLElement>({
               );
             }
           }
+
+          const item = typeof item_ === "function" ? item_() : item_;
+
           events.startDragging(identifier, item, mode);
         },
         onDragEnd: (ev: DragEvent) => {

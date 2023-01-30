@@ -57,7 +57,8 @@ import { tools } from "shared/editor-tools";
 import { ComputationOp } from "shared/operations";
 import { useGlobalState } from "../state/state";
 import { getFileType, getImageSize, getVideoSize } from "../utils/file";
-import { createComponent, spliceTextWithNodes } from "./Editor/ContentPlugin";
+import { spliceTextWithNodes } from "./Editor/spliceTextWithNodes";
+import { createComponent } from "./Editor/createComponent";
 import {
   $getComputation,
   $getIndexFromPoint,

@@ -183,6 +183,7 @@ export interface DBDocument {
   config: DocumentConfig;
   values: ValueRecord<TemplateFieldId>;
   compute: ComputationBlock[];
+  label?: string;
   versions?: Record<TemplateFieldId | DocumentId, number>;
 }
 

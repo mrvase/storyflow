@@ -8,7 +8,7 @@ import BuilderIframe, {
   useIframeDispatchers,
   useIframeListeners,
 } from "./builder/BuilderIframe";
-import { calculateFn } from "./DefaultField";
+import { calculateFn } from "./default/calculateFn";
 import { tools } from "shared/editor-tools";
 import { ComputationOp, targetTools } from "shared/operations";
 import { store, useGlobalState } from "../state/state";
@@ -25,9 +25,9 @@ import Content from "../layout/components/Content";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { useLocalStorage } from "../state/useLocalStorage";
 import { useClientConfig } from "../client-config";
-import { createComponent } from "./Editor/ContentPlugin";
+import { createComponent } from "./Editor/createComponent";
 import { useCollab } from "../state/collaboration";
-import { useArticlePageContext } from "../articles/ArticlePage";
+import { useArticlePageContext } from "../articles/ArticlePageContext";
 import { Client, useClient } from "../client";
 
 const useBuilderRendered = ({

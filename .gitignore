@@ -34,3 +34,5 @@ yarn-error.log*
 
 apps/web/public/dashboard
 !apps/web/public/dashboard/favicon.ico
+
+dist

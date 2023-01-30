@@ -3,18 +3,16 @@ import React from "react";
 import { FieldOperation } from "shared/operations";
 import {
   Computation,
+  DocumentId,
   FieldConfig,
   FieldId,
   FieldType,
 } from "@storyflow/backend/types";
-import { useContextWithError } from "../utils/contextError";
-import DefaultField from "./DefaultField";
+import DefaultField from "./default/DefaultField";
 import FieldContainer from "./FieldContainer";
 import UrlField from "./UrlField";
 import { ServerPackage } from "@storyflow/state";
-
-const FieldIdContext = React.createContext<FieldId | null>(null);
-export const useFieldId = () => useContextWithError(FieldIdContext, "FieldId");
+import { FieldIdContext } from "./FieldIdContext";
 
 const Components: { [K in FieldType]: React.FC<FieldProps<K>> } = {
   default: DefaultField,
@@ -43,6 +41,7 @@ export function RenderField<T extends FieldType>({
   history,
   index,
   version,
+  template,
   dragHandleProps,
 }: {
   id: FieldId;
@@ -51,6 +50,7 @@ export function RenderField<T extends FieldType>({
   index: number;
   version: number;
   history: ServerPackage<FieldOperation[T]>[];
+  template: DocumentId;
   dragHandleProps?: any;
 }) {
   const Component = getComponent(fieldConfig.type);
@@ -61,6 +61,7 @@ export function RenderField<T extends FieldType>({
         index={index}
         fieldConfig={fieldConfig}
         dragHandleProps={dragHandleProps}
+        template={template}
         initialValue={value}
       >
         <NoList>

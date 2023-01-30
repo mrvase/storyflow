@@ -94,7 +94,7 @@ export function AddArticleDialog({
               {
                 type: "insert",
                 id,
-                label: (data.get("label") as string) ?? "",
+                // label: (data.get("label") as string) ?? "",
                 values: Object.assign(defaultValues?.values ?? {}, {
                   [CREATION_DATE_ID]: [new Date()],
                 }),

@@ -14,7 +14,7 @@ export const useFolder = (folderId?: string) => {
   );
 };
 
-export const useTemplateFolder = (folderId?: string) => {
+export const useTemplateFolder = () => {
   const ctx = useFolders();
   return ctx.folders?.find((el) => el.type === "templates");
 };

@@ -441,7 +441,7 @@ export const articles = createRoute({
               z.object({
                 type: z.literal("insert"),
                 id: z.string(),
-                label: z.string(),
+                label: z.string().optional(),
                 values: z.record(z.string(), z.array(z.any())),
                 compute: z.array(
                   z.object({ id: z.string(), value: z.array(z.any()) })
@@ -525,6 +525,7 @@ export const articles = createRoute({
                   folder,
                   versions: {},
                   config: [],
+                  ...(action.label && { label: action.label }),
                   compute: action.compute as ComputationBlock[],
                   values: action.values,
                 };
@@ -593,6 +594,7 @@ export const articles = createRoute({
                     $set: {
                       id: insert.id,
                       folder: insert.folder,
+                      ...(insert.label && { label: insert.label }),
                       config: { $literal: insert.config },
                       values: { $literal: insert.values },
                       compute: { $literal: insert.compute },

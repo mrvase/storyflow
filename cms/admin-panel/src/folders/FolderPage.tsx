@@ -100,7 +100,7 @@ export default function FolderPage({
         selected={isOpen}
         header={
           <Content.Header>
-            <div className="flex-center h-full pl-2.5 font-medium">
+            <div className="flex-center h-full font-medium">
               <EditableLabel
                 value={folder?.label ?? ""}
                 onChange={(value) => {

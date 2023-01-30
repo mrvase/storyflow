@@ -66,7 +66,7 @@ export function EditableLabel({
       <div
         className={cl(
           "flex leading-none pl-2 -ml-2 rounded-full",
-          isEditing && "ring-1 ring-teal-200 dark:ring-teal-500"
+          isEditing && "ring-1 ring-amber-200 dark:ring-amber-400"
         )}
       >
         <input
@@ -99,7 +99,7 @@ export function EditableLabel({
         />
         {isEditing && (
           <div
-            className="ml-2 shrink-0 w-5 h-5 flex-center rounded-full bg-gray-100 text-gray-600 dark:bg-gray-600 dark:text-gray-100 hover:bg-red-100 hover:text-red-600"
+            className="ml-2 shrink-0 h-full aspect-square flex-center rounded-full bg-gray-100 text-gray-600 dark:bg-gray-600 dark:text-gray-100 hover:bg-red-100 hover:text-red-600"
             onMouseDown={() => {
               reject();
             }}

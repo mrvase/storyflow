@@ -1,12 +1,22 @@
 import React from "react";
-import { DocumentConfig, FieldConfig, FieldId } from "@storyflow/backend/types";
+import {
+  DocumentConfig,
+  DocumentId,
+  FieldConfig,
+  FieldId,
+} from "@storyflow/backend/types";
 import { useCollab } from "./collaboration";
 import { PropertyOp, targetTools, DocumentConfigOp } from "shared/operations";
 import { getFieldConfig, setFieldConfig } from "shared/getFieldConfig";
 import { createPurger, createStaticStore } from "./StaticStore";
 import { useSingular } from "./state";
 import { useArticle, useArticleTemplate } from "../articles";
-import { getTemplateDocumentId } from "@storyflow/backend/ids";
+import {
+  computeFieldId,
+  getDocumentId,
+  getTemplateDocumentId,
+  getTemplateFieldId,
+} from "@storyflow/backend/ids";
 import { ServerPackage } from "@storyflow/state";
 
 export const labels = createStaticStore(new Map<string, string | undefined>());
@@ -130,24 +140,37 @@ export function useFieldConfig(
       | ((ps: FieldConfig[Name] | undefined) => FieldConfig[Name])
   ) => void
 ] {
-  const templateId = getTemplateDocumentId(fieldId);
+  const documentId = getDocumentId(fieldId);
+  const templateDocumentId = getTemplateDocumentId(fieldId);
 
-  const [config] = configs.useKey(templateId, (value) => {
-    if (!value) return;
-    return getFieldConfig(value, fieldId);
-  });
+  const isNative = documentId === templateDocumentId;
 
-  const { push } = useCollab().mutate<PropertyOp>(
-    fieldId.slice(0, 4),
-    fieldId.slice(0, 4)
-  );
+  let config: FieldConfig | undefined;
+
+  if (isNative) {
+    [config] = configs.useKey(templateDocumentId, (value) => {
+      if (!value) return;
+      return getFieldConfig(value, fieldId);
+    });
+  } else {
+    /* should not update reactively */
+    const id = computeFieldId(templateDocumentId, getTemplateFieldId(fieldId));
+    const template = useArticleTemplate(templateDocumentId);
+    config = template?.config?.find(
+      (el): el is FieldConfig => "id" in el && el.id === id
+    );
+  }
+
+  const { push } = useCollab().mutate<PropertyOp>(documentId, documentId);
 
   const setter = <Name extends keyof FieldConfig>(
     name: Name,
     payload:
       | FieldConfig[Name]
       | ((ps: FieldConfig[Name] | undefined) => FieldConfig[Name])
+      | undefined
   ) => {
+    if (!isNative) return;
     const value =
       typeof payload === "function" ? payload(config?.[name]) : payload;
     push({
@@ -167,11 +190,11 @@ export function useFieldConfig(
   return [config, setter];
 }
 
-export function useLabel(fieldId: string) {
+export function useLabel(fieldId: FieldId, overwritingTemplate?: DocumentId) {
   /* the updated label */
   const [label] = labels.useKey(fieldId);
 
-  const templateId = fieldId.slice(4, 8);
+  const templateId = overwritingTemplate ?? fieldId.slice(4, 8);
   const article = useArticleTemplate(templateId);
 
   const initialLabel = React.useMemo(() => {

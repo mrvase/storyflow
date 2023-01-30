@@ -1,15 +1,33 @@
 {
   "name": "@storyflow/frontend",
+  "private": true,
   "version": "0.0.0",
-  "main": "./index.ts",
-  "types": "./index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./events": {
+      "import": "./events.ts",
+      "require": "./events.ts"
+    }
+  },
   "license": "MIT",
   "scripts": {
-    "lint": "eslint *.ts*"
+    "lint": "eslint *.ts*",
+    "build": "rollup --config rollup.config.ts --configPlugin typescript"
   },
   "devDependencies": {
+    "@rollup/plugin-typescript": "^11.0.0",
+    "add": "^2.0.6",
+    "esbuild": "^0.17.5",
     "eslint": "^7.32.0",
     "eslint-config-custom": "workspace:*",
+    "rollup": "^3.12.0",
+    "rollup-plugin-dts": "^5.1.1",
+    "rollup-plugin-esbuild": "^5.0.0",
     "tsconfig": "workspace:*",
     "typescript": "^4.9.4"
   }

@@ -1,58 +1,76 @@
 import React from "react";
+import { createStaticStore } from "../state/StaticStore";
 
-const IsFocusedContext = React.createContext<{
-  register: (id: any) => void;
-  getElements: () => any[];
-} | null>(null);
+const IsFocusedContext = React.createContext<ReturnType<
+  typeof createStaticStore<Record<string, boolean>>
+> | null>(null);
 
 export function FocusOrchestrator({ children }: { children: React.ReactNode }) {
-  const elements = React.useRef(new Set<{ item: any }>());
-
-  const ctx = React.useMemo(
-    () => ({
-      register: (item: any) => {
-        const obj = { item };
-        elements.current.add(obj);
-        return () => {
-          elements.current.delete(obj);
-        };
-      },
-      getElements: () => Array.from(elements.current, (x) => x.item),
-    }),
+  const store = React.useMemo(
+    () => createStaticStore<Record<string, boolean>>(new Map([["", {}]])),
     []
   );
 
   return (
-    <IsFocusedContext.Provider value={ctx}>
+    <IsFocusedContext.Provider value={store}>
       {children}
     </IsFocusedContext.Provider>
   );
 }
 
-export function useFocusedElements() {
+export function useFocusedIds() {
   const ctx = React.useContext(IsFocusedContext);
-  if (!ctx) return () => [];
-  return ctx.getElements;
+  if (!ctx) return [];
+  const obj = ctx.useKey("")[0];
+  return React.useMemo(
+    () =>
+      Object.entries(obj ?? {})
+        .filter((el) => el[1])
+        .map((el) => el[0]),
+    [obj]
+  );
 }
 
 export default function useIsFocused({
+  id,
   multiple,
-  item,
   holdShiftKey,
-}: { multiple?: boolean; item?: any; holdShiftKey?: boolean } = {}) {
-  const [isFocused, setIsFocused] = React.useState<boolean>(false);
-
-  const [id] = React.useState(() => Math.random().toString(36).slice(2, 10));
-
-  const isInsideClick = React.useRef(false);
-
+}: { multiple?: boolean; id?: string; holdShiftKey?: boolean } = {}) {
   const ctx = React.useContext(IsFocusedContext);
 
+  const [uniqueId] = React.useState(() =>
+    Math.random().toString(36).slice(2, 10)
+  );
+
+  let [isFocused, setIsFocused] = [false, () => {}] as [
+    boolean,
+    (value: boolean) => void
+  ];
+
+  if (id && ctx) {
+    const [isFocused_, setIsFocused_] = ctx.useKey(
+      "",
+      (record) => record?.[id]
+    );
+    isFocused = isFocused_ ?? false;
+    setIsFocused = (value: boolean) => {
+      setIsFocused_((oldRecord) => {
+        let record = { ...(oldRecord ?? {}) };
+        record[id] = value;
+        return record;
+      });
+    };
+  } else {
+    [isFocused, setIsFocused] = React.useState(false);
+  }
+
   React.useEffect(() => {
-    if (ctx && item && isFocused) {
-      return ctx.register(item);
-    }
-  }, [item, isFocused]);
+    return () => {
+      setIsFocused(false);
+    };
+  }, []);
+
+  const isInsideClick = React.useRef(false);
 
   React.useEffect(() => {
     const handleBlur = () => {
@@ -60,7 +78,7 @@ export default function useIsFocused({
       if (
         el &&
         el.tagName === "IFRAME" &&
-        el.getAttribute("data-select") === id
+        el.getAttribute("data-select") === uniqueId
       ) {
         setIsFocused(true);
       } else {
@@ -117,7 +135,7 @@ export default function useIsFocused({
       if (holdShiftKey && ev.shiftKey) {
         ev.preventDefault();
         const el = document.querySelector(
-          `[data-selectable="${id}"]`
+          `[data-selectable="${uniqueId}"]`
         ) as HTMLElement | null;
         if (el) {
           el.focus();
@@ -143,8 +161,8 @@ export default function useIsFocused({
         setIsFocused(true);
       });
     },
-    "data-selectable": id,
+    "data-selectable": uniqueId,
   };
 
-  return { isFocused, handlers, id };
+  return { isFocused, handlers, id: uniqueId };
 }

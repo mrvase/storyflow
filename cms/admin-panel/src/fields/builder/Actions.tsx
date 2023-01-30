@@ -6,7 +6,7 @@ import {
   TrashIcon,
 } from "@heroicons/react/24/outline";
 import { ComputationOp, targetTools } from "shared//operations";
-import { createComponent } from "../Editor/ContentPlugin";
+import { createComponent } from "../Editor/createComponent";
 import { getInfoFromType, useClientConfig } from "../../client-config";
 import { useCollab } from "../../state/collaboration";
 
