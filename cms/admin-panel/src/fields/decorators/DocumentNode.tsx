@@ -14,6 +14,7 @@ import cl from "clsx";
 import { caretClasses } from "./caret";
 import {
   Computation,
+  ComputationRecord,
   DocumentImport,
   Fetcher,
   FieldId,
@@ -32,12 +33,13 @@ import { useFieldConfig } from "../../state/documentConfig";
 import { Menu } from "@headlessui/react";
 import { MenuTransition } from "../../elements/transitions/MenuTransition";
 import { useTemplateFolder } from "../../folders";
-import { useArticleList } from "../../articles";
+import { useArticle, useArticleList } from "../../articles";
 import { calculateFn, useFieldTemplate } from "../DefaultField";
 import { useGlobalState } from "../../state/state";
 import { useArticlePageContext } from "../../articles/ArticlePage";
 import { computeFieldId, getTemplateFieldId } from "@storyflow/backend/ids";
 import { useClient } from "../../client";
+import { getComputationRecord } from "@storyflow/backend/flatten";
 
 function DocumentDecorator({
   value,
@@ -80,7 +82,15 @@ function DocumentDecorator({
   } else if ("values" in value) {
     docs = [value];
   } else if ("dref" in value) {
-    docs = [{ id: value.dref, values: {} }];
+    const { article } = useArticle(value.dref);
+    let values = article ? getComputationRecord(article) : {};
+    values = Object.fromEntries(
+      Object.entries(values).map(([key, value]) => [
+        getTemplateFieldId(key as FieldId),
+        value,
+      ])
+    );
+    docs = [{ id: value.dref, values }];
   }
 
   const color = {
@@ -102,6 +112,8 @@ function DocumentDecorator({
   }[type];
 
   const parentFieldId = useFieldId();
+
+  const { imports } = useArticlePageContext();
 
   return (
     <div className="py-0.5">
@@ -161,6 +173,7 @@ function DocumentDecorator({
                           : computeFieldId(docId, getTemplateFieldId(id))
                       }
                       initialValue={initialValue}
+                      imports={type == "nested" ? imports : values}
                     />
                   );
                 })}
@@ -176,13 +189,13 @@ function DocumentDecorator({
 function ValueDisplay({
   id,
   initialValue,
+  imports,
 }: {
   id: FieldId;
   initialValue: Computation;
+  imports: ComputationRecord;
 }) {
   const client = useClient();
-
-  const { imports } = useArticlePageContext();
 
   let output: undefined | Value[];
 
