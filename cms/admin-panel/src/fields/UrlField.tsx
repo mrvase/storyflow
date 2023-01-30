@@ -15,7 +15,7 @@ import { createId, getDocumentId, restoreId } from "@storyflow/backend/ids";
 import { createQueueCache, useCollab } from "../state/collaboration";
 import { targetTools, ComputationOp } from "shared/operations";
 import { useSingular, useGlobalState } from "../state/state";
-import { calculateFn } from "./DefaultField";
+import { calculateFn } from "./default/calculateFn";
 import { IconButton } from "./IconButton";
 import {
   HomeIcon,
@@ -31,7 +31,7 @@ import { getDocumentLabel, useArticle } from "../articles";
 import { getConfig } from "shared/fieldConfig";
 import { inputConfig } from "shared/inputConfig";
 import cl from "clsx";
-import { useArticlePageContext } from "../articles/ArticlePage";
+import { useArticlePageContext } from "../articles/ArticlePageContext";
 import {
   decodeEditorComputation,
   encodeEditorComputation,

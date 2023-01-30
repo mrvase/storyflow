@@ -7,14 +7,11 @@ import {
   FieldId,
   FieldType,
 } from "@storyflow/backend/types";
-import { useContextWithError } from "../utils/contextError";
-import DefaultField from "./DefaultField";
+import DefaultField from "./default/DefaultField";
 import FieldContainer from "./FieldContainer";
 import UrlField from "./UrlField";
 import { ServerPackage } from "@storyflow/state";
-
-const FieldIdContext = React.createContext<FieldId | null>(null);
-export const useFieldId = () => useContextWithError(FieldIdContext, "FieldId");
+import { FieldIdContext } from "./FieldIdContext";
 
 const Components: { [K in FieldType]: React.FC<FieldProps<K>> } = {
   default: DefaultField,

@@ -15,10 +15,10 @@ import { caretClasses } from "./caret";
 import { useLabel } from "../../state/documentConfig";
 import { useGlobalState } from "../../state/state";
 import { useGlobalContext } from "../../state/context";
-import { useArticlePageContext } from "../../articles/ArticlePage";
-import { getPreview } from "../DefaultField";
+import { useArticlePageContext } from "../../articles/ArticlePageContext";
+import { getPreview } from "../default/DefaultField";
 import { Computation, FieldImport } from "@storyflow/backend/types";
-import { usePathContext } from "../FieldContainer";
+import { usePathContext } from "../PathContext";
 
 const useState = (
   id: string,

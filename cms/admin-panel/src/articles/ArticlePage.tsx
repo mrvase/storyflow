@@ -11,7 +11,6 @@ import {
 } from "@storyflow/backend/ids";
 import { useDocumentConfig } from "../state/documentConfig";
 import {
-  ComputationBlock,
   ComputationRecord,
   DBDocument,
   DocumentConfigItem,
@@ -39,17 +38,7 @@ import { FieldType } from "@storyflow/backend/types";
 import { getComputationRecord } from "@storyflow/backend/flatten";
 import { useCollab } from "../state/collaboration";
 import { ServerPackage } from "@storyflow/state";
-
-const ArticlePageContext = React.createContext<{
-  id: string;
-  imports: ComputationRecord;
-} | null>(null);
-
-export const useArticlePageContext = () => {
-  const ctx = React.useContext(ArticlePageContext);
-  if (!ctx) throw new Error("ArticlePageContext.Provider not found.");
-  return ctx;
-};
+import { ArticlePageContext } from "./ArticlePageContext";
 
 const getVersionKey = (versions?: Record<TemplateFieldId, number>) => {
   if (!versions) return -1;
@@ -142,7 +131,7 @@ const Page = ({
   const owner = article;
 
   return (
-    <div className="pb-96 flex flex-col gap-8">
+    <div className="pb-96 flex flex-col -mt-6">
       {templateId && (
         <GetArticle id={templateId}>
           {(article) => (
@@ -364,7 +353,7 @@ function RenderTemplate({
           }}
           disabled={!isMain}
         >
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col">
             {(template ?? []).map(render)}
             <DropShadow>
               {(item) => render(item, (template ?? []).length)}

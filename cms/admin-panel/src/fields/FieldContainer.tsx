@@ -26,29 +26,9 @@ import {
   useIframeDispatchers,
   useIframeListeners,
 } from "./builder/BuilderIframe";
-import { useFieldId } from "./RenderField";
+import { useFieldId } from "./FieldIdContext";
 import { useCollab } from "../state/collaboration";
-
-type PathContextType = {
-  path: Path;
-  goToPath: (path: PathSegment | null) => void;
-};
-
-const PathContext = React.createContext<PathContextType | null>(null);
-
-export const stringifyPath = (path: PathSegment[]) => {
-  let string = "";
-  path.forEach(({ id, parentProp }) => {
-    string += `${parentProp ? `/${parentProp.name}` : ""}.${id}`;
-  });
-  return string.slice(1);
-};
-
-export const usePathContext = () => {
-  const ctx = React.useContext(PathContext);
-  if (!ctx) throw new Error("usePathContext cannot find provider.");
-  return ctx;
-};
+import { PathContext } from "./PathContext";
 
 const useBuilderPath = (): [
   path: Path,
@@ -160,17 +140,17 @@ function FieldContainerInner({
     <div
       {...(withProps && props)}
       className={cl(
-        "relative grow shrink basis-0 focus-container",
+        "relative grow shrink basis-0 focus-container pt-5",
         withProps && props.className
       )}
     >
       <div
         className={cl(
           !isOpen && "focus-bg",
-          "-z-10 absolute bg-black/20 inset-0 -top-5 -bottom-1 pointer-events-none"
+          "-z-10 absolute bg-black/20 inset-0 pointer-events-none"
         )}
       />
-      <div className="flex px-5 mb-1 h-5">
+      <div className="flex px-5 h-5">
         <Dot id={fieldConfig.id} native={native} {...(withProps && dotProps)} />
         <div className="ml-5 flex">
           {path.length === 0 ? (

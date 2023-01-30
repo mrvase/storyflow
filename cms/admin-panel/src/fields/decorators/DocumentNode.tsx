@@ -21,22 +21,23 @@ import {
   NestedDocument,
   Value,
 } from "@storyflow/backend/types";
-import { usePathContext } from "../FieldContainer";
+import { usePathContext } from "../PathContext";
 import {
   ChevronDownIcon,
   DocumentIcon,
   FolderArrowDownIcon,
   LinkIcon,
 } from "@heroicons/react/24/outline";
-import { useFieldId } from "../RenderField";
+import { useFieldId } from "../FieldIdContext";
 import { useFieldConfig } from "../../state/documentConfig";
 import { Menu } from "@headlessui/react";
 import { MenuTransition } from "../../elements/transitions/MenuTransition";
 import { useTemplateFolder } from "../../folders";
 import { useArticle, useArticleList } from "../../articles";
-import { calculateFn, useFieldTemplate } from "../DefaultField";
+import { useFieldTemplate } from "../default/useFieldTemplate";
+import { calculateFn } from "../default/calculateFn";
 import { useGlobalState } from "../../state/state";
-import { useArticlePageContext } from "../../articles/ArticlePage";
+import { useArticlePageContext } from "../../articles/ArticlePageContext";
 import { computeFieldId, getTemplateFieldId } from "@storyflow/backend/ids";
 import { useClient } from "../../client";
 import { getComputationRecord } from "@storyflow/backend/flatten";

@@ -1,15 +1,18 @@
 import { ImportNode } from "../decorators/ImportNode";
 import { OperatorNode } from "../decorators/OperatorNode";
 import { ParameterNode } from "../decorators/ParameterNode";
+import { FunctionNode } from "../decorators/FunctionNode";
 import { ContentPlugin } from "./ContentPlugin";
 import { DecoratorPlugin } from "./DecoratorPlugin";
+import { TokenNode } from "../decorators/TokenNode";
+import { LayoutElementNode } from "../decorators/LayoutElementNode";
+import { InlineLayoutElementNode } from "../decorators/InlineLayoutElementNode";
 import {
   EditorProvider,
   useEditorContext,
 } from "../../editor/react/EditorProvider";
 import { AnyOp, Target, ComputationOp } from "shared/operations";
 import React from "react";
-import { FunctionNode } from "../decorators/FunctionNode";
 import { $getComputation, $initializeEditor } from "./transforms";
 import {
   Computation,
@@ -21,15 +24,12 @@ import { Reconciler } from "./Reconciler";
 import { useIsFocused } from "../../editor/react/useIsFocused";
 import { useClientConfig } from "../../client-config";
 import { useFieldFocus } from "../../field-focus";
-import { LayoutElementNode } from "../decorators/LayoutElementNode";
+import { HeadingNode } from "../../editor/react/HeadingNode";
 import { DocumentNode } from "../decorators/DocumentNode";
-import { InlineLayoutElementNode } from "../decorators/InlineLayoutElementNode";
 import { $getRoot } from "lexical";
 import { decodeEditorComputation } from "shared/editor-computation";
-import { HeadingNode } from "../../editor/react/HeadingNode";
 import { Query } from "../Query";
-import { TokenNode } from "../decorators/TokenNode";
-import { QueueListener } from "@storyflow/state";
+import { type QueueListener } from "@storyflow/state";
 
 const editorConfig = {
   namespace: "EDITOR",

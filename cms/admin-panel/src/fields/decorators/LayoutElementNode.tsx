@@ -13,8 +13,8 @@ import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
 import { caretClasses } from "./caret";
 import { LayoutElement } from "@storyflow/backend/types";
-import { ParentPropContext } from "../DefaultField";
-import { usePathContext } from "../FieldContainer";
+import { ParentPropContext } from "../default/DefaultField";
+import { usePathContext } from "../PathContext";
 import { getConfigFromType, useClientConfig } from "../../client-config";
 
 function LayoutElementDecorator({
