@@ -17,11 +17,11 @@ import { useGlobalState } from "../../state/state";
 import { useGlobalContext } from "../../state/context";
 import { useArticlePageContext } from "../../articles/ArticlePageContext";
 import { getPreview } from "../default/DefaultField";
-import { Computation, FieldImport } from "@storyflow/backend/types";
+import { Computation, FieldId, FieldImport } from "@storyflow/backend/types";
 import { usePathContext } from "../PathContext";
 
 const useState = (
-  id: string,
+  id: FieldId,
   templateId?: string
 ): [label: string, value: Computation | undefined] => {
   if (templateId) {

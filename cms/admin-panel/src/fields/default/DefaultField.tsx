@@ -15,6 +15,7 @@ import {
   NestedDocument,
   FieldId,
   FieldImport,
+  FieldConfig,
 } from "@storyflow/backend/types";
 import { useArticlePageContext } from "../../articles/ArticlePageContext";
 import { ChevronDownIcon, LinkIcon } from "@heroicons/react/24/outline";
@@ -24,7 +25,12 @@ import { tools } from "shared/editor-tools";
 import { stringifyPath, usePathContext } from "../PathContext";
 import { addImport } from "../../custom-events";
 import { useFieldConfig } from "../../state/documentConfig";
-import { getDocumentId, getTemplateFieldId } from "@storyflow/backend/ids";
+import {
+  computeFieldId,
+  getDocumentId,
+  getTemplateDocumentId,
+  getTemplateFieldId,
+} from "@storyflow/backend/ids";
 import { useCollab } from "../../state/collaboration";
 import { useClient } from "../../client";
 import { Plus } from "./Plus";
@@ -36,6 +42,7 @@ import {
 } from "./RenderNestedFields";
 import { calculateFn } from "./calculateFn";
 import { useFieldTemplate } from "./useFieldTemplate";
+import { useArticleTemplate } from "../../articles";
 
 export const ParentPropContext = React.createContext<{
   name: string;
@@ -214,8 +221,7 @@ function TemplateHeader({ id }: { id: FieldId }) {
             className="grow shrink basis-0 px-2 flex items-center"
           >
             <span className="truncate">{label}</span>
-            <LinkIcon
-              className="w-3 h-3 ml-auto opacity-25 hover:opacity-100"
+            <div
               onMouseDown={(ev) => {
                 ev.preventDefault();
                 addImport.dispatch({
@@ -224,7 +230,9 @@ function TemplateHeader({ id }: { id: FieldId }) {
                   imports: [],
                 });
               }}
-            />
+            >
+              <LinkIcon className="w-3 h-3 ml-auto opacity-25 hover:opacity-100" />
+            </div>
           </div>
         ))}
       </div>

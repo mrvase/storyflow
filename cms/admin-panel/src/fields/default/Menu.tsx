@@ -67,6 +67,7 @@ export function Menu({
       }}
     >
       <button
+        tabIndex={-1}
         type="button"
         className="opacity-50 hover:opacity-100 p-2"
         onMouseDown={(ev: any) => {

@@ -4,6 +4,7 @@ import {
   ArrowsPointingInIcon,
   ArrowsPointingOutIcon,
   ChevronRightIcon,
+  ChevronUpDownIcon,
   LinkIcon,
 } from "@heroicons/react/24/outline";
 import React from "react";
@@ -17,10 +18,16 @@ import { useTabUrl } from "../layout/utils";
 import { PropertyOp, targetTools } from "shared/operations";
 import { isTemplateField, restoreId } from "@storyflow/backend/ids";
 import { useFieldConfig, useLabel } from "../state/documentConfig";
-import { Computation, FieldConfig, FieldId } from "@storyflow/backend/types";
+import {
+  Computation,
+  DocumentId,
+  FieldConfig,
+  FieldId,
+} from "@storyflow/backend/types";
 import { getTranslateDragEffect } from "../utils/dragEffects";
 import useIsFocused from "../utils/useIsFocused";
 import { Path, PathSegment } from "@storyflow/frontend/types";
+import { FIELDS, getDefaultField } from "@storyflow/backend/fields";
 import {
   IframeProvider,
   useIframeDispatchers,
@@ -29,6 +36,8 @@ import {
 import { useFieldId } from "./FieldIdContext";
 import { useCollab } from "../state/collaboration";
 import { PathContext } from "./PathContext";
+import { useArticlePageContext } from "../articles/ArticlePageContext";
+import { useLocalStorage } from "../state/useLocalStorage";
 
 const useBuilderPath = (): [
   path: Path,
@@ -61,6 +70,7 @@ type Props = {
   index: number;
   children: React.ReactNode;
   initialValue: Computation;
+  template: DocumentId;
   dragHandleProps?: any;
 };
 
@@ -78,14 +88,17 @@ function FieldContainerInner({
   children,
   dragHandleProps: dragHandlePropsFromProps,
   initialValue,
+  template,
 }: Props) {
   const props: any = {};
-
   const dotProps: any = {};
+
+  const articleId = useArticlePageContext().id;
+  const isNative = template === articleId;
 
   const [path, setPath] = useBuilderPath();
 
-  const [config, setConfig] = useFieldConfig(fieldConfig.id);
+  const [isEditing] = useLocalStorage<boolean>("editing-articles", false);
 
   const ctx = React.useMemo(
     () => ({
@@ -111,12 +124,7 @@ function FieldContainerInner({
 
     const { isFocused, handlers } = useIsFocused({
       multiple: true,
-      holdShiftKey: true,
-      item: fieldConfig,
-    });
-
-    Object.assign(dotProps, dragHandlePropsFromHook, handlers, {
-      className: isFocused && "bg-yellow-600",
+      id: fieldConfig.id,
     });
 
     const dragProps = {
@@ -124,17 +132,19 @@ function FieldContainerInner({
       style,
     };
 
-    Object.assign(props, dragProps);
+    Object.assign(props, dragProps, handlers, {
+      className: isEditing && isFocused && "ring-1 ring-yellow-500 ring-inset",
+    });
+
+    Object.assign(dotProps, isEditing && dragHandlePropsFromHook); // { className: isFocused && "bg-yellow-500" }
   } else {
-    Object.assign(dotProps, dragHandlePropsFromProps);
+    // Object.assign(dotProps, dragHandlePropsFromProps);
   }
 
   const { full } = useSegment();
   const isOpen = full.endsWith(`/c-${restoreId(fieldConfig.id)}`);
 
-  const native =
-    (!isTemplateField(fieldConfig.id) || fieldConfig.static) &&
-    !Boolean(dragHandlePropsFromProps);
+  const [, specialFieldConfig] = getDefaultField(fieldConfig.id);
 
   const content = (withProps: boolean) => (
     <div
@@ -151,17 +161,26 @@ function FieldContainerInner({
         )}
       />
       <div className="flex px-5 h-5">
-        <Dot id={fieldConfig.id} native={native} {...(withProps && dotProps)} />
+        <Dot
+          id={fieldConfig.id}
+          native={isNative}
+          {...(withProps && dotProps)}
+        />
         <div className="ml-5 flex">
           {path.length === 0 ? (
-            <Label id={fieldConfig.id} native={native} />
+            <Label
+              id={fieldConfig.id}
+              isNative={isNative}
+              template={template}
+              isEditable={isNative && isEditing}
+            />
           ) : (
             <PathMap path={path} setPath={setPath} />
           )}
         </div>
-        {fieldConfig.static && (
-          <div className="ml-auto mr-8 text-xs py-0.5 font-light bg-yellow-400/30 text-yellow-200 px-2 rounded-full">
-            {fieldConfig.label}
+        {specialFieldConfig && (
+          <div className="ml-3 backdrop:mr-8 text-xs my-0.5 font-light bg-yellow-400/10 text-yellow-200/75 px-1.5 rounded">
+            {specialFieldConfig.label}
           </div>
         )}
       </div>
@@ -231,6 +250,7 @@ function Dot({ id, native, ...props }: any) {
   const [focused] = useFieldFocus();
 
   const isEditable = native;
+  const isDraggable = "draggable" in props;
 
   const isLink = focused && focused !== id;
 
@@ -239,14 +259,17 @@ function Dot({ id, native, ...props }: any) {
 
   const isOpen = full.endsWith(`/c-${restoreId(id)}`);
 
-  const Icon = isOpen ? ArrowsPointingInIcon : ArrowsPointingOutIcon;
+  const Icon = isOpen
+    ? ArrowsPointingInIcon
+    : isEditable && isDraggable
+    ? ChevronUpDownIcon
+    : ArrowsPointingOutIcon;
 
   return (
     <>
       <div
         {...props}
         className="group w-6 h-6 p-1 -m-1 translate-y-0.5"
-        data-focus-remain="true"
         onClick={() => {
           navigateTab(isOpen ? `${current}` : `${current}/c-${restoreId(id)}`);
         }}
@@ -260,6 +283,8 @@ function Dot({ id, native, ...props }: any) {
               ? "bg-gray-200 dark:bg-gray-600/50 dark:group-hover:bg-red-800/50"
               : !isEditable
               ? "bg-gray-200 dark:bg-teal-600/50 dark:group-hover:bg-teal-800/50"
+              : isDraggable
+              ? "bg-gray-200 dark:bg-gray-600/50"
               : "bg-gray-200 dark:bg-gray-600/50 dark:group-hover:bg-sky-800/50"
           )}
         >
@@ -268,6 +293,8 @@ function Dot({ id, native, ...props }: any) {
               "flex-center w-2 h-2 m-1 rounded-full group-hover:scale-[2] transition-[transform,background-color]",
               isOpen
                 ? "dark:bg-white/20 dark:group-hover:bg-red-800"
+                : isDraggable && isEditable
+                ? "dark:bg-white/20"
                 : "dark:bg-white/20 dark:group-hover:bg-sky-800"
             )}
           >
@@ -276,11 +303,12 @@ function Dot({ id, native, ...props }: any) {
         </div>
       </div>
       <button
+        tabIndex={-1}
         className={cl(
           isLink
             ? "opacity-25 hover:opacity-100"
             : "opacity-0 pointer-events-none",
-          "absolute z-10 top-7 w-6 h-6 p-1 -mx-1 transition-opacity"
+          "absolute z-10 top-11 w-6 h-6 p-1 -mx-1 transition-opacity duration-75"
         )}
         onMouseDown={(ev) => {
           if (isLink) {
@@ -304,9 +332,18 @@ function LabelText() {
   );
 }
 
-function Label({ id, native }: { id: FieldId; native?: boolean }) {
-  const label = useLabel(id);
-  const isEditable = native;
+function Label({
+  id,
+  isNative,
+  isEditable,
+  template,
+}: {
+  id: FieldId;
+  isNative?: boolean;
+  isEditable?: boolean;
+  template: DocumentId;
+}) {
+  const label = useLabel(id, template);
 
   const articleId = id.slice(0, 4);
 
@@ -335,6 +372,13 @@ function Label({ id, native }: { id: FieldId; native?: boolean }) {
       className="text-sm text-gray-400 placeholder:text-gray-300 dark:placeholder:text-gray-500 font-normal"
     />
   ) : (
-    <span className="text-sm text-teal-400/60 font-normal">{label}</span>
+    <span
+      className={cl(
+        "text-sm font-normal",
+        isNative ? "text-gray-400" : "text-teal-400/60"
+      )}
+    >
+      {label || "Ingen label"}
+    </span>
   );
 }

@@ -53,11 +53,15 @@ function FocusPlugin({ id }: { id: string }) {
   const isFocused = useIsFocused(editor);
   const [, setFocused] = useFieldFocus();
 
+  const prevIsFocused = React.useRef(false);
+
   React.useEffect(() => {
     if (isFocused) {
       setFocused(id);
-    } else {
+      prevIsFocused.current = true;
+    } else if (prevIsFocused.current) {
       setFocused(null);
+      prevIsFocused.current = false;
     }
   }, [isFocused, id]);
 

@@ -1,32 +1,21 @@
 import cl from "clsx";
 import { NoList, useDragItem } from "@storyflow/dnd";
-import { Menu, Transition } from "@headlessui/react";
+import { Transition } from "@headlessui/react";
 import {
+  AdjustmentsHorizontalIcon,
   ArrowUpTrayIcon,
+  CogIcon,
   DocumentDuplicateIcon,
-  PlusIcon,
-  ViewColumnsIcon,
 } from "@heroicons/react/24/outline";
 import React from "react";
-import {
-  LABEL_ID,
-  LAYOUT_ID,
-  PAGE_ID,
-  PUBLISHED_ID,
-  REDIRECT_ID,
-  RELEASED_ID,
-  SLUG_ID,
-  USER_ID,
-} from "@storyflow/backend/templates";
 import Content from "../layout/components/Content";
-import { useSegment } from "../layout/components/SegmentContext";
-import { getPathFromSegment } from "../layout/utils";
-import { getDocumentId, minimizeId } from "@storyflow/backend/ids";
-import { targetTools, DocumentConfigOp } from "shared/operations";
 import { useCollab } from "../state/collaboration";
-import { FocusOrchestrator, useFocusedElements } from "../utils/useIsFocused";
+import { FocusOrchestrator } from "../utils/useIsFocused";
 import { useSaveArticle } from ".";
-import { MenuTransition } from "../elements/transitions/MenuTransition";
+import { useLocalStorage } from "../state/useLocalStorage";
+import { DocumentId } from "@storyflow/backend/types";
+import { computeFieldId, createFieldId } from "@storyflow/backend/ids";
+import { FIELDS } from "@storyflow/backend/fields";
 
 export const ArticleContent = ({
   id,
@@ -38,7 +27,7 @@ export const ArticleContent = ({
   variant,
   version,
 }: {
-  id: string;
+  id: DocumentId;
   folder: string | undefined;
   selected: boolean;
   label: string;
@@ -65,6 +54,11 @@ export const ArticleContent = ({
     setIsModified(initialIsModified);
   }, [version, initialIsModified]);
 
+  const [isEditing, setIsEditing] = useLocalStorage<boolean>(
+    "editing-articles",
+    false
+  );
+
   return (
     <FocusOrchestrator>
       <Content
@@ -74,7 +68,7 @@ export const ArticleContent = ({
           <Content.Header>
             <div
               className={cl(
-                "flex-center h-full pl-2.5 font-medium",
+                "flex-center h-full font-medium",
                 variant === "template" && "text-teal-500"
               )}
             >
@@ -90,15 +84,46 @@ export const ArticleContent = ({
             </div>
           </Content.Header>
         }
+        toolbar={
+          isEditing ? (
+            <Content.Toolbar>
+              <NoList>
+                <DragButton
+                  label={"Nyt felt"}
+                  item={() => ({
+                    id: createFieldId(id),
+                    label: "",
+                    type: "default",
+                  })}
+                />
+                <DragButton
+                  label={"Label"}
+                  item={() => ({
+                    ...FIELDS.label,
+                    id: computeFieldId(id, FIELDS.label.id),
+                  })}
+                />
+                <DragButton
+                  label={"Slug"}
+                  item={() => ({
+                    ...FIELDS.slug,
+                    id: computeFieldId(id, FIELDS.slug.id),
+                  })}
+                />
+              </NoList>
+            </Content.Toolbar>
+          ) : undefined
+        }
         buttons={
           <Content.Buttons>
             {/*<GroupButton />*/}
+            <Content.Button
+              icon={AdjustmentsHorizontalIcon}
+              onClick={() => setIsEditing((ps) => !ps)}
+            />
             {folder && (
               <SaveButton id={id} folder={folder} isModified={isModified} />
             )}
-            <NoList>
-              <DragButton />
-            </NoList>
           </Content.Buttons>
         }
       >
@@ -140,176 +165,7 @@ function SaveButton({
   );
 }
 
-function GroupButton() {
-  const getElements = useFocusedElements();
-
-  const { current } = useSegment();
-  const path = getPathFromSegment(current);
-
-  const [, articleId] = path.split("/").slice(-1)[0].split("-");
-
-  const id = minimizeId(articleId);
-
-  const { push } = useCollab().mutate<DocumentConfigOp>(id, id);
-
-  const onClick = () => {
-    const elements = getElements();
-
-    const ops: DocumentConfigOp["ops"] = elements.map((el) => ({
-      index: 0,
-      insert: [],
-      remove: 1,
-    }));
-
-    ops.push({
-      index: 0,
-      insert: elements,
-      remove: 0,
-    });
-
-    push({
-      target: targetTools.stringify({
-        field: "any",
-        operation: "computation",
-        location: "",
-      }),
-      ops,
-    });
-  };
-
-  return (
-    <Content.Button
-      icon={ViewColumnsIcon}
-      onClick={onClick}
-      onMouseDown={(ev) => {
-        ev.stopPropagation();
-      }}
-    />
-  );
-}
-
-function DragButton() {
-  const label = "Default";
-
-  const { ref, dragHandleProps, state } = useDragItem({
-    id: `ny-blok-2-${label}`,
-    type: "fields",
-    item: {
-      type: "default",
-      __new__: true,
-    },
-    mode: "move",
-  });
-
-  return (
-    <div className="relative z-10">
-      <Menu>
-        {({ open }) => (
-          <>
-            <Menu.Button
-              as={Content.Button}
-              {...dragHandleProps}
-              icon={PlusIcon}
-              active={open}
-            />
-            <MenuTransition show={open} className="absolute right-0">
-              <Menu.Items
-                static
-                className="bg-white dark:bg-gray-800 mt-1 rounded shadow flex flex-col outline-none overflow-hidden"
-              >
-                <DragItem
-                  label={"Felt"}
-                  item={{
-                    type: "default",
-                    __new__: true,
-                  }}
-                />
-                <DragItem
-                  label={"Komponent"}
-                  item={{
-                    type: "component",
-                    __new__: true,
-                  }}
-                />
-                <DragItem
-                  label={"Artikel"}
-                  item={{
-                    type: "article",
-                    __new__: true,
-                  }}
-                />
-                <DragItem
-                  label={"Liste"}
-                  item={{
-                    type: "list",
-                    __new__: true,
-                  }}
-                />
-                <DragItem
-                  label={"Overskrift"}
-                  item={{
-                    text: "Overskrift",
-                    level: 1,
-                  }}
-                />
-                <DragItem
-                  label={"Label"}
-                  item={{
-                    template: getDocumentId(LABEL_ID),
-                  }}
-                />
-                <DragItem
-                  label={"Slug"}
-                  item={{
-                    template: getDocumentId(SLUG_ID),
-                  }}
-                />
-                <DragItem
-                  label={"Side"}
-                  item={{
-                    template: getDocumentId(PAGE_ID),
-                  }}
-                />
-                <DragItem
-                  label={"Layout"}
-                  item={{
-                    template: getDocumentId(LAYOUT_ID),
-                  }}
-                />
-                <DragItem
-                  label={"Omdirigering"}
-                  item={{
-                    template: getDocumentId(REDIRECT_ID),
-                  }}
-                />
-                <DragItem
-                  label={"Offentlig"}
-                  item={{
-                    template: getDocumentId(PUBLISHED_ID),
-                  }}
-                />
-                <DragItem
-                  label={"Udgivelsesdato"}
-                  item={{
-                    template: getDocumentId(RELEASED_ID),
-                  }}
-                />
-                <DragItem
-                  label={"Bruger"}
-                  item={{
-                    template: getDocumentId(USER_ID),
-                  }}
-                />
-              </Menu.Items>
-            </MenuTransition>
-          </>
-        )}
-      </Menu>
-    </div>
-  );
-}
-
-function DragItem({ item, label }: { label: string; item: any }) {
+function DragButton({ item, label }: { label: string; item: any }) {
   const { ref, dragHandleProps, state } = useDragItem({
     id: `ny-blok-2-${label}`,
     type: "fields",
@@ -318,19 +174,12 @@ function DragItem({ item, label }: { label: string; item: any }) {
   });
 
   return (
-    <Menu.Item>
-      {({ active }) => (
-        <button
-          ref={ref as React.MutableRefObject<HTMLButtonElement | null>}
-          {...dragHandleProps}
-          className={cl(
-            "p-3 text-sm text-left outline-none text-gray-600 dark:text-gray-100 hover:bg-teal-100 hover:text-teal-600 dark:hover:bg-teal-600 dark:hover:text-teal-100 transition-colors",
-            active ? "bg-teal-100 text-teal-600" : ""
-          )}
-        >
-          {label}
-        </button>
-      )}
-    </Menu.Item>
+    <button
+      ref={ref as React.MutableRefObject<HTMLButtonElement | null>}
+      {...dragHandleProps}
+      className="text-xs font-light py-1 px-2 rounded bg-white/10 hover:bg-white/20 text-white/80 transition-colors"
+    >
+      {label}
+    </button>
   );
 }

@@ -1,6 +1,7 @@
 import React from "react";
 import cl from "clsx";
 import { useBranchIsFocused } from "./Branch";
+import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 
 const VariantContext = React.createContext<string>("default");
 const useVariant = () => React.useContext(VariantContext);
@@ -10,6 +11,7 @@ function Content({
   selected,
   buttons,
   header,
+  toolbar,
   variant = "default",
   className,
 }: {
@@ -17,6 +19,7 @@ function Content({
   selected: boolean;
   header?: React.ReactNode;
   buttons?: React.ReactNode;
+  toolbar?: React.ReactNode;
   variant?: string;
   className?: string;
 }) {
@@ -44,8 +47,7 @@ function Content({
         {header && (
           <div
             className={cl(
-              "text-gray-800 text-2xl pt-12 pb-6 mb-6 dark:text-white sticky -top-10 bg-gray-850 z-50 border-b border-white/5",
-              "px-2"
+              "pt-12 pb-6 px-5 mb-6 sticky -top-10 bg-gray-850 z-50 border-b border-white/5"
               // "bg-gradient-to-b from-gray-850 to-rose-800"
             )}
           >
@@ -55,8 +57,13 @@ function Content({
                 isFocused ? "opacity-100" : "opacity-25"
               )}
             >
-              <div>{header}</div>
+              <div className="text-gray-800 text-2xl dark:text-white">
+                {header}
+              </div>
               {buttons}
+            </div>
+            <div className={isFocused ? "opacity-100" : "opacity-25"}>
+              {toolbar}
             </div>
           </div>
         )}
@@ -65,6 +72,40 @@ function Content({
     </VariantContext.Provider>
   );
 }
+
+const Toolbar = ({ children }: { children: React.ReactNode }) => {
+  return <div className="max-w-6xl mt-5 flex gap-2">{children}</div>;
+};
+
+const ToolbarButton = React.forwardRef<
+  HTMLButtonElement,
+  React.ComponentProps<"button"> & {
+    icon?: React.FC<{ className: string }>;
+    active?: boolean;
+    chevron?: boolean;
+  }
+>(({ icon: Icon, active, chevron, ...props }, ref) => {
+  return (
+    <button
+      ref={ref}
+      {...props}
+      className={cl(
+        "flex-center gap-1.5 text-xs font-light py-1 px-2 rounded text-white/80 transition-colors",
+        active ? "bg-white/20" : "bg-white/10 hover:bg-white/20",
+        props.className
+      )}
+    >
+      {Icon && <Icon className="w-3 h-3" />}
+      {props.children}
+      {chevron &&
+        (active ? (
+          <ChevronUpIcon className="w-3 h-3" />
+        ) : (
+          <ChevronDownIcon className="w-3 h-3" />
+        ))}
+    </button>
+  );
+});
 
 const Header = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
@@ -106,4 +147,10 @@ const Button = React.forwardRef<
   );
 });
 
-export default Object.assign(Content, { Header, Buttons, Button });
+export default Object.assign(Content, {
+  Header,
+  Buttons,
+  Button,
+  Toolbar,
+  ToolbarButton,
+});

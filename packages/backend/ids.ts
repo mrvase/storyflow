@@ -35,7 +35,7 @@ export const getDocumentId = (id: FieldId | TemplateFieldId) => {
 };
 
 export const getTemplateDocumentId = (id: FieldId) => {
-  return id.slice(4, 8);
+  return id.slice(4, 8) as DocumentId;
 };
 
 export const isTemplateField = (id: FieldId) => {

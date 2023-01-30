@@ -28,7 +28,7 @@ type ArticleListMutation =
   | {
       type: "insert";
       id: string;
-      label: string;
+      label?: string;
       values: ValueRecord;
       compute: { id: string; value: FlatComputation }[];
     }
@@ -410,5 +410,5 @@ export const useDocumentLabel = <T extends DBDocument | undefined>(
     return typeof output[0] === "string" ? output[0] : (fallbackLabel as any);
   }
 
-  return defaultLabel ?? (fallbackLabel as any);
+  return doc?.label ?? defaultLabel ?? (fallbackLabel as any);
 };

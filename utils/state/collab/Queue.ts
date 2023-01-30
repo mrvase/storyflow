@@ -34,7 +34,7 @@ export interface Queue<Operation extends DefaultOperation> {
   push: (
     action: Operation | ((latest: Operation | undefined) => Operation[]),
     tracker?: QueueTracker<Operation>
-  ) => void;
+  ) => boolean;
   register: (
     listener: QueueListener<Operation>,
     tracker?: QueueTracker<Operation>
@@ -180,11 +180,16 @@ export function createQueue<Operation extends DefaultOperation>(
       operations = [operation];
     }
 
+    if (operations.length === 0) {
+      return false;
+    }
+
     state.queue.push(...operations);
     tracker?.push(...operations);
 
     // timer.trigger();
     _triggerListeners({ origin: "push" });
+    return true;
   }
 
   function merge(
@@ -194,6 +199,11 @@ export function createQueue<Operation extends DefaultOperation>(
 
     const [latest] = queue.splice(queue.length - 1, 1);
     const operations = callback(latest);
+
+    if (operations.length === 1 && operations[0] === latest) {
+      queue.push(...operations);
+      return [];
+    }
 
     // state.mergeIndex += 2 - operations.length;
     return operations;
