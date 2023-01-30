@@ -60,7 +60,7 @@ export default function Nav() {
           <div className="mt-auto flex justify-evenly">
             <a
               className="flex-center w-12 h-12 hover:bg-gray-400/25 dark:hover:bg-gray-850 rounded transition-colors"
-              href="/user"
+              href="/bruger"
             >
               <UserIcon className="w-6 h-6" />
             </a>

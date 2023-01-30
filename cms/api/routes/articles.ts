@@ -596,7 +596,7 @@ export const articles = createRoute({
                       config: { $literal: insert.config },
                       values: { $literal: insert.values },
                       compute: { $literal: insert.compute },
-                      version: {},
+                      versions: { $literal: {} },
                     },
                   },
                   ...createStages([]),
@@ -1103,7 +1103,7 @@ const flatten = (
     const segments = path.split(".");
     const current = segments[segments.length - 1] || base;
 
-    const ids = inputConfig.getImportIds(value as Computation);
+    const ids = inputConfig.getImportIds(value);
     importMap.set(current, ids);
 
     if (path === "") return current as FieldId;

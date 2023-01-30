@@ -294,14 +294,12 @@ export const getDefaultValuesFromTemplateAsync = async (
   const compute: ComputationBlock[] = [];
 
   const getValues = async (id: DocumentId) => {
-    const article = await fetchArticle(id, client);
-
-    if (article) {
+    const assignValues = (doc: Pick<DBDocument, "compute" | "values">) => {
       const computeIds = new Set();
-      article.compute.forEach((block) => {
-        // we handle external imports on the server
+      doc.compute.forEach((block) => {
         computeIds.add(block.id);
         const exists = compute.some(({ id }) => id === block.id);
+        // we handle external imports on the server
         if (block.id.startsWith(id) && !exists) {
           compute.push(block);
         }
@@ -309,17 +307,34 @@ export const getDefaultValuesFromTemplateAsync = async (
       Object.assign(
         values,
         Object.fromEntries(
-          Object.entries(article.values).filter(
+          Object.entries(doc.values).filter(
             ([key]) =>
               !computeIds.has(computeFieldId(id, key as TemplateFieldId))
           )
         )
       );
+    };
 
+    /*
+    const defaultTemplate = TEMPLATES.find((el) => el.id === id);
+    if (defaultTemplate) {
+      assignValues(article);
+      return;
+    }
+    */
+
+    const article = await fetchArticle(id, client);
+
+    if (article) {
+      console.log("default article", article);
+      assignValues(article);
+
+      /*
       const nestedTemplates = article.config
         .filter((el): el is TemplateRef => "template" in el)
         .map((el) => el.template as DocumentId);
       nestedTemplates.forEach((id) => getValues(id));
+      */
     }
   };
   await getValues(id);

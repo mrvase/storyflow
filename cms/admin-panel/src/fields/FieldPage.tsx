@@ -15,6 +15,7 @@ import { store, useGlobalState } from "../state/state";
 import {
   Computation,
   ComputationBlock,
+  ComputationRecord,
   FieldId,
   Value,
   ValueRecord,
@@ -208,7 +209,7 @@ const recordifyComponent = (
 const computeComponentRecord = (
   id: FieldId,
   initialValue: Computation,
-  imports: ComputationBlock[] = [],
+  imports: ComputationRecord = {},
   client: Client
 ): ValueRecord => {
   const recursivelyGetRecordFromComputation = (

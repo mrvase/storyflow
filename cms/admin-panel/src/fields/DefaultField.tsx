@@ -25,6 +25,7 @@ import {
   Value,
   FieldId,
   FieldImport,
+  ComputationRecord,
 } from "@storyflow/backend/types";
 import { useArticlePageContext } from "../articles/ArticlePage";
 import {
@@ -173,7 +174,7 @@ export const getPreview = (output: Computation) => {
 export const calculateFn = (
   id: FieldId,
   value: Computation,
-  imports: ComputationBlock[] = [],
+  imports: ComputationRecord = {},
   client: Client
 ): Value[] => {
   const getter = (id: FieldId) => {
@@ -186,27 +187,32 @@ export const calculateFn = (
       return store.use<Value[]>(id).value ?? [];
     }
 
-    const imp = imports.find((el) => el.id === id);
+    const value = imports[id];
 
-    if (imp) {
-      const value = restoreComputation(imp.value, imports);
-      if (!value) return store.use<Value[]>(id).value ?? [];
-      const fn = () => calculateFn(imp.id, value, imports, client);
+    // if (!value) return store.use<Value[]>(id).value ?? [];
+
+    if (value) {
+      const fn = () => calculateFn(id, value, imports, client);
       return store.use<Value[]>(id, fn).value;
     }
 
     const asyncFn = fetchArticle(getDocumentId(id), client).then((article) => {
+      // returning undefined makes sure that the field is not initialized,
+      // so that if the field is initialized elsewhere, this field will react to it.
+      // (e.g. a not yet saved article)
       if (!article) return undefined;
-      const value = getComputationRecord(article)[id as FieldId];
+      const all = getComputationRecord(article, { includeImports: true });
+      const value = all[id as FieldId];
       if (!value) return undefined;
-      const fn = () => calculateFn(id, value, imports, client);
+      const fn = () => calculateFn(id, value, all, client);
       return fn;
     });
 
     return store.useAsync(id, asyncFn).value ?? [];
   };
 
-  return calculate(id, value, getter);
+  const result = calculate(id, value, getter);
+  return result;
 };
 
 export const findImportsFn = (value: Computation) => {
@@ -428,7 +434,7 @@ function WritableDefaultField({
   const setValue = React.useCallback((func: () => Computation) => {
     singular(() => {
       const decoded = func();
-      setOutput(() => calculateFn(id, decoded, [], client));
+      setOutput(() => calculateFn(id, decoded, {}, client));
       setFieldImports(() => findImportsFn(decoded));
       setFetchers(() => findFetchersFn(decoded));
     });

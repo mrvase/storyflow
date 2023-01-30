@@ -3,26 +3,36 @@ import {
   EditorComputation,
   FieldId,
   FlatComputation,
+  TemplateFieldId,
 } from "@storyflow/backend/types";
 import { ComputationOp } from "./operations";
 import { tools } from "./editor-tools";
 import { encodeEditorComputation } from "./editor-computation";
+import { computeFieldId } from "@storyflow/backend/ids";
+
+type SomeComputation = (Computation[number] | FlatComputation[number])[];
 
 export type InputConfig = {
   getNextState: (value: Computation, operation: ComputationOp) => Computation;
   getSpliceableValue: (value: Computation) => EditorComputation;
-  getImportIds: (
-    value: (Computation[number] | FlatComputation[number])[]
-  ) => FieldId[];
+  getImportIds: (value: SomeComputation) => FieldId[];
 };
 
-const getImportIds = (
-  value: (Computation[number] | FlatComputation[number])[]
-) => {
-  return value.reduce(
-    (a, c) => (tools.isImport(c, "field") ? a.concat(c.fref) : a),
-    [] as FieldId[]
-  );
+const getImportIds = (value: SomeComputation) => {
+  const imports: FieldId[] = [];
+
+  value.forEach((c, i) => {
+    if (tools.isImport(c, "field")) {
+      imports.push(c.fref);
+    } else if (i > 0 && tools.isDBSymbol(c, "p")) {
+      const prev = value[i - 1];
+      if (tools.isImport(prev, "document")) {
+        imports.push(computeFieldId(prev.dref, c[1] as TemplateFieldId));
+      }
+    }
+  }, [] as FieldId[]);
+
+  return imports;
 };
 
 const getNextState = (compute: EditorComputation, operation: ComputationOp) => {

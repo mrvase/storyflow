@@ -18,6 +18,7 @@ import {
   Fetcher,
   FieldId,
   NestedDocument,
+  Value,
 } from "@storyflow/backend/types";
 import { usePathContext } from "../FieldContainer";
 import {
@@ -146,19 +147,23 @@ function DocumentDecorator({
                 <div className="w-5 flex-center bg-white/10">
                   <Icon className="w-3 h-3" />
                 </div>
-                {(template ?? []).map(({ id }) => (
-                  <Value
-                    key={id}
-                    id={
-                      type === "nested" && "id" in value
-                        ? (`${parentFieldId}.${value.id}/${id.slice(
-                            4
-                          )}` as FieldId)
-                        : computeFieldId(docId, getTemplateFieldId(id))
-                    }
-                    initialValue={values[getTemplateFieldId(id)] ?? []}
-                  />
-                ))}
+                {(template ?? []).map(({ id }) => {
+                  const initialValue =
+                    values[getTemplateFieldId(id)] ?? undefined;
+                  return (
+                    <ValueDisplay
+                      key={`id-${Boolean(initialValue)}`}
+                      id={
+                        type === "nested" && "id" in value
+                          ? (`${parentFieldId}.${value.id}/${id.slice(
+                              4
+                            )}` as FieldId)
+                          : computeFieldId(docId, getTemplateFieldId(id))
+                      }
+                      initialValue={initialValue}
+                    />
+                  );
+                })}
               </>
             )}
           </div>
@@ -168,7 +173,7 @@ function DocumentDecorator({
   );
 }
 
-function Value({
+function ValueDisplay({
   id,
   initialValue,
 }: {
@@ -178,9 +183,17 @@ function Value({
   const client = useClient();
 
   const { imports } = useArticlePageContext();
-  const [output] = useGlobalState(id, () =>
-    calculateFn(id, initialValue, imports, client)
-  );
+
+  let output: undefined | Value[];
+
+  if (initialValue) {
+    [output] = useGlobalState(id, () =>
+      calculateFn(id, initialValue, imports, client)
+    );
+  } else {
+    [output] = useGlobalState<Value[]>(id);
+  }
+
   return (
     <div className="grow shrink basis-0 px-2 truncate">
       {String(output?.[0])}

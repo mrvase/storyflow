@@ -42,7 +42,7 @@ import { ServerPackage } from "@storyflow/state";
 
 const ArticlePageContext = React.createContext<{
   id: string;
-  imports: ComputationBlock[];
+  imports: ComputationRecord;
 } | null>(null);
 
 export const useArticlePageContext = () => {
@@ -81,8 +81,13 @@ export default function ArticlePage({
   const isModified = Object.keys(histories ?? {}).length > 0;
 
   const ctx = React.useMemo(
-    () => ({ id, imports: article?.compute ?? [] }),
-    [id, article?.compute]
+    () => ({
+      id,
+      imports: article
+        ? getComputationRecord(article, { includeImports: true })
+        : {},
+    }),
+    [id, article]
   );
 
   const label = useDocumentLabel(article);
