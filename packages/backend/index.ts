@@ -12,4 +12,4 @@ export type {
   TemplateFieldId,
 } from "./types";
 
-export type { LibraryConfig } from "@storyflow/frontend";
+export type { LibraryConfig } from "@storyflow/frontend/types";

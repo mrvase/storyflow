@@ -30,12 +30,21 @@ export const request: (
         },
       }),
       credentials: "include",
-    }).then(async (res) =>
-      unwrap((await res.json()) as Result<{ page: any; layout: any }>, {
+    }).then(async (res) => {
+      try {
+        const json = await res.json();
+        return unwrap(json as Result<{ page: any; layout: any }>, {
+          page: null,
+          layout: null,
+        });
+      } catch (err) {
+        console.error(err);
+      }
+      return {
         page: null,
         layout: null,
-      })
-    );
+      };
+    });
     // return fetchSinglePage(url, "dashboard-625y", [config]);
   }
 );
