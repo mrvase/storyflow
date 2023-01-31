@@ -30,9 +30,11 @@ export default async function handler(
     try {
       // This should be the actual path not a rewritten path
       // e.g. for "/blog/[slug]" this should be "/blog/post-1"
-      paths.forEach(async (path) => {
-        await res.revalidate(path);
-      });
+      await Promise.all(
+        paths.map(async (path) => {
+          await res.revalidate(path);
+        })
+      );
       return res.json({ revalidated: true });
     } catch (err) {
       // If there was an error, Next.js will continue
