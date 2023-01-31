@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   build: {
     outDir: "public",
-    assetsDir: "dashboard",
+    assetsDir: "dashboard/assets",
     emptyOutDir: false,
   },
 });
