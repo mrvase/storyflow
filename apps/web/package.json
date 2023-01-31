@@ -3,9 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "dev": "vite build && (next dev & vite dev)",
-    "build": "vite build && next build",
-    "build:vite": "vite build",
+    "dev": "pnpm build:vite && (next dev & vite dev)",
+    "build": "pnpm build:vite && next build",
+    "build:vite": "rm -rf public/dashboard && vite build && mv public/index.html public/dashboard/index.html",
     "start": "next start",
     "lint": "next lint"
   },
