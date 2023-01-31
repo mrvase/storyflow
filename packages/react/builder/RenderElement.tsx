@@ -1,5 +1,5 @@
+import * as React from "react";
 import { PathSegment, PropConfig, ValueArray } from "@storyflow/frontend/types";
-import React from "react";
 import {
   AddPathSegment,
   ExtendPath,

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import * as React from "react";
 
 type RenderHook<T extends keyof JSX.IntrinsicElements> = (
   props: React.ComponentProps<T>

@@ -1,3 +1,4 @@
+import * as React from "react";
 import {
   ClientConfig,
   Component,
@@ -5,7 +6,6 @@ import {
   Library,
   LibraryConfig,
 } from "@storyflow/frontend/types";
-import { cms } from "../src/CMSElement";
 
 declare module "@storyflow/frontend/types" {
   interface ComponentType<P> {
@@ -39,7 +39,7 @@ export function registerLibraries(libraries: Library<any>[]) {
       components: {
         Text: ({ text }) => <p>{text}</p>,
         Outlet: () => (
-          <cms.div
+          <div
             style={{
               padding: "15px",
               textAlign: "center",
@@ -48,7 +48,7 @@ export function registerLibraries(libraries: Library<any>[]) {
             }}
           >
             [Outlet]
-          </cms.div>
+          </div>
         ),
       },
     },

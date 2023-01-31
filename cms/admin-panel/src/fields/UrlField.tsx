@@ -299,7 +299,7 @@ export default function UrlField({
   }
 
   return (
-    <div className="mt-2 px-5">
+    <div className="mt-2 px-5 pb-5">
       <div className="px-8">
         <div className="outline-none pl-3 h-10 border rounded border-yellow-300/50 dark:border-yellow-300/50 bg-white/5 font-light flex items-center">
           {parentSlugs.map((el, index) => (
