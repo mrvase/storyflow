@@ -270,6 +270,8 @@ export function RenderLayoutElement({
 
   const initialProps = getConfigFromType(type, libraries)?.props ?? [];
 
+  console.log("INITIAL PROPS", initialProps);
+
   return (
     <RenderNestedFields
       id={id}
@@ -371,7 +373,7 @@ function RenderNestedFields({
   values: Record<string, Computation>;
   template:
     | ({ arg: number; label: string } | { id: string; label: string })[]
-    | readonly { name: string; label: string }[];
+    | readonly { name: string; label: string; options?: any }[];
 }) {
   const { path: fullPath } = usePathContext();
   const isActive = stringifyPath(fullPath) === path;
@@ -394,6 +396,9 @@ function RenderNestedFields({
                 path={extendPath(path, `${name}`, "/")}
                 initialValue={initialValue}
                 fieldConfig={{ type: "default" }}
+                {...("options" in el
+                  ? { options: el.options as string[] }
+                  : {})}
               />
             </ParentProp>
           </React.Fragment>

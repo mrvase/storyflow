@@ -60,7 +60,7 @@ export const isInlineElement = (
   element: LayoutElement
 ): boolean => {
   const config = getConfigFromType(element.type, libraries);
-  const result = Boolean(config?.isInline);
+  const result = Boolean(config?.inline);
   return result;
 };
 
