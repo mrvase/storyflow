@@ -28,7 +28,8 @@
   "license": "MIT",
   "scripts": {
     "lint": "eslint *.ts*",
-    "build:package": "rollup --config rollup.config.ts --configPlugin typescript"
+    "build": "rollup --config rollup.config.ts --configPlugin typescript",
+    "build:package": "pnpm run build"
   },
   "dependencies": {
     "@storyflow/frontend": "workspace:*"

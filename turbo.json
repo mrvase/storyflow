@@ -10,6 +10,7 @@
       "env": [
         "NODE_ENV",
         "BASE_URL",
+        "API_KEY",
         "MONGO_URL",
         "SECRET_KEY",
         "EMAIL_SERVER_HOST",
