@@ -77,6 +77,7 @@ export default function Editor({
   target,
   setValue,
   transform,
+  options,
 }: {
   id: FieldId;
   target?: Target;
@@ -91,6 +92,7 @@ export default function Editor({
   setValue: (value: () => Computation) => void;
   transform?: FunctionName;
   children?: React.ReactNode;
+  options?: string[];
 }) {
   const { libraries } = useClientConfig();
 
@@ -105,7 +107,7 @@ export default function Editor({
       <DecoratorPlugin />
       <FocusPlugin id={id} />
       {push && register && target ? (
-        <Query push={push}>
+        <Query push={push} options={options}>
           {(pushWithQuery) => (
             <Reconciler
               target={target}

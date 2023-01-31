@@ -15,6 +15,8 @@ importers:
   apps/web:
     specifiers:
       '@babel/core': ^7.0.0
+      '@headlessui/react': ^1.7.3
+      '@heroicons/react': ^2.0.11
       '@sfrpc/client': workspace:*
       '@sfrpc/server': workspace:*
       '@sfrpc/types': workspace:*
@@ -31,6 +33,7 @@ importers:
       admin-panel: workspace:*
       api: workspace:*
       autoprefixer: ^10.4.13
+      clsx: ^1.2.1
       eslint: 7.32.0
       eslint-config-custom: workspace:*
       mongodb: ^4.13.0
@@ -46,6 +49,8 @@ importers:
       vite: ^4.0.4
       zod: ^3.20.2
     dependencies:
+      '@headlessui/react': 1.7.7_biqbaboplfbrettd7655fr4n2y
+      '@heroicons/react': 2.0.13_react@18.2.0
       '@sfrpc/client': link:../../rpc/client
       '@sfrpc/server': link:../../rpc/server
       '@storyflow/auth': link:../../utils/auth
@@ -56,6 +61,7 @@ importers:
       '@vitejs/plugin-react': 3.0.1_vite@4.0.4
       admin-panel: link:../../cms/admin-panel
       api: link:../../cms/api
+      clsx: 1.2.1
       mongodb: 4.13.0
       next: 13.1.4_pjwopsidmaokadturxaafygjp4
       nodemailer: 6.9.0
@@ -2731,6 +2737,18 @@ packages:
       strip-json-comments: 3.1.1
     transitivePeerDependencies:
       - supports-color
+
+  /@headlessui/react/1.7.7_biqbaboplfbrettd7655fr4n2y:
+    resolution: {integrity: sha512-BqDOd/tB9u2tA0T3Z0fn18ktw+KbVwMnkxxsGPIH2hzssrQhKB5n/6StZOyvLYP/FsYtvuXfi9I0YowKPv2c1w==}
+    engines: {node: '>=10'}
+    peerDependencies:
+      react: ^16 || ^17 || ^18
+      react-dom: ^16 || ^17 || ^18
+    dependencies:
+      client-only: 0.0.1
+      react: 18.2.0
+      react-dom: 18.2.0_react@18.2.0
+    dev: false
 
   /@headlessui/react/1.7.7_react@18.2.0:
     resolution: {integrity: sha512-BqDOd/tB9u2tA0T3Z0fn18ktw+KbVwMnkxxsGPIH2hzssrQhKB5n/6StZOyvLYP/FsYtvuXfi9I0YowKPv2c1w==}
@@ -5498,6 +5516,8 @@ packages:
     resolution: {integrity: sha512-AhwtHCKMtR71JgeYDaswmZXhPcW9iuI9Sp2LvZPo9upDZ7231ZJ7eA9RaURbhpXGVlrjX4cFNlB4ieTetEb7hQ==}
     engines: {node: '>=12.13.0'}
     hasBin: true
+    peerDependencies:
+      postcss: ^8.0.9
     dependencies:
       arg: 5.0.2
       chokidar: 3.5.3
@@ -5523,7 +5543,6 @@ packages:
       quick-lru: 5.1.1
       resolve: 1.22.1
     transitivePeerDependencies:
-      - postcss
       - ts-node
     dev: true
 

@@ -133,7 +133,7 @@ function FieldContainerInner({
     };
 
     Object.assign(props, dragProps, handlers, {
-      className: isEditing && isFocused && "ring-1 ring-yellow-500 ring-inset",
+      className: isEditing && isFocused && "ring-1 ring-yellow-400 ring-inset",
     });
 
     Object.assign(dotProps, isEditing && dragHandlePropsFromHook); // { className: isFocused && "bg-yellow-500" }

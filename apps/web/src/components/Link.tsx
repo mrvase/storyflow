@@ -24,5 +24,5 @@ export const Link = {
       label: "Label",
     },
   ],
-  isInline: true,
+  inline: true,
 };

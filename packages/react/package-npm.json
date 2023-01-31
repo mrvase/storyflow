@@ -1,9 +1,34 @@
 {
   "name": "@storyflow/react",
   "version": "0.1.0",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js"
+    },
+    "./builder": {
+      "import": "./dist/builder.js"
+    },
+    "./config": {
+      "import": "./dist/config.js"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      ".": [
+        "dist/index.d.ts"
+      ],
+      "builder": [
+        "dist/builder.d.ts"
+      ],
+      "config": [
+        "dist/config.d.ts"
+      ]
+    }
+  },
   "license": "MIT",
   "scripts": {
     "lint": "eslint *.ts*",
+    "build": "rollup --config rollup.config.ts --configPlugin typescript",
     "build:package": "pnpm run build"
   },
   "dependencies": {

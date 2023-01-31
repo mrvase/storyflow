@@ -28,6 +28,44 @@ export const useCMSElement = (
     });
   }, [isSelected]);
 
+  const blocker = (
+    <span
+      style={{
+        position: "absolute",
+        zIndex: 1,
+        left: "0px",
+        right: "0px",
+        top: "0px",
+        bottom: "0px",
+        pointerEvents: "auto",
+        outlineWidth: "2px",
+        borderRadius: "2px",
+        // outlineOffset: "2px",
+        ...(isSelected && {
+          outlineStyle: "solid",
+          outlineColor: "rgb(253 224 71)",
+        }),
+      }}
+      onClick={(ev) => ev.preventDefault() /* avoid linking */}
+    />
+  );
+
+  let children: any = (
+    <>
+      {blocker}
+      {props.children}
+    </>
+  );
+
+  if (typeof props.children === "function") {
+    children = (...args: any[]) => (
+      <>
+        {blocker}
+        {(props.children as any)(...args)}
+      </>
+    );
+  }
+
   return {
     ...props,
     style: {
@@ -51,29 +89,6 @@ export const useCMSElement = (
     ["data-parent"]: path.split(".").slice(0, -1).join("."),
     ["data-element"]: path.split(".").slice(-1)[0],
     tabIndex: 0,
-    children: (
-      <>
-        <span
-          style={{
-            position: "absolute",
-            zIndex: 1,
-            left: "0px",
-            right: "0px",
-            top: "0px",
-            bottom: "0px",
-            pointerEvents: "auto",
-            outlineWidth: "2px",
-            borderRadius: "2px",
-            // outlineOffset: "2px",
-            ...(isSelected && {
-              outlineStyle: "solid",
-              outlineColor: "rgb(253 224 71)",
-            }),
-          }}
-          onClick={(ev) => ev.preventDefault() /* avoid linking */}
-        />
-        {props.children}
-      </>
-    ),
+    children,
   };
 };
