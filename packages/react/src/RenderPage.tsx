@@ -1,5 +1,5 @@
-import { LayoutElement, Library, ValueArray } from "@storyflow/frontend/types";
-import React from "react";
+import * as React from "react";
+import { LayoutElement, ValueArray } from "@storyflow/frontend/types";
 import { getComponentByName } from "../config";
 
 const C = ({

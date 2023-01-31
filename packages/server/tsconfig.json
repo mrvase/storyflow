@@ -1,5 +1,9 @@
 {
   "extends": "tsconfig/default.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "declarationDir": "dist"
+  },
   "include": [".", "./src/**/*.ts"],
   "exclude": ["dist", "build", "node_modules"]
 }

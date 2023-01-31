@@ -1,3 +1,5 @@
+import clientPromise from "./mongo/mongoClient";
+/*
 import {
   LAYOUT_ID,
   PAGE_ID,
@@ -18,7 +20,6 @@ import {
   findFetchers,
 } from "@storyflow/backend/traverse-async";
 import { WithId } from "mongodb";
-import clientPromise from "./mongo/mongoClient";
 
 async function fetchSinglePage(url: string, db: string) {
   const client = await clientPromise;
@@ -192,3 +193,4 @@ export async function fetchPage(url: string, db: string) {
 
   return pages.reverse();
 }
+*/

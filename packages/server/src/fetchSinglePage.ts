@@ -1,27 +1,21 @@
+import clientPromise from "./mongo/mongoClient";
 import {
-  LAYOUT_ID,
-  PAGE_ID,
-  REDIRECT_ID,
-  URL_ID,
-} from "@storyflow/backend/templates";
-import {
+  FIELDS,
+  computeFieldId,
+  calculateFlatComputationAsync,
+  findFetchers,
+} from "@storyflow/backend";
+import type {
   Computation,
   ComputationBlock,
   DBDocument,
   Fetcher,
-  FieldId,
   Filter,
   NestedDocument,
   TemplateFieldId,
-} from "@storyflow/backend/types";
-import clientPromise from "./mongo/mongoClient";
+  LibraryConfig,
+} from "@storyflow/backend";
 import { WithId } from "mongodb";
-import { computeFieldId } from "@storyflow/backend/ids";
-import {
-  calculateFlatComputationAsync,
-  findFetchers,
-} from "@storyflow/backend/traverse-async";
-import { LibraryConfig } from "@storyflow/frontend/types";
 
 let CACHE: Record<string, Promise<NestedDocument[]>> = {};
 
@@ -115,7 +109,7 @@ export async function fetchSinglePage(
     .db(db)
     .collection("articles")
     .findOne<DBDocument>({
-      [`values.${URL_ID}`]:
+      [`values.${FIELDS.url.id}`]:
         url.indexOf("/") < 0
           ? url
           : {
@@ -156,9 +150,9 @@ export async function fetchSinglePage(
   };
 
   const [layout, redirect, page] = await Promise.all([
-    getByPower(LAYOUT_ID),
-    getByPower(REDIRECT_ID),
-    getByPower(PAGE_ID),
+    getByPower(FIELDS.layout.id),
+    getByPower(FIELDS.redirect.id),
+    getByPower(FIELDS.page.id),
   ]);
 
   return {

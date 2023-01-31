@@ -1,6 +1,7 @@
 {
   "name": "@storyflow/server",
-  "version": "0.0.0",
+  "private": true,
+  "version": "0.1.0",
   "main": "./index.ts",
   "types": "./index.ts",
   "license": "MIT",
@@ -11,10 +12,14 @@
     "@storyflow/backend": "workspace:*"
   },
   "devDependencies": {
-    "@storyflow/frontend": "workspace:*",
+    "@rollup/plugin-typescript": "^11.0.0",
+    "esbuild": "^0.17.5",
     "eslint": "^7.32.0",
     "eslint-config-custom": "workspace:*",
     "mongodb": "^4.13.0",
+    "rollup": "^3.12.0",
+    "rollup-plugin-dts": "^5.1.1",
+    "rollup-plugin-esbuild": "^5.0.0",
     "tsconfig": "workspace:*",
     "typescript": "^4.9.4"
   },

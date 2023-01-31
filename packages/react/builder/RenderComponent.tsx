@@ -1,5 +1,5 @@
+import * as React from "react";
 import { ExtendPath, usePath } from "./contexts";
-import { dispatchers } from "./events";
 import RenderElement from "./RenderElement";
 import { useValue } from "../builder/RenderBuilder";
 import { PropConfig, ValueArray } from "@storyflow/frontend/types";

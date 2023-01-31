@@ -1,8 +1,12 @@
 import type { MiddlewareContext } from "@sfrpc/server";
 
-export function cors(allowedOrigins: string[]) {
+export function cors(allowedOrigins: string[] | "allow-all") {
   return async ({ req, res }: MiddlewareContext) => {
-    if (req.headers.origin && allowedOrigins.includes(req.headers.origin)) {
+    if (
+      req.headers.origin &&
+      (allowedOrigins === "allow-all" ||
+        allowedOrigins.includes(req.headers.origin))
+    ) {
       res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
       res.setHeader(
         "Access-Control-Allow-Headers",

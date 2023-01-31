@@ -177,6 +177,9 @@ export function createEmailStrategy<User>({
     if (!sessionLinkCode) {
       throw new Error("Sign in link invalid. Please request a new one. [3]");
     }
+
+    console.log("CODES", linkCode, sessionLinkCode);
+
     if (linkCode !== sessionLinkCode) {
       throw new Error(
         `You must open the magic link on the same device it was created from for security reasons. Please request a new link.`

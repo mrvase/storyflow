@@ -1,7 +1,7 @@
 {
   "name": "web",
-  "version": "0.0.0",
   "private": true,
+  "version": "0.0.0",
   "scripts": {
     "dev": "vite build && (next dev & vite dev)",
     "build": "vite build && next build",

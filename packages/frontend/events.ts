@@ -1,5 +1,7 @@
 import { Path } from "./types";
 
+export type { LibraryConfig } from "./types";
+
 export const createEventsFromIframeToCMS = () => {
   let state = {
     target: null as Window | null,

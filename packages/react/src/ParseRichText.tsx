@@ -1,4 +1,4 @@
-import React from "react";
+import * as React from "react";
 
 export function ParseRichText({ children }: { children: string }) {
   if (!children) return null;

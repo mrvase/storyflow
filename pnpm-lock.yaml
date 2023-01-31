@@ -149,10 +149,13 @@ importers:
       '@storyflow/auth': workspace:*
       '@storyflow/backend': workspace:*
       '@storyflow/result': workspace:*
+      '@storyflow/server': workspace:*
       '@storyflow/session': workspace:*
       '@storyflow/state': workspace:*
+      '@types/bcryptjs': ^2.4.2
       '@types/nodemailer': ^6.4.7
       '@upstash/redis': ^1.16.0
+      bcryptjs: ^2.4.3
       eslint: ^7.32.0
       eslint-config-custom: workspace:*
       mongodb: ^4.13.0
@@ -170,14 +173,17 @@ importers:
       '@storyflow/auth': link:../../utils/auth
       '@storyflow/backend': link:../../packages/backend
       '@storyflow/result': link:../../utils/result
+      '@storyflow/server': link:../../packages/server
       '@storyflow/session': link:../../utils/session
       '@storyflow/state': link:../../utils/state
       '@upstash/redis': 1.19.3
+      bcryptjs: 2.4.3
       qs: 6.11.0
       shared: link:../shared
       zod: 3.20.2
     devDependencies:
       '@sfrpc/types': link:../../rpc/types
+      '@types/bcryptjs': 2.4.2
       '@types/nodemailer': 6.4.7
       eslint: 7.32.0
       eslint-config-custom: link:../../setup/eslint-config-custom
@@ -206,24 +212,9 @@ importers:
 
   packages/backend:
     specifiers:
+      '@rollup/plugin-typescript': ^11.0.0
       '@storyflow/frontend': workspace:*
       '@types/node': ^17.0.45
-      eslint: ^7.32.0
-      eslint-config-custom: workspace:*
-      tsconfig: workspace:*
-      typescript: ^4.9.4
-    devDependencies:
-      '@storyflow/frontend': link:../frontend
-      '@types/node': 17.0.45
-      eslint: 7.32.0
-      eslint-config-custom: link:../../setup/eslint-config-custom
-      tsconfig: link:../../setup/tsconfig
-      typescript: 4.9.4
-
-  packages/frontend:
-    specifiers:
-      '@rollup/plugin-typescript': ^11.0.0
-      add: ^2.0.6
       esbuild: ^0.17.5
       eslint: ^7.32.0
       eslint-config-custom: workspace:*
@@ -234,7 +225,30 @@ importers:
       typescript: ^4.9.4
     devDependencies:
       '@rollup/plugin-typescript': 11.0.0_tkwgik6422u3whqaozmypsnvni
-      add: 2.0.6
+      '@storyflow/frontend': link:../frontend
+      '@types/node': 17.0.45
+      esbuild: 0.17.5
+      eslint: 7.32.0
+      eslint-config-custom: link:../../setup/eslint-config-custom
+      rollup: 3.12.0
+      rollup-plugin-dts: 5.1.1_tkwgik6422u3whqaozmypsnvni
+      rollup-plugin-esbuild: 5.0.0_xh5ziip2kh75funlguo4husgu4
+      tsconfig: link:../../setup/tsconfig
+      typescript: 4.9.4
+
+  packages/frontend:
+    specifiers:
+      '@rollup/plugin-typescript': ^11.0.0
+      esbuild: ^0.17.5
+      eslint: ^7.32.0
+      eslint-config-custom: workspace:*
+      rollup: ^3.12.0
+      rollup-plugin-dts: ^5.1.1
+      rollup-plugin-esbuild: ^5.0.0
+      tsconfig: workspace:*
+      typescript: ^4.9.4
+    devDependencies:
+      '@rollup/plugin-typescript': 11.0.0_tkwgik6422u3whqaozmypsnvni
       esbuild: 0.17.5
       eslint: 7.32.0
       eslint-config-custom: link:../../setup/eslint-config-custom
@@ -246,43 +260,63 @@ importers:
 
   packages/react:
     specifiers:
+      '@rollup/plugin-typescript': ^11.0.0
       '@storyflow/frontend': workspace:*
       '@types/react': ^18.0.17
       '@types/react-dom': ^18.0.6
+      esbuild: ^0.17.5
       eslint: ^7.32.0
       eslint-config-custom: workspace:*
       react: ^18.2.0
       react-dom: ^18.2.0
+      rollup: ^3.12.0
+      rollup-plugin-dts: ^5.1.1
+      rollup-plugin-esbuild: ^5.0.0
       tsconfig: workspace:*
+      tslib: ^2.5.0
       typescript: ^4.9.4
     dependencies:
       '@storyflow/frontend': link:../frontend
     devDependencies:
+      '@rollup/plugin-typescript': 11.0.0_m3kxv4pqnmlodzidcpaglsppii
       '@types/react': 18.0.27
       '@types/react-dom': 18.0.10
+      esbuild: 0.17.5
       eslint: 7.32.0
       eslint-config-custom: link:../../setup/eslint-config-custom
       react: 18.2.0
       react-dom: 18.2.0_react@18.2.0
+      rollup: 3.12.0
+      rollup-plugin-dts: 5.1.1_tkwgik6422u3whqaozmypsnvni
+      rollup-plugin-esbuild: 5.0.0_xh5ziip2kh75funlguo4husgu4
       tsconfig: link:../../setup/tsconfig
+      tslib: 2.5.0
       typescript: 4.9.4
 
   packages/server:
     specifiers:
+      '@rollup/plugin-typescript': ^11.0.0
       '@storyflow/backend': workspace:*
-      '@storyflow/frontend': workspace:*
+      esbuild: ^0.17.5
       eslint: ^7.32.0
       eslint-config-custom: workspace:*
       mongodb: ^4.13.0
+      rollup: ^3.12.0
+      rollup-plugin-dts: ^5.1.1
+      rollup-plugin-esbuild: ^5.0.0
       tsconfig: workspace:*
       typescript: ^4.9.4
     dependencies:
       '@storyflow/backend': link:../backend
     devDependencies:
-      '@storyflow/frontend': link:../frontend
+      '@rollup/plugin-typescript': 11.0.0_tkwgik6422u3whqaozmypsnvni
+      esbuild: 0.17.5
       eslint: 7.32.0
       eslint-config-custom: link:../../setup/eslint-config-custom
       mongodb: 4.13.0
+      rollup: 3.12.0
+      rollup-plugin-dts: 5.1.1_tkwgik6422u3whqaozmypsnvni
+      rollup-plugin-esbuild: 5.0.0_xh5ziip2kh75funlguo4husgu4
       tsconfig: link:../../setup/tsconfig
       typescript: 4.9.4
 
@@ -2929,6 +2963,26 @@ packages:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.15.0
 
+  /@rollup/plugin-typescript/11.0.0_m3kxv4pqnmlodzidcpaglsppii:
+    resolution: {integrity: sha512-goPyCWBiimk1iJgSTgsehFD5OOFHiAknrRJjqFCudcW8JtWiBlK284Xnn4flqMqg6YAjVG/EE+3aVzrL5qNSzQ==}
+    engines: {node: '>=14.0.0'}
+    peerDependencies:
+      rollup: ^2.14.0||^3.0.0
+      tslib: '*'
+      typescript: '>=3.7.0'
+    peerDependenciesMeta:
+      rollup:
+        optional: true
+      tslib:
+        optional: true
+    dependencies:
+      '@rollup/pluginutils': 5.0.2_rollup@3.12.0
+      resolve: 1.22.1
+      rollup: 3.12.0
+      tslib: 2.5.0
+      typescript: 4.9.4
+    dev: true
+
   /@rollup/plugin-typescript/11.0.0_tkwgik6422u3whqaozmypsnvni:
     resolution: {integrity: sha512-goPyCWBiimk1iJgSTgsehFD5OOFHiAknrRJjqFCudcW8JtWiBlK284Xnn4flqMqg6YAjVG/EE+3aVzrL5qNSzQ==}
     engines: {node: '>=14.0.0'}
@@ -2971,6 +3025,10 @@ packages:
     resolution: {integrity: sha512-4C7nX/dvpzB7za4Ql9K81xK3HPxCpHMgwTZVyf+9JQ6VUbn9jjZVN7/Nkdz/Ugzs2CSjqnL/UPXroiVBVHUWUw==}
     dependencies:
       tslib: 2.4.1
+
+  /@types/bcryptjs/2.4.2:
+    resolution: {integrity: sha512-LiMQ6EOPob/4yUL66SZzu6Yh77cbzJFYll+ZfaPiPPFswtIlA/Fs1MzdKYA7JApHU49zQTbJGX3PDmCpIdDBRQ==}
+    dev: true
 
   /@types/cookie-signature/1.1.0:
     resolution: {integrity: sha512-6/OwJHoeGW5taC2vWq1sz8X7/T2rAPVXj3zQds+rM4b5VrW8lgpYjpDVjTJmkRB1IODBCAiuPXNk092CjYlryQ==}
@@ -3149,10 +3207,6 @@ packages:
     engines: {node: '>=0.4.0'}
     hasBin: true
 
-  /add/2.0.6:
-    resolution: {integrity: sha512-j5QzrmsokwWWp6kUcJQySpbG+xfOBqqKnup3OIk1pz+kB/80SLorZ9V8zHFLO92Lcd+hbvq8bT+zOGoPkmBV0Q==}
-    dev: true
-
   /ajv/6.12.6:
     resolution: {integrity: sha512-j3fVLgvTo527anyYyJOGTYJbG+vnnQYvE0m5mmkc1TK+nxAppkCLMIL0aZ4dblVCNoGShhm+kzE4ZUykBoMg4g==}
     dependencies:
@@ -3293,6 +3347,10 @@ packages:
 
   /base64-js/1.5.1:
     resolution: {integrity: sha512-AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA==}
+
+  /bcryptjs/2.4.3:
+    resolution: {integrity: sha512-V/Hy/X9Vt7f3BbPJEi8BdVFMByHi+jNXrYkW3huaybV/kQ0KJg0Y6PkEMbn+zeT+i+SiKZ/HMqJGIIt4LZDqNQ==}
+    dev: false
 
   /binary-extensions/2.2.0:
     resolution: {integrity: sha512-jDctJ/IVQbZoJykoeHbhXpOlNBqGNcwXJKJog42E5HDPUwQTSdjCHdihjj0DlnheQ7blbT6dHOafNAiS8ooQKA==}
@@ -5506,6 +5564,10 @@ packages:
 
   /tslib/2.4.1:
     resolution: {integrity: sha512-tGyy4dAjRIEwI7BzsB0lynWgOpfqjUdq91XXAlIWD2OwKBH7oCl/GZG/HT4BOHrTlPMOASlMQ7veyTqpmRcrNA==}
+
+  /tslib/2.5.0:
+    resolution: {integrity: sha512-336iVw3rtn2BUK7ORdIAHTyxHGRIHVReokCR3XjbckJMK7ms8FysBfhLR8IXnAgy7T0PTPNBWKiH514FOW/WSg==}
+    dev: true
 
   /tsutils/3.21.0_typescript@4.9.4:
     resolution: {integrity: sha512-mHKK3iUXL+3UF6xL5k0PEhKRUBKPBCv/+RkEOpjRWxxx27KKRBmmA60A9pgOUvMi8GKhRMPEmjBRPzs2W7O1OA==}

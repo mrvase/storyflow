@@ -1,4 +1,4 @@
-import { DocumentId, FieldId, TemplateFieldId } from "./types";
+import type { DocumentId, FieldId, TemplateFieldId } from "./types";
 
 export const createFieldId = (
   documentId: DocumentId,

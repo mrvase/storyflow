@@ -1,4 +1,4 @@
-import React from "react";
+import * as React from "react";
 import { extendPath } from "./extendPath";
 import { dispatchers } from "./events";
 import { Path, PathSegment } from "@storyflow/frontend/types";

@@ -8,10 +8,14 @@ export default defineConfig([
     output: [
       {
         file: `dist/index.js`,
+        format: "cjs",
+      },
+      {
+        file: `dist/index.mjs`,
         format: "es",
       },
     ],
-    input: "events.ts",
+    input: "index.ts",
     external: (id) => !/^[./]/.test(id),
   },
   {
@@ -20,7 +24,7 @@ export default defineConfig([
       file: `dist/index.d.ts`,
       format: "es",
     },
-    input: "events.ts",
+    input: "index.ts",
     external: (id) => !/^[./]/.test(id),
   },
 ]);

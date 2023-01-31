@@ -1,4 +1,4 @@
-import React from "react";
+import * as React from "react";
 import { useBuilderSelection, usePath } from "./contexts";
 import { stringifyPath } from "./RenderBuilder";
 
