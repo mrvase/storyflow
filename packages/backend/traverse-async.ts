@@ -17,19 +17,6 @@ import type { LibraryConfig } from "@storyflow/frontend/types";
 const BUCKET_NAME = "awss3stack-mybucket15d133bf-1wx5fzxzweii4";
 const BUCKET_REGION = "eu-west-1";
 
-const getConfigFromType = (type: string, libraries: LibraryConfig[]) => {
-  const [library, name] = type.split(":");
-  const config = libraries.find((el) => el.name === library);
-
-  if (!config) return;
-
-  const result = Object.entries(config.components).find(
-    ([, el]) => el.name === name
-  );
-
-  return result;
-};
-
 const getImageObject = (name: string, slug: string) => {
   const url = `https://${BUCKET_NAME}.s3.${BUCKET_REGION}.amazonaws.com/${slug}/${name}`;
 
@@ -41,6 +28,19 @@ const getImageObject = (name: string, slug: string) => {
     width,
     height,
   };
+};
+
+const getConfigFromType = (type: string, libraries: LibraryConfig[]) => {
+  const [library, name] = type.split(":");
+  const config = libraries.find((el) => el.name === library);
+
+  if (!config) return;
+
+  const result = Object.entries(config.components).find(
+    ([, el]) => el.name === name
+  );
+
+  return result;
 };
 
 export const traverseFlatComputationAsync = async (
@@ -73,12 +73,16 @@ export const traverseFlatComputationAsync = async (
               id.match(new RegExp(`${el.id}\/${name}\#?`))
             )!;
             const result = await callback(computation);
-            const value =
-              type === "children"
-                ? { $children: result }
-                : type === "image"
-                ? getImageObject(result[0] as string, options.slug)
-                : result[0];
+            let value = result[0];
+            if (type === "children") {
+              value = { $children: result };
+            } else if (type === "image") {
+              if (Array.isArray(result[0])) {
+                value = getImageObject(result[0][0] as string, options.slug);
+              } else {
+                value = { url: "", width: 0, height: 0 };
+              }
+            }
             return [name, value];
           })
         );

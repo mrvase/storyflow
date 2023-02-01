@@ -85,7 +85,7 @@ export function Reconciler({
 
       if (update) {
         const decoded = decodeEditorComputation(result, transform);
-        console.log("COMP", decoded);
+        console.log("COMPUTATION:", decoded);
         setValue(() => decoded);
       }
     });

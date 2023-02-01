@@ -7,7 +7,7 @@ export const createChangeDebugger = () => {
       prev.length !== args.length ||
       prev.some((el, i) => el !== args[i])
     ) {
-      console.log(`%c${name}`, "background:#0f0;", ...args);
+      console.log(`%c${name}`, "background:#0f0;", prev, args);
     }
     memo.set(name, args);
   };

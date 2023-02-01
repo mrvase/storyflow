@@ -250,8 +250,6 @@ export function Query({
     token?.value ? setQueryType(".") : setQueryType(null);
   }, [token?.value]);
 
-  console.log("QUERY TYPE", token, queryType);
-
   const pushWithQuery = React.useCallback(
     (next: ComputationOp["ops"], tags: Set<string>) => {
       return push((prev) => {
@@ -775,6 +773,7 @@ function QueryComponents({
     <>
       {filtered.map((el, index) => (
         <Option
+          key={el.name}
           onEnter={() => {
             insertBlock([
               createComponent(el.name, { library: el.libraryName, libraries }),
@@ -834,6 +833,7 @@ function QueryCommands({
   if (!isSearching) {
     options = [
       {
+        id: 0,
         label: (
           <div className="flex items-center">
             {markMatchingString("Søg efter dokument", query)}
@@ -850,6 +850,7 @@ function QueryCommands({
         Icon: MagnifyingGlassIcon,
       },
       {
+        id: 1,
         label: (
           <div className="flex items-center">
             {markMatchingString("AI-kommando", query)}
@@ -867,6 +868,7 @@ function QueryCommands({
     ];
   } else {
     options = (data ?? []).map((el) => ({
+      id: el.id,
       label: el.values[LABEL_ID],
       secondary: el.id,
       Icon: DocumentIcon,
@@ -889,6 +891,7 @@ function QueryCommands({
     <>
       {options.map((el, index) => (
         <Option
+          key={el.id}
           onEnter={el.onEnter}
           onEnterLabel={el.onEnterLabel}
           onArrowRight={el.onArrowRight}

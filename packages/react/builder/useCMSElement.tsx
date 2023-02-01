@@ -40,7 +40,7 @@ export const useCMSElement = (
         pointerEvents: "auto",
         outlineWidth: "2px",
         borderRadius: "2px",
-        // outlineOffset: "2px",
+        outlineOffset: "-2px",
         ...(isSelected && {
           outlineStyle: "solid",
           outlineColor: "rgb(253 224 71)",

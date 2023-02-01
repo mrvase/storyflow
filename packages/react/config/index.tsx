@@ -130,7 +130,7 @@ export const createFullConfig = <T extends ExtendedLibraryConfig>(
           const newEntries = Object.entries(prop.options);
           newEntries.forEach((el) => {
             if (!entries.some((existing) => existing[1] === el[1])) {
-              entries.push(el as any);
+              entries.push([el[0], { ...(el[1] as any), hidden: true }]);
             }
           });
           return {

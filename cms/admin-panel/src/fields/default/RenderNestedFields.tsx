@@ -270,8 +270,6 @@ export function RenderLayoutElement({
 
   const initialProps = getConfigFromType(type, libraries)?.props ?? [];
 
-  console.log("INITIAL PROPS", initialProps);
-
   return (
     <RenderNestedFields
       id={id}

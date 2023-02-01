@@ -128,13 +128,17 @@ export function createQueue<Operation extends DefaultOperation>(
     initialVersion: number,
     initialHistory: ServerPackage<Operation>[]
   ) {
-    const initialShared = filterServerPackages(initialVersion, initialHistory);
-    state.shared = transform(initialShared);
-    state.posted = [];
-    state.queue = [];
-    state.version = initialVersion;
-    state.initialized = true;
-    console.log("INITIALIZED", key, state);
+    if (!state.initialized || initialVersion > state.version) {
+      const initialShared = filterServerPackages(
+        initialVersion,
+        initialHistory
+      );
+      state.shared = transform(initialShared);
+      state.posted = [];
+      state.queue = [];
+      state.version = initialVersion;
+      state.initialized = true;
+    }
     return queue;
   }
 
@@ -186,6 +190,18 @@ export function createQueue<Operation extends DefaultOperation>(
 
     state.queue.push(...operations);
     tracker?.push(...operations);
+
+    const last = operations.slice(-1)[0];
+    if (
+      "ops" in last &&
+      Array.isArray(last.ops) &&
+      last.ops.length === 1 &&
+      "index" in last.ops[0] &&
+      !("insert" in last.ops[0]) &&
+      !("remove" in last.ops[0])
+    ) {
+      console.log("**** NEW PUSH ****");
+    }
 
     // timer.trigger();
     _triggerListeners({ origin: "push" });
@@ -248,8 +264,6 @@ export function createQueue<Operation extends DefaultOperation>(
     the posted ones are still in state.posted, so
     they are also still in the WeakSet
     */
-
-    console.log("PULL SERVER PACKAGE", packages);
 
     const postedPackage = packages.find((_pkg) => {
       const pkg = unwrapServerPackage(_pkg);

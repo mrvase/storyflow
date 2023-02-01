@@ -79,7 +79,12 @@ function createDocumentCollaboration(
 
   const syncOnInterval = () => {
     return onInterval(
-      (event) => throttle(() => sync(event === "unload"), duration / 2),
+      (event) => {
+        if (event === "unload") {
+          return sync(true);
+        }
+        return throttle(() => sync(false), duration / 2);
+      },
       { duration }
     );
   };
