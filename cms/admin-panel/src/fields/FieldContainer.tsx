@@ -38,6 +38,7 @@ import { useCollab } from "../state/collaboration";
 import { PathContext } from "./PathContext";
 import { useArticlePageContext } from "../articles/ArticlePageContext";
 import { useLocalStorage } from "../state/useLocalStorage";
+import useTabs from "../layout/useTabs";
 
 const useBuilderPath = (): [
   path: Path,
@@ -265,43 +266,56 @@ function Dot({ id, native, ...props }: any) {
     ? ChevronUpDownIcon
     : ArrowsPointingOutIcon;
 
+  const { tabs } = useTabs();
+
   return (
     <>
-      <div
-        {...props}
-        className="group w-6 h-6 p-1 -m-1 translate-y-0.5"
-        onClick={() => {
-          navigateTab(isOpen ? `${current}` : `${current}/c-${restoreId(id)}`);
+      <Draggable
+        onDrop={() => {
+          const index = Math.max(...tabs.map((el) => el.index)) + 1;
+          const currentUrl = current.split("/").slice(2).join("/");
+          const tab = isOpen ? currentUrl : `${currentUrl}/c-${restoreId(id)}`;
+          navigateTab(`/~${index}/${tab}`);
         }}
       >
         <div
-          className={cl(
-            "flex-center w-4 h-4 rounded-full group-hover:scale-[1.5] transition-transform",
-            props.className
-              ? props.className
-              : isOpen
-              ? "bg-gray-200 dark:bg-gray-600/50 dark:group-hover:bg-red-800/50"
-              : !isEditable
-              ? "bg-gray-200 dark:bg-teal-600/50 dark:group-hover:bg-teal-800/50"
-              : isDraggable
-              ? "bg-gray-200 dark:bg-gray-600/50"
-              : "bg-gray-200 dark:bg-gray-600/50 dark:group-hover:bg-sky-800/50"
-          )}
+          {...props}
+          className="group w-6 h-6 p-1 -m-1 translate-y-0.5"
+          onClick={() => {
+            navigateTab(
+              isOpen ? `${current}` : `${current}/c-${restoreId(id)}`
+            );
+          }}
         >
           <div
             className={cl(
-              "flex-center w-2 h-2 m-1 rounded-full group-hover:scale-[2] transition-[transform,background-color]",
-              isOpen
-                ? "dark:bg-white/20 dark:group-hover:bg-red-800"
-                : isDraggable && isEditable
-                ? "dark:bg-white/20"
-                : "dark:bg-white/20 dark:group-hover:bg-sky-800"
+              "flex-center w-4 h-4 rounded-full group-hover:scale-[1.5] transition-transform",
+              props.className
+                ? props.className
+                : isOpen
+                ? "bg-gray-200 dark:bg-gray-600/50 dark:group-hover:bg-red-800/50"
+                : !isEditable
+                ? "bg-gray-200 dark:bg-teal-600/50 dark:group-hover:bg-teal-800/50"
+                : isDraggable
+                ? "bg-gray-200 dark:bg-gray-600/50"
+                : "bg-gray-200 dark:bg-gray-600/50 dark:group-hover:bg-sky-800/50"
             )}
           >
-            <Icon className="w-[0.3rem] h-1.5 opacity-0 group-hover:opacity-75 transition-opacity" />
+            <div
+              className={cl(
+                "flex-center w-2 h-2 m-1 rounded-full group-hover:scale-[2] transition-[transform,background-color]",
+                isOpen
+                  ? "dark:bg-white/20 dark:group-hover:bg-red-800"
+                  : isDraggable && isEditable
+                  ? "dark:bg-white/20"
+                  : "dark:bg-white/20 dark:group-hover:bg-sky-800"
+              )}
+            >
+              <Icon className="w-[0.3rem] h-1.5 opacity-0 group-hover:opacity-75 transition-opacity" />
+            </div>
           </div>
         </div>
-      </div>
+      </Draggable>
       <button
         tabIndex={-1}
         className={cl(
@@ -380,5 +394,80 @@ function Label({
     >
       {label || "Ingen label"}
     </span>
+  );
+}
+
+function Draggable({
+  children,
+  onDrop,
+}: {
+  children: React.ReactNode;
+  onDrop: () => void;
+}) {
+  const [start, setStart] = React.useState(0);
+  const [x, setX] = React.useState(0);
+  const [isDragging, setIsDragging] = React.useState(false);
+
+  React.useEffect(() => {
+    if (isDragging) {
+      const handleMove = (ev: DragEvent) => {
+        ev.preventDefault();
+        setX(ev.clientX - start);
+      };
+
+      window.addEventListener("dragover", handleMove);
+      return () => {
+        window.removeEventListener("dragover", handleMove);
+      };
+    }
+  }, [isDragging, start]);
+
+  const accepted = Math.abs(x) >= 20;
+
+  React.useEffect(() => {
+    if (isDragging) {
+      const handleDrop = (ev: DragEvent) => {
+        ev.preventDefault();
+        if (accepted) {
+          onDrop();
+        }
+      };
+
+      window.addEventListener("drop", handleDrop);
+      return () => {
+        window.removeEventListener("drop", handleDrop);
+      };
+    }
+  }, [isDragging, accepted]);
+
+  const dragImage = React.useRef<HTMLSpanElement | null>(null);
+
+  const onDragStart = React.useCallback((ev: React.DragEvent) => {
+    console.log("START", ev);
+    ev.dataTransfer.setDragImage(dragImage.current!, 0, 0);
+    setStart(ev.clientX);
+    setIsDragging(true);
+  }, []);
+
+  const onDragEnd = React.useCallback((ev: React.DragEvent) => {
+    ev.preventDefault();
+    setIsDragging(false);
+    setX(0);
+    setStart(0);
+  }, []);
+
+  return (
+    <div
+      draggable="true"
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      style={{ transform: `translateX(${Math.min(Math.max(x, -20), 20)}px)` }}
+    >
+      <span
+        ref={dragImage}
+        className="absolute block w-1 h-1 pointer-events-none opacity-0"
+      ></span>
+      {children}
+    </div>
   );
 }

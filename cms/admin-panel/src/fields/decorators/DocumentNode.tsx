@@ -41,6 +41,7 @@ import { useArticlePageContext } from "../../articles/ArticlePageContext";
 import { computeFieldId, getTemplateFieldId } from "@storyflow/backend/ids";
 import { useClient } from "../../client";
 import { getComputationRecord } from "@storyflow/backend/flatten";
+import { getPreview } from "../default/DefaultField";
 
 function DocumentDecorator({
   value,
@@ -210,7 +211,7 @@ function ValueDisplay({
 
   return (
     <div className="grow shrink basis-0 px-2 truncate">
-      {String(output?.[0])}
+      {getPreview(output || [])}
     </div>
   );
 }

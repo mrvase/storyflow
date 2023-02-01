@@ -7,7 +7,7 @@ import { User } from "./types";
 
 export const config = {
   matcher:
-    "/((?!index|public|static|api|_next|favicon.ico|sw.js|login|logout|opret-org|registrer|bruger|builder|verify|priser|dashboard\\/assets).+)",
+    "/((?!index|public|static|api|_next|favicon.ico|sw.js|blog|priser|login|logout|opret-org|registrer|bruger|builder|viewer|verify|dashboard\\/assets).+)",
 };
 
 const sessionStorage = createSessionStorage({
@@ -16,6 +16,8 @@ const sessionStorage = createSessionStorage({
 
 export default async function middleware(req: NextRequest) {
   const org = req.nextUrl.pathname.split("/")[1];
+
+  console.log("MIDDLEWARE HIT", org);
 
   const auth = createAuthenticator<User>([], sessionStorage);
 

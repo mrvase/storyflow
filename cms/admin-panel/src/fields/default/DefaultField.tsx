@@ -218,7 +218,7 @@ function TemplateHeader({ id }: { id: FieldId }) {
         {(template ?? []).map(({ id: columnId, label }) => (
           <div
             key={columnId}
-            className="grow shrink basis-0 px-2 flex items-center"
+            className="grow shrink basis-0 px-2 flex items-center justify-between"
           >
             <span className="truncate">{label}</span>
             <div
@@ -231,7 +231,7 @@ function TemplateHeader({ id }: { id: FieldId }) {
                 });
               }}
             >
-              <LinkIcon className="w-3 h-3 ml-auto opacity-25 hover:opacity-100" />
+              <LinkIcon className="w-3 h-3 ml-auto opacity-50 hover:opacity-100" />
             </div>
           </div>
         ))}

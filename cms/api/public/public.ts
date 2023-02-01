@@ -11,6 +11,7 @@ import { User } from "../users/types";
 import { error, success } from "@storyflow/result";
 import { globals } from "../middleware/globals";
 import { fetchSinglePage } from "@storyflow/server";
+import { URL_ID } from "@storyflow/backend/templates";
 
 const sessionStorage = createSessionStorage({
   cookie: cookieOptions,
@@ -21,8 +22,6 @@ const authorization = async (ctx: MiddlewareContext) => {
 
   let user: { slug: string; db: string } | null =
     session.get("api-user") ?? null;
-
-  console.log("COOKIE USER", user);
 
   if (!user) {
     let auth = ctx.req.headers["authorization"];
@@ -88,6 +87,25 @@ export const public_ = createRoute({
     async mutation({ url, config }, { dbName, slug }) {
       const page = await fetchSinglePage(url, dbName, config);
       return success(page);
+    },
+  }),
+  getPaths: createProcedure({
+    middleware(ctx) {
+      return ctx.use(corsFactory("allow-all"), authorization);
+    },
+    async query(_, { dbName, slug }) {
+      const client = await clientPromise;
+      const articles = await client
+        .db(dbName)
+        .collection("articles")
+        .find({
+          [`values.${URL_ID}`]: { $exists: true },
+        })
+        .toArray();
+
+      const urls = articles.map((el) => el.values[URL_ID][0] as string);
+
+      return success(urls);
     },
   }),
   generateKey: createProcedure({

@@ -3,7 +3,7 @@ import { staticParams } from "../../../staticParams";
 export { default } from "../page";
 
 export async function generateStaticParams() {
-  return staticParams(["priser", "test1", "test2"]);
+  return await staticParams(3);
 }
 
 export const dynamic = "force-static";

@@ -1017,8 +1017,6 @@ export const articles = createRoute({
 
       const urls = articles.map((el) => el.values[URL_ID][0] as string);
 
-      console.log(urls, revalidateUrl);
-
       // const paths = urls.map((el) => `/${el.replace("://", "").split("/")[1]}`);
 
       /*
