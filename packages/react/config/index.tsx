@@ -116,25 +116,16 @@ export const createFullConfig = <T extends ExtendedLibraryConfig>(
   let i = 0;
   while (i < entries.length) {
     const entry = entries[i];
-<<<<<<< HEAD
     const [
       key,
       { component, typespace, stories, name, label, props, ...rest },
     ] = entry;
-=======
-    const [key, { component, typespace, stories, name, label, ...rest }] =
-      entry;
->>>>>>> 1aabc6c61b5cf4acf15eb0ee09bdf736765fd7cf
 
     componentConfigs[key] = {
       ...rest,
       name: extendedName(entry),
       label: label ?? name ?? key,
-<<<<<<< HEAD
       props: props.map((prop: any) => {
-=======
-      props: rest.props.map((prop: any) => {
->>>>>>> 1aabc6c61b5cf4acf15eb0ee09bdf736765fd7cf
         if (typeof prop.options === "object") {
           const newEntries = Object.entries(prop.options);
           newEntries.forEach((el) => {
