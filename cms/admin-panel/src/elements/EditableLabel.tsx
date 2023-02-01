@@ -66,7 +66,7 @@ export function EditableLabel({
       <div
         className={cl(
           "flex leading-none pl-2 -ml-2 rounded-full",
-          isEditing && "ring-1 ring-amber-200 dark:ring-amber-400"
+          isEditing && "ring-1 ring-yellow-200 dark:ring-yellow-400"
         )}
       >
         <input

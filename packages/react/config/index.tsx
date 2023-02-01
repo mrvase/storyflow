@@ -1,11 +1,17 @@
-import * as React from "react";
 import {
   ClientConfig,
   Component,
   ComponentConfig,
+  ExtendedLibraryConfig,
+  ExtendedPartialConfig,
   Library,
   LibraryConfig,
+  PartialConfig,
+  PropConfig,
+  Props,
+  Story,
 } from "@storyflow/frontend/types";
+import * as React from "react";
 
 declare module "@storyflow/frontend/types" {
   interface ComponentType<P> {
@@ -110,16 +116,25 @@ export const createFullConfig = <T extends ExtendedLibraryConfig>(
   let i = 0;
   while (i < entries.length) {
     const entry = entries[i];
+<<<<<<< HEAD
     const [
       key,
       { component, typespace, stories, name, label, props, ...rest },
     ] = entry;
+=======
+    const [key, { component, typespace, stories, name, label, ...rest }] =
+      entry;
+>>>>>>> 1aabc6c61b5cf4acf15eb0ee09bdf736765fd7cf
 
     componentConfigs[key] = {
       ...rest,
       name: extendedName(entry),
       label: label ?? name ?? key,
+<<<<<<< HEAD
       props: props.map((prop: any) => {
+=======
+      props: rest.props.map((prop: any) => {
+>>>>>>> 1aabc6c61b5cf4acf15eb0ee09bdf736765fd7cf
         if (typeof prop.options === "object") {
           const newEntries = Object.entries(prop.options);
           newEntries.forEach((el) => {
@@ -250,7 +265,7 @@ export const getComponentByName = (type: string) => {
   return library.components[name]!;
 };
 
-export type { ComponentConfig, Component };
+export type { ComponentConfig, PartialConfig, Props };
 
 /*
 import Outlet from "./Outlet";

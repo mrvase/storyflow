@@ -5,6 +5,7 @@ import { authenticator, authorizer } from "./auth";
 import { error, isError, success, unwrap } from "@storyflow/result";
 import clientPromise from "../mongo/mongoClient";
 import { Organization, User } from "./types";
+import { USER_ID } from "@storyflow/backend/templates";
 
 const user = async ({ req, client }: MiddlewareContext) => {
   const user = await authorizer.authorize(req);
@@ -139,7 +140,7 @@ export const users = createRoute({
           .db(organization.db)
           .collection("articles")
           .findOne({
-            [`values.${"abcd"}`]: user.email,
+            [`values.${USER_ID}`]: user.email,
           });
 
         if (!orgUser) {
@@ -151,7 +152,7 @@ export const users = createRoute({
           createCallback({
             slug,
             db: organization.db,
-            permissions: {}, // orgUser.values["abcd"] ?? false,
+            permissions: {}, // orgUser.values["permissions"] ?? false,
           })
         );
       }

@@ -228,6 +228,7 @@ const getQueryType = (query: string, index: number): QueryType | null => {
 export function Query({
   push,
   children,
+  options,
 }: {
   push: (
     payload:
@@ -238,6 +239,7 @@ export function Query({
   children: (
     push: (payload: ComputationOp["ops"], tags: Set<string>) => void
   ) => React.ReactNode;
+  options?: string[];
 }) {
   const [queryType, setQueryType] = React.useState<QueryType | null>(null);
   const [query, setQuery] = React.useState("");
@@ -665,6 +667,7 @@ export function Query({
               selected={selected}
               query={queryString}
               insertBlock={insertBlock}
+              options={options}
             />
           )}
           {queryType === "@" && (
@@ -722,13 +725,15 @@ function QueryComponents({
   query,
   selected,
   insertBlock,
+  options: defaultOptions,
 }: {
   query: string;
   selected: number;
   insertBlock: (comp: EditorComputation) => void;
+  options?: string[];
 }) {
   const { libraries } = useClientConfig();
-  const options = libraries
+  let options = libraries
     .map((library) =>
       Object.values(library.components).map((component) => ({
         ...component,
@@ -737,6 +742,14 @@ function QueryComponents({
       }))
     )
     .flat(1);
+
+  if (defaultOptions) {
+    options = options.filter((el) =>
+      defaultOptions.includes(`${el.libraryName}:${el.name}`)
+    );
+  } else {
+    options = options.filter((el) => !el.hidden);
+  }
 
   const filtered = query
     ? options.filter(({ label }) =>

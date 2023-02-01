@@ -25,12 +25,7 @@ import { tools } from "shared/editor-tools";
 import { stringifyPath, usePathContext } from "../PathContext";
 import { addImport } from "../../custom-events";
 import { useFieldConfig } from "../../state/documentConfig";
-import {
-  computeFieldId,
-  getDocumentId,
-  getTemplateDocumentId,
-  getTemplateFieldId,
-} from "@storyflow/backend/ids";
+import { getDocumentId, getTemplateFieldId } from "@storyflow/backend/ids";
 import { useCollab } from "../../state/collaboration";
 import { useClient } from "../../client";
 import { Plus } from "./Plus";
@@ -245,11 +240,13 @@ export function WritableDefaultField({
   path,
   initialValue,
   fieldConfig,
+  options,
 }: {
   id: FieldId;
   path: string;
   initialValue: Computation;
   fieldConfig: { type: "default" | "slug" };
+  options?: string[];
 }) {
   const { path: fullPath } = usePathContext();
   const isActive =
@@ -345,6 +342,7 @@ export function WritableDefaultField({
         initialValue={encodeEditorComputation(initialValue, transform)}
         setValue={setValue}
         transform={transform}
+        options={options}
       >
         <div className={cl("relative", !isActive && "hidden")}>
           <ContentEditable
