@@ -156,6 +156,7 @@ export class ImportNode extends DecoratorNode<React.ReactNode> {
   createDOM(): HTMLElement {
     const element = document.createElement("span");
     element.setAttribute("data-lexical-import", "true");
+    element.setAttribute("data-lexical-inline", "true");
     return element;
   }
 
@@ -182,6 +183,7 @@ export class ImportNode extends DecoratorNode<React.ReactNode> {
   exportDOM(): DOMExportOutput {
     const element = document.createElement("span");
     element.setAttribute("data-lexical-import", "true");
+    element.setAttribute("data-lexical-inline", "true");
     element.textContent = "x";
     return { element };
   }

@@ -12,6 +12,7 @@ import {
   Story,
 } from "@storyflow/frontend/types";
 import * as React from "react";
+import { cms } from "../src/CMSElement";
 
 declare module "@storyflow/frontend/types" {
   interface ComponentType<P> {
@@ -43,7 +44,18 @@ export function registerLibraries(libraries: Library<any>[]) {
     {
       name: "",
       components: {
-        Text: ({ text }) => <p>{text}</p>,
+        Text: ({ children }: any) => {
+          return <p>{children}</p>;
+        },
+        H1: ({ children }: any) => {
+          return <h1>{children}</h1>;
+        },
+        H2: ({ children }: any) => {
+          return <h2>{children}</h2>;
+        },
+        H3: ({ children }: any) => {
+          return <h3>{children}</h3>;
+        },
         Outlet: () => (
           <div
             style={{
@@ -56,10 +68,39 @@ export function registerLibraries(libraries: Library<any>[]) {
             [Outlet]
           </div>
         ),
+        Link: ({ href, label }: { href?: string; label?: String }) => {
+          return <cms.a href={`/${href ?? ""}`}>{label}</cms.a>;
+        },
       },
     },
   ];
 }
+
+export const registerLibraryConfigs = (configs: LibraryConfig[]) => {
+  LIBRARY_CONFIGS = [
+    ...configs,
+    {
+      name: "",
+      label: "Default",
+      components: {
+        Outlet: {
+          label: "Outlet",
+          name: "Outlet",
+          props: [],
+        },
+        Link: {
+          label: "Link",
+          name: "Link",
+          props: [
+            { name: "href", type: "string", label: "URL" },
+            { name: "label", type: "string", label: "Label" },
+          ],
+          inline: true,
+        },
+      },
+    },
+  ];
+};
 
 export const createComponent = <T extends readonly PropConfig[]>(
   component: ExtendedPartialConfig<T>["component"],
@@ -130,7 +171,10 @@ export const createFullConfig = <T extends ExtendedLibraryConfig>(
           const newEntries = Object.entries(prop.options);
           newEntries.forEach((el) => {
             if (!entries.some((existing) => existing[1] === el[1])) {
-              entries.push([el[0], { ...(el[1] as any), hidden: true }]);
+              entries.push([
+                el[0],
+                Object.assign(el[1] as any, { hidden: true }),
+              ]);
             }
           });
           return {
@@ -194,10 +238,6 @@ export const createFullConfig = <T extends ExtendedLibraryConfig>(
   ] as const;
 };
 
-export const registerLibraryConfigs = (configs: LibraryConfig[]) => {
-  LIBRARY_CONFIGS = [...configs];
-};
-
 export const getLibraries = () => {
   if (!LIBRARIES) {
     throw new Error("Libraries not registered");
@@ -212,71 +252,4 @@ export const getLibraryConfigs = () => {
   return LIBRARY_CONFIGS;
 };
 
-export const getComponentByConfig = (type: string) => {
-  const [namespace, name] = type.split(":");
-  const configs = getLibraryConfigs();
-  const libraries = getLibraries();
-
-  const getComponentFromName = (
-    config: LibraryConfig
-  ): [Component<ComponentConfig>, ComponentConfig] | undefined => {
-    const result = Object.entries(config.components).find(
-      ([, el]) => el.name === name
-    );
-
-    if (!result) return;
-
-    const [key, componentConfig] = result;
-
-    const library = libraries.find((el) => el.name === config.name)!;
-    return [library.components[key]!, componentConfig];
-  };
-
-  const namespaceConfig = configs.find((el) => el.name === namespace);
-
-  if (namespaceConfig) {
-    const result = getComponentFromName(namespaceConfig);
-    if (result) return result;
-  }
-
-  for (let i = 0; i < configs.length; i++) {
-    let config = configs[i];
-    if (config === namespaceConfig) continue;
-
-    const result = getComponentFromName(config);
-    if (result) return result;
-  }
-};
-
-export const getComponentByName = (type: string) => {
-  const [namespace, name] =
-    type.indexOf(":") >= 0 ? type.split(":") : ["", type];
-  const libraries = getLibraries();
-  const library = libraries.find((el) => el.name === namespace)!;
-  return library.components[name]!;
-};
-
 export type { ComponentConfig, PartialConfig, Props };
-
-/*
-import Outlet from "./Outlet";
-
-export const defaultLibrary = {
-  name: "sf",
-  label: "Standard",
-  components: {
-    Outlet,
-  },
-} satisfies Library<{ [key: string]: React.FC<any> }>;
-
-export const defaultLibraryConfig: LibraryConfig<typeof defaultLibrary> = {
-  name: "sf",
-  label: "Standard",
-  components: {
-    Outlet: {
-      props: [],
-      label: "Outlet",
-    },
-  },
-};
-*/

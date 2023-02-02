@@ -140,6 +140,12 @@ export type ValueArray = (
   | NestedDocument
 )[];
 
+export type RenderArray = (
+  | LayoutElement
+  | { $text: (string | number | LayoutElement)[] }
+  | { $heading: [number, string] }
+)[];
+
 type NameToType<
   C extends ComponentConfig | PartialConfig,
   Prop extends C["props"][number],

@@ -12,10 +12,12 @@ import {
 import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
 import { caretClasses } from "./caret";
-import { LayoutElement } from "@storyflow/backend/types";
+import { LayoutElement, Value } from "@storyflow/backend/types";
 import { ParentPropContext } from "../default/DefaultField";
-import { usePathContext } from "../PathContext";
+import { stringifyPath, usePathContext } from "../PathContext";
 import { getConfigFromType, useClientConfig } from "../../client-config";
+import { useGlobalState } from "../../state/state";
+import { useFieldId } from "../FieldIdContext";
 
 function InlineLayoutElementDecorator({
   value,
@@ -24,8 +26,19 @@ function InlineLayoutElementDecorator({
   value: LayoutElement;
   nodeKey: string;
 }) {
-  const { goToPath } = usePathContext();
+  const { path, goToPath } = usePathContext();
   const parentProp = React.useContext(ParentPropContext);
+
+  const pathString = stringifyPath(path);
+
+  const id = useFieldId();
+
+  const parentPath = pathString ? `${pathString}/${parentProp?.name}` : "";
+  const pathToLabel = `${id}${parentPath ? "." : ""}${parentPath}.${
+    value.id
+  }/label`;
+
+  const [output] = useGlobalState<Value[]>(pathToLabel);
 
   const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
 
@@ -34,13 +47,16 @@ function InlineLayoutElementDecorator({
   const { libraries } = useClientConfig();
   const config = getConfigFromType(value.type, libraries);
 
+  const text =
+    typeof output?.[0] === "string" ? output[0] : config?.label ?? value.type;
+
   return (
     <span
       className={cl(
-        "relative my-0.5 px-2 bg-fuchsia-100 text-fuchsia-800 dark:bg-gray-800 dark:text-gray-200 flex",
-        "flex rounded text-sm selection:bg-transparent",
-        isSelected && "ring-2 ring-amber-300",
-        !isSelected && "ring-1 ring-gray-200 dark:ring-gray-700",
+        "text-gray-100/90 rounded-sm selection:bg-transparent relative",
+        "before:absolute before:-z-10 before:inset-0 before:rounded-t-sm before:bg-gray-50 before:dark:bg-gray-400/20 ",
+        "after:absolute after:-z-10 after:w-full after:left-0 after:-bottom-0.5 after:border-b-2 after:border-b-green-300/50 after:rounded-b-sm",
+        isSelected ? "ring-2 ring-amber-300" : "dark:ring-gray-600",
         isPseudoSelected && caretClasses
       )}
       onMouseDown={() => {
@@ -60,7 +76,7 @@ function InlineLayoutElementDecorator({
         selectClick.current = false;
       }}
     >
-      {config?.label ?? value.type}
+      {text}
     </span>
   );
 }
@@ -98,6 +114,7 @@ export class InlineLayoutElementNode extends DecoratorNode<React.ReactNode> {
   createDOM(): HTMLElement {
     const element = document.createElement("span");
     element.setAttribute("data-lexical-inline-layout-element", "true");
+    element.setAttribute("data-lexical-inline", "true");
     return element;
   }
 
@@ -127,6 +144,7 @@ export class InlineLayoutElementNode extends DecoratorNode<React.ReactNode> {
   exportDOM(): DOMExportOutput {
     const element = document.createElement("span");
     element.setAttribute("data-lexical-inline-layout-element", "true");
+    element.setAttribute("data-lexical-inline", "true");
     element.textContent = `%`;
     return { element };
   }

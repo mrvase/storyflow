@@ -4,6 +4,7 @@ import {
   computeFieldId,
   calculateFlatComputationAsync,
   findFetchers,
+  createRenderArray,
 } from "@storyflow/backend";
 import type {
   Computation,
@@ -93,11 +94,34 @@ function fetchFetcher(fetcher: Fetcher, db: string): Promise<NestedDocument[]> {
   );
 }
 
+const defaultLibrary: LibraryConfig = {
+  name: "",
+  label: "Default",
+  components: {
+    Outlet: {
+      label: "Outlet",
+      name: "Outlet",
+      props: [],
+    },
+    Link: {
+      label: "Link",
+      name: "Link",
+      props: [
+        { name: "href", type: "string", label: "URL" },
+        { name: "label", type: "string", label: "Label" },
+      ],
+      inline: true,
+    },
+  },
+};
+
 export async function fetchSinglePage(
   url: string,
   db: string,
-  libraries: LibraryConfig[]
+  libraries_: LibraryConfig[]
 ) {
+  const libraries = [...libraries_, defaultLibrary];
+
   const client = await clientPromise;
 
   const regex = `^${url
@@ -156,7 +180,7 @@ export async function fetchSinglePage(
   ]);
 
   return {
-    layout: layout ?? null,
-    page: page ?? null,
+    layout: layout ? createRenderArray(layout as any, libraries) : null,
+    page: page ? createRenderArray(page as any, libraries) : null,
   };
 }

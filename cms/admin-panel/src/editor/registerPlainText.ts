@@ -131,6 +131,12 @@ export function registerPlainText(
         if (!$isRangeSelection(selection)) {
           return false;
         }
+        // we block attempts to mark elements as bold right now
+        // (even inline ones), as it is not yet supported.
+        const nodes = selection.getNodes();
+        if (nodes.some((el) => !$isTextNode(el))) {
+          return false;
+        }
         selection.formatText(format);
         return true;
       },

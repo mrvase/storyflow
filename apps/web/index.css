@@ -76,7 +76,7 @@ a {
 
 .editor
   > *
-  > [data-lexical-decorator="true"]:not([data-lexical-import="true"]):not(
+  > [data-lexical-decorator="true"]:not([data-lexical-inline="true"]):not(
     [data-lexical-layout-element="true"]
   ) {
   display: inline-flex;
@@ -84,15 +84,15 @@ a {
 
 .editor
   > *
-  > [data-lexical-decorator="true"]:not([data-lexical-import="true"])
+  > [data-lexical-decorator="true"]:not([data-lexical-inline="true"])
   .selection-box {
   padding-right: 0.375rem;
 }
 
 .editor
   > *
-  > :not([data-lexical-decorator="true"]:not([data-lexical-import="true"]))
-  + [data-lexical-decorator="true"]:not([data-lexical-import="true"])
+  > :not([data-lexical-decorator="true"]:not([data-lexical-inline="true"]))
+  + [data-lexical-decorator="true"]:not([data-lexical-inline="true"])
   .selection-box {
   padding-left: 0.375rem;
 }

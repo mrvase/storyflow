@@ -1,30 +1,68 @@
 import * as React from "react";
-import { LayoutElement, ValueArray } from "@storyflow/frontend/types";
-import { getComponentByName } from "../config";
+import {
+  Component,
+  LayoutElement,
+  RenderArray,
+} from "@storyflow/frontend/types";
+import { getLibraries } from "../config";
+import { ParseRichText } from "./ParseRichText";
+
+const getComponentByType = (type: string) => {
+  // the type property has been transformed by the server (traverse-async),
+  // so that it parses to the true library with its matching key
+
+  const [namespace, name] =
+    type.indexOf(":") >= 0 ? type.split(":") : ["", type];
+  const libraries = getLibraries();
+  const filtered = libraries.filter((el) => el.name === namespace)!;
+  let component: Component<any> | undefined;
+  for (let i = 0; i < filtered.length; i++) {
+    component = filtered[i].components[name] as Component<any> | undefined;
+    if (component) break;
+  }
+  return component!;
+};
 
 const Component = ({
   data,
   children,
 }: {
-  data: ValueArray;
+  data: RenderArray;
   children?: React.ReactNode;
 }) => {
   return (
     <>
-      {data.map((d) =>
-        typeof d === "object" && "type" in d ? (
-          d.type === "Outlet" ? (
-            children
-          ) : (
-            <Element key={d.id} data={d} children={children} />
-          )
-        ) : typeof d === "string" && d !== "" ? (
-          <Element
-            key={`t-${d.substring(0, 25)}`}
-            data={{ id: "text", type: "Text", props: { text: d } }}
-          />
-        ) : null
-      )}
+      {data.map((d, i1) => {
+        if ("type" in d && d.type === "Outlet") {
+          return <React.Fragment key="Outlet">{children}</React.Fragment>;
+        }
+        if ("$heading" in d) {
+          const H = `h${d.$heading[0]}` as "h1";
+          const string = String(d.$heading[1]);
+          return (
+            <H key={i1}>
+              <ParseRichText>{string}</ParseRichText>
+            </H>
+          );
+        }
+        if ("$text" in d) {
+          return (
+            <p key={i1}>
+              {d.$text.map((el, i2) => {
+                if (typeof el === "object") {
+                  return <Element key={el.id} data={el} children={children} />;
+                }
+                return (
+                  <ParseRichText key={`${i1}-${i2}`}>
+                    {String(el)}
+                  </ParseRichText>
+                );
+              })}
+            </p>
+          );
+        }
+        return <Element key={d.id} data={d} children={children} />;
+      })}
     </>
   );
 };
@@ -43,7 +81,7 @@ const Element = ({
   data: LayoutElement;
   children?: React.ReactNode;
 }) => {
-  const CMSComponent = getComponentByName(data.type);
+  const CMSComponent = getComponentByType(data.type);
   const props = React.useMemo(() => {
     return Object.fromEntries(
       Object.entries(data.props).map(([name, value]) => [
@@ -52,6 +90,7 @@ const Element = ({
       ])
     );
   }, []);
+
   return <CMSComponent {...props} />;
 };
 

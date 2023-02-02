@@ -56,7 +56,6 @@ export const requestPaths = async () => {
     },
     credentials: "include",
   }).then(async (res) => {
-    console.log("PATHS", res);
     try {
       const json = await res.json();
       return unwrap(json as Result<string[]>, [] as string[]);

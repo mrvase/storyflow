@@ -89,12 +89,20 @@ export function Plus() {
           node = node.getParent() as LexicalNode;
           node = (node.isInline() ? node.getParent() : node) as LexicalNode;
         }
-        const isP = $isParagraphNode(node);
-        const isH = $isHeadingNode(node);
-        if (isP || isH) {
-          const targetElement = isP
-            ? $createHeadingNode("h1")
-            : $createParagraphNode();
+        let targetElement: LexicalNode | null = null;
+        if ($isParagraphNode(node)) {
+          targetElement = $createHeadingNode("h1");
+        }
+        if ($isHeadingNode(node)) {
+          const tag = node.__tag;
+          const level = parseInt(tag.slice(1), 10);
+          if (level < 2) {
+            targetElement = $createHeadingNode(`h${(level + 1) as 2 | 3}`);
+          } else {
+            targetElement = $createParagraphNode();
+          }
+        }
+        if (targetElement) {
           targetElement.setFormat(node.getFormatType());
           targetElement.setIndent(node.getIndent());
           node.replace(targetElement, true);

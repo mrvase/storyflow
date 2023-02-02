@@ -1,6 +1,7 @@
 export { FIELDS } from "./fields";
 export { computeFieldId } from "./ids";
 export { calculateFlatComputationAsync, findFetchers } from "./traverse-async";
+export { createRenderArray } from "./traverse-helpers/createRenderArray";
 
 export type {
   Computation,
@@ -12,4 +13,8 @@ export type {
   TemplateFieldId,
 } from "./types";
 
-export type { LibraryConfig } from "@storyflow/frontend/types";
+export type {
+  LibraryConfig,
+  RenderArray,
+  ValueArray,
+} from "@storyflow/frontend/types";

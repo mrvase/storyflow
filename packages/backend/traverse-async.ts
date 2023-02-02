@@ -13,6 +13,8 @@ import {
   Value,
 } from "./types";
 import type { LibraryConfig } from "@storyflow/frontend/types";
+import { getConfigByType } from "./traverse-helpers/getConfigByType";
+import { createRenderArray } from "./traverse-helpers/createRenderArray";
 
 const BUCKET_NAME = "awss3stack-mybucket15d133bf-1wx5fzxzweii4";
 const BUCKET_REGION = "eu-west-1";
@@ -30,19 +32,6 @@ const getImageObject = (name: string, slug: string) => {
   };
 };
 
-const getConfigFromType = (type: string, libraries: LibraryConfig[]) => {
-  const [library, name] = type.split(":");
-  const config = libraries.find((el) => el.name === library);
-
-  if (!config) return;
-
-  const result = Object.entries(config.components).find(
-    ([, el]) => el.name === name
-  );
-
-  return result;
-};
-
 export const traverseFlatComputationAsync = async (
   value: FlatComputation,
   compute: ComputationBlock[],
@@ -57,15 +46,12 @@ export const traverseFlatComputationAsync = async (
     value.map(async (el) => {
       if (el === null || typeof el !== "object") return el;
       if ("type" in el) {
-        if (el.type === "Outlet") return { ...el, props: {} } as LayoutElement;
+        const config = getConfigByType(el.type, options.libraries);
 
-        const result = getConfigFromType(el.type, options.libraries);
-        if (!result) {
+        console.log("HERE", el.type, config);
+        if (!config) {
           return undefined;
         }
-        const library = el.type.split(":")[0];
-
-        const [type, config] = result;
 
         const entries = await Promise.all(
           config.props.map(async ({ name, type }) => {
@@ -75,7 +61,9 @@ export const traverseFlatComputationAsync = async (
             const result = await callback(computation);
             let value = result[0];
             if (type === "children") {
-              value = { $children: result };
+              value = {
+                $children: createRenderArray(result, options.libraries),
+              };
             } else if (type === "image") {
               if (Array.isArray(result[0])) {
                 value = getImageObject(result[0][0] as string, options.slug);
@@ -88,9 +76,10 @@ export const traverseFlatComputationAsync = async (
         );
 
         const props = Object.fromEntries(entries);
+
         const newEl: LayoutElement = {
           ...el,
-          type: library ? `${library}:${type}` : type,
+          type: config.name, // replaces name with "library:key"
           props,
         };
         return newEl;

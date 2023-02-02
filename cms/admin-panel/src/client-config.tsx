@@ -19,6 +19,12 @@ export const getComponentType = (
 };
 
 export const getInfoFromType = (type: string) => {
+  if (type.indexOf(":") < 0) {
+    return {
+      library: "",
+      name: type,
+    };
+  }
   const [library, name] = type.split(":");
   return {
     library,
@@ -62,6 +68,15 @@ const defaultLibrary: LibraryConfig = {
   name: "",
   label: "Default",
   components: {
+    Link: {
+      label: "Link",
+      name: "Link",
+      props: [
+        { name: "href", type: "string", label: "URL" },
+        { name: "label", type: "string", label: "Label" },
+      ],
+      inline: true,
+    },
     Outlet: {
       label: "Side",
       name: "Outlet",

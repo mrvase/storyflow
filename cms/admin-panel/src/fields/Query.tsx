@@ -218,8 +218,12 @@ const isNoop = (ops: ComputationOp["ops"]): ops is TextOps => {
 type QueryType = "<" | "@" | "#" | "/" | ".";
 
 const getQueryType = (query: string, index: number): QueryType | null => {
-  const match = query.match(/^([\@\#\/\<\.])/)?.[1] as QueryType | null;
-  if (match === "." && index !== 0) {
+  // Avoid matching a query, when there is a space immediately after the query symbol.
+  // This prevents the command that adds "# " to create a headline from triggering the query.
+  const match = query.match(
+    /^([\@\#\/\<\.])([^\s]|$)/
+  )?.[1] as QueryType | null;
+  if (!match || ([".", "#"].includes(match) && index !== 0)) {
     return null;
   }
   return match;
@@ -263,7 +267,6 @@ export function Query({
           result = [prev, next];
 
           if (isAdjacent(prev, next)) {
-            console.log("IS ADJACENT");
             const nextIsSymbolInsert =
               isTextInsert(next) && next[0].insert[0].match(/([^\w-])/)?.[1];
 
@@ -320,6 +323,7 @@ export function Query({
           const query = latest[0].insert[0];
           const index = latest[0].index;
           setQuery(query);
+          console.log("QUERY", query);
           setQueryType(getQueryType(query, index));
         } else {
           setQuery("");
@@ -665,6 +669,7 @@ export function Query({
               selected={selected}
               query={queryString}
               insertBlock={insertBlock}
+              insertComputation={insertComputation}
               options={options}
             />
           )}
@@ -723,11 +728,13 @@ function QueryComponents({
   query,
   selected,
   insertBlock,
+  insertComputation,
   options: defaultOptions,
 }: {
   query: string;
   selected: number;
   insertBlock: (comp: EditorComputation) => void;
+  insertComputation: (comp: EditorComputation) => void;
   options?: string[];
 }) {
   const { libraries } = useClientConfig();
@@ -760,12 +767,21 @@ function QueryComponents({
   useOnEnter(() => {
     const config = filtered[current];
     if (config) {
-      insertBlock([
-        createComponent(config.name, {
-          library: config.libraryName,
-          libraries,
-        }),
-      ]);
+      if (config.inline) {
+        insertComputation([
+          createComponent(config.name, {
+            library: config.libraryName,
+            libraries,
+          }),
+        ]);
+      } else {
+        insertBlock([
+          createComponent(config.name, {
+            library: config.libraryName,
+            libraries,
+          }),
+        ]);
+      }
     }
   }, [query, selected]);
 

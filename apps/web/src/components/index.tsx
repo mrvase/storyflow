@@ -2,7 +2,7 @@ import { Content } from "./Content";
 import { Nav } from "./Nav";
 import { createFullConfig } from "@storyflow/react/config";
 import { Header } from "./Header/Header";
-import util from "util";
+import { Link } from "./Link";
 
 export const [config, library, stories] = createFullConfig({
   name: "sf",
@@ -11,6 +11,7 @@ export const [config, library, stories] = createFullConfig({
     Content,
     Header,
     Nav,
+    Link,
   },
 });
 

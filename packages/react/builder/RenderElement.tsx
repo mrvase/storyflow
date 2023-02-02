@@ -1,5 +1,10 @@
 import * as React from "react";
-import { PathSegment, PropConfig, ValueArray } from "@storyflow/frontend/types";
+import {
+  ComponentConfig,
+  PathSegment,
+  PropConfig,
+  ValueArray,
+} from "@storyflow/frontend/types";
 import {
   AddPathSegment,
   ExtendPath,
@@ -14,7 +19,9 @@ import {
 } from "./focus";
 import { useValue } from "../builder/RenderBuilder";
 import RenderComponent from "./RenderComponent";
-import { getComponentByConfig } from "../config";
+import { cms } from "../src/CMSElement";
+import { getConfigByType } from "./getConfigByType";
+import { getLibraryConfigs } from "../config";
 
 const BUCKET_NAME = "awss3stack-mybucket15d133bf-1wx5fzxzweii4";
 const BUCKET_REGION = "eu-west-1";
@@ -74,26 +81,24 @@ export default function RenderElement({
   const uncomputedProps =
     propsFromProps ?? (useValue(path) as Record<string, ValueArray>);
 
-  const result = getComponentByConfig(type);
+  let config_ = getConfigByType(type, getLibraryConfigs());
 
-  if (!result) {
+  if (!config_) {
     return null;
   }
 
-  const [Component, config] = result;
+  const config = config_;
 
   const props = React.useMemo(
     () =>
       Object.fromEntries(
-        config.props.map((config) => [
+        config!.props.map((config) => [
           config.name,
-          calculateProp(config, uncomputedProps[config.name] ?? []),
+          calculateProp(config, uncomputedProps?.[config.name] ?? []),
         ])
       ),
     [uncomputedProps]
   );
-
-  const [select] = useBuilderSelection();
 
   React.useEffect(() => {
     const activeEl = document.activeElement as HTMLElement;
@@ -145,7 +150,7 @@ export default function RenderElement({
 
   return (
     <AddPathSegment segment={segment}>
-      <Component {...props} />
+      <config.component {...props} />
     </AddPathSegment>
   );
 }
