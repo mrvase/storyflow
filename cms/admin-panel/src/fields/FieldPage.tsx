@@ -29,6 +29,15 @@ import { createComponent } from "./Editor/createComponent";
 import { useCollab } from "../state/collaboration";
 import { useArticlePageContext } from "../articles/ArticlePageContext";
 import { Client, useClient } from "../client";
+import { FieldToolbar } from "../articles/ArticlePage";
+import {
+  getDocumentId,
+  getTemplateDocumentId,
+  getTemplateFieldId,
+} from "@storyflow/backend/ids";
+import { ChevronLeftIcon } from "@heroicons/react/24/outline";
+import { useSegment } from "../layout/components/SegmentContext";
+import { useTabUrl } from "../layout/utils";
 
 const useBuilderRendered = ({
   listeners,
@@ -52,7 +61,7 @@ const useBuilderRendered = ({
   return rendered;
 };
 
-const useCreateComponent = ({
+const useComponentActions = ({
   listeners,
   push,
 }: {
@@ -77,7 +86,58 @@ const useCreateComponent = ({
       });
     });
   }, [libraries]);
+  React.useEffect(() => {
+    return listeners.moveComponent.subscribe(({ parent, from, to }) => {
+      console.log("MOVED", parent, from, to);
+      const fieldId = parent.split(".")[0];
+      const location = parent.split(".").slice(1).join(".");
+      push({
+        target: targetTools.stringify({
+          field: "default",
+          operation: "computation",
+          location,
+        }),
+        ops: [
+          {
+            index: from,
+            remove: 1,
+          },
+          {
+            index: to,
+          },
+        ],
+      });
+    });
+  }, [libraries]);
 };
+
+function Toolbar({ id }: { id: FieldId }) {
+  const documentId = getDocumentId(id);
+
+  const isNative = documentId === getTemplateDocumentId(id);
+
+  const [, navigateTab] = useTabUrl();
+  const { current, full } = useSegment();
+
+  return (
+    <div className="flex mb-5">
+      <div className="mt-5 mr-2">
+        <Content.ToolbarButton
+          icon={ChevronLeftIcon}
+          onClick={() => {
+            navigateTab(current);
+          }}
+        >
+          Tilbage
+        </Content.ToolbarButton>
+      </div>
+      {isNative && <FieldToolbar documentId={documentId} fieldId={id} />}
+      <div className="mt-5 ml-auto">
+        <Content.ToolbarButton>Gem felt</Content.ToolbarButton>
+      </div>
+    </div>
+  );
+}
 
 export function FieldPage({
   id,
@@ -94,12 +154,15 @@ export function FieldPage({
   const dispatchers = useIframeDispatchers();
   const rendered = useBuilderRendered({ listeners });
 
+  const documentId = getDocumentId(id);
+  const templateFieldId = getTemplateFieldId(id);
+
   const { push } = useCollab().mutate<ComputationOp>(
-    id.slice(0, 4),
-    id.slice(4)
+    documentId,
+    templateFieldId
   );
 
-  useCreateComponent({ listeners, push });
+  useComponentActions({ listeners, push });
 
   const [direction, setDirection] = useLocalStorage<
     "horizontal" | "vertical" | "horizontal-reverse" | "vertical-reverse"
@@ -108,7 +171,7 @@ export function FieldPage({
   const isHorizontal = direction.split("-")[0] === "horizontal";
   const isReversed = direction.endsWith("reverse");
 
-  const panel1 = <div className="py-5">{children}</div>;
+  const panel1 = <div>{children}</div>;
 
   const panel2 = (
     <div className="h-full bg-gray-200">
@@ -124,7 +187,11 @@ export function FieldPage({
   );
 
   return (
-    <Content selected={selected} className="h-full">
+    <Content
+      toolbar={<Toolbar id={id} />}
+      selected={selected}
+      className="h-full"
+    >
       <PropagateStatePlugin
         id={id}
         rendered={rendered}

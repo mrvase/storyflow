@@ -789,7 +789,7 @@ function QueryComponents({
     <>
       {filtered.map((el, index) => (
         <Option
-          key={el.name}
+          key={`${el.libraryName}:${el.name}`}
           onEnter={() => {
             insertBlock([
               createComponent(el.name, { library: el.libraryName, libraries }),

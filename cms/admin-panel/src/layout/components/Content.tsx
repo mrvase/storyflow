@@ -2,6 +2,8 @@ import React from "react";
 import cl from "clsx";
 import { useBranchIsFocused } from "./Branch";
 import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
+import { Menu } from "@headlessui/react";
+import { MenuTransition } from "../../elements/transitions/MenuTransition";
 
 const VariantContext = React.createContext<string>("default");
 const useVariant = () => React.useContext(VariantContext);
@@ -67,6 +69,16 @@ function Content({
             </div>
           </div>
         )}
+        {!header && toolbar && (
+          <div
+            className={cl(
+              "px-5 py-0",
+              isFocused ? "opacity-100" : "opacity-25"
+            )}
+          >
+            {toolbar}
+          </div>
+        )}
         <div className={cl(className ?? "max-w-6xl")}>{children}</div>
       </div>
     </VariantContext.Provider>
@@ -106,6 +118,81 @@ const ToolbarButton = React.forwardRef<
     </button>
   );
 });
+
+function ToolbarMenu<T extends { label: string }>({
+  icon,
+  label,
+  selected,
+  options,
+  onSelect,
+  onClear,
+}: {
+  icon: React.FC<{ className: string }>;
+  label: string;
+  selected?: T | null;
+  options: T[];
+  onSelect: (value: T) => void;
+  onClear?: () => void;
+}) {
+  return (
+    <Menu>
+      {({ open }) => (
+        <div className="block">
+          <Menu.Button
+            as={ToolbarButton}
+            active={open}
+            data-focus-remain="true"
+            chevron
+            icon={icon}
+            className={cl(!selected && "text-white/50")}
+          >
+            {selected?.label ?? label}
+          </Menu.Button>
+          <MenuTransition show={open} className="absolute z-10">
+            <Menu.Items
+              static
+              className="bg-white dark:bg-gray-800 mt-1 rounded shadow flex flex-col outline-none overflow-hidden w-52"
+              data-focus-remain="true"
+            >
+              {selected && onClear && (
+                <Menu.Item>
+                  {({ active }) => (
+                    <div
+                      className={cl(
+                        "py-1.5 px-3 hover:bg-gray-700 font-light",
+                        active && "bg-teal-700"
+                      )}
+                      onClick={onClear}
+                    >
+                      Fjern
+                    </div>
+                  )}
+                </Menu.Item>
+              )}
+              {options.map((el) => (
+                <Menu.Item>
+                  {({ active }) => (
+                    <div
+                      className={cl(
+                        "py-1.5 px-3 hover:bg-gray-700 font-light",
+                        active && "bg-teal-700"
+                      )}
+                      onClick={() => {
+                        onSelect(el);
+                      }}
+                    >
+                      {el.label}
+                    </div>
+                  )}
+                </Menu.Item>
+              ))}
+            </Menu.Items>
+          </MenuTransition>
+        </div>
+      )}
+    </Menu>
+  );
+}
 
 const Header = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
@@ -153,4 +240,5 @@ export default Object.assign(Content, {
   Button,
   Toolbar,
   ToolbarButton,
+  ToolbarMenu,
 });

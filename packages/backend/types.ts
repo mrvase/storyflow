@@ -155,7 +155,7 @@ export type FieldConfig<T extends FieldType = FieldType> = {
   label: string;
   type: T;
   template?: string;
-  static?: boolean;
+  restrictTo?: string;
 };
 
 export type TemplateRef = {

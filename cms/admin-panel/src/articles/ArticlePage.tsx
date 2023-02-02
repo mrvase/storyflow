@@ -3,6 +3,7 @@ import {
   AdjustmentsHorizontalIcon,
   ArrowUpTrayIcon,
   DocumentDuplicateIcon,
+  FunnelIcon,
   ListBulletIcon,
   PencilSquareIcon,
   TrashIcon,
@@ -232,14 +233,14 @@ function Toolbar({ id, config }: { id: DocumentId; config: DocumentConfig }) {
   );
 }
 
-function FieldToolbar({
+export function FieldToolbar({
   documentId,
   fieldId,
   index,
 }: {
   documentId: DocumentId;
   fieldId: FieldId;
-  index: number;
+  index?: number;
 }) {
   const [config, setConfig] = useFieldConfig(fieldId);
 
@@ -248,91 +249,61 @@ function FieldToolbar({
   const templateFolder = useTemplateFolder()?.id;
   const { articles: templates } = useArticleList(templateFolder);
 
-  const templateLabel =
-    config?.template && templates
-      ? templates.find((el) => el.id === config.template)?.label
-      : undefined;
+  const templateOptions = (templates ?? []).map((el) => ({
+    id: el.id,
+    label: el.label ?? el.id,
+  }));
+
+  const restrictToOptions = [{ id: "number", label: "Tal" }];
 
   return (
     <Content.Toolbar>
-      <Menu>
-        {({ open }) => (
-          <div className="block">
-            <Menu.Button
-              as={Content.ToolbarButton}
-              active={open}
-              data-focus-remain="true"
-              chevron
-              icon={ListBulletIcon}
-              className={cl(!templateLabel && "text-white/50")}
-            >
-              {templateLabel ?? "Vælg template"}
-            </Menu.Button>
-            <MenuTransition show={open} className="absolute">
-              <Menu.Items
-                static
-                className="bg-white dark:bg-gray-800 mt-1 rounded shadow flex flex-col outline-none overflow-hidden w-52"
-                data-focus-remain="true"
-              >
-                {config?.template && (
-                  <Menu.Item>
-                    {({ active }) => (
-                      <div
-                        className={cl(
-                          "py-1.5 px-3 hover:bg-gray-700 font-light",
-                          active && "bg-teal-700"
-                        )}
-                        onClick={() => {
-                          setConfig("template", undefined);
-                        }}
-                      >
-                        Fjern
-                      </div>
-                    )}
-                  </Menu.Item>
-                )}
-                {(templates ?? [])?.map((el) => (
-                  <Menu.Item>
-                    {({ active }) => (
-                      <div
-                        className={cl(
-                          "py-1.5 px-3 hover:bg-gray-700 font-light",
-                          active && "bg-teal-700"
-                        )}
-                        onClick={() => {
-                          setConfig("template", el.id);
-                        }}
-                      >
-                        {el.label ?? el.id}
-                      </div>
-                    )}
-                  </Menu.Item>
-                ))}
-              </Menu.Items>
-            </MenuTransition>
-          </div>
-        )}
-      </Menu>
-      <Content.ToolbarButton
-        data-focus-remain="true"
-        onClick={() => {
-          push({
-            target: targetTools.stringify({
-              field: "any",
-              operation: "document-config",
-              location: "",
-            }),
-            ops: [
-              {
-                index,
-                remove: 1,
-              },
-            ],
-          });
-        }}
-      >
-        <TrashIcon className="w-4 h-4" />
-      </Content.ToolbarButton>
+      <Content.ToolbarMenu<{ id: string; label: string }>
+        icon={ListBulletIcon}
+        label="Vælg template"
+        onSelect={(el) => setConfig("template", el.id)}
+        onClear={() => setConfig("template", undefined)}
+        selected={
+          config?.template
+            ? templateOptions.find((el) => el.id === config?.template)
+            : undefined
+        }
+        options={templateOptions}
+      />
+      <Content.ToolbarMenu<{ id: string; label: string }>
+        icon={FunnelIcon}
+        label="Begræns til"
+        onSelect={(el) => setConfig("restrictTo", el.id)}
+        onClear={() => setConfig("restrictTo", undefined)}
+        selected={
+          config?.restrictTo
+            ? restrictToOptions.find((el) => el.id === config.restrictTo)
+            : undefined
+        }
+        options={restrictToOptions}
+      />
+      {typeof index === "number" && (
+        <Content.ToolbarButton
+          data-focus-remain="true"
+          onClick={() => {
+            push({
+              target: targetTools.stringify({
+                field: "any",
+                operation: "document-config",
+                location: "",
+              }),
+              ops: [
+                {
+                  index,
+                  remove: 1,
+                },
+              ],
+            });
+          }}
+        >
+          <TrashIcon className="w-4 h-4" />
+        </Content.ToolbarButton>
+      )}
     </Content.Toolbar>
   );
 }

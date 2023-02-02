@@ -78,7 +78,7 @@ export default function BuilderIframe() {
         <iframe
           ref={ctx.iframeRef}
           src={`${builderUrl}?uniqueId=${ctx.uniqueId}`}
-          className="w-full h-full"
+          className="w-full h-full bg-white"
           data-select={id}
         />
       ) : null,
