@@ -1,4 +1,5 @@
 export { RenderPage, RenderSingleLayout } from "./src/RenderPage";
+export { RenderHead } from "./src/RenderHead";
 export {
   createLibrary,
   createLibraryConfig,

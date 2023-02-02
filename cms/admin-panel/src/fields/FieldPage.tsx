@@ -190,7 +190,7 @@ export function FieldPage({
     <Content
       toolbar={<Toolbar id={id} />}
       selected={selected}
-      className="h-full"
+      className="h-[calc(100%-64px)]"
     >
       <PropagateStatePlugin
         id={id}
@@ -205,11 +205,11 @@ export function FieldPage({
         <Panel collapsible>{isReversed ? panel2 : panel1}</Panel>
         <PanelResizeHandle
           className={cl(
-            "group relative bg-white/10 opacity-0 hover:opacity-100 transition-opacity",
-            isHorizontal ? "w-2" : "h-2"
+            "group relative bg-white/10 opacity-50 hover:opacity-100 transition-opacity",
+            isHorizontal ? "w-1" : "h-1"
           )}
         >
-          <div className="absolute z-10 inset-0 flex-center">
+          <div className="absolute z-10 inset-0 flex-center opacity-0 group-hover:opacity-100">
             <div
               className={cl(
                 "w-20 h-20 p-2 shrink-0 flex flex-wrap gap-4 bg-gray-800 rounded-lg",

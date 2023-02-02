@@ -34,9 +34,10 @@ export const request = async (url: string) => {
   }).then(async (res) => {
     try {
       const json = await res.json();
-      return unwrap(json as Result<{ page: any; layout: any }>, {
+      return unwrap(json as Result<{ page: any; layout: any; head: any }>, {
         page: null,
         layout: null,
+        head: null,
       });
     } catch (err) {
       console.error(err);
@@ -44,6 +45,7 @@ export const request = async (url: string) => {
     return {
       page: null,
       layout: null,
+      head: null,
     };
   });
 };

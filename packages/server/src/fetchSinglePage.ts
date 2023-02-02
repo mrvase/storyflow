@@ -173,14 +173,18 @@ export async function fetchSinglePage(
     });
   };
 
-  const [layout, redirect, page] = await Promise.all([
+  const [layout, redirect, page, title] = await Promise.all([
     getByPower(FIELDS.layout.id),
     getByPower(FIELDS.redirect.id),
     getByPower(FIELDS.page.id),
+    getByPower(FIELDS.label.id),
   ]);
 
   return {
     layout: layout ? createRenderArray(layout as any, libraries) : null,
     page: page ? createRenderArray(page as any, libraries) : null,
+    head: {
+      ...(title && { title }),
+    },
   };
 }

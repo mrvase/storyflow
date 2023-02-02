@@ -225,20 +225,20 @@ function PathMap({
       </button>
       {path.map(({ id, label, parentProp }, index) => (
         <React.Fragment key={id}>
-          {parentProp !== null && (
-            <>
-              <div className="opacity-75">·</div>
-              <div className="opacity-75">{parentProp.label}</div>
-            </>
-          )}
           <div className="opacity-75">
             <ChevronRightIcon className="w-3 h-3" />
           </div>
           <button
             type="button"
             onClick={() => setPath(path.slice(0, index + 1))}
-            className="hover:underline text-yellow-400"
+            className="hover:underline text-yellow-400 flexitems-center"
           >
+            {/*
+            {parentProp !== null && (
+              <span className="opacity-50">{parentProp.label}</span>
+            )}
+            <span className="opacity-50">&nbsp;·&nbsp;</span>
+            */}
             {label}
           </button>
         </React.Fragment>
@@ -443,7 +443,6 @@ function Draggable({
   const dragImage = React.useRef<HTMLSpanElement | null>(null);
 
   const onDragStart = React.useCallback((ev: React.DragEvent) => {
-    console.log("START", ev);
     ev.dataTransfer.setDragImage(dragImage.current!, 0, 0);
     setStart(ev.clientX);
     setIsDragging(true);

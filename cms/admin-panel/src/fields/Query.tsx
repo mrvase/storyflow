@@ -629,17 +629,17 @@ export function Query({
     <>
       <div
         className={cl(
-          "absolute left-11 right-11 z-10 bg-gray-800 p-2 rounded shadow-lg font-light",
+          "absolute left-11 right-11 z-10 bg-gray-800 rounded shadow-lg font-light",
           show
             ? "opacity-100 transition-opacity"
             : "opacity-0 pointer-events-none"
         )}
         style={{ transform: `translate(0px, ${y}px)` }}
       >
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col">
           <div
             className={cl(
-              "relative h-10 px-3 text-opacity-50 text-gray-300 text-xs flex items-center rounded"
+              "pt-2 relative h-10 px-3 text-opacity-50 text-gray-300 text-xs flex items-center rounded"
             )}
           >
             <div>{QueryIcon && <QueryIcon className="w-4 h-4" />}</div>
@@ -664,43 +664,45 @@ export function Query({
               </div>
             )}
           </div>
-          {queryType === "<" && (
-            <QueryComponents
-              selected={selected}
-              query={queryString}
-              insertBlock={insertBlock}
-              insertComputation={insertComputation}
-              options={options}
-            />
-          )}
-          {queryType === "@" && (
-            <QueryCommands
-              selected={selected}
-              query={queryString}
-              insertBlock={insertBlock}
-            />
-          )}
-          {queryType === "/" && (
-            <QueryLinks
-              selected={selected}
-              query={queryString}
-              insertComputation={insertComputation}
-            />
-          )}
-          {queryType === "." && (
-            <QueryFiles
-              selected={selected}
-              query={queryString}
-              reset={reset}
-              holdActions={holdActions}
-              insertComputation={insertComputation}
-            />
-          )}
-          {!queryType && func && (
-            <Option isSelected={true} onEnter={() => {}} Icon={BoltIcon}>
-              Indsæt funktion: "{queryString}()"
-            </Option>
-          )}
+          <div className="p-2 max-h-60 overflow-y-auto flex flex-col gap-1">
+            {queryType === "<" && (
+              <QueryComponents
+                selected={selected}
+                query={queryString}
+                insertBlock={insertBlock}
+                insertComputation={insertComputation}
+                options={options}
+              />
+            )}
+            {queryType === "@" && (
+              <QueryCommands
+                selected={selected}
+                query={queryString}
+                insertBlock={insertBlock}
+              />
+            )}
+            {queryType === "/" && (
+              <QueryLinks
+                selected={selected}
+                query={queryString}
+                insertComputation={insertComputation}
+              />
+            )}
+            {queryType === "." && (
+              <QueryFiles
+                selected={selected}
+                query={queryString}
+                reset={reset}
+                holdActions={holdActions}
+                insertComputation={insertComputation}
+              />
+            )}
+            {!queryType && func && (
+              <Option isSelected={true} onEnter={() => {}} Icon={BoltIcon}>
+                Indsæt funktion: "{queryString}()"
+              </Option>
+            )}
+          </div>
         </div>
       </div>
       {React.useMemo(() => children(pushWithQuery), [pushWithQuery])}
