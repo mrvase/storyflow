@@ -18,9 +18,9 @@ export const markdownToHTML = (string: string) => {
     result += text;
   };
 
-  for (let el of matches) {
+  Array.from(matches).forEach((el) => {
     if (el.index === undefined) {
-      continue;
+      return;
     }
     let index = el.index + (el[1] ? 0 : 1);
     let value = el[1] || el[2];
@@ -40,7 +40,7 @@ export const markdownToHTML = (string: string) => {
     }
 
     prev = index + value.length;
-  }
+  });
 
   addText(string.slice(prev));
 

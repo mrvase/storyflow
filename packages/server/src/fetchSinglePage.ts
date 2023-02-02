@@ -118,9 +118,9 @@ const defaultLibrary: LibraryConfig = {
 export async function fetchSinglePage(
   url: string,
   db: string,
-  libraries_: LibraryConfig[]
+  clientLibraries: LibraryConfig[]
 ) {
-  const libraries = [...libraries_, defaultLibrary];
+  const libraries = [...clientLibraries, defaultLibrary];
 
   const client = await clientPromise;
 

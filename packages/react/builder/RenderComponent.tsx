@@ -7,15 +7,13 @@ import { createRenderArray } from "./createRenderArray";
 import { ParseRichText } from "../src/ParseRichText";
 import { getLibraries, getLibraryConfigs } from "../config";
 
-const getComponentByType = (type: string) => {
+const getDefaultComponent = (type: string) => {
   // we use this only to get the default render components
   // Text, H1, H2, ...
-  // If we used getConfigByType, we would lack the ComponentConfig and not find the Component
   const libraries = getLibraries();
-  const filtered = libraries.filter((el) => el.name === "")!;
   let component: Component<any> | undefined;
-  for (let i = 0; i < filtered.length; i++) {
-    component = filtered[i].components[type] as Component<any> | undefined;
+  for (let i = 0; i < libraries.length; i++) {
+    component = libraries[i].components[type] as Component<any> | undefined;
     if (component) break;
   }
   return component!;
@@ -55,7 +53,7 @@ export default function RenderComponent({
     <>
       {renderArray.map((block, i1) => {
         if ("$heading" in block) {
-          const Component = getComponentByType(`H${block.$heading[0]}`)!;
+          const Component = getDefaultComponent(`H${block.$heading[0]}`)!;
           const string = String(block.$heading[1]);
           return (
             <Component key={i1}>
@@ -64,7 +62,7 @@ export default function RenderComponent({
           );
         }
         if ("$text" in block) {
-          const Component = getComponentByType("Text")!;
+          const Component = getDefaultComponent("Text")!;
           return (
             <Component key={i1}>
               {block.$text.map((el, i2) => {

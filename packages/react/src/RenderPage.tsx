@@ -7,6 +7,18 @@ import {
 import { getLibraries } from "../config";
 import { ParseRichText } from "./ParseRichText";
 
+const getDefaultComponent = (type: string) => {
+  // we use this only to get the default render components
+  // Text, H1, H2, ...
+  const libraries = getLibraries();
+  let component: Component<any> | undefined;
+  for (let i = 0; i < libraries.length; i++) {
+    component = libraries[i].components[type] as Component<any> | undefined;
+    if (component) break;
+  }
+  return component!;
+};
+
 const getComponentByType = (type: string) => {
   // the type property has been transformed by the server (traverse-async),
   // so that it parses to the true library with its matching key
@@ -37,17 +49,18 @@ const Component = ({
           return <React.Fragment key="Outlet">{children}</React.Fragment>;
         }
         if ("$heading" in d) {
-          const H = `h${d.$heading[0]}` as "h1";
+          const Component = getDefaultComponent(`H${d.$heading[0]}`)!;
           const string = String(d.$heading[1]);
           return (
-            <H key={i1}>
+            <Component key={i1}>
               <ParseRichText>{string}</ParseRichText>
-            </H>
+            </Component>
           );
         }
         if ("$text" in d) {
+          const Component = getDefaultComponent("Text")!;
           return (
-            <p key={i1}>
+            <Component key={i1}>
               {d.$text.map((el, i2) => {
                 if (typeof el === "object") {
                   return <Element key={el.id} data={el} children={children} />;
@@ -58,7 +71,7 @@ const Component = ({
                   </ParseRichText>
                 );
               })}
-            </p>
+            </Component>
           );
         }
         return <Element key={d.id} data={d} children={children} />;

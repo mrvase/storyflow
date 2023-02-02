@@ -268,7 +268,7 @@ export function Query({
 
           if (isAdjacent(prev, next)) {
             const nextIsSymbolInsert =
-              isTextInsert(next) && next[0].insert[0].match(/([^\w-])/)?.[1];
+              isTextInsert(next) && next[0].insert[0].match(/([^\wæøå-])/)?.[1];
 
             if (
               !(!isTextInsert(prev) && isTextInsert(next)) &&

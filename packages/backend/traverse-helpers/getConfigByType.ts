@@ -17,8 +17,6 @@ export const getConfigByType = (type: string, configs: LibraryConfig[]) => {
       ([, el]) => el.name === name
     );
 
-    console.log("RESULT", result);
-
     if (!result) return;
 
     const [key, componentConfig] = result;
@@ -33,7 +31,7 @@ export const getConfigByType = (type: string, configs: LibraryConfig[]) => {
   // but we always let other libraries overwrite the default library
 
   const mainLibraryConfigs =
-    libraryName == "" ? [] : configs.filter((el) => el.name === libraryName);
+    libraryName === "" ? [] : configs.filter((el) => el.name === libraryName);
   const rest =
     libraryName === ""
       ? configs
