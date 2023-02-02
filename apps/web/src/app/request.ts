@@ -1,5 +1,4 @@
 import { type Result, unwrap } from "@storyflow/result";
-import { cache } from "react";
 import { config } from "../components";
 // import { fetchSinglePage } from "@storyflow/server";
 
@@ -34,11 +33,14 @@ export const request = async (url: string) => {
   }).then(async (res) => {
     try {
       const json = await res.json();
-      return unwrap(json as Result<{ page: any; layout: any; head: any }>, {
-        page: null,
-        layout: null,
-        head: null,
-      });
+      return unwrap(
+        json as Result<{ page: any; layout: any; head: any } | null>,
+        {
+          page: null,
+          layout: null,
+          head: null,
+        }
+      );
     } catch (err) {
       console.error(err);
     }

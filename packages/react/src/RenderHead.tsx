@@ -4,7 +4,7 @@ export function RenderHead({
   data,
   transformTitle,
 }: {
-  data: any;
+  data: Record<string, any> | null;
   transformTitle?: (title: string) => string;
 }) {
   const title =

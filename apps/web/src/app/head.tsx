@@ -7,7 +7,7 @@ export default async function Head({ params }: { params: any }) {
 
   return (
     <RenderHead
-      data={data.head}
+      data={data?.head}
       transformTitle={(title) =>
         [title === "Forside" ? "" : title, "Storyflow"]
           .filter(Boolean)
