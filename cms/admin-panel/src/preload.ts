@@ -5,6 +5,11 @@ import { provider, useClient, useQueryContext } from "./client";
 
 let preloaded = false;
 
+const API_URL =
+  process.env.NODE_ENV === "production" ? `/api` : `http://localhost:3000/api`;
+
+const TEMPLATE_FOLDER_ID = "---0";
+
 export function Preload() {
   const client = useClient();
 
@@ -12,19 +17,14 @@ export function Preload() {
 
   React.useLayoutEffect(() => {
     const cache = provider();
-    const id = "--0a";
     if (!preloaded) {
       preloaded = true;
       (async () => {
-        const data = await client.articles.getList.query(id);
+        const data = await client.articles.getList.query(TEMPLATE_FOLDER_ID);
         const result = unwrap(data);
         if (result) {
           result.articles.forEach((article) => {
-            const key = queryKey(
-              `http://localhost:3001/api/articles/get`,
-              article.id,
-              ctx
-            );
+            const key = queryKey(`${API_URL}/articles/get`, article.id, ctx);
             const exists = cache.get(key);
             if (!exists) {
               cache.set(key, {
