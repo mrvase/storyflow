@@ -18,10 +18,6 @@ const apiKey = Buffer.from(process.env.API_KEY as string).toString("base64");
 const domain = IS_DEV ? "http://localhost:3000" : "https://www.storyflow.dk";
 
 export const request = async (url: string) => {
-  return {
-    page: null,
-    layout: null,
-  };
   return await fetch(`${domain}/api/public/get`, {
     method: "post",
     headers: {
@@ -53,7 +49,6 @@ export const request = async (url: string) => {
 };
 
 export const requestPaths = async () => {
-  return [];
   return await fetch(`${domain}/api/public/getPaths`, {
     method: "get",
     headers: {
