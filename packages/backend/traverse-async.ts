@@ -48,7 +48,6 @@ export const traverseFlatComputationAsync = async (
       if ("type" in el) {
         const config = getConfigByType(el.type, options.libraries);
 
-        console.log("HERE", el.type, config);
         if (!config) {
           return undefined;
         }

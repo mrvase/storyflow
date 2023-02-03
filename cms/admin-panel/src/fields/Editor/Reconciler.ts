@@ -44,7 +44,7 @@ export function Reconciler({
   target: Target;
   push: (ops: ComputationOp["ops"], tags: Set<string>) => void;
   register: (listener: QueueListener<ComputationOp>) => () => void;
-  setValue: (value: () => Computation) => void;
+  setValue: (value: () => EditorComputation) => void;
   transform?: FunctionName;
 }) {
   const editor = useEditorContext();
@@ -84,9 +84,8 @@ export function Reconciler({
       }
 
       if (update) {
-        const decoded = decodeEditorComputation(result, transform);
-        console.log("COMPUTATION:", decoded);
-        setValue(() => decoded);
+        console.log("COMPUTATION:", result);
+        setValue(() => result);
       }
     });
   }, [editor, libraries]);

@@ -478,16 +478,12 @@ export function $initializeEditor(
           (!tools.isLineBreak(el[0]) || typeof arr[index + 1]?.[0] !== "string")
       );
 
-    if (
-      initialState.some(
-        (el) => typeof el === "string" && el.indexOf("lækkert") > 0
-      )
-    )
-      if (!arr.length) {
-        const paragraphNode = $createParagraphNode();
-        root.append(paragraphNode);
-        return;
-      }
+    if (!arr.length) {
+      const paragraphNode = $createParagraphNode();
+      root.append(paragraphNode);
+      return;
+    }
+
     arr.forEach((computation) => {
       if (computation.length === 1 && isBlockElement(computation[0])) {
         if (tools.isLayoutElement(computation[0])) {

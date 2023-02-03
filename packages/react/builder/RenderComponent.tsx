@@ -3,7 +3,7 @@ import { ExtendPath, usePath } from "./contexts";
 import RenderElement from "./RenderElement";
 import { useValue } from "../builder/RenderBuilder";
 import { Component, PropConfig, ValueArray } from "@storyflow/frontend/types";
-import { createRenderArray } from "./createRenderArray";
+import { createRenderArray } from "../config/createRenderArray";
 import { ParseRichText } from "../src/ParseRichText";
 import { getLibraries, getLibraryConfigs } from "../config";
 

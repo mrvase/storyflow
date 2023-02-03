@@ -16,6 +16,7 @@ import {
   Computation,
   ComputationBlock,
   ComputationRecord,
+  EditorComputation,
   FieldId,
   Value,
   ValueRecord,
@@ -38,6 +39,9 @@ import {
 import { ChevronLeftIcon } from "@heroicons/react/24/outline";
 import { useSegment } from "../layout/components/SegmentContext";
 import { useTabUrl } from "../layout/utils";
+import { stringifyPath } from "./PathContext";
+import { PathMap, useBuilderPath } from "./FieldContainer";
+import { Path } from "@storyflow/frontend/types";
 
 const useBuilderRendered = ({
   listeners,
@@ -61,13 +65,35 @@ const useBuilderRendered = ({
   return rendered;
 };
 
-const useComponentActions = ({
+const useElementActions = ({
+  id,
   listeners,
   push,
+  setBuilderPath,
 }: {
+  id: FieldId;
   listeners: ReturnType<typeof createEventsFromIframeToCMS>;
   push: any;
+  setBuilderPath: (payload: Path | ((ps: Path) => Path)) => void;
 }) => {
+  const [path, setPath] = React.useState<string | null>(null);
+
+  const parentPath =
+    path !== null ? path.split(".").slice(0, -1).join(".") : null;
+  const elementId = path !== null ? path.split(".").slice(-1)[0] : null;
+  const fullParentPath =
+    parentPath !== null ? extendPath(id, parentPath) : null;
+
+  const [computation] = useGlobalState<EditorComputation>(
+    fullParentPath !== null ? `${fullParentPath}#computation` : undefined
+  );
+
+  React.useEffect(() => {
+    return listeners.selection.subscribe((path) => {
+      setPath(stringifyPath(path));
+    });
+  }, []);
+
   const { libraries } = useClientConfig();
   React.useEffect(() => {
     return listeners.createComponent.subscribe(({ path, name, library }) => {
@@ -86,10 +112,110 @@ const useComponentActions = ({
       });
     });
   }, [libraries]);
+
+  React.useEffect(() => {
+    return listeners.changeComponent.subscribe(({ library, name }) => {
+      if (!computation || parentPath == null || elementId === null) return;
+
+      let index = -1;
+      tools.forEach(
+        computation,
+        (value, i) => {
+          if (tools.isLayoutElement(value) && value.id === elementId) {
+            index = i;
+            return true;
+          }
+        },
+        true
+      );
+
+      console.log("CHANGE", computation, index, parentPath, library, name);
+
+      if (index < 0) return;
+
+      push({
+        target: targetTools.stringify({
+          field: "default",
+          operation: "computation",
+          location: parentPath,
+        }),
+        ops: [
+          {
+            index,
+            insert: [createComponent(name, { library, libraries })],
+            remove: 1,
+          },
+        ],
+      });
+    });
+  }, [libraries, computation, parentPath, elementId]);
+
+  React.useEffect(() => {
+    return listeners.deleteComponent.subscribe(() => {
+      if (!computation || parentPath == null || elementId === null) return;
+
+      let index = -1;
+      tools.forEach(
+        computation,
+        (value, i) => {
+          if (tools.isLayoutElement(value) && value.id === elementId) {
+            index = i;
+            return true;
+          }
+        },
+        true
+      );
+
+      if (index < 0) return;
+
+      push({
+        target: targetTools.stringify({
+          field: "default",
+          operation: "computation",
+          location: parentPath,
+        }),
+        ops: [
+          {
+            index,
+            remove: 1,
+          },
+        ],
+      });
+
+      setBuilderPath((ps) => ps.slice(0, -1));
+    });
+  }, [libraries, computation, parentPath, elementId]);
+
   React.useEffect(() => {
     return listeners.moveComponent.subscribe(({ parent, from, to }) => {
-      console.log("MOVED", parent, from, to);
-      const fieldId = parent.split(".")[0];
+      if (!computation) return;
+      if (parent !== fullParentPath) return;
+      let fromIndex: number | null = null;
+      let toIndex: number | null = null;
+      let i = -1;
+      tools.forEach(
+        computation,
+        (value, index) => {
+          if (tools.isLayoutElement(value)) {
+            i++;
+          }
+          if (i === from) {
+            fromIndex = index;
+          }
+          if (i === to) {
+            toIndex = index;
+          }
+          if (fromIndex !== null && toIndex !== null) {
+            return true;
+          }
+        },
+        true
+      );
+
+      if (fromIndex === null || toIndex === null) {
+        return;
+      }
+
       const location = parent.split(".").slice(1).join(".");
       push({
         target: targetTools.stringify({
@@ -99,19 +225,27 @@ const useComponentActions = ({
         }),
         ops: [
           {
-            index: from,
+            index: fromIndex,
             remove: 1,
           },
           {
-            index: to,
+            index: toIndex,
           },
         ],
       });
     });
-  }, [libraries]);
+  }, [computation, fullParentPath]);
 };
 
-function Toolbar({ id }: { id: FieldId }) {
+function Toolbar({
+  id,
+  path,
+  setPath,
+}: {
+  id: FieldId;
+  path: Path;
+  setPath: (payload: Path | ((ps: Path) => Path)) => void;
+}) {
   const documentId = getDocumentId(id);
 
   const isNative = documentId === getTemplateDocumentId(id);
@@ -121,7 +255,7 @@ function Toolbar({ id }: { id: FieldId }) {
 
   return (
     <div className="flex mb-5">
-      <div className="mt-5 mr-2">
+      <div className="mt-5 mr-5">
         <Content.ToolbarButton
           icon={ChevronLeftIcon}
           onClick={() => {
@@ -131,8 +265,11 @@ function Toolbar({ id }: { id: FieldId }) {
           Tilbage
         </Content.ToolbarButton>
       </div>
+      <div className="mt-5 mr-auto flex items-center">
+        <PathMap path={path} setPath={setPath} />
+      </div>
       {isNative && <FieldToolbar documentId={documentId} fieldId={id} />}
-      <div className="mt-5 ml-auto">
+      <div className="mt-5 ml-2">
         <Content.ToolbarButton>Gem felt</Content.ToolbarButton>
       </div>
     </div>
@@ -144,11 +281,15 @@ export function FieldPage({
   initialValue,
   selected,
   children,
+  builderPath,
+  setBuilderPath,
 }: {
   id: FieldId;
   initialValue: Computation;
   selected: boolean;
   children?: React.ReactNode;
+  builderPath: Path;
+  setBuilderPath: (payload: Path | ((ps: Path) => Path)) => void;
 }) {
   const listeners = useIframeListeners();
   const dispatchers = useIframeDispatchers();
@@ -162,7 +303,7 @@ export function FieldPage({
     templateFieldId
   );
 
-  useComponentActions({ listeners, push });
+  useElementActions({ id, listeners, push, setBuilderPath });
 
   const [direction, setDirection] = useLocalStorage<
     "horizontal" | "vertical" | "horizontal-reverse" | "vertical-reverse"
@@ -188,7 +329,7 @@ export function FieldPage({
 
   return (
     <Content
-      toolbar={<Toolbar id={id} />}
+      toolbar={<Toolbar id={id} path={builderPath} setPath={setBuilderPath} />}
       selected={selected}
       className="h-[calc(100%-64px)]"
     >

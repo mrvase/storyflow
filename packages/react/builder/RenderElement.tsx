@@ -20,8 +20,8 @@ import {
 import { useValue } from "../builder/RenderBuilder";
 import RenderComponent from "./RenderComponent";
 import { cms } from "../src/CMSElement";
-import { getConfigByType } from "./getConfigByType";
-import { getLibraryConfigs } from "../config";
+import { getConfigByType } from "../config/getConfigByType";
+import { getLibraries, getLibraryConfigs } from "../config";
 
 const BUCKET_NAME = "awss3stack-mybucket15d133bf-1wx5fzxzweii4";
 const BUCKET_REGION = "eu-west-1";
@@ -81,7 +81,7 @@ export default function RenderElement({
   const uncomputedProps =
     propsFromProps ?? (useValue(path) as Record<string, ValueArray>);
 
-  let config_ = getConfigByType(type, getLibraryConfigs());
+  let config_ = getConfigByType(type, getLibraryConfigs(), getLibraries());
 
   if (!config_) {
     return null;

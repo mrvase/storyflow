@@ -13,6 +13,7 @@ import {
 } from "@storyflow/frontend/types";
 import * as React from "react";
 import { cms } from "../src/CMSElement";
+import { createRenderArray } from "./createRenderArray";
 
 declare module "@storyflow/frontend/types" {
   interface ComponentType<P> {
@@ -37,69 +38,70 @@ export const createLibrary = <C extends LibraryConfig>(
 let LIBRARIES: Library<any>[] | null = null;
 let LIBRARY_CONFIGS: LibraryConfig[] | null = null;
 
+const defaultLibrary = {
+  name: "",
+  components: {
+    Text: ({ children }: any) => {
+      return <p>{children}</p>;
+    },
+    H1: ({ children }: any) => {
+      return <h1>{children}</h1>;
+    },
+    H2: ({ children }: any) => {
+      return <h2>{children}</h2>;
+    },
+    H3: ({ children }: any) => {
+      return <h3>{children}</h3>;
+    },
+    Outlet: () => (
+      <cms.div
+        style={{
+          padding: "15px",
+          textAlign: "center",
+          color: "#0005",
+          backgroundColor: "#fff",
+        }}
+      >
+        [Outlet]
+      </cms.div>
+    ),
+    Link: ({ href, label }: { href?: string; label?: String }) => {
+      return <cms.a href={`/${href ?? ""}`}>{label}</cms.a>;
+    },
+  },
+};
+
 export function registerLibraries(libraries: Library<any>[]) {
   LIBRARIES = [
     ...libraries,
     // FALLBACK LIBRARY:
-    {
-      name: "",
-      components: {
-        Text: ({ children }: any) => {
-          return <p>{children}</p>;
-        },
-        H1: ({ children }: any) => {
-          return <h1>{children}</h1>;
-        },
-        H2: ({ children }: any) => {
-          return <h2>{children}</h2>;
-        },
-        H3: ({ children }: any) => {
-          return <h3>{children}</h3>;
-        },
-        Outlet: () => (
-          <div
-            style={{
-              padding: "15px",
-              textAlign: "center",
-              color: "#0005",
-              backgroundColor: "#fff",
-            }}
-          >
-            [Outlet]
-          </div>
-        ),
-        Link: ({ href, label }: { href?: string; label?: String }) => {
-          return <cms.a href={`/${href ?? ""}`}>{label}</cms.a>;
-        },
-      },
-    },
+    defaultLibrary,
   ];
 }
 
-export const registerLibraryConfigs = (configs: LibraryConfig[]) => {
-  LIBRARY_CONFIGS = [
-    ...configs,
-    {
-      name: "",
-      label: "Default",
-      components: {
-        Outlet: {
-          label: "Outlet",
-          name: "Outlet",
-          props: [],
-        },
-        Link: {
-          label: "Link",
-          name: "Link",
-          props: [
-            { name: "href", type: "string", label: "URL" },
-            { name: "label", type: "string", label: "Label" },
-          ],
-          inline: true,
-        },
-      },
+const defaultLibraryConfig: LibraryConfig = {
+  name: "",
+  label: "Default",
+  components: {
+    Outlet: {
+      label: "Outlet",
+      name: "Outlet",
+      props: [],
     },
-  ];
+    Link: {
+      label: "Link",
+      name: "Link",
+      props: [
+        { name: "href", type: "string", label: "URL" },
+        { name: "label", type: "string", label: "Label" },
+      ],
+      inline: true,
+    },
+  },
+};
+
+export const registerLibraryConfigs = (configs: LibraryConfig[]) => {
+  LIBRARY_CONFIGS = [...configs, defaultLibraryConfig];
 };
 
 export const createComponent = <T extends readonly PropConfig[]>(
@@ -128,30 +130,37 @@ export const createFullConfig = <T extends ExtendedLibraryConfig>(
     return entries.find(([, value]) => value === componentConfig)?.[0];
   };
 
-  const handleImports: any = (props: any) => {
-    return Object.fromEntries(
-      Object.entries(props).map(([key, value]) => {
-        if (Array.isArray(value)) {
-          return [
-            key,
-            {
-              $children: value.map((el: any) => {
-                if (typeof el !== "object") return el;
+  const handleImports = (props: any, libraries: LibraryConfig[]): any => {
+    const modifyValues = (
+      obj: any,
+      callback: (value: any, key: string) => any
+    ) => {
+      return Object.fromEntries(
+        Object.entries(obj).map(([key, value]) => [key, callback(value, key)])
+      );
+    };
 
-                return {
-                  id: "",
-                  type: el.typespace
-                    ? `${config.name}:${el.typespace}/${getName(el)}`
-                    : `${config.name}:${getName(el)}`,
-                  props: handleImports(el.stories?.[0]?.props ?? {}),
-                };
-              }),
-            },
-          ];
-        }
-        return [key, value];
-      })
-    );
+    return modifyValues(props, (value) => {
+      if (Array.isArray(value)) {
+        return {
+          $children: createRenderArray(
+            value.map((el: any) => {
+              if (typeof el !== "object") return el;
+
+              return {
+                id: "",
+                type: el.typespace
+                  ? `${config.name}:${el.typespace}/${getName(el)}`
+                  : `${config.name}:${getName(el)}`,
+                props: handleImports(el.stories?.[0]?.props ?? {}, libraries),
+              };
+            }),
+            libraries
+          ),
+        };
+      }
+      return value;
+    });
   };
 
   let i = 0;
@@ -196,6 +205,12 @@ export const createFullConfig = <T extends ExtendedLibraryConfig>(
     i++;
   }
 
+  const libraryConfig = createLibraryConfig({
+    name: config.name,
+    label: config.label,
+    components: componentConfigs,
+  });
+
   i = 0;
   while (i < entries.length) {
     const entry = entries[i];
@@ -210,7 +225,10 @@ export const createFullConfig = <T extends ExtendedLibraryConfig>(
           {
             id: "root",
             type: `${config.name}:${key}`,
-            props: handleImports(story.props),
+            props: handleImports(story.props, [
+              libraryConfig,
+              defaultLibraryConfig,
+            ]),
           },
         ],
       }));
@@ -222,11 +240,7 @@ export const createFullConfig = <T extends ExtendedLibraryConfig>(
   }
 
   return [
-    createLibraryConfig({
-      name: config.name,
-      label: config.label,
-      components: componentConfigs,
-    }),
+    libraryConfig,
     createLibrary({
       name: config.name,
       components,

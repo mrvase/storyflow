@@ -211,10 +211,6 @@ const isAdjacent = (
   return prevEndingIndex === nextStartingIndex;
 };
 
-const isNoop = (ops: ComputationOp["ops"]): ops is TextOps => {
-  return ops.length === 1 && !ops[0].insert && !ops[0].remove;
-};
-
 type QueryType = "<" | "@" | "#" | "/" | ".";
 
 const getQueryType = (query: string, index: number): QueryType | null => {
@@ -237,8 +233,10 @@ export function Query({
   push: (
     payload:
       | ComputationOp["ops"]
-      | ((prev: ComputationOp["ops"] | undefined) => ComputationOp["ops"][]),
-    noTracking?: boolean
+      | ((
+          prev: ComputationOp["ops"] | undefined,
+          noop: ComputationOp["ops"]
+        ) => ComputationOp["ops"][])
   ) => void;
   children: (
     push: (payload: ComputationOp["ops"], tags: Set<string>) => void
@@ -256,16 +254,15 @@ export function Query({
 
   const pushWithQuery = React.useCallback(
     (next: ComputationOp["ops"], tags: Set<string>) => {
-      return push((prev) => {
+      return push((prev, noop) => {
         let result: ComputationOp["ops"][] = [];
 
         console.log("PUSH INPUT", prev, next);
 
-        if (!prev || isNoop(prev)) {
+        if (!prev || prev === noop) {
           result = [next];
         } else {
           result = [prev, next];
-
           if (isAdjacent(prev, next)) {
             const nextIsSymbolInsert =
               isTextInsert(next) && next[0].insert[0].match(/([^\wæøå-])/)?.[1];
@@ -328,6 +325,7 @@ export function Query({
         } else {
           setQuery("");
           setQueryType(null);
+          result.push(noop);
         }
         console.log("PUSH RESULT", ...result);
         return result;
@@ -447,14 +445,14 @@ export function Query({
   const escape = () => {
     setQuery("");
     setQueryType(null);
-    push((prev) => {
+    push((prev, noop) => {
       if (!prev) {
         return [];
       }
-      if (isNoop(prev)) {
+      if (prev === noop) {
         return [prev];
       }
-      return [prev, [{ index: 0 }]];
+      return [prev, noop];
     });
   };
 
@@ -639,7 +637,7 @@ export function Query({
         <div className="flex flex-col">
           <div
             className={cl(
-              "pt-2 relative h-10 px-3 text-opacity-50 text-gray-300 text-xs flex items-center rounded"
+              "pt-3 relative h-10 px-3 text-opacity-50 text-gray-300 text-xs flex items-center rounded"
             )}
           >
             <div>{QueryIcon && <QueryIcon className="w-4 h-4" />}</div>
@@ -1320,7 +1318,7 @@ function Option({
   return (
     <div
       className={cl(
-        "group pl-3 pr-2 h-10 rounded text-sm hover:bg-gray-700 transition-colors",
+        "group pl-3 pr-2 h-10 shrink-0 rounded text-sm hover:bg-gray-700 transition-colors",
         isSelected && "ring-1 ring-gray-700",
         "flex items-center justify-between"
       )}

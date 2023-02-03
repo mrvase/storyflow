@@ -1,6 +1,7 @@
 import {
   Component,
   ComponentConfig,
+  Library,
   LibraryConfig,
 } from "@storyflow/frontend/types";
 import { getLibraries } from "../config";
@@ -15,18 +16,35 @@ type ExtendedComponentConfig = ComponentConfig & {
   component: Component<ComponentConfig>;
 };
 
-export const getConfigByType = (type: string, configs: LibraryConfig[]) => {
+export function getConfigByType(
+  type: string,
+  configs: LibraryConfig[]
+): ComponentConfig | undefined;
+export function getConfigByType(
+  type: string,
+  configs: LibraryConfig[],
+  libraries: Library[]
+): ExtendedComponentConfig | undefined;
+export function getConfigByType(
+  type: string,
+  configs: LibraryConfig[],
+  libraries?: Library[]
+): ComponentConfig | ExtendedComponentConfig | undefined {
   const [libraryName, name] = parseTypeString(type);
-  const libraries = getLibraries();
+  // const libraries = getLibraries();
 
   const getComponentFromLibraryConfig = (
     libraryConfig: LibraryConfig
-  ): ExtendedComponentConfig | undefined => {
+  ): ComponentConfig | ExtendedComponentConfig | undefined => {
     const result = Object.entries(libraryConfig.components).find(
       ([, el]) => el.name === name
     );
     if (!result) return;
     const [key, componentConfig] = result;
+
+    if (!libraries) {
+      return componentConfig;
+    }
 
     const library = libraries.find((el) => el.name === libraryConfig.name)!;
 
@@ -57,4 +75,4 @@ export const getConfigByType = (type: string, configs: LibraryConfig[]) => {
     const result = getComponentFromLibraryConfig(config);
     if (result) return result;
   }
-};
+}

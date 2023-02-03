@@ -89,21 +89,23 @@ export async function syncQueueMap<Operation extends DefaultOperation>(
     force?: boolean;
   } = {}
 ) {
-  const promises: {
-    document: string;
+  const queueHandlers: {
+    documentId: string;
+    pkg: ServerPackage<Operation>;
     promise: ReturnType<
       typeof createPromise<ServerPackage<Operation>[] | false>
     >;
-    pkg: ServerPackage<Operation>;
   }[] = [];
 
   const callback = (
     pkg: ServerPackage<Operation>,
     ctx: { document: string }
   ) => {
+    // returns a resolvable promise object that we resolve afterwards
+
     const promise = createPromise<ServerPackage<Operation>[] | false>();
-    promises.push({
-      document: ctx.document,
+    queueHandlers.push({
+      documentId: ctx.document,
       promise,
       pkg,
     });
@@ -112,24 +114,28 @@ export async function syncQueueMap<Operation extends DefaultOperation>(
 
   queues.syncEach(callback, options);
 
-  const input = promises.reduce((acc, cur) => {
-    if (!acc[cur.document]) {
-      acc[cur.document] = {};
+  // create input record
+
+  const input = queueHandlers.reduce((acc, { documentId, pkg }) => {
+    if (!acc[documentId]) {
+      acc[documentId] = {};
     }
-    const unwrapped = unwrapServerPackage(cur.pkg);
+    const unwrapped = unwrapServerPackage(pkg);
     if (unwrapped.operations.length) {
-      acc[cur.document][unwrapped.key] = cur.pkg;
+      acc[documentId][unwrapped.key] = pkg;
     }
     return acc;
   }, {} as Record<string, Record<string, ServerPackage<Operation>>>);
 
   const result = await mutation(input);
 
-  promises.forEach(({ pkg, document, promise }) => {
+  // resolve promises
+
+  queueHandlers.forEach(({ pkg, documentId, promise }) => {
     if (isError(result)) {
       promise.resolve(false);
     } else {
-      const doc = unwrap(result)[document];
+      const doc = unwrap(result)[documentId];
       const pkgs = doc[unwrapServerPackage(pkg).key];
       promise.resolve(pkgs ?? []);
     }

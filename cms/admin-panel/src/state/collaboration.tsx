@@ -20,10 +20,10 @@ import { useContextWithError } from "../utils/contextError";
 import { useClient } from "../client";
 import { useSubject } from "./useSubject";
 
-export type QueueStrategy<Operation extends DefaultOperation> = {
+export type QueueOptions<Operation extends DefaultOperation> = {
   transform: QueueTransformStrategy<Operation>;
   invert?: QueueInvertStrategy<Operation>;
-  mergeable?: number;
+  mergeableNoop?: Operation;
 };
 
 export const CollabContext = React.createContext<ReturnType<
@@ -75,12 +75,12 @@ function createDocumentCollaboration(
     return result;
   };
 
-  const duration = 5000;
+  const duration = 3500;
 
   const syncOnInterval = () => {
     return onInterval(
       (event) => {
-        if (event === "unload") {
+        if (event === "unload" || event === "visibilitychange") {
           return sync(true);
         }
         return throttle(() => sync(false), duration / 2);
@@ -94,23 +94,34 @@ function createDocumentCollaboration(
     key: string, // article (templates / labels) // field name (text / component),
     tracker?: QueueTracker<Operation>
   ): {
-    push: (
-      action: Operation | ((prev: Operation | undefined) => Operation[]),
-      noTracking?: boolean
+    push: (action: Operation) => void;
+    mergeablePush: (
+      action:
+        | Operation
+        | ((prev: Operation | undefined, noop: Operation) => Operation[])
     ) => void;
     undo: (state: any) => void;
     redo: (state: any) => void;
   } => {
     return {
-      push(op, noTracking) {
+      push(op) {
         const queue = queues.get<Operation>(document, key)!;
-        if (noTracking) {
-          const changed = queue.push(op);
-          if (changed) emitMutation(document);
+        let changed = false;
+        if (queue.mergeableNoop) {
+          // make sure to always have mergeableNoop at the end with normal push
+          changed = queue.push((prev, noop) => {
+            if (!prev || prev === noop) return [op, noop];
+            return [prev, op, noop];
+          }, tracker);
         } else {
-          const changed = queue.push(op, tracker);
-          if (changed) emitMutation(document);
+          changed = queue.push(op, tracker);
         }
+        if (changed) emitMutation(document);
+      },
+      mergeablePush(op) {
+        const queue = queues.get<Operation>(document, key)!;
+        const changed = queue.push(op, tracker);
+        if (changed) emitMutation(document);
       },
       undo(state) {
         emitMutation(document);
@@ -143,11 +154,11 @@ function createDocumentCollaboration(
   const addQueue = <Operation extends AnyOp>(
     document: string,
     key: string,
-    strategy: QueueStrategy<Operation>
+    strategy: QueueOptions<Operation>
   ) => {
     const queue = withUndoRedo(
       createQueue(key, {
-        mergeable: strategy.mergeable,
+        mergeableNoop: strategy.mergeableNoop,
         transform: strategy.transform,
       }),
       strategy.invert
@@ -159,7 +170,7 @@ function createDocumentCollaboration(
   const getOrAddQueue = <Operation extends AnyOp>(
     document: string,
     key: string,
-    strategy: QueueStrategy<Operation>
+    strategy: QueueOptions<Operation>
   ) => {
     const current = queues.get(document, key);
     if (current) return current as any as WithUndoRedo<Queue<Operation>>;

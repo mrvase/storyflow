@@ -21,7 +21,11 @@ export const createEventsFromIframeToCMS = () => {
       name: string;
       library: string;
     }>("create-component", state),
-    changeComponent: createIframeEvent<string>("change-component", state),
+    changeComponent: createIframeEvent<{ name: string; library: string }>(
+      "change-component",
+      state
+    ),
+    deleteComponent: createIframeEvent("delete-component", state),
     moveComponent: createIframeEvent<{
       parent: string;
       from: number;

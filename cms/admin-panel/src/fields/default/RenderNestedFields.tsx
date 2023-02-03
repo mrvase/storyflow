@@ -3,7 +3,10 @@ import Editor from "../Editor/Editor";
 import { ComputationOp } from "shared/operations";
 import { ContentEditable } from "../../editor/react/ContentEditable";
 import { useGlobalState } from "../../state/state";
-import { encodeEditorComputation } from "shared/editor-computation";
+import {
+  decodeEditorComputation,
+  encodeEditorComputation,
+} from "shared/editor-computation";
 import cl from "clsx";
 import {
   Computation,
@@ -11,6 +14,7 @@ import {
   NestedDocument,
   FieldId,
   FieldImport,
+  EditorComputation,
 } from "@storyflow/backend/types";
 import {
   ChevronRightIcon,
@@ -161,7 +165,8 @@ function FilterComp({
   );
 
   const setValue = React.useCallback(
-    (value: () => Computation) => setFilterValue("value", value()),
+    (value: () => EditorComputation) =>
+      setFilterValue("value", decodeEditorComputation(value())),
     []
   );
 
@@ -353,7 +358,7 @@ function NestedFieldsWrapper({
   return (
     <div
       className={cl(
-        isActive ? "py-8 focus-permanent" : hideWhenInactive && "hidden"
+        isActive ? "py-5 focus-permanent" : hideWhenInactive && "hidden"
       )}
     >
       {children}

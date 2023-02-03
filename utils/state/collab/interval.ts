@@ -2,7 +2,7 @@ import { Result } from "@storyflow/result";
 
 export function onInterval(
   callback: (
-    event: "start" | "stop" | "interval" | "unload"
+    event: "start" | "stop" | "interval" | "unload" | "visibilitychange"
   ) => Promise<Result<any>> | undefined,
   options: {
     duration?: number;
@@ -14,7 +14,9 @@ export function onInterval(
 
   let error = false;
 
-  const run = async (event: "start" | "stop" | "interval" | "unload") => {
+  const run = async (
+    event: "start" | "stop" | "interval" | "unload" | "visibilitychange"
+  ) => {
     const result = await callback(event);
     /*
     if (result && isError(result)) {
@@ -40,6 +42,7 @@ export function onInterval(
   };
 
   const onFocus = () => {
+    run("start");
     startInterval();
   };
 
@@ -47,17 +50,24 @@ export function onInterval(
     stopInterval();
   };
 
+  const onVisibilityChange = async () => {
+    run("visibilitychange");
+  };
+
   const onUnload = async () => {
     run("unload");
+    /*
     localStorage.setItem(
       "UNLOADED",
       String(Number(localStorage.getItem("UNLOADED") ?? "0") + 1)
     );
+    */
   };
 
   const start = () => {
     window.addEventListener("focus", onFocus);
     window.addEventListener("blur", onBlur);
+    window.addEventListener("visibilitychange", onVisibilityChange);
     window.addEventListener("beforeunload", onUnload);
 
     if (document.hasFocus()) {
@@ -77,6 +87,7 @@ export function onInterval(
     }
     window.removeEventListener("focus", onFocus);
     window.removeEventListener("blur", onBlur);
+    window.removeEventListener("visibilitychange", onVisibilityChange);
     window.removeEventListener("beforeunload", onUnload);
   };
 

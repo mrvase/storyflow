@@ -40,7 +40,7 @@ import { useArticlePageContext } from "../articles/ArticlePageContext";
 import { useLocalStorage } from "../state/useLocalStorage";
 import useTabs from "../layout/useTabs";
 
-const useBuilderPath = (): [
+export const useBuilderPath = (): [
   path: Path,
   setPath: (value: Path | ((ps: Path) => Path)) => void
 ] => {
@@ -198,8 +198,21 @@ function FieldContainerInner({
             selected={isOpen}
             id={fieldConfig.id}
             initialValue={initialValue}
+            builderPath={path}
+            setBuilderPath={setPath}
           >
-            {content(false)}
+            <div
+              className={cl(
+                "relative grow shrink basis-0 focus-container pt-4"
+              )}
+            >
+              <div
+                className={cl(
+                  "-z-10 absolute bg-black/20 inset-0 pointer-events-none"
+                )}
+              />
+              {children}
+            </div>
           </FieldPage>
         )}
       </BuilderPortal>
@@ -207,7 +220,7 @@ function FieldContainerInner({
   );
 }
 
-function PathMap({
+export function PathMap({
   path,
   setPath,
 }: {

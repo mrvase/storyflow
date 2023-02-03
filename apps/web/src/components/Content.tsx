@@ -33,7 +33,7 @@ export const Content = createComponent(
       {
         label: "En anden farve",
         props: {
-          backgroundColor: "#00f",
+          backgroundColor: "#0f0",
           content: ["hej med dig"],
         },
       },

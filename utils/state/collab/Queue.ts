@@ -32,7 +32,9 @@ export interface Queue<Operation extends DefaultOperation> {
   key: string;
   clientId: string | number | null;
   push: (
-    action: Operation | ((latest: Operation | undefined) => Operation[]),
+    action:
+      | Operation
+      | ((latest: Operation | undefined, noop: Operation) => Operation[]),
     tracker?: QueueTracker<Operation>
   ) => boolean;
   register: (
@@ -53,6 +55,7 @@ export interface Queue<Operation extends DefaultOperation> {
     initialVersion: number,
     initialHistory: ServerPackage<Operation>[]
   ) => this;
+  mergeableNoop: Operation | undefined;
 }
 
 export function createQueueTracker<Operation extends DefaultOperation>() {
@@ -104,7 +107,7 @@ export type QueueTracker<Operation extends DefaultOperation> = ReturnType<
 export function createQueue<Operation extends DefaultOperation>(
   key: string,
   options: {
-    mergeable?: number;
+    mergeableNoop?: Operation;
     transform?: QueueTransformStrategy<Operation>;
     clientId?: string | number | null;
   } = {}
@@ -150,11 +153,10 @@ export function createQueue<Operation extends DefaultOperation>(
   function _post(force = false) {
     if (!state.queue.length) return;
 
-    const mergeable = options.mergeable; // && timer.getDelta() < options.mergeable;
+    const last = state.queue[state.queue.length - 1];
+    const lastIsNoop = last && last === options.mergeableNoop;
 
-    console.log("POSTING", mergeable);
-
-    if (mergeable && !force) {
+    if (options.mergeableNoop && (!force || lastIsNoop)) {
       state.posted = state.queue.slice(0, -1);
       state.queue = state.queue.slice(-1);
     } else {
@@ -169,7 +171,9 @@ export function createQueue<Operation extends DefaultOperation>(
   }
 
   function push(
-    operation: Operation | ((latest: Operation | undefined) => Operation[]),
+    operation:
+      | Operation
+      | ((latest: Operation | undefined, noop: Operation) => Operation[]),
     tracker?: QueueTracker<Operation>
   ) {
     if (!state.initialized) {
@@ -185,36 +189,29 @@ export function createQueue<Operation extends DefaultOperation>(
     }
 
     if (operations.length === 0) {
+      console.log("EMPTY PUSH");
       return false;
     }
 
     state.queue.push(...operations);
     tracker?.push(...operations);
 
-    const last = operations.slice(-1)[0];
-    if (
-      "ops" in last &&
-      Array.isArray(last.ops) &&
-      last.ops.length === 1 &&
-      "index" in last.ops[0] &&
-      !("insert" in last.ops[0]) &&
-      !("remove" in last.ops[0])
-    ) {
-      console.log("**** NEW PUSH ****");
-    }
+    console.log("PUSH", operations, state.queue);
 
-    // timer.trigger();
     _triggerListeners({ origin: "push" });
     return true;
   }
 
   function merge(
-    callback: (latest: Operation | undefined) => Operation[]
+    callback: (latest: Operation | undefined, noop: Operation) => Operation[]
   ): Operation[] {
     const queue = state.queue;
 
     const [latest] = queue.splice(queue.length - 1, 1);
-    const operations = callback(latest);
+    const operations = callback(
+      latest,
+      options.mergeableNoop ?? ({} as Operation)
+    );
 
     if (operations.length === 1 && operations[0] === latest) {
       queue.push(...operations);
@@ -467,6 +464,7 @@ export function createQueue<Operation extends DefaultOperation>(
     isInactive,
     forEach,
     initialize,
+    mergeableNoop: options.mergeableNoop,
   };
 
   return queue;

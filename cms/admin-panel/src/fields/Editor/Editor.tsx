@@ -84,12 +84,14 @@ export default function Editor({
   push?: (
     payload:
       | ComputationOp["ops"]
-      | ((prev: ComputationOp["ops"] | undefined) => ComputationOp["ops"][]),
-    noTracking?: boolean
+      | ((
+          prev: ComputationOp["ops"] | undefined,
+          noop: ComputationOp["ops"]
+        ) => ComputationOp["ops"][])
   ) => void;
   register?: (listener: QueueListener<ComputationOp>) => () => void;
   initialValue: EditorComputation;
-  setValue: (value: () => Computation) => void;
+  setValue: (value: () => EditorComputation) => void;
   transform?: FunctionName;
   children?: React.ReactNode;
   options?: string[];
@@ -120,7 +122,7 @@ export default function Editor({
           )}
         </Query>
       ) : (
-        <Setter setValue={setValue} transform={transform} />
+        <Setter setValue={setValue} />
       )}
       {children}
     </EditorProvider>
@@ -129,10 +131,8 @@ export default function Editor({
 
 function Setter({
   setValue,
-  transform,
 }: {
-  setValue: (callback: () => Computation) => void;
-  transform?: FunctionName;
+  setValue: (callback: () => EditorComputation) => void;
 }) {
   const editor = useEditorContext();
 
@@ -143,7 +143,7 @@ function Setter({
       }
 
       const next = editorState.read(() => $getComputation($getRoot()));
-      setValue(() => decodeEditorComputation(next, transform));
+      setValue(() => next);
     });
   }, [editor]);
 

@@ -39,6 +39,7 @@ export const createRenderArray = (
   value: ValueArray,
   configs: LibraryConfig[]
 ) => {
+  console.log("CONFIG", value, configs);
   return value.reduce((a, c) => {
     if (!isRenderable(c)) {
       return a;

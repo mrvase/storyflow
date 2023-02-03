@@ -6,7 +6,10 @@ import { useEditorContext } from "../../editor/react/EditorProvider";
 import { ContentEditable } from "../../editor/react/ContentEditable";
 import { useIsEmpty } from "../../editor/react/useIsEmpty";
 import { useSingular, useGlobalState } from "../../state/state";
-import { encodeEditorComputation } from "shared/editor-computation";
+import {
+  decodeEditorComputation,
+  encodeEditorComputation,
+} from "shared/editor-computation";
 import cl from "clsx";
 import { createComputationTransformer, getConfig } from "shared/fieldConfig";
 import {
@@ -16,6 +19,7 @@ import {
   FieldId,
   FieldImport,
   FieldConfig,
+  EditorComputation,
 } from "@storyflow/backend/types";
 import { useArticlePageContext } from "../../articles/ArticlePageContext";
 import { ChevronDownIcon, LinkIcon } from "@heroicons/react/24/outline";
@@ -171,7 +175,7 @@ export default function DefaultField({
     collab
       .getOrAddQueue<ComputationOp>(id.slice(0, 4), id.slice(4), {
         transform: createComputationTransformer(initialValue),
-        mergeable: 500,
+        mergeableNoop: { target: "0:0:", ops: [] },
       })
       .initialize(version, history ?? []);
   }, []);
@@ -262,6 +266,16 @@ export function WritableDefaultField({
 
   const output: Computation = _output.flat(1) as any;
 
+  const transform =
+    path === "" ? getConfig(fieldConfig.type).transform : undefined;
+
+  const initialEditorValue = encodeEditorComputation(initialValue, transform);
+
+  const [, setComputation] = useGlobalState<EditorComputation>(
+    `${extendPath(id, path)}#computation`,
+    () => initialEditorValue
+  );
+
   const [fieldImports, setFieldImports] = useGlobalState<FieldImport[]>(
     `${extendPath(id, path)}#imports`,
     () => findImportsFn(initialValue)
@@ -290,9 +304,6 @@ export function WritableDefaultField({
     [output]
   );
 
-  const transform =
-    path === "" ? getConfig(fieldConfig.type).transform : undefined;
-
   const collab = useCollab();
 
   const actions = React.useMemo(
@@ -308,24 +319,30 @@ export function WritableDefaultField({
     (
       payload:
         | ComputationOp["ops"]
-        | ((prev: ComputationOp["ops"] | undefined) => ComputationOp["ops"][]),
-      noTracking?: boolean
+        | ((
+            prev: ComputationOp["ops"] | undefined,
+            noop: ComputationOp["ops"]
+          ) => ComputationOp["ops"][])
     ) => {
-      return actions.push((_prev) => {
+      return actions.mergeablePush((_prev, noop) => {
         const prev = _prev?.target === target ? _prev : undefined; // only treat as mergeable if they have same target.
         const newOps =
-          typeof payload === "function" ? payload(prev?.ops) : [payload];
-        return newOps.map((ops) => ({ target, ops }));
-      }, noTracking);
+          typeof payload === "function"
+            ? payload(prev?.ops, noop.ops)
+            : [payload];
+        return newOps.map((ops) => (ops === noop.ops ? noop : { target, ops }));
+      });
     },
     [actions, target]
   );
 
   const singular = useSingular(`${id}${target}`);
 
-  const setValue = React.useCallback((func: () => Computation) => {
+  const setValue = React.useCallback((func: () => EditorComputation) => {
     singular(() => {
-      const decoded = func();
+      setComputation(func);
+      const encoded = func();
+      const decoded = decodeEditorComputation(encoded, transform);
       setOutput(() => calculateFn(id, decoded, {}, client));
       setFieldImports(() => findImportsFn(decoded));
       setFetchers(() => findFetchersFn(decoded));
@@ -339,7 +356,7 @@ export function WritableDefaultField({
         id={id}
         push={push}
         register={actions.register}
-        initialValue={encodeEditorComputation(initialValue, transform)}
+        initialValue={initialEditorValue}
         setValue={setValue}
         transform={transform}
         options={options}
