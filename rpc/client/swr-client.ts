@@ -65,21 +65,22 @@ export function createSWRClient<UserAPI extends API>(
             if (typeof procedure !== "string")
               throw new Error(proxyErrorMessage);
             return {
-              useQuery: (input: any, options: UseQueryOptions = {}) => {
+              useQuery: (
+                input: any,
+                { inactive, context, ...SWROptions }: UseQueryOptions = {}
+              ) => {
                 const ctx = useContext?.();
                 return useSWR(
                   () =>
-                    options.inactive
+                    inactive
                       ? undefined
                       : queryKey(
                           `${apiUrl}/${route}/${procedure}`,
                           input,
-                          getContext(options.context, ctx)
+                          getContext(context, ctx)
                         ),
                   SWRFetcher,
-                  {
-                    refreshInterval: options.refreshInterval,
-                  }
+                  SWROptions
                 );
               },
               useMutation: (

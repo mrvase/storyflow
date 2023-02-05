@@ -1,4 +1,6 @@
 export const markdownToHTML = (string: string) => {
+  string = string.replace(/\</g, "&lt;");
+  string = string.replace(/\>/g, "&gt;");
   const matches = string.matchAll(new RegExp(`^(\\*+)|[^\\\\](\\*+)`, "g"));
 
   let prev = 0;

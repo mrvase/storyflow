@@ -14,6 +14,7 @@ import { Token, TokenString } from "@storyflow/backend/types";
 import { useIsSelected } from "./useIsSelected";
 import { caretClasses } from "./caret";
 import { PhotoIcon } from "@heroicons/react/24/outline";
+import { useFileLabel } from "../../files";
 
 export const getTokenType = (value: TokenString) => {
   if (value.match(/^#[0-9a-fA-F]+$/)) {
@@ -31,6 +32,8 @@ function TokenDecorator({ nodeKey, token }: { nodeKey: string; token: Token }) {
   const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
   const selectClick = React.useRef(false);
 
+  const label = useFileLabel(token[0]);
+
   return (
     <span
       className={cl(
@@ -47,7 +50,7 @@ function TokenDecorator({ nodeKey, token }: { nodeKey: string; token: Token }) {
     >
       <span className="flex-center gap-2">
         <PhotoIcon className="w-4 h-4 inline" />
-        {token[0]}
+        {label}
       </span>
     </span>
   );

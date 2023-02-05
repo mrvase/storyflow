@@ -26,14 +26,21 @@ import { getLibraries, getLibraryConfigs } from "../config";
 const BUCKET_NAME = "awss3stack-mybucket15d133bf-1wx5fzxzweii4";
 const BUCKET_REGION = "eu-west-1";
 
-const getImageObject = (name: string, slug: string) => {
-  const url = `https://${BUCKET_NAME}.s3.${BUCKET_REGION}.amazonaws.com/${slug}/${name}`;
+const slug =
+  typeof window !== "undefined"
+    ? new URLSearchParams(window.location.search).get("slug")!
+    : "";
 
-  const width = name ? parseInt(name.split("-")[1] ?? "0", 10) : 0;
-  const height = name ? parseInt(name.split("-")[2] ?? "0", 10) : 0;
+const getImageObject = (name: string) => {
+  const src = slug
+    ? `https://${BUCKET_NAME}.s3.${BUCKET_REGION}.amazonaws.com/${slug}/${name}`
+    : "";
+
+  const width = name ? parseInt(name.split("-")[4] ?? "0", 10) : 0;
+  const height = name ? parseInt(name.split("-")[5] ?? "0", 10) : 0;
 
   return {
-    url,
+    src,
     width,
     height,
   };
@@ -44,12 +51,12 @@ const calculateProp = (config: PropConfig, prop: any) => {
     const src = prop[0];
     if (!src.match(/\.(png|jpg|jpeg|gif)$/)) {
       return {
-        url: "",
+        src: "",
         width: 0,
         height: 0,
       };
     }
-    return getImageObject(src, "kfs");
+    return getImageObject(src);
   }
   if (config.type === "children" && prop.length > 0) {
     return (

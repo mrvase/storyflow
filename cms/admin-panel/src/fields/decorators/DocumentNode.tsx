@@ -166,7 +166,7 @@ function DocumentDecorator({
                     values[getTemplateFieldId(id)] ?? undefined;
                   return (
                     <ValueDisplay
-                      key={`id-${Boolean(initialValue)}`}
+                      key={`${docId}-${id}-${Boolean(initialValue)}`}
                       id={
                         type === "nested" && "id" in value
                           ? (`${parentFieldId}.${value.id}/${id.slice(

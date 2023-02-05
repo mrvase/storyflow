@@ -5,7 +5,7 @@ export interface ComponentType<P extends Props<ComponentConfig>> {
 type PropTypes = {
   string: string;
   image: {
-    url: string;
+    src: string;
     width: number;
     height: number;
   };

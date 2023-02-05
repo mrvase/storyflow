@@ -1,8 +1,23 @@
 import { isError, unwrap } from "@storyflow/result";
 import { SWRClient, useClient } from "../client";
 
+function useFilesQuery() {
+  return SWRClient.files.getAll.useQuery(undefined, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+    revalidateIfStale: false,
+  });
+}
+
+export function useFileLabel(name: string) {
+  const defaultLabel = "Fil uden navn";
+  const { data } = useFilesQuery();
+  if (!data) return defaultLabel;
+  return data.find((el) => el.name === name)?.label ?? defaultLabel;
+}
+
 export function useFiles() {
-  const { data, mutate } = SWRClient.files.getAll.useQuery();
+  const { data, mutate } = useFilesQuery();
 
   const client = useClient();
 

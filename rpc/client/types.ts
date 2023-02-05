@@ -5,7 +5,7 @@ import type {
   OptionalParamFunc,
   QueryObject,
 } from "@sfrpc/types";
-import type { SWRResponse } from "swr";
+import type { SWRResponse, SWRConfiguration } from "swr";
 
 export type SharedOptions = {
   context?:
@@ -47,8 +47,7 @@ export type APIToClient<UserAPI extends API> = {
 
 export type UseQueryOptions = SharedOptions & {
   inactive?: boolean;
-  refreshInterval?: number;
-};
+} & SWRConfiguration;
 
 export type UseMutationOptions<
   UserAPI,
