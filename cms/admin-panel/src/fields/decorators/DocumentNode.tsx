@@ -15,6 +15,7 @@ import { caretClasses } from "./caret";
 import {
   Computation,
   ComputationRecord,
+  DocumentId,
   DocumentImport,
   Fetcher,
   FieldId,
@@ -219,7 +220,7 @@ function ValueDisplay({
 function TemplateSelect({
   setTemplateId,
 }: {
-  setTemplateId: (value: string) => void;
+  setTemplateId: (value: DocumentId) => void;
 }) {
   const id = useTemplateFolder()?.id;
   const { articles } = useArticleList(id);

@@ -15,6 +15,7 @@ import {
   FieldId,
   FieldImport,
   EditorComputation,
+  DocumentId,
 } from "@storyflow/backend/types";
 import {
   ChevronRightIcon,
@@ -30,37 +31,61 @@ import { Client, useClient } from "../../client";
 import { ParentProp, WritableDefaultField } from "./DefaultField";
 import { useFieldTemplate } from "./useFieldTemplate";
 import { unwrap } from "@storyflow/result";
+import { fetchFn } from "./calculateFn";
+import { TemplateHeader } from "./TemplateHeader";
 
-const fetchFn = (fetcher: Fetcher, client: Client) => {
-  const isFetcherFetchable = (
-    fetcher: Fetcher
-  ): fetcher is Fetcher & {
-    filters: {
-      field: Exclude<Filter["field"], "">;
-      operation: Exclude<Filter["operation"], "">;
-      value: Computation;
-    }[];
-  } => {
-    return (
-      fetcher.filters.length > 0 &&
-      fetcher.filters.every(
-        (el: Filter) =>
-          el.value.length > 0 &&
-          ![el.field, el.operation].some((el: any) =>
-            ["", null, undefined].includes(el)
-          )
-      )
-    );
-  };
+const ListContext = React.createContext<
+  { listId: string; templateId: string }[]
+>([]);
 
-  if (isFetcherFetchable(fetcher)) {
-    return client.articles.getListFromFilters.query(fetcher).then((res) => {
-      return unwrap(res, []);
-    });
-  } else {
-    return [];
-  }
-};
+export function ListContextProvider({
+  id,
+  path,
+  children,
+}: {
+  id: FieldId;
+  path: string;
+  children: React.ReactNode;
+}) {
+  const ctx = React.useContext(ListContext);
+
+  return <>{children}</>;
+  /*
+  const [currentKey] = useGlobalState<(Computation[number] | Computation)[]>(
+    extendPath(id, `${path}/_template`)
+  );
+
+  const nextCtx = React.useMemo(() => {
+    if (!currentKey) return ctx;
+    return [...ctx, { listId: "", templateId: "" }];
+  }, [ctx, currentKey]);
+
+  return (
+    <ListContext.Provider value={nextCtx}>
+      <IfActive else="hidden" path={path}>
+        <div>
+          <TemplateHeader template={currentKey?.[0] as DocumentId} />
+          <RenderNestedField
+            id={id}
+            path={path}
+            initialValue={[]}
+            label={"Template"}
+            name="_template"
+          />
+          <RenderNestedField
+            id={id}
+            path={path}
+            initialValue={[]}
+            label={"Listenøgle"}
+            name="_key"
+          />
+        </div>
+      </IfActive>
+      {children}
+    </ListContext.Provider>
+  );
+  */
+}
 
 export function RenderFetcher({
   id,
@@ -93,54 +118,56 @@ export function RenderFetcher({
   );
 
   return (
-    <NestedFieldsWrapper path={path} hideWhenInactive>
-      {fetcher.filters.map((filter, index) => (
-        <FilterComp
-          key={index}
-          id={id}
-          // path={extendPath(path, `${index}`, "/")}
-          setFetcher={setFetcher}
-          index={index}
-          filter={filter}
-        />
-      ))}
-      <div
-        onClick={() => {
-          setFetcher((ps) => ({
-            ...ps,
-            filters: [...ps.filters, { field: "", operation: "", value: [] }],
-          }));
-        }}
-        className="flex items-center text-xs opacity-50 cursor-default"
-      >
-        <div className="w-4 mx-5 flex-center opacity-75 px-13 h-5">
-          <PlusIcon className="w-3 h-3" />
+    <IfActive path={path} then="py-5 focus-permanent" else="hidden">
+      <div>
+        {fetcher.filters.map((filter, index) => (
+          <FilterComp
+            key={index}
+            id={id}
+            // path={extendPath(path, `${index}`, "/")}
+            setFetcher={setFetcher}
+            index={index}
+            filter={filter}
+          />
+        ))}
+        <div
+          onClick={() => {
+            setFetcher((ps) => ({
+              ...ps,
+              filters: [...ps.filters, { field: "", operation: "", value: [] }],
+            }));
+          }}
+          className="flex items-center text-xs opacity-50 cursor-default"
+        >
+          <div className="w-4 mx-5 flex-center opacity-75 px-13 h-5">
+            <PlusIcon className="w-3 h-3" />
+          </div>
+          TILFØJ FILTER
         </div>
-        TILFØJ FILTER
+        <button
+          className={cl(
+            "bg-teal-600 rounded px-3 py-1.5 ml-14 mt-5 text-sm font-light hover:bg-teal-500 transition-colors",
+            !isModified && "opacity-50"
+          )}
+          onClick={() => {
+            if (isModified) {
+              setOutput(() => fetchFn({ ...fetcher }, client));
+              push([
+                {
+                  index,
+                  insert: [{ ...fetcher }],
+                  remove: 1,
+                },
+              ]);
+              goToPath(null);
+              setIsModified(false);
+            }
+          }}
+        >
+          Aktiver ændringer
+        </button>
       </div>
-      <button
-        className={cl(
-          "bg-teal-600 rounded px-3 py-1.5 ml-14 mt-5 text-sm font-light hover:bg-teal-500 transition-colors",
-          !isModified && "opacity-50"
-        )}
-        onClick={() => {
-          if (isModified) {
-            setOutput(() => fetchFn({ ...fetcher }, client));
-            push([
-              {
-                index,
-                insert: [{ ...fetcher }],
-                remove: 1,
-              },
-            ]);
-            goToPath(null);
-            setIsModified(false);
-          }
-        }}
-      >
-        Aktiver ændringer
-      </button>
-    </NestedFieldsWrapper>
+    </IfActive>
   );
 }
 function FilterComp({
@@ -234,11 +261,18 @@ function FilterComp({
     </div>
   );
 }
-function NestedLabel({ children }: { children: React.ReactNode }) {
+function NestedLabel({
+  children,
+  className, // used by IfActive
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
     <div
       className={cl(
-        "text-sm opacity-50 flex items-center px-13 cursor-default"
+        "text-sm opacity-50 flex items-center px-13 cursor-default",
+        className
       )}
     >
       <div className="w-4 mx-5 flex-center opacity-75">
@@ -276,12 +310,19 @@ export function RenderLayoutElement({
   const initialProps = getConfigFromType(type, libraries)?.props ?? [];
 
   return (
-    <RenderNestedFields
-      id={id}
-      path={path}
-      values={initialElement?.props ?? {}}
-      template={initialProps}
-    />
+    <ListContextProvider id={id} path={path}>
+      <IfActive else="hidden" path={path}>
+        <div>
+          <div className="pl-14 pt-5 font-light text-sm">Headline</div>
+        </div>
+      </IfActive>
+      <RenderNestedFields
+        id={id}
+        path={path}
+        values={initialElement?.props ?? {}}
+        template={initialProps}
+      />
+    </ListContextProvider>
   );
 }
 export function RenderNestedDocument({
@@ -343,28 +384,26 @@ export function RenderImportArgs({
     />
   );
 }
-function NestedFieldsWrapper({
+
+function IfActive({
   path,
+  then: then_,
+  else: else_,
   children,
-  hideWhenInactive = false,
 }: {
   path: string;
-  children: React.ReactNode;
-  hideWhenInactive?: boolean;
+  then?: string;
+  else?: string;
+  children: React.ReactElement;
 }) {
   const { path: fullPath } = usePathContext();
   const isActive = stringifyPath(fullPath) === path;
 
-  return (
-    <div
-      className={cl(
-        isActive ? "py-5 focus-permanent" : hideWhenInactive && "hidden"
-      )}
-    >
-      {children}
-    </div>
-  );
+  return React.cloneElement(children, {
+    className: cl(children.props.className, isActive ? then_ : else_),
+  });
 }
+
 function RenderNestedFields({
   id,
   path,
@@ -378,35 +417,60 @@ function RenderNestedFields({
     | ({ arg: number; label: string } | { id: string; label: string })[]
     | readonly { name: string; label: string; options?: any }[];
 }) {
-  const { path: fullPath } = usePathContext();
-  const isActive = stringifyPath(fullPath) === path;
-
   return (
-    <NestedFieldsWrapper path={path}>
-      {template.map((el) => {
-        const label = el.label;
-        const name =
-          "id" in el ? el.id.slice(4) : "name" in el ? el.name : el.arg;
-        const initialValue = values[name] ?? [];
-        return (
-          <React.Fragment key={name}>
-            <div className={cl(!isActive && "hidden")}>
-              <NestedLabel>{label}</NestedLabel>
-            </div>
-            <ParentProp label={label} name={`${name}`}>
-              <WritableDefaultField
-                id={id}
-                path={extendPath(path, `${name}`, "/")}
-                initialValue={initialValue}
-                fieldConfig={{ type: "default" }}
-                {...("options" in el
-                  ? { options: el.options as string[] }
-                  : {})}
-              />
-            </ParentProp>
-          </React.Fragment>
-        );
-      })}
-    </NestedFieldsWrapper>
+    <IfActive then="pb-5 focus-permanent" path={path}>
+      <div>
+        {template.map((el) => {
+          const label = el.label;
+          const name =
+            "id" in el ? el.id.slice(4) : "name" in el ? el.name : el.arg;
+          const initialValue = values[name] ?? [];
+          return (
+            <RenderNestedField
+              key={name}
+              id={id}
+              path={path}
+              initialValue={initialValue}
+              label={label}
+              name={name}
+              options={"options" in el ? el.options : undefined}
+            />
+          );
+        })}
+      </div>
+    </IfActive>
+  );
+}
+
+function RenderNestedField({
+  path,
+  label,
+  name,
+  id,
+  initialValue,
+  options,
+}: {
+  path: string;
+  label: string;
+  name: string | number;
+  id: FieldId;
+  initialValue: Computation;
+  options?: any;
+}) {
+  return (
+    <>
+      <IfActive else="hidden" path={path}>
+        <NestedLabel>{label}</NestedLabel>
+      </IfActive>
+      <ParentProp label={label} name={`${name}`}>
+        <WritableDefaultField
+          id={id}
+          path={extendPath(path, `${name}`, "/")}
+          initialValue={initialValue}
+          fieldConfig={{ type: "default" }}
+          {...(options ? { options: options as string[] } : {})}
+        />
+      </ParentProp>
+    </>
   );
 }

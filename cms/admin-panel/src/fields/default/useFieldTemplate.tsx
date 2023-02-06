@@ -1,12 +1,11 @@
 import React from "react";
 import { getTemplateFieldsAsync, useArticleTemplate } from "../../articles";
-import { FieldConfig, FieldId } from "@storyflow/backend/types";
+import { DocumentId, FieldConfig, FieldId } from "@storyflow/backend/types";
 import { useFieldConfig } from "../../state/documentConfig";
 import { useClient } from "../../client";
 
-export const useFieldTemplate = (id: FieldId) => {
-  const [config] = useFieldConfig(id);
-  const article = useArticleTemplate(config?.template);
+export const useTemplate = (templateId: DocumentId | undefined) => {
+  const article = useArticleTemplate(templateId);
   const [template, setTemplate] = React.useState<FieldConfig[]>();
 
   const client = useClient();
@@ -20,4 +19,9 @@ export const useFieldTemplate = (id: FieldId) => {
   }, [article]);
 
   return template;
+};
+
+export const useFieldTemplate = (id: FieldId) => {
+  const [config] = useFieldConfig(id);
+  return useTemplate(config?.template);
 };

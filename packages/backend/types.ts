@@ -154,7 +154,7 @@ export type FieldConfig<T extends FieldType = FieldType> = {
   id: FieldId;
   label: string;
   type: T;
-  template?: string;
+  template?: DocumentId;
   restrictTo?: string;
 };
 
