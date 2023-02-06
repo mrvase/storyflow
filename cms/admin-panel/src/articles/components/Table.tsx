@@ -12,6 +12,7 @@ import { minimizeId } from "@storyflow/backend/ids";
 import { useFieldFocus } from "../../field-focus";
 import { addDocumentImport } from "../../custom-events";
 import { useCurrentFolder } from "../../folders/FolderPage";
+import { DocumentId } from "@storyflow/backend/types";
 
 export default function Table({
   rows,
@@ -139,7 +140,7 @@ function Checkbox({ id, name }: { id: string; name?: string }) {
         onMouseDown={(ev) => {
           ev.preventDefault();
           addDocumentImport.dispatch({
-            documentId: minimizeId(id),
+            documentId: minimizeId(id) as DocumentId,
             templateId: folder?.template,
           });
         }}
