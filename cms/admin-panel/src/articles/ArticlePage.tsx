@@ -258,7 +258,7 @@ export function FieldToolbar({
 
   return (
     <Content.Toolbar>
-      <Content.ToolbarMenu<{ id: string; label: string }>
+      <Content.ToolbarMenu<{ id: DocumentId; label: string }>
         icon={ListBulletIcon}
         label="Vælg template"
         onSelect={(el) => setConfig("template", el.id)}

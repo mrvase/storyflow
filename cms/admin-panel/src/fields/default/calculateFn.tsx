@@ -7,10 +7,13 @@ import {
   Value,
   FieldId,
   ComputationRecord,
+  Fetcher,
+  Filter,
 } from "@storyflow/backend/types";
 import { getComputationRecord } from "@storyflow/backend/flatten";
 import { getDocumentId } from "@storyflow/backend/ids";
 import { Client } from "../../client";
+import { unwrap } from "@storyflow/result";
 
 export const calculateFn = (
   id: FieldId,
@@ -53,4 +56,35 @@ export const calculateFn = (
 
   const result = calculate(id, value, getter);
   return result;
+};
+
+export const fetchFn = (fetcher: Fetcher, client: Client) => {
+  const isFetcherFetchable = (
+    fetcher: Fetcher
+  ): fetcher is Fetcher & {
+    filters: {
+      field: Exclude<Filter["field"], "">;
+      operation: Exclude<Filter["operation"], "">;
+      value: Computation;
+    }[];
+  } => {
+    return (
+      fetcher.filters.length > 0 &&
+      fetcher.filters.every(
+        (el: Filter) =>
+          el.value.length > 0 &&
+          ![el.field, el.operation].some((el: any) =>
+            ["", null, undefined].includes(el)
+          )
+      )
+    );
+  };
+
+  if (isFetcherFetchable(fetcher)) {
+    return client.articles.getListFromFilters.query(fetcher).then((res) => {
+      return unwrap(res, []);
+    });
+  } else {
+    return [];
+  }
 };

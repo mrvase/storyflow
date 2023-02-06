@@ -22,12 +22,10 @@ import {
   EditorComputation,
 } from "@storyflow/backend/types";
 import { useArticlePageContext } from "../../articles/ArticlePageContext";
-import { ChevronDownIcon, LinkIcon } from "@heroicons/react/24/outline";
 import { extendPath } from "@storyflow/backend/extendPath";
 import { Fetcher } from "@storyflow/backend/types";
 import { tools } from "shared/editor-tools";
 import { stringifyPath, usePathContext } from "../PathContext";
-import { addImport } from "../../custom-events";
 import { useFieldConfig } from "../../state/documentConfig";
 import { getDocumentId, getTemplateFieldId } from "@storyflow/backend/ids";
 import { useCollab } from "../../state/collaboration";
@@ -40,8 +38,7 @@ import {
   RenderImportArgs,
 } from "./RenderNestedFields";
 import { calculateFn } from "./calculateFn";
-import { useFieldTemplate } from "./useFieldTemplate";
-import { useArticleTemplate } from "../../articles";
+import { TemplateHeader } from "./TemplateHeader";
 
 export const ParentPropContext = React.createContext<{
   name: string;
@@ -86,6 +83,8 @@ export const getVariant = (output: any): Variant => {
 };
 
 export const getPreview = (output: Computation) => {
+  return JSON.stringify(output);
+
   const valueAsString = (value: any) => {
     if (typeof value === "boolean") {
       return value ? "SAND" : "FALSK";
@@ -94,7 +93,7 @@ export const getPreview = (output: Computation) => {
       return value.toFixed(2).replace(".", ",").replace(",00", "");
     }
     if (typeof value === "object") {
-      return "type" in value ? `{ ${value.type} }` : JSON.stringify(value);
+      return "type" in value ? `{ ${value.type} }` : "{ Dokument }";
     }
     return `${value}`;
   };
@@ -192,50 +191,6 @@ export default function DefaultField({
         fieldConfig={fieldConfig}
       />
     </>
-  );
-}
-
-function TemplateHeader({ id }: { id: FieldId }) {
-  const template = useFieldTemplate(id);
-  const { path } = usePathContext();
-
-  if (path.length !== 0 || !template) return null;
-
-  return (
-    <div className="px-14">
-      <div
-        className={cl(
-          "w-full flex divide-x divide-sky-800 rounded mt-2 -mb-0.5",
-          "dark:bg-gray-900 dark:text-sky-200",
-          "text-sm",
-          "ring-1 ring-sky-200 dark:ring-sky-800"
-        )}
-      >
-        <div className="w-5 flex-center">
-          <ChevronDownIcon className="w-3 h-3" />
-        </div>
-        {(template ?? []).map(({ id: columnId, label }) => (
-          <div
-            key={columnId}
-            className="grow shrink basis-0 px-2 flex items-center justify-between"
-          >
-            <span className="truncate">{label}</span>
-            <div
-              onMouseDown={(ev) => {
-                ev.preventDefault();
-                addImport.dispatch({
-                  id,
-                  templateId: getTemplateFieldId(columnId),
-                  imports: [],
-                });
-              }}
-            >
-              <LinkIcon className="w-3 h-3 ml-auto opacity-50 hover:opacity-100" />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
   );
 }
 
@@ -368,13 +323,7 @@ export function WritableDefaultField({
               "preview text-base leading-6"
               // mode === null || mode === "slug" ? "calculator" : ""
             )}
-            data-value={
-              (preview === output[0] ||
-                output.some((el) => Array.isArray(el) && el[0] === "n")) &&
-              fieldConfig.type !== "slug"
-                ? ""
-                : preview
-            }
+            data-value={preview}
           />
           <Plus />
         </div>
