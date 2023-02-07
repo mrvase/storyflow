@@ -426,7 +426,7 @@ const computeComponentRecord = (
   ): ValueRecord => {
     const state = store.use<Value[]>(path);
     if (!state.initialized()) {
-      state.set(() => calculateFn(id, initialValue, imports, client));
+      state.set(() => calculateFn(id, initialValue, { imports, client }));
     }
     const value = state.value!;
     const children = value.reduce((acc, element) => {

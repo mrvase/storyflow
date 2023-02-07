@@ -81,11 +81,13 @@ export type Value =
   | boolean
   | Date
   | LayoutElement
-  | NestedDocument;
+  | NestedDocument
+  | DocumentImport
+  | Value[];
 
 export type Parameter = [number, PrimitiveValue?];
 
-export type Placeholder = Parameter | DocumentImport | FieldImport | Fetcher;
+export type Placeholder = Parameter | FieldImport | Fetcher;
 export type FlatPlaceholder =
   | Parameter
   | DocumentImport
@@ -136,6 +138,8 @@ export type DBSymbol =
   | SharedSymbol
   | ["{"]
   | ["}"]
+  | ["["]
+  | ["]"]
   | [")", Operator | FunctionName]
   | ["p", TemplateFieldId];
 

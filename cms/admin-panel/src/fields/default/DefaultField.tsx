@@ -217,7 +217,9 @@ export function WritableDefaultField({
 
   const [_output, setOutput] = useGlobalState<
     (Computation[number] | Computation)[]
-  >(extendPath(id, path), () => calculateFn(id, initialValue, imports, client));
+  >(extendPath(id, path), () =>
+    calculateFn(id, initialValue, { imports, client })
+  );
 
   const output: Computation = _output.flat(1) as any;
 
@@ -229,6 +231,11 @@ export function WritableDefaultField({
   const [, setComputation] = useGlobalState<EditorComputation>(
     `${extendPath(id, path)}#computation`,
     () => initialEditorValue
+  );
+
+  const [, setFunction] = useGlobalState<Computation>(
+    `${extendPath(id, path)}#function`,
+    () => calculateFn(id, initialValue, { imports, client, function: true })
   );
 
   const [fieldImports, setFieldImports] = useGlobalState<FieldImport[]>(
@@ -298,7 +305,10 @@ export function WritableDefaultField({
       setComputation(func);
       const encoded = func();
       const decoded = decodeEditorComputation(encoded, transform);
-      setOutput(() => calculateFn(id, decoded, {}, client));
+      setOutput(() => calculateFn(id, decoded, { client, imports }));
+      setFunction(() =>
+        calculateFn(id, decoded, { client, imports, function: true })
+      );
       setFieldImports(() => findImportsFn(decoded));
       setFetchers(() => findFetchersFn(decoded));
     });

@@ -118,7 +118,7 @@ export default function UrlField({
 
   const [output, setOutput] = useGlobalState<[string]>(
     id,
-    () => calculateFn(id, initialValue, imports, client) as [string]
+    () => calculateFn(id, initialValue, { imports, client }) as [string]
   );
 
   const url = getUrlStringFromValue(id, output);
@@ -191,7 +191,10 @@ export default function UrlField({
 
   const [parents, children] = useRelatedPages(
     getDocumentId(id),
-    getUrlStringFromValue(id, calculateFn(id, initialValue, imports, client))
+    getUrlStringFromValue(
+      id,
+      calculateFn(id, initialValue, { imports, client })
+    )
   );
 
   const [isFocused, setIsFocused] = React.useState(false);
@@ -262,8 +265,7 @@ export default function UrlField({
             calculateFn(
               id,
               decodeEditorComputation(result, getConfig("url").transform),
-              imports,
-              client
+              { imports, client }
             ) as [string]
         );
       });

@@ -18,8 +18,15 @@ import { unwrap } from "@storyflow/result";
 export const calculateFn = (
   id: FieldId,
   value: Computation,
-  imports: ComputationRecord = {},
-  client: Client
+  {
+    imports = {},
+    function: isFunc = false,
+    client,
+  }: {
+    client: Client;
+    imports?: ComputationRecord;
+    function?: boolean;
+  }
 ): Value[] => {
   const getter = (id: FieldId) => {
     if (id.startsWith("ctx:")) {
@@ -35,7 +42,7 @@ export const calculateFn = (
 
     // if (!value) return store.use<Value[]>(id).value ?? [];
     if (value) {
-      const fn = () => calculateFn(id, value, imports, client);
+      const fn = () => calculateFn(id, value, { imports, client });
       return store.use<Value[]>(id, fn).value;
     }
 
@@ -47,7 +54,7 @@ export const calculateFn = (
       const all = getComputationRecord(article, { includeImports: true });
       const value = all[id as FieldId];
       if (!value) return undefined;
-      const fn = () => calculateFn(id, value, all, client);
+      const fn = () => calculateFn(id, value, { imports: all, client });
       return fn;
     });
 

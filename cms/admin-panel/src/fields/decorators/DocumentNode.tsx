@@ -204,7 +204,7 @@ function ValueDisplay({
 
   if (initialValue) {
     [output] = useGlobalState(id, () =>
-      calculateFn(id, initialValue, imports, client)
+      calculateFn(id, initialValue, { imports, client })
     );
   } else {
     [output] = useGlobalState<Value[]>(id);
