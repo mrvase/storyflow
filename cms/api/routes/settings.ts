@@ -1,9 +1,11 @@
 import { createProcedure, createRoute } from "@sfrpc/server";
 import { Settings } from "@storyflow/backend/types";
-import { success } from "@storyflow/result";
+import { error, success } from "@storyflow/result";
 import { z } from "zod";
 import { globals } from "../middleware/globals";
 import clientPromise from "../mongo/mongoClient";
+import { authenticator } from "../users/auth";
+import { modifyOrganization } from "../users/users";
 
 export const settings = createRoute({
   get: createProcedure({
@@ -44,6 +46,47 @@ export const settings = createRoute({
             settings,
           },
         }
+      );
+
+      return success(true);
+    },
+  }),
+  changeVersion: createProcedure({
+    middleware(ctx) {
+      return ctx.use(globals);
+    },
+    schema() {
+      return z.object({ slug: z.string(), version: z.number() });
+    },
+    async mutation({ slug, version }, { req, res }) {
+      const client = await clientPromise;
+
+      const organization = await client
+        .db("cms")
+        .collection("organizations")
+        .findOne<{
+          name: string;
+          slug: string;
+          dbs: Record<number, string>;
+          admin: string;
+        }>({
+          slug,
+        });
+
+      const db = organization?.dbs?.[version];
+
+      if (!db) {
+        return error({ message: "Version does not exist", status: 400 });
+      }
+
+      await authenticator.modifyUser(
+        { request: req, response: res },
+        modifyOrganization({
+          slug,
+          db,
+          version,
+          permissions: {},
+        })
       );
 
       return success(true);

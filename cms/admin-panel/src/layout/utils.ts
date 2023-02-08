@@ -1,5 +1,6 @@
 import { useLocation, useNavigate } from "@storyflow/router";
 import React from "react";
+import { useUrlInfo } from "../users";
 
 export const trimLeadingSlash = (el: string) => el.replace(/^\/+/, "");
 export const trimTrailingSlash = (el: string) => el.replace(/\/+$/, "");
@@ -18,27 +19,6 @@ export const getSubSegments = (url: string) => {
 
 export const getPathFromSegment = (url: string) => url.replace(/^\/~\d+/, "");
 
-const splitTabUrl = (pathname: string) => {
-  pathname = trimSlashes(pathname);
-
-  if (!pathname.includes("/")) {
-    return [pathname, "/~1"];
-  }
-
-  if (pathname.startsWith("~")) {
-    return ["", `/${pathname}`];
-  }
-
-  let [org, tabUrl] = [
-    pathname.substring(0, pathname.indexOf("/")),
-    pathname.substring(pathname.indexOf("/")),
-  ];
-
-  tabUrl = [undefined, ""].includes(tabUrl) ? "/~1" : tabUrl;
-
-  return [org, tabUrl];
-};
-
 export const useTabUrl = (): [
   string,
   (url: string, options?: { close?: boolean; navigate?: boolean }) => string
@@ -46,7 +26,12 @@ export const useTabUrl = (): [
   const navigate = useNavigate();
   let { pathname } = useLocation();
 
-  let [org, tabUrl] = splitTabUrl(pathname);
+  let { urlInfoSegment } = useUrlInfo();
+
+  let tabUrl = pathname.replace(urlInfoSegment, "");
+  tabUrl = tabUrl === "" ? "/~1" : tabUrl;
+
+  console.log("URL", tabUrl);
 
   const navigateTab = React.useCallback(
     (
@@ -56,7 +41,7 @@ export const useTabUrl = (): [
         navigate: navigateOption = true,
       }: { close?: boolean; navigate?: boolean } = {}
     ) => {
-      const url = `${org ? "/" : ""}${org}${tabUrl}`;
+      const url = `${urlInfoSegment}${tabUrl}`;
 
       const id = segment.match(/^\/~\d+/)?.[0];
 

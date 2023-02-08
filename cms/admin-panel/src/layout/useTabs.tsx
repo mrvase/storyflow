@@ -7,6 +7,7 @@ const getTabsFromUrl = (url: string) => {
   let tabs: UrlTab[] = [];
   let index = -1;
   const segments = url.split(/(\/(?:~\d+)?)/g).filter((el) => el !== "");
+  console.log("SEGMENTS", segments);
   segments.forEach((el) => {
     if (el.match(/^\/~\d+$/)) {
       index++;

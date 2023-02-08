@@ -6,7 +6,7 @@ import type { PublicAPI } from "api/public";
 import type {} from "@sfrpc/types";
 import type {} from "@storyflow/result";
 import useSWR, { useSWRConfig } from "swr";
-import { useOrganisationSlug } from "./users";
+import { useUrlInfo } from "./users";
 import { useContextWithError } from "./utils/contextError";
 
 const QueryContext = React.createContext<Record<string, any>>({});
@@ -25,9 +25,12 @@ export function QueryContextProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const slug = useOrganisationSlug();
+  const { organization, version } = useUrlInfo();
 
-  const queryCtx = React.useMemo(() => ({ slug }), [slug]);
+  const queryCtx = React.useMemo(
+    () => ({ slug: organization, version }),
+    [organization]
+  );
 
   const clientCtx = React.useMemo(
     () => createClient<API & BucketAPI & PublicAPI>(url, queryCtx),

@@ -4,7 +4,7 @@ import type {} from "@sfrpc/types";
 import { authenticator, authorizer } from "./auth";
 import { error, isError, success, unwrap } from "@storyflow/result";
 import clientPromise from "../mongo/mongoClient";
-import { Organization, User } from "./types";
+import { Organization, User } from "../types";
 import { USER_ID } from "@storyflow/backend/templates";
 
 const user = async ({ req, client }: MiddlewareContext) => {
@@ -18,6 +18,22 @@ const user = async ({ req, client }: MiddlewareContext) => {
     user: unwrap(user),
   };
 };
+
+type OrganizationDB = {
+  name: string;
+  slug: string;
+  dbs: Record<number, string>;
+  admin: string;
+  version: number;
+};
+
+export const modifyOrganization = (org: Organization) => (user: User) => ({
+  ...user,
+  organizations: [
+    ...user.organizations.filter((el) => el.slug !== org.slug),
+    org,
+  ],
+});
 
 export const users = createRoute({
   getUser: createProcedure({
@@ -34,9 +50,13 @@ export const users = createRoute({
       return ctx.use(user);
     },
     schema() {
-      return z.object({ slug: z.string(), admin: z.string().optional() });
+      return z.object({
+        slug: z.string(),
+        admin: z.string().optional(),
+        version: z.number().optional(),
+      });
     },
-    async mutation({ slug, admin }, { user }) {
+    async mutation({ slug, admin, version }, { user }) {
       if (user.email !== "martin@rvase.dk") {
         return error({ message: "Access denied", status: 401 });
       }
@@ -69,15 +89,28 @@ export const users = createRoute({
               children: [],
             },
           ]),
-        ,
         client
           .db("cms")
           .collection("organizations")
-          .insertOne({
-            slug,
-            db,
-            admin: admin || "martin@rvase.dk",
-          }),
+          .updateOne(
+            {
+              slug,
+            },
+            [
+              {
+                $set: {
+                  admin: admin || "martin@rvase.dk",
+                  [`dbs.${version ?? 0}`]: {
+                    $ifNull: [`$dbs.${version ?? 0}`, db],
+                  },
+                  version: { $ifNull: ["$version", version ?? 0] },
+                },
+              },
+            ],
+            {
+              upsert: true,
+            }
+          ),
       ]);
 
       return success(slug);
@@ -110,7 +143,7 @@ export const users = createRoute({
       const organization = await client
         .db("cms")
         .collection("organizations")
-        .findOne<{ name: string; slug: string; db: string; admin: string }>({
+        .findOne<OrganizationDB>({
           slug,
         });
 
@@ -118,26 +151,21 @@ export const users = createRoute({
         return error({ message: "Organization does not exist" });
       }
 
-      const createCallback = (org: Organization) => (user: User) => ({
-        ...user,
-        organizations: [
-          ...user.organizations.filter((el) => el.slug !== slug),
-          org,
-        ],
-      });
+      const db = organization.dbs[organization.version];
 
       if (organization.admin === user.email) {
         await authenticator.modifyUser(
           { request: req, response: res },
-          createCallback({
+          modifyOrganization({
             slug,
-            db: organization.db,
+            db,
+            version: organization.version,
             permissions: {},
           })
         );
       } else {
         const orgUser = await client
-          .db(organization.db)
+          .db(db)
           .collection("articles")
           .findOne({
             [`values.${USER_ID}`]: user.email,
@@ -149,9 +177,10 @@ export const users = createRoute({
 
         await authenticator.modifyUser(
           { request: req, response: res },
-          createCallback({
+          modifyOrganization({
             slug,
-            db: organization.db,
+            db,
+            version: organization.version,
             permissions: {}, // orgUser.values["permissions"] ?? false,
           })
         );

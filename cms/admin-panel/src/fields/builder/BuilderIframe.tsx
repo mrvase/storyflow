@@ -5,7 +5,7 @@ import {
 import React from "react";
 import { useClientConfig } from "../../client-config";
 import { useBranchIsFocused } from "../../layout/components/Branch";
-import { useOrganisationSlug } from "../../users";
+import { useUrlInfo } from "../../users";
 import { createKey } from "../../utils/createKey";
 
 export const IframeContext = React.createContext<{
@@ -73,14 +73,14 @@ export default function BuilderIframe() {
 
   const { id } = useBranchIsFocused();
 
-  const slug = useOrganisationSlug();
+  const { organization } = useUrlInfo();
 
   return React.useMemo(
     () =>
       builderUrl ? (
         <iframe
           ref={ctx.iframeRef}
-          src={`${builderUrl}?uniqueId=${ctx.uniqueId}&slug=${slug}`}
+          src={`${builderUrl}?uniqueId=${ctx.uniqueId}&slug=${organization}`}
           className="w-full h-full bg-white"
           data-select={id}
         />

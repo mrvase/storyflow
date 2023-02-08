@@ -7,7 +7,7 @@ import { cors as corsFactory } from "../middleware/cors";
 
 import { createSessionStorage } from "@storyflow/session";
 import { cookieOptions } from "../cookie-options";
-import { User } from "../users/types";
+import { User } from "../types";
 import { error, success } from "@storyflow/result";
 import { globals } from "../middleware/globals";
 import { fetchSinglePage } from "@storyflow/server";

@@ -1,12 +1,31 @@
 import { useLocation } from "@storyflow/router";
 import { trimLeadingSlash } from "./utils/trimSlashes";
 
-export function useOrganisationSlug() {
+const DEFAULT_VERSION = 0;
+
+export function useUrlInfo() {
   const { pathname } = useLocation();
 
-  const slug = trimLeadingSlash(pathname).split("/")[0];
+  const slugs = trimLeadingSlash(pathname).split("/");
 
-  if (slug.startsWith("~")) return "";
+  const hasVersion = slugs[0].match(/v\d+/);
 
-  return slug;
+  const versionSlug = hasVersion ? slugs[0] : `v${DEFAULT_VERSION}`;
+  const organization = hasVersion ? slugs[1] : slugs[0];
+
+  const version = parseInt(versionSlug.replace("v", ""), 10);
+
+  if (organization.startsWith("~")) {
+    return {
+      version,
+      organization: "",
+      urlInfoSegment: hasVersion ? `/${versionSlug}` : "/",
+    };
+  }
+
+  const urlInfoSegment = hasVersion
+    ? `/${versionSlug}/${organization}`
+    : `/${organization}`;
+
+  return { version, organization, urlInfoSegment };
 }

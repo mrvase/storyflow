@@ -69,7 +69,7 @@ import {
 } from "./Editor/transforms";
 import { useFiles } from "../files";
 import { Spinner } from "../elements/Spinner";
-import { useOrganisationSlug } from "../users";
+import { useUrlInfo } from "../users";
 
 type TextOps = [{ index: number; insert: [string]; remove?: 0 }];
 
@@ -1135,7 +1135,7 @@ function QueryFiles({
   };
   insertComputation: (computation: EditorComputation) => void;
 }) {
-  const slug = useOrganisationSlug();
+  const { organization } = useUrlInfo();
 
   const searchQuery = query.match(/\"([^\"]*)/)?.[1] ?? query;
 
@@ -1280,7 +1280,7 @@ function QueryFiles({
         >
           <div className="w-full aspect-[4/3] flex-center mb-2">
             <img
-              src={`https://awss3stack-mybucket15d133bf-1wx5fzxzweii4.s3.eu-west-1.amazonaws.com/${slug}/${name}`}
+              src={`https://awss3stack-mybucket15d133bf-1wx5fzxzweii4.s3.eu-west-1.amazonaws.com/${organization}/${name}`}
               className="max-w-full max-h-full w-auto h-auto"
             />
           </div>
