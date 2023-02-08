@@ -161,13 +161,13 @@ function FieldContainerInner({
           "-z-10 absolute bg-black/20 inset-0 pointer-events-none"
         )}
       />
-      <div className="flex px-5 h-5">
+      <div className={cl("flex px-5", path.length === 0 ? "h-5" : "h-10 pb-5")}>
         <Dot
           id={fieldConfig.id}
           native={isNative}
           {...(withProps && dotProps)}
         />
-        <div className="ml-5 flex">
+        <div className={cl("ml-5 flex")}>
           {path.length === 0 ? (
             <Label
               id={fieldConfig.id}
@@ -203,7 +203,7 @@ function FieldContainerInner({
           >
             <div
               className={cl(
-                "relative grow shrink basis-0 focus-container pt-4"
+                "pt-5 relative grow shrink basis-0 focus-container"
               )}
             >
               <div

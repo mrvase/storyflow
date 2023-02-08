@@ -3,7 +3,7 @@ import {
   EditorComputation,
   FieldImport,
   functions,
-  TokenString,
+  Token,
   Value,
 } from "@storyflow/backend/types";
 import { LABEL_ID, URL_ID } from "@storyflow/backend/templates";
@@ -49,7 +49,7 @@ import { useClientConfig } from "../client-config";
 import { SWRClient } from "../client";
 import $createRangeSelection from "../editor/createRangeSelection";
 import { $isImportNode } from "../fields/decorators/ImportNode";
-import { $isTokenNode, getTokenType, TokenNode } from "./decorators/TokenNode";
+import { $isTokenNode, TokenNode } from "./decorators/TokenNode";
 import { useEditorContext } from "../editor/react/EditorProvider";
 import { mergeRegister } from "../editor/utils/mergeRegister";
 import { useAppFolders } from "../folders";
@@ -119,13 +119,11 @@ const useRestorableSelection = () => {
   return [Boolean(savedSelection), actions] as [boolean, typeof actions];
 };
 
-const useSelectedToken = (callback: (token: TokenString) => void) => {
+const useSelectedToken = (callback: (token: Token) => void) => {
   const [tokenNode, setTokenNode] = React.useState<{
     key: string;
-    value: TokenString;
+    value: Token;
   }>();
-
-  const type = tokenNode ? getTokenType(tokenNode.value) : undefined;
 
   const editor = useEditorContext();
 
@@ -142,7 +140,7 @@ const useSelectedToken = (callback: (token: TokenString) => void) => {
         if (!$isTokenNode(node)) return;
 
         return {
-          value: node.getToken()[0],
+          value: node.getToken(),
           key: node.__key,
         };
       });
@@ -175,13 +173,13 @@ const useSelectedToken = (callback: (token: TokenString) => void) => {
     );
   }, [editor]);
 
-  const token = { value: tokenNode?.value, type };
+  const token = tokenNode?.value;
 
-  const setToken = (value: string) => {
+  const setToken = (value: Token) => {
     if (!tokenNode) return;
     editor.update(() => {
       const node = $getNodeByKey(tokenNode.key) as TokenNode | null;
-      node?.setToken([value as TokenString]);
+      node?.setToken(value);
     });
   };
 
@@ -249,8 +247,8 @@ export function Query({
   const [token] = useSelectedToken(() => {});
 
   React.useEffect(() => {
-    token?.value ? setQueryType(".") : setQueryType(null);
-  }, [token?.value]);
+    token && "src" in token ? setQueryType(".") : setQueryType(null);
+  }, [token]);
 
   const pushWithQuery = React.useCallback(
     (next: ComputationOp["ops"], tags: Set<string>) => {
@@ -569,12 +567,8 @@ export function Query({
             }
           } else {
             try {
-              spliceTextWithNodes(
-                node,
-                startIndex,
-                remove,
-                getNodesFromComputation(insert, libraries)
-              );
+              const nodes = getNodesFromComputation(insert, libraries);
+              spliceTextWithNodes(node, startIndex, remove, nodes);
             } catch (err) {
               console.error(err);
               resolve(false);
@@ -1165,9 +1159,9 @@ function QueryFiles({
   useOnEnter(() => {
     const offset = 1 + previewOption;
     const option = files[offset + current];
-    console.log("OPTION", option, files, offset, current);
     if (option) {
-      insertComputation([[option.name as TokenString]]);
+      console.log("OPTION", option);
+      insertComputation([{ src: option.name }]);
     }
   }, [query, files, previewOption, current]);
 
@@ -1213,10 +1207,11 @@ function QueryFiles({
                 const measure = type === "image" ? getImageSize : getVideoSize;
                 size = await measure(preview);
               }
-              const name = await upload(file, query || label, size);
+              const src = await upload(file, query || label, size);
+              if (!src) return;
               resetFile();
-              insertComputation([[name as TokenString]]);
               setIsUploading(false);
+              insertComputation([{ src }]);
             } else {
               holdActions.hold();
             }
@@ -1279,7 +1274,7 @@ function QueryFiles({
           )}
           onMouseDown={(ev) => {
             ev.preventDefault();
-            insertComputation([[name as TokenString]]);
+            insertComputation([{ src: name }]);
           }}
           data-image-preview={`${index + 1 + previewOption}`}
         >

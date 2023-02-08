@@ -10,6 +10,7 @@ import {
   DBSymbol,
   Fetcher,
   Token,
+  TemplateFieldId,
 } from "./types";
 
 function isSymbol(value: any): value is EditorSymbol;
@@ -36,6 +37,10 @@ function isSymbol<T extends EditorSymbol[0], F extends FunctionName>(
 }
 
 function isDBSymbol(value: any): value is DBSymbol;
+function isDBSymbol<T extends DBSymbol[0]>(
+  value: any,
+  type: "p"
+): value is ["p", TemplateFieldId];
 function isDBSymbol<T extends DBSymbol[0]>(value: any, type: T): value is [T];
 function isDBSymbol<T extends ")", F extends Operator | FunctionName>(
   value: any,
@@ -57,6 +62,7 @@ function isDBSymbol<T extends DBSymbol[0], F extends Operator | FunctionName>(
     (!func || value[1] === func)
   );
 }
+
 function isImport(value: any, specify: "field"): value is FieldImport;
 function isImport(value: any, specify: "document"): value is DocumentImport;
 function isImport(value: any): value is DocumentImport | FieldImport;
@@ -96,9 +102,7 @@ function isNestedDocument(value: any): value is NestedDocument {
 }
 
 function isToken(value: any): value is Token {
-  return (
-    Array.isArray(value) && typeof value[0] === "string" && value[0].length > 2
-  );
+  return typeof value === "object" && ("src" in value || "color" in value);
 }
 
 function isFetcher(value: any): value is Fetcher {

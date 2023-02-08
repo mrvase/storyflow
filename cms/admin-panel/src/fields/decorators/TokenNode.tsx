@@ -10,12 +10,13 @@ import {
   Spread,
 } from "lexical";
 import cl from "clsx";
-import { Token, TokenString } from "@storyflow/backend/types";
+import { ColorElement, FileElement, Token } from "@storyflow/backend/types";
 import { useIsSelected } from "./useIsSelected";
 import { caretClasses } from "./caret";
 import { PhotoIcon } from "@heroicons/react/24/outline";
 import { useFileLabel } from "../../files";
 
+/*
 export const getTokenType = (value: TokenString) => {
   if (value.match(/^#[0-9a-fA-F]+$/)) {
     return "color";
@@ -27,12 +28,26 @@ export const getTokenType = (value: TokenString) => {
     return "file";
   }
 };
+*/
 
 function TokenDecorator({ nodeKey, token }: { nodeKey: string; token: Token }) {
+  if ("color" in token) {
+    return <ColorDecorator nodeKey={nodeKey} token={token} />;
+  }
+  return <FileDecorator nodeKey={nodeKey} token={token} />;
+}
+
+function FileDecorator({
+  nodeKey,
+  token,
+}: {
+  nodeKey: string;
+  token: FileElement;
+}) {
   const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
   const selectClick = React.useRef(false);
 
-  const label = useFileLabel(token[0]);
+  const label = useFileLabel(token.src);
 
   return (
     <span
@@ -51,6 +66,38 @@ function TokenDecorator({ nodeKey, token }: { nodeKey: string; token: Token }) {
       <span className="flex-center gap-2">
         <PhotoIcon className="w-4 h-4 inline" />
         {label}
+      </span>
+    </span>
+  );
+}
+
+function ColorDecorator({
+  nodeKey,
+  token,
+}: {
+  nodeKey: string;
+  token: ColorElement;
+}) {
+  const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
+  const selectClick = React.useRef(false);
+
+  return (
+    <span
+      className={cl(
+        "bg-gray-50 dark:bg-sky-400/20 text-sky-100/90 rounded-sm selection:bg-transparent relative px-2",
+        isSelected ? "ring-2 ring-amber-300" : "dark:ring-gray-600",
+        isPseudoSelected && caretClasses
+      )}
+      onMouseDown={() => {
+        if (!isSelected) {
+          select();
+          selectClick.current = true;
+        }
+      }}
+    >
+      <span className="flex-center gap-2">
+        <PhotoIcon className="w-4 h-4 inline" />
+        {token.color}
       </span>
     </span>
   );

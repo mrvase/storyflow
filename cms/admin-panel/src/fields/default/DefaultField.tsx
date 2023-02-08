@@ -83,8 +83,6 @@ export const getVariant = (output: any): Variant => {
 };
 
 export const getPreview = (output: Computation) => {
-  return JSON.stringify(output);
-
   const valueAsString = (value: any) => {
     if (typeof value === "boolean") {
       return value ? "SAND" : "FALSK";
@@ -228,10 +226,14 @@ export function WritableDefaultField({
 
   const initialEditorValue = encodeEditorComputation(initialValue, transform);
 
-  const [, setComputation] = useGlobalState<EditorComputation>(
+  const [computation, setComputation] = useGlobalState<EditorComputation>(
     `${extendPath(id, path)}#computation`,
     () => initialEditorValue
   );
+
+  const isEmpty =
+    computation.length === 0 ||
+    (computation.length === 1 && computation[0] === "");
 
   const [, setFunction] = useGlobalState<Computation>(
     `${extendPath(id, path)}#function`,
@@ -327,13 +329,18 @@ export function WritableDefaultField({
         options={options}
       >
         <div className={cl("relative", !isActive && "hidden")}>
+          {isEmpty && (
+            <div className="absolute pointer-events-none px-14 pt-1 font-light opacity-25">
+              Ikke udfyldt
+            </div>
+          )}
           <ContentEditable
             className={cl(
               "peer grow editor outline-none px-14 pt-1 pb-5 font-light selection:bg-gray-700",
               "preview text-base leading-6"
               // mode === null || mode === "slug" ? "calculator" : ""
             )}
-            data-value={preview}
+            data-value={preview !== output[0] ? preview : ""}
           />
           <Plus />
         </div>

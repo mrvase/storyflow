@@ -83,7 +83,7 @@ export const operators: Operators<any> = {
     return !Boolean(val);
   },
   ne(val1, val2) {
-    return val1 !== val2;
+    return (val1 as any) !== (val2 as any);
   },
   in(val1, val2) {
     return val2.includes(val1);
@@ -184,7 +184,7 @@ export const operators: Operators<any> = {
     return arr.slice(start, end);
   },
   range(start, end, step = 1) {
-    return Array.from({ length: end - start }, (_, x) => x * step + start);
+    return Array.from({ length: end - start + 1 }, (_, x) => x * step + start);
   },
   arrayToObject(array) {
     if (array.length === 0) return {};
@@ -220,17 +220,18 @@ export const operators: Operators<any> = {
     return input.toLowerCase();
   },
   replaceOne(input, find, replacement) {
-    return input.replace(new RegExp(find), replacement);
+    const escaped = find.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return input.replace(new RegExp(escaped), replacement);
   },
   regexFindAll(input, regex, options) {
-    return Array.from(
-      input.matchAll(new RegExp(regex, `g${options.replace("g", "")}`)),
-      (x) => ({
-        match: x[0],
-        idx: x.index as number,
-        captures: x as string[],
-      })
+    const matches = input.matchAll(
+      new RegExp(regex, `g${options.replace("g", "")}`)
     );
+    return Array.from(matches, (x) => ({
+      match: x[0],
+      idx: x.index as number,
+      captures: x as string[],
+    }));
   },
   max(numbers) {
     return Math.max(...numbers);

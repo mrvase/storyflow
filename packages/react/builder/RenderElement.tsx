@@ -20,8 +20,13 @@ import {
 import { useValue } from "../builder/RenderBuilder";
 import RenderComponent from "./RenderComponent";
 import { cms } from "../src/CMSElement";
-import { getConfigByType } from "../config/getConfigByType";
+import {
+  ExtendedComponentConfig,
+  getConfigByType,
+} from "../config/getConfigByType";
 import { getLibraries, getLibraryConfigs } from "../config";
+
+const IndexContext = React.createContext(0);
 
 const BUCKET_NAME = "awss3stack-mybucket15d133bf-1wx5fzxzweii4";
 const BUCKET_REGION = "eu-west-1";
@@ -46,7 +51,7 @@ const getImageObject = (name: string) => {
   };
 };
 
-const calculateProp = (config: PropConfig, prop: any) => {
+const calculateProp = (config: PropConfig, prop: any, index: number) => {
   if (config.type === "image" && prop.length > 0) {
     const src = prop[0];
     if (!src.match(/\.(png|jpg|jpeg|gif)$/)) {
@@ -65,7 +70,7 @@ const calculateProp = (config: PropConfig, prop: any) => {
       </ExtendPath>
     );
   } else {
-    return prop[0];
+    return prop[index % prop.length];
   }
 };
 
@@ -96,16 +101,7 @@ export default function RenderElement({
 
   const config = config_;
 
-  const props = React.useMemo(
-    () =>
-      Object.fromEntries(
-        config!.props.map((config) => [
-          config.name,
-          calculateProp(config, uncomputedProps?.[config.name] ?? []),
-        ])
-      ),
-    [uncomputedProps]
-  );
+  const key = uncomputedProps?.key?.length ? uncomputedProps?.key : [""];
 
   React.useEffect(() => {
     const activeEl = document.activeElement as HTMLElement;
@@ -155,9 +151,44 @@ export default function RenderElement({
     [path, type]
   );
 
+  if (key.length === 1) {
+    return (
+      <AddPathSegment segment={segment}>
+        <RenderElementWithProps config={config} props={uncomputedProps} />
+      </AddPathSegment>
+    );
+  }
+
   return (
     <AddPathSegment segment={segment}>
-      <config.component {...props} />
+      {key.map((key, index) => (
+        <IndexContext.Provider key={index} value={index}>
+          <RenderElementWithProps config={config} props={uncomputedProps} />
+        </IndexContext.Provider>
+      ))}
     </AddPathSegment>
   );
+}
+
+function RenderElementWithProps({
+  props: uncomputedProps,
+  config,
+}: {
+  props: any;
+  config: ExtendedComponentConfig;
+}) {
+  const index = React.useContext(IndexContext);
+
+  const props = React.useMemo(
+    () =>
+      Object.fromEntries(
+        config!.props.map((config) => [
+          config.name,
+          calculateProp(config, uncomputedProps?.[config.name] ?? [], index),
+        ])
+      ),
+    [uncomputedProps, index]
+  );
+
+  return <config.component {...props} />;
 }

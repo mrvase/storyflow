@@ -71,23 +71,38 @@ export type Fetcher = {
   filters: Filter[];
 };
 
+export type FileElement = {
+  src: string;
+};
+
+export type ColorElement = {
+  color: string;
+};
+
+export type Token = FileElement | ColorElement;
+
 export type PrimitiveValue = string | number | boolean | Date;
 
-export type FlatValue = PrimitiveValue | FlatLayoutElement | FlatNestedDocument;
+export type FlatValue =
+  | PrimitiveValue
+  | FlatLayoutElement
+  | FlatNestedDocument
+  | DocumentImport
+  | Token
+  | FlatValue[];
 
 export type Value =
-  | string
-  | number
-  | boolean
-  | Date
+  | PrimitiveValue
   | LayoutElement
   | NestedDocument
   | DocumentImport
+  | Token
   | Value[];
 
 export type Parameter = [number, PrimitiveValue?];
 
 export type Placeholder = Parameter | FieldImport | Fetcher;
+
 export type FlatPlaceholder =
   | Parameter
   | DocumentImport
@@ -122,11 +137,7 @@ export const functions = [
 
 export type FunctionName = (typeof functions)[number];
 
-export type TokenString = StringType<"token">;
-
-export type Token = [TokenString];
-
-export type SharedSymbol = ["("] | [")"] | ["n"] | Token;
+export type SharedSymbol = ["("] | [")"] | ["n"];
 
 export type EditorSymbol =
   | SharedSymbol
@@ -142,6 +153,26 @@ export type DBSymbol =
   | ["]"]
   | [")", Operator | FunctionName]
   | ["p", TemplateFieldId];
+
+export type SharedSymbolNext =
+  | { "(": true }
+  | { ")": true }
+  | { "[": true }
+  | { "]": true }
+  | { n: true };
+
+export type EditorSymbolNext =
+  | SharedSymbol
+  | { _: Operator }
+  | { ")": FunctionName }
+  | { ",": true };
+
+export type DBSymbolNext =
+  | SharedSymbol
+  | { "{": true }
+  | { "}": true }
+  | { ")": Operator | FunctionName }
+  | { p: TemplateFieldId };
 
 export type EditorComputation = (Value | Placeholder | EditorSymbol)[];
 export type Computation = (Value | Placeholder | DBSymbol)[];
