@@ -265,7 +265,7 @@ export function FieldToolbar({
         onClear={() => setConfig("template", undefined)}
         selected={
           config?.template
-            ? templateOptions.find((el) => el.id === config?.template)
+            ? templateOptions.find((el) => el.id === config.template)
             : undefined
         }
         options={templateOptions}

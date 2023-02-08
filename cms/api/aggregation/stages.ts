@@ -176,7 +176,7 @@ const createCalculationStage = (
                       $doc.compute as (ComputationBlock & {
                         result: Value[];
                       })[],
-                      (el) => $.eq(el.id, id)
+                      (el) => $.eq(el.id, id as FieldId)
                     ),
                     { result: [] as Value[] }
                   ),

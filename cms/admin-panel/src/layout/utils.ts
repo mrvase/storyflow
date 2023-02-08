@@ -31,8 +31,6 @@ export const useTabUrl = (): [
   let tabUrl = pathname.replace(urlInfoSegment, "");
   tabUrl = tabUrl === "" ? "/~1" : tabUrl;
 
-  console.log("URL", tabUrl);
-
   const navigateTab = React.useCallback(
     (
       segment: string,

@@ -63,7 +63,7 @@ export const useBuilderPath = (): [
     // dispatch
   }, []);
 
-  return [path, setPath];
+  return React.useMemo(() => [path, setPath], [path, setPath]);
 };
 
 type Props = {
@@ -97,18 +97,10 @@ function FieldContainerInner({
   const articleId = useArticlePageContext().id;
   const isNative = template === articleId;
 
-  const [path, setPath] = useBuilderPath();
+  const pathState = useBuilderPath();
+  const [path, setPath] = pathState;
 
   const [isEditing] = useLocalStorage<boolean>("editing-articles", false);
-
-  const ctx = React.useMemo(
-    () => ({
-      path,
-      goToPath: (path: PathSegment | null) =>
-        setPath((ps) => (path === null ? [] : [...ps, path])),
-    }),
-    [path]
-  );
 
   if (!dragHandlePropsFromProps) {
     const {
@@ -190,7 +182,7 @@ function FieldContainerInner({
   );
 
   return (
-    <PathContext.Provider value={ctx}>
+    <PathContext.Provider value={pathState}>
       {content(true)}
       <BuilderPortal id={fieldConfig.id}>
         {(isOpen) => (
@@ -402,7 +394,7 @@ function Label({
     <span
       className={cl(
         "text-sm font-normal",
-        isNative ? "text-gray-400" : "text-teal-400/60"
+        isNative ? "text-gray-400" : "text-teal-400/90"
       )}
     >
       {label || "Ingen label"}

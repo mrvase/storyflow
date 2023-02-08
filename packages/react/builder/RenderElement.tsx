@@ -26,7 +26,7 @@ import {
 } from "../config/getConfigByType";
 import { getLibraries, getLibraryConfigs } from "../config";
 
-const IndexContext = React.createContext(0);
+export const IndexContext = React.createContext(0);
 
 const BUCKET_NAME = "awss3stack-mybucket15d133bf-1wx5fzxzweii4";
 const BUCKET_REGION = "eu-west-1";

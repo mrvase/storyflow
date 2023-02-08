@@ -42,7 +42,7 @@ import { useArticlePageContext } from "../../articles/ArticlePageContext";
 import { computeFieldId, getTemplateFieldId } from "@storyflow/backend/ids";
 import { useClient } from "../../client";
 import { getComputationRecord } from "@storyflow/backend/flatten";
-import { getPreview } from "../default/DefaultField";
+import { getPreview } from "../default/getPreview";
 
 function DocumentDecorator({
   value,
@@ -51,7 +51,7 @@ function DocumentDecorator({
   value: NestedDocument | DocumentImport | Fetcher;
   nodeKey: string;
 }) {
-  const { goToPath } = usePathContext();
+  const [, setPath] = usePathContext();
 
   const type = (() => {
     if ("dref" in value) {
@@ -141,11 +141,14 @@ function DocumentDecorator({
             !selectClick.current &&
             "id" in value
           ) {
-            goToPath({
-              id: value.id,
-              label: type === "fetcher" ? "Fetcher" : "Dokument",
-              parentProp: null,
-            });
+            setPath((ps) => [
+              ...ps,
+              {
+                id: value.id,
+                label: type === "fetcher" ? "Fetcher" : "Dokument",
+                parentProp: null,
+              },
+            ]);
           }
           selectClick.current = false;
         }}

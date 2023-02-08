@@ -49,7 +49,7 @@ export const getChildren = (
     const hasMarker = prop?.type === "children" || (prop as any)?.searchable;
     return `${element.id}/${key}${hasMarker ? "#" : ""}`;
   };
-  const keys = value.reduce((acc, element) => {
+  const keys = value.reduce((acc: string[], element) => {
     if (symb.isLayoutElement(element)) {
       return acc.concat(
         Object.keys(element.props).map((key) => searchable(element, key))
@@ -58,7 +58,7 @@ export const getChildren = (
       return acc.concat(
         Object.keys(element.values).map((key) => `${element.id}${key}`)
       );
-    } else if (symb.isImport(element, "field")) {
+    } else if (symb.isFieldImport(element)) {
       return acc.concat(
         Object.keys(element.args).map((key) => `${element.id}/${key}`)
       );
@@ -123,9 +123,9 @@ export const modifyChild = (
   }
 };
 
-export const traverse = (
-  value: Computation,
-  callback: (value: Computation, path: string) => void,
+export const traverse = <T extends Computation>(
+  value: T,
+  callback: (value: T, path: string) => void,
   config?: { components: Record<string, { props: { type: string }[] }> },
   path = ""
 ) => {
@@ -133,7 +133,7 @@ export const traverse = (
   const children = getChildren(value);
   Object.entries(children).forEach(([key, child]) => {
     if (child !== null) {
-      traverse(child, callback, config, extendPath(path, key));
+      traverse(child as T, callback, config, extendPath(path, key));
     }
   });
 };

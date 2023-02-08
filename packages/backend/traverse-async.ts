@@ -1,4 +1,4 @@
-import { calculateAsync } from "./calculate-async";
+import { calculateAsync } from "./calculate";
 import { traverseFlatComputation } from "./flatten";
 import { getTemplateFieldId } from "./ids";
 import { symb } from "./symb";
@@ -112,9 +112,9 @@ export const traverseFlatComputationAsync = async (
 
   return result.reduce((a, c) => {
     if (c !== null && typeof c === "object" && "$fetch" in c) {
-      a.push(...([["("], ...c.$fetch, [")"]] as Computation));
+      a.push(...([{ "(": true }, ...c.$fetch, { ")": true }] as Computation));
     } else if (c !== undefined) {
-      a.push(c);
+      a.push(c as Computation[number]);
     }
     return a;
   }, [] as Computation);
@@ -172,7 +172,7 @@ export const findFetchers = (
   };
   const fetchers = value.filter((el): el is Fetcher => symb.isFetcher(el));
   const imports = value.filter((el): el is FieldImport =>
-    symb.isImport(el, "field")
+    symb.isFieldImport(el)
   );
   imports.forEach((imp) => {
     const comp = compute.find((el) => el.id === imp.fref)!;

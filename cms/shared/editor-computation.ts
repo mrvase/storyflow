@@ -7,6 +7,8 @@ import {
   Placeholder,
   TemplateFieldId,
   Value,
+  DBSymbol,
+  EditorSymbol,
 } from "@storyflow/backend/types";
 import { tools } from "./editor-tools";
 
@@ -17,21 +19,38 @@ type GroupedEditorElement =
   | EditorElement
   | { group: GroupedEditorElement[]; type: string };
 
+function isObject(value: any): value is Record<string, any> {
+  return value !== null && typeof value === "object";
+}
+
+const isSymbol = (
+  el: DBElement | EditorElement
+): el is DBSymbol | EditorSymbol => {
+  if (!isObject(el)) return false;
+  const keys = Object.keys(el);
+  return keys.length === 1 && keys[0].length === 1;
+};
+
 const isValueOrPlaceholder = (
   el: DBElement | EditorElement
 ): el is Value | Placeholder => {
-  return !Array.isArray(el) || typeof el[0] === "number";
+  return !isSymbol(el);
 };
 
-const isSeparator = (el: any, specify?: "," | "n"): el is [","] =>
-  Array.isArray(el) &&
-  ((el[0] === "," && specify !== "n") || (el[0] === "n" && specify !== ","));
+const isSeparator = <T extends "," | "n" = "," | "n">(
+  el: any,
+  specify?: T
+): el is { [key in T]: true } => {
+  if (!isSymbol(el)) return false;
+  const key = Object.keys(el)[0];
+  return (key === "," && specify !== "n") || (key === "n" && specify !== ",");
+};
 
 const addTransform = (
   db: Computation,
   transform: FunctionName
 ): Computation => {
-  return [["("], ...db, [")", transform]];
+  return [{ "(": true }, ...db, { ")": transform }];
 };
 
 const removeTransform = (
@@ -55,7 +74,7 @@ export const encodeEditorComputation = (
 
   const replaceSeparators = (
     arr: GroupedEditorElement[],
-    value?: [Operator]
+    value?: { _: Operator }
   ) => {
     return arr.reduce((acc, el, i) => {
       if (isSeparator(el, ",")) {
@@ -73,10 +92,7 @@ export const encodeEditorComputation = (
   const prevIsValueOrPlaceholder = (arr: GroupedEditorElement[]) => {
     if (arr.length === 0) return false;
     const prev = arr[arr.length - 1];
-    return (
-      (prev !== null && typeof prev === "object" && "group" in prev) ||
-      isValueOrPlaceholder(prev)
-    );
+    return (isObject(prev) && "group" in prev) || isValueOrPlaceholder(prev);
   };
 
   const flatten = (
@@ -85,16 +101,16 @@ export const encodeEditorComputation = (
   ): EditorElement[] => {
     const flattened: EditorElement[] = [];
     value.forEach((el) => {
-      if (el !== null && typeof el === "object" && "group" in el) {
+      if (isObject(el) && "group" in el) {
         const nestedAddition =
           ["*", "/"].includes(parentOperator as string) &&
           ["+", "-"].includes(el.type);
         if (nestedAddition || el.type === "paren") {
-          flattened.push(["("]);
+          flattened.push({ "(": true });
         }
         flattened.push(...flatten(el.group, el.type));
         if (nestedAddition || el.type === "paren") {
-          flattened.push([")"]);
+          flattened.push({ ")": true });
         }
       } else {
         flattened.push(el);
@@ -117,32 +133,35 @@ export const encodeEditorComputation = (
       const saved = stack[stack.length - 1];
       if (prevIsValueOrPlaceholder(saved)) {
         // inserts separator between operations
-        saved.push([","]);
+        saved.push({ ",": true });
       }
 
-      let group = replaceSeparators(value, [el[1]]);
+      const operator = el[")"];
+      const symbol = { _: operator };
+
+      let group = replaceSeparators(value, symbol);
 
       // edge cases
       if (group[0] === null) {
         group.shift();
       } else if (group.length === 1) {
-        group.push([el[1]]);
+        group.push(symbol);
       }
 
       saved.push({
         group,
-        type: el[1],
+        type: operator,
       });
       value = saved;
       stack.pop();
     } else if (tools.isDBSymbol(el, "p")) {
       const saved = stack[stack.length - 1];
       if (prevIsValueOrPlaceholder(saved)) {
-        saved.push([","]);
+        saved.push({ ",": true });
       }
-      if (value.length === 1 && tools.isImport(value[0], "field")) {
+      if (value.length === 1 && tools.isFieldImport(value[0])) {
         const fieldImport = { ...value[0] };
-        fieldImport.pick = el[1] as TemplateFieldId;
+        fieldImport.pick = el.p;
         saved.push(fieldImport);
       } else {
         let group = value;
@@ -159,7 +178,7 @@ export const encodeEditorComputation = (
       const saved = stack[stack.length - 1];
       if (prevIsValueOrPlaceholder(saved)) {
         // inserts separator between operations
-        saved.push([","]);
+        saved.push({ ",": true });
       }
       saved.push({
         group: value,
@@ -174,15 +193,17 @@ export const encodeEditorComputation = (
         !tools.isDBSymbol(prev, "n") &&
         !tools.isDBSymbol(el, "n")
       ) {
-        value.push([","]);
+        value.push({ ",": true });
       }
-      if (tools.isImport(el, "field")) {
+      if (tools.isFieldImport(el)) {
         value.push(el);
       } else if (isValueOrPlaceholder(el)) {
         value.push(el);
       } else if (tools.isDBSymbol(el, "n")) {
         value.push(el);
-      } else if (tools.isToken(el)) {
+      } else if (tools.isFileToken(el)) {
+        value.push(el);
+      } else if (tools.isColorToken(el)) {
         value.push(el);
       }
     }
@@ -192,7 +213,14 @@ export const encodeEditorComputation = (
 };
 
 type DbFunction = {
-  parameters: (DbFunction | Value | Placeholder | [","] | ["n"] | Token)[];
+  parameters: (
+    | DbFunction
+    | Value
+    | Placeholder
+    | { ",": true }
+    | { n: true }
+    | Token
+  )[];
   operation: string | null;
   parent: DbFunction | null;
   pick?: TemplateFieldId;
@@ -228,9 +256,9 @@ export const decodeEditorComputation = (
       tools.isSymbol(el, "*") ||
       tools.isSymbol(el, "/")
     ) {
-      if (current.operation !== el[0]) {
+      if (current.operation !== el["_"]) {
         if (
-          ["+", "-"].includes(el[0]) &&
+          ["+", "-"].includes(el["_"]) &&
           ["*", "/"].includes(current.operation as string)
         ) {
           /*
@@ -243,8 +271,8 @@ export const decodeEditorComputation = (
             (el) => el === current
           );
           const func: DbFunction = {
-            parameters: [current, [","]],
-            operation: el[0],
+            parameters: [current, { ",": true }],
+            operation: el["_"],
             parent: current.parent,
           };
           current.parent!.parameters[swapIndex] = func;
@@ -253,17 +281,17 @@ export const decodeEditorComputation = (
           const last = current.parameters[current.parameters.length - 1];
           current.parameters.pop();
           const func: DbFunction = {
-            parameters: [last ?? null, [","]],
-            operation: el[0],
+            parameters: [last ?? null, { ",": true }],
+            operation: el["_"],
             parent: current,
           };
           current.parameters.push(func);
           current = func;
         }
       } else {
-        current.parameters.push([","]);
+        current.parameters.push({ ",": true });
       }
-    } else if (tools.isImport(el, "field")) {
+    } else if (tools.isFieldImport(el)) {
       if ("pick" in el) {
         let { pick, ...rest } = el;
         current.parameters.push({
@@ -275,26 +303,24 @@ export const decodeEditorComputation = (
       } else {
         current.parameters.push(el);
       }
-    } else if (tools.isToken(el)) {
+    } else if (tools.isFileToken(el)) {
+      current.parameters.push(el);
+    } else if (tools.isColorToken(el)) {
       current.parameters.push(el);
     } else if (isValueOrPlaceholder(el)) {
       current.parameters.push(el);
     }
   });
 
-  /*
-  const isMergeable = (el: DBElement | DbFunction | [","]) => {
-    return (
-      tools.isImport(el, "field") ||
-      (Array.isArray(el) && typeof el[0] === "number") ||
-      ["string", "number"].includes(typeof el) ||
-      (typeof el === "object" && "parameters" in el)
-    );
-  };
-  */
-
   const getMergeableSpans = (
-    params: (DbFunction | Value | Placeholder | [","] | ["n"] | Token)[]
+    params: (
+      | DbFunction
+      | Value
+      | Placeholder
+      | { ",": true }
+      | { n: true }
+      | Token
+    )[]
   ) => {
     const mergeableSpans: [number, number][] = [];
     let i = 0;
@@ -341,8 +367,7 @@ export const decodeEditorComputation = (
 
     const childIsAddition =
       value.parameters.length === 1 &&
-      value.parameters[0] !== null &&
-      typeof value.parameters[0] === "object" &&
+      isObject(value.parameters[0]) &&
       "operation" in value.parameters[0] &&
       ["+", "-"].includes(value.parameters[0].operation as string);
 
@@ -353,14 +378,14 @@ export const decodeEditorComputation = (
 
     if (!isRoot && !isAutoParen) {
       if (value.operation === "merge") {
-        flattened.push(["{"]);
+        flattened.push({ "{": true });
       } else {
-        flattened.push(["("]);
+        flattened.push({ "(": true });
       }
     }
 
     value.parameters.forEach((el) => {
-      if (el !== null && typeof el === "object" && "parameters" in el) {
+      if (isObject(el) && "parameters" in el) {
         flattened.push(...flatten(el));
       } else if (isSeparator(el, ",")) {
         // do nothing
@@ -371,13 +396,13 @@ export const decodeEditorComputation = (
 
     if (!isRoot && !isAutoParen) {
       if (value.operation === "merge") {
-        flattened.push(["}"]);
+        flattened.push({ "}": true });
       } else if (value.operation === "pick") {
-        flattened.push(["p", value.pick!]);
+        flattened.push({ p: value.pick! });
       } else if (value.operation !== null) {
-        flattened.push([")", value.operation as "+"]);
+        flattened.push({ ")": value.operation as "+" });
       } else {
-        flattened.push([")"]);
+        flattened.push({ ")": true });
       }
     }
 

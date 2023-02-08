@@ -10,7 +10,7 @@ import {
   Spread,
 } from "lexical";
 import cl from "clsx";
-import { ColorElement, FileElement, Token } from "@storyflow/backend/types";
+import { ColorToken, FileToken, Token } from "@storyflow/backend/types";
 import { useIsSelected } from "./useIsSelected";
 import { caretClasses } from "./caret";
 import { PhotoIcon } from "@heroicons/react/24/outline";
@@ -42,7 +42,7 @@ function FileDecorator({
   token,
 }: {
   nodeKey: string;
-  token: FileElement;
+  token: FileToken;
 }) {
   const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
   const selectClick = React.useRef(false);
@@ -76,7 +76,7 @@ function ColorDecorator({
   token,
 }: {
   nodeKey: string;
-  token: ColorElement;
+  token: ColorToken;
 }) {
   const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
   const selectClick = React.useRef(false);

@@ -1,10 +1,7 @@
 import React from "react";
 import { Path, PathSegment } from "@storyflow/frontend/types";
 
-type PathContextType = {
-  path: Path;
-  goToPath: (path: PathSegment | null) => void;
-};
+type PathContextType = [Path, (value: Path | ((ps: Path) => Path)) => void];
 export const PathContext = React.createContext<PathContextType | null>(null);
 
 export const stringifyPath = (path: PathSegment[]) => {

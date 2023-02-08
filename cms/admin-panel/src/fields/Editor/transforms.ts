@@ -167,7 +167,7 @@ export const $getComputation = (node: LexicalNode) => {
         for (let i = 0; i < children.length; i++) {
           const child = children[i];
           if (i > 0 && $isBlockNode(child)) {
-            content = tools.concat(content, [["n"]]);
+            content = tools.concat(content, [{ n: true }]);
           }
           if ($isHeadingNode(child)) {
             const level = parseInt(child.__tag.slice(1), 10);
@@ -219,20 +219,24 @@ export const $getComputation = (node: LexicalNode) => {
       const operator = node.getTextContent();
       let compute: EditorComputation = [];
       if (operator === ",") {
-        compute = [[","]];
+        compute = [{ ",": true }];
       } else if (operator === "(") {
-        compute = [["("]];
+        compute = [{ "(": true }];
       } else if (operator === ")") {
-        compute = [[")"]];
+        compute = [{ ")": true }];
+      } else if (operator === "[") {
+        compute = [{ "[": true }];
+      } else if (operator === "]") {
+        compute = [{ "]": true }];
       } else {
-        compute = [[operator as "+"]];
+        compute = [{ _: operator as "+" }];
       }
       content = compute;
     } else if ($isFunctionNode(node)) {
-      content = [["(", node.__func]];
+      content = [{ "(": node.__func }];
     } else if ($isParameterNode(node)) {
       const parameter = node.getTextContent();
-      content = [[parseInt(parameter, 10)]];
+      content = [{ x: parseInt(parameter, 10) }];
     } else if ($isLayoutElementNode(node)) {
       content = [node.__value];
     } else if ($isInlineLayoutElementNode(node)) {
@@ -414,17 +418,14 @@ export const getNodesFromComputation = (
     } else if (typeof el === "boolean") {
       const node = $createTextNode(el ? "SAND" : "FALSK");
       acc.push(node);
-    } else if (
-      tools.isSymbol(el, "(") &&
-      typeof (el as any[])[1] === "string"
-    ) {
+    } else if (tools.isSymbol(el, "(") && typeof el["("] === "string") {
       const node = $createFunctionNode((el as any)[1]);
       acc.push(node);
-    } else if (tools.isImport(el, "field")) {
+    } else if (tools.isFieldImport(el)) {
       const node = $createImportNode(el);
       acc.push(node);
     } else if (tools.isParameter(el)) {
-      const node = $createParameterNode(`${el[0]}`);
+      const node = $createParameterNode(`${el["x"]}`);
       acc.push(node);
     } else if (tools.isLayoutElement(el)) {
       if (isInlineElement(libraries, el)) {
@@ -440,14 +441,24 @@ export const getNodesFromComputation = (
     } else if (tools.isFetcher(el)) {
       const node = $createDocumentNode(el);
       acc.push(node);
-    } else if (tools.isImport(el, "document")) {
+    } else if (tools.isDocumentImport(el)) {
       const node = $createDocumentNode(el);
       acc.push(node);
-    } else if (tools.isToken(el)) {
+    } else if (tools.isFileToken(el) || tools.isColorToken(el)) {
       const node = $createTokenNode(el);
       acc.push(node);
-    } else if (tools.isSymbol(el)) {
-      const node = $createOperatorNode(el[0]);
+    } else if (tools.isSymbol(el, "_")) {
+      const node = $createOperatorNode(el["_"]);
+      acc.push(node);
+    } else if (
+      tools.isSymbol(el, ",") ||
+      tools.isSymbol(el, "(") ||
+      tools.isSymbol(el, ")") ||
+      tools.isSymbol(el, "[") ||
+      tools.isSymbol(el, "]")
+    ) {
+      const key = Object.keys(el)[0];
+      const node = $createOperatorNode(key);
       acc.push(node);
     }
     return acc;
@@ -466,7 +477,7 @@ export function $initializeEditor(
         (tools.isLayoutElement(el) && !isInlineElement(libraries, el)) ||
         tools.isNestedDocument(el) ||
         tools.isFetcher(el) ||
-        tools.isImport(el, "document")
+        tools.isDocumentImport(el)
       );
     };
 

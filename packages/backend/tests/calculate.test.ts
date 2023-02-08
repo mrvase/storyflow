@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { DocumentId, FieldId, TemplateFieldId, Value } from "../types";
-import { calculate as calculate_, Computation } from "./calculate";
+import {
+  Computation,
+  DocumentId,
+  FieldId,
+  TemplateFieldId,
+  Value,
+} from "../types";
+import {
+  calculateSync as calculateSync_,
+  calculateAsync as calculateAsync_,
+} from "../calculate";
 
 type ComputationBlock = { id: string; value: Computation };
 
@@ -12,7 +21,7 @@ const calculateAsync = (
     const block = imports.find((el) => el.id == id);
     if (!block) return;
     return new Promise<Value[]>((res) => {
-      const result = calculate_(id, block.value, getter, {
+      const result = calculateAsync_(id, block.value, getter, {
         returnFunction,
       });
       setTimeout(() => {
@@ -20,24 +29,19 @@ const calculateAsync = (
       }, 5);
     });
   };
-  return calculate_("root", comp, getter);
+  return calculateAsync_("root", comp, getter);
 };
 
 const calculate = (comp: Computation, imports: ComputationBlock[] = []) => {
-  const getter = (id: string, returnFunction: boolean = false) => {
+  const getter = (id: string, returnFunction: boolean) => {
     const block = imports.find((el) => el.id == id);
     if (!block) return;
-    return {
-      then(callback: any) {
-        return callback(
-          calculate_(id, block.value, getter, {
-            returnFunction,
-          })
-        );
-      },
-    };
+    const value = calculateSync_(id, block.value, getter, {
+      returnFunction,
+    });
+    return value;
   };
-  return calculate_("root", comp, getter);
+  return calculateSync_("root", comp, getter);
 };
 
 const test = async (
@@ -154,7 +158,7 @@ describe("calculator - functions", () => {
 
     return test(computation, result, imports);
   });
-  it("replaces parameter with args", () => {
+  it.only("replaces parameter with args 1", () => {
     const computation: Computation = [
       { id: "imp", fref: "a" as FieldId, args: {} },
     ];
@@ -168,7 +172,7 @@ describe("calculator - functions", () => {
 
     return test(computation, result, imports);
   });
-  it("replaces parameter with args", () => {
+  it("replaces parameter with args 2", () => {
     const computation: Computation = [
       { "(": true },
       2,

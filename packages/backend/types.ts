@@ -4,6 +4,70 @@ export type DocumentId = StringType<"short-id">;
 export type TemplateFieldId = StringType<"template-field-id">;
 export type FieldId = StringType<"field-id">; // `${DocumentId}${TemplateFieldId}`
 
+export type Parameter = { x: number; value?: PrimitiveValue };
+
+// placeholders are meant to be replaced by a value when the computation is executed
+export type Placeholder = Parameter | FieldImport | Fetcher;
+export type FlatPlaceholder = Parameter | FlatFieldImport | Fetcher;
+
+// symbols are also meant to be eliminated when the computation is executed,
+// but unlike placeholders, they do not indicate a place for a value
+// but define the execution of a function
+// NOTICE! They are characterized by only one key-value pair
+// if this changes, we need to change the symb.equals implementation
+//
+
+export type SharedSymbol =
+  | { "(": true }
+  | { ")": true }
+  | { "[": true }
+  | { "]": true }
+  | { n: true };
+
+export type EditorSymbol =
+  | SharedSymbol
+  | { _: Operator }
+  | { ")": FunctionName }
+  | { ",": true };
+
+export type DBSymbol =
+  | SharedSymbol
+  | { "{": true }
+  | { "}": true }
+  | { ")": Operator | FunctionName }
+  | { p: TemplateFieldId };
+
+type SharedSymbolKey = "(" | ")" | "[" | "]" | "n";
+export type EditorSymbolKey = SharedSymbolKey | "_" | ",";
+export type DBSymbolKey = SharedSymbolKey | "{" | "}" | "p";
+
+export type EditorComputation = (Value | Placeholder | EditorSymbol)[];
+export type Computation = (Value | Placeholder | DBSymbol)[];
+
+// FlatComputations reside as the value in ComputationBlocks, and they are always
+// the root of the computation.  Nested arrays only occur as a product of calculations,
+// so they cannot be in the FlatComputation.
+export type FlatComputation = (
+  | Exclude<FlatValue, FlatValue[]>
+  | FlatPlaceholder
+  | DBSymbol
+)[];
+
+// These occur when we in the database compute the ComputationBlocks and add
+// the "result" and "function" properties to the block. But this does not
+// create a problem for us.
+export type PossiblyNestedFlatComputation = (
+  | FlatValue
+  | FlatPlaceholder
+  | DBSymbol
+)[];
+
+export type NonNestedComputation = (
+  | Exclude<Value, Value[]>
+  | Placeholder
+  | DBSymbol
+)[];
+
 export type DocumentImport = { dref: DocumentId };
 
 export type FlatFieldImport = {
@@ -71,15 +135,15 @@ export type Fetcher = {
   filters: Filter[];
 };
 
-export type FileElement = {
+export type FileToken = {
   src: string;
 };
 
-export type ColorElement = {
+export type ColorToken = {
   color: string;
 };
 
-export type Token = FileElement | ColorElement;
+export type Token = FileToken | ColorToken;
 
 export type PrimitiveValue = string | number | boolean | Date;
 
@@ -98,16 +162,6 @@ export type Value =
   | DocumentImport
   | Token
   | Value[];
-
-export type Parameter = [number, PrimitiveValue?];
-
-export type Placeholder = Parameter | FieldImport | Fetcher;
-
-export type FlatPlaceholder =
-  | Parameter
-  | DocumentImport
-  | FlatFieldImport
-  | Fetcher;
 
 export const operators = [
   "*",
@@ -136,47 +190,6 @@ export const functions = [
 ] as const;
 
 export type FunctionName = (typeof functions)[number];
-
-export type SharedSymbol = ["("] | [")"] | ["n"];
-
-export type EditorSymbol =
-  | SharedSymbol
-  | [Operator]
-  | ["(", FunctionName]
-  | [","];
-
-export type DBSymbol =
-  | SharedSymbol
-  | ["{"]
-  | ["}"]
-  | ["["]
-  | ["]"]
-  | [")", Operator | FunctionName]
-  | ["p", TemplateFieldId];
-
-export type SharedSymbolNext =
-  | { "(": true }
-  | { ")": true }
-  | { "[": true }
-  | { "]": true }
-  | { n: true };
-
-export type EditorSymbolNext =
-  | SharedSymbol
-  | { _: Operator }
-  | { ")": FunctionName }
-  | { ",": true };
-
-export type DBSymbolNext =
-  | SharedSymbol
-  | { "{": true }
-  | { "}": true }
-  | { ")": Operator | FunctionName }
-  | { p: TemplateFieldId };
-
-export type EditorComputation = (Value | Placeholder | EditorSymbol)[];
-export type Computation = (Value | Placeholder | DBSymbol)[];
-export type FlatComputation = (FlatValue | FlatPlaceholder | DBSymbol)[];
 
 export type ComputationBlock = {
   id: FieldId;

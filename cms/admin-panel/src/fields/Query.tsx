@@ -13,6 +13,7 @@ import {
   ArrowUturnRightIcon,
   AtSymbolIcon,
   BoltIcon,
+  CalculatorIcon,
   ChevronLeftIcon,
   ComputerDesktopIcon,
   CubeIcon,
@@ -875,6 +876,19 @@ function QueryCommands({
           searchQuery.length > 20 ? " ..." : ""
         }"`,
       },
+      {
+        id: 2,
+        label: (
+          <div className="flex items-center">
+            {markMatchingString("Skift mellem matematik/tekst", query)}
+          </div>
+        ),
+        onEnter() {
+          console.log("BIP BOP");
+        },
+        onEnterLabel: "Skift",
+        Icon: CalculatorIcon,
+      },
     ];
   } else {
     options = (data ?? []).map((el) => ({
@@ -945,7 +959,7 @@ function QueryLinks({
 
   React.useEffect(() => {
     const symbol = getPrevSymbol();
-    if (tools.isImport(symbol, "field")) {
+    if (tools.isFieldImport(symbol)) {
       setLinkParent(symbol);
     }
   }, []);

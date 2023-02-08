@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { operators } from "../aggregation/js-operators";
-import { calculate as _calculate, FlatComputation } from "./calculate";
+import {
+  calculate as _calculate,
+  FlatComputation,
+} from "../aggregation/calculate";
 import {
   DocumentId,
   DocumentImport,

@@ -2,22 +2,6 @@ import { symb } from "@storyflow/backend/symb";
 import { EditorComputation } from "@storyflow/backend/types";
 import { matchNonEscapedCharacter } from "./matchNonEscapedCharacter";
 
-function getType(value: EditorComputation[number] | undefined) {
-  if (value === null) return "null";
-  if (typeof value === "object") {
-    if (Array.isArray(value)) {
-      if (typeof value[0] === "number") return "parameter";
-      return "symbol";
-    }
-    if ("dref" in value) return "document-import";
-    if ("fref" in value) return "field-import";
-    if ("values" in value) return "nested-document";
-    if ("type" in value) return "layout-element";
-    if ("filters" in value) return "fetcher";
-  }
-  return typeof value;
-}
-
 function forEach(
   compute: EditorComputation,
   callback: (value: any, index: number) => boolean | void,
@@ -26,7 +10,7 @@ function forEach(
   let index = 0;
   for (let cIndex = 0; cIndex < compute.length; cIndex++) {
     let el = compute[cIndex];
-    if (!symb.isValue(el)) {
+    if (!symb.isPrimitiveValue(el)) {
       if (callback(el, index++)) return;
     } else {
       if (typeof el === "boolean") {
@@ -77,7 +61,7 @@ function forEach(
 function getLength(compute: EditorComputation): number {
   return (compute as any).reduce(
     (sum: number, el: EditorComputation[number]): number => {
-      if (!symb.isValue(el)) {
+      if (!symb.isPrimitiveValue(el)) {
         return sum + 1;
       } else if (typeof el === "boolean") {
         return sum + 1;
@@ -120,7 +104,7 @@ function slice(compute: EditorComputation, _start: number, _end?: number) {
       return true;
     }
     let latest = array[array.length - 1];
-    if (!symb.isValue(el)) {
+    if (!symb.isPrimitiveValue(el)) {
       push(el);
     } else {
       if (typeof el === "string" && typeof latest === "string") {
@@ -175,6 +159,27 @@ const compareArrays = (arr1: any[], arr2: any[]) => {
   );
 };
 
+function getType(value: EditorComputation[number] | undefined) {
+  if (value === null) return "null";
+  if (typeof value === "object") {
+    // values
+    if ("dref" in value) return "document-import";
+    if ("values" in value) return "nested-document";
+    if ("type" in value) return "layout-element";
+    if ("src" in value) return "file-token";
+    if ("color" in value) return "color-token";
+
+    // placeholders
+    if ("fref" in value) return "field-import";
+    if ("filters" in value) return "fetcher";
+    if ("x" in value) return "parameter";
+
+    // symbols
+    return "symbol";
+  }
+  return typeof value;
+}
+
 function equals(compute1: EditorComputation, compute2: EditorComputation) {
   if (getLength(compute1) !== getLength(compute2)) {
     return false;
@@ -184,44 +189,38 @@ function equals(compute1: EditorComputation, compute2: EditorComputation) {
     let value2 = at(compute2, index);
     if (getType(value1) !== getType(value2)) {
       result = false;
-    } else if (
-      symb.isSymbol(value1) &&
-      symb.isSymbol(value2) &&
-      !compareArrays(value1, value2)
-    ) {
-      result = false;
-    } else if (
-      symb.isParameter(value1) &&
-      symb.isParameter(value2) &&
-      !compareArrays(value1, value2)
-    ) {
-      result = false;
-    } else if (
-      symb.isImport(value1, "field") &&
-      symb.isImport(value2, "field") &&
-      value1.id !== value2.id
-    ) {
-      result = false;
-    } else if (
-      symb.isImport(value1, "document") &&
-      symb.isImport(value2, "document") &&
-      value1.dref !== value2.dref
-    ) {
-      result = false;
-    } else if (
-      symb.isLayoutElement(value1) &&
-      symb.isLayoutElement(value2) &&
-      value1.id !== value2.id
-    ) {
-      result = false;
-    } else if (
-      symb.isNestedDocument(value1) &&
-      symb.isNestedDocument(value2) &&
-      value1.id !== value2.id
-    ) {
-      result = false;
-    } else if (symb.isLineBreak(value1) !== symb.isLineBreak(value2)) {
-      result = false;
+      // from now on they are the same type
+    } else if (symb.isFieldImport(value2)) {
+      if (value1.id !== value2.id) {
+        result = false;
+      }
+    } else if (symb.isDocumentImport(value2)) {
+      if (value1.dref !== value2.dref) {
+        result = false;
+      }
+    } else if (symb.isLayoutElement(value2)) {
+      if (value1.id !== value2.id) {
+        result = false;
+      }
+    } else if (symb.isNestedDocument(value2)) {
+      if (value1.id !== value2.id) {
+        result = false;
+      }
+    } else if (symb.isFileToken(value2)) {
+      if (value1.src !== value2.src) {
+        result = false;
+      }
+    } else if (symb.isColorToken(value2)) {
+      if (value1.color !== value2.color) {
+        result = false;
+      }
+    } else if (typeof value2 === "object") {
+      const arr1 = Object.entries(value1)[0]; // [key, value]
+      const arr2 = Object.entries(value2)[0]; // [key, value]
+      // if the keys or the values are different
+      if (arr1.some((el, index) => el !== arr2[index])) {
+        result = false;
+      }
     } else if (String(value1) !== String(value2)) {
       result = false;
     }
@@ -255,7 +254,7 @@ function match(
   value: EditorComputation,
   ...patterns: (string | ((value: EditorComputation[number]) => boolean))[]
 ) {
-  let matches: { index: number; value: string | ["n"] }[] = [];
+  let matches: { index: number; value: string | { n: true } }[] = [];
   forEach(
     value,
     (el, index) => {
@@ -270,7 +269,7 @@ function match(
             break;
           }
         } else if (typeof pattern === "function" && pattern(el)) {
-          matches.push({ index, value: ["n"] });
+          matches.push({ index, value: { n: true } });
           break;
         }
       }

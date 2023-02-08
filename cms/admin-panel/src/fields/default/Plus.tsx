@@ -1,6 +1,6 @@
 import React from "react";
 import { useEditorContext } from "../../editor/react/EditorProvider";
-import { PaintBrushIcon } from "@heroicons/react/24/outline";
+import { CalculatorIcon, PaintBrushIcon } from "@heroicons/react/24/outline";
 import {
   $createParagraphNode,
   $getRoot,
@@ -18,11 +18,16 @@ import {
   $isHeadingNode,
 } from "../../editor/react/HeadingNode";
 import { Menu } from "./Menu";
+import { useFieldConfig } from "../../state/documentConfig";
+import { useFieldId } from "../FieldIdContext";
 
 export function Plus() {
   const editor = useEditorContext();
 
-  const [mathMode, setMathMode] = useMathMode({});
+  const id = useFieldId();
+  const [config] = useFieldConfig(id);
+
+  const [mathMode, setMathMode] = useMathMode(config?.restrictTo === "number");
 
   const read = (func: () => any) => editor.getEditorState().read(func);
   const isEditorEmpty = () => {
@@ -111,6 +116,8 @@ export function Plus() {
     });
   };
 
+  const Icon = mathMode ? CalculatorIcon : PaintBrushIcon;
+
   return isFocused && y !== null ? (
     <>
       <div
@@ -118,10 +125,12 @@ export function Plus() {
         style={{ transform: `translateY(${y}px)` }}
         onMouseDown={(ev) => {
           ev.preventDefault();
-          formatHeading();
+          if (config?.restrictTo !== "number") {
+            formatHeading();
+          }
         }}
       >
-        <PaintBrushIcon className="w-4 h-4" />
+        <Icon className="w-4 h-4" />
       </div>
       <Menu
         isEmpty={isEmpty}

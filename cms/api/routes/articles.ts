@@ -14,6 +14,7 @@ import {
   EditorComputation,
   FlatComputationRecord,
   TemplateFieldId,
+  NonNestedComputation,
 } from "@storyflow/backend/types";
 import { ModifyResult, ObjectId, WithId } from "mongodb";
 import clientPromise from "../mongo/mongoClient";
@@ -1091,7 +1092,9 @@ const flatten = (
   Object.entries(computationRecord).map(([fieldId, computation]) => {
     if (fieldId in record) return;
 
-    const flattenedComputation = flattenComputation(computation);
+    const flattenedComputation = flattenComputation(
+      computation as NonNestedComputation
+    );
 
     Object.entries(flattenedComputation).map(([id, value]) => {
       const computeId = addToImportMaps(id, value, fieldId);

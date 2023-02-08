@@ -50,7 +50,7 @@ export function RenderFetcher({
   push: (ops: ComputationOp["ops"]) => void;
 }) {
   const path = extendPath(parentPath, currentFetcher.id);
-  const { goToPath } = usePathContext();
+  const [, setPath] = usePathContext();
 
   const [fetcher, _setFetcher] = React.useState(currentFetcher);
   const [isModified, setIsModified] = React.useState(false);
@@ -67,7 +67,7 @@ export function RenderFetcher({
   );
 
   return (
-    <IfActive path={path} then="py-5 focus-permanent" else="hidden">
+    <IfActive path={path} then="pb-5 focus-permanent" else="hidden">
       <div>
         {fetcher.filters.map((filter, index) => (
           <FilterComp
@@ -108,7 +108,7 @@ export function RenderFetcher({
                   remove: 1,
                 },
               ]);
-              goToPath(null);
+              setPath(() => []);
               setIsModified(false);
             }
           }}
@@ -222,6 +222,8 @@ export function RenderLayoutElement({
   path: string;
   initialValue: Computation;
 }) {
+  const [fullPath, setPath] = usePathContext();
+
   const element = path.split(".").slice(-1)[0]; // e
 
   const { libraries } = useClientConfig();
@@ -245,11 +247,14 @@ export function RenderLayoutElement({
           <div>
             <div className="pb-5 text-gray-300 text-sm flex items-center">
               <div className="mx-5 w-4">
-                <div className="w-4 h-4 rounded-full bg-gray-700 hover:scale-150 hover:bg-gray-600 flex-center transition-[transform,colors]">
+                <button
+                  className="w-4 h-4 rounded-full bg-gray-700 hover:scale-150 hover:bg-gray-600 flex-center transition-[transform,colors]"
+                  onClick={() => setPath((ps) => ps.slice(0, -1))}
+                >
                   <ChevronLeftIcon className="w-3 h-3" />
-                </div>
+                </button>
               </div>
-              Komponent
+              {fullPath.slice(-1)[0]?.label ?? ""}
             </div>
           </div>
           <div>
@@ -257,7 +262,8 @@ export function RenderLayoutElement({
               id={id}
               path={path}
               initialValue={[]}
-              label={"Generer liste"}
+              label={"Lav til liste"}
+              labelColor="blue"
               icon={Bars3Icon}
               name="key"
             />
@@ -318,8 +324,7 @@ export function RenderImportArgs({
   const initialImport = React.useMemo(() => {
     if (!importId) return;
     return initialValue.find(
-      (el): el is FieldImport =>
-        tools.isImport(el, "field") && el.id === importId
+      (el): el is FieldImport => tools.isFieldImport(el) && el.id === importId
     );
   }, [path, initialValue]);
 
@@ -344,7 +349,7 @@ function IfActive({
   else?: string;
   children: React.ReactElement;
 }) {
-  const { path: fullPath } = usePathContext();
+  const [fullPath] = usePathContext();
   const isActive = stringifyPath(fullPath) === path;
 
   return React.cloneElement(children, {
@@ -393,6 +398,7 @@ function RenderNestedFields({
 function RenderNestedField({
   path,
   label,
+  labelColor,
   name,
   id,
   initialValue,
@@ -401,6 +407,7 @@ function RenderNestedField({
 }: {
   path: string;
   label: string;
+  labelColor?: "blue";
   name: string | number;
   id: FieldId;
   initialValue: Computation;
@@ -412,7 +419,8 @@ function RenderNestedField({
       <IfActive else="hidden" path={path}>
         <div
           className={cl(
-            "text-sm text-gray-400 flex items-center px-13 cursor-default"
+            "text-sm flex items-center px-13 cursor-default",
+            labelColor ? `text-sky-400/90` : "text-gray-400"
           )}
         >
           <div className="w-4 mx-5 flex-center opacity-60">

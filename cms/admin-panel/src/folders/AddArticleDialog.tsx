@@ -58,7 +58,7 @@ export function AddArticleDialog({
           const compute = (defaultValues?.compute ?? []).map((block) => ({
             id: replaceDocumentId(block.id, id),
             value: block.value.map((el) =>
-              tools.isImport(el, "field")
+              tools.isFieldImport(el)
                 ? {
                     ...el,
                     fref:
@@ -73,12 +73,12 @@ export function AddArticleDialog({
             compute.push({
               id: computeFieldId(id, URL_ID),
               value: [
-                ["("],
+                { "(": true },
                 parentUrl === true
                   ? ""
                   : { id: createId(1), fref: parentUrl.id },
                 "ny",
-                [")", "url"],
+                { ")": "url" },
               ],
             });
             /*

@@ -138,6 +138,7 @@ export type ValueArray = (
   | boolean
   | LayoutElement
   | NestedDocument
+  | ValueArray
 )[];
 
 export type RenderArray = (

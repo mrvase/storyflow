@@ -2,6 +2,7 @@ import {
   Computation,
   ComputationBlock,
   DBDocument,
+  DBSymbol,
   FieldId,
   FieldImport,
   FlatComputation,
@@ -11,19 +12,22 @@ import {
   FlatNestedDocument,
   LayoutElement,
   NestedDocument,
+  NonNestedComputation,
   TemplateFieldId,
   Value,
 } from "./types";
 import { traverse } from "./traverse";
 import { computeFieldId, getTemplateFieldId } from "./ids";
 import { symb } from "./symb";
-import { calculate } from "./calculate";
+import { calculateSync } from "./calculate";
 
-export const toFlatComputation = (value: Computation): FlatComputation => {
+export const toFlatComputation = (
+  value: NonNestedComputation
+): FlatComputation => {
   return value.map((el) => {
     if (symb.isLayoutElement(el)) {
       return { ...el, props: Object.keys(el.props) } as FlatLayoutElement;
-    } else if (symb.isImport(el, "field")) {
+    } else if (symb.isFieldImport(el)) {
       const { args, ...newEl } = el;
       return newEl as FlatFieldImport;
     } else if (symb.isNestedDocument(el)) {
@@ -36,7 +40,7 @@ export const toFlatComputation = (value: Computation): FlatComputation => {
 };
 
 export const flattenComputation = (
-  value: Computation
+  value: NonNestedComputation
 ): FlatComputationRecord => {
   const result = new Map<string, FlatComputation>();
   traverse(value, (value, path) => {
@@ -93,17 +97,25 @@ export const calculateFlatComputation = (
   value: FlatComputation,
   compute: ComputationBlock[]
 ): Value[] => {
-  return calculate(
+  return calculateSync(
     id,
     traverseFlatComputation(value, compute, (block) => {
       if (!block) return [];
-      return calculateFlatComputation(block.id, block.value, compute);
+      return calculateFlatComputation(
+        block.id,
+        block.value as FlatComputation,
+        compute
+      );
     }),
     (_id: string) => {
       const id = _id.indexOf(".") > 0 ? _id.split(".")[1] : _id;
       const computation = compute.find((el) => el.id === id)?.value;
       if (!computation) return [];
-      return calculateFlatComputation(id, computation, compute);
+      return calculateFlatComputation(
+        id,
+        computation as FlatComputation,
+        compute
+      );
     }
   );
 };
@@ -149,6 +161,8 @@ export const getComputationRecord = (
   const fields = Object.fromEntries(
     rootCompute.map(({ id, value }) => [
       id,
+      // we know that these are non-nested computations as
+      // they have not been computed
       restoreComputation(value, doc.compute),
     ])
   );

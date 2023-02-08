@@ -47,11 +47,11 @@ export const fieldConfig: Record<
     initialValue: [],
   },
   url: {
-    initialValue: [["("], "", "", [")", "url"]],
+    initialValue: [{ "(": true }, "", "", { ")": "url" }],
     transform: "url",
   },
   slug: {
-    initialValue: [["("], [")", "slug"]],
+    initialValue: [{ "(": true }, { ")": "slug" }],
     transform: "slug",
   },
 };
