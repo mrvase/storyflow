@@ -45,7 +45,7 @@ export const resolveProps = (
                   let array = prop
                     ? recursive(el.props[name] as Value[], {
                         index: finalIndex,
-                      })
+                      }) ?? []
                     : [];
                   let value: any = array[finalIndex % array.length];
                   value = {
@@ -56,8 +56,8 @@ export const resolveProps = (
                   };
                   return [name, value];
                 } else {
-                  let value: any =
-                    el.props[name][finalIndex % el.props[name].length];
+                  let array = el.props[name] ?? [];
+                  let value: any = array[finalIndex % array.length];
                   if (["image", "video"].includes(type)) {
                     if (
                       value !== null &&
