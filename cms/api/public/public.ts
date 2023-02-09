@@ -62,7 +62,7 @@ const authorization = async (ctx: MiddlewareContext) => {
 
     user = {
       slug: organization.slug,
-      db: organization.db,
+      db: organization.dbs[1],
     };
 
     session.set("user-api", user);

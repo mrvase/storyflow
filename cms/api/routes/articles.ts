@@ -1260,12 +1260,13 @@ const transformField = (
       } else {
         const path = targetTools.getLocation(operation.target);
         const result = modifyNestedChild(value, path.split("."), (value) => {
-          return decodeEditorComputation(
-            inputConfig.getNextState(
-              encodeEditorComputation(value) as Computation,
-              operation
-            ) as EditorComputation
-          );
+          const encoded = encodeEditorComputation(value) as Computation;
+          const transformed = inputConfig.getNextState(
+            encoded,
+            operation
+          ) as EditorComputation;
+          const decoded = decodeEditorComputation(transformed);
+          return decoded;
         });
         if (result) {
           value = result;

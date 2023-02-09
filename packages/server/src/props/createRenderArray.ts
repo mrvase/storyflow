@@ -1,4 +1,8 @@
-import type { LibraryConfig, RenderArray, ValueArray } from "..";
+import type {
+  LibraryConfig,
+  RenderArray,
+  ValueArray,
+} from "@storyflow/frontend/types";
 import { getConfigByType } from "./getConfigByType";
 
 const isRenderable = (

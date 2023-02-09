@@ -1,5 +1,4 @@
 import { ComponentConfig, LibraryConfig } from "@storyflow/frontend/types";
-import util from "util";
 
 const parseTypeString = (type: string): [library: string, name: string] => {
   return type.indexOf(":") >= 0

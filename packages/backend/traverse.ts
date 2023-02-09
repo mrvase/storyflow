@@ -99,7 +99,7 @@ export const modifyChild = (
     if (index < 0) return undefined;
     const element = newComputation[index] as LayoutElement | FieldImport;
     if (symb.isLayoutElement(element)) {
-      const prop = element.props[propKey];
+      const prop = element.props[propKey] ?? [];
       (newComputation[index] as LayoutElement) = {
         ...element,
         props: {

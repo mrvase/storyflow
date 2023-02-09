@@ -15,14 +15,12 @@ import {
   FieldId,
   FieldImport,
   EditorComputation,
-  DocumentId,
+  Value,
 } from "@storyflow/backend/types";
 import {
   Bars3Icon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  PencilIcon,
-  PencilSquareIcon,
   PlusIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
@@ -31,7 +29,7 @@ import { Fetcher, Filter } from "@storyflow/backend/types";
 import { tools } from "shared/editor-tools";
 import { stringifyPath, usePathContext } from "../PathContext";
 import { getConfigFromType, useClientConfig } from "../../client-config";
-import { Client, useClient } from "../../client";
+import { useClient } from "../../client";
 import { ParentProp, WritableDefaultField } from "./DefaultField";
 import { useFieldTemplate } from "./useFieldTemplate";
 import { fetchFn } from "./calculateFn";
@@ -240,6 +238,20 @@ export function RenderLayoutElement({
 
   const initialProps = getConfigFromType(type, libraries)?.props ?? [];
 
+  const [key] = useGlobalState<Value[]>(extendPath(id, `${path}/key`));
+
+  const [listIsOpen_, toggleListIsOpen] = React.useReducer((ps) => !ps, false);
+  React.useEffect(() => {
+    if (!listIsOpen_ && (key?.length ?? 0) > 0) {
+      console.log("SET IS OPEN");
+      toggleListIsOpen();
+    }
+  }, [listIsOpen_, key]);
+
+  const listIsOpen = listIsOpen_ || (key?.length ?? 0) > 0;
+
+  console.log("KEY", key);
+
   return (
     <>
       <IfActive else="hidden" path={path}>
@@ -255,13 +267,19 @@ export function RenderLayoutElement({
                 </button>
               </div>
               {fullPath.slice(-1)[0]?.label ?? ""}
+              <button
+                className="ml-auto mr-5 w-4 h-4 flex-center rounded-full bg-gray-700"
+                onClick={toggleListIsOpen}
+              >
+                <Bars3Icon className="w-3 h-3" />
+              </button>
             </div>
           </div>
-          <div>
+          <div className={listIsOpen ? "" : "hidden"}>
             <RenderNestedField
               id={id}
               path={path}
-              initialValue={[]}
+              initialValue={(initialElement?.props ?? {})["key"] ?? []}
               label={"Lav til liste"}
               labelColor="blue"
               icon={Bars3Icon}

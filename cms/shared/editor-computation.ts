@@ -139,14 +139,16 @@ export const encodeEditorComputation = (
       const operator = el[")"];
       const symbol = { _: operator };
 
-      let group = replaceSeparators(value, symbol);
+      let group = replaceSeparators(value, symbol).filter((el) => el !== null);
 
       // edge cases
+      /*
       if (group[0] === null) {
         group.shift();
       } else if (group.length === 1) {
         group.push(symbol);
       }
+      */
 
       saved.push({
         group,
@@ -181,7 +183,7 @@ export const encodeEditorComputation = (
         saved.push({ ",": true });
       }
       saved.push({
-        group: value,
+        group: value.filter((el) => el !== null),
         type: "paren",
       });
       value = saved;
@@ -205,11 +207,13 @@ export const encodeEditorComputation = (
         value.push(el);
       } else if (tools.isColorToken(el)) {
         value.push(el);
+      } else if (tools.isParameter(el)) {
+        value.push(el);
       }
     }
   });
 
-  return flatten(value);
+  return flatten(value.filter((el) => el !== null));
 };
 
 type DbFunction = {
@@ -307,6 +311,8 @@ export const decodeEditorComputation = (
       current.parameters.push(el);
     } else if (tools.isColorToken(el)) {
       current.parameters.push(el);
+    } else if (tools.isParameter(el)) {
+      current.parameters.push(el);
     } else if (isValueOrPlaceholder(el)) {
       current.parameters.push(el);
     }
@@ -384,11 +390,19 @@ export const decodeEditorComputation = (
       }
     }
 
-    value.parameters.forEach((el) => {
+    value.parameters.forEach((el, index) => {
       if (isObject(el) && "parameters" in el) {
         flattened.push(...flatten(el));
       } else if (isSeparator(el, ",")) {
-        // do nothing
+        if (index === 0) {
+          flattened.push(null as any);
+        } else if (isSeparator(value.parameters[index - 1], ",")) {
+          flattened.push(null as any);
+        }
+        if (index === value.parameters.length - 1) {
+          flattened.push(null as any);
+        }
+        // else do nothing
       } else {
         flattened.push(el);
       }
