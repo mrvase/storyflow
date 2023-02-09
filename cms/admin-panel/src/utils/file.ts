@@ -117,7 +117,7 @@ export const getVideoSize = (src: string) => {
     const onLoad = () => {
       video.removeEventListener("loadedmetadata", onLoad);
       clearTimeout(timer);
-      resolve({ width: video.videoHeight, height: video.videoWidth });
+      resolve({ width: video.videoWidth, height: video.videoHeight });
     };
     timer = setTimeout(() => {
       video.removeEventListener("loadedmetadata", onLoad);
