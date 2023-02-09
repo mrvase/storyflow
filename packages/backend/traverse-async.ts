@@ -1,4 +1,4 @@
-import { calculateAsync } from "./calculate-async";
+import { calculateAsync } from "./calculate";
 import { traverseFlatComputation } from "./flatten";
 import { getTemplateFieldId } from "./ids";
 import { symb } from "./symb";
@@ -8,29 +8,10 @@ import {
   Fetcher,
   FieldImport,
   FlatComputation,
-  LayoutElement,
   NestedDocument,
   Value,
 } from "./types";
 import type { LibraryConfig } from "@storyflow/frontend/types";
-import { getConfigByType } from "./traverse-helpers/getConfigByType";
-import { createRenderArray } from "./traverse-helpers/createRenderArray";
-
-const BUCKET_NAME = "awss3stack-mybucket15d133bf-1wx5fzxzweii4";
-const BUCKET_REGION = "eu-west-1";
-
-const getImageObject = (name: string, slug: string) => {
-  const src = `https://${BUCKET_NAME}.s3.${BUCKET_REGION}.amazonaws.com/${slug}/${name}`;
-
-  const width = name ? parseInt(name.split("-")[4] ?? "0", 10) : 0;
-  const height = name ? parseInt(name.split("-")[5] ?? "0", 10) : 0;
-
-  return {
-    src,
-    width,
-    height,
-  };
-};
 
 export const traverseFlatComputationAsync = async (
   value: FlatComputation,
@@ -38,50 +19,28 @@ export const traverseFlatComputationAsync = async (
   callback: (block: ComputationBlock | undefined) => Promise<any>,
   options: {
     fetch: (fetcher: Fetcher) => Promise<NestedDocument[]>;
-    libraries: LibraryConfig[];
-    slug: string;
   }
 ): Promise<Computation> => {
   const result = await Promise.all(
     value.map(async (el) => {
       if (el === null || typeof el !== "object") return el;
       if ("type" in el) {
-        const config = getConfigByType(el.type, options.libraries);
-
-        if (!config) {
-          return undefined;
-        }
-
-        const entries = await Promise.all(
-          config.props.map(async ({ name, type }) => {
-            const computation = compute.find(({ id }) =>
-              id.match(new RegExp(`${el.id}\/${name}\#?`))
-            )!;
-            const result = await callback(computation);
-            let value = result[0];
-            if (type === "children") {
-              value = {
-                $children: createRenderArray(result, options.libraries),
-              };
-            } else if (type === "image") {
-              if (Array.isArray(result[0])) {
-                value = getImageObject(result[0][0] as string, options.slug);
-              } else {
-                value = { url: "", width: 0, height: 0 };
-              }
-            }
-            return [name, value];
-          })
+        const props = Object.fromEntries(
+          await Promise.all(
+            el.props.map(async (name) => {
+              const computation = compute.find(({ id }) =>
+                id.match(new RegExp(`${el.id}\/${name}\#?`))
+              )!;
+              const result = await callback(computation);
+              return [name, result];
+            })
+          )
         );
 
-        const props = Object.fromEntries(entries);
-
-        const newEl: LayoutElement = {
+        return {
           ...el,
-          type: config.name, // replaces name with "library:key"
           props,
         };
-        return newEl;
       } else if ("fref" in el) {
         const entries = await Promise.all(
           compute
@@ -112,9 +71,11 @@ export const traverseFlatComputationAsync = async (
 
   return result.reduce((a, c) => {
     if (c !== null && typeof c === "object" && "$fetch" in c) {
-      a.push(...([["("], ...c.$fetch, [")"]] as Computation));
+      a.push(
+        ...([{ "(": true }, ...(c.$fetch ?? []), { ")": true }] as Computation)
+      );
     } else if (c !== undefined) {
-      a.push(c);
+      a.push(c as Computation[number]);
     }
     return a;
   }, [] as Computation);
@@ -126,8 +87,6 @@ export const calculateFlatComputationAsync = async (
   compute: ComputationBlock[],
   options: {
     fetch: (fetcher: Fetcher) => Promise<NestedDocument[]>;
-    libraries: LibraryConfig[];
-    slug: string;
   }
 ): Promise<Value[]> => {
   const computation = await traverseFlatComputationAsync(
@@ -157,7 +116,9 @@ export const calculateFlatComputationAsync = async (
     );
   };
 
-  return calculateAsync(id, computation, getter);
+  // cannot put cache here apparently.
+  const result = calculateAsync(id, computation, getter);
+  return await result;
 };
 
 export const findFetchers = (
@@ -172,7 +133,7 @@ export const findFetchers = (
   };
   const fetchers = value.filter((el): el is Fetcher => symb.isFetcher(el));
   const imports = value.filter((el): el is FieldImport =>
-    symb.isImport(el, "field")
+    symb.isFieldImport(el)
   );
   imports.forEach((imp) => {
     const comp = compute.find((el) => el.id === imp.fref)!;

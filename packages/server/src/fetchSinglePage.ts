@@ -4,7 +4,6 @@ import {
   computeFieldId,
   calculateFlatComputationAsync,
   findFetchers,
-  createRenderArray,
 } from "@storyflow/backend";
 import type {
   Computation,
@@ -14,9 +13,11 @@ import type {
   Filter,
   NestedDocument,
   TemplateFieldId,
-  LibraryConfig,
-} from "@storyflow/backend";
+  Value,
+} from "@storyflow/backend/types";
+import type { LibraryConfig, RenderArray } from "@storyflow/frontend/types";
 import { WithId } from "mongodb";
+import { resolveProps } from "./props/resolveProps";
 
 let CACHE: Record<string, Promise<NestedDocument[]>> = {};
 
@@ -155,7 +156,7 @@ export async function fetchSinglePage(
 
   const getByPower = async (
     id: TemplateFieldId
-  ): Promise<Computation | undefined> => {
+  ): Promise<RenderArray | Value[] | undefined> => {
     const fieldId = computeFieldId(doc.id, id);
     const computation = blocks.find((el) => el.id === fieldId)?.value;
 
@@ -166,11 +167,30 @@ export async function fetchSinglePage(
     // caching
     fetchers.forEach((fetcher) => fetchFetcher(fetcher, db));
 
-    return await calculateFlatComputationAsync(fieldId, computation, blocks, {
-      fetch: (fetcher) => fetchFetcher(fetcher, db),
-      libraries,
-      slug: db.split("-").slice(0, -1).join("-"),
-    });
+    const slug = db.split("-").slice(0, -1).join("-");
+
+    const content = await calculateFlatComputationAsync(
+      fieldId,
+      computation,
+      blocks,
+      {
+        fetch: (fetcher) => fetchFetcher(fetcher, db),
+      }
+    );
+
+    if ([FIELDS.layout.id, FIELDS.page.id].includes(id)) {
+      return resolveProps(
+        content,
+        {
+          libraries,
+          slug,
+        },
+        {
+          index: 0,
+        }
+      );
+    }
+    return content;
   };
 
   const [layout, redirect, page, title] = await Promise.all([
@@ -181,8 +201,8 @@ export async function fetchSinglePage(
   ]);
 
   return {
-    layout: layout ? createRenderArray(layout as any, libraries) : null,
-    page: page ? createRenderArray(page as any, libraries) : null,
+    layout: layout ?? null,
+    page: page ?? null,
     head: {
       ...(title && { title }),
     },

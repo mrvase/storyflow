@@ -68,6 +68,7 @@ a {
   pointer-events: none;
   color: rgb(156 163 175);
   display: inline-flex;
+  white-space: nowrap;
 }
 
 .editor > * > [data-lexical-decorator="true"] {

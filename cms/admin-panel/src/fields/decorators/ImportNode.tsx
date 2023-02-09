@@ -16,26 +16,28 @@ import { useLabel } from "../../state/documentConfig";
 import { useGlobalState } from "../../state/state";
 import { useGlobalContext } from "../../state/context";
 import { useArticlePageContext } from "../../articles/ArticlePageContext";
-import { getPreview } from "../default/DefaultField";
-import { Computation, FieldId, FieldImport } from "@storyflow/backend/types";
+import { getPreview } from "../default/getPreview";
+import {
+  FieldId,
+  FieldImport,
+  TemplateFieldId,
+  Value,
+} from "@storyflow/backend/types";
 import { usePathContext } from "../PathContext";
+import { getDocumentId, computeFieldId } from "@storyflow/backend/ids";
 
 const useState = (
   id: FieldId,
-  templateId?: string
-): [label: string, value: Computation | undefined] => {
+  templateId?: TemplateFieldId
+): [label: string, value: Value[] | undefined] => {
   if (templateId) {
-    return [`Kolonne`, [`Kolonne`]];
-    /*
-    const [articleField] = useGlobalState<string>(id);
     const label1 = useLabel(id);
-    const id2 = `${articleField}${templateId}`;
-    const [value] = useGlobalState<Computation>(id2);
-    const label2 = useLabel(`${templateId.slice(0, 4)}${templateId}`);
-    return [`${label1} · ${label2}`, value];
-    */
+    const label2 = useLabel(
+      computeFieldId(getDocumentId(templateId), templateId)
+    );
+    return [label1, [`[${label1} · ${label2}]`]];
   } else {
-    let value: Computation | undefined;
+    let value: Value[] | undefined;
     let label: string = "";
     if (!id) return [label, value];
     if (id.startsWith("ctx:")) {
@@ -43,7 +45,7 @@ const useState = (
       value = useGlobalContext(id, id.slice(4))[0][id.slice(4)];
       label = id.slice(4);
     } else {
-      value = useGlobalState<Computation>(id)[0];
+      value = useGlobalState<Value[]>(id)[0];
       label = useLabel(id);
     }
     return [label, value];
@@ -58,11 +60,13 @@ function ImportDecorator({
   nodeKey: string;
   fieldImport: FieldImport;
 }) {
-  const { goToPath } = usePathContext();
+  const [, setPath] = usePathContext();
 
   const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
 
   const parameters = ["x", "y", "z"];
+
+  const isColumn = Boolean(fieldImport.pick);
 
   const [label, value] = useState(fieldImport.fref, fieldImport.pick);
 
@@ -73,7 +77,10 @@ function ImportDecorator({
   return (
     <span
       className={cl(
-        "bg-gray-50 dark:bg-teal-400/20 text-teal-100/90 rounded-sm selection:bg-transparent relative",
+        "bg-gray-50 rounded-sm selection:bg-transparent relative",
+        isColumn
+          ? "dark:bg-sky-400/20 text-sky-100/90"
+          : "dark:bg-teal-400/20 text-teal-100/90",
         // "after:absolute after:w-full after:left-0 after:-bottom-0.5 after:border-b-2 after:border-b-white/20",
         isSelected ? "ring-2 ring-amber-300" : "dark:ring-gray-600",
         isPseudoSelected && caretClasses
@@ -86,11 +93,14 @@ function ImportDecorator({
       }}
       onClick={() => {
         if (isSelected && !selectClick.current) {
-          goToPath({
-            id: fieldImport.id,
-            label: fieldImport.id,
-            parentProp: null,
-          });
+          setPath((ps) => [
+            ...ps,
+            {
+              id: fieldImport.id,
+              label: fieldImport.id,
+              parentProp: null,
+            },
+          ]);
         }
         selectClick.current = false;
       }}

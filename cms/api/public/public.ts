@@ -7,11 +7,11 @@ import { cors as corsFactory } from "../middleware/cors";
 
 import { createSessionStorage } from "@storyflow/session";
 import { cookieOptions } from "../cookie-options";
-import { User } from "../users/types";
 import { error, success } from "@storyflow/result";
 import { globals } from "../middleware/globals";
 import { fetchSinglePage } from "@storyflow/server";
 import { URL_ID } from "@storyflow/backend/templates";
+import type {} from "@storyflow/frontend/types";
 
 const sessionStorage = createSessionStorage({
   cookie: cookieOptions,
@@ -62,7 +62,7 @@ const authorization = async (ctx: MiddlewareContext) => {
 
     user = {
       slug: organization.slug,
-      db: organization.db,
+      db: organization.dbs[1],
     };
 
     session.set("user-api", user);

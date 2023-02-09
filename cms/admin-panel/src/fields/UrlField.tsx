@@ -36,7 +36,7 @@ import {
   decodeEditorComputation,
   encodeEditorComputation,
 } from "shared/editor-computation";
-import { calculate } from "@storyflow/backend/calculate";
+import { calculateSync } from "@storyflow/backend/calculate";
 import { URL_ID } from "@storyflow/backend/templates";
 
 export const toSlug = (value: string) =>
@@ -56,8 +56,8 @@ const getUrlStringFromValue = (id: string, value: Computation) => {
   return getString(
     value.length === 1
       ? value
-      : calculate(id, value, () => undefined, {
-          returnDefaultValue: true,
+      : calculateSync(id, value, () => undefined, {
+          returnFunction: false,
         })
   );
 };
@@ -118,7 +118,7 @@ export default function UrlField({
 
   const [output, setOutput] = useGlobalState<[string]>(
     id,
-    () => calculateFn(id, initialValue, imports, client) as [string]
+    () => calculateFn(id, initialValue, { imports, client }) as [string]
   );
 
   const url = getUrlStringFromValue(id, output);
@@ -142,7 +142,7 @@ export default function UrlField({
         ops: [
           {
             index: 1,
-            insert: [[","], ""],
+            insert: [{ ",": true }, ""],
             remove: slug.length + 1,
           },
         ],
@@ -159,7 +159,7 @@ export default function UrlField({
         ops: [
           {
             index: 2,
-            insert: [[0, "*"]],
+            insert: [{ x: 0, value: "*" }],
             remove: slug.length,
           },
         ],
@@ -191,7 +191,10 @@ export default function UrlField({
 
   const [parents, children] = useRelatedPages(
     getDocumentId(id),
-    getUrlStringFromValue(id, calculateFn(id, initialValue, imports, client))
+    getUrlStringFromValue(
+      id,
+      calculateFn(id, initialValue, { imports, client })
+    )
   );
 
   const [isFocused, setIsFocused] = React.useState(false);
@@ -223,7 +226,7 @@ export default function UrlField({
             ops: [
               {
                 index: 0,
-                insert: [...insert, [","]],
+                insert: [...insert, { ",": true }],
                 remove: 2,
               },
             ],
@@ -262,8 +265,7 @@ export default function UrlField({
             calculateFn(
               id,
               decodeEditorComputation(result, getConfig("url").transform),
-              imports,
-              client
+              { imports, client }
             ) as [string]
         );
       });

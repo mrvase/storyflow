@@ -27,6 +27,13 @@ const user = async ({ req, client }: MiddlewareContext) => {
     throw error({ message: "Not authorized.", status: 401 });
   }
 
+  if (organization.version !== client.version) {
+    throw error({
+      message: "You are not logged into this version of the client.",
+      status: 401,
+    });
+  }
+
   return {
     user,
     slug: organization.slug,

@@ -2,7 +2,6 @@ import React from "react";
 import cl from "clsx";
 import { DocumentId, FieldId } from "@storyflow/backend/types";
 import { ChevronDownIcon, LinkIcon } from "@heroicons/react/24/outline";
-import { usePathContext } from "../PathContext";
 import { addImport } from "../../custom-events";
 import { getTemplateFieldId } from "@storyflow/backend/ids";
 import { useFieldTemplate, useTemplate } from "./useFieldTemplate";
@@ -14,7 +13,6 @@ export function TemplateHeader(
     "template" in props
       ? useTemplate(props.template)
       : useFieldTemplate(props.id);
-  // const { path } = usePathContext();
 
   console.log("TEMPLATE", props, template);
 

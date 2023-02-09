@@ -1,6 +1,6 @@
 import * as React from "react";
 import { ExtendPath, usePath } from "./contexts";
-import RenderElement from "./RenderElement";
+import RenderElement, { IndexContext } from "./RenderElement";
 import { useValue } from "../builder/RenderBuilder";
 import { Component, PropConfig, ValueArray } from "@storyflow/frontend/types";
 import { createRenderArray } from "../config/createRenderArray";
@@ -28,10 +28,13 @@ export default function RenderComponent({
 
   const value = useValue(path) as ValueArray;
 
-  const renderArray = React.useMemo(
-    () => createRenderArray(value, getLibraryConfigs()),
-    [value]
-  );
+  const index = React.useContext(IndexContext);
+
+  const renderArray = React.useMemo(() => {
+    const valueAtIndex = value[index];
+    const value_ = Array.isArray(valueAtIndex) ? valueAtIndex : value;
+    return createRenderArray(value_, getLibraryConfigs());
+  }, [value, index]);
 
   const createElement = (element: {
     id: string;

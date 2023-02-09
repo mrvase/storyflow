@@ -12,7 +12,7 @@ const parseTypeString = (type: string): [library: string, name: string] => {
     : ["", type];
 };
 
-type ExtendedComponentConfig = ComponentConfig & {
+export type ExtendedComponentConfig = ComponentConfig & {
   component: Component<ComponentConfig>;
 };
 

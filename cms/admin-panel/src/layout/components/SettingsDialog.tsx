@@ -1,11 +1,12 @@
 import cl from "clsx";
 import { PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
-import React from "react";
+import React, { use } from "react";
 import { SWRClient, useClient } from "../../client";
 import { Settings } from "@storyflow/backend/types";
 import { createId } from "@storyflow/backend/ids";
 import { Spinner } from "../../elements/Spinner";
 import { isSuccess, unwrap } from "@storyflow/result";
+import { useUrlInfo } from "../../users";
 
 export function SettingsDialog({ close }: { close: () => void }) {
   const [focused, setFocused] = React.useState<number | null>(null);
@@ -20,6 +21,8 @@ export function SettingsDialog({ close }: { close: () => void }) {
       });
     },
   });
+
+  const { organization, version } = useUrlInfo();
 
   const client = useClient();
 
@@ -123,6 +126,21 @@ export function SettingsDialog({ close }: { close: () => void }) {
             </span>
           </button>
         </div>
+      </div>
+      <div className="py-5">
+        <button
+          onClick={async () => {
+            const newVersion = Number(!version);
+            await client.settings.changeVersion.mutation({
+              slug: organization,
+              version: newVersion,
+            });
+            const url = new URL(window.location.href);
+            window.location.href = `${url.origin}/v${newVersion}/${organization}`;
+          }}
+        >
+          Skift version
+        </button>
       </div>
       <div className="flex justify-end">
         <button

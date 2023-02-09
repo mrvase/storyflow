@@ -6,15 +6,15 @@ import { useClientConfig } from "../../client-config";
 import { operators } from "@storyflow/backend/types";
 import { insertComputation } from "./insertComputation";
 
-export function useMathMode({
-  push,
-}: {
-  push?: (ops: ComputationOp["ops"]) => void;
-}) {
+export function useMathMode(defaultValue: boolean = false) {
   const editor = useEditorContext();
 
-  const state = React.useState(false);
+  const state = React.useState(defaultValue);
   const [mathMode] = state;
+
+  React.useEffect(() => {
+    state[1](defaultValue);
+  }, [defaultValue]);
 
   const { libraries } = useClientConfig();
 
@@ -64,16 +64,16 @@ export function useMathMode({
       */
       const insert = (compute: EditorComputation) => {
         event.preventDefault();
-        insertComputation(editor, compute, libraries, push);
+        insertComputation(editor, compute, libraries);
       };
 
       if (mathMode) {
         if (operators.includes(event.key as any)) {
-          insert([[event.key as "*"]]);
+          insert([{ _: event.key as "*" }]);
         } else if (event.key === ",") {
-          insert([[","]]);
+          insert([{ ",": true }]);
         } else if ("xyz".indexOf(event.key) >= 0) {
-          insert([["xyz".indexOf(event.key)]]);
+          insert([{ x: "xyz".indexOf(event.key) }]);
         }
       } else {
         if (!mathMode && event.key === "*") {
@@ -82,13 +82,13 @@ export function useMathMode({
       }
 
       if (event.key === "(") {
-        insert([["("]]);
+        insert([{ "(": true }]);
       } else if (event.key === "[") {
-        insert([["("]]);
+        insert([{ "[": true }]);
       } else if (event.key === ")") {
-        insert([[")"]]);
+        insert([{ ")": true }]);
       } else if (event.key === "]") {
-        insert([[")"]]);
+        insert([{ "]": true }]);
       }
     }
     return editor.registerRootListener((next, prev) => {

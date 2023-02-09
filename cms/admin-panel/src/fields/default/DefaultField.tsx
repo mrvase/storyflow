@@ -18,8 +18,8 @@ import {
   NestedDocument,
   FieldId,
   FieldImport,
-  FieldConfig,
   EditorComputation,
+  Value,
 } from "@storyflow/backend/types";
 import { useArticlePageContext } from "../../articles/ArticlePageContext";
 import { extendPath } from "@storyflow/backend/extendPath";
@@ -39,6 +39,7 @@ import {
 } from "./RenderNestedFields";
 import { calculateFn } from "./calculateFn";
 import { TemplateHeader } from "./TemplateHeader";
+import { getPreview } from "./getPreview";
 
 export const ParentPropContext = React.createContext<{
   name: string;
@@ -82,39 +83,14 @@ export const getVariant = (output: any): Variant => {
   return null;
 };
 
-export const getPreview = (output: Computation) => {
-  return JSON.stringify(output);
-
-  const valueAsString = (value: any) => {
-    if (typeof value === "boolean") {
-      return value ? "SAND" : "FALSK";
-    }
-    if (typeof value === "number") {
-      return value.toFixed(2).replace(".", ",").replace(",00", "");
-    }
-    if (typeof value === "object") {
-      return "type" in value ? `{ ${value.type} }` : "{ Dokument }";
-    }
-    return `${value}`;
-  };
-  if (output.length === 0) {
-    return "";
-  }
-  if (output.length === 1) {
-    return valueAsString(output[0]);
-  }
-
-  return `[${output.map((el) => valueAsString(el)).join(", ")}]`;
-};
-
 export const findImportsFn = (value: Computation) => {
-  return value.filter((el): el is FieldImport => tools.isImport(el, "field"));
+  return value.filter((el): el is FieldImport => tools.isFieldImport(el));
 };
 
 export const findFetchersFn = (value: Computation) => {
   return value.reduce(
     (acc, fetcher, index) =>
-      tools.isFetcher(fetcher) ? acc.concat({ index, fetcher }) : acc,
+      tools.isFetcher(fetcher) ? acc.concat([{ index, fetcher }]) : acc,
     [] as { index: number; fetcher: Fetcher }[]
   );
 };
@@ -179,11 +155,12 @@ export default function DefaultField({
       .initialize(version, history ?? []);
   }, []);
 
+  const [path] = usePathContext();
   const [config] = useFieldConfig(id);
 
   return (
     <>
-      {config?.template && <TemplateHeader id={id} />}
+      {path.length === 0 && config?.template && <TemplateHeader id={id} />}
       <WritableDefaultField
         id={id}
         path=""
@@ -207,7 +184,7 @@ export function WritableDefaultField({
   fieldConfig: { type: "default" | "slug" };
   options?: string[];
 }) {
-  const { path: fullPath } = usePathContext();
+  const [fullPath] = usePathContext();
   const isActive =
     stringifyPath(fullPath) === path.split("/").slice(0, -1).join("/");
 
@@ -215,20 +192,29 @@ export function WritableDefaultField({
 
   const client = useClient();
 
-  const [_output, setOutput] = useGlobalState<
-    (Computation[number] | Computation)[]
-  >(extendPath(id, path), () => calculateFn(id, initialValue, imports, client));
-
-  const output: Computation = _output.flat(1) as any;
+  const [output, setOutput] = useGlobalState<Value[]>(
+    extendPath(id, path),
+    () => calculateFn(id, initialValue, { imports, client })
+  );
 
   const transform =
     path === "" ? getConfig(fieldConfig.type).transform : undefined;
 
   const initialEditorValue = encodeEditorComputation(initialValue, transform);
 
-  const [, setComputation] = useGlobalState<EditorComputation>(
+  const [computation, setComputation] = useGlobalState<EditorComputation>(
     `${extendPath(id, path)}#computation`,
     () => initialEditorValue
+  );
+
+  const isEmpty =
+    computation.length === 0 ||
+    (computation.length === 1 && computation[0] === "");
+
+  const [, setFunction] = useGlobalState<Computation>(
+    `${extendPath(id, path)}#function`,
+    () =>
+      calculateFn(id, initialValue, { imports, client, returnFunction: true })
   );
 
   const [fieldImports, setFieldImports] = useGlobalState<FieldImport[]>(
@@ -280,7 +266,16 @@ export function WritableDefaultField({
           ) => ComputationOp["ops"][])
     ) => {
       return actions.mergeablePush((_prev, noop) => {
-        const prev = _prev?.target === target ? _prev : undefined; // only treat as mergeable if they have same target.
+        const result = [];
+        let prev = _prev;
+        if (_prev?.target !== target) {
+          if (prev === noop) {
+            prev = noop;
+          } else {
+            prev = undefined;
+            result.push(prev);
+          }
+        }
         const newOps =
           typeof payload === "function"
             ? payload(prev?.ops, noop.ops)
@@ -298,7 +293,10 @@ export function WritableDefaultField({
       setComputation(func);
       const encoded = func();
       const decoded = decodeEditorComputation(encoded, transform);
-      setOutput(() => calculateFn(id, decoded, {}, client));
+      setOutput(() => calculateFn(id, decoded, { client, imports }));
+      setFunction(() =>
+        calculateFn(id, decoded, { client, imports, returnFunction: true })
+      );
       setFieldImports(() => findImportsFn(decoded));
       setFetchers(() => findFetchersFn(decoded));
     });
@@ -317,13 +315,18 @@ export function WritableDefaultField({
         options={options}
       >
         <div className={cl("relative", !isActive && "hidden")}>
+          {isEmpty && (
+            <div className="absolute pointer-events-none px-14 pt-1 font-light opacity-25">
+              Ikke udfyldt
+            </div>
+          )}
           <ContentEditable
             className={cl(
               "peer grow editor outline-none px-14 pt-1 pb-5 font-light selection:bg-gray-700",
               "preview text-base leading-6"
               // mode === null || mode === "slug" ? "calculator" : ""
             )}
-            data-value={preview}
+            data-value={preview !== output[0] ? preview : ""}
           />
           <Plus />
         </div>

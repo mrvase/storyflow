@@ -9,7 +9,6 @@ import {
 } from "@heroicons/react/24/outline";
 import React from "react";
 import { useLocalStorage } from "../../state/useLocalStorage";
-import { useOrganisationSlug } from "../../users";
 import Dialog from "../../elements/Dialog";
 import { SettingsDialog } from "./SettingsDialog";
 
@@ -17,8 +16,6 @@ export default function Nav() {
   const [isOpen, setIsOpen] = useLocalStorage<boolean>("nav-is-open", true);
 
   const [dialog, setDialog] = React.useState<string | null>(null);
-
-  const slug = useOrganisationSlug();
 
   const [darkMode, setDarkMode] = useLocalStorage<boolean>("dark-mode", true);
   const DarkIcon = darkMode ? MoonIcon : SunIcon;

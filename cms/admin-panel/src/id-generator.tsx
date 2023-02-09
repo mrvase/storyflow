@@ -2,7 +2,7 @@ import { unwrap } from "@storyflow/result";
 import React from "react";
 import { useClient } from "./client";
 import { DocumentId } from "@storyflow/backend/types";
-import { useOrganisationSlug } from "./users";
+import { useUrlInfo } from "./users";
 
 const IdContext = React.createContext<{
   getArticleId: () => Promise<DocumentId>;
@@ -10,9 +10,9 @@ const IdContext = React.createContext<{
 } | null>(null);
 
 export function IdGenerator({ children }: { children: React.ReactNode }) {
-  const slug = useOrganisationSlug();
+  const { organization } = useUrlInfo();
 
-  const getName = (name: string) => `${slug}:${name}`;
+  const getName = (name: string) => `${organization}:${name}`;
 
   const getValue = (name: string): string[] => {
     if (typeof window === "undefined") return [];

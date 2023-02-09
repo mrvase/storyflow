@@ -1,6 +1,6 @@
 export type Organization = { slug: string } & (
-  | { db: string; permissions: Record<string, any> | false }
-  | {}
+  | { db: string; version: number; permissions: Record<string, any> | false }
+  | { db?: never; version?: never; permissions?: never }
 );
 
 export type User = {

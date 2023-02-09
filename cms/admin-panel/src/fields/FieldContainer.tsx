@@ -63,7 +63,7 @@ export const useBuilderPath = (): [
     // dispatch
   }, []);
 
-  return [path, setPath];
+  return React.useMemo(() => [path, setPath], [path, setPath]);
 };
 
 type Props = {
@@ -97,18 +97,10 @@ function FieldContainerInner({
   const articleId = useArticlePageContext().id;
   const isNative = template === articleId;
 
-  const [path, setPath] = useBuilderPath();
+  const pathState = useBuilderPath();
+  const [path, setPath] = pathState;
 
   const [isEditing] = useLocalStorage<boolean>("editing-articles", false);
-
-  const ctx = React.useMemo(
-    () => ({
-      path,
-      goToPath: (path: PathSegment | null) =>
-        setPath((ps) => (path === null ? [] : [...ps, path])),
-    }),
-    [path]
-  );
 
   if (!dragHandlePropsFromProps) {
     const {
@@ -161,13 +153,13 @@ function FieldContainerInner({
           "-z-10 absolute bg-black/20 inset-0 pointer-events-none"
         )}
       />
-      <div className="flex px-5 h-5">
+      <div className={cl("flex px-5", path.length === 0 ? "h-5" : "h-10 pb-5")}>
         <Dot
           id={fieldConfig.id}
           native={isNative}
           {...(withProps && dotProps)}
         />
-        <div className="ml-5 flex">
+        <div className={cl("ml-5 flex")}>
           {path.length === 0 ? (
             <Label
               id={fieldConfig.id}
@@ -190,7 +182,7 @@ function FieldContainerInner({
   );
 
   return (
-    <PathContext.Provider value={ctx}>
+    <PathContext.Provider value={pathState}>
       {content(true)}
       <BuilderPortal id={fieldConfig.id}>
         {(isOpen) => (
@@ -203,7 +195,7 @@ function FieldContainerInner({
           >
             <div
               className={cl(
-                "relative grow shrink basis-0 focus-container pt-4"
+                "pt-5 relative grow shrink basis-0 focus-container"
               )}
             >
               <div
@@ -402,7 +394,7 @@ function Label({
     <span
       className={cl(
         "text-sm font-normal",
-        isNative ? "text-gray-400" : "text-teal-400/60"
+        isNative ? "text-gray-400" : "text-teal-400/90"
       )}
     >
       {label || "Ingen label"}

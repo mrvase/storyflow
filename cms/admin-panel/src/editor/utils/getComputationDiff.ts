@@ -119,27 +119,31 @@ export const getComputationDiff = (
     )
   ) {
     const find = (value: EditorComputation) => tools.match(value, "\\*+")[0];
-    let match: { index: number; value: string | ["n"] } | null;
+    let match: { index: number; value: string | { n: true } } | null;
 
     let insertText = insert;
-    let insertMatches = [] as { value: string | ["n"]; index: number }[];
+    let insertMatches = [] as { value: string | { n: true }; index: number }[];
     match = find(insertText);
+
+    const getLength = (el: string | { n: true }) =>
+      typeof el === "object" ? 1 : el.length;
+
     while (typeof match?.index === "number") {
       insertText = tools.concat(
         tools.slice(insertText, 0, match.index),
-        tools.slice(insertText, match.index + match.value.length)
+        tools.slice(insertText, match.index + getLength(match.value))
       );
       insertMatches.push({ value: match.value, index: match.index });
       match = find(insertText);
     }
 
     let removeText = remove;
-    let removeMatches = [] as { value: string | ["n"]; index: number }[];
+    let removeMatches = [] as { value: string | { n: true }; index: number }[];
     match = find(removeText);
     while (typeof match?.index === "number") {
       removeText = tools.concat(
         tools.slice(removeText, 0, match.index),
-        tools.slice(removeText, match.index + match.value.length)
+        tools.slice(removeText, match.index + getLength(match.value))
       );
       removeMatches.push({ value: match.value, index: match.index });
       match = find(removeText);
@@ -151,7 +155,7 @@ export const getComputationDiff = (
       actions.push({
         index: left + match.index,
         insert: [],
-        remove: match.value.length,
+        remove: getLength(match.value),
       });
     }
     for (let match of insertMatches.slice().reverse()) {

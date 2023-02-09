@@ -24,7 +24,7 @@ function LayoutElementDecorator({
   value: LayoutElement;
   nodeKey: string;
 }) {
-  const { goToPath } = usePathContext();
+  const [, setPath] = usePathContext();
   const parentProp = React.useContext(ParentPropContext);
 
   const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
@@ -53,12 +53,15 @@ function LayoutElementDecorator({
         }}
         onClick={() => {
           if (isSelected && !selectClick.current) {
-            goToPath({
-              id: value.id,
-              label: config?.label ?? value.type,
-              // type: value.type,
-              parentProp: parentProp,
-            });
+            setPath((ps) => [
+              ...ps,
+              {
+                id: value.id,
+                label: config?.label ?? value.type,
+                // type: value.type,
+                parentProp: parentProp,
+              },
+            ]);
           }
           selectClick.current = false;
         }}

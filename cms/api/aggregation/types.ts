@@ -43,7 +43,7 @@ export type Operators<DocumentType extends Record<string, any>> = {
     arr: Array<Input>,
     callback: (value: Input) => boolean
   ) => Input | null;
-  eq: (arg1: any, arg2: any) => boolean;
+  eq: <T, U extends T>(arg1: T, arg2: U) => boolean;
   cond: <Success, Failure>(
     condition: boolean,
     ifTrue: () => Success,
@@ -62,14 +62,14 @@ export type Operators<DocumentType extends Record<string, any>> = {
   and: (...args: any[]) => boolean;
   or: (...args: any[]) => boolean;
   not: (arg: boolean) => boolean;
-  in: (arg1: any, arg2: any[]) => boolean;
-  ne: (arg1: any, arg2: any) => boolean;
+  in: <T extends any[], U extends T[number]>(arg1: U, arg2: T) => boolean;
+  ne: <T, U extends Exclude<any, T>>(arg1: T, arg2: U) => boolean;
   first: <T extends any[]>(
     arr: T
   ) => T extends [infer First, ...any] ? First : never;
   last: <T extends any[]>(
     arr: T
-  ) => T extends [...any, infer Last] ? Last : never;
+  ) => T extends [...any, infer Last] ? Last : T[number];
   at: <Input>(arr: Array<Input>, index: number) => Input;
   anyElementTrue: (arr: any[]) => boolean;
   concat: (...strings: string[]) => string;

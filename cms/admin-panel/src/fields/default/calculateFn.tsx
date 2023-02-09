@@ -1,5 +1,5 @@
 import { store } from "../../state/state";
-import { calculate } from "@storyflow/backend/calculate";
+import { calculateSync } from "@storyflow/backend/calculate";
 import { context, getContextKey } from "../../state/context";
 import { fetchArticle } from "../../articles";
 import {
@@ -16,15 +16,25 @@ import { Client } from "../../client";
 import { unwrap } from "@storyflow/result";
 
 export const calculateFn = (
-  id: FieldId,
+  id: FieldId | string,
   value: Computation,
-  imports: ComputationRecord = {},
-  client: Client
+  {
+    imports = {},
+    returnFunction = false,
+    client,
+  }: {
+    client: Client;
+    imports?: ComputationRecord;
+    returnFunction?: boolean;
+  }
 ): Value[] => {
-  const getter = (id: FieldId) => {
+  const getter = (id: FieldId | string, returnFunction: boolean) => {
+    const stateId = returnFunction ? `${id}#function` : id;
+
     if (id.startsWith("ctx:")) {
-      return context.use<Value[]>(getContextKey(getDocumentId(id), id.slice(4)))
-        .value;
+      return context.use<Value[]>(
+        getContextKey(getDocumentId(id as FieldId), id.slice(4))
+      ).value;
     }
 
     if (id.indexOf(".") > 0) {
@@ -35,26 +45,30 @@ export const calculateFn = (
 
     // if (!value) return store.use<Value[]>(id).value ?? [];
     if (value) {
-      const fn = () => calculateFn(id, value, imports, client);
-      return store.use<Value[]>(id, fn).value;
+      return store.use<Value[]>(stateId, () =>
+        calculateFn(id, value, { imports, client, returnFunction })
+      ).value;
     }
 
-    const asyncFn = fetchArticle(getDocumentId(id), client).then((article) => {
-      // returning undefined makes sure that the field is not initialized,
-      // so that if the field is initialized elsewhere, this field will react to it.
-      // (e.g. a not yet saved article)
-      if (!article) return undefined;
-      const all = getComputationRecord(article, { includeImports: true });
-      const value = all[id as FieldId];
-      if (!value) return undefined;
-      const fn = () => calculateFn(id, value, all, client);
-      return fn;
-    });
+    const asyncFn = fetchArticle(getDocumentId(id as FieldId), client).then(
+      (article) => {
+        // returning undefined makes sure that the field is not initialized,
+        // so that if the field is initialized elsewhere, this field will react to it.
+        // (e.g. a not yet saved article)
+        if (!article) return undefined;
+        const all = getComputationRecord(article, { includeImports: true });
+        const value = all[id as FieldId];
+        if (!value) return undefined;
+        const fn = () =>
+          calculateFn(id, value, { imports: all, client, returnFunction });
+        return fn;
+      }
+    );
 
-    return store.useAsync(id, asyncFn).value ?? [];
+    return store.useAsync(stateId, asyncFn).value ?? [];
   };
 
-  const result = calculate(id, value, getter);
+  const result = calculateSync(id, value, getter, { returnFunction });
   return result;
 };
 

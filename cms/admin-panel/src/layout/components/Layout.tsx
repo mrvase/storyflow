@@ -6,7 +6,7 @@ import Sidebar from "./Sidebar";
 import { Sortable } from "@storyflow/dnd";
 import { useNavigate } from "@storyflow/router";
 import Nav from "./Nav";
-import { useOrganisationSlug } from "../../users";
+import { useUrlInfo } from "../../users";
 import { useLocalStorage } from "../../state/useLocalStorage";
 
 /**
@@ -32,7 +32,7 @@ export default function Layout() {
 
   const navigate = useNavigate();
 
-  const organisation = useOrganisationSlug();
+  const { urlInfoSegment } = useUrlInfo();
 
   return (
     <div className="flex h-screen bg-gray-100 dark:bg-gray-950">
@@ -69,7 +69,7 @@ export default function Layout() {
                 }
               }
               const path = newTabs.map((el) => el.segment).join("");
-              navigate(`/${organisation}${path}`);
+              navigate(`${urlInfoSegment}${path}`);
             }}
           >
             <div

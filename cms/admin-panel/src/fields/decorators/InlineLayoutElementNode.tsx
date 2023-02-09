@@ -26,7 +26,7 @@ function InlineLayoutElementDecorator({
   value: LayoutElement;
   nodeKey: string;
 }) {
-  const { path, goToPath } = usePathContext();
+  const [path, setPath] = usePathContext();
   const parentProp = React.useContext(ParentPropContext);
 
   const pathString = stringifyPath(path);
@@ -67,11 +67,14 @@ function InlineLayoutElementDecorator({
       }}
       onClick={() => {
         if (isSelected && !selectClick.current) {
-          goToPath({
-            id: value.id,
-            label: config?.label ?? value.type,
-            parentProp: parentProp,
-          });
+          setPath((ps) => [
+            ...ps,
+            {
+              id: value.id,
+              label: config?.label ?? value.type,
+              parentProp: parentProp,
+            },
+          ]);
         }
         selectClick.current = false;
       }}

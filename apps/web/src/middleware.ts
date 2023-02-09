@@ -3,7 +3,7 @@ import { createSessionStorage } from "@storyflow/session/src/sessionStorageEdge"
 import { NextResponse } from "next/server";
 import { NextRequest } from "next/server";
 import { cookieOptions } from "api/cookie-options";
-import { User } from "./types";
+import { User } from "api/types";
 
 export const config = {
   matcher:

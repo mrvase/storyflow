@@ -15,9 +15,11 @@ import {
   FieldId,
   FieldImport,
   EditorComputation,
-  DocumentId,
+  Value,
 } from "@storyflow/backend/types";
 import {
+  Bars3Icon,
+  ChevronLeftIcon,
   ChevronRightIcon,
   PlusIcon,
   XMarkIcon,
@@ -27,65 +29,10 @@ import { Fetcher, Filter } from "@storyflow/backend/types";
 import { tools } from "shared/editor-tools";
 import { stringifyPath, usePathContext } from "../PathContext";
 import { getConfigFromType, useClientConfig } from "../../client-config";
-import { Client, useClient } from "../../client";
+import { useClient } from "../../client";
 import { ParentProp, WritableDefaultField } from "./DefaultField";
 import { useFieldTemplate } from "./useFieldTemplate";
-import { unwrap } from "@storyflow/result";
 import { fetchFn } from "./calculateFn";
-import { TemplateHeader } from "./TemplateHeader";
-
-const ListContext = React.createContext<
-  { listId: string; templateId: string }[]
->([]);
-
-export function ListContextProvider({
-  id,
-  path,
-  children,
-}: {
-  id: FieldId;
-  path: string;
-  children: React.ReactNode;
-}) {
-  const ctx = React.useContext(ListContext);
-
-  return <>{children}</>;
-  /*
-  const [currentKey] = useGlobalState<(Computation[number] | Computation)[]>(
-    extendPath(id, `${path}/_template`)
-  );
-
-  const nextCtx = React.useMemo(() => {
-    if (!currentKey) return ctx;
-    return [...ctx, { listId: "", templateId: "" }];
-  }, [ctx, currentKey]);
-
-  return (
-    <ListContext.Provider value={nextCtx}>
-      <IfActive else="hidden" path={path}>
-        <div>
-          <TemplateHeader template={currentKey?.[0] as DocumentId} />
-          <RenderNestedField
-            id={id}
-            path={path}
-            initialValue={[]}
-            label={"Template"}
-            name="_template"
-          />
-          <RenderNestedField
-            id={id}
-            path={path}
-            initialValue={[]}
-            label={"Listenøgle"}
-            name="_key"
-          />
-        </div>
-      </IfActive>
-      {children}
-    </ListContext.Provider>
-  );
-  */
-}
 
 export function RenderFetcher({
   id,
@@ -101,7 +48,7 @@ export function RenderFetcher({
   push: (ops: ComputationOp["ops"]) => void;
 }) {
   const path = extendPath(parentPath, currentFetcher.id);
-  const { goToPath } = usePathContext();
+  const [, setPath] = usePathContext();
 
   const [fetcher, _setFetcher] = React.useState(currentFetcher);
   const [isModified, setIsModified] = React.useState(false);
@@ -118,7 +65,7 @@ export function RenderFetcher({
   );
 
   return (
-    <IfActive path={path} then="py-5 focus-permanent" else="hidden">
+    <IfActive path={path} then="pb-5 focus-permanent" else="hidden">
       <div>
         {fetcher.filters.map((filter, index) => (
           <FilterComp
@@ -159,7 +106,7 @@ export function RenderFetcher({
                   remove: 1,
                 },
               ]);
-              goToPath(null);
+              setPath(() => []);
               setIsModified(false);
             }
           }}
@@ -261,27 +208,7 @@ function FilterComp({
     </div>
   );
 }
-function NestedLabel({
-  children,
-  className, // used by IfActive
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <div
-      className={cl(
-        "text-sm opacity-50 flex items-center px-13 cursor-default",
-        className
-      )}
-    >
-      <div className="w-4 mx-5 flex-center opacity-75">
-        <ChevronRightIcon className="w-3 h-3" />
-      </div>
-      {children}
-    </div>
-  );
-}
+
 export function RenderLayoutElement({
   id,
   type,
@@ -293,6 +220,8 @@ export function RenderLayoutElement({
   path: string;
   initialValue: Computation;
 }) {
+  const [fullPath, setPath] = usePathContext();
+
   const element = path.split(".").slice(-1)[0]; // e
 
   const { libraries } = useClientConfig();
@@ -309,11 +238,54 @@ export function RenderLayoutElement({
 
   const initialProps = getConfigFromType(type, libraries)?.props ?? [];
 
+  const [key] = useGlobalState<Value[]>(extendPath(id, `${path}/key`));
+
+  const [listIsOpen_, toggleListIsOpen] = React.useReducer((ps) => !ps, false);
+  React.useEffect(() => {
+    if (!listIsOpen_ && (key?.length ?? 0) > 0) {
+      console.log("SET IS OPEN");
+      toggleListIsOpen();
+    }
+  }, [listIsOpen_, key]);
+
+  const listIsOpen = listIsOpen_ || (key?.length ?? 0) > 0;
+
+  console.log("KEY", key);
+
   return (
-    <ListContextProvider id={id} path={path}>
+    <>
       <IfActive else="hidden" path={path}>
         <div>
-          <div className="pl-14 pt-5 font-light text-sm">Headline</div>
+          <div>
+            <div className="pb-5 text-gray-300 text-sm flex items-center">
+              <div className="mx-5 w-4">
+                <button
+                  className="w-4 h-4 rounded-full bg-gray-700 hover:scale-150 hover:bg-gray-600 flex-center transition-[transform,colors]"
+                  onClick={() => setPath((ps) => ps.slice(0, -1))}
+                >
+                  <ChevronLeftIcon className="w-3 h-3" />
+                </button>
+              </div>
+              {fullPath.slice(-1)[0]?.label ?? ""}
+              <button
+                className="ml-auto mr-5 w-4 h-4 flex-center rounded-full bg-gray-700"
+                onClick={toggleListIsOpen}
+              >
+                <Bars3Icon className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+          <div className={listIsOpen ? "" : "hidden"}>
+            <RenderNestedField
+              id={id}
+              path={path}
+              initialValue={(initialElement?.props ?? {})["key"] ?? []}
+              label={"Lav til liste"}
+              labelColor="blue"
+              icon={Bars3Icon}
+              name="key"
+            />
+          </div>
         </div>
       </IfActive>
       <RenderNestedFields
@@ -322,7 +294,7 @@ export function RenderLayoutElement({
         values={initialElement?.props ?? {}}
         template={initialProps}
       />
-    </ListContextProvider>
+    </>
   );
 }
 export function RenderNestedDocument({
@@ -370,8 +342,7 @@ export function RenderImportArgs({
   const initialImport = React.useMemo(() => {
     if (!importId) return;
     return initialValue.find(
-      (el): el is FieldImport =>
-        tools.isImport(el, "field") && el.id === importId
+      (el): el is FieldImport => tools.isFieldImport(el) && el.id === importId
     );
   }, [path, initialValue]);
 
@@ -396,7 +367,7 @@ function IfActive({
   else?: string;
   children: React.ReactElement;
 }) {
-  const { path: fullPath } = usePathContext();
+  const [fullPath] = usePathContext();
   const isActive = stringifyPath(fullPath) === path;
 
   return React.cloneElement(children, {
@@ -418,7 +389,7 @@ function RenderNestedFields({
     | readonly { name: string; label: string; options?: any }[];
 }) {
   return (
-    <IfActive then="pb-5 focus-permanent" path={path}>
+    <IfActive then="focus-permanent" path={path}>
       <div>
         {template.map((el) => {
           const label = el.label;
@@ -445,22 +416,36 @@ function RenderNestedFields({
 function RenderNestedField({
   path,
   label,
+  labelColor,
   name,
   id,
   initialValue,
   options,
+  icon: Icon = ChevronRightIcon,
 }: {
   path: string;
   label: string;
+  labelColor?: "blue";
   name: string | number;
   id: FieldId;
   initialValue: Computation;
   options?: any;
+  icon?: React.FC<{ className?: string }>;
 }) {
   return (
     <>
       <IfActive else="hidden" path={path}>
-        <NestedLabel>{label}</NestedLabel>
+        <div
+          className={cl(
+            "text-sm flex items-center px-13 cursor-default",
+            labelColor ? `text-sky-400/90` : "text-gray-400"
+          )}
+        >
+          <div className="w-4 mx-5 flex-center opacity-60">
+            <Icon className="w-4 h-4" />
+          </div>
+          {label}
+        </div>
       </IfActive>
       <ParentProp label={label} name={`${name}`}>
         <WritableDefaultField

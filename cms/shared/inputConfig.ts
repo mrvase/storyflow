@@ -3,7 +3,6 @@ import {
   EditorComputation,
   FieldId,
   FlatComputation,
-  TemplateFieldId,
 } from "@storyflow/backend/types";
 import { ComputationOp } from "./operations";
 import { tools } from "./editor-tools";
@@ -22,12 +21,12 @@ const getImportIds = (value: SomeComputation) => {
   const imports: FieldId[] = [];
 
   value.forEach((c, i) => {
-    if (tools.isImport(c, "field")) {
+    if (tools.isFieldImport(c)) {
       imports.push(c.fref);
     } else if (i > 0 && tools.isDBSymbol(c, "p")) {
       const prev = value[i - 1];
-      if (tools.isImport(prev, "document")) {
-        imports.push(computeFieldId(prev.dref, c[1] as TemplateFieldId));
+      if (tools.isDocumentImport(prev)) {
+        imports.push(computeFieldId(prev.dref, c.p));
       }
     }
   }, [] as FieldId[]);

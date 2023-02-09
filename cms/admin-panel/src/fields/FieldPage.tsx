@@ -41,7 +41,11 @@ import { useSegment } from "../layout/components/SegmentContext";
 import { useTabUrl } from "../layout/utils";
 import { stringifyPath } from "./PathContext";
 import { PathMap, useBuilderPath } from "./FieldContainer";
-import { Path } from "@storyflow/frontend/types";
+import {
+  ComponentConfig,
+  LibraryConfig,
+  Path,
+} from "@storyflow/frontend/types";
 
 const useBuilderRendered = ({
   listeners,
@@ -417,8 +421,15 @@ const recordifyComponent = (
 const computeComponentRecord = (
   id: FieldId,
   initialValue: Computation,
-  imports: ComputationRecord = {},
-  client: Client
+  {
+    imports = {},
+    client,
+    libraries,
+  }: {
+    imports?: ComputationRecord;
+    client: Client;
+    libraries: LibraryConfig[];
+  }
 ): ValueRecord => {
   const recursivelyGetRecordFromComputation = (
     path: string,
@@ -426,7 +437,7 @@ const computeComponentRecord = (
   ): ValueRecord => {
     const state = store.use<Value[]>(path);
     if (!state.initialized()) {
-      state.set(() => calculateFn(id, initialValue, imports, client));
+      state.set(() => calculateFn(id, initialValue, { imports, client }));
     }
     const value = state.value!;
     const children = value.reduce((acc, element) => {
@@ -435,18 +446,36 @@ const computeComponentRecord = (
       }
       const newPath = element.parent ?? path;
 
-      const props = Object.entries(element.props).reduce(
-        (acc, [key, value]) => {
-          return Object.assign(
-            acc,
-            recursivelyGetRecordFromComputation(
-              extendPath(newPath, `${element.id}/${key}`),
-              value
-            )
-          );
-        },
-        {}
-      );
+      // TODO: this can be made more performant
+      const components = libraries
+        .reduce(
+          (acc: ComponentConfig[], library) =>
+            acc.concat(
+              Object.values(library.components).map((el) => ({
+                ...el,
+                name: extendPath(library.name, el.name, ":"),
+              }))
+            ),
+          []
+        )
+        .flat(1);
+
+      const propKeys =
+        components
+          .find((el) => el.name === element.type)
+          ?.props?.map((el) => el.name) ?? Object.keys(element.props);
+
+      propKeys.push("key");
+
+      const props = propKeys.reduce((acc, key) => {
+        return Object.assign(
+          acc,
+          recursivelyGetRecordFromComputation(
+            extendPath(newPath, `${element.id}/${key}`),
+            element.props[key] ?? []
+          )
+        );
+      }, {});
       return Object.assign(acc, props);
     }, {});
 
@@ -474,9 +503,15 @@ function PropagateStatePlugin({
 
   const client = useClient();
 
+  const { libraries } = useClientConfig();
+
   // state initialized in ComponentField
   const [tree] = useGlobalState<ComponentRecord>(`${id}/record`, () => {
-    return computeComponentRecord(id, initialValue, imports, client);
+    return computeComponentRecord(id, initialValue, {
+      imports,
+      client,
+      libraries,
+    });
   });
 
   let oldValue = React.useRef({ ...tree });

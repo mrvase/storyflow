@@ -1,7 +1,5 @@
 import { Narrow, Operators } from "./types";
 import {
-  ComputationBlock,
-  FlatComputation,
   DBDocument,
   FieldId,
   FieldImport,
@@ -9,21 +7,56 @@ import {
   Operator,
   FlatFieldImport,
   DocumentId,
+  PrimitiveValue,
+  Fetcher,
+  DocumentImport,
+  TemplateFieldId,
+  FlatValue,
+  PossiblyNestedFlatComputation,
 } from "@storyflow/backend/types";
 
+type Parameter = { x: number; value?: PrimitiveValue };
+
+type FlatPlaceholderNext =
+  | Parameter
+  | DocumentImport
+  | FlatFieldImport
+  | Fetcher;
+
+type SharedSymbolNext =
+  | { "(": true }
+  | { ")": true }
+  | { "[": true }
+  | { "]": true }
+  | { n: true };
+
+type DBSymbol =
+  | SharedSymbolNext
+  | { "{": true }
+  | { "}": true }
+  | { ")": Operator | FunctionName }
+  | { p: TemplateFieldId };
+
+export type FlatComputation = (FlatValue | FlatPlaceholderNext | DBSymbol)[];
+
+type ComputationBlock = {
+  id: FieldId;
+  value: FlatComputation;
+};
+
 type Accummulator = {
-  value: FlatComputation[];
-  stack: FlatComputation[][];
+  value: FlatValue[][];
+  stack: FlatValue[][][];
   imports: FieldId[];
-  function: FlatComputation;
+  function: PossiblyNestedFlatComputation;
 };
 
 const calculateCombinations = (
   $: Operators<DBDocument>,
-  value: FlatComputation[]
+  value: FlatValue[][]
 ) => {
   return $.reduce(
-    value,
+    levelImplicitAndExplicitArrays($, value),
     (combinations, array) =>
       $.reduce(
         array,
@@ -42,214 +75,222 @@ const calculateCombinations = (
 
 const compute = (
   $: Operators<DBDocument>,
-  operator:
-    | Operator
-    | "["
-    | "]"
-    | "("
-    | ")"
-    | "n"
-    | FunctionName
-    | "merge"
-    | null,
+  operator: Operator | FunctionName | "}" | "]" | ")",
   acc: Accummulator
 ) =>
-  $.mergeObjects(acc, {
-    value: $.concatArrays(
-      $.last(acc.stack),
-      $.switch()
-        .case($.eq(operator, null), () => [
-          $.reduce(
+  $.switch()
+    .case($.in(operator, [")", "]"]), () =>
+      $.define()
+        .let({
+          spread: $.reduce(
             acc.value,
             (acc, cur) =>
-              $.reduce(cur, (acc, cur) => $.concatArrays(acc, [cur]), acc),
-            [] as FlatComputation
-          ),
-        ])
-        .case($.eq(operator, "merge"), () => [
-          $.filter(
-            $.reduce(
-              acc.value,
-              (acc, cur) =>
-                $.reduceWithIndex(
-                  cur,
-                  (acc, cur, index) =>
+              $.reduce(
+                cur,
+                (acc, cur) =>
+                  $.concatArrays(acc, [
                     $.cond(
-                      $.in($.type(cur), ["object", "array"]),
+                      $.isArray(cur),
                       () =>
                         $.cond(
-                          $.eq($.last(acc), ""),
-                          () => acc,
-                          () => $.concatArrays(acc, [""])
+                          $.eq($.size(cur as Narrow<typeof cur, any[]>), 1),
+                          () => $.first(cur as Narrow<typeof cur, [any]>),
+                          () => cur
                         ),
+                      () => cur
+                    ),
+                  ]),
+                acc
+              ),
+            [] as FlatValue[]
+          ),
+        })
+        .return(({ spread }) =>
+          $.cond(
+            $.eq(operator, "]"),
+            () => [[spread]],
+            () => [spread]
+          )
+        )
+    )
+    .case($.eq(operator, "}"), () => [
+      $.filter(
+        $.reduce(
+          acc.value,
+          (acc, cur) =>
+            $.reduceWithIndex(
+              cur,
+              (acc, cur, index) =>
+                $.cond(
+                  $.in($.type(cur), ["object", "array"]),
+                  () =>
+                    $.cond(
+                      $.eq($.last(acc), ""),
+                      () => acc,
+                      () => $.concatArrays(acc, [""])
+                    ),
+                  () =>
+                    $.cond(
+                      $.gt(index, 0),
+                      () => $.concatArrays(acc, [$.toString(cur as string)]),
                       () =>
+                        $.concatArrays($.pop(acc), [
+                          $.concat($.last(acc), $.toString(cur as string)),
+                        ])
+                    )
+                ),
+              acc
+            ),
+          [""] as string[]
+        ),
+        (el) => $.ne(el, "")
+      ),
+    ])
+    .case($.eq(operator, "sum"), () => [])
+    .case($.eq(operator, "filter"), () => [])
+    .default(() =>
+      $.define()
+        .let({
+          combinations: calculateCombinations($, acc.value),
+        })
+        .return(({ combinations }) => {
+          return $.switch()
+            .case($.eq(operator, "in"), () => [
+              [
+                $.reduce(
+                  combinations,
+                  (acc, values) =>
+                    $.or(acc, $.eq($.at(values, 0), $.at(values, 1))),
+                  false
+                ),
+              ],
+            ])
+            .case($.eq(operator, "concat"), () => [
+              $.reduce(
+                combinations,
+                (acc, values) =>
+                  $.concatArrays(
+                    acc,
+                    $.reduce(
+                      values,
+                      (acc, cur) =>
                         $.cond(
-                          $.gt(index, 0),
-                          () =>
-                            $.concatArrays(acc, [$.toString(cur as string)]),
+                          $.and(
+                            $.or($.isNumber(cur), $.eq($.type(cur), "string")),
+                            $.or(
+                              $.isNumber($.last(acc)),
+                              $.eq($.type($.last(acc)), "string")
+                            )
+                          ),
                           () =>
                             $.concatArrays($.pop(acc), [
-                              $.concat($.last(acc), $.toString(cur as string)),
-                            ])
-                        )
-                    ),
-                  acc
-                ),
-              [""] as string[]
-            ),
-            (el) => $.ne(el, "")
-          ),
-        ])
-        .case($.eq(operator, "sum"), () => [])
-        .case($.eq(operator, "filter"), () => [])
-        .default(() =>
-          $.define()
-            .let({
-              combinations: calculateCombinations($, acc.value),
-            })
-            .return(({ combinations }) =>
-              $.switch()
-                .case($.eq(operator, "in"), () => [
-                  [
-                    $.reduce(
-                      combinations,
-                      (acc, values) =>
-                        $.or(acc, $.eq($.at(values, 0), $.at(values, 1))),
-                      false
-                    ),
-                  ],
-                ])
-                .case($.eq(operator, "concat"), () => [
-                  $.reduce(
-                    combinations,
-                    (acc, values) =>
-                      $.concatArrays(
-                        acc,
-                        $.reduce(
-                          values,
-                          (acc, cur) =>
-                            $.cond(
-                              $.and(
-                                $.or(
-                                  $.isNumber(cur),
-                                  $.eq($.type(cur), "string")
-                                ),
-                                $.or(
-                                  $.isNumber($.last(acc)),
-                                  $.eq($.type($.last(acc)), "string")
-                                )
+                              $.concat(
+                                $.toString($.last(acc)),
+                                $.toString(cur)
                               ),
-                              () =>
-                                $.concatArrays($.pop(acc), [
-                                  $.concat(
-                                    $.toString($.last(acc)),
-                                    $.toString(cur)
-                                  ),
-                                ]),
-                              () => $.concatArrays(acc, [cur])
-                            ),
-                          [] as FlatComputation
-                        )
-                      ),
-                    [] as FlatComputation
+                            ]),
+                          () => $.concatArrays(acc, [cur])
+                        ),
+                      [] as FlatComputation
+                    )
                   ),
-                ])
-                .case($.in(operator, ["url", "slug"]), () => [
-                  $.map(combinations, (values) =>
-                    $.toLower(
-                      $.reduce(
-                        values,
-                        (acc, cur) =>
-                          $.concat(
-                            acc,
-                            $.switch()
-                              .case($.isNumber(cur), () => $.toString(cur))
-                              .case($.eq($.type(cur), "string"), () =>
-                                $.concat(
-                                  $.cond(
-                                    $.and(
-                                      $.eq(operator, "url"),
-                                      $.ne(cur, ""),
-                                      $.ne(acc, "")
-                                    ),
-                                    () => "/",
-                                    () => ""
-                                  ),
-                                  replaceAllWithRegex(
-                                    $,
-                                    cur as string,
-                                    $.cond(
-                                      $.eq(operator, "url"),
-                                      () => "[^\\w\\-\\*\\/]",
-                                      () => "[^\\w\\-]"
-                                    ),
-                                    "i"
-                                  )
-                                )
+                [] as FlatComputation
+              ),
+            ])
+            .case($.in(operator, ["url", "slug"]), () => [
+              $.map(combinations, (values) =>
+                $.toLower(
+                  $.reduce(
+                    values,
+                    (acc, cur) =>
+                      $.concat(
+                        acc,
+                        $.switch()
+                          .case($.isNumber(cur), () => $.toString(cur))
+                          .case($.eq($.type(cur), "string"), () =>
+                            $.concat(
+                              $.cond(
+                                $.and(
+                                  $.eq(operator, "url"),
+                                  $.ne(cur, ""),
+                                  $.ne(acc, "")
+                                ),
+                                () => "/",
+                                () => ""
+                              ),
+                              replaceAllWithRegex(
+                                $,
+                                cur as string,
+                                $.cond(
+                                  $.eq(operator, "url"),
+                                  () => "[^\\w\\-\\*\\/]",
+                                  () => "[^\\w\\-]"
+                                ),
+                                "i"
                               )
-                              .default(() => "")
-                          ),
-                        ""
+                            )
+                          )
+                          .default(() => "")
+                      ),
+                    ""
+                  )
+                )
+              ),
+            ])
+            .case($.eq(operator, "="), () => [
+              $.map(combinations, (values) =>
+                $.eq($.at(values, 0), $.at(values, 1))
+              ),
+            ])
+            .case($.in(operator, ["+", "-"]), () => [
+              $.map(combinations, (values) =>
+                $.reduce(
+                  $.slice(values, 1),
+                  (a, c) =>
+                    $.switch()
+                      .case($.eq(operator, "+"), () => $.add([a, $.number(c)]))
+                      .case($.eq(operator, "-"), () =>
+                        $.subtract([a, $.number(c)])
                       )
-                    )
-                  ),
-                ])
-                .case($.eq(operator, "="), () => [
-                  $.map(combinations, (values) =>
-                    $.eq($.at(values, 0), $.at(values, 1))
-                  ),
-                ])
-                .case($.in(operator, ["+", "-"]), () => [
-                  $.map(combinations, (values) =>
-                    $.reduce(
-                      $.slice(values, 1),
-                      (a, c) =>
-                        $.switch()
-                          .case($.eq(operator, "+"), () =>
-                            $.add([a, $.number(c)])
-                          )
-                          .case($.eq(operator, "-"), () =>
-                            $.subtract([a, $.number(c)])
-                          )
-                          .default(() => a),
-                      $.number($.first(values))
-                    )
-                  ),
-                ])
-                .case($.in(operator, ["*", "/"]), () => [
-                  $.map(combinations, (values) =>
-                    $.reduce(
-                      $.slice(values, 1),
-                      (a, c) =>
-                        $.switch()
-                          .case($.eq(operator, "*"), () =>
-                            $.multiply([a, $.number(c, 1)])
-                          )
-                          .case($.eq(operator, "/"), () =>
-                            $.divide([a, $.number(c, 1)])
-                          )
-                          .default(() => a),
-                      $.number($.first(values), 1)
-                    )
-                  ),
-                ])
-                .default(() => combinations)
-            )
-        )
-    ),
-    stack: $.pop(acc.stack),
-  });
-
-type Middleware = {
-  (...args: any): any;
-  this: Operators<DBDocument>;
-};
+                      .default(() => a),
+                  $.number($.first(values))
+                )
+              ),
+            ])
+            .case($.in(operator, ["*", "/"]), () => [
+              $.map(combinations, (values) =>
+                $.reduce(
+                  $.slice(values, 1),
+                  (a, c) =>
+                    $.switch()
+                      .case($.eq(operator, "*"), () =>
+                        $.multiply([a, $.number(c, 1)])
+                      )
+                      .case($.eq(operator, "/"), () =>
+                        $.divide([a, $.number(c, 1)])
+                      )
+                      .default(() => a),
+                  $.number($.first(values), 1)
+                )
+              ),
+            ])
+            .default(() => combinations);
+        })
+    );
 
 const isObjectWithProp = <Object, Prop extends string>(
   $: Operators<DBDocument>,
   object: Object,
   prop: Prop,
-  type: string
+  type:
+    | "string"
+    | "undefined"
+    | "object"
+    | "array"
+    | "bool"
+    | "null"
+    | "double"
+    | "date"
 ): boolean => {
   return $.cond(
     $.eq($.type(object), "object"),
@@ -259,17 +300,22 @@ const isObjectWithProp = <Object, Prop extends string>(
     () => false
   );
 };
-const isArrayWithFirstElement = <Object, Prop extends string>(
+
+const levelImplicitAndExplicitArrays = (
   $: Operators<DBDocument>,
-  object: Object,
-  type: any
-): boolean => {
-  return $.cond(
-    $.isArray(object),
-    () => {
-      return $.eq($.first(object as Narrow<Object, any[]>), type);
-    },
-    () => false
+  arr: FlatValue[][]
+): FlatValue[][] => {
+  return $.reduce(
+    arr,
+    (acc, cur) =>
+      $.concatArrays(acc, [
+        $.cond(
+          $.isArray($.first(cur)),
+          () => $.first(cur),
+          () => cur
+        ),
+      ]),
+    [] as FlatValue[][]
   );
 };
 
@@ -323,17 +369,13 @@ export const calculate = (
       result: $.reduce(
         block.value,
         (acc, cur) => {
-          // håndter import generators ("pick" og layout element props)
-          // håndter imports / parameters
-          // håndter beregninger
-
           return $.define()
-            .let({ pick: isArrayWithFirstElement($, cur, "p") })
+            .let({ pick: isObjectWithProp($, cur, "p", "string") })
             .let(({ pick }) => ({
               next: $.switch()
                 .case(isObjectWithProp($, cur, "type", "string"), () =>
                   $.concatArrays(
-                    [["("], ""] as FlatComputation,
+                    [{ "(": true }, ""] as FlatComputation,
                     $.reduce(
                       (cur as any).props,
                       (acc, el: string) =>
@@ -344,12 +386,12 @@ export const calculate = (
                         ]),
                       [] as FlatComputation
                     ),
-                    ["", [")"]] as FlatComputation
+                    ["", { ")": true }] as FlatComputation
                   )
                 )
                 .case(pick, () =>
                   $.concatArrays(
-                    [["("]] as FlatComputation,
+                    [{ "(": true }] as FlatComputation,
                     $.reduce(
                       acc.value,
                       (acc, comp) =>
@@ -360,6 +402,7 @@ export const calculate = (
                               isObjectWithProp($, el, "dref", "string"),
                               () =>
                                 $.concatArrays(acc, [
+                                  { "[": true },
                                   {
                                     fref: $.concat(
                                       (
@@ -368,19 +411,44 @@ export const calculate = (
                                           { dref: DocumentId }
                                         >
                                       ).dref,
-                                      $.last(
-                                        cur as Narrow<typeof cur, ["p", any?]>
-                                      )
+                                      (
+                                        cur as Narrow<
+                                          typeof cur,
+                                          { p: TemplateFieldId }
+                                        >
+                                      ).p
                                     ),
                                   } as FieldImport,
+                                  {
+                                    "]": true,
+                                  },
                                 ]),
-                              () => acc
+                              () =>
+                                $.concatArrays(acc, [
+                                  { "[": true },
+                                  {
+                                    fref: $.concat(
+                                      (el as Narrow<typeof el, { id: string }>)
+                                        .id,
+                                      "/",
+                                      (
+                                        cur as Narrow<
+                                          typeof cur,
+                                          { p: TemplateFieldId }
+                                        >
+                                      ).p
+                                    ),
+                                  } as FieldImport,
+                                  {
+                                    "]": true,
+                                  },
+                                ])
                             ),
                           acc
                         ),
                       [] as FlatComputation
                     ),
-                    [[")"]] as FlatComputation
+                    [{ ")": true }] as FlatComputation
                   )
                 )
                 .default(() => [cur]),
@@ -420,11 +488,11 @@ export const calculate = (
                                     (imp as FieldImport).id,
                                     "/",
                                     $.toString(index)
-                                  )
+                                  ) as FieldId
                                 )
                               ) as ComputationBlock & {
-                                result: FlatComputation;
-                                function: FlatComputation;
+                                result: PossiblyNestedFlatComputation;
+                                function: PossiblyNestedFlatComputation;
                               }
                           ),
                         () => [null]
@@ -435,8 +503,8 @@ export const calculate = (
                           $.find(imports, (el) =>
                             $.eq(el.id, (imp as FieldImport).fref)
                           ) as ComputationBlock & {
-                            result: FlatComputation;
-                            function: FlatComputation;
+                            result: PossiblyNestedFlatComputation;
+                            function: PossiblyNestedFlatComputation;
                           },
                         () => null
                       ),
@@ -446,7 +514,7 @@ export const calculate = (
                         $.toBool(importedField),
                         () =>
                           $.concatArrays(
-                            [["("]] as FlatComputation,
+                            [{ "(": true }] as FlatComputation,
                             $.cond(
                               $.anyElementTrue(args),
                               () =>
@@ -466,29 +534,33 @@ export const calculate = (
                                   "result"
                                 )
                             ),
-                            [[")"]] as FlatComputation
+                            [{ ")": true }] as FlatComputation
                           ),
                         () => [cur] as FlatComputation
                       ),
                     }))
-                    .return(({ imp, args, next }) =>
-                      $.mergeObjects(
+                    .return(({ imp, args, importedField, next }) => {
+                      // console.log("IMP", imp, args);
+                      return $.mergeObjects(
                         $.reduce(
                           next,
                           (acc, cur) =>
                             $.cond(
-                              $.isArray(cur),
+                              $.eq($.type(cur), "object"),
                               () => {
-                                const curArr = cur as Narrow<typeof cur, any[]>;
+                                const curObj = cur as Narrow<
+                                  typeof cur,
+                                  object
+                                >;
                                 return (
                                   $.switch()
                                     // if [number]:
-                                    .case($.isNumber($.first(curArr)), () =>
+                                    .case($.isNumber((curObj as any).x), () =>
                                       $.define()
                                         .let({
                                           arg: $.at(
                                             args,
-                                            $.first(curArr) as number
+                                            (curObj as Parameter).x
                                           ),
                                         })
                                         .return(({ arg }) =>
@@ -501,21 +573,44 @@ export const calculate = (
                                                 ])
                                                 .case(
                                                   $.ne(
-                                                    $.type($.at(curArr, 1)),
+                                                    $.type(
+                                                      (curObj as Parameter)
+                                                        .value
+                                                    ),
                                                     "missing"
                                                   ),
-                                                  () => [[$.at(curArr, 1)!]]
+                                                  () => [
+                                                    [
+                                                      (curObj as Parameter)
+                                                        .value!,
+                                                    ],
+                                                  ]
                                                 )
                                                 .default(() => [])
                                             ),
                                           })
                                         )
                                     )
-                                    // if ["n"]: IGNORE
-                                    .case($.eq($.first(curArr), "n"), () => acc)
-                                    // if ["("] or ["["]: STACK
+                                    // if "n": IGNORE
                                     .case(
-                                      $.in($.first(curArr), ["(", "{"]),
+                                      $.eq($.type((cur as any).n), "bool"),
+                                      () => acc
+                                    )
+                                    // if fetcher: IGNORE
+                                    .case(
+                                      $.eq(
+                                        $.type((cur as any).filters),
+                                        "array"
+                                      ),
+                                      () => acc
+                                    )
+                                    // if "(" or "{" "[": STACK
+                                    .case(
+                                      $.in("bool", [
+                                        $.type((cur as any)["("]),
+                                        $.type((cur as any)["{"]),
+                                        $.type((cur as any)["["]),
+                                      ]),
                                       () =>
                                         $.mergeObjects(acc, {
                                           stack: $.concatArrays(acc.stack, [
@@ -524,60 +619,84 @@ export const calculate = (
                                           value: [],
                                         })
                                     )
-                                    // if [")"] or ["]"]: OPERATE
-                                    .case(
-                                      $.in($.first(curArr), [")", "}"]),
-                                      () =>
-                                        $.define()
-                                          .let({
-                                            operator: $.cond(
-                                              $.gt($.size(curArr), 1),
+                                    .default(() =>
+                                      $.define()
+                                        .let({
+                                          operator: $.switch()
+                                            .case(
+                                              $.eq(
+                                                $.type((cur as any)[")"]),
+                                                "string"
+                                              ),
                                               () =>
-                                                $.last(
+                                                (
                                                   cur as Narrow<
                                                     typeof cur,
-                                                    [")" | "}", any]
+                                                    {
+                                                      ")":
+                                                        | Operator
+                                                        | FunctionName;
+                                                    }
                                                   >
+                                                )[")"]
+                                            )
+                                            .case(
+                                              $.eq(
+                                                $.type((cur as any)["}"]),
+                                                "bool"
+                                              ),
+                                              () => "}" as "}"
+                                            )
+                                            .case(
+                                              $.eq(
+                                                $.type((cur as any)[")"]),
+                                                "bool"
+                                              ),
+                                              () => ")" as ")"
+                                            )
+                                            .case(
+                                              $.eq(
+                                                $.type((cur as any)["]"]),
+                                                "bool"
+                                              ),
+                                              () => "]" as "]"
+                                            )
+                                            .default(() => null),
+                                        })
+                                        .return(({ operator }) => {
+                                          return $.cond(
+                                            $.eq(operator, null),
+                                            () =>
+                                              $.mergeObjects(acc, {
+                                                value: $.concatArrays(
+                                                  acc.value,
+                                                  [[cur]]
                                                 ),
-                                              () =>
-                                                $.cond(
-                                                  $.eq($.first(curArr), "}"),
-                                                  () => "merge" as "merge",
-                                                  () => null
-                                                )
-                                            ),
-                                          })
-                                          .return(({ operator }) =>
-                                            compute($, operator, acc)
-                                          )
-                                    )
-                                    .default(() =>
-                                      $.mergeObjects(acc, {
-                                        value: $.concatArrays(acc.value, [
-                                          [
-                                            $.first(
-                                              cur as Narrow<typeof cur, any[]>
-                                            ),
-                                          ],
-                                        ]),
-                                      })
+                                              }),
+                                            () => {
+                                              return $.mergeObjects(acc, {
+                                                value: $.concatArrays(
+                                                  $.last(acc.stack),
+                                                  compute(
+                                                    $,
+                                                    operator as Exclude<
+                                                      typeof operator,
+                                                      null
+                                                    >,
+                                                    acc
+                                                  )
+                                                ),
+                                                stack: $.pop(acc.stack),
+                                              });
+                                            }
+                                          );
+                                        })
                                     )
                                 );
                               },
                               () =>
                                 $.mergeObjects(acc, {
-                                  value: $.concatArrays(acc.value, [
-                                    $.cond(
-                                      isObjectWithProp(
-                                        $,
-                                        cur,
-                                        "filters",
-                                        "array"
-                                      ),
-                                      () => [],
-                                      () => [cur]
-                                    ),
-                                  ]),
+                                  value: $.concatArrays(acc.value, [[cur]]),
                                 })
                             ),
                           acc
@@ -606,8 +725,8 @@ export const calculate = (
                           ),
                           function: $.concatArrays(acc.function, next),
                         }
-                      )
-                    ),
+                      );
+                    }),
                 acc
               )
             );
