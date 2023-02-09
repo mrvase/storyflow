@@ -316,7 +316,9 @@ export function FieldPage({
   const isHorizontal = direction.split("-")[0] === "horizontal";
   const isReversed = direction.endsWith("reverse");
 
-  const panel1 = <div>{children}</div>;
+  const panel1 = (
+    <div className="h-full overflow-y-auto no-scrollbar">{children}</div>
+  );
 
   const panel2 = (
     <div className="h-full bg-gray-200">
