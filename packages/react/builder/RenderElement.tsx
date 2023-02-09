@@ -52,9 +52,14 @@ const getImageObject = (name: string) => {
 };
 
 const calculateProp = (config: PropConfig, prop: any, index: number) => {
-  if (config.type === "image" && prop.length > 0) {
-    const src = prop[0]?.src ?? "";
-    if (!src.match(/\.(png|jpg|jpeg|gif)$/)) {
+  const type = config.type;
+  const value = prop[index % prop.length];
+  if (["image", "video"].includes(type) && prop.length > 0) {
+    const src = value?.src ?? "";
+    if (
+      !src.match(/\.(png|jpg|jpeg|gif)$/) &&
+      !src.match(/\.(mp4|mov|wmv|avi)$/)
+    ) {
       return {
         src: "",
         width: 0,
@@ -62,16 +67,20 @@ const calculateProp = (config: PropConfig, prop: any, index: number) => {
       };
     }
     return getImageObject(src);
-  }
-  if (config.type === "children" && prop.length > 0) {
+  } else if (type === "boolean") {
+    return value === "false" ? false : Boolean(value);
+  } else if (type === "number") {
+    return Number(value || 0);
+  } else if (type === "string") {
+    return String(value || "");
+  } else if (type === "children" && prop.length > 0) {
     return (
       <ExtendPath extend={config.name} spacer="/">
         <RenderComponent parentProp={config} />
       </ExtendPath>
     );
-  } else {
-    return prop[index % prop.length];
   }
+  return prop[index % prop.length];
 };
 
 export default function RenderElement({

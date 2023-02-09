@@ -58,7 +58,7 @@ export const resolveProps = (
                 } else {
                   let value: any =
                     el.props[name][finalIndex % el.props[name].length];
-                  if (type === "image") {
+                  if (["image", "video"].includes(type)) {
                     if (
                       value !== null &&
                       typeof value === "object" &&
@@ -68,6 +68,12 @@ export const resolveProps = (
                     } else {
                       value = { src: "", width: 0, height: 0 };
                     }
+                  } else if (type === "boolean") {
+                    value = value === "false" ? false : Boolean(value);
+                  } else if (type === "number") {
+                    value = Number(value || 0);
+                  } else if (type === "string") {
+                    value = String(value || "");
                   }
                   return [name, value];
                 }

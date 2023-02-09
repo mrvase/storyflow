@@ -2,6 +2,20 @@ export interface ComponentType<P extends Props<ComponentConfig>> {
   (value: P): any;
 }
 
+type ExtendableTypes = "Element";
+
+export interface CustomTypes {
+  [key: string]: unknown;
+}
+
+type ExtendedType<K extends ExtendableTypes, B> = unknown extends CustomTypes[K]
+  ? B
+  : CustomTypes[K] extends B
+  ? CustomTypes[K]
+  : never;
+
+export type Element = ExtendedType<"Element", object>;
+
 type PropTypes = {
   string: string;
   image: {
@@ -9,9 +23,14 @@ type PropTypes = {
     width: number;
     height: number;
   };
+  video: {
+    src: string;
+    width: number;
+    height: number;
+  };
   number: number;
   boolean: boolean;
-  children: any[];
+  children: (string | number | Element)[];
 };
 
 export type PropConfig = {
@@ -29,6 +48,12 @@ type NameToType2<
   Name extends Props[number]["name"]
 > = Prop extends { name: Name } ? PropTypes[Prop["type"]] : never;
 
+type AddConfigAsChild<A> = {
+  [Key in keyof A]: A[Key] extends PropTypes["children"]
+    ? (A[Key][number] | ExtendedPartialConfig<any>)[]
+    : A[Key];
+};
+
 type Props2<T extends readonly PropConfig[]> = {
   [Key in T[number]["name"]]: NameToType2<T, T[number], Key>;
 };
@@ -36,7 +61,7 @@ type Props2<T extends readonly PropConfig[]> = {
 type StoryConfig<T extends readonly PropConfig[]> = {
   label?: string;
   canvas?: string;
-  props: Partial<Props2<T>>;
+  props: Partial<AddConfigAsChild<Props2<T>>>;
 };
 
 export type Story = {
@@ -71,7 +96,7 @@ export type PartialConfig<
 
 export type ExtendedPartialConfig<T extends readonly PropConfig[]> =
   PartialConfig<T> & {
-    component: ComponentType<T extends any[] ? Props2<T> : any>;
+    component: ComponentType<Props2<T>>;
   };
 
 export type ExtendedLibraryConfig = {

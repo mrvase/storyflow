@@ -19,6 +19,9 @@ declare module "@storyflow/frontend/types" {
   interface ComponentType<P> {
     (props: P): React.ReactElement<any, any> | null;
   }
+  interface CustomTypes {
+    Element: React.ReactElement;
+  }
 }
 
 export const createConfig = (config: ClientConfig) => {
