@@ -74,21 +74,19 @@ export function useMathMode(defaultValue: boolean = false) {
           insert([{ ",": true }]);
         } else if ("xyz".indexOf(event.key) >= 0) {
           insert([{ x: "xyz".indexOf(event.key) }]);
+        } else if (event.key === "(") {
+          insert([{ "(": true }]);
+        } else if (event.key === "[") {
+          insert([{ "[": true }]);
+        } else if (event.key === ")") {
+          insert([{ ")": true }]);
+        } else if (event.key === "]") {
+          insert([{ "]": true }]);
         }
       } else {
         if (!mathMode && event.key === "*") {
           insert([`\\*`]);
         }
-      }
-
-      if (event.key === "(") {
-        insert([{ "(": true }]);
-      } else if (event.key === "[") {
-        insert([{ "[": true }]);
-      } else if (event.key === ")") {
-        insert([{ ")": true }]);
-      } else if (event.key === "]") {
-        insert([{ "]": true }]);
       }
     }
     return editor.registerRootListener((next, prev) => {
