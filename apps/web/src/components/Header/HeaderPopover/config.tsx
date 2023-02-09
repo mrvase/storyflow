@@ -32,8 +32,8 @@ export const HeaderPopoverConfig = {
     {
       props: {
         label: "Løsninger",
-        items: [HeaderPopoverItem],
-        callsToAction: [HeaderPopoverCTA],
+        items: [HeaderPopoverItem as any],
+        callsToAction: [HeaderPopoverCTA as any],
       },
     },
   ],
