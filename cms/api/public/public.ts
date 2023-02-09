@@ -37,8 +37,6 @@ const authorization = async (ctx: MiddlewareContext) => {
     const [domainIdAndSlug, key] = result.split(":");
     const [domainId, slug] = domainIdAndSlug.split("@");
 
-    console.log("auth", domainId, slug, key);
-
     const organization = await (await clientPromise)
       .db("cms")
       .collection("organizations")
@@ -62,7 +60,7 @@ const authorization = async (ctx: MiddlewareContext) => {
 
     user = {
       slug: organization.slug,
-      db: organization.dbs[1],
+      db: organization.dbs[organization.version],
     };
 
     session.set("user-api", user);
