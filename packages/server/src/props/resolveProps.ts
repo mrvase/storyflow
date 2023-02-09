@@ -9,8 +9,8 @@ const BUCKET_REGION = "eu-west-1";
 const getImageObject = (name: string, slug: string) => {
   const src = `https://${BUCKET_NAME}.s3.${BUCKET_REGION}.amazonaws.com/${slug}/${name}`;
 
-  const width = name ? parseInt(name.split("-")[4] ?? "0", 10) : 0;
-  const height = name ? parseInt(name.split("-")[5] ?? "0", 10) : 0;
+  const width = name ? parseInt(name.split("-")[4] ?? "0", 16) : 0;
+  const height = name ? parseInt(name.split("-")[5] ?? "0", 16) : 0;
 
   return {
     src,

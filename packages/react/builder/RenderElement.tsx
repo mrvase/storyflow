@@ -41,8 +41,8 @@ const getImageObject = (name: string) => {
     ? `https://${BUCKET_NAME}.s3.${BUCKET_REGION}.amazonaws.com/${slug}/${name}`
     : "";
 
-  const width = name ? parseInt(name.split("-")[4] ?? "0", 10) : 0;
-  const height = name ? parseInt(name.split("-")[5] ?? "0", 10) : 0;
+  const width = name ? parseInt(name.split("-")[4] ?? "0", 16) : 0;
+  const height = name ? parseInt(name.split("-")[5] ?? "0", 16) : 0;
 
   return {
     src,
@@ -53,7 +53,7 @@ const getImageObject = (name: string) => {
 
 const calculateProp = (config: PropConfig, prop: any, index: number) => {
   if (config.type === "image" && prop.length > 0) {
-    const src = prop[0];
+    const src = prop[0]?.src ?? "";
     if (!src.match(/\.(png|jpg|jpeg|gif)$/)) {
       return {
         src: "",
