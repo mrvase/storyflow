@@ -57,7 +57,13 @@ import { useAppFolders } from "../folders";
 import { tools } from "shared/editor-tools";
 import { ComputationOp } from "shared/operations";
 import { useGlobalState } from "../state/state";
-import { getFileType, getImageSize, getVideoSize } from "../utils/file";
+import {
+  getFileExtension,
+  getFileType,
+  getFileTypeFromExtension,
+  getImageSize,
+  getVideoSize,
+} from "../utils/file";
 import { spliceTextWithNodes } from "./Editor/spliceTextWithNodes";
 import { createComponent } from "./Editor/createComponent";
 import {
@@ -1281,27 +1287,75 @@ function QueryFiles({
         )}
       </div>
       {files.map(({ name, label }, index) => (
-        <div
-          className={cl(
-            "rounded bg-[#ffffff05] p-3 hover:bg-gray-700 transition-colors text-sm text-center w-52 shrink-0",
-            current === index + 1 + previewOption && "ring-1 ring-gray-700"
-          )}
-          onMouseDown={(ev) => {
-            ev.preventDefault();
-            insertComputation([{ src: name }]);
-          }}
-          data-image-preview={`${index + 1 + previewOption}`}
-        >
-          <div className="w-full aspect-[4/3] flex-center mb-2">
-            <img
-              src={`https://awss3stack-mybucket15d133bf-1wx5fzxzweii4.s3.eu-west-1.amazonaws.com/${organization}/${name}`}
-              className="max-w-full max-h-full w-auto h-auto"
-            />
-          </div>
-          <div className="truncate w-full">{label}</div>
-        </div>
+        <FileContainer
+          name={name}
+          label={label}
+          index={index + 1 + previewOption}
+          isSelected={current === index + 1 + previewOption}
+          organization={organization}
+          insertComputation={insertComputation}
+        />
       ))}
     </div>
+  );
+}
+
+function FileContainer({
+  isSelected,
+  index,
+  name,
+  label,
+  organization,
+  insertComputation,
+}: {
+  isSelected: boolean;
+  index: number;
+  name: string;
+  label: string;
+  organization: string;
+  insertComputation: (computation: EditorComputation) => void;
+}) {
+  return (
+    <div
+      className={cl(
+        "rounded bg-[#ffffff05] p-3 hover:bg-gray-700 transition-colors text-sm text-center w-52 shrink-0",
+        isSelected && "ring-1 ring-gray-700"
+      )}
+      onMouseDown={(ev) => {
+        ev.preventDefault();
+        insertComputation([{ src: name }]);
+      }}
+      data-image-preview={`${index}`}
+    >
+      <div className="w-full aspect-[4/3] flex-center mb-2">
+        <File name={name} organization={organization} />
+      </div>
+      <div className="truncate w-full">{label}</div>
+    </div>
+  );
+}
+
+function File({ name, organization }: { name: string; organization: string }) {
+  const type = getFileTypeFromExtension(getFileExtension(name) ?? "");
+  const src = `https://awss3stack-mybucket15d133bf-1wx5fzxzweii4.s3.eu-west-1.amazonaws.com/${organization}/${name}`;
+  return (
+    <>
+      {type === "image" && (
+        <img src={src} className="max-w-full max-h-full w-auto h-auto" />
+      )}
+      {type === "video" && (
+        <video
+          style={{ width: "100%", height: "auto" }}
+          autoPlay
+          muted
+          playsInline
+          loop
+        >
+          <source src={src} id="video_here" />
+          Your browser does not support HTML5 video.
+        </video>
+      )}
+    </>
   );
 }
 
