@@ -41,31 +41,36 @@ export const resolveProps = (
               config.props.map(({ name, type }) => {
                 const finalIndex = hasKey ? index : ctx.index;
                 const prop = el.props[name];
-                let array = prop
-                  ? recursive(el.props[name] as Value[], {
-                      index: finalIndex,
-                    })
-                  : [];
-                let value: any = array[finalIndex % array.length];
                 if (type === "children") {
+                  let array = prop
+                    ? recursive(el.props[name] as Value[], {
+                        index: finalIndex,
+                      })
+                    : [];
+                  let value: any = array[finalIndex % array.length];
                   value = {
                     $children: createRenderArray(
                       Array.isArray(value) ? value : array,
                       options.libraries
                     ),
                   };
-                } else if (type === "image") {
-                  if (
-                    value !== null &&
-                    typeof value === "object" &&
-                    "src" in value
-                  ) {
-                    value = getImageObject(value.src, options.slug);
-                  } else {
-                    value = { url: "", width: 0, height: 0 };
+                  return [name, value];
+                } else {
+                  let value: any =
+                    el.props[name][finalIndex % el.props[name].length];
+                  if (type === "image") {
+                    if (
+                      value !== null &&
+                      typeof value === "object" &&
+                      "src" in value
+                    ) {
+                      value = getImageObject(value.src, options.slug);
+                    } else {
+                      value = { src: "", width: 0, height: 0 };
+                    }
                   }
+                  return [name, value];
                 }
-                return [name, value];
               })
             ),
           });

@@ -132,12 +132,17 @@ export type NestedDocument = {
   values: Record<string, any>;
 };
 
+export type FileToken = {
+  src: string;
+};
+
 export type ValueArray = (
   | string
   | number
   | boolean
   | LayoutElement
   | NestedDocument
+  | FileToken
   | ValueArray
 )[];
 
