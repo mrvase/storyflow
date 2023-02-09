@@ -27,6 +27,7 @@
   },
   "devDependencies": {
     "@sfrpc/types": "workspace:*",
+    "@storyflow/frontend": "workspace:*",
     "@types/bcryptjs": "^2.4.2",
     "@types/nodemailer": "^6.4.7",
     "eslint": "^7.32.0",

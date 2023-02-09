@@ -13,6 +13,7 @@ import type {
   Filter,
   NestedDocument,
   TemplateFieldId,
+  Value,
 } from "@storyflow/backend/types";
 import type { LibraryConfig, RenderArray } from "@storyflow/frontend/types";
 import { WithId } from "mongodb";
@@ -155,7 +156,7 @@ export async function fetchSinglePage(
 
   const getByPower = async (
     id: TemplateFieldId
-  ): Promise<RenderArray | undefined> => {
+  ): Promise<RenderArray | Value[] | undefined> => {
     const fieldId = computeFieldId(doc.id, id);
     const computation = blocks.find((el) => el.id === fieldId)?.value;
 
@@ -168,18 +169,28 @@ export async function fetchSinglePage(
 
     const slug = db.split("-").slice(0, -1).join("-");
 
-    return resolveProps(
-      await calculateFlatComputationAsync(fieldId, computation, blocks, {
+    const content = await calculateFlatComputationAsync(
+      fieldId,
+      computation,
+      blocks,
+      {
         fetch: (fetcher) => fetchFetcher(fetcher, db),
-      }),
-      {
-        libraries,
-        slug,
-      },
-      {
-        index: 0,
       }
     );
+
+    if ([FIELDS.layout.id, FIELDS.page.id].includes(id)) {
+      return resolveProps(
+        content,
+        {
+          libraries,
+          slug,
+        },
+        {
+          index: 0,
+        }
+      );
+    }
+    return content;
   };
 
   const [layout, redirect, page, title] = await Promise.all([
