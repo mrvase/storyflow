@@ -40,9 +40,12 @@ export const resolveProps = (
             props: Object.fromEntries(
               config.props.map(({ name, type }) => {
                 const finalIndex = hasKey ? index : ctx.index;
-                let array = recursive(el.props[name] as Value[], {
-                  index: finalIndex,
-                });
+                const prop = el.props[name];
+                let array = prop
+                  ? recursive(el.props[name] as Value[], {
+                      index: finalIndex,
+                    })
+                  : [];
                 let value: any = array[finalIndex % array.length];
                 if (type === "children") {
                   value = {
