@@ -110,7 +110,7 @@ export function ClientConfigProvider({
             : configUrl;
 
           if (process.env.NODE_ENV === "development") {
-            configUrl = "http://localhost:3000/api/config";
+            configUrl = "http://localhost:3003/api/config";
           }
 
           if (!configUrl) return;

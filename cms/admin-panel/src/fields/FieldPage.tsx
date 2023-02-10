@@ -39,8 +39,8 @@ import {
 import { ChevronLeftIcon } from "@heroicons/react/24/outline";
 import { useSegment } from "../layout/components/SegmentContext";
 import { useTabUrl } from "../layout/utils";
-import { stringifyPath } from "./PathContext";
-import { PathMap, useBuilderPath } from "./FieldContainer";
+import { stringifyPath, useBuilderPath } from "./BuilderPath";
+import { PathMap } from "./FieldContainer";
 import {
   ComponentConfig,
   LibraryConfig,
@@ -274,7 +274,7 @@ function Toolbar({
       </div>
       {isNative && <FieldToolbar documentId={documentId} fieldId={id} />}
       <div className="mt-5 ml-2">
-        <Content.ToolbarButton>Gem felt</Content.ToolbarButton>
+        <Content.ToolbarButton>Publicer ændringer</Content.ToolbarButton>
       </div>
     </div>
   );
@@ -285,16 +285,14 @@ export function FieldPage({
   initialValue,
   selected,
   children,
-  builderPath,
-  setBuilderPath,
 }: {
   id: FieldId;
   initialValue: Computation;
   selected: boolean;
   children?: React.ReactNode;
-  builderPath: Path;
-  setBuilderPath: (payload: Path | ((ps: Path) => Path)) => void;
 }) {
+  const [builderPath, setBuilderPath] = useBuilderPath();
+
   const listeners = useIframeListeners();
   const dispatchers = useIframeDispatchers();
   const rendered = useBuilderRendered({ listeners });
@@ -317,7 +315,9 @@ export function FieldPage({
   const isReversed = direction.endsWith("reverse");
 
   const panel1 = (
-    <div className="h-full overflow-y-auto no-scrollbar">{children}</div>
+    <div className="h-full overflow-y-auto no-scrollbar pt-[1px]">
+      {children}
+    </div>
   );
 
   const panel2 = (

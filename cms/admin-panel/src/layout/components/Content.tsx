@@ -27,14 +27,6 @@ function Content({
 }) {
   const { isFocused } = useBranchIsFocused();
 
-  /*
-  const colors = {
-    default: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-white",
-    template: "bg-teal-200 text-teal-700 dark:bg-teal-800 dark:text-white",
-    app: "bg-yellow-200 text-yellow-700 dark:bg-yellow-800 dark:text-white",
-  }[variant];
-  */
-
   return (
     <VariantContext.Provider value={variant}>
       <div
@@ -49,14 +41,16 @@ function Content({
         {header && (
           <div
             className={cl(
-              "pt-12 pb-6 px-5 mb-6 sticky -top-10 bg-gray-850 z-50 border-b border-white/5"
+              "pt-12 pb-6 px-5 mb-6 sticky -top-10 z-50 border-b border-gray-100 dark:border-gray-800",
+              "bg-white dark:bg-gray-850" // need bg color because it is sticky
+              // isFocused ? "dark:bg-gray-850" : "dark:bg-gray-900"
               // "bg-gradient-to-b from-gray-850 to-rose-800"
             )}
           >
             <div
               className={cl(
                 "flex justify-between max-w-6xl",
-                isFocused ? "opacity-100" : "opacity-25"
+                isFocused ? "opacity-100" : "opacity-50"
               )}
             >
               <div className="text-gray-800 text-2xl dark:text-white">
@@ -64,7 +58,7 @@ function Content({
               </div>
               {buttons}
             </div>
-            <div className={isFocused ? "opacity-100" : "opacity-25"}>
+            <div className={isFocused ? "opacity-100" : "opacity-50"}>
               {toolbar}
             </div>
           </div>
@@ -73,7 +67,7 @@ function Content({
           <div
             className={cl(
               "px-5 py-0",
-              isFocused ? "opacity-100" : "opacity-25"
+              isFocused ? "opacxity-100" : "opacity-50"
             )}
           >
             {toolbar}
@@ -86,7 +80,7 @@ function Content({
 }
 
 const Toolbar = ({ children }: { children: React.ReactNode }) => {
-  return <div className="max-w-6xl mt-5 flex gap-2">{children}</div>;
+  return <div className="max-w-6xl mt-5 flex gap-2 pl-9">{children}</div>;
 };
 
 const ToolbarButton = React.forwardRef<

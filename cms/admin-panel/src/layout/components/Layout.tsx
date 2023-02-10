@@ -42,7 +42,7 @@ export default function Layout() {
         style={{
           width: `calc(${[
             "100%",
-            navIsOpen && "14rem",
+            navIsOpen && "12rem",
             sidebarIsOpen && "14rem",
           ]
             .filter(Boolean)

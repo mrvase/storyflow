@@ -14,7 +14,7 @@ import cl from "clsx";
 import { caretClasses } from "./caret";
 import { LayoutElement, Value } from "@storyflow/backend/types";
 import { ParentPropContext } from "../default/DefaultField";
-import { stringifyPath, usePathContext } from "../PathContext";
+import { stringifyPath, useBuilderPath } from "../BuilderPath";
 import { getConfigFromType, useClientConfig } from "../../client-config";
 import { useGlobalState } from "../../state/state";
 import { useFieldId } from "../FieldIdContext";
@@ -26,7 +26,7 @@ function InlineLayoutElementDecorator({
   value: LayoutElement;
   nodeKey: string;
 }) {
-  const [path, setPath] = usePathContext();
+  const [path, setPath] = useBuilderPath();
   const parentProp = React.useContext(ParentPropContext);
 
   const pathString = stringifyPath(path);

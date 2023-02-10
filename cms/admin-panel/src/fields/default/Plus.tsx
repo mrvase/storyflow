@@ -44,7 +44,7 @@ export function Plus() {
 
   const isFocused = useEditorIsFocused(editor);
 
-  const offset = 4;
+  const offset = 0;
 
   const [y, setY] = React.useState<number | null>(null);
 
@@ -58,7 +58,7 @@ export function Plus() {
     read(() => isBlockFocused())
   );
 
-  const normalize = (value: number) => value - ((value - 4) % 24);
+  const normalize = (value: number) => value - (value % 24);
 
   React.useEffect(() => {
     return editor.registerUpdateListener(({ editorState }) => {

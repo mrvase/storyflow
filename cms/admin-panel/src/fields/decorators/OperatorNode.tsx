@@ -92,8 +92,8 @@ function OperatorDecorator({
       );
     }
     return cl(
-      "bg-blue-100 text-blue-800 dark:bg-sky-800 dark:text-sky-100",
-      "ring-1 ring-blue-200 dark:ring-sky-700"
+      "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-sky-100",
+      "ring-1 ring-gray-200 dark:ring-gray-700"
     );
   };
 

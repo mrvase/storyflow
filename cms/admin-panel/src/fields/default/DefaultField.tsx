@@ -25,7 +25,7 @@ import { useArticlePageContext } from "../../articles/ArticlePageContext";
 import { extendPath } from "@storyflow/backend/extendPath";
 import { Fetcher } from "@storyflow/backend/types";
 import { tools } from "shared/editor-tools";
-import { stringifyPath, usePathContext } from "../PathContext";
+import { stringifyPath, useBuilderPath } from "../BuilderPath";
 import { useFieldConfig } from "../../state/documentConfig";
 import { getDocumentId, getTemplateFieldId } from "@storyflow/backend/ids";
 import { useCollab } from "../../state/collaboration";
@@ -40,6 +40,8 @@ import {
 import { calculateFn } from "./calculateFn";
 import { TemplateHeader } from "./TemplateHeader";
 import { getPreview } from "./getPreview";
+import { useIsFocused } from "../../editor/react/useIsFocused";
+import { useFieldFocus } from "../../field-focus";
 
 export const ParentPropContext = React.createContext<{
   name: string;
@@ -155,7 +157,7 @@ export default function DefaultField({
       .initialize(version, history ?? []);
   }, []);
 
-  const [path] = usePathContext();
+  const [path] = useBuilderPath();
   const [config] = useFieldConfig(id);
 
   return (
@@ -184,7 +186,7 @@ export function WritableDefaultField({
   fieldConfig: { type: "default" | "slug" };
   options?: string[];
 }) {
-  const [fullPath] = usePathContext();
+  const [fullPath] = useBuilderPath();
   const isActive =
     stringifyPath(fullPath) === path.split("/").slice(0, -1).join("/");
 
@@ -316,13 +318,13 @@ export function WritableDefaultField({
       >
         <div className={cl("relative", !isActive && "hidden")}>
           {isEmpty && (
-            <div className="absolute pointer-events-none px-14 pt-1 font-light opacity-25">
+            <div className="absolute pointer-events-none px-14 font-light opacity-25">
               Ikke udfyldt
             </div>
           )}
           <ContentEditable
             className={cl(
-              "peer grow editor outline-none px-14 pt-1 pb-5 font-light selection:bg-gray-700",
+              "peer grow editor outline-none px-14 pb-5 font-light selection:bg-gray-700",
               "preview text-base leading-6"
               // mode === null || mode === "slug" ? "calculator" : ""
             )}
@@ -330,6 +332,7 @@ export function WritableDefaultField({
           />
           <Plus />
         </div>
+        {path === "" && <FocusBg />}
       </Editor>
       {els.map((element) => (
         <RenderLayoutElement
@@ -367,6 +370,24 @@ export function WritableDefaultField({
         />
       ))}
     </>
+  );
+}
+
+export function FocusBg() {
+  const editor = useEditorContext();
+  const isFocused = useIsFocused(editor);
+  const [fullPath] = useBuilderPath();
+  return (
+    <div
+      className={cl(
+        "[.focused_&]:ring-1 [.focused_&]:ring-gray-200 [.focused_&]:dark:ring-gray-700",
+        isFocused || fullPath.length > 0
+          ? "bg-gray-50 dark:bg-gray-800 ring-gray-700 ring-1"
+          : "bg-transparent ring-gray-100 dark:ring-gray-800 group-hover/container:ring-1",
+        "transition-[backgroundColor,box-shadow] ease-in-out",
+        "-z-10 absolute inset-2.5 rounded-md pointer-events-none"
+      )}
+    />
   );
 }
 

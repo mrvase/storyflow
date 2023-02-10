@@ -301,46 +301,59 @@ export default function UrlField({
   }
 
   return (
-    <div className="mt-2 px-5 pb-5">
-      <div className="px-8">
-        <div className="outline-none pl-3 h-10 border rounded border-yellow-300/50 dark:border-yellow-300/50 bg-white/5 font-light flex items-center">
-          {parentSlugs.map((el, index) => (
-            <React.Fragment key={parents[index]?.id}>
-              <Link
-                to={replacePage(parents[index]?.id ?? "")}
-                className={cl(
-                  "cursor-default rounded-full bg-gray-600 truncate text-sm shrink-0 hover:ring-2 ring-teal-600 transition-shadow",
-                  index === 0 ? "p-1.5" : "py-0.5 px-3"
-                )}
+    <div className="px-5">
+      <div className="pr-8">
+        <div className="outline-none rounded font-light flex items-start">
+          <Link
+            to={replacePage(parents[0]?.id ?? "")}
+            className={cl(
+              "cursor-default rounded-full truncate text-sm shrink-0 opacity-50 hover:opacity-100 transition-opacity",
+              "p-1 -ml-1 mr-4"
+            )}
+          >
+            <HomeIcon className="w-4 h-4" />
+          </Link>
+          <div className="flex items-center pb-2 h-8">
+            {parentSlugs.slice(1).map((el, index) => (
+              <React.Fragment key={parents[index + 1]?.id}>
+                <Link
+                  to={replacePage(parents[index + 1]?.id ?? "")}
+                  className={cl(
+                    "cursor-default rounded-full bg-gray-100 dark:bg-gray-750 truncate text-sm shrink-0",
+                    "px-3"
+                  )}
+                >
+                  {el || <HomeIcon className="w-3 h-3" />}
+                </Link>
+                <div
+                  className={cl(
+                    "px-2 text-gray-300 dark:text-gray-600 text-sm transition-opacity",
+                    index + 1 === parentSlugs.length - 1 &&
+                      slug === "" &&
+                      "opacity-0"
+                  )}
+                >
+                  /
+                </div>
+              </React.Fragment>
+            ))}
+            {slug === "*" && (
+              <button
+                className="px-1.5 h-5 bg-sky-200 dark:bg-sky-900 rounded-full shrink-0 flex-center mr-1.5"
+                onMouseDown={(ev) => {
+                  ev.preventDefault();
+                  ev.stopPropagation();
+                  addImport.dispatch({ id: "ctx:param1" as any, imports: [] });
+                }}
               >
-                {el || <HomeIcon className="w-3 h-3" />}
-              </Link>
-              <div
-                className={cl(
-                  "px-1.5 text-white/50 text-sm transition-opacity",
-                  index === parentSlugs.length - 1 && slug === "" && "opacity-0"
-                )}
-              >
-                /
-              </div>
-            </React.Fragment>
-          ))}
-          {slug === "*" && (
-            <button
-              className="px-1.5 h-5 bg-sky-900 rounded-full shrink-0 flex-center mr-1.5"
-              onMouseDown={(ev) => {
-                ev.preventDefault();
-                ev.stopPropagation();
-                addImport.dispatch({ id: "ctx:param1" as any, imports: [] });
-              }}
-            >
-              <StarIcon className="w-3 h-3 mr-1" />{" "}
-              <LinkIcon className="w-3 h-3 opacity-50" />
-            </button>
-          )}
+                <StarIcon className="w-3 h-3 mr-1" />{" "}
+                <LinkIcon className="w-3 h-3 opacity-50" />
+              </button>
+            )}
+          </div>
           <input
             type="text"
-            className={cl("w-full bg-transparent outline-none")}
+            className={cl("w-full bg-transparent outline-none pb-2")}
             value={slug === "*" ? "" : slug}
             onChange={(ev) => handleChange(ev.target.value)}
             onFocus={() => setIsFocused(true)}
@@ -355,43 +368,32 @@ export default function UrlField({
             <input
               type="text"
               placeholder="indtast slug-eksempel"
-              className="w-full bg-transparent outline-none font-light border border-gray-600 rounded px-2 text-sm py-0.5"
+              className="w-full bg-transparent outline-none font-light border border-gray-200 dark:border-gray-600 rounded px-2 text-sm py-0.5"
               value={values.param1}
               onChange={(ev) => {
                 setValues({ param1: ev.target.value });
               }}
             />
           )}
-          <IconButton
-            onMouseDown={(ev) => {
-              ev.preventDefault();
-              ev.stopPropagation();
-              addImport.dispatch({ id, imports: [] });
-            }}
-            icon={LinkIcon}
-          />
         </div>
         {id.slice(4, 8) === URL_ID.slice(0, 4) && (
-          <div className="mt-5">
-            <div className="dark:text-gray-300 text-sm mb-1.5">Undersider</div>
-            <div className="flex items-center flex-wrap gap-2">
+          <div className="flex items-center pb-5">
+            <button
+              className="p-1 -ml-1 mr-4 opacity-50 hover:opacity-100 transition-opacity"
+              onClick={() => ctx.addArticleWithUrl({ id, value: initialValue })}
+            >
+              <PlusIcon className="w-4 h-4" />
+            </button>
+            <div className="flex flex-wrap gap-2">
               {children.map((el) => (
                 <Link
                   key={el.id}
                   to={replacePage(el.id)}
-                  className="px-3 py-0.5 rounded-full bg-yellow-300 text-black text-sm font-light hover:ring-2 ring-teal-600 transition-shadow"
+                  className="px-3 rounded-full bg-gray-100 dark:bg-gray-750 text-sm font-light"
                 >
                   {getDocumentLabel(el)}
                 </Link>
               ))}
-              <button
-                className="p-1 rounded-full bg-yellow-300 text-black text-sm font-light hover:ring-2 ring-teal-600 transition-shadow"
-                onClick={() =>
-                  ctx.addArticleWithUrl({ id, value: initialValue })
-                }
-              >
-                <PlusIcon className="w-4 h-4" />
-              </button>
             </div>
           </div>
         )}

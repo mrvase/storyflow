@@ -57,16 +57,16 @@ export default function FolderUI({
 
   const colors = {
     data: cl(
-      "text-gray-700 dark:text-white",
+      "text-gray-700 dark:text-white bg-gray-50 dark:bg-gray-850",
       isOpen
-        ? "bg-gray-50 dark:bg-gray-800 dark:border-gray-600"
-        : "bg-gray-100 dark:border-gray-800 dark:bg-gray-800 hover:dark:border-gray-600"
+        ? "border-gray-300 dark:border-gray-600"
+        : "border-gray-100 hover:border-gray-300 dark:border-gray-800 hover:dark:border-gray-600"
     ),
     app: cl(
-      "dark:text-white dark:border-yellow-300 dark:text-yellow-300",
+      "dark:text-white dark:text-yellow-300 bg-yellow-100 dark:bg-gray-850 dark:border-yellow-300/40",
       isOpen
-        ? "bg-yellow-50 dark:bg-gray-700/75"
-        : "bg-yellow-100 dark:bg-gray-800 hover:dark:bg-gray-700/75 hover:dark:border-yellow-200 hover:dark:text-yellow-200"
+        ? "border-yellow-300 dark:border-yellow-600"
+        : "border-yellow-100 hover:border-yellow-300 hover:dark:border-yellow-300"
     ),
     root: "",
     templates: "",
@@ -78,7 +78,7 @@ export default function FolderUI({
         ref={ref as any}
         to={navigateTab(to, { navigate: false })}
         className={cl(
-          "group flex items-center px-3 py-4 rounded-md text-lg font-light transition-colors border-2",
+          "group flex items-center px-3 py-4 rounded-md text-lg font-light transition-colors border",
           colors
         )}
         style={style}

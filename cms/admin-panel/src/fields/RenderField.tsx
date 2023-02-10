@@ -9,7 +9,7 @@ import {
   FieldType,
 } from "@storyflow/backend/types";
 import DefaultField from "./default/DefaultField";
-import FieldContainer from "./FieldContainer";
+import { FieldContainer } from "./FieldContainer";
 import UrlField from "./UrlField";
 import { ServerPackage } from "@storyflow/state";
 import { FieldIdContext } from "./FieldIdContext";

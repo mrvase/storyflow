@@ -109,7 +109,7 @@ export const ArticleContent = ({
         <Content.Header>
           <div
             className={cl(
-              "flex-center h-full font-medium",
+              "flex-center h-full font-medium pl-9",
               variant === "template" && "text-teal-500"
             )}
           >
@@ -134,6 +134,7 @@ export const ArticleContent = ({
           <Content.Button
             icon={AdjustmentsHorizontalIcon}
             onClick={() => setIsEditing((ps) => !ps)}
+            data-focus-remain="true"
           />
           {folder && (
             <SaveButton id={id} folder={folder} isModified={isModified} />

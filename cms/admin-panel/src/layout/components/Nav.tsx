@@ -36,7 +36,7 @@ export default function Nav() {
       <div
         className={cl(
           "h-screen flex flex-col shrink-0 grow-0 overflow-hidden transition-[width] ease-out",
-          isOpen ? "w-56" : "w-0",
+          isOpen ? "w-48" : "w-0",
           "text-gray-600 dark:text-white"
         )}
       >
@@ -49,30 +49,37 @@ export default function Nav() {
               <MinusIcon className="w-4 h-4" />
             </button>
           </div>
-          <div className="mt-auto flex justify-evenly">
+          <div className="mt-auto flex gap-2">
             <a
-              className="flex-center w-12 h-12 hover:bg-gray-400/25 dark:hover:bg-gray-850 rounded transition-colors"
+              className="flex-center w-10 h-10 hover:bg-gray-400/25 dark:hover:bg-gray-850 rounded transition-colors"
               href="/bruger"
             >
               <UserIcon className="w-6 h-6" />
             </a>
             <button
-              className="flex-center w-12 h-12 hover:bg-gray-400/25 dark:hover:bg-gray-850 rounded transition-colors"
+              className="flex-center w-10 h-10 hover:bg-gray-400/25 dark:hover:bg-gray-850 rounded transition-colors"
               onClick={() => setDarkMode((ps) => !ps)}
             >
               <DarkIcon className="w-6 h-6" />
             </button>
             <button
-              className="flex-center w-12 h-12 hover:bg-gray-400/25 dark:hover:bg-gray-850 rounded transition-colors"
+              className="flex-center w-10 h-10 hover:bg-gray-400/25 dark:hover:bg-gray-850 rounded transition-colors"
+              onClick={() => setDarkMode((ps) => !ps)}
+            >
+              <DarkIcon className="w-6 h-6" />
+            </button>
+            <button
+              className="flex-center w-10 h-10 hover:bg-gray-400/25 dark:hover:bg-gray-850 rounded transition-colors"
               onClick={() => setDialog("settings")}
             >
               <CogIcon className="w-6 h-6" />
             </button>
           </div>
         </div>
-        <div className="w-full h-11 mt-auto px-3 flex-center font-black tracking-wider text-sm">
+        {/*<div className="w-full h-11 mt-auto px-3 flex-center font-black tracking-wider text-sm">
           <span className="text-white">Storyflow</span>
         </div>
+        */}
       </div>
     </>
   );

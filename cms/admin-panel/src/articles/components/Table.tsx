@@ -41,7 +41,7 @@ export default function Table({
           <Row key={id} id={id} columns={columns} indent={indent} />
         ))}
         {rows.length === 0 ? (
-          <tr className="border-t border-gray-200 dark:border-gray-600">
+          <tr className="border-t border-gray-100 dark:border-gray-800">
             <td className="w-8 p-3 text-[0px]">
               <input type="checkbox" className="w-4 h-4 invisible" />
             </td>
@@ -76,7 +76,7 @@ function Row({
   return (
     <tr
       ref={ref}
-      className="border-t border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+      className="border-t border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition-[background-color]"
       {...dragHandleProps}
     >
       {columns.map((el, index) => {

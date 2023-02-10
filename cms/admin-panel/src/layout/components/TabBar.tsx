@@ -44,9 +44,9 @@ export default function TabBar({
     >
       <button
         className={cl(
-          "text-sm h-7 px-2 flex items-center rounded-md transition-colors",
-          "bg-gray-300 hover:bg-gray-400 hover:text-white text-gray-600",
-          "dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-white dark:hover:text-white"
+          "text-sm h-10 w-10 shrink-0 flex-center rounded-md border border-gray-200 dark:border-gray-800 transition-colors",
+          "bg-white hover:bg-gray-50 hover:text-white text-gray-600",
+          "dark:bg-gray-850 dark:hover:bg-gray-800 dark:text-white dark:hover:text-white"
         )}
         onClick={() => setNavIsOpen((ps) => !ps)}
       >
@@ -56,6 +56,8 @@ export default function TabBar({
           <Bars3Icon className="w-4 h-4" />
         )}
       </button>
+      <CommandLine />
+      {/*
       <div
         className={cl(
           "w-full flex gap-2 justify-start items-start",
@@ -101,7 +103,7 @@ export default function TabBar({
           <ArrowsPointingOutIcon className="w-4 h-4" />
         </button>
         <button
-          className="flex items-center px-2"
+          className="h-10 w-10 flex-center px-2"
           onClick={() =>
             setNoOfTabs((ps) => {
               let ps2 = typeof ps === "number" ? ps : tabs.length;
@@ -112,19 +114,49 @@ export default function TabBar({
           <MagnifyingGlassPlusIcon className="w-4 h-4" />
         </button>
       </div>
+      */}
       {/*<button
         className="flex items-center text-sm bg-white dark:bg-gray-800 rounded-md px-2"
         onClick={() => setDarkMode((ps) => !ps)}
       >
         <DarkIcon className="w-4 h-4" />
         </button>*/}
-      <StatusButton />
       <button
-        className="text-sm h-7 px-2 flex items-center rounded-md bg-gray-800 bg-opacity-90 text-gray-300 hover:text-white hover:bg-opacity-100 transition-colors"
+        className="text-sm h-10 w-10 shrink-0 px-2 flex-center rounded-md bg-white dark:bg-gray-850 border border-gray-200 dark:border-gray-800 text-gray-300 hover:text-white hover:bg-opacity-100 transition-colors"
+        onClick={addTab}
+      >
+        <PlusIcon className="w-4 h-4" />
+      </button>
+      <button
+        className="text-sm h-10 w-10 shrink-0 px-2 flex-center rounded-md bg-white dark:bg-gray-850 border border-gray-200 dark:border-gray-800 text-gray-300 hover:text-white hover:bg-opacity-100 transition-colors"
         onClick={() => setSidebarIsOpen((ps) => !ps)}
       >
         <AdjustmentsHorizontalIcon className="w-4 h-4" />
       </button>
+    </div>
+  );
+}
+
+function CommandLine() {
+  const [isFocused, setIsFocused] = React.useState(false);
+  return (
+    <div
+      className={cl(
+        "w-full flex justify-start items-start rounded-md border border-gray-200 dark:border-gray-800",
+        isFocused ? "bg-gray-50 dark:bg-gray-850" : "bg-white dark:bg-gray-900",
+        "transition-colors ease-out"
+      )}
+    >
+      <input
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
+        type="text"
+        className={cl(
+          "w-full h-full flex items-center bg-transparent outline-none px-3 font-light placeholder:text-gray-400/50"
+        )}
+        placeholder="Indtast kommando"
+      />
+      <StatusButton />
     </div>
   );
 }
@@ -215,10 +247,10 @@ function StatusButton() {
   return (
     <button
       className={cl(
-        "flex items-center text-sm rounded-md px-2 bg-white dark:bg-gray-800",
+        "h-10 w-10 shrink-0 flex-center text-sm rounded-md",
         ["uploading", "modified"].includes(current)
-          ? "text-yellow-300"
-          : "text-green-300"
+          ? "text-yellow-400"
+          : "text-green-400"
       )}
       onClick={() => collab.sync()}
     >

@@ -101,6 +101,9 @@ export default function FolderPage({
         header={
           <Content.Header>
             <div className="flex-center h-full font-medium">
+              <span className="text-sm font-light mt-0.5 mr-5 text-gray-400">
+                <FolderIcon className="w-4 h-4" />
+              </span>
               <EditableLabel
                 value={folder?.label ?? ""}
                 onChange={(value) => {
@@ -113,9 +116,6 @@ export default function FolderPage({
                 }}
                 className={cl("font-medium")}
               />
-              <span className="text-sm font-light mt-1 ml-4 text-gray-400">
-                <FolderIcon className="w-4 h-4" />
-              </span>
             </div>
           </Content.Header>
         }
@@ -135,7 +135,7 @@ export default function FolderPage({
                   }
                   setDialogIsOpen("add-template");
                 }}
-                className="bg-teal-800 hover:bg-teal-600"
+                className="bg-teal-600 dark:bg-teal-800 text-white hover:bg-teal-600"
               >
                 {folder?.template ? "Skabelon" : "Tilføj skabelon"}
               </Content.Button>

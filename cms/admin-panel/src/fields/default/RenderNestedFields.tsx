@@ -27,7 +27,7 @@ import {
 import { extendPath } from "@storyflow/backend/extendPath";
 import { Fetcher, Filter } from "@storyflow/backend/types";
 import { tools } from "shared/editor-tools";
-import { stringifyPath, usePathContext } from "../PathContext";
+import { stringifyPath, useBuilderPath } from "../BuilderPath";
 import { getConfigFromType, useClientConfig } from "../../client-config";
 import { useClient } from "../../client";
 import { ParentProp, WritableDefaultField } from "./DefaultField";
@@ -48,7 +48,7 @@ export function RenderFetcher({
   push: (ops: ComputationOp["ops"]) => void;
 }) {
   const path = extendPath(parentPath, currentFetcher.id);
-  const [, setPath] = usePathContext();
+  const [, setPath] = useBuilderPath();
 
   const [fetcher, _setFetcher] = React.useState(currentFetcher);
   const [isModified, setIsModified] = React.useState(false);
@@ -220,7 +220,7 @@ export function RenderLayoutElement({
   path: string;
   initialValue: Computation;
 }) {
-  const [fullPath, setPath] = usePathContext();
+  const [fullPath, setPath] = useBuilderPath();
 
   const element = path.split(".").slice(-1)[0]; // e
 
@@ -367,7 +367,7 @@ function IfActive({
   else?: string;
   children: React.ReactElement;
 }) {
-  const [fullPath] = usePathContext();
+  const [fullPath] = useBuilderPath();
   const isActive = stringifyPath(fullPath) === path;
 
   return React.cloneElement(children, {
@@ -437,7 +437,7 @@ function RenderNestedField({
       <IfActive else="hidden" path={path}>
         <div
           className={cl(
-            "text-sm flex items-center px-13 cursor-default",
+            "text-sm flex items-center px-13 cursor-default pb-1.5",
             labelColor ? `text-sky-400/90` : "text-gray-400"
           )}
         >

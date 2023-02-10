@@ -22,7 +22,7 @@ import {
   NestedDocument,
   Value,
 } from "@storyflow/backend/types";
-import { usePathContext } from "../PathContext";
+import { useBuilderPath } from "../BuilderPath";
 import {
   ChevronDownIcon,
   DocumentIcon,
@@ -51,7 +51,7 @@ function DocumentDecorator({
   value: NestedDocument | DocumentImport | Fetcher;
   nodeKey: string;
 }) {
-  const [, setPath] = usePathContext();
+  const [, setPath] = useBuilderPath();
 
   const type = (() => {
     if ("dref" in value) {
@@ -100,17 +100,20 @@ function DocumentDecorator({
     import: cl(
       "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200",
       !isSelected && "ring-1 ring-teal-200 dark:ring-teal-800",
-      hasTemplate && "divide-x divide-teal-800"
+      hasTemplate &&
+        "child:divide-x child:divide-teal-200 child:dark:divide-teal-800"
     ),
     fetcher: cl(
       "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
       !isSelected && "ring-1 ring-red-200 dark:ring-red-800",
-      hasTemplate && "divide-x divide-red-800"
+      hasTemplate &&
+        "divide-y divide-red-200 dark:divide-red-800 child:divide-x child:divide-red-200 child:dark:divide-red-800"
     ),
     nested: cl(
       "bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-200",
       !isSelected && "ring-1 ring-sky-200 dark:ring-sky-800",
-      hasTemplate && "divide-x divide-sky-800"
+      hasTemplate &&
+        "child:divide-x child:divide-sky-200 child:dark:divide-sky-800"
     ),
   }[type];
 
@@ -124,7 +127,7 @@ function DocumentDecorator({
         className={cl(
           "relative",
           "rounded text-sm selection:bg-transparent",
-          isSelected && "ring-2 ring-amber-300",
+          isSelected && "ring-1 ring-amber-300",
           color,
           isPseudoSelected && caretClasses
         )}
@@ -155,14 +158,14 @@ function DocumentDecorator({
       >
         {docs.length === 0 && <div className="text-center w-full">[TOM]</div>}
         {docs.map(({ id: docId, values }) => (
-          <div key={docId} className="flex w-full">
+          <div key={docId} className="flex w-full py-0.5">
             {!hasTemplate ? (
               <TemplateSelect
                 setTemplateId={(value) => setConfig("template", value)}
               />
             ) : (
               <>
-                <div className="w-5 flex-center bg-white/10">
+                <div className="w-6 flex-center">
                   <Icon className="w-3 h-3" />
                 </div>
                 {(template ?? []).map(({ id }) => {

@@ -14,7 +14,7 @@ import cl from "clsx";
 import { caretClasses } from "./caret";
 import { LayoutElement } from "@storyflow/backend/types";
 import { ParentPropContext } from "../default/DefaultField";
-import { usePathContext } from "../PathContext";
+import { useBuilderPath } from "../BuilderPath";
 import { getConfigFromType, useClientConfig } from "../../client-config";
 
 function LayoutElementDecorator({
@@ -24,7 +24,7 @@ function LayoutElementDecorator({
   value: LayoutElement;
   nodeKey: string;
 }) {
-  const [, setPath] = usePathContext();
+  const [, setPath] = useBuilderPath();
   const parentProp = React.useContext(ParentPropContext);
 
   const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
@@ -39,8 +39,8 @@ function LayoutElementDecorator({
     <div className="py-0.5">
       <div
         className={cl(
-          "relative bg-fuchsia-100 text-fuchsia-800 dark:bg-gray-800 dark:text-gray-200",
-          "flex rounded px-2 text-sm selection:bg-transparent",
+          "relative text-gray-800 dark:text-gray-200",
+          "flex rounded px-2 py-0.5 text-sm bg-gray-100 dark:bg-gray-800 selection:bg-transparent",
           isSelected && "ring-2 ring-amber-300",
           !isSelected && "ring-1 ring-gray-200 dark:ring-gray-700",
           isPseudoSelected && caretClasses

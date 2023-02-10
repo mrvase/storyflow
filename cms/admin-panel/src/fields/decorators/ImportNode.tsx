@@ -23,7 +23,7 @@ import {
   TemplateFieldId,
   Value,
 } from "@storyflow/backend/types";
-import { usePathContext } from "../PathContext";
+import { useBuilderPath } from "../BuilderPath";
 import { getDocumentId, computeFieldId } from "@storyflow/backend/ids";
 
 const useState = (
@@ -35,7 +35,7 @@ const useState = (
     const label2 = useLabel(
       computeFieldId(getDocumentId(templateId), templateId)
     );
-    return [label1, [`[${label1} · ${label2}]`]];
+    return ["", [`[${label1} · ${label2}]`]];
   } else {
     let value: Value[] | undefined;
     let label: string = "";
@@ -60,7 +60,7 @@ function ImportDecorator({
   nodeKey: string;
   fieldImport: FieldImport;
 }) {
-  const [, setPath] = usePathContext();
+  const [, setPath] = useBuilderPath();
 
   const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
 
@@ -77,12 +77,12 @@ function ImportDecorator({
   return (
     <span
       className={cl(
-        "bg-gray-50 rounded-sm selection:bg-transparent relative",
+        "rounded-sm selection:bg-transparent relative",
         isColumn
-          ? "dark:bg-sky-400/20 text-sky-100/90"
-          : "dark:bg-teal-400/20 text-teal-100/90",
+          ? "bg-sky-100 dark:bg-sky-400/20 text-sky-700/90 dark:text-sky-100/90"
+          : "bg-teal-100 dark:bg-teal-400/20 text-teal-700/90 dark:text-teal-100/90",
         // "after:absolute after:w-full after:left-0 after:-bottom-0.5 after:border-b-2 after:border-b-white/20",
-        isSelected ? "ring-2 ring-amber-300" : "dark:ring-gray-600",
+        isSelected ? "ring-1 ring-amber-300" : "dark:ring-gray-600",
         isPseudoSelected && caretClasses
       )}
       onMouseDown={() => {
@@ -105,14 +105,14 @@ function ImportDecorator({
         selectClick.current = false;
       }}
     >
-      {isSelected && (
+      {label && isSelected && (
         <span
           className={cl(
-            "relative text-gray-600 dark:text-gray-500 truncate text-sm",
-            preview && "mx-2"
+            "relative text-gray-600 dark:text-teal-400 truncate select-none",
+            preview && "ml-1 mr-2"
           )}
         >
-          {label || "Ingen label"}
+          {label}
         </span>
       )}
       {Array.isArray(preview) ? (
@@ -127,7 +127,7 @@ function ImportDecorator({
           ))}
         </>
       ) : (
-        <span>{preview || "Intet indhold"}</span>
+        <span className="select-none">{preview || "Intet indhold"}</span>
       )}
     </span>
   );

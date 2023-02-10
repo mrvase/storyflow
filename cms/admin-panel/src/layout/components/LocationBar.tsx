@@ -72,38 +72,18 @@ export default function LocationBar({
   return (
     <div
       className={cl(
-        "h-12 shrink-0 overflow-x-auto text-gray-600 dark:text-white bg-white dark:bg-gray-850"
+        "h-12 shrink-0 overflow-x-auto text-gray-600 dark:text-white",
+        "bg-white dark:bg-gray-850"
+        // isFocused ? "bg-white dark:bg-gray-850" : "bg-white dark:bg-gray-900"
       )}
     >
       <div
         className={cl(
-          "h-full flex dark:bg-gray-850",
+          "h-full flex pl-2",
           isFocused ? "opacity-100" : "opacity-25"
         )}
         {...dragHandleProps}
       >
-        <Link
-          to={navigateTab(tab.segment.split("/").slice(0, -1).join("/"), {
-            navigate: false,
-          })}
-          className="shrink-0 h-full w-10 pl-1 flex-center"
-        >
-          <ChevronLeftIcon className="w-4 h-4" />
-        </Link>
-        {segmentsMemo.current[0] ? (
-          <Link
-            to={navigateTab(segmentsMemo.current[0] ?? "", {
-              navigate: false,
-            })}
-            className="shrink-0 h-full w-10 pr-1 flex-center"
-          >
-            <ChevronRightIcon className="w-4 h-4" />
-          </Link>
-        ) : (
-          <div className="shrink-0 h-full w-10 pr-1 flex-center">
-            <ChevronRightIcon className="w-4 h-4" />
-          </div>
-        )}
         <div className="flex gap-2 h-full overflow-x-auto no-scrollbar grow">
           {segments.map((el) => (
             <LocationBarItem
@@ -170,8 +150,6 @@ function LocationBarItem({
   current: boolean;
   onHover: () => void;
 }) {
-  const { isFocused } = useBranchIsFocused();
-
   const { label, type } = useLocationLabel(segment);
 
   const getTitle = () => {
@@ -225,7 +203,7 @@ function LocationBarItem({
 
   const onMouseEnter = () => {
     if (current) return;
-    timer.current = setTimeout(onHover, 100);
+    timer.current = setTimeout(onHover, 400);
   };
 
   const onMouseLeave = () => {
@@ -237,12 +215,17 @@ function LocationBarItem({
   return (
     <button
       className={cl(
-        "px-3 my-2 h-8 text-sm leading-none rounded-md font-light",
+        "px-3 my-2 h-7 text-sm leading-none rounded-md font-light border border-transparent",
+        type === "app"
+          ? "border-yellow-300 dark:border-yellow-300"
+          : "border-gray-100 hover:border-gray-200 dark:hover:border-gray-700",
         type === "template"
           ? "bg-teal-800"
+          : /*
           : type === "app"
           ? "bg-yellow-100 dark:bg-yellow-300 text-black"
-          : current
+          */
+          current
           ? "bg-gray-100 dark:bg-gray-700/50"
           : "bg-white dark:bg-gray-850"
       )}

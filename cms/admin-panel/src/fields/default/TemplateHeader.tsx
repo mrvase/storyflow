@@ -5,16 +5,13 @@ import { ChevronDownIcon, LinkIcon } from "@heroicons/react/24/outline";
 import { addImport } from "../../custom-events";
 import { getTemplateFieldId } from "@storyflow/backend/ids";
 import { useFieldTemplate, useTemplate } from "./useFieldTemplate";
+import { useFieldFocus } from "../../field-focus";
 
-export function TemplateHeader(
-  props: { id: FieldId } | { template: DocumentId }
-) {
-  const template =
-    "template" in props
-      ? useTemplate(props.template)
-      : useFieldTemplate(props.id);
+export function TemplateHeader({ id }: { id: FieldId }) {
+  const [focused] = useFieldFocus();
+  const isLink = focused && focused !== id;
 
-  console.log("TEMPLATE", props, template);
+  const template = useFieldTemplate(id);
 
   if (!template) return null;
 
@@ -22,35 +19,39 @@ export function TemplateHeader(
     <div className="px-14">
       <div
         className={cl(
-          "w-full flex divide-x divide-sky-800 rounded mt-2 -mb-0.5",
-          "dark:bg-gray-900 dark:text-sky-200",
+          "w-full flex divide-x divide-gray-200 dark:divide-gray-700 rounded mt-1 mb-2 py-0.5",
+          "dark:text-gray-300",
           "text-sm",
-          "ring-1 ring-sky-200 dark:ring-sky-800"
+          "ring-1 ring-gray-200 dark:ring-gray-700"
         )}
       >
-        <div className="w-5 flex-center">
+        <div className="w-6 flex-center">
           <ChevronDownIcon className="w-3 h-3" />
         </div>
         {(template ?? []).map(({ id: columnId, label }) => (
           <div
             key={columnId}
-            className="grow shrink basis-0 px-2 flex items-center justify-between"
+            className={cl(
+              "group grow shrink basis-0 flex items-center justify-between",
+              isLink && "cursor-alias"
+            )}
+            onMouseDown={(ev) => {
+              if (isLink) {
+                ev.preventDefault();
+                addImport.dispatch({
+                  id,
+                  templateId: getTemplateFieldId(columnId),
+                  imports: [],
+                });
+              }
+            }}
           >
-            <span className="truncate">{label}</span>
-            <div
-              onMouseDown={(ev) => {
-                if ("id" in props) {
-                  ev.preventDefault();
-                  addImport.dispatch({
-                    id: props.id,
-                    templateId: getTemplateFieldId(columnId),
-                    imports: [],
-                  });
-                }
-              }}
-            >
-              <LinkIcon className="w-3 h-3 ml-auto opacity-50 hover:opacity-100" />
-            </div>
+            <span className="truncate px-2">{label}</span>
+            {/*(
+              <div className="w-6 h-6 flex-center ml-auto">
+                <LinkIcon className="w-3 h-3 opacity-50 group-hover:opacity-100" />
+              </div>
+            )*/}
           </div>
         ))}
       </div>

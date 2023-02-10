@@ -16,8 +16,8 @@ import { FieldPage } from "./FieldPage";
 import { useSegment } from "../layout/components/SegmentContext";
 import { useTabUrl } from "../layout/utils";
 import { PropertyOp, targetTools } from "shared/operations";
-import { isTemplateField, restoreId } from "@storyflow/backend/ids";
-import { useFieldConfig, useLabel } from "../state/documentConfig";
+import { restoreId } from "@storyflow/backend/ids";
+import { useLabel } from "../state/documentConfig";
 import {
   Computation,
   DocumentId,
@@ -26,45 +26,15 @@ import {
 } from "@storyflow/backend/types";
 import { getTranslateDragEffect } from "../utils/dragEffects";
 import useIsFocused from "../utils/useIsFocused";
-import { Path, PathSegment } from "@storyflow/frontend/types";
-import { FIELDS, getDefaultField } from "@storyflow/backend/fields";
-import {
-  IframeProvider,
-  useIframeDispatchers,
-  useIframeListeners,
-} from "./builder/BuilderIframe";
+import { Path } from "@storyflow/frontend/types";
+import { getDefaultField } from "@storyflow/backend/fields";
+import { IframeProvider } from "./builder/BuilderIframe";
 import { useFieldId } from "./FieldIdContext";
 import { useCollab } from "../state/collaboration";
-import { PathContext } from "./PathContext";
+import { BuilderPathProvider, useBuilderPath } from "./BuilderPath";
 import { useArticlePageContext } from "../articles/ArticlePageContext";
 import { useLocalStorage } from "../state/useLocalStorage";
 import useTabs from "../layout/useTabs";
-
-export const useBuilderPath = (): [
-  path: Path,
-  setPath: (value: Path | ((ps: Path) => Path)) => void
-] => {
-  const id = useFieldId();
-
-  const [path, setPathInternal] = React.useState<Path>([]);
-
-  const listeners = useIframeListeners();
-  const dispatchers = useIframeDispatchers();
-
-  React.useEffect(() => {
-    return listeners.selection.subscribe((path) => {
-      // check if path is from own field.
-      setPathInternal(path);
-    });
-  }, []);
-
-  const setPath = React.useCallback((value: Path | ((ps: Path) => Path)) => {
-    setPathInternal((ps) => (typeof value === "function" ? value(ps) : value));
-    // dispatch
-  }, []);
-
-  return React.useMemo(() => [path, setPath], [path, setPath]);
-};
 
 type Props = {
   fieldConfig: FieldConfig;
@@ -75,32 +45,16 @@ type Props = {
   dragHandleProps?: any;
 };
 
-export default function FieldContainer(props: Props) {
-  return (
-    <IframeProvider>
-      <FieldContainerInner {...props} />
-    </IframeProvider>
-  );
-}
-
-function FieldContainerInner({
-  fieldConfig,
-  index,
+export function FieldContainer({
   children,
-  dragHandleProps: dragHandlePropsFromProps,
   initialValue,
+  index,
+  fieldConfig,
   template,
+  dragHandleProps: dragHandlePropsFromProps,
 }: Props) {
-  const props: any = {};
-  const dotProps: any = {};
-
-  const articleId = useArticlePageContext().id;
-  const isNative = template === articleId;
-
-  const pathState = useBuilderPath();
-  const [path, setPath] = pathState;
-
-  const [isEditing] = useLocalStorage<boolean>("editing-articles", false);
+  let props: any = {};
+  let dragHandleProps: any;
 
   if (!dragHandlePropsFromProps) {
     const {
@@ -109,7 +63,7 @@ function FieldContainerInner({
       state,
     } = useSortableItem({
       id: fieldConfig.id,
-      index,
+      index: index,
       item: fieldConfig,
     });
 
@@ -126,89 +80,115 @@ function FieldContainerInner({
     };
 
     Object.assign(props, dragProps, handlers, {
-      className: isEditing && isFocused && "ring-1 ring-yellow-400 ring-inset",
+      className: cl(
+        isFocused && "focused"
+        // isEditing && isFocused && "ring-1 ring-yellow-400 ring-inset"
+      ),
     });
 
-    Object.assign(dotProps, isEditing && dragHandlePropsFromHook); // { className: isFocused && "bg-yellow-500" }
+    dragHandleProps = dragHandlePropsFromHook;
   } else {
-    // Object.assign(dotProps, dragHandlePropsFromProps);
+    // dragHandleProps = dragHandlePropsFromProps;
   }
 
-  const { full } = useSegment();
-  const isOpen = full.endsWith(`/c-${restoreId(fieldConfig.id)}`);
+  return (
+    <IframeProvider>
+      <BuilderPathProvider>
+        <div
+          {...props}
+          className={cl(
+            "relative grow shrink basis-0 group/container",
+            props.className
+          )}
+        >
+          <LabelBar
+            fieldConfig={fieldConfig}
+            template={template}
+            dragHandleProps={dragHandleProps}
+          />
+          {children}
+        </div>
+        <BuilderPortal id={fieldConfig.id}>
+          {(isOpen) => (
+            <FieldPage
+              selected={isOpen}
+              id={fieldConfig.id}
+              initialValue={initialValue}
+            >
+              <div className={cl("pt-5 -mt-2.5 relative grow shrink basis-0")}>
+                {/*<div
+                className={cl(
+                  "-z-10 absolute inset-2.5 top-0 rounded-lg pointer-events-none",
+                  "bg-gray-850"
+                  // "ring-1 ring-inset ring-gray-750"
+                )}
+                />*/}
+                {children}
+              </div>
+            </FieldPage>
+          )}
+        </BuilderPortal>
+      </BuilderPathProvider>
+    </IframeProvider>
+  );
+}
 
+function LabelBar({
+  fieldConfig,
+  dragHandleProps,
+  template,
+}: {
+  fieldConfig: FieldConfig;
+  dragHandleProps: any;
+  template: DocumentId;
+}) {
+  const [path, setPath] = useBuilderPath();
+
+  const articleId = useArticlePageContext().id;
+  const isNative = template === articleId;
+
+  const [isEditing] = useLocalStorage<boolean>("editing-articles", false);
+
+  const [, navigateTab] = useTabUrl();
+  const { current, full } = useSegment();
+  const isOpen = full.endsWith(`/c-${restoreId(fieldConfig.id)}`);
   const [, specialFieldConfig] = getDefaultField(fieldConfig.id);
 
-  const content = (withProps: boolean) => (
+  return (
     <div
-      {...(withProps && props)}
       className={cl(
-        "relative grow shrink basis-0 focus-container pt-5",
-        withProps && props.className
+        "flex px-5 pt-5",
+        path.length === 0 ? "h-12 pb-2" : "h-[3.75rem] pb-5"
       )}
+      onDoubleClick={() => {
+        navigateTab(
+          isOpen ? `${current}` : `${current}/c-${restoreId(fieldConfig.id)}`
+        );
+      }}
     >
-      <div
-        className={cl(
-          !isOpen && "focus-bg",
-          "-z-10 absolute bg-black/20 inset-0 pointer-events-none"
-        )}
+      <Dot
+        id={fieldConfig.id}
+        isNative={isNative}
+        dragHandleProps={isEditing ? dragHandleProps : {}}
       />
-      <div className={cl("flex px-5", path.length === 0 ? "h-5" : "h-10 pb-5")}>
-        <Dot
-          id={fieldConfig.id}
-          native={isNative}
-          {...(withProps && dotProps)}
-        />
-        <div className={cl("ml-5 flex")}>
-          {path.length === 0 ? (
-            <Label
-              id={fieldConfig.id}
-              isNative={isNative}
-              template={template}
-              isEditable={isNative && isEditing}
-            />
-          ) : (
-            <PathMap path={path} setPath={setPath} />
-          )}
-        </div>
-        {specialFieldConfig && (
-          <div className="ml-3 backdrop:mr-8 text-xs my-0.5 font-light bg-yellow-400/10 text-yellow-200/75 px-1.5 rounded">
-            {specialFieldConfig.label}
-          </div>
+      <div className={cl("ml-5 flex")}>
+        {path.length === 0 ? (
+          <Label
+            id={fieldConfig.id}
+            isNative={isNative}
+            template={template}
+            isEditable={isNative && isEditing}
+          />
+        ) : (
+          <PathMap path={path} setPath={setPath} />
         )}
       </div>
-      {children}
+      {specialFieldConfig && (
+        <div className="ml-3 backdrop:mr-8 text-xs my-0.5 font-light bg-yellow-300 text-yellow-800/90 dark:bg-yellow-400/10 dark:text-yellow-200/75 px-1.5 rounded">
+          {specialFieldConfig.label}
+        </div>
+      )}
     </div>
-  );
-
-  return (
-    <PathContext.Provider value={pathState}>
-      {content(true)}
-      <BuilderPortal id={fieldConfig.id}>
-        {(isOpen) => (
-          <FieldPage
-            selected={isOpen}
-            id={fieldConfig.id}
-            initialValue={initialValue}
-            builderPath={path}
-            setBuilderPath={setPath}
-          >
-            <div
-              className={cl(
-                "pt-5 relative grow shrink basis-0 focus-container"
-              )}
-            >
-              <div
-                className={cl(
-                  "-z-10 absolute bg-black/20 inset-0 pointer-events-none"
-                )}
-              />
-              {children}
-            </div>
-          </FieldPage>
-        )}
-      </BuilderPortal>
-    </PathContext.Provider>
   );
 }
 
@@ -252,17 +232,23 @@ export function PathMap({
   );
 }
 
-function Dot({ id, native, ...props }: any) {
+function Dot({
+  id,
+  isNative,
+  dragHandleProps,
+}: {
+  id: FieldId;
+  isNative: boolean;
+  dragHandleProps: any;
+}) {
   const [focused] = useFieldFocus();
-
-  const isEditable = native;
-  const isDraggable = "draggable" in props;
-
   const isLink = focused && focused !== id;
+
+  const isEditable = isNative;
+  const isDraggable = "draggable" in dragHandleProps;
 
   const [, navigateTab] = useTabUrl();
   const { current, full } = useSegment();
-
   const isOpen = full.endsWith(`/c-${restoreId(id)}`);
 
   const Icon = isOpen
@@ -284,7 +270,7 @@ function Dot({ id, native, ...props }: any) {
         }}
       >
         <div
-          {...props}
+          {...dragHandleProps}
           className="group w-6 h-6 p-1 -m-1 translate-y-0.5"
           onClick={() => {
             navigateTab(
@@ -295,9 +281,7 @@ function Dot({ id, native, ...props }: any) {
           <div
             className={cl(
               "flex-center w-4 h-4 rounded-full group-hover:scale-[1.5] transition-transform",
-              props.className
-                ? props.className
-                : isOpen
+              isOpen
                 ? "bg-gray-200 dark:bg-gray-600/50 dark:group-hover:bg-red-800/50"
                 : !isEditable
                 ? "bg-gray-200 dark:bg-teal-600/50 dark:group-hover:bg-teal-800/50"
@@ -321,6 +305,7 @@ function Dot({ id, native, ...props }: any) {
           </div>
         </div>
       </Draggable>
+      {/*
       <button
         tabIndex={-1}
         className={cl(
@@ -339,6 +324,7 @@ function Dot({ id, native, ...props }: any) {
       >
         <LinkIcon className="w-4 h-4" />
       </button>
+      */}
     </>
   );
 }
@@ -362,6 +348,9 @@ function Label({
   isEditable?: boolean;
   template: DocumentId;
 }) {
+  const [focused] = useFieldFocus();
+  const isLink = focused && focused !== id;
+
   const label = useLabel(id, template);
 
   const articleId = id.slice(0, 4);
@@ -394,8 +383,16 @@ function Label({
     <span
       className={cl(
         "text-sm font-normal",
-        isNative ? "text-gray-400" : "text-teal-400/90"
+        isNative ? "text-gray-400" : "text-teal-600/90 dark:text-teal-400/90",
+        isLink && "cursor-alias"
       )}
+      onMouseDown={(ev) => {
+        if (isLink) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          addImport.dispatch({ id, imports: [] });
+        }
+      }}
     >
       {label || "Ingen label"}
     </span>

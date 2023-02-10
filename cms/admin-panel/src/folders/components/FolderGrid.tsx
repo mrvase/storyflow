@@ -112,7 +112,7 @@ export default function FolderGrid({
       disabled={disabled}
       onChange={onChange}
     >
-      <div className={cl("flex flex-wrap gap-2")}>
+      <div className={cl("flex flex-wrap gap-2 pl-7")}>
         {childrenAsFolders.map((folder, index) => (
           <FolderItem folder={folder} index={index} key={folder.id} />
         ))}

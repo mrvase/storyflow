@@ -112,7 +112,7 @@ export default function Branch({
 
   const { isFocused: _isFocused, handlers, id: focusId } = useIsFocused();
 
-  const isFocused = _isFocused || pinned;
+  const isFocused = _isFocused || pinned || numberOfVisibleTabs === 1;
 
   const top = tab.segment;
 
@@ -175,7 +175,7 @@ export default function Branch({
         >
           <div
             className={cl(
-              "w-full grow-0 h-full flex flex-col rounded-md overflow-hidden",
+              "w-full grow-0 h-full flex flex-col rounded-md overflow-hidden border border-gray-200 dark:border-gray-800",
               pinned && "shadow-lg shadow-black/50"
               // isFocused && "ring-4 ring-amber-100"
             )}

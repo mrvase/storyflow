@@ -180,7 +180,10 @@ export default function AppPage({
         selected={isOpen}
         header={
           <Content.Header>
-            <div className="flex-center h-full pl-2.5 font-medium">
+            <div className="flex-center h-full font-medium">
+              <span className="text-sm font-light mt-1 mr-5 text-yellow-300">
+                <ComputerDesktopIcon className="w-4 h-4" />
+              </span>
               <EditableLabel
                 value={folder?.label ?? ""}
                 onChange={(value) => {
@@ -193,9 +196,6 @@ export default function AppPage({
                 }}
                 className={cl("font-medium", "text-yellow-300")}
               />
-              <span className="text-sm font-light mt-1 ml-4 text-gray-400">
-                <ComputerDesktopIcon className="w-4 h-4" />
-              </span>
             </div>
           </Content.Header>
         }
