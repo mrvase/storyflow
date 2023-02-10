@@ -380,9 +380,9 @@ export function FocusBg() {
   return (
     <div
       className={cl(
-        "[.focused_&]:ring-1 [.focused_&]:ring-gray-200 [.focused_&]:dark:ring-gray-700",
+        "[.focused_&]:ring-1 [.focused_&]:ring-gray-200 dark:[.focused_&]:ring-gray-700",
         isFocused || fullPath.length > 0
-          ? "bg-gray-50 dark:bg-gray-800 ring-gray-700 ring-1"
+          ? "bg-gray-50 dark:ring-gray-700 dark:bg-gray-800 ring-1"
           : "bg-transparent ring-gray-100 dark:ring-gray-800 group-hover/container:ring-1",
         "transition-[backgroundColor,box-shadow] ease-in-out",
         "-z-10 absolute inset-2.5 rounded-md pointer-events-none"
