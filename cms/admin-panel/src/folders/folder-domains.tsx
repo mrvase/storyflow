@@ -17,7 +17,7 @@ export const FolderDomainsProvider = ({
   let next = new Set(parent ?? []);
   domains.forEach((d) => next.add(d));
 
-  const array = React.useMemo(() => [...next], [parent, domains]);
+  const array = React.useMemo(() => Array.from(next), [parent, domains]);
 
   return (
     <FolderDomainsContext.Provider value={array}>
