@@ -215,8 +215,6 @@ export default function AppPage({
 
   const parentDomains = React.useContext(FolderDomainsContext);
 
-  const front = articles ? orderedArticles[0] : null;
-
   return (
     <AppPageContext.Provider value={ctx}>
       <FolderDomainsProvider domains={folder?.domains ?? []}>
@@ -247,11 +245,16 @@ export default function AppPage({
             isEditing ? (
               <Content.Toolbar>
                 {folder && (
-                  <DomainsButton
-                    parentDomains={parentDomains ?? undefined}
-                    domains={folder.domains}
-                    mutate={mutate}
-                  />
+                  <>
+                    <DomainsButton
+                      parentDomains={parentDomains ?? undefined}
+                      domains={folder.domains}
+                      mutate={mutate}
+                    />
+                    <div className="text-xs text-gray-300 font-light flex-center h-6 ring-1 ring-inset ring-white/10 px-2 rounded cursor-default">
+                      ID: {restoreId(folder.id)}
+                    </div>
+                  </>
                 )}
               </Content.Toolbar>
             ) : null
@@ -267,9 +270,9 @@ export default function AppPage({
               <span className="text-xs opacity-50 font-light ml-5 cursor-default hover:underline">
                 x sider ændret
               </span>
-              {typeof front?.url === "string" && config.revalidateUrl && (
+              {folder && config.revalidateUrl && (
                 <RefreshButton
-                  namespace={front.url}
+                  namespace={restoreId(folder.id)}
                   revalidateUrl={config.revalidateUrl}
                 />
               )}

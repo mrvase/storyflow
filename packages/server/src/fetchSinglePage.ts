@@ -18,6 +18,7 @@ import type {
 import type { LibraryConfig, RenderArray } from "@storyflow/frontend/types";
 import { WithId } from "mongodb";
 import { resolveProps } from "./props/resolveProps";
+import { minimizeId } from "@storyflow/backend/ids";
 
 let CACHE: Record<string, Promise<NestedDocument[]>> = {};
 
@@ -118,6 +119,7 @@ const defaultLibrary: LibraryConfig = {
 
 export async function fetchSinglePage(
   url: string,
+  namespace: string,
   db: string,
   clientLibraries: LibraryConfig[]
 ) {
@@ -134,6 +136,7 @@ export async function fetchSinglePage(
     .db(db)
     .collection("articles")
     .findOne<DBDocument>({
+      ...(namespace && { folder: minimizeId(namespace) }),
       [`values.${FIELDS.url.id}`]:
         url.indexOf("/") < 0
           ? url

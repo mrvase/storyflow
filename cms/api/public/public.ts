@@ -13,6 +13,7 @@ import { fetchSinglePage } from "@storyflow/server";
 import { URL_ID } from "@storyflow/backend/templates";
 import type {} from "@storyflow/frontend/types";
 import { extendPath } from "@storyflow/backend/extendPath";
+import { minimizeId } from "@storyflow/backend/ids";
 
 const sessionStorage = createSessionStorage({
   cookie: cookieOptions,
@@ -88,11 +89,7 @@ export const public_ = createRoute({
       });
     },
     async mutation({ namespace, url, config }, { dbName, slug }) {
-      const page = await fetchSinglePage(
-        extendPath(namespace ?? "", url, "/"),
-        dbName,
-        config
-      );
+      const page = await fetchSinglePage(url, namespace ?? "", dbName, config);
       return success(page);
     },
   }),
@@ -109,17 +106,24 @@ export const public_ = createRoute({
         .db(dbName)
         .collection("articles")
         .find({
+          ...(namespace
+            ? { folder: minimizeId(namespace) }
+            : { [`values.${URL_ID}`]: { $exists: true } }),
+          /*
           [`values.${URL_ID}`]: namespace
             ? { $regex: `^${namespace}` }
             : { $exists: true },
+          */
         })
         .toArray();
 
       const urls = articles.map((el) => {
-        const value = el.values[URL_ID][0] as string;
+        return el.values[URL_ID][0] as string;
+        /*
         return namespace
           ? value.replace(new RegExp(`^${namespace}\/?`), "")
           : value;
+        */
       });
 
       return success(urls);

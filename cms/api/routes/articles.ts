@@ -45,6 +45,7 @@ import {
   getDocumentId,
   getTemplateFieldId,
   isTemplateField,
+  minimizeId,
 } from "@storyflow/backend/ids";
 import { createStages, Update } from "../aggregation/stages";
 import util from "util";
@@ -1016,9 +1017,14 @@ export const articles = createRoute({
       const articles = await db
         .collection("articles")
         .find({
+          ...(namespace
+            ? { folder: minimizeId(namespace) }
+            : { [`values.${URL_ID}`]: { $exists: true } }),
+          /*
           [`values.${URL_ID}`]: namespace
             ? { $regex: `^${namespace}` }
             : { $exists: true },
+          */
         })
         .toArray();
 
