@@ -86,6 +86,10 @@ export function useClientConfig(key?: string): ClientConfig {
     throw new Error("useClientConfig cannot find provider.");
   }
 
+  if (key) {
+    return configs[key] ?? defaultClientConfig;
+  }
+
   const domains = useFolderDomains();
 
   if (!domains) {
@@ -96,10 +100,6 @@ export function useClientConfig(key?: string): ClientConfig {
 
   if (!Object.keys(configs ?? []).length) {
     return defaultClientConfig;
-  }
-
-  if (key) {
-    return configs[key];
   }
 
   const main = configs[domains[0]];

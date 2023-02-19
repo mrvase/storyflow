@@ -209,7 +209,7 @@ export default function AppPage({
     }
   };
 
-  const config = useClientConfig();
+  const config = useClientConfig(folder?.domains?.[0]);
 
   const [isEditing] = useLocalStorage<boolean>("editing-articles", false);
 
