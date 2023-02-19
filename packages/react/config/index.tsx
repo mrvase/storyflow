@@ -10,6 +10,8 @@ import {
   PropConfig,
   Props,
   Story,
+  StoryConfig,
+  StoryProps,
 } from "@storyflow/frontend/types";
 import * as React from "react";
 import { cms } from "../src/CMSElement";
@@ -117,13 +119,45 @@ export const createComponent = <T extends readonly PropConfig[]>(
   };
 };
 
+function modifyValues<T extends object>(
+  obj: T,
+  callback: (value: T[keyof T], key: string) => any
+) {
+  return Object.fromEntries(
+    Object.entries(obj).map(([key, value]) => [key, callback(value, key)])
+  );
+}
+
+export function modifyChild<T extends readonly PropConfig[]>(
+  child: ExtendedPartialConfig<T>,
+  props: number | StoryProps<T>,
+  overwritingProps?: StoryProps<T>
+):
+  | ExtendedPartialConfig<T>
+  | {
+      config: ExtendedPartialConfig<T>;
+      story: StoryConfig<T>;
+    } {
+  if (typeof props === "number") {
+    if (!child.stories || child.stories.length <= props) return child;
+    return {
+      config: child,
+      story: {
+        ...child.stories[props],
+        props: { ...child.stories[props].props, ...overwritingProps },
+      },
+    };
+  }
+  return { config: child, story: { props } };
+}
+
 export const createFullConfig = <T extends ExtendedLibraryConfig>(
   config: T
 ) => {
   const entries = Object.entries(config.components);
   const componentConfigs: any = {};
   const components: any = {};
-  const stories = [];
+  const stories: any = {};
 
   const extendedName = ([key, el]: [string, ExtendedPartialConfig<any>]) => {
     return el.typespace ? `${el.typespace}/${el.name ?? key}` : el.name ?? key;
@@ -133,29 +167,42 @@ export const createFullConfig = <T extends ExtendedLibraryConfig>(
     return entries.find(([, value]) => value === componentConfig)?.[0];
   };
 
-  const handleImports = (props: any, libraries: LibraryConfig[]): any => {
-    const modifyValues = (
-      obj: any,
-      callback: (value: any, key: string) => any
-    ) => {
-      return Object.fromEntries(
-        Object.entries(obj).map(([key, value]) => [key, callback(value, key)])
-      );
-    };
-
+  const handleImports = (
+    props: StoryProps<any>,
+    libraries: LibraryConfig[]
+  ): any => {
     return modifyValues(props, (value) => {
       if (Array.isArray(value)) {
         return {
           $children: createRenderArray(
-            value.map((el: any) => {
+            value.map((el) => {
               if (typeof el !== "object") return el;
+
+              const createName = (
+                componentConfig: ExtendedPartialConfig<any>
+              ) => {
+                return componentConfig.typespace
+                  ? `${config.name}:${componentConfig.typespace}/${getName(
+                      componentConfig
+                    )}`
+                  : `${config.name}:${getName(componentConfig)}`;
+              };
+
+              let type = "";
+              let props = {};
+
+              if ("story" in el && "config" in el) {
+                type = createName(el.config);
+                props = el.story.props;
+              } else {
+                type = createName(el);
+                props = el.stories?.[0]?.props ?? {};
+              }
 
               return {
                 id: "",
-                type: el.typespace
-                  ? `${config.name}:${el.typespace}/${getName(el)}`
-                  : `${config.name}:${getName(el)}`,
-                props: handleImports(el.stories?.[0]?.props ?? {}, libraries),
+                type,
+                props: handleImports(props, libraries),
               };
             }),
             libraries
@@ -220,7 +267,7 @@ export const createFullConfig = <T extends ExtendedLibraryConfig>(
     const [key, { stories: newStories, name, label }] = entry;
 
     if (newStories) {
-      const arr: any[] = newStories.map((story, index) => ({
+      stories[key] = newStories.map((story, index) => ({
         name: `${config.name}_${name ?? key}_${index}`,
         label: story.label ?? label ?? key,
         canvas: story.canvas ?? "",
@@ -235,8 +282,6 @@ export const createFullConfig = <T extends ExtendedLibraryConfig>(
           },
         ],
       }));
-
-      stories.push(...arr);
     }
 
     i++;
@@ -250,8 +295,8 @@ export const createFullConfig = <T extends ExtendedLibraryConfig>(
     }),
     {
       name: config.name,
-      stories,
-    } as { name: string; stories: Story[] },
+      components: stories,
+    } as { name: string; components: Record<string, Story[]> },
   ] as const;
 };
 

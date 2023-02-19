@@ -258,6 +258,7 @@ export interface DBFolder {
   type: "data" | "app" | "root" | "templates";
   label: string;
   template?: DocumentId;
+  domains?: string[];
   children: FolderChild[];
 }
 

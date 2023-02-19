@@ -96,14 +96,10 @@ export const ArticleContent = ({
 }) => {
   const isModified = useIsModified(id, initialIsModified, version);
 
-  const [isEditing, setIsEditing] = useLocalStorage<boolean>(
-    "editing-articles",
-    false
-  );
+  const [isEditing] = useLocalStorage<boolean>("editing-articles", false);
 
   return (
     <Content
-      variant={variant}
       selected={selected}
       header={
         <Content.Header>
@@ -114,12 +110,6 @@ export const ArticleContent = ({
             )}
           >
             {label}
-            {isModified && (
-              <span className="text-xs text-amber-300 flex gap-2 ml-4 font-light">
-                <PencilSquareIcon className="w-4 h-4" />
-                redigeret
-              </span>
-            )}
             {variant === "template" && (
               <span className="text-sm font-light mt-1 ml-4 text-gray-400">
                 <DocumentDuplicateIcon className="w-4 h-4" />
@@ -128,19 +118,21 @@ export const ArticleContent = ({
           </div>
         </Content.Header>
       }
-      toolbar={isEditing ? toolbar : undefined}
       buttons={
-        <Content.Buttons>
-          <Content.Button
-            icon={AdjustmentsHorizontalIcon}
-            onClick={() => setIsEditing((ps) => !ps)}
-            data-focus-remain="true"
-          />
-          {folder && (
-            <SaveButton id={id} folder={folder} isModified={isModified} />
+        <div
+          className={cl(
+            "flex-center",
+            "transition-opacity",
+            isModified ? "opacity-100" : "opacity-0 pointer-events-none"
           )}
-        </Content.Buttons>
+        >
+          <span className="text-xs opacity-50 font-light ml-5 cursor-default hover:underline">
+            ændret d. 22/2 10:33
+          </span>
+          {folder && <NewSaveButton id={id} folder={folder} />}
+        </div>
       }
+      toolbar={isEditing ? toolbar : undefined}
     >
       {children}
     </Content>
@@ -259,6 +251,9 @@ export function FieldToolbar({
 
   return (
     <Content.Toolbar>
+      <div className="text-xs text-gray-300 font-light flex-center h-6 ring-1 ring-inset ring-white/10 px-2 rounded cursor-default">
+        Felt: {config?.label || "Ingen label"}
+      </div>
       <Content.ToolbarMenu<{ id: DocumentId; label: string }>
         icon={ListBulletIcon}
         label="Vælg template"
@@ -386,6 +381,7 @@ const Page = ({
       imports: article
         ? getComputationRecord(article, { includeImports: true })
         : {},
+      article,
     }),
     [id, article]
   );
@@ -471,6 +467,39 @@ function SaveButton({
   );
 }
 
+function NewSaveButton({ id, folder }: { id: string; folder: string }) {
+  const collab = useCollab();
+  const [isLoading, setIsLoading] = React.useState(false);
+  const saveArticle = useSaveArticle(folder);
+  return (
+    <div className="relative ml-5">
+      {/*isLoading && (
+        <div className="absolute inset-0 flex-center">
+          <div className="w-8 h-8 bg-white/5 rounded-full animate-ping-lg" />
+        </div>
+      )*/}
+      <button
+        className="relative z-0 bg-button-teal ring-button text-button rounded px-3 py-1 font-light flex-center gap-2 text-sm overflow-hidden"
+        onClick={async () => {
+          if (isLoading) return;
+          setIsLoading(true);
+          await collab.sync(true);
+          const result = await saveArticle(id);
+          setIsLoading(false);
+        }}
+      >
+        {isLoading && (
+          <div className="absolute inset-0 -z-10 flex-center">
+            <div className="w-8 h-8 bg-teal-300 rounded-full animate-ping-lg" />
+          </div>
+        )}
+        <ArrowUpTrayIcon className="w-3 h-3" />
+        Udgiv
+      </button>
+    </div>
+  );
+}
+
 function DragButton({ item, label }: { label: string; item: any }) {
   const { ref, dragHandleProps, state } = useDragItem({
     id: `ny-blok-2-${label}`,
@@ -480,12 +509,11 @@ function DragButton({ item, label }: { label: string; item: any }) {
   });
 
   return (
-    <button
+    <Content.ToolbarButton
       ref={ref as React.MutableRefObject<HTMLButtonElement | null>}
       {...dragHandleProps}
-      className="text-xs font-light py-1 px-2 rounded bg-white/10 hover:bg-white/20 text-white/80 transition-colors"
     >
       {label}
-    </button>
+    </Content.ToolbarButton>
   );
 }

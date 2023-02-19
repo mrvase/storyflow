@@ -9,24 +9,36 @@ import { useFolder, useFolderMutation, useFolders, useTemplateFolder } from ".";
 import {
   FolderIcon,
   FolderPlusIcon,
+  GlobeAltIcon,
   PlusIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
 import Dialog from "../elements/Dialog";
 import {
+  getDefaultValuesFromTemplateAsync,
   getDocumentLabel,
   useArticleList,
   useArticleListMutation,
 } from "../articles";
 import { useSegment } from "../layout/components/SegmentContext";
 import { useOnLoadHandler } from "../layout/onLoadHandler";
-import { minimizeId, restoreId } from "@storyflow/backend/ids";
+import {
+  getDocumentId,
+  minimizeId,
+  replaceDocumentId,
+  restoreId,
+} from "@storyflow/backend/ids";
 import { useArticleIdGenerator, useFolderIdGenerator } from "../id-generator";
 import { EditableLabel } from "../elements/EditableLabel";
 import cl from "clsx";
 import { AddArticleDialog } from "./AddArticleDialog";
-import { DBFolder } from "@storyflow/backend/types";
+import { DBFolder, DocumentId } from "@storyflow/backend/types";
 import { useContextWithError } from "../utils/contextError";
+import { useLocalStorage } from "../state/useLocalStorage";
+import { SWRClient, useClient } from "../client";
+import { FolderDomainsContext, FolderDomainsProvider } from "./folder-domains";
+import { tools } from "shared/editor-tools";
+import { CREATION_DATE_ID } from "@storyflow/backend/templates";
 
 const FolderContext = React.createContext<DBFolder | undefined | null>(null);
 export const useCurrentFolder = () =>
@@ -94,114 +106,244 @@ export default function FolderPage({
     }
   };
 
+  const [isEditing] = useLocalStorage<boolean>("editing-articles", false);
+
+  const parentDomains = React.useContext(FolderDomainsContext);
+
   return (
     <FolderContext.Provider value={folder}>
-      <Content
-        selected={isOpen}
-        header={
-          <Content.Header>
-            <div className="flex-center h-full font-medium">
-              <span className="text-sm font-light mt-0.5 mr-5 text-gray-400">
-                <FolderIcon className="w-4 h-4" />
-              </span>
-              <EditableLabel
-                value={folder?.label ?? ""}
-                onChange={(value) => {
-                  if (folder) {
-                    mutate({
-                      name: "label",
-                      value,
-                    });
-                  }
-                }}
-                className={cl("font-medium")}
-              />
-            </div>
-          </Content.Header>
-        }
-        buttons={
-          <Content.Buttons>
-            <Content.Button icon={TrashIcon} onClick={() => handleDelete()} />
-            <Content.Button
-              icon={FolderPlusIcon}
-              onClick={() => setDialogIsOpen("add-folder")}
-            />
-            {folder?.type === "data" && (
-              <Content.Button
-                onClick={() => {
-                  if (folder?.template) {
-                    navigateTab(`${current}/t-${restoreId(folder.template)}`);
-                    return;
-                  }
-                  setDialogIsOpen("add-template");
-                }}
-                className="bg-teal-600 dark:bg-teal-800 text-white hover:bg-teal-600"
-              >
-                {folder?.template ? "Skabelon" : "Tilføj skabelon"}
-              </Content.Button>
-            )}
-            <Content.Button
-              icon={PlusIcon}
-              onClick={() => setDialogIsOpen("add-article")}
-            />
-          </Content.Buttons>
-        }
-      >
-        {folder && templateFolderId && (
-          <>
-            <AddFolderDialog
-              isOpen={dialogIsOpen === "add-folder"}
-              close={() => setDialogIsOpen(null)}
-              parent={folder.id}
-            />
-            <AddTemplateDialog
-              isOpen={dialogIsOpen === "add-template"}
-              close={() => setDialogIsOpen(null)}
-              label={folder.label}
-              parent={folder.id}
-              templateFolder={templateFolderId}
-            />
-            <AddArticleDialog
-              isOpen={dialogIsOpen === "add-article"}
-              close={() => {
-                setDialogIsOpen(null);
-              }}
-              folder={folder.id}
-              template={folder.template}
-              type={type}
-            />
-          </>
-        )}
-        {folder && articles ? (
-          <div className="flex flex-col p-5">
-            <FolderGrid
-              parent={folder}
-              folders={folders!}
-              disabled={!isSelected}
-              cols={cols}
-            />
-            {folder.type === "data" && (
-              <form ref={form} onSubmit={(ev) => ev.preventDefault()}>
-                <Table
-                  rows={articles.map((el) => ({
-                    id: restoreId(el.id),
-                    columns: [
-                      { name: el.id, value: false },
-                      { value: getDocumentLabel(el) },
-                    ],
-                  }))}
+      <FolderDomainsProvider domains={folder?.domains ?? []}>
+        <Content
+          selected={isOpen}
+          header={
+            <Content.Header>
+              <div className="flex-center h-full font-medium">
+                <span className="text-sm font-light mt-0.5 mr-5 text-gray-400">
+                  <FolderIcon className="w-4 h-4" />
+                </span>
+                <EditableLabel
+                  value={folder?.label ?? ""}
+                  onChange={(value) => {
+                    if (folder) {
+                      mutate({
+                        name: "label",
+                        value,
+                      });
+                    }
+                  }}
+                  className={cl("font-medium")}
                 />
-              </form>
-            )}
-          </div>
-        ) : (
-          <div className="text-center py-5 text-xl font-bold text-gray-300">
-            {/*Vent et øjeblik*/}
-          </div>
-        )}
-      </Content>
-      {children}
+              </div>
+            </Content.Header>
+          }
+          toolbar={
+            isEditing ? (
+              <Content.Toolbar>
+                <Content.ToolbarButton
+                  data-focus-remain="true"
+                  onClick={() => {
+                    if (folder?.template) {
+                      navigateTab(`${current}/t-${restoreId(folder.template)}`);
+                      return;
+                    }
+                    setDialogIsOpen("add-template");
+                  }}
+                >
+                  {folder?.template ? "Skabelon" : "Tilføj skabelon"}
+                </Content.ToolbarButton>
+                {folder && (
+                  <DomainsButton
+                    parentDomains={parentDomains ?? undefined}
+                    domains={folder.domains}
+                    mutate={mutate}
+                  />
+                )}
+              </Content.Toolbar>
+            ) : null
+          }
+        >
+          {folder && templateFolderId && (
+            <>
+              <AddFolderDialog
+                isOpen={dialogIsOpen === "add-folder"}
+                close={() => setDialogIsOpen(null)}
+                parent={folder.id}
+              />
+              <AddTemplateDialog
+                isOpen={dialogIsOpen === "add-template"}
+                close={() => setDialogIsOpen(null)}
+                label={folder.label}
+                parent={folder.id}
+                templateFolder={templateFolderId}
+              />
+            </>
+          )}
+          {folder && articles ? (
+            <div className="flex flex-col gap-8 px-5">
+              <div>
+                <div className="flex items-center ml-9 mb-3.5 justify-between">
+                  <h2 className=" text-gray-400">Undermapper</h2>
+                  <div className="flex gap-2">
+                    <button
+                      className="px-3 rounded py-1.5 ring-button text-button"
+                      onClick={() => setDialogIsOpen("add-folder")}
+                    >
+                      <FolderPlusIcon className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+                <FolderGrid
+                  parent={folder}
+                  folders={folders!}
+                  disabled={!isSelected}
+                  cols={cols}
+                />
+              </div>
+              <div>
+                <div className="flex items-center ml-9 mb-1 justify-between">
+                  <h2 className=" text-gray-400">Data</h2>
+                  <div className="flex gap-2">
+                    <button
+                      className="px-3 rounded py-1.5 ring-button text-button"
+                      onClick={handleDelete}
+                    >
+                      <TrashIcon className="w-4 h-4" />
+                    </button>
+                    <AddArticleButton
+                      folder={folder.id}
+                      template={folder.template}
+                    />
+                  </div>
+                </div>
+                {folder.type === "data" && (
+                  <form ref={form} onSubmit={(ev) => ev.preventDefault()}>
+                    <Table
+                      rows={articles.map((el) => ({
+                        id: restoreId(el.id),
+                        columns: [{ value: getDocumentLabel(el) }],
+                      }))}
+                    />
+                  </form>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-5 text-xl font-bold text-gray-300">
+              {/*Vent et øjeblik*/}
+            </div>
+          )}
+        </Content>
+        {children}
+      </FolderDomainsProvider>
     </FolderContext.Provider>
+  );
+}
+
+function AddArticleButton({
+  folder,
+  template,
+}: {
+  folder: string;
+  template?: DocumentId;
+}) {
+  const mutateArticles = useArticleListMutation();
+  const generateId = useArticleIdGenerator();
+  const [, navigateTab] = useTabUrl();
+  const { current } = useSegment();
+  const client = useClient();
+  return (
+    <button
+      className="px-3 rounded py-1.5 ring-button text-button"
+      onClick={async () => {
+        const id = await generateId();
+        const defaultValues = template
+          ? await getDefaultValuesFromTemplateAsync(template, client)
+          : null;
+        const compute = (defaultValues?.compute ?? []).map((block) => ({
+          id: replaceDocumentId(block.id, id),
+          value: block.value.map((el) =>
+            tools.isFieldImport(el)
+              ? {
+                  ...el,
+                  fref:
+                    getDocumentId(block.id) === getDocumentId(el.fref)
+                      ? replaceDocumentId(el.fref, id)
+                      : el.fref,
+                }
+              : el
+          ),
+        }));
+        mutateArticles({
+          folder,
+          actions: [
+            {
+              type: "insert",
+              id,
+              values: Object.assign(defaultValues?.values ?? {}, {
+                [CREATION_DATE_ID]: [new Date()],
+              }),
+              compute,
+            },
+          ],
+        });
+        navigateTab(`${current}/d-${restoreId(id)}`, { navigate: true });
+      }}
+    >
+      <PlusIcon className="w-4 h-4" />
+    </button>
+  );
+}
+
+export function DomainsButton({
+  parentDomains = [],
+  domains = [],
+  mutate,
+}: {
+  parentDomains?: string[];
+  domains?: string[];
+  mutate: ReturnType<typeof useFolderMutation>;
+}) {
+  const { data } = SWRClient.settings.get.useQuery();
+
+  const getLabel = (domain: string) => {
+    domain = domain.replace("https://", "");
+    domain = domain.replace("www.", "");
+    domain = domain.replace("/api/config", "");
+    return domain;
+  };
+
+  const options = React.useMemo(() => {
+    if (!data?.domains) return [];
+    return data.domains.map((el) => ({
+      id: el.id,
+      label: getLabel(el.configUrl),
+      disabled: parentDomains.includes(el.id),
+    }));
+  }, [domains]);
+
+  const selected = options.filter(
+    (el) => parentDomains.includes(el.id) || domains.includes(el.id)
+  );
+
+  if (!data?.domains || data.domains.length === 0) return null;
+
+  return (
+    <Content.ToolbarMenu<{ id: string; label: string }>
+      icon={GlobeAltIcon}
+      label="Hjemmesider"
+      onSelect={(selected) => {
+        const newDomains = domains.includes(selected.id)
+          ? domains.filter((el) => el !== selected.id)
+          : [...domains, selected.id];
+        mutate({
+          name: "domains",
+          value: newDomains,
+        });
+      }}
+      selected={selected}
+      options={options}
+      multi
+    />
   );
 }
 
@@ -216,6 +358,7 @@ function AddFolderDialog({
 }) {
   const mutate = useFolderMutation(parent);
   const generateId = useFolderIdGenerator();
+  const generateFrontId = useArticleIdGenerator();
 
   return (
     <Dialog isOpen={isOpen} close={close} title="Tilføj mappe">
@@ -223,7 +366,12 @@ function AddFolderDialog({
         onSubmit={async (ev) => {
           ev.preventDefault();
           const data = new FormData(ev.target as HTMLFormElement);
-          const id = await generateId();
+          const type = (data.get("type") as "data" | "app") ?? "data";
+          const label = (data.get("label") as string) ?? "";
+          const [id, frontId] = await Promise.all([
+            generateId(),
+            type === "app" ? generateFrontId() : ("" as DocumentId),
+          ]);
           mutate({
             type: "reorder",
             children: [
@@ -233,11 +381,19 @@ function AddFolderDialog({
                 after: null,
               },
             ],
-            insert: {
-              id,
-              label: (data.get("label") as string) ?? "",
-              type: (data.get("type") as "data") ?? "data",
-            },
+            insert:
+              type === "app"
+                ? {
+                    id,
+                    label,
+                    type,
+                    frontId,
+                  }
+                : {
+                    id,
+                    label,
+                    type,
+                  },
           });
           close();
         }}

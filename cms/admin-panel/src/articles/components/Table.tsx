@@ -26,14 +26,15 @@ export default function Table({
   return (
     <table
       className={cl(
-        "w-full leading-none font-light",
+        "w-full leading-none font-light -mx-2.5",
         rows.length === 0 && "opacity-50"
       )}
+      border={0}
     >
       <thead>
         <tr className="font-normal">
-          <td className="p-3"></td>
-          <td className="p-3">Navn</td>
+          <td className=""></td>
+          <td className="p-2.5">Navn</td>
         </tr>
       </thead>
       <tbody>
@@ -79,32 +80,33 @@ function Row({
       className="border-t border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition-[background-color]"
       {...dragHandleProps}
     >
+      <td className="w-[1%] text-[0px] border-0 p-0">
+        <Checkbox id={id} />
+      </td>
       {columns.map((el, index) => {
-        const type = typeof el.value;
         return (
           <td
             key={index}
-            className={cl(type === "boolean" ? "w-8 text-[0px]" : "p-3")}
+            className={cl(
+              "p-2.5 border-0",
+              typeof el.value !== "string" ? "w-[1%]" : "w-full"
+            )}
             onClick={() => {
-              if (index !== 0) {
-                navigateTab(`${current}/d-${id}`);
-              }
+              navigateTab(`${current}/d-${id}`);
             }}
           >
-            {index === 1 && indent ? (
+            {index === 0 && indent ? (
               <span className="opacity-50 text-xs mr-3 align-middle">
                 {Array.from({ length: indent }, (_, x) => (
                   <>- - - - </>
                 ))}
               </span>
             ) : null}
-            <span className="align-middle">
-              {type === "boolean" && <Checkbox id={id} name={el.name} />}
-              {type === "string" && el.value}
-            </span>
+            {el.value}
           </td>
         );
       })}
+      {/*
       <td className="w-10">
         <button
           onMouseDown={(ev) => {
@@ -124,11 +126,12 @@ function Row({
           <ArrowTopRightOnSquareIcon className="w-4 h-4" />
         </button>
       </td>
+        */}
     </tr>
   );
 }
 
-function Checkbox({ id, name }: { id: string; name?: string }) {
+function Checkbox({ id }: { id: string }) {
   const [focused] = useFieldFocus();
 
   const folder = useCurrentFolder();
@@ -136,7 +139,7 @@ function Checkbox({ id, name }: { id: string; name?: string }) {
   if (focused) {
     return (
       <button
-        className="p-3"
+        className="p-2.5"
         onMouseDown={(ev) => {
           ev.preventDefault();
           addDocumentImport.dispatch({
@@ -151,15 +154,15 @@ function Checkbox({ id, name }: { id: string; name?: string }) {
   }
 
   return (
-    <label className="block p-3">
+    <label className="block p-2.5">
       <div className="w-4 h-4 relative z-0 flex-center">
         <input
-          name={name}
+          name={minimizeId(id)}
           type="checkbox"
           className="peer w-0 h-0 bg-transparent"
         />
-        <div className="absolute inset-0 -z-10 bg-white dark:bg-gray-700 peer-checked:bg-yellow-300 rounded transition-colors" />
-        <CheckIcon className="w-3 h-3 opacity-0 peer-checked:opacity-100 text-yellow-800 transition-opacity" />
+        <div className="absolute inset-0 -z-10 bg-white dark:bg-gray-750 peer-checked:bg-gray-500 rounded transition-colors" />
+        <CheckIcon className="w-3 h-3 opacity-0 peer-checked:opacity-100 text-gray-200 transition-opacity" />
       </div>
     </label>
   );

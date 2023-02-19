@@ -1,12 +1,13 @@
 import React from "react";
 import cl from "clsx";
 import { useBranchIsFocused } from "./Branch";
-import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
+import {
+  CheckIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+} from "@heroicons/react/24/outline";
 import { Menu } from "@headlessui/react";
 import { MenuTransition } from "../../elements/transitions/MenuTransition";
-
-const VariantContext = React.createContext<string>("default");
-const useVariant = () => React.useContext(VariantContext);
 
 function Content({
   children,
@@ -14,7 +15,6 @@ function Content({
   buttons,
   header,
   toolbar,
-  variant = "default",
   className,
 }: {
   children: React.ReactNode;
@@ -22,65 +22,63 @@ function Content({
   header?: React.ReactNode;
   buttons?: React.ReactNode;
   toolbar?: React.ReactNode;
-  variant?: string;
   className?: string;
 }) {
   const { isFocused } = useBranchIsFocused();
 
   return (
-    <VariantContext.Provider value={variant}>
-      <div
-        className={cl(
-          "inset-0 absolute transition-[opacity,transform] ease-out overflow-y-auto no-scrollbar",
-          "bg-white dark:bg-gray-850 text-gray-700 dark:text-white", // for when transparency is added on non-focus
-          selected
-            ? "opacity-100 translate-x-0"
-            : "opacity-0 translate-x-10 pointer-events-none"
-        )}
-      >
-        {header && (
+    <div
+      className={cl(
+        "inset-0 absolute transition-[opacity,transform] ease-out overflow-y-auto no-scrollbar",
+        "bg-white dark:bg-gray-850 text-gray-700 dark:text-white", // for when transparency is added on non-focus
+        selected
+          ? "opacity-100 translate-x-0"
+          : "opacity-0 translate-x-10 pointer-events-none"
+      )}
+    >
+      {header && (
+        <div
+          className={cl(
+            "pt-12 pb-6 px-5 mb-6 sticky -top-10 z-50 border-b border-gray-100 dark:border-gray-800",
+            "bg-white dark:bg-gray-850" // need bg color because it is sticky
+            // isFocused ? "dark:bg-gray-850" : "dark:bg-gray-900"
+            // "bg-gradient-to-b from-gray-850 to-rose-800"
+          )}
+        >
           <div
             className={cl(
-              "pt-12 pb-6 px-5 mb-6 sticky -top-10 z-50 border-b border-gray-100 dark:border-gray-800",
-              "bg-white dark:bg-gray-850" // need bg color because it is sticky
-              // isFocused ? "dark:bg-gray-850" : "dark:bg-gray-900"
-              // "bg-gradient-to-b from-gray-850 to-rose-800"
+              "flex justify-between max-w-6xl",
+              isFocused ? "opacity-100" : "opacity-50"
             )}
           >
-            <div
-              className={cl(
-                "flex justify-between max-w-6xl",
-                isFocused ? "opacity-100" : "opacity-50"
-              )}
-            >
-              <div className="text-gray-800 text-2xl dark:text-white">
-                {header}
-              </div>
-              {buttons}
+            <div className="text-gray-800 text-2xl leading-none dark:text-white">
+              {header}
             </div>
-            <div className={isFocused ? "opacity-100" : "opacity-50"}>
-              {toolbar}
-            </div>
+            {buttons}
           </div>
-        )}
-        {!header && toolbar && (
-          <div
-            className={cl(
-              "px-5 py-0",
-              isFocused ? "opacxity-100" : "opacity-50"
-            )}
-          >
+          <div className={isFocused ? "opacity-100" : "opacity-50"}>
             {toolbar}
           </div>
-        )}
-        <div className={cl(className ?? "max-w-6xl")}>{children}</div>
-      </div>
-    </VariantContext.Provider>
+        </div>
+      )}
+      {!header && toolbar && (
+        <div
+          className={cl("px-5 py-0", isFocused ? "opacxity-100" : "opacity-50")}
+        >
+          {toolbar}
+        </div>
+      )}
+      <div className={cl(className ?? "max-w-6xl")}>{children}</div>
+    </div>
   );
 }
 
 const Toolbar = ({ children }: { children: React.ReactNode }) => {
-  return <div className="max-w-6xl mt-5 flex gap-2 pl-9">{children}</div>;
+  return (
+    <div className="max-w-6xl mt-3.5 flex gap-2 pl-9 overflow-x-auto no-scrollbar">
+      {children}
+    </div>
+  );
 };
 
 const ToolbarButton = React.forwardRef<
@@ -96,9 +94,10 @@ const ToolbarButton = React.forwardRef<
       ref={ref}
       {...props}
       className={cl(
-        "flex-center gap-1.5 text-xs font-light py-1 px-2 rounded text-white/80 transition-colors",
-        active ? "bg-white/20" : "bg-white/10 hover:bg-white/20",
-        props.className
+        "ring-button text-gray-800 dark:text-white flex-center gap-1.5 text-xs font-light py-1 px-2 rounded transition-colors whitespace-nowrap",
+        active ? "bg-button-active" : "bg-button",
+        props.className ||
+          "text-opacity-90 hover:text-opacity-100 dark:text-opacity-90 dark:hover:text-opacity-100"
       )}
     >
       {Icon && <Icon className="w-3 h-3" />}
@@ -113,34 +112,45 @@ const ToolbarButton = React.forwardRef<
   );
 });
 
-function ToolbarMenu<T extends { label: string }>({
+function ToolbarMenu<T extends { label: string; disabled?: boolean }>({
   icon,
   label,
   selected,
   options,
   onSelect,
   onClear,
+  multi,
 }: {
   icon: React.FC<{ className: string }>;
   label: string;
-  selected?: T | null;
+  selected?: T[] | T | null;
   options: T[];
   onSelect: (value: T) => void;
   onClear?: () => void;
+  multi?: boolean;
 }) {
+  const selectedArray = selected
+    ? Array.isArray(selected)
+      ? selected
+      : [selected]
+    : null;
+
   return (
     <Menu>
       {({ open }) => (
-        <div className="block">
+        <div className="block text-sm font-light">
           <Menu.Button
             as={ToolbarButton}
             active={open}
             data-focus-remain="true"
             chevron
             icon={icon}
-            className={cl(!selected && "text-white/50")}
+            className={cl(
+              (!selectedArray || selectedArray.length === 0) &&
+                "text-opacity-50 dark:text-opacity-50"
+            )}
           >
-            {selected?.label ?? label}
+            {selectedArray?.map((el) => el.label).join(", ") || label}
           </Menu.Button>
           <MenuTransition show={open} className="absolute z-10">
             <Menu.Items
@@ -153,7 +163,7 @@ function ToolbarMenu<T extends { label: string }>({
                   {({ active }) => (
                     <div
                       className={cl(
-                        "py-1.5 px-3 hover:bg-gray-700 font-light",
+                        "py-1.5 px-3 hover:bg-gray-750 font-light",
                         active && "bg-teal-700"
                       )}
                       onClick={onClear}
@@ -166,17 +176,26 @@ function ToolbarMenu<T extends { label: string }>({
               {options.map((el) => (
                 <Menu.Item>
                   {({ active }) => (
-                    <div
+                    <button
                       className={cl(
-                        "py-1.5 px-3 hover:bg-gray-700 font-light",
-                        active && "bg-teal-700"
+                        "py-1.5 px-2 hover:bg-gray-750 font-light flex items-center gap-2",
+                        active && "bg-gray-750",
+                        el.disabled && "text-gray-500"
                       )}
-                      onClick={() => {
-                        onSelect(el);
+                      onClick={(ev) => {
+                        if (multi || el.disabled) ev.preventDefault();
+                        if (!el.disabled) onSelect(el);
                       }}
                     >
-                      {el.label}
-                    </div>
+                      {multi && (
+                        <div className="w-4 h-4 flex-center rounded bg-gray-700">
+                          {selectedArray?.some((s) => s === el) ? (
+                            <CheckIcon className="w-3 h-3" />
+                          ) : null}
+                        </div>
+                      )}
+                      <span className="truncate">{el.label}</span>
+                    </button>
                   )}
                 </Menu.Item>
               ))}
@@ -205,20 +224,13 @@ const Button = React.forwardRef<
     active?: boolean;
   }
 >(({ icon: Icon, active, ...props }, ref) => {
-  const variant = useVariant();
-
   return (
     <button
       ref={ref}
       {...props}
       className={cl(
-        "flex-center rounded-md h-8 px-3 transition-colors text-sm hover:shadow-sm outline-0 outline focus-visible:outline-2 outline-offset-2 outline-teal-600",
-        Icon &&
-          cl(
-            "hover:bg-teal-100 dark:hover:bg-teal-600 hover:text-teal-600 dark:hover:text-teal-100 hover:shadow-teal-500/20",
-            active &&
-              "bg-teal-100 text-teal-600 dark:bg-teal-600 dark:text-teal-100"
-          ),
+        "flex-center rounded-md h-7 px-3 text-sm outline-0 outline focus-visible:outline-2 outline-offset-2 outline-teal-600 transition-shadow",
+        Icon && cl("hover:ring-1 ring-inset ring-gray-200 dark:ring-gray-700"),
         props.className
       )}
     >

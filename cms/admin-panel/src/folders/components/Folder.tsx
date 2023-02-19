@@ -57,10 +57,10 @@ export default function FolderUI({
 
   const colors = {
     data: cl(
-      "text-gray-700 dark:text-white bg-gray-50 dark:bg-gray-850",
+      "text-gray-700 dark:text-white bg-gray-50 dark:bg-gray-850", // dark:bg-gradient-to-b dark:from-gray-825 dark:to-gray-835
       isOpen
         ? "border-gray-300 dark:border-gray-600"
-        : "border-gray-100 hover:border-gray-300 dark:border-gray-800 hover:dark:border-gray-600"
+        : "border-gray-100 hover:border-gray-300 dark:border-gray-750 hover:dark:border-gray-600"
     ),
     app: cl(
       "dark:text-white dark:text-yellow-300 bg-yellow-100 dark:bg-gray-850 dark:border-yellow-300/40",
@@ -73,7 +73,7 @@ export default function FolderUI({
   }[folder.type];
 
   return (
-    <div className="w-56 child:last:mb-10">
+    <div className="w-56">
       <Link
         ref={ref as any}
         to={navigateTab(to, { navigate: false })}

@@ -5,6 +5,7 @@ import type {
   LibraryConfig,
 } from "@storyflow/frontend/types";
 import { SWRClient } from "./client";
+import { useFolderDomains } from "./folders/folder-domains";
 
 const ClientConfigContext = React.createContext<Record<
   string,
@@ -52,18 +53,6 @@ export const getConfigFromType = (type: string, libraries: LibraryConfig[]) => {
   return result;
 };
 
-export function useClientConfig(key?: string): ClientConfig {
-  const ctx = React.useContext(ClientConfigContext);
-  if (!ctx) throw new Error("useClientConfig cannot find provider.");
-  return (
-    (key ? ctx[key] : Object.values(ctx)[0]) ?? {
-      builderUrl: "",
-      revalidateUrl: "",
-      libraries: [defaultLibrary],
-    }
-  );
-}
-
 const defaultLibrary: LibraryConfig = {
   name: "",
   label: "Default",
@@ -84,6 +73,43 @@ const defaultLibrary: LibraryConfig = {
     },
   },
 };
+
+const defaultClientConfig: ClientConfig = {
+  builderUrl: "",
+  revalidateUrl: "",
+  libraries: [defaultLibrary],
+};
+
+export function useClientConfig(key?: string): ClientConfig {
+  const configs = React.useContext(ClientConfigContext);
+  if (!configs) {
+    throw new Error("useClientConfig cannot find provider.");
+  }
+
+  const domains = useFolderDomains();
+
+  if (!domains) {
+    throw new Error("useClientConfig must be used within a FolderPage");
+  }
+
+  // TODO should return union of all config libraries
+
+  if (!Object.keys(configs ?? []).length) {
+    return defaultClientConfig;
+  }
+
+  if (key) {
+    return configs[key];
+  }
+
+  const main = configs[domains[0]];
+
+  return {
+    builderUrl: main?.builderUrl ?? "",
+    revalidateUrl: main?.revalidateUrl ?? "",
+    libraries: main?.libraries ?? [defaultLibrary],
+  };
+}
 
 export function ClientConfigProvider({
   children,
@@ -110,7 +136,17 @@ export function ClientConfigProvider({
             : configUrl;
 
           if (process.env.NODE_ENV === "development") {
-            configUrl = "http://localhost:3003/api/config";
+            configUrl =
+              {
+                "https://www.storyflow.dk/api/config":
+                  "http://localhost:3000/api/config",
+                "https://storyflow-mrvase.vercel.app/api/config":
+                  "http://localhost:3000/api/config2",
+                "https://ltc-mrvase.vercel.app/api/config":
+                  "http://localhost:3002/api/config",
+                "https://www.paaskelejr.dk/api/config":
+                  "http://localhost:3003/api/config",
+              }[configUrl] ?? configUrl;
           }
 
           if (!configUrl) return;

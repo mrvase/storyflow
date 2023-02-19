@@ -35,13 +35,17 @@ function LayoutElementDecorator({
 
   const config = getConfigFromType(value.type, libraries);
 
+  const libraryLabel = libraries.find(
+    (el) => el.name === value.type.split(":")[0]
+  )?.label;
+
   return (
     <div className="py-0.5">
       <div
         className={cl(
           "relative text-gray-800 dark:text-gray-200",
-          "flex rounded px-2 py-0.5 text-sm bg-gray-100 dark:bg-gray-800 selection:bg-transparent",
-          isSelected && "ring-2 ring-amber-300",
+          "flex items-center rounded px-2 py-0.5 text-sm bg-gray-100 dark:bg-gray-800 selection:bg-transparent",
+          isSelected && "ring-1 ring-amber-300",
           !isSelected && "ring-1 ring-gray-200 dark:ring-gray-700",
           isPseudoSelected && caretClasses
         )}
@@ -67,6 +71,7 @@ function LayoutElementDecorator({
         }}
       >
         {config?.label ?? value.type}
+        <span className="text-xs text-gray-400 ml-auto">{libraryLabel}</span>
         {/*<button className="group h-full px-2 hover:bg-white/5 flex-center gap-1 rounded cursor-default transition-colors">
           {component.label ?? value.type}{" "}
           <ChevronDownIcon className="w-3 h-3 opacity-0 group-hover:opacity-75 transition-opacity" />

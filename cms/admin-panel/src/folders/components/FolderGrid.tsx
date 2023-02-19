@@ -67,6 +67,12 @@ export default function FolderGrid({
 }) {
   const children = getFolderChildren(parent?.children ?? []);
 
+  if (children.length === 0) {
+    return (
+      <div className="text-gray-300 font-light ml-9 text-sm">Ingen mapper</div>
+    );
+  }
+
   const childrenAsFolders = children.map(
     ({ id }) => (folders ?? []).find((folder) => folder.id === id)!
   );
@@ -112,7 +118,7 @@ export default function FolderGrid({
       disabled={disabled}
       onChange={onChange}
     >
-      <div className={cl("flex flex-wrap gap-2 pl-7")}>
+      <div className={cl("flex flex-wrap gap-2 pl-9")}>
         {childrenAsFolders.map((folder, index) => (
           <FolderItem folder={folder} index={index} key={folder.id} />
         ))}

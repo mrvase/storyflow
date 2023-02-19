@@ -8,13 +8,21 @@ export type FolderMutation =
   | {
       type: "reorder";
       children: FolderChild[];
-      insert?: {
-        id: string;
-        label: string;
-        type: "data" | "app";
-      };
+      insert?:
+        | {
+            id: string;
+            label: string;
+            type: "data";
+          }
+        | {
+            id: string;
+            label: string;
+            type: "app";
+            frontId: DocumentId;
+          };
     }
   | { name: "label"; value: string }
+  | { name: "domains"; value: string[] }
   | { name: "template"; value: string };
 
 export type FolderOperation = {
@@ -44,7 +52,7 @@ const optimisticUpdate = (ps: DBFolder[], input: FolderOperation[]) => {
   >();
   const inserts = new Map<string, DBFolder>();
 
-  const setProp = (key: string, name: string, value: string) => {
+  const setProp = (key: string, name: string, value: any) => {
     const insert = inserts.get(key);
     if (insert) {
       inserts.set(key, { ...insert, [name]: value });

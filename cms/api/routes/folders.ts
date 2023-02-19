@@ -1,10 +1,17 @@
 import { createProcedure, createRoute } from "@sfrpc/server";
 import { success } from "@storyflow/result";
 import { z } from "zod";
-import { DBFolder, DocumentId, FolderChild } from "@storyflow/backend/types";
+import {
+  DBDocument,
+  DBFolder,
+  DocumentId,
+  FolderChild,
+} from "@storyflow/backend/types";
 import { ObjectId } from "mongodb";
 import clientPromise from "../mongo/mongoClient";
 import { globals } from "../middleware/globals";
+import { LABEL_ID, URL_ID } from "@storyflow/backend/templates";
+import { computeFieldId } from "@storyflow/backend";
 
 export const removeObjectId = <T extends { _id: any }>({
   _id,
@@ -65,12 +72,17 @@ export const folders = createRoute({
                     id: z.string(),
                     label: z.string(),
                     type: z.union([z.literal("data"), z.literal("app")]),
+                    frontId: z.string().optional(),
                   })
                   .optional(),
               }),
               z.object({
                 name: z.string(),
                 value: z.string(),
+              }),
+              z.object({
+                name: z.string(),
+                value: z.array(z.string()),
               }),
             ])
           ),
@@ -79,7 +91,6 @@ export const folders = createRoute({
     },
     async mutation(input, { dbName }) {
       const db = (await clientPromise).db(dbName);
-      console.log("FOLDER UPDATE", input);
 
       const updates = new Map<
         string,
@@ -88,11 +99,13 @@ export const folders = createRoute({
           label?: string;
           template?: string;
           children?: FolderChild[];
+          domains?: string[];
         }
       >();
+
       const inserts = new Map<string, DBFolder>();
 
-      const setProp = (key: string, name: string, value: string) => {
+      const setProp = (key: string, name: string, value: any) => {
         const insert = inserts.get(key);
         if (insert) {
           inserts.set(key, { ...insert, [name]: value });
@@ -143,17 +156,22 @@ export const folders = createRoute({
       });
 
       const updatePromises = Array.from(updates.values()).map(
-        ({ id, label, template, children }) => {
+        ({ id, label, template, domains, children }) => {
           return db
             .collection<DBFolder>("folders")
             .findOneAndUpdate(
               { id },
               {
-                ...((label !== undefined || template !== undefined) && {
+                ...((label !== undefined ||
+                  template !== undefined ||
+                  domains !== undefined) && {
                   $set: {
                     ...(label !== undefined && { label }),
                     ...(template !== undefined && {
                       template: template as DocumentId,
+                    }),
+                    ...(domains !== undefined && {
+                      domains,
                     }),
                   },
                 }),
@@ -183,18 +201,57 @@ export const folders = createRoute({
         );
       }
 
-      const insertValues = Array.from(inserts.values());
+      const insertFolders = Array.from(inserts.values());
 
-      const insertPromise = db
+      const insertDocuments = insertFolders
+        .filter(
+          (el): el is typeof el & { frontId: DocumentId } =>
+            "frontId" in el && typeof el.frontId === "string"
+        )
+        .map((el) => {
+          const article: DBDocument = {
+            id: el.frontId,
+            folder: el.id,
+            versions: {},
+            config: [],
+            compute: [
+              {
+                id: computeFieldId(el.frontId, URL_ID),
+                value: [{ "(": true }, "", "", { ")": "url" }],
+              },
+              {
+                id: computeFieldId(el.frontId, LABEL_ID),
+                value: ["Forside"],
+              },
+            ],
+            values: {
+              [URL_ID]: [""],
+              [LABEL_ID]: ["Forside"],
+            },
+          };
+          return article;
+        });
+
+      const insertFoldersPromise = db
         .collection<DBFolder>("folders")
-        .insertMany(insertValues);
+        .insertMany(insertFolders);
 
-      const [insertResult, ...updateResults] = await Promise.all([
-        insertPromise,
-        ...updatePromises,
-      ]);
+      const insertDocumentsPromise =
+        insertDocuments.length === 0
+          ? { acknowledged: true }
+          : db.collection<DBDocument>("articles").insertMany(insertDocuments);
 
-      if (!insertResult.acknowledged) {
+      const [insertFoldersResult, insertDocumentsResult, ...updateResults] =
+        await Promise.all([
+          insertFoldersPromise,
+          insertDocumentsPromise,
+          ...updatePromises,
+        ]);
+
+      if (
+        !insertFoldersResult.acknowledged ||
+        !insertDocumentsResult.acknowledged
+      ) {
         throw new Error("Fejlede");
       }
 
@@ -202,7 +259,7 @@ export const folders = createRoute({
         ...updateResults.filter(
           (el): el is Exclude<typeof el, null> => el !== null
         ),
-        ...insertValues,
+        ...insertFolders,
       ];
 
       return success(array);

@@ -6,6 +6,7 @@ import {
   ChevronRightIcon,
   ChevronUpDownIcon,
   LinkIcon,
+  LockClosedIcon,
 } from "@heroicons/react/24/outline";
 import React from "react";
 import { useFieldFocus } from "../field-focus";
@@ -56,6 +57,8 @@ export function FieldContainer({
   let props: any = {};
   let dragHandleProps: any;
 
+  let isFocused = false;
+
   if (!dragHandlePropsFromProps) {
     const {
       dragHandleProps: dragHandlePropsFromHook,
@@ -69,22 +72,19 @@ export function FieldContainer({
 
     const style = getTranslateDragEffect(state);
 
-    const { isFocused, handlers } = useIsFocused({
+    const { isFocused: isFocused_, handlers } = useIsFocused({
       multiple: true,
       id: fieldConfig.id,
     });
+
+    isFocused = isFocused_;
 
     const dragProps = {
       ref,
       style,
     };
 
-    Object.assign(props, dragProps, handlers, {
-      className: cl(
-        isFocused && "focused"
-        // isEditing && isFocused && "ring-1 ring-yellow-400 ring-inset"
-      ),
-    });
+    Object.assign(props, dragProps, handlers);
 
     dragHandleProps = dragHandlePropsFromHook;
   } else {
@@ -98,13 +98,14 @@ export function FieldContainer({
           {...props}
           className={cl(
             "relative grow shrink basis-0 group/container",
-            props.className
+            isFocused && "focused"
           )}
         >
           <LabelBar
             fieldConfig={fieldConfig}
             template={template}
             dragHandleProps={dragHandleProps}
+            isFocused={isFocused}
           />
           {children}
         </div>
@@ -137,10 +138,12 @@ function LabelBar({
   fieldConfig,
   dragHandleProps,
   template,
+  isFocused,
 }: {
   fieldConfig: FieldConfig;
   dragHandleProps: any;
   template: DocumentId;
+  isFocused: boolean;
 }) {
   const [path, setPath] = useBuilderPath();
 
@@ -154,17 +157,19 @@ function LabelBar({
   const isOpen = full.endsWith(`/c-${restoreId(fieldConfig.id)}`);
   const [, specialFieldConfig] = getDefaultField(fieldConfig.id);
 
+  const fullscreen = () => {
+    navigateTab(
+      isOpen ? `${current}` : `${current}/c-${restoreId(fieldConfig.id)}`
+    );
+  };
+
   return (
     <div
       className={cl(
         "flex px-5 pt-5",
         path.length === 0 ? "h-12 pb-2" : "h-[3.75rem] pb-5"
       )}
-      onDoubleClick={() => {
-        navigateTab(
-          isOpen ? `${current}` : `${current}/c-${restoreId(fieldConfig.id)}`
-        );
-      }}
+      onDoubleClick={fullscreen}
     >
       <Dot
         id={fieldConfig.id}
@@ -188,6 +193,19 @@ function LabelBar({
           {specialFieldConfig.label}
         </div>
       )}
+      <button
+        className={cl(
+          "ml-auto text-sm font-light flex-center -m-1 p-1",
+          isFocused
+            ? "opacity-75"
+            : "opacity-0 group-hover/container:opacity-50",
+          // "opacity-0 group-hover/container:opacity-50",
+          "group-hover/container:hover:opacity-100 transition-opacity"
+        )}
+        onClick={fullscreen}
+      >
+        <ChevronUpDownIcon className="w-4 h-4 rotate-45" />
+      </button>
     </div>
   );
 }
@@ -251,11 +269,15 @@ function Dot({
   const { current, full } = useSegment();
   const isOpen = full.endsWith(`/c-${restoreId(id)}`);
 
+  /*
   const Icon = isOpen
     ? ArrowsPointingInIcon
     : isEditable && isDraggable
     ? ChevronUpDownIcon
     : ArrowsPointingOutIcon;
+  */
+
+  const Icon = isEditable ? ChevronUpDownIcon : LockClosedIcon;
 
   const { tabs } = useTabs();
 
@@ -272,15 +294,21 @@ function Dot({
         <div
           {...dragHandleProps}
           className="group w-6 h-6 p-1 -m-1 translate-y-0.5"
+          /*
           onClick={() => {
             navigateTab(
               isOpen ? `${current}` : `${current}/c-${restoreId(id)}`
             );
           }}
+          */
         >
           <div
             className={cl(
               "flex-center w-4 h-4 rounded-full group-hover:scale-[1.5] transition-transform",
+              !isEditable
+                ? "bg-gray-200 dark:bg-teal-600/50 dark:group-hover:bg-teal-800/50"
+                : "bg-gray-200 dark:bg-gray-600/50"
+              /*
               isOpen
                 ? "bg-gray-200 dark:bg-gray-600/50 dark:group-hover:bg-red-800/50"
                 : !isEditable
@@ -288,16 +316,21 @@ function Dot({
                 : isDraggable
                 ? "bg-gray-200 dark:bg-gray-600/50"
                 : "bg-gray-200 dark:bg-gray-600/50 dark:group-hover:bg-sky-800/50"
+              */
             )}
           >
             <div
               className={cl(
                 "flex-center w-2 h-2 m-1 rounded-full group-hover:scale-[2] transition-[transform,background-color]",
+                !isEditable && "dark:group-hover:bg-teal-800",
+                "dark:bg-white/20"
+                /*
                 isOpen
                   ? "dark:bg-white/20 dark:group-hover:bg-red-800"
                   : isDraggable && isEditable
                   ? "dark:bg-white/20"
                   : "dark:bg-white/20 dark:group-hover:bg-sky-800"
+                */
               )}
             >
               <Icon className="w-[0.3rem] h-1.5 opacity-0 group-hover:opacity-75 transition-opacity" />

@@ -5,6 +5,7 @@ import { useRouter } from "next/router";
 import React from "react";
 import { client } from "../client";
 import { api } from "api/users";
+import Loader from "../components/Loader";
 
 export const getServerSideProps: GetServerSideProps = async ({ req, res }) => {
   const user = await api.users.getUser.query.call({ context: { req, res } });
@@ -46,39 +47,50 @@ export default function Page() {
   return (
     <div className="absolute inset-0 bg-gray-900 text-white flex">
       <div className="w-full max-w-lg flex items-center">
-        <form
-          onSubmit={(ev) => {
-            ev.preventDefault();
-            const data = new FormData(ev.currentTarget);
-            login(data.get("email") as string);
-          }}
-          className="w-full px-12 flex flex-col gap-24"
-        >
-          <h1 className="text-4xl text-gray-200">Log ind</h1>
-          <div>
-            <div className="text-sm text-gray-200">Email</div>
-            <input
-              type="text"
-              name="email"
-              ls-ignore="true"
-              className="w-full py-2.5 border-b-2 border-white border-opacity-50 focus:border-opacity-100 bg-transparent outline-none transition-colors"
-              autoComplete="off"
-            />
-          </div>
-          <div className="w-full flex flex-col gap-5">
-            <button
-              type="submit"
-              className="w-full rounded-full bg-gray-200 hover:bg-white text-gray-900 text-sm text-center py-3 transition-colors"
-            >
-              Log ind
-            </button>
-            <div className="w-full text-center text-sm">
-              <Link href="registrer" className="hover:underline">
-                Opret dig
-              </Link>
+        {status === "login" ? (
+          <form
+            onSubmit={(ev) => {
+              ev.preventDefault();
+              const data = new FormData(ev.currentTarget);
+              login(data.get("email") as string);
+            }}
+            className="w-full px-12 flex flex-col gap-24"
+          >
+            <h1 className="text-4xl text-gray-200">Log ind</h1>
+            {error && (
+              <div className="bg-red-600 p-5 rounded text-white">
+                Mislykkedes
+              </div>
+            )}
+            <div>
+              <div className="text-sm text-gray-200">Email</div>
+              <input
+                type="text"
+                name="email"
+                ls-ignore="true"
+                className="w-full py-2.5 border-b-2 border-white border-opacity-50 focus:border-opacity-100 bg-transparent outline-none transition-colors"
+                autoComplete="off"
+              />
             </div>
+            <div className="w-full flex flex-col gap-5">
+              <button
+                type="submit"
+                className="w-full rounded-full bg-gray-200 h-12 hover:bg-white text-gray-900 text-sm flex-center transition-colors"
+              >
+                {loading ? <Loader /> : "Log ind"}
+              </button>
+              <div className="w-full text-center text-sm">
+                <Link href="registrer" className="hover:underline">
+                  Opret dig
+                </Link>
+              </div>
+            </div>
+          </form>
+        ) : (
+          <div className="px-12">
+            <h1 className="text-4xl text-gray-200">Email sendt!</h1>
           </div>
-        </form>
+        )}
       </div>
       <div className="w-full h-full bg-gradient-to-br from-fuchsia-600 to-pink-600 flex items-center">
         <div className="flex-col px-24">

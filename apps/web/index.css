@@ -1,6 +1,31 @@
 @config "./tailwind.vite.config.js";
 @tailwind base;
 @tailwind components;
+
+.bg-button {
+  @apply bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-700/60 dark:to-gray-725/60;
+}
+
+.bg-button-teal {
+  @apply bg-gradient-to-b from-teal-50 to-teal-100 dark:from-teal-600 dark:to-teal-700;
+}
+
+.bg-button-yellow {
+  @apply bg-gradient-to-b from-yellow-50 to-yellow-100 dark:from-yellow-500 dark:to-yellow-600;
+}
+
+.bg-button-active {
+  @apply bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-700/60 dark:to-gray-725/60;
+}
+
+.ring-button {
+  @apply ring-1 ring-inset ring-black/5 dark:ring-white/5 hover:ring-black/20 dark:hover:ring-white/20;
+}
+
+.text-button {
+  @apply text-gray-800 dark:text-white text-opacity-90 dark:hover:text-opacity-100;
+}
+
 @tailwind utilities;
 
 body,

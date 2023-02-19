@@ -50,7 +50,14 @@ type NameToType2<
 
 type AddConfigAsChild<A> = {
   [Key in keyof A]: A[Key] extends PropTypes["children"]
-    ? (A[Key][number] | ExtendedPartialConfig<any>)[]
+    ? (
+        | A[Key][number]
+        | ExtendedPartialConfig<any>
+        | {
+            config: ExtendedPartialConfig<any>;
+            story: StoryConfig<any>;
+          }
+      )[]
     : A[Key];
 };
 
@@ -58,10 +65,14 @@ type Props2<T extends readonly PropConfig[]> = {
   [Key in T[number]["name"]]: NameToType2<T, T[number], Key>;
 };
 
-type StoryConfig<T extends readonly PropConfig[]> = {
+export type StoryProps<T extends readonly PropConfig[]> = Partial<
+  AddConfigAsChild<Props2<T>>
+>;
+
+export type StoryConfig<T extends readonly PropConfig[]> = {
   label?: string;
   canvas?: string;
-  props: Partial<AddConfigAsChild<Props2<T>>>;
+  props: StoryProps<T>;
 };
 
 export type Story = {

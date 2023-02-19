@@ -12,7 +12,11 @@ module.exports = {
       ...colors,
       gray: {
         ...colors.gray,
+        ["700"]: "rgb(55, 65, 81)",
+        ["725"]: "rgb(48, 58, 77)", // used for subtle gradient from 700 to 725
         ["750"]: "rgb(40, 53, 73)",
+        ["825"]: "rgb(28, 39, 56)",
+        ["835"]: "rgb(26, 36, 51)",
         ["850"]: "rgb(24, 33, 47)",
         ["900"]: "rgb(17, 23, 33)",
         ["925"]: "rgb(16, 22, 32)",
@@ -23,6 +27,8 @@ module.exports = {
       animation: {
         load: "load 750ms ease-in-out infinite",
         blink: "blink 1000ms steps(1) infinite",
+        "ping-lg": "ping-lg 2s cubic-bezier(0, 0, 0.2, 1) infinite",
+        "ping-lg-delay": "ping-lg 2s cubic-bezier(0, 0, 0.2, 1) infinite 0.1s",
       },
       keyframes: {
         load: {
@@ -33,6 +39,10 @@ module.exports = {
         blink: {
           "0%": { opacity: 1 },
           "50%": { opacity: 0 },
+        },
+        "ping-lg": {
+          "0%": { transform: "scale(1)", opacity: 1 },
+          "75%, 100%": { transform: "scale(5)", opacity: 0 },
         },
       },
     },

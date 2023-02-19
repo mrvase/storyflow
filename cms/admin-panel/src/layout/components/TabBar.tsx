@@ -11,6 +11,7 @@ import {
   Bars3Icon,
   AdjustmentsHorizontalIcon,
   ChevronLeftIcon,
+  WrenchScrewdriverIcon,
 } from "@heroicons/react/24/outline";
 import TabButton from "./TabButton";
 import { Tab } from "../types";
@@ -38,15 +39,19 @@ export default function TabBar({
     true
   );
 
+  const [isEditing, setIsEditing] = useLocalStorage<boolean>(
+    "editing-articles",
+    false
+  );
+
   return (
     <div
       className={cl("flex px-2 pb-2 gap-2", "text-gray-600 dark:text-gray-200")}
     >
       <button
         className={cl(
-          "text-sm h-10 w-10 shrink-0 flex-center rounded-md border border-gray-200 dark:border-gray-800 transition-colors",
-          "bg-white hover:bg-gray-50 hover:text-white text-gray-600",
-          "dark:bg-gray-850 dark:hover:bg-gray-800 dark:text-white dark:hover:text-white"
+          "text-sm h-10 w-10 shrink-0 flex-center rounded-md transition-[color,box-shadow]",
+          "bg-button ring-button text-button"
         )}
         onClick={() => setNavIsOpen((ps) => !ps)}
       >
@@ -55,6 +60,16 @@ export default function TabBar({
         ) : (
           <Bars3Icon className="w-4 h-4" />
         )}
+      </button>
+      <button
+        className={cl(
+          "text-sm h-10 w-10 shrink-0 flex-center rounded-md transition-[color,background-color,box-shadow]",
+          "ring-button text-button",
+          isEditing ? "bg-button-yellow" : "bg-button"
+        )}
+        onClick={() => setIsEditing((ps) => !ps)}
+      >
+        <WrenchScrewdriverIcon className="w-4 h-4" />
       </button>
       <CommandLine />
       {/*

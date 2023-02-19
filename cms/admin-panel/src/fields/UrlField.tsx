@@ -107,12 +107,12 @@ export default function UrlField({
     );
   }
 
+  const { article, imports } = useArticlePageContext();
+
   const initialValue = React.useMemo(
     () => (value?.length > 0 ? value : getConfig("url").initialValue),
     []
   );
-
-  const { imports } = useArticlePageContext();
 
   const client = useClient();
 
@@ -380,7 +380,7 @@ export default function UrlField({
           <div className="flex items-center pb-5">
             <button
               className="p-1 -ml-1 mr-4 opacity-50 hover:opacity-100 transition-opacity"
-              onClick={() => ctx.addArticleWithUrl({ id, value: initialValue })}
+              onClick={() => ctx.addArticleWithUrl(article)}
             >
               <PlusIcon className="w-4 h-4" />
             </button>

@@ -1,9 +1,10 @@
 import React from "react";
-import { ComputationRecord } from "@storyflow/backend/types";
+import { ComputationRecord, DBDocument } from "@storyflow/backend/types";
 
 export const ArticlePageContext = React.createContext<{
   id: string;
   imports: ComputationRecord;
+  article: DBDocument;
 } | null>(null);
 
 export const useArticlePageContext = () => {

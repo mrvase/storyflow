@@ -494,7 +494,6 @@ export const articles = createRoute({
         const resolvers = new Set<(value: DBDocument[]) => void>();
 
         const fetch = async () => {
-          console.log("IDS", Array.from(collectedIds));
           const array = await db
             .collection("articles")
             .find<WithId<DBDocument>>({

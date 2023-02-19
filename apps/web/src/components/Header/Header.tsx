@@ -1,6 +1,6 @@
 import React from "react";
 import { cms } from "@storyflow/react";
-import { createComponent } from "@storyflow/react/config";
+import { modifyChild, createComponent } from "@storyflow/react/config";
 import Link from "next/link";
 import { PopoverGroup } from "./(PopoverGroup)";
 import { HeaderButton } from "./HeaderButton";
@@ -58,7 +58,12 @@ export const Header = createComponent(
     stories: [
       {
         props: {
-          items: [HeaderPopover, HeaderItem, HeaderItem, HeaderPopover],
+          items: [
+            HeaderPopover,
+            HeaderItem,
+            modifyChild(HeaderItem, 0, { label: "Et andet link" }),
+            HeaderPopover,
+          ],
           buttons: [HeaderItem, HeaderButton],
         },
       },

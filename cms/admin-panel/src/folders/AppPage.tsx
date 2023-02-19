@@ -27,16 +27,25 @@ import {
   Computation,
   DBDocument,
   FieldId,
+  FlatComputation,
+  ComputationRecord,
 } from "@storyflow/backend/types";
-import { getComputationRecord } from "@storyflow/backend/flatten";
-import { getConfig } from "shared/fieldConfig";
+import {
+  getComputationRecord,
+  getFlatComputationRecord,
+} from "@storyflow/backend/flatten";
+import { fieldConfig, getConfig } from "shared/fieldConfig";
 import { URL_ID } from "@storyflow/backend/templates";
 import { useClient } from "../client";
 import { useClientConfig } from "../client-config";
 import { unwrap } from "@storyflow/result";
+import { useLocalStorage } from "../state/useLocalStorage";
+import { DomainsButton } from "./FolderPage";
+import { FolderDomainsContext, FolderDomainsProvider } from "./folder-domains";
+import { inputConfig } from "shared/inputConfig";
 
 const AppPageContext = React.createContext<{
-  addArticleWithUrl: (parentUrl: { id: FieldId; value: Computation }) => void;
+  addArticleWithUrl: (parent: DBDocument) => void;
   urls: { id: string; value: string; indent: number }[];
 } | null>(null);
 
@@ -44,6 +53,43 @@ export const useAppPageContext = () => {
   const ctx = React.useContext(AppPageContext);
   if (!ctx) throw new Error("FolderPageContext.Provider not found.");
   return ctx;
+};
+
+const getUrlImports = (article: DBDocument) => {
+  const record = getComputationRecord(article);
+  const imports = new Set<ComputationBlock>();
+
+  const recursive = (value: Computation) => {
+    inputConfig.getImportIds(value).forEach((id) => {
+      const block = article.compute.find((el) => el.id === id) ?? {
+        id,
+        value: getConfig("url").initialValue as FlatComputation,
+      };
+      imports.add(block);
+      const computation = record[id] ?? getConfig("url").initialValue;
+      recursive(computation);
+    });
+  };
+
+  const id = computeFieldId(article.id, URL_ID);
+  const value = record[id];
+
+  if (value) recursive(value);
+
+  return Array.from(imports);
+};
+
+const getUrlField = (article: DBDocument) => {
+  const record = getFlatComputationRecord(article);
+  const id = computeFieldId(article.id, URL_ID);
+  const value = record[id] ?? getConfig("url").initialValue;
+  const url = (article.values[URL_ID]?.[0] as string) ?? "";
+
+  return {
+    id,
+    value,
+    url,
+  };
 };
 
 export default function AppPage({
@@ -71,19 +117,6 @@ export default function AppPage({
 
   const orderedArticles = React.useMemo(() => {
     if (!articles) return [];
-
-    const getUrlField = (article: DBDocument) => {
-      const id = computeFieldId(article.id, URL_ID);
-      const computation: Computation | null = getComputationRecord(article)[id];
-      const value: Computation = computation ?? getConfig("url").initialValue;
-      const url = (article.values[URL_ID]?.[0] as string) ?? "";
-
-      return {
-        id,
-        value,
-        url,
-      };
-    };
 
     const getUrlLength = (url: string) => {
       return url ? url.split("/").length : 0;
@@ -128,15 +161,23 @@ export default function AppPage({
   const [dialogIsOpen, setDialogIsOpen] = React.useState<null | string>(null);
   const [parentUrl, setParentUrl] = React.useState<null | {
     id: FieldId;
-    value: Computation;
+    value: FlatComputation;
+    url: string;
+    imports: ComputationBlock[];
   }>(null);
+
+  const addArticleWithUrl = (parent: DBDocument) => {
+    setDialogIsOpen("add-article");
+    const record = getComputationRecord(parent);
+    setParentUrl({
+      ...getUrlField(parent),
+      imports: getUrlImports(parent),
+    });
+  };
 
   const ctx = React.useMemo(
     () => ({
-      addArticleWithUrl: (parentUrl: { id: FieldId; value: Computation }) => {
-        setDialogIsOpen("add-article");
-        setParentUrl(parentUrl);
-      },
+      addArticleWithUrl,
       urls: orderedArticles.map((el) => ({
         id: el.urlId,
         value: el.url,
@@ -147,8 +188,6 @@ export default function AppPage({
   );
 
   const mutate = useFolderMutation(folder?.id ?? "");
-
-  const [, navigateTab] = useTabUrl();
 
   const form = React.useRef<HTMLFormElement | null>(null);
 
@@ -170,99 +209,166 @@ export default function AppPage({
     }
   };
 
-  const client = useClient();
   const config = useClientConfig();
+
+  const [isEditing] = useLocalStorage<boolean>("editing-articles", false);
+
+  const parentDomains = React.useContext(FolderDomainsContext);
 
   return (
     <AppPageContext.Provider value={ctx}>
-      <Content
-        variant="app"
-        selected={isOpen}
-        header={
-          <Content.Header>
-            <div className="flex-center h-full font-medium">
-              <span className="text-sm font-light mt-1 mr-5 text-yellow-300">
-                <ComputerDesktopIcon className="w-4 h-4" />
+      <FolderDomainsProvider domains={folder?.domains ?? []}>
+        <Content
+          selected={isOpen}
+          header={
+            <Content.Header>
+              <div className="flex-center h-full font-medium">
+                <span className="text-sm font-light mt-1 mr-5 text-yellow-300">
+                  <ComputerDesktopIcon className="w-4 h-4" />
+                </span>
+                <EditableLabel
+                  value={folder?.label ?? ""}
+                  onChange={(value) => {
+                    if (folder) {
+                      mutate({
+                        name: "label",
+                        value,
+                      });
+                    }
+                  }}
+                  className={cl("font-medium", "text-yellow-300")}
+                />
+              </div>
+            </Content.Header>
+          }
+          toolbar={
+            isEditing ? (
+              <Content.Toolbar>
+                {folder && (
+                  <DomainsButton
+                    parentDomains={parentDomains ?? undefined}
+                    domains={folder.domains}
+                    mutate={mutate}
+                  />
+                )}
+              </Content.Toolbar>
+            ) : null
+          }
+          buttons={
+            <div
+              className={cl(
+                "flex-center",
+                "transition-opacity",
+                true ? "opacity-100" : "opacity-0 pointer-events-none"
+              )}
+            >
+              <span className="text-xs opacity-50 font-light ml-5 cursor-default hover:underline">
+                x sider ændret
               </span>
-              <EditableLabel
-                value={folder?.label ?? ""}
-                onChange={(value) => {
-                  if (folder) {
-                    mutate({
-                      name: "label",
-                      value,
-                    });
-                  }
-                }}
-                className={cl("font-medium", "text-yellow-300")}
-              />
+              {config.revalidateUrl && <RefreshButton />}
             </div>
-          </Content.Header>
-        }
-        buttons={
-          <Content.Buttons>
-            {config.revalidateUrl && (
-              <Content.Button
-                icon={ArrowPathIcon}
-                onClick={async () => {
-                  if (config.revalidateUrl) {
-                    const urls = await client.articles.revalidate.query({
-                      domain: "",
-                      revalidateUrl: config.revalidateUrl,
-                    });
-                    await fetch(config.revalidateUrl, {
-                      body: JSON.stringify(
-                        unwrap(urls, []).map((el) => `/${el}`)
-                      ),
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                    });
-                  }
-                }}
-              />
-            )}
-            <Content.Button icon={TrashIcon} onClick={() => handleDelete()} />
-            <Content.Button
-              icon={PlusIcon}
-              onClick={() => setDialogIsOpen("add-article")}
+          }
+        >
+          {folder && (
+            <AddArticleDialog
+              isOpen={dialogIsOpen === "add-article"}
+              close={() => {
+                setDialogIsOpen(null);
+                setParentUrl(null);
+              }}
+              folder={folder.id}
+              parentUrl={parentUrl ?? undefined}
+              type={type}
             />
-          </Content.Buttons>
-        }
-      >
-        {folder && (
-          <AddArticleDialog
-            isOpen={dialogIsOpen === "add-article"}
-            close={() => {
-              setDialogIsOpen(null);
-              setParentUrl(null);
-            }}
-            folder={folder.id}
-            parentUrl={parentUrl ?? true}
-            type={type}
-          />
-        )}
-        {folder && articles ? (
-          <div className="flex flex-col p-5">
-            <form ref={form} onSubmit={(ev) => ev.preventDefault()}>
-              <Table
-                rows={orderedArticles.map((el) => ({
-                  id: restoreId(el.id),
-                  columns: [
-                    { name: el.id, value: false },
-                    { value: getDocumentLabel(el) },
-                  ],
-                  indent: el.indent,
-                }))}
-              />
-            </form>
-          </div>
-        ) : (
-          <div className="text-center py-5 text-xl font-bold text-gray-300">
-            Vent et øjeblik
-          </div>
-        )}
-      </Content>
-      {children}
+          )}
+          {folder && articles ? (
+            <div className="flex flex-col px-5">
+              <div className="flex items-center ml-9 mb-1 justify-between">
+                <h2 className=" text-gray-400">Data</h2>
+                <div className="flex gap-2">
+                  <button
+                    className="px-3 rounded py-1.5 ring-button text-button"
+                    onClick={handleDelete}
+                  >
+                    <TrashIcon className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+              <form ref={form} onSubmit={(ev) => ev.preventDefault()}>
+                <Table
+                  rows={orderedArticles.map((el) => ({
+                    id: restoreId(el.id),
+                    columns: [
+                      { value: getDocumentLabel(el) },
+                      {
+                        value: (
+                          <button
+                            className="rounded px-2 py-0.5 text-sm text-gray-800 dark:text-white text-opacity-50 hover:text-opacity-100 dark:text-opacity-50 dark:hover:text-opacity-100 ring-button flex items-center gap-2 whitespace-nowrap"
+                            onClick={(ev) => {
+                              ev.stopPropagation();
+                              addArticleWithUrl(el);
+                            }}
+                          >
+                            <PlusIcon className="w-3 h-3" /> Tilføj underside
+                          </button>
+                        ),
+                      },
+                    ],
+                    indent: el.indent,
+                  }))}
+                />
+              </form>
+            </div>
+          ) : (
+            <div className="text-center py-5 text-xl font-bold text-gray-300">
+              Vent et øjeblik
+            </div>
+          )}
+        </Content>
+        {children}
+      </FolderDomainsProvider>
     </AppPageContext.Provider>
+  );
+}
+
+function RefreshButton() {
+  const [isLoading, setIsLoading] = React.useState(false);
+
+  const client = useClient();
+  const config = useClientConfig();
+  return (
+    <div className="relative ml-5">
+      {/*isLoading && (
+        <div className="absolute inset-0 flex-center">
+          <div className="w-8 h-8 bg-white/5 rounded-full animate-ping-lg" />
+        </div>
+      )*/}
+      <button
+        className="relative z-0 bg-button-yellow ring-button text-button rounded px-3 py-1 font-light flex-center gap-2 text-sm overflow-hidden"
+        onClick={async () => {
+          if (config.revalidateUrl) {
+            setIsLoading(true);
+            const urls = await client.articles.revalidate.query({
+              domain: "",
+              revalidateUrl: config.revalidateUrl,
+            });
+            await fetch(config.revalidateUrl, {
+              body: JSON.stringify(unwrap(urls, []).map((el) => `/${el}`)),
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+            });
+            setIsLoading(false);
+          }
+        }}
+      >
+        {isLoading && (
+          <div className="absolute inset-0 -z-10 flex-center">
+            <div className="w-8 h-8 bg-teal-300 rounded-full animate-ping-lg" />
+          </div>
+        )}
+        <ArrowPathIcon className="w-3 h-3" />
+        Opdater
+      </button>
+    </div>
   );
 }

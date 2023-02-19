@@ -215,10 +215,7 @@ function LocationBarItem({
   return (
     <button
       className={cl(
-        "px-3 my-2 h-7 text-sm leading-none rounded-md font-light border border-transparent",
-        type === "app"
-          ? "border-yellow-300 dark:border-yellow-300"
-          : "border-gray-100 hover:border-gray-200 dark:hover:border-gray-700",
+        "px-3 my-2 h-7 text-sm leading-none rounded-md font-light ring-inset transition-shadow",
         type === "template"
           ? "bg-teal-800"
           : /*
@@ -226,8 +223,8 @@ function LocationBarItem({
           ? "bg-yellow-100 dark:bg-yellow-300 text-black"
           */
           current
-          ? "bg-gray-100 dark:bg-gray-700/50"
-          : "bg-white dark:bg-gray-850"
+          ? "bg-white dark:bg-gray-850"
+          : "bg-button ring-button text-button"
       )}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
