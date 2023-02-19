@@ -318,7 +318,7 @@ export function WritableDefaultField({
       >
         <div className={cl("relative", !isActive && "hidden")}>
           {isEmpty && (
-            <div className="absolute pointer-events-none px-14 font-light opacity-25">
+            <div className="absolute pointer-events-none px-14 font-light opacity-25 select-none">
               Ikke udfyldt
             </div>
           )}
@@ -398,7 +398,7 @@ export function Placeholder({ className }: { className?: string }) {
   return isEmpty ? (
     <div
       className={cl(
-        "absolute pointer-events-none top-0 text-gray-400 font-light leading-8 py-2 -z-10",
+        "absolute pointer-events-none top-0 text-gray-400 font-light leading-8 py-2 -z-10 select-none",
         className
       )}
     >

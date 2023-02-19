@@ -215,6 +215,8 @@ export default function AppPage({
 
   const parentDomains = React.useContext(FolderDomainsContext);
 
+  const front = articles ? orderedArticles[0] : null;
+
   return (
     <AppPageContext.Provider value={ctx}>
       <FolderDomainsProvider domains={folder?.domains ?? []}>
@@ -265,7 +267,12 @@ export default function AppPage({
               <span className="text-xs opacity-50 font-light ml-5 cursor-default hover:underline">
                 x sider ændret
               </span>
-              {config.revalidateUrl && <RefreshButton />}
+              {typeof front?.url === "string" && config.revalidateUrl && (
+                <RefreshButton
+                  namespace={front.url}
+                  revalidateUrl={config.revalidateUrl}
+                />
+              )}
             </div>
           }
         >
@@ -331,11 +338,17 @@ export default function AppPage({
   );
 }
 
-function RefreshButton() {
+function RefreshButton({
+  namespace,
+  revalidateUrl,
+}: {
+  namespace: string;
+  revalidateUrl: string;
+}) {
   const [isLoading, setIsLoading] = React.useState(false);
 
   const client = useClient();
-  const config = useClientConfig();
+
   return (
     <div className="relative ml-5">
       {/*isLoading && (
@@ -346,13 +359,14 @@ function RefreshButton() {
       <button
         className="relative z-0 bg-button-yellow ring-button text-button rounded px-3 py-1 font-light flex-center gap-2 text-sm overflow-hidden"
         onClick={async () => {
-          if (config.revalidateUrl) {
+          if (revalidateUrl) {
             setIsLoading(true);
             const urls = await client.articles.revalidate.query({
+              namespace,
               domain: "",
-              revalidateUrl: config.revalidateUrl,
+              revalidateUrl,
             });
-            await fetch(config.revalidateUrl, {
+            await fetch(revalidateUrl, {
               body: JSON.stringify(unwrap(urls, []).map((el) => `/${el}`)),
               method: "POST",
               headers: { "Content-Type": "application/json" },

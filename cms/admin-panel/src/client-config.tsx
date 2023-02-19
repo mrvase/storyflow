@@ -142,7 +142,7 @@ export function ClientConfigProvider({
                   "http://localhost:3000/api/config",
                 "https://storyflow-mrvase.vercel.app/api/config":
                   "http://localhost:3000/api/config2",
-                "https://ltc-mrvase.vercel.app/api/config":
+                "https://kfs-ltc.vercel.app/api/config":
                   "http://localhost:3002/api/config",
                 "https://www.paaskelejr.dk/api/config":
                   "http://localhost:3003/api/config",

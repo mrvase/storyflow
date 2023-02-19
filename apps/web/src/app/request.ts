@@ -27,6 +27,7 @@ export const request = async (url: string) => {
       query: {
         url,
         config: [config],
+        namespace: process.env.NAMESPACE ?? "",
       },
     }),
     credentials: "include",
@@ -53,13 +54,16 @@ export const request = async (url: string) => {
 };
 
 export const requestPaths = async () => {
-  return await fetch(`${domain}/api/public/getPaths`, {
-    method: "get",
-    headers: {
-      Authorization: `Basic ${apiKey}`,
-    },
-    credentials: "include",
-  }).then(async (res) => {
+  return await fetch(
+    `${domain}/api/public/getPaths?query=${process.env.NAMESPACE ?? ""}`,
+    {
+      method: "get",
+      headers: {
+        Authorization: `Basic ${apiKey}`,
+      },
+      credentials: "include",
+    }
+  ).then(async (res) => {
     try {
       const json = await res.json();
       return unwrap(json as Result<string[]>, [] as string[]);

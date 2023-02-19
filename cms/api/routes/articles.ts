@@ -985,10 +985,15 @@ export const articles = createRoute({
       return ctx.use(globals);
     },
     schema() {
-      return z.object({ domain: z.string(), revalidateUrl: z.string() });
+      return z.object({
+        namespace: z.string().optional(),
+        domain: z.string(),
+        revalidateUrl: z.string(),
+      });
     },
-    async query({ domain, revalidateUrl }, { dbName }) {
+    async query({ namespace, domain, revalidateUrl }, { dbName }) {
       const db = (await clientPromise).db(dbName);
+
       const lastBuildCounter = await db
         .collection<{ name: string; counter: number }>("counters")
         .findOneAndUpdate(
@@ -1011,11 +1016,15 @@ export const articles = createRoute({
       const articles = await db
         .collection("articles")
         .find({
-          [`values.${URL_ID}`]: { $exists: true },
+          [`values.${URL_ID}`]: namespace
+            ? { $regex: `^${namespace}` }
+            : { $exists: true },
         })
         .toArray();
 
       const urls = articles.map((el) => el.values[URL_ID][0] as string);
+
+      console.log("REVALIDATE", urls);
 
       // const paths = urls.map((el) => `/${el.replace("://", "").split("/")[1]}`);
 

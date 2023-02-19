@@ -12,6 +12,7 @@ import { globals } from "../middleware/globals";
 import { fetchSinglePage } from "@storyflow/server";
 import { URL_ID } from "@storyflow/backend/templates";
 import type {} from "@storyflow/frontend/types";
+import { extendPath } from "@storyflow/backend/extendPath";
 
 const sessionStorage = createSessionStorage({
   cookie: cookieOptions,
@@ -80,10 +81,18 @@ export const public_ = createRoute({
       return ctx.use(corsFactory("allow-all"), authorization);
     },
     schema() {
-      return z.object({ url: z.string(), config: z.array(z.any()) });
+      return z.object({
+        namespace: z.string().optional(),
+        url: z.string(),
+        config: z.array(z.any()),
+      });
     },
-    async mutation({ url, config }, { dbName, slug }) {
-      const page = await fetchSinglePage(url, dbName, config);
+    async mutation({ namespace, url, config }, { dbName, slug }) {
+      const page = await fetchSinglePage(
+        extendPath(namespace ?? "", url, "/"),
+        dbName,
+        config
+      );
       return success(page);
     },
   }),
@@ -91,17 +100,27 @@ export const public_ = createRoute({
     middleware(ctx) {
       return ctx.use(corsFactory("allow-all"), authorization);
     },
-    async query(_, { dbName, slug }) {
+    schema() {
+      return z.string().optional();
+    },
+    async query(namespace, { dbName, slug }) {
       const client = await clientPromise;
       const articles = await client
         .db(dbName)
         .collection("articles")
         .find({
-          [`values.${URL_ID}`]: { $exists: true },
+          [`values.${URL_ID}`]: namespace
+            ? { $regex: `^${namespace}` }
+            : { $exists: true },
         })
         .toArray();
 
-      const urls = articles.map((el) => el.values[URL_ID][0] as string);
+      const urls = articles.map((el) => {
+        const value = el.values[URL_ID][0] as string;
+        return namespace
+          ? value.replace(new RegExp(`^${namespace}\/?`), "")
+          : value;
+      });
 
       return success(urls);
     },
