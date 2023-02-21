@@ -184,6 +184,7 @@ export const useCMSElement = (
           backgroundColor: "rgb(253 224 71)",
           opacity: 0,
           transition: "opacity 75ms ease-out",
+          pointerEvents: "none",
         }}
       />
       {/*isSelected && (
