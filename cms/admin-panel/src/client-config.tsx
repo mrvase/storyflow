@@ -82,6 +82,7 @@ const defaultClientConfig: ClientConfig = {
 
 export function useClientConfig(key?: string): ClientConfig {
   const configs = React.useContext(ClientConfigContext);
+  const domains = useFolderDomains();
   if (!configs) {
     throw new Error("useClientConfig cannot find provider.");
   }
@@ -89,8 +90,6 @@ export function useClientConfig(key?: string): ClientConfig {
   if (key) {
     return configs[key] ?? defaultClientConfig;
   }
-
-  const domains = useFolderDomains();
 
   if (!domains) {
     throw new Error("useClientConfig must be used within a FolderPage");

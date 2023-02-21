@@ -1,16 +1,11 @@
 import * as React from "react";
 import {
-  ComponentConfig,
   PathSegment,
   PropConfig,
+  PropConfigArray,
   ValueArray,
 } from "@storyflow/frontend/types";
-import {
-  AddPathSegment,
-  ExtendPath,
-  useBuilderSelection,
-  usePath,
-} from "./contexts";
+import { AddPathSegment, ExtendPath, usePath } from "./contexts";
 import {
   focusCMSElement,
   getSiblings,
@@ -25,6 +20,7 @@ import {
   getConfigByType,
 } from "../config/getConfigByType";
 import { getLibraries, getLibraryConfigs } from "../config";
+import { extendPath } from "./extendPath";
 
 export const IndexContext = React.createContext(0);
 
@@ -188,16 +184,25 @@ function RenderElementWithProps({
 }) {
   const index = React.useContext(IndexContext);
 
-  const props = React.useMemo(
-    () =>
-      Object.fromEntries(
-        config!.props.map((config) => [
+  const calculatePropsFromConfig = (props: PropConfigArray, group?: string) => {
+    return Object.fromEntries(
+      props.map((config): [string, any] => {
+        const key = extendPath(group ?? "", config.name, "#");
+        return [
           config.name,
-          calculateProp(config, uncomputedProps?.[config.name] ?? [], index),
-        ])
-      ),
-    [uncomputedProps, index]
-  );
+          config.type === "group"
+            ? calculatePropsFromConfig(config.props, config.name)
+            : calculateProp(config, uncomputedProps?.[key] ?? [], index),
+        ];
+      })
+    );
+  };
+
+  const props = React.useMemo(() => {
+    const props = calculatePropsFromConfig(config.props);
+    console.log("RENDERED PROPS", props);
+    return props;
+  }, [uncomputedProps, index]);
 
   return <config.component {...props} />;
 }

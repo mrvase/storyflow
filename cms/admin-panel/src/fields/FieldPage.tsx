@@ -462,10 +462,19 @@ const computeComponentRecord = (
         )
         .flat(1);
 
+      const propConfigArray = components.find(
+        (el) => el.name === element.type
+      )?.props;
+
       const propKeys =
-        components
-          .find((el) => el.name === element.type)
-          ?.props?.map((el) => el.name) ?? Object.keys(element.props);
+        propConfigArray?.reduce((acc: string[], el) => {
+          if (el.type === "group") {
+            acc.push(...el.props.map((child) => `${el.name}#${child.name}`));
+            return acc;
+          }
+          acc.push(el.name);
+          return acc;
+        }, []) ?? Object.keys(element.props);
 
       propKeys.push("key");
 

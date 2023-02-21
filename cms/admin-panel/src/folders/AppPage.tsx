@@ -211,9 +211,8 @@ export default function AppPage({
 
   const config = useClientConfig(folder?.domains?.[0]);
 
-  const [isEditing] = useLocalStorage<boolean>("editing-articles", false);
-
   const parentDomains = React.useContext(FolderDomainsContext);
+  const [isEditing] = useLocalStorage<boolean>("editing-articles", false);
 
   return (
     <AppPageContext.Provider value={ctx}>

@@ -1,17 +1,16 @@
 import {
   ClientConfig,
-  Component,
   ComponentConfig,
   ExtendedLibraryConfig,
   ExtendedPartialConfig,
   Library,
   LibraryConfig,
   PartialConfig,
-  PropConfig,
-  Props,
+  ComponentProps,
   Story,
   StoryConfig,
   StoryProps,
+  PropConfigArray,
 } from "@storyflow/frontend/types";
 import * as React from "react";
 import { cms } from "../src/CMSElement";
@@ -109,7 +108,7 @@ export const registerLibraryConfigs = (configs: LibraryConfig[]) => {
   LIBRARY_CONFIGS = [...configs, defaultLibraryConfig];
 };
 
-export const createComponent = <T extends readonly PropConfig[]>(
+export const createComponent = <T extends PropConfigArray>(
   component: ExtendedPartialConfig<T>["component"],
   config: PartialConfig<T>
 ): ExtendedPartialConfig<T> => {
@@ -128,7 +127,7 @@ function modifyValues<T extends object>(
   );
 }
 
-export function modifyChild<T extends readonly PropConfig[]>(
+export function modifyChild<T extends PropConfigArray>(
   child: ExtendedPartialConfig<T>,
   props: number | StoryProps<T>,
   overwritingProps?: StoryProps<T>
@@ -314,4 +313,4 @@ export const getLibraryConfigs = () => {
   return LIBRARY_CONFIGS;
 };
 
-export type { ComponentConfig, PartialConfig, Props };
+export type { ComponentConfig, PartialConfig, ComponentProps };

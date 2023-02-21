@@ -69,7 +69,7 @@ export default function FolderGrid({
 
   if (children.length === 0) {
     return (
-      <div className="text-gray-300 font-light ml-9 text-sm">Ingen mapper</div>
+      <div className="text-gray-500 font-light ml-9 text-sm">Ingen mapper</div>
     );
   }
 

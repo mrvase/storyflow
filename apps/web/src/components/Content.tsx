@@ -2,9 +2,9 @@ import { cms } from "@storyflow/react";
 import { createComponent } from "@storyflow/react/config";
 
 export const Content = createComponent(
-  ({ content, backgroundColor }) => {
+  ({ content, style }) => {
     return (
-      <cms.div className="p-20" style={{ backgroundColor }}>
+      <cms.div className="p-20" style={style}>
         {content}
       </cms.div>
     );
@@ -13,27 +13,38 @@ export const Content = createComponent(
     label: "Indhold",
     props: [
       {
-        type: "string",
-        name: "backgroundColor",
-        label: "Baggrundsfarve",
-      },
-      {
         type: "children",
         name: "content",
         label: "Indhold",
+      },
+      {
+        type: "group",
+        name: "style",
+        label: "Styling",
+        props: [
+          {
+            type: "string",
+            name: "backgroundColor",
+            label: "Baggrundsfarve",
+          },
+        ],
       },
     ] as const,
     stories: [
       {
         props: {
-          backgroundColor: "#f0f",
+          style: {
+            backgroundColor: "#f0f",
+          },
           content: ["hej med dig"],
         },
       },
       {
         label: "En anden farve",
         props: {
-          backgroundColor: "#0f0",
+          style: {
+            backgroundColor: "#f0f",
+          },
           content: ["hej med dig"],
         },
       },

@@ -170,6 +170,7 @@ export const useCMSElement = (
         }),
       }}
       onClick={(ev) => ev.preventDefault() /* avoid linking */}
+      data-cms-event-control="true"
     >
       <span
         data-indicator={element}

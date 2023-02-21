@@ -1,7 +1,12 @@
 import { createRenderArray } from "./createRenderArray";
-import { LibraryConfig, ValueArray } from "@storyflow/frontend/types";
+import {
+  LibraryConfig,
+  PropConfigArray,
+  ValueArray,
+} from "@storyflow/frontend/types";
 import { Value } from "@storyflow/backend/types";
 import { getConfigByType } from "./getConfigByType";
+import { extendPath } from "@storyflow/backend/extendPath";
 
 const BUCKET_NAME = "awss3stack-mybucket15d133bf-1wx5fzxzweii4";
 const BUCKET_REGION = "eu-west-1";
@@ -34,16 +39,19 @@ export const resolveProps = (
         const length = el.props.key?.length || 1;
 
         Array.from({ length }, (_, index) => {
-          acc.push({
-            id: `${el.id}[${index}]`,
-            type: config.name,
-            props: Object.fromEntries(
-              config.props.map(({ name, type }) => {
+          const createPropsFromConfig = (
+            props: PropConfigArray,
+            group?: string
+          ) => {
+            return Object.fromEntries(
+              props.map((propConfig) => {
+                const { name, type } = propConfig;
                 const finalIndex = hasKey ? index : ctx.index;
-                const prop = el.props[name];
+                const key = extendPath(group ?? "", name, "#");
+                let prop = el.props[key];
                 if (type === "children") {
                   let array = prop
-                    ? recursive(el.props[name] as Value[], {
+                    ? recursive(prop as Value[], {
                         index: finalIndex,
                       }) ?? []
                     : [];
@@ -56,7 +64,7 @@ export const resolveProps = (
                   };
                   return [name, value];
                 } else {
-                  let array = el.props[name] ?? [];
+                  const array = prop ?? [];
                   let value: any = array[finalIndex % array.length];
                   if (["image", "video"].includes(type)) {
                     if (
@@ -74,11 +82,21 @@ export const resolveProps = (
                     value = Number(value || 0);
                   } else if (type === "string") {
                     value = String(value || "");
+                  } else if (propConfig.type === "group") {
+                    value = createPropsFromConfig(
+                      propConfig.props,
+                      propConfig.name
+                    );
                   }
                   return [name, value];
                 }
               })
-            ),
+            );
+          };
+          acc.push({
+            id: `${el.id}[${index}]`,
+            type: config.name,
+            props: createPropsFromConfig(config.props),
           });
         });
 

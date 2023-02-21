@@ -23,7 +23,7 @@
 }
 
 .text-button {
-  @apply text-gray-800 dark:text-white text-opacity-90 dark:hover:text-opacity-100;
+  @apply text-gray-800 dark:text-white text-opacity-90 dark:text-opacity-80 hover:text-opacity-100 dark:hover:text-opacity-100;
 }
 
 @tailwind utilities;

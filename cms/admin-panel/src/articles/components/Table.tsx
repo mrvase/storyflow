@@ -24,13 +24,7 @@ export default function Table({
   }[];
 }) {
   return (
-    <table
-      className={cl(
-        "w-full leading-none font-light -mx-2.5",
-        rows.length === 0 && "opacity-50"
-      )}
-      border={0}
-    >
+    <table className={cl("w-full leading-none font-light -mx-2.5")} border={0}>
       <thead>
         <tr className="font-normal">
           <td className=""></td>
@@ -46,7 +40,7 @@ export default function Table({
             <td className="w-8 p-3 text-[0px]">
               <input type="checkbox" className="w-4 h-4 invisible" />
             </td>
-            <td className="p-3">Ingen elementer</td>
+            <td className="p-3 text-sm text-gray-500">Ingen elementer</td>
           </tr>
         ) : null}
       </tbody>

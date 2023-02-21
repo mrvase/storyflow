@@ -33,6 +33,7 @@ import { useClient } from "../../client";
 import { ParentProp, WritableDefaultField } from "./DefaultField";
 import { useFieldTemplate } from "./useFieldTemplate";
 import { fetchFn } from "./calculateFn";
+import { PropGroup } from "@storyflow/frontend/types";
 
 export function RenderFetcher({
   id,
@@ -250,7 +251,17 @@ export function RenderLayoutElement({
 
   const listIsOpen = listIsOpen_ || (key?.length ?? 0) > 0;
 
-  console.log("KEY", key);
+  const [tab, setTab] = React.useState(0);
+
+  const props = initialElement?.props ?? {};
+
+  const groups = initialProps.filter(
+    (el): el is PropGroup => el.type === "group"
+  );
+
+  const tabs = ["Indstillinger", ...groups.map((el) => el.label)];
+
+  const initialGroup = initialProps.filter((el) => el.type !== "group");
 
   return (
     <>
@@ -279,7 +290,7 @@ export function RenderLayoutElement({
             <RenderNestedField
               id={id}
               path={path}
-              initialValue={(initialElement?.props ?? {})["key"] ?? []}
+              initialValue={props["key"] ?? []}
               label={"Lav til liste"}
               labelColor="blue"
               icon={Bars3Icon}
@@ -288,12 +299,44 @@ export function RenderLayoutElement({
           </div>
         </div>
       </IfActive>
-      <RenderNestedFields
-        id={id}
-        path={path}
-        values={initialElement?.props ?? {}}
-        template={initialProps}
-      />
+      {tabs.length > 1 && (
+        <IfActive else="hidden" path={path}>
+          <div className="pl-14 mb-5 flex gap-2">
+            {tabs.map((label, index) => (
+              <button
+                onClick={() => setTab(index)}
+                className={cl(
+                  tab !== index
+                    ? "bg-button ring-button text-button"
+                    : "ring-1 ring-gray-750",
+                  "rounded px-3 py-1.5 text-sm font-light"
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </IfActive>
+      )}
+      <div className={tab === 0 ? "" : "hidden"}>
+        <RenderNestedFields
+          id={id}
+          path={path}
+          values={props}
+          template={initialGroup}
+        />
+      </div>
+      {groups.map((group, index) => (
+        <div className={tab === index + 1 ? "" : "hidden"}>
+          <RenderNestedFields
+            id={id}
+            path={path}
+            values={props}
+            template={group.props}
+            group={group.name}
+          />
+        </div>
+      ))}
     </>
   );
 }
@@ -380,6 +423,7 @@ function RenderNestedFields({
   path,
   values,
   template,
+  group,
 }: {
   id: FieldId;
   path: string;
@@ -387,14 +431,16 @@ function RenderNestedFields({
   template:
     | ({ arg: number; label: string } | { id: string; label: string })[]
     | readonly { name: string; label: string; options?: any }[];
+  group?: string;
 }) {
   return (
     <IfActive then="focus-permanent" path={path}>
       <div>
         {template.map((el) => {
           const label = el.label;
-          const name =
+          let name =
             "id" in el ? el.id.slice(4) : "name" in el ? el.name : el.arg;
+          name = group ? extendPath(group, String(name), "#") : name;
           const initialValue = values[name] ?? [];
           return (
             <RenderNestedField

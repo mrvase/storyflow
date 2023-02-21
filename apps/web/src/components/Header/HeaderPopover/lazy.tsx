@@ -4,7 +4,7 @@ import { Fragment } from "react";
 import { Popover, Transition } from "@headlessui/react";
 import { ChevronDownIcon } from "@heroicons/react/20/solid";
 import cl from "clsx";
-import { Props } from "@storyflow/react/config";
+import { ComponentProps } from "@storyflow/react/config";
 import { HeaderPopoverConfig } from "./config";
 import { CMSElement } from "@storyflow/react";
 
@@ -12,7 +12,7 @@ export default function HeaderPopover({
   label,
   items,
   callsToAction,
-}: Props<typeof HeaderPopoverConfig>) {
+}: ComponentProps<typeof HeaderPopoverConfig>) {
   return (
     <CMSElement>
       <Popover className="relative">

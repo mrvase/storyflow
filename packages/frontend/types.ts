@@ -1,4 +1,4 @@
-export interface ComponentType<P extends Props<ComponentConfig>> {
+export interface ComponentType<P extends ComponentProps<ComponentConfig>> {
   (value: P): any;
 }
 
@@ -42,11 +42,25 @@ export type PropConfig = {
   options?: any[] | readonly any[] | Record<string, PartialConfig>;
 };
 
-type NameToType2<
-  Props extends readonly PropConfig[],
-  Prop extends Props[number],
-  Name extends Props[number]["name"]
-> = Prop extends { name: Name } ? PropTypes[Prop["type"]] : never;
+export type PropGroup = {
+  name: string;
+  type: "group";
+  label: string;
+  props: readonly PropConfig[];
+  searchable?: boolean;
+};
+
+export type PropConfigArray = readonly (PropConfig | PropGroup)[];
+
+type NameToType<
+  Ps extends PropConfigArray,
+  Prop extends Ps[number],
+  Name extends Ps[number]["name"]
+> = Prop extends { type: "group"; name: Name }
+  ? Props<Prop["props"]>
+  : Prop extends { type: keyof PropTypes; name: Name }
+  ? PropTypes[Prop["type"]]
+  : never;
 
 type AddConfigAsChild<A> = {
   [Key in keyof A]: A[Key] extends PropTypes["children"]
@@ -61,15 +75,15 @@ type AddConfigAsChild<A> = {
     : A[Key];
 };
 
-type Props2<T extends readonly PropConfig[]> = {
-  [Key in T[number]["name"]]: NameToType2<T, T[number], Key>;
+type Props<T extends PropConfigArray> = {
+  [Key in T[number]["name"]]: NameToType<T, T[number], Key>;
 };
 
-export type StoryProps<T extends readonly PropConfig[]> = Partial<
-  AddConfigAsChild<Props2<T>>
+export type StoryProps<T extends PropConfigArray> = Partial<
+  AddConfigAsChild<Props<T>>
 >;
 
-export type StoryConfig<T extends readonly PropConfig[]> = {
+export type StoryConfig<T extends PropConfigArray> = {
   label?: string;
   canvas?: string;
   props: StoryProps<T>;
@@ -82,9 +96,7 @@ export type Story = {
   page: any[];
 };
 
-export type ComponentConfig<
-  T extends readonly PropConfig[] = readonly PropConfig[]
-> = {
+export type ComponentConfig<T extends PropConfigArray = PropConfigArray> = {
   name: string;
   label: string;
   inline?: boolean;
@@ -93,9 +105,7 @@ export type ComponentConfig<
   stories?: StoryConfig<T>[];
 };
 
-export type PartialConfig<
-  T extends readonly PropConfig[] = readonly PropConfig[]
-> = {
+export type PartialConfig<T extends PropConfigArray = PropConfigArray> = {
   name?: string;
   typespace?: string;
   label?: string;
@@ -105,9 +115,9 @@ export type PartialConfig<
   stories?: StoryConfig<T>[];
 };
 
-export type ExtendedPartialConfig<T extends readonly PropConfig[]> =
+export type ExtendedPartialConfig<T extends PropConfigArray> =
   PartialConfig<T> & {
-    component: ComponentType<Props2<T>>;
+    component: ComponentType<Props<T>>;
   };
 
 export type ExtendedLibraryConfig = {
@@ -188,15 +198,13 @@ export type RenderArray = (
   | { $heading: [number, string] }
 )[];
 
-type NameToType<
-  C extends ComponentConfig | PartialConfig,
-  Prop extends C["props"][number],
-  Name extends C["props"][number]["name"]
-> = Prop extends { name: Name } ? PropTypes[Prop["type"]] : never;
-
-export type Props<C extends ComponentConfig | PartialConfig> = {
-  [Key in C["props"][number]["name"]]: NameToType<C, C["props"][number], Key>;
+export type ComponentProps<C extends ComponentConfig | PartialConfig> = {
+  [Key in C["props"][number]["name"]]: NameToType<
+    C["props"],
+    C["props"][number],
+    Key
+  >;
 };
 
 export type Component<C extends ComponentConfig | PartialConfig> =
-  ComponentType<Props<C>>;
+  ComponentType<ComponentProps<C>>;

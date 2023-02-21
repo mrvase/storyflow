@@ -243,21 +243,24 @@ export function RenderBuilder() {
 const Frame = ({ children }: { children: React.ReactNode }) => {
   const [, , deselect] = useBuilderSelection();
 
-  return (
-    <div
-      onClick={(ev) => {
-        deselect([]);
-      }}
-    >
-      <div
-        onClick={(ev) => {
-          ev.stopPropagation();
-        }}
-      >
-        {children}
-      </div>
-    </div>
-  );
+  React.useEffect(() => {
+    const onClick = (ev: MouseEvent) => {
+      const target = ev.target;
+      if (
+        target instanceof HTMLElement &&
+        target.dataset["cmsEventControl"] === "true"
+      ) {
+        return;
+      }
+      deselect([]);
+    };
+    document.addEventListener("click", onClick);
+    return () => {
+      document.removeEventListener("click", onClick);
+    };
+  }, []);
+
+  return <>{children}</>;
 };
 
 function SelectPortal() {
@@ -328,7 +331,7 @@ function Select() {
       if (!config) return [];
       const prop = config.props.find((el) => el.name === parentProp);
       if (!prop) return [];
-      if (prop.options) {
+      if ("options" in prop && prop.options) {
         return initialOptions.filter(
           (el) =>
             el.libraryName === config.libraryName &&
