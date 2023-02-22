@@ -66,6 +66,30 @@ export const resolveProps = (
                 } else {
                   const array = prop ?? [];
                   let value: any = array[finalIndex % array.length];
+                  if (
+                    propConfig.type !== "group" &&
+                    value !== null &&
+                    typeof value === "object" &&
+                    "name" in value
+                  ) {
+                    const option = Array.isArray(propConfig.options)
+                      ? propConfig.options.find(
+                          (el): el is { value: any } | { name: any } =>
+                            typeof el === "object" && el.name === value.name
+                        )
+                      : undefined;
+                    if (option && "value" in option) {
+                      value = option.value as any;
+                    }
+                  }
+                  if (
+                    propConfig.type !== "group" &&
+                    value !== null &&
+                    typeof value === "object" &&
+                    "color" in value
+                  ) {
+                    value = value.color;
+                  }
                   if (["image", "video"].includes(type)) {
                     if (
                       value !== null &&

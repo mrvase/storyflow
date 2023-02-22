@@ -207,6 +207,8 @@ export const encodeEditorComputation = (
         value.push(el);
       } else if (tools.isColorToken(el)) {
         value.push(el);
+      } else if (tools.isCustomToken(el)) {
+        value.push(el);
       } else if (tools.isParameter(el)) {
         value.push(el);
       }
@@ -310,6 +312,8 @@ export const decodeEditorComputation = (
     } else if (tools.isFileToken(el)) {
       current.parameters.push(el);
     } else if (tools.isColorToken(el)) {
+      current.parameters.push(el);
+    } else if (tools.isCustomToken(el)) {
       current.parameters.push(el);
     } else if (tools.isParameter(el)) {
       current.parameters.push(el);

@@ -44,7 +44,7 @@ export async function insertComputation(
           const placementNode = startNode.getChildAtIndex(startPoint.offset);
           const textNode = $createTextNode();
           const target = $isRootNode(startNode)
-            ? $createParagraphNode().append(startNode)
+            ? $createParagraphNode().append(textNode)
             : textNode;
           if (placementNode === null) {
             startNode.append(target);

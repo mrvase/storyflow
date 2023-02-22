@@ -33,7 +33,12 @@ import { useClient } from "../../client";
 import { ParentProp, WritableDefaultField } from "./DefaultField";
 import { useFieldTemplate } from "./useFieldTemplate";
 import { fetchFn } from "./calculateFn";
-import { PropGroup } from "@storyflow/frontend/types";
+import {
+  PropConfig,
+  PropGroup,
+  RegularOptions,
+} from "@storyflow/frontend/types";
+import { OptionsContext } from "./OptionsContext";
 
 export function RenderFetcher({
   id,
@@ -256,86 +261,88 @@ export function RenderLayoutElement({
   const props = initialElement?.props ?? {};
 
   const groups = initialProps.filter(
-    (el): el is PropGroup => el.type === "group"
+    (el): el is PropGroup<RegularOptions> => el.type === "group"
   );
 
-  const tabs = ["Indstillinger", ...groups.map((el) => el.label)];
+  const leftoverProps = initialProps.filter(
+    (el): el is PropConfig<RegularOptions> => el.type !== "group"
+  );
 
-  const initialGroup = initialProps.filter((el) => el.type !== "group");
+  const hasLeftoverGroup = Boolean(leftoverProps.length && groups.length);
+
+  const tabs = ["Egenskaber", ...groups.map((el) => el.label)];
+
+  const isActive = useIsActive(path);
 
   return (
     <>
-      <IfActive else="hidden" path={path}>
-        <div>
-          <div>
-            <div className="pb-5 text-gray-300 text-sm flex items-center">
-              <div className="mx-5 w-4">
-                <button
-                  className="w-4 h-4 rounded-full bg-gray-700 hover:scale-150 hover:bg-gray-600 flex-center transition-[transform,colors]"
-                  onClick={() => setPath((ps) => ps.slice(0, -1))}
-                >
-                  <ChevronLeftIcon className="w-3 h-3" />
-                </button>
-              </div>
-              {fullPath.slice(-1)[0]?.label ?? ""}
-              <button
-                className="ml-auto mr-5 w-4 h-4 flex-center rounded-full bg-gray-700"
-                onClick={toggleListIsOpen}
-              >
-                <Bars3Icon className="w-3 h-3" />
-              </button>
-            </div>
+      <div className={!isActive ? "hidden" : ""}>
+        <div className="pb-5 text-gray-300 text-sm flex items-center">
+          <div className="mx-5 w-4">
+            <button
+              className="w-4 h-4 rounded-full bg-gray-700 hover:scale-150 hover:bg-gray-600 flex-center transition-[transform,colors]"
+              onClick={() => setPath((ps) => ps.slice(0, -1))}
+            >
+              <ChevronLeftIcon className="w-3 h-3" />
+            </button>
           </div>
-          <div className={listIsOpen ? "" : "hidden"}>
-            <RenderNestedField
-              id={id}
-              path={path}
-              initialValue={props["key"] ?? []}
-              label={"Lav til liste"}
-              labelColor="blue"
-              icon={Bars3Icon}
-              name="key"
-            />
-          </div>
+          {fullPath.slice(-1)[0]?.label ?? ""}
+          <button
+            className="ml-auto mr-5 w-4 h-4 flex-center rounded-full bg-gray-700"
+            onClick={toggleListIsOpen}
+          >
+            <Bars3Icon className="w-3 h-3" />
+          </button>
         </div>
-      </IfActive>
+      </div>
+      <div className={!listIsOpen || !isActive ? "hidden" : ""}>
+        <RenderNestedField
+          id={id}
+          hidden={!isActive || !listIsOpen}
+          path={path}
+          initialValue={props["key"] ?? []}
+          label={"Lav til liste"}
+          labelColor="blue"
+          icon={Bars3Icon}
+          name="key"
+        />
+      </div>
       {tabs.length > 1 && (
-        <IfActive else="hidden" path={path}>
-          <div className="pl-14 mb-5 flex gap-2">
-            {tabs.map((label, index) => (
+        <div className={cl("pl-14 mb-5 flex gap-2", !isActive && "hidden")}>
+          {tabs.map((label, index) => {
+            if (index === 0 && !hasLeftoverGroup) return null;
+            return (
               <button
                 onClick={() => setTab(index)}
                 className={cl(
                   tab !== index
                     ? "bg-button ring-button text-button"
-                    : "ring-1 ring-gray-750",
+                    : "ring-1 bg-button ring-yellow-400",
                   "rounded px-3 py-1.5 text-sm font-light"
                 )}
               >
                 {label}
               </button>
-            ))}
-          </div>
-        </IfActive>
+            );
+          })}
+        </div>
       )}
-      <div className={tab === 0 ? "" : "hidden"}>
+      <RenderNestedFields
+        id={id}
+        hidden={!isActive || tab !== 0}
+        path={path}
+        values={props}
+        template={leftoverProps}
+      />
+      {groups.map((group, index) => (
         <RenderNestedFields
           id={id}
+          hidden={!isActive || tab !== index + 1}
           path={path}
           values={props}
-          template={initialGroup}
+          template={group.props}
+          group={group.name}
         />
-      </div>
-      {groups.map((group, index) => (
-        <div className={tab === index + 1 ? "" : "hidden"}>
-          <RenderNestedFields
-            id={id}
-            path={path}
-            values={props}
-            template={group.props}
-            group={group.name}
-          />
-        </div>
       ))}
     </>
   );
@@ -362,9 +369,12 @@ export function RenderNestedDocument({
     );
   }, [path, initialValue]);
 
+  const isActive = useIsActive(path);
+
   return (
     <RenderNestedFields
       id={id}
+      hidden={!isActive}
       path={path}
       values={initialDoc?.values ?? {}}
       template={template}
@@ -389,14 +399,22 @@ export function RenderImportArgs({
     );
   }, [path, initialValue]);
 
+  const isActive = useIsActive(path);
+
   return (
     <RenderNestedFields
       id={id}
+      hidden={!isActive}
       path={path}
       values={initialImport?.args ?? {}}
       template={[{ arg: 0, label: "Parameter 1" }]}
     />
   );
+}
+
+function useIsActive(path: string) {
+  const [fullPath] = useBuilderPath();
+  return stringifyPath(fullPath) === path;
 }
 
 function IfActive({
@@ -424,13 +442,15 @@ function RenderNestedFields({
   values,
   template,
   group,
+  hidden,
 }: {
   id: FieldId;
   path: string;
   values: Record<string, Computation>;
   template:
     | ({ arg: number; label: string } | { id: string; label: string })[]
-    | readonly { name: string; label: string; options?: any }[];
+    | readonly PropConfig<RegularOptions>[];
+  hidden: boolean;
   group?: string;
 }) {
   return (
@@ -443,15 +463,19 @@ function RenderNestedFields({
           name = group ? extendPath(group, String(name), "#") : name;
           const initialValue = values[name] ?? [];
           return (
-            <RenderNestedField
-              key={name}
-              id={id}
-              path={path}
-              initialValue={initialValue}
-              label={label}
-              name={name}
-              options={"options" in el ? el.options : undefined}
-            />
+            <OptionsContext.Provider
+              value={"options" in el ? el.options ?? null : null}
+            >
+              <RenderNestedField
+                key={name}
+                id={id}
+                path={path}
+                initialValue={initialValue}
+                label={label}
+                name={name}
+                hidden={hidden}
+              />
+            </OptionsContext.Provider>
           );
         })}
       </div>
@@ -466,7 +490,7 @@ function RenderNestedField({
   name,
   id,
   initialValue,
-  options,
+  hidden,
   icon: Icon = ChevronRightIcon,
 }: {
   path: string;
@@ -475,31 +499,30 @@ function RenderNestedField({
   name: string | number;
   id: FieldId;
   initialValue: Computation;
-  options?: any;
+  hidden: boolean;
   icon?: React.FC<{ className?: string }>;
 }) {
   return (
     <>
-      <IfActive else="hidden" path={path}>
-        <div
-          className={cl(
-            "text-sm flex items-center px-13 cursor-default pb-1.5",
-            labelColor ? `text-sky-400/90` : "text-gray-400"
-          )}
-        >
-          <div className="w-4 mx-5 flex-center opacity-60">
-            <Icon className="w-4 h-4" />
-          </div>
-          {label}
+      <div
+        className={cl(
+          "text-sm flex items-center px-13 cursor-default pb-1.5",
+          labelColor ? `text-sky-400/90` : "text-gray-400",
+          hidden && "hidden"
+        )}
+      >
+        <div className="w-4 mx-5 flex-center opacity-60">
+          <Icon className="w-4 h-4" />
         </div>
-      </IfActive>
+        {label}
+      </div>
       <ParentProp label={label} name={`${name}`}>
         <WritableDefaultField
           id={id}
           path={extendPath(path, `${name}`, "/")}
           initialValue={initialValue}
           fieldConfig={{ type: "default" }}
-          {...(options ? { options: options as string[] } : {})}
+          hidden={hidden}
         />
       </ParentProp>
     </>

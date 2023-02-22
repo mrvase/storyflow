@@ -135,6 +135,11 @@ export type Fetcher = {
   filters: Filter[];
 };
 
+export type CustomToken = {
+  name: string;
+  kind?: string;
+};
+
 export type FileToken = {
   src: string;
 };
@@ -143,7 +148,7 @@ export type ColorToken = {
   color: string;
 };
 
-export type Token = FileToken | ColorToken;
+export type Token = CustomToken | FileToken | ColorToken;
 
 export type PrimitiveValue = string | number | boolean | Date;
 
@@ -234,14 +239,6 @@ export interface DBDocument {
   label?: string;
   versions?: Record<TemplateFieldId | DocumentId, number>;
 }
-
-export type PropConfig = {
-  name: string;
-  type: string;
-  label: string;
-  defaultValue?: any;
-  searchable?: boolean;
-};
 
 export type FolderChild =
   | {

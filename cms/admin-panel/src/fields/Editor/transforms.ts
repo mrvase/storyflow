@@ -444,7 +444,11 @@ export const getNodesFromComputation = (
     } else if (tools.isDocumentImport(el)) {
       const node = $createDocumentNode(el);
       acc.push(node);
-    } else if (tools.isFileToken(el) || tools.isColorToken(el)) {
+    } else if (
+      tools.isFileToken(el) ||
+      tools.isColorToken(el) ||
+      tools.isCustomToken(el)
+    ) {
       const node = $createTokenNode(el);
       acc.push(node);
     } else if (tools.isSymbol(el, "_")) {

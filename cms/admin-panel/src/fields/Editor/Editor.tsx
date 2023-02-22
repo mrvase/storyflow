@@ -28,8 +28,9 @@ import { HeadingNode } from "../../editor/react/HeadingNode";
 import { DocumentNode } from "../decorators/DocumentNode";
 import { $getRoot } from "lexical";
 import { decodeEditorComputation } from "shared/editor-computation";
-import { Query } from "../Query";
+import { Query } from "../query/Query";
 import { type QueueListener } from "@storyflow/state";
+import { PropConfig, RegularOptions } from "@storyflow/frontend/types";
 
 const editorConfig = {
   namespace: "EDITOR",
@@ -77,7 +78,6 @@ export default function Editor({
   target,
   setValue,
   transform,
-  options,
 }: {
   id: FieldId;
   target?: Target;
@@ -94,7 +94,6 @@ export default function Editor({
   setValue: (value: () => EditorComputation) => void;
   transform?: FunctionName;
   children?: React.ReactNode;
-  options?: string[];
 }) {
   const { libraries } = useClientConfig();
 
@@ -109,7 +108,7 @@ export default function Editor({
       <DecoratorPlugin />
       <FocusPlugin id={id} />
       {push && register && target ? (
-        <Query push={push} options={options}>
+        <Query push={push}>
           {(pushWithQuery) => (
             <Reconciler
               target={target}

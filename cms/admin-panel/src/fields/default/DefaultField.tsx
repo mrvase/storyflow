@@ -41,7 +41,6 @@ import { calculateFn } from "./calculateFn";
 import { TemplateHeader } from "./TemplateHeader";
 import { getPreview } from "./getPreview";
 import { useIsFocused } from "../../editor/react/useIsFocused";
-import { useFieldFocus } from "../../field-focus";
 
 export const ParentPropContext = React.createContext<{
   name: string;
@@ -166,6 +165,7 @@ export default function DefaultField({
       <WritableDefaultField
         id={id}
         path=""
+        hidden={path.length > 0}
         initialValue={initialValue}
         fieldConfig={fieldConfig}
       />
@@ -178,17 +178,19 @@ export function WritableDefaultField({
   path,
   initialValue,
   fieldConfig,
-  options,
+  hidden,
 }: {
   id: FieldId;
   path: string;
   initialValue: Computation;
   fieldConfig: { type: "default" | "slug" };
-  options?: string[];
+  hidden?: boolean;
 }) {
+  /*
   const [fullPath] = useBuilderPath();
   const isActive =
     stringifyPath(fullPath) === path.split("/").slice(0, -1).join("/");
+  */
 
   const { imports } = useArticlePageContext();
 
@@ -314,9 +316,8 @@ export function WritableDefaultField({
         initialValue={initialEditorValue}
         setValue={setValue}
         transform={transform}
-        options={options}
       >
-        <div className={cl("relative", !isActive && "hidden")}>
+        <div className={cl("relative", hidden && "hidden")}>
           {isEmpty && (
             <div className="absolute pointer-events-none px-14 font-light opacity-25 select-none">
               Ikke udfyldt

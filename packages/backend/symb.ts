@@ -16,6 +16,7 @@ import {
   operators,
   FileToken,
   ColorToken,
+  CustomToken,
 } from "./types";
 
 function isObject(value: any): value is Record<string, any> {
@@ -111,6 +112,10 @@ function isColorToken(value: any): value is ColorToken {
   return isObject(value) && "color" in value;
 }
 
+function isCustomToken(value: any): value is CustomToken {
+  return isObject(value) && "name" in value;
+}
+
 function isFetcher(value: any): value is Fetcher {
   return isObject(value) && "id" in value && "filters" in value;
 }
@@ -132,4 +137,5 @@ export const symb = {
   isPrimitiveValue,
   isFileToken,
   isColorToken,
+  isCustomToken,
 };

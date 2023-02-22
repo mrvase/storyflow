@@ -195,7 +195,7 @@ function LabelBar({
       )}
       <button
         className={cl(
-          "ml-auto text-sm font-light flex-center -m-1 p-1",
+          "ml-auto shrink-0 text-sm font-light flex-center -m-0.5 p-0.5 w-5 h-5 bg-gray-750 rounded-full",
           isFocused
             ? "opacity-75"
             : "opacity-0 group-hover/container:opacity-50",

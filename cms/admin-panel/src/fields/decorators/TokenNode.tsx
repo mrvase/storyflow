@@ -10,11 +10,25 @@ import {
   Spread,
 } from "lexical";
 import cl from "clsx";
-import { ColorToken, FileToken, Token } from "@storyflow/backend/types";
+import {
+  ColorToken,
+  CustomToken,
+  FileToken,
+  Token,
+} from "@storyflow/backend/types";
 import { useIsSelected } from "./useIsSelected";
 import { caretClasses } from "./caret";
-import { PhotoIcon } from "@heroicons/react/24/outline";
+import {
+  PhotoIcon,
+  SwatchIcon,
+  TagIcon,
+  VariableIcon,
+} from "@heroicons/react/24/outline";
 import { useFileLabel } from "../../files";
+import { useFieldOptions } from "../default/OptionsContext";
+import { Option, RegularOptions } from "@storyflow/frontend/types";
+import useSWR from "swr";
+import { getColorName, hexColorToRgb, isHexColor } from "../../utils/colors";
 
 /*
 export const getTokenType = (value: TokenString) => {
@@ -34,7 +48,62 @@ function TokenDecorator({ nodeKey, token }: { nodeKey: string; token: Token }) {
   if ("color" in token) {
     return <ColorDecorator nodeKey={nodeKey} token={token} />;
   }
+  if ("name" in token) {
+    return <CustomDecorator nodeKey={nodeKey} token={token} />;
+  }
   return <FileDecorator nodeKey={nodeKey} token={token} />;
+}
+
+function CustomDecorator({
+  nodeKey,
+  token,
+}: {
+  nodeKey: string;
+  token: CustomToken;
+}) {
+  const { data } = useSWR("COLORS", {
+    revalidateOnMount: false,
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+    revalidateIfStale: false,
+  });
+
+  const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
+  const selectClick = React.useRef(false);
+
+  const options = useFieldOptions();
+
+  const option = (options as Option[]).find(
+    (option): option is { name: string; label?: string } =>
+      typeof option === "object" && option.name === token.name
+  );
+
+  let label = option && "label" in option ? option.label : token.name;
+
+  if (data && option && "value" in option && isHexColor(option.value)) {
+    label += ` (${getColorName(option.value.slice(1), data[0], data[1])})`;
+  }
+
+  return (
+    <span
+      className={cl(
+        "bg-gray-50 dark:bg-sky-400/20 text-sky-100/90 rounded-sm selection:bg-transparent relative px-2",
+        isSelected ? "ring-1 ring-amber-300" : "dark:ring-gray-600",
+        isPseudoSelected && caretClasses
+      )}
+      onMouseDown={() => {
+        if (!isSelected) {
+          select();
+          selectClick.current = true;
+        }
+      }}
+    >
+      <span className="flex-center gap-2">
+        <TagIcon className="w-4 h-4 inline" />
+        {label}
+      </span>
+    </span>
+  );
 }
 
 function FileDecorator({
@@ -53,7 +122,7 @@ function FileDecorator({
     <span
       className={cl(
         "bg-gray-50 dark:bg-sky-400/20 text-sky-100/90 rounded-sm selection:bg-transparent relative px-2",
-        isSelected ? "ring-2 ring-amber-300" : "dark:ring-gray-600",
+        isSelected ? "ring-1 ring-amber-300" : "dark:ring-gray-600",
         isPseudoSelected && caretClasses
       )}
       onMouseDown={() => {
@@ -85,7 +154,7 @@ function ColorDecorator({
     <span
       className={cl(
         "bg-gray-50 dark:bg-sky-400/20 text-sky-100/90 rounded-sm selection:bg-transparent relative px-2",
-        isSelected ? "ring-2 ring-amber-300" : "dark:ring-gray-600",
+        isSelected ? "ring-1 ring-amber-300" : "dark:ring-gray-600",
         isPseudoSelected && caretClasses
       )}
       onMouseDown={() => {
@@ -96,8 +165,12 @@ function ColorDecorator({
       }}
     >
       <span className="flex-center gap-2">
-        <PhotoIcon className="w-4 h-4 inline" />
+        <SwatchIcon className="w-4 h-4 inline" />
         {token.color}
+        <div
+          className="w-4 h-4 rounded ring-1 ring-inset ring-white/50"
+          style={{ backgroundColor: token.color }}
+        />
       </span>
     </span>
   );

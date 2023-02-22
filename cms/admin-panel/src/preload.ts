@@ -2,6 +2,8 @@ import { queryKey } from "@sfrpc/client";
 import { unwrap } from "@storyflow/result";
 import React from "react";
 import { provider, useClient, useQueryContext } from "./client";
+import { hexColorToRgb } from "./utils/colors";
+import useSWR from "swr";
 
 let preloaded = false;
 
@@ -14,6 +16,26 @@ export function Preload() {
   const client = useClient();
 
   const ctx = useQueryContext();
+
+  useSWR(
+    "COLORS",
+    () =>
+      fetch("/colors.json").then(async (r) => {
+        const json = await r.json();
+        const colors: number[] = [];
+        const names: string[] = [];
+        json.forEach(([el, name]: [string, string]) => {
+          colors.push(...hexColorToRgb(el));
+          names.push(name);
+        });
+        return [new Uint8Array(colors), names] as const;
+      }),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      revalidateIfStale: false,
+    }
+  );
 
   React.useLayoutEffect(() => {
     const cache = provider();

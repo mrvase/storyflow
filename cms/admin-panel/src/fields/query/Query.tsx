@@ -1,15 +1,15 @@
 import cl from "clsx";
 import {
+  DocumentId,
   EditorComputation,
+  FieldId,
   FieldImport,
   functions,
-  Token,
   Value,
 } from "@storyflow/backend/types";
 import { LABEL_ID, URL_ID } from "@storyflow/backend/templates";
 import { computeFieldId, createId } from "@storyflow/backend/ids";
 import {
-  ArrowRightIcon,
   ArrowUturnRightIcon,
   AtSymbolIcon,
   BoltIcon,
@@ -26,214 +26,209 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import {
-  $getNodeByKey,
+  $createParagraphNode,
+  $createTextNode,
   $getRoot,
   $getSelection,
-  $isNodeSelection,
+  $isParagraphNode,
   $isRangeSelection,
+  $isRootNode,
   $isTextNode,
-  $setSelection,
   BLUR_COMMAND,
   CLICK_COMMAND,
   COMMAND_PRIORITY_EDITOR,
   COMMAND_PRIORITY_HIGH,
-  EditorState,
-  FOCUS_COMMAND,
   KEY_ARROW_DOWN_COMMAND,
   KEY_ARROW_UP_COMMAND,
   KEY_ENTER_COMMAND,
   KEY_ESCAPE_COMMAND,
+  LexicalEditor,
   LexicalNode,
 } from "lexical";
 import React from "react";
-import { useClientConfig } from "../client-config";
-import { SWRClient } from "../client";
-import $createRangeSelection from "../editor/createRangeSelection";
-import { $isImportNode } from "../fields/decorators/ImportNode";
-import { $isTokenNode, TokenNode } from "./decorators/TokenNode";
-import { useEditorContext } from "../editor/react/EditorProvider";
-import { mergeRegister } from "../editor/utils/mergeRegister";
-import { useAppFolders } from "../folders";
+import { useClientConfig } from "../../client-config";
+import { SWRClient } from "../../client";
+import { $isImportNode } from "../decorators/ImportNode";
+import { useEditorContext } from "../../editor/react/EditorProvider";
+import { mergeRegister } from "../../editor/utils/mergeRegister";
+import { useAppFolders } from "../../folders";
 import { tools } from "shared/editor-tools";
 import { ComputationOp } from "shared/operations";
-import { useGlobalState } from "../state/state";
+import { useGlobalState } from "../../state/state";
 import {
   getFileExtension,
   getFileType,
   getFileTypeFromExtension,
   getImageSize,
   getVideoSize,
-} from "../utils/file";
-import { spliceTextWithNodes } from "./Editor/spliceTextWithNodes";
-import { createComponent } from "./Editor/createComponent";
+} from "../../utils/file";
+import { spliceTextWithNodes } from "../Editor/spliceTextWithNodes";
+import { createComponent } from "../Editor/createComponent";
 import {
   $getComputation,
   $getIndexFromPoint,
   $getNodeFromIndex,
-  $getPointFromIndex,
   $isBlockNode,
   getNodesFromComputation,
-} from "./Editor/transforms";
-import { useFiles } from "../files";
-import { Spinner } from "../elements/Spinner";
-import { useUrlInfo } from "../users";
+} from "../Editor/transforms";
+import { useFiles } from "../../files";
+import { Spinner } from "../../elements/Spinner";
+import { useUrlInfo } from "../../users";
+import { LibraryConfig, RegularOptions } from "@storyflow/frontend/types";
+import { useIsFocused } from "../../editor/react/useIsFocused";
+import { useRestorableSelection } from "./useRestorableSelection";
+import { useSelectedToken } from "./useSelectedToken";
+import { useYPosition } from "./useYPosition";
+import { QueryType, isAdjacent, isTextInsert, getQueryType } from "./helpers";
+import { useFieldOptions } from "../default/OptionsContext";
+import { ColorPicker } from "../../elements/ColorPicker/ColorPicker";
+import useSWR from "swr";
+import { getColorName } from "../../utils/colors";
+import { Option } from "./Option";
 
-type TextOps = [{ index: number; insert: [string]; remove?: 0 }];
+export type TextOps = [{ index: number; insert: [string]; remove?: 0 }];
 
-const useRestorableSelection = () => {
-  const [savedSelection, setSavedSelection] = React.useState<number | null>(
-    null
-  );
-
-  const editor = useEditorContext();
-
-  const hold = React.useCallback(() => {
-    const result = editor.getEditorState().read(() => {
-      const selection = $getSelection();
-      if (!$isRangeSelection(selection)) return null;
-      return $getIndexFromPoint(selection.anchor);
-    });
-    setSavedSelection(result);
-  }, [editor]);
-
-  const restore = React.useCallback(async () => {
-    if (!savedSelection) return;
-    await new Promise((resolve, reject) =>
-      editor.update(() => {
-        try {
-          const [anchorNode, anchorOffset] = $getPointFromIndex(
-            "cursor",
-            savedSelection
-          );
-          if ($isTextNode(anchorNode)) {
-            const point = { node: anchorNode, offset: anchorOffset };
-            const newSelection = $createRangeSelection(point, point);
-            $setSelection(newSelection);
-            resolve(true);
-          } else {
-            resolve(false);
-          }
-        } catch (err) {
-          reject();
-        }
-      })
-    );
-    setSavedSelection(null);
-  }, [editor, savedSelection]);
-
-  const actions = React.useMemo(() => ({ hold, restore }), [hold, restore]);
-
-  return [Boolean(savedSelection), actions] as [boolean, typeof actions];
-};
-
-const useSelectedToken = (callback: (token: Token) => void) => {
-  const [tokenNode, setTokenNode] = React.useState<{
-    key: string;
-    value: Token;
-  }>();
-
-  const editor = useEditorContext();
-
-  React.useEffect(() => {
-    const update = (editorState: EditorState) => {
-      const state = editorState.read(() => {
+const insertComputation = async (
+  editor: LexicalEditor,
+  insert: EditorComputation,
+  remove: number,
+  libraries: LibraryConfig[],
+  removeExtra?: boolean
+) => {
+  return await new Promise<boolean>((resolve) => {
+    editor.update(
+      () => {
         const selection = $getSelection();
 
-        if (!$isNodeSelection(selection)) return;
-        const nodes = selection.getNodes();
-        if (nodes.length !== 1) return;
-        const [node] = nodes;
+        if (!$isRangeSelection(selection) || !selection.isCollapsed()) {
+          console.error(
+            "Tried to insert computation. But selection is not collapsed or not a range selection.",
+            {
+              isRangeSelection: $isRangeSelection(selection),
+            }
+          );
+          resolve(false);
+          return;
+        }
 
-        if (!$isTokenNode(node)) return;
+        const anchor = selection.anchor;
+        let node = anchor.getNode();
+        const index = $getIndexFromPoint(anchor);
 
-        return {
-          value: node.getToken(),
-          key: node.__key,
-        };
-      });
+        if ($isRootNode(node) && node.getTextContent() === "") {
+          const root = node;
+          node = $createTextNode();
+          root.append($createParagraphNode().append(node));
+        }
 
-      if (state) callback(state.value);
-      setTokenNode(state);
-    };
-    return mergeRegister(
-      editor.registerCommand(
-        FOCUS_COMMAND,
-        () => {
-          console.log("focus");
-          update(editor.getEditorState());
-          return false;
-        },
-        COMMAND_PRIORITY_EDITOR
-      ),
-      editor.registerCommand(
-        BLUR_COMMAND,
-        () => {
-          setTokenNode(undefined);
-          return false;
-        },
-        COMMAND_PRIORITY_EDITOR
-      ),
-      editor.registerUpdateListener(({ editorState }) => {
-        console.log("update");
-        update(editorState);
-      })
+        if ($isParagraphNode(node) && node.getTextContent() === "") {
+          const p = node;
+          node = $createTextNode();
+          p.append(node);
+        }
+
+        if (!$isTextNode(node) || index === null) {
+          console.error(
+            "Tried to insert computation. But selection is not a text node or lacks index.",
+            { isTextNode: $isTextNode(node) }
+          );
+          resolve(false);
+          return;
+        }
+
+        const startIndex = anchor.offset - remove;
+        const universalIndex = $getIndexFromPoint(anchor) - remove;
+
+        if (insert.length === 1 && typeof insert[0] === "string") {
+          try {
+            node = node.spliceText(startIndex, remove, insert[0], true);
+            if (node.getTextContent() === "") {
+              node.remove();
+            }
+          } catch (err) {
+            console.error(err);
+            resolve(false);
+            return;
+          }
+        } else {
+          try {
+            const nodes = getNodesFromComputation(insert, libraries);
+            spliceTextWithNodes(node, startIndex, remove, nodes);
+          } catch (err) {
+            console.error(err);
+            resolve(false);
+            return;
+          }
+        }
+
+        if (removeExtra) {
+          const index = universalIndex - 1;
+          const [node] = $getNodeFromIndex("symbol", index, $getRoot());
+          if (node && $isImportNode(node)) {
+            node?.remove();
+          }
+        }
+
+        resolve(true);
+      },
+      { tag: "cms-command" }
     );
-  }, [editor]);
-
-  const token = tokenNode?.value;
-
-  const setToken = (value: Token) => {
-    if (!tokenNode) return;
-    editor.update(() => {
-      const node = $getNodeByKey(tokenNode.key) as TokenNode | null;
-      node?.setToken(value);
-    });
-  };
-
-  return [token, setToken] as [typeof token, typeof setToken];
+  });
 };
 
-const isTextInsert = (ops: ComputationOp["ops"]): ops is TextOps => {
-  return (
-    ops.length === 1 &&
-    Array.isArray(ops[0].insert) &&
-    ops[0].insert.length === 1 &&
-    !ops[0].remove &&
-    typeof ops[0].insert[0] === "string"
-  );
+const insertBlock = async (
+  editor: LexicalEditor,
+  insert: EditorComputation,
+  remove: number,
+  libraries: LibraryConfig[]
+) => {
+  return await new Promise<boolean>((resolve) => {
+    editor.update(
+      () => {
+        const newNode = getNodesFromComputation(insert, libraries)[0];
+        const selection = $getSelection();
+
+        if (!$isRangeSelection(selection) || !selection.isCollapsed()) {
+          return resolve(false);
+        }
+
+        let node = selection.anchor.getNode();
+
+        if (!$isTextNode(node)) return resolve(false);
+
+        let parentNode: LexicalNode | null = node;
+
+        while (parentNode && !$isBlockNode(parentNode)) {
+          parentNode = parentNode!.getParent();
+        }
+
+        if (!parentNode) return resolve(false);
+
+        node.spliceText(selection.anchor.offset - remove, remove, "", true);
+
+        const isEmpty = node.getTextContent() === "";
+
+        if (isEmpty) {
+          parentNode.insertBefore(newNode);
+        } else {
+          parentNode.insertAfter(newNode);
+        }
+        resolve(true);
+      },
+      { tag: "cms-command" }
+    );
+  });
 };
 
-const isAdjacent = (
-  prev: ComputationOp["ops"],
-  next: ComputationOp["ops"]
-): boolean => {
-  if (prev.length !== 1 || next.length !== 1) return false;
-  const prevEndingIndex =
-    prev[0].index +
-    tools.getLength(prev[0].insert ?? []) -
-    (prev[0].remove ?? 0);
-  const nextStartingIndex = next[0].index + (next[0].remove ?? 0);
-  return prevEndingIndex === nextStartingIndex;
-};
-
-type QueryType = "<" | "@" | "#" | "/" | ".";
-
-const getQueryType = (query: string, index: number): QueryType | null => {
-  // Avoid matching a query, when there is a space immediately after the query symbol.
-  // This prevents the command that adds "# " to create a headline from triggering the query.
-  const match = query.match(
-    /^([\@\#\/\<\.])([^\s]|$)/
-  )?.[1] as QueryType | null;
-  if (!match || ([".", "#"].includes(match) && index !== 0)) {
-    return null;
-  }
-  return match;
+const getOptionLabel = (option: RegularOptions[number]) => {
+  return typeof option === "object"
+    ? option.label ?? ("value" in option ? option.value : option.name)
+    : option;
 };
 
 export function Query({
   push,
   children,
-  options,
 }: {
   push: (
     payload:
@@ -246,15 +241,27 @@ export function Query({
   children: (
     push: (payload: ComputationOp["ops"], tags: Set<string>) => void
   ) => React.ReactNode;
-  options?: string[];
 }) {
+  const editor = useEditorContext();
+  const { libraries } = useClientConfig();
+  const options = useFieldOptions() ?? undefined;
+
   const [queryType, setQueryType] = React.useState<QueryType | null>(null);
   const [query, setQuery] = React.useState("");
 
-  const [token] = useSelectedToken(() => {});
+  const [token, setToken] = useSelectedToken(() => {});
+
+  const isFocused = useIsFocused(editor);
 
   React.useEffect(() => {
-    token && "src" in token ? setQueryType(".") : setQueryType(null);
+    if (token)
+      if ("src" in token) {
+        setQueryType(".");
+      } else if ("color" in token) {
+        setQueryType("#");
+      } else {
+        setQueryType(null);
+      }
   }, [token]);
 
   const pushWithQuery = React.useCallback(
@@ -325,8 +332,9 @@ export function Query({
           const query = latest[0].insert[0];
           const index = latest[0].index;
           setQuery(query);
-          console.log("QUERY", query);
-          setQueryType(getQueryType(query, index));
+          const queryType = getQueryType(query, index);
+          console.log("QUERY", query, queryType);
+          setQueryType(queryType);
         } else {
           setQuery("");
           setQueryType(null);
@@ -336,7 +344,7 @@ export function Query({
         return result;
       });
     },
-    [push, queryType]
+    [push, queryType, options]
   );
 
   const [hold, holdActions] = useRestorableSelection();
@@ -347,6 +355,7 @@ export function Query({
       editor.registerCommand(
         BLUR_COMMAND,
         () => {
+          console.log("blur escape");
           escape();
           return false;
         },
@@ -355,67 +364,31 @@ export function Query({
       editor.registerCommand(
         CLICK_COMMAND,
         () => {
-          if (!token) escape();
+          if (!token && !options) {
+            console.log("click escape");
+            escape();
+          }
           return false;
         },
         COMMAND_PRIORITY_EDITOR
       )
     );
-  }, [push, hold, token]);
-
-  const [y, setState] = React.useState(0);
-
-  const queryString = queryType ? query.slice(1) : query;
+  }, [push, hold, token, options]);
 
   const [selected, setSelected] = React.useState(0);
 
-  const editor = useEditorContext();
-  const { libraries } = useClientConfig();
-
   React.useEffect(() => {
     setSelected(0);
-    if (query || queryType) {
-      editor.getEditorState().read(() => {
-        const selection = $getSelection();
-        if ($isRangeSelection(selection)) {
-          const key = selection.anchor.key;
-          let DOMNode: HTMLElement | null = editor.getElementByKey(key);
-          const EditorNode = editor.getRootElement();
-          if (!DOMNode || !EditorNode) return;
-          const range = document.createRange();
-          try {
-            range.setEnd(DOMNode.firstChild!, selection.anchor.offset);
-            range.setStart(
-              DOMNode.firstChild!,
-              selection.anchor.offset - query.length
-            );
-            const editorRect = EditorNode.getBoundingClientRect();
-            const rangeRect = range.getBoundingClientRect();
-            setState(rangeRect.y + rangeRect.height - editorRect.y + 8);
-          } catch (err) {
-            console.error(err);
-          }
-        } else if ($isNodeSelection(selection)) {
-          console.log("NODE SELECTION");
-          const nodes = selection.getNodes();
-          if (nodes.length !== 1) return;
-          const [node] = nodes;
-          const DOMNode = editor.getElementByKey(node.__key);
-          const EditorNode = editor.getRootElement();
-          console.log("DOMNODE", DOMNode, EditorNode);
-          if (!DOMNode || !EditorNode) return;
-          const editorRect = EditorNode.getBoundingClientRect();
-          const nodeRect = DOMNode.getBoundingClientRect();
-          setState(nodeRect.y + nodeRect.height - editorRect.y + 8);
-        }
-      });
-    } else {
-      setState(0);
-    }
   }, [query, queryType]);
 
+  const queryString =
+    queryType && query.startsWith(queryType) ? query.slice(1) : query;
+  const func = functions.includes(queryString as any);
+  const showOptions = isFocused && options && options.length > 0;
+  const show = Boolean(queryType || func || showOptions);
+
   React.useEffect(() => {
-    if (!query && !queryType) return;
+    if (!show) return;
     return mergeRegister(
       editor.registerCommand(
         KEY_ARROW_DOWN_COMMAND,
@@ -445,9 +418,10 @@ export function Query({
         COMMAND_PRIORITY_HIGH
       )
     );
-  }, [query, queryType]);
+  }, [show]);
 
   const escape = () => {
+    console.log("@QUERY ESCAPE");
     setQuery("");
     setQueryType(null);
     push((prev, noop) => {
@@ -462,6 +436,7 @@ export function Query({
   };
 
   const reset = () => {
+    console.log("@QUERY RESET");
     setQuery("");
     setQueryType(null);
     resetEditorQuery();
@@ -491,120 +466,7 @@ export function Query({
     });
   };
 
-  const insertBlock = async (insert: EditorComputation) => {
-    const success = await new Promise<boolean>((resolve) => {
-      editor.update(
-        () => {
-          const newNode = getNodesFromComputation(insert, libraries)[0];
-          const selection = $getSelection();
-
-          if (!$isRangeSelection(selection) || !selection.isCollapsed()) {
-            return resolve(false);
-          }
-
-          let node = selection.anchor.getNode();
-
-          if (!$isTextNode(node)) return resolve(false);
-
-          let parentNode: LexicalNode | null = node;
-
-          while (parentNode && !$isBlockNode(parentNode)) {
-            parentNode = parentNode!.getParent();
-          }
-
-          if (!parentNode) return resolve(false);
-
-          node.spliceText(
-            selection.anchor.offset - query.length,
-            query.length,
-            "",
-            true
-          );
-
-          const isEmpty = node.getTextContent() === "";
-
-          if (isEmpty) {
-            parentNode.insertBefore(newNode);
-          } else {
-            parentNode.insertAfter(newNode);
-          }
-          resolve(true);
-        },
-        { tag: "cms-command" }
-      );
-    });
-
-    if (success) {
-      setQuery("");
-      setQueryType(null);
-    }
-  };
-
-  const insertComputation = async (
-    insert: EditorComputation,
-    removeExtra?: boolean
-  ) => {
-    const success = await new Promise<boolean>((resolve) => {
-      editor.update(
-        () => {
-          const selection = $getSelection();
-
-          if (!$isRangeSelection(selection) || !selection.isCollapsed()) {
-            resolve(false);
-            return;
-          }
-
-          const anchor = selection.anchor;
-          let node = anchor.getNode();
-          const index = $getIndexFromPoint(anchor);
-
-          if (!$isTextNode(node) || index === null) {
-            resolve(false);
-            return;
-          }
-
-          const remove = query.length;
-          const startIndex = anchor.offset - remove;
-          const universalIndex = $getIndexFromPoint(anchor) - remove;
-
-          if (insert.length === 1 && typeof insert[0] === "string") {
-            node = node.spliceText(startIndex, remove, insert[0], true);
-            if (node.getTextContent() === "") {
-              node.remove();
-            }
-          } else {
-            try {
-              const nodes = getNodesFromComputation(insert, libraries);
-              spliceTextWithNodes(node, startIndex, remove, nodes);
-            } catch (err) {
-              console.error(err);
-              resolve(false);
-            }
-          }
-
-          if (removeExtra) {
-            const index = universalIndex - 1;
-            const [node] = $getNodeFromIndex("symbol", index, $getRoot());
-            if (node && $isImportNode(node)) {
-              node?.remove();
-            }
-          }
-
-          resolve(true);
-        },
-        { tag: "cms-command" }
-      );
-    });
-
-    if (success) {
-      setQuery("");
-      setQueryType(null);
-    }
-  };
-
-  const func = functions.includes(queryString as any);
-
-  const show = queryType || func;
+  const y = useYPosition(editor, show);
 
   const QueryIcon = {
     "": null,
@@ -616,7 +478,7 @@ export function Query({
   }[queryType ?? ""];
 
   const queryTitle = {
-    "": null,
+    "": "Valgmuligheder",
     "#": "Indsæt farve",
     "<": "Indsæt element",
     ".": "Find billede",
@@ -624,11 +486,67 @@ export function Query({
     "/": "Generer linkadresse",
   }[queryType ?? ""];
 
+  const insertComputationSimple = React.useCallback(
+    async (insert: EditorComputation, removeExtra?: boolean) => {
+      const success = await insertComputation(
+        editor,
+        insert,
+        query.length,
+        libraries,
+        removeExtra
+      );
+      if (success) {
+        setQuery("");
+        setQueryType(null);
+      }
+    },
+    [editor, query, libraries]
+  );
+
+  const insertBlockSimple = React.useCallback(
+    async (insert: EditorComputation) => {
+      const success = await insertBlock(
+        editor,
+        insert,
+        query.length,
+        libraries
+      );
+      if (success) {
+        setQuery("");
+        setQueryType(null);
+      }
+    },
+    [editor, query, libraries]
+  );
+
+  const filteredOptions = React.useMemo(
+    () =>
+      options?.filter((el) => {
+        return String(getOptionLabel(el))
+          .toLowerCase()
+          .startsWith(queryString.toLowerCase());
+      }) ?? [],
+    [options, query]
+  );
+
+  const onOptionEnter = React.useCallback(
+    (option: RegularOptions[number]) => {
+      if (typeof option !== "object") {
+        insertComputationSimple([option]);
+      } else if ("name" in option && typeof option.name !== "undefined") {
+        insertComputationSimple([{ name: option.name }]);
+      } else if ("value" in option && typeof option.value !== "undefined") {
+        insertComputationSimple([option.value]);
+      }
+    },
+    [insertComputationSimple]
+  );
+
   return (
     <>
       <div
         className={cl(
-          "absolute left-11 right-11 z-10 bg-gray-800 rounded shadow-lg font-light",
+          "absolute left-5 right-5 z-10 bg-gray-800 ring-1 ring-gray-700 rounded shadow-lg font-light",
           show
             ? "opacity-100 transition-opacity"
             : "opacity-0 pointer-events-none"
@@ -638,7 +556,7 @@ export function Query({
         <div className="flex flex-col">
           <div
             className={cl(
-              "pt-3 relative h-10 px-3 text-opacity-50 text-gray-300 text-xs flex items-center rounded"
+              "pt-3 relative h-10 px-5 text-opacity-50 text-gray-300 text-xs flex items-center rounded"
             )}
           >
             <div>{QueryIcon && <QueryIcon className="w-4 h-4" />}</div>
@@ -663,13 +581,24 @@ export function Query({
               </div>
             )}
           </div>
-          <div className="p-2 max-h-60 overflow-y-auto flex flex-col gap-1">
+          <div className="p-2 max-h-60 overflow-y-auto no-scrollbar flex flex-col gap-1">
+            {queryType === "#" && (
+              <QueryColors
+                selected={selected}
+                query={queryString}
+                insertComputation={insertComputationSimple}
+                setToken={token && "color" in token ? setToken : undefined}
+                initialColor={
+                  token && "color" in token ? token.color : undefined
+                }
+              />
+            )}
             {queryType === "<" && (
               <QueryComponents
                 selected={selected}
                 query={queryString}
-                insertBlock={insertBlock}
-                insertComputation={insertComputation}
+                insertBlock={insertBlockSimple}
+                insertComputation={insertComputationSimple}
                 options={options}
               />
             )}
@@ -677,14 +606,14 @@ export function Query({
               <QueryCommands
                 selected={selected}
                 query={queryString}
-                insertBlock={insertBlock}
+                insertBlock={insertBlockSimple}
               />
             )}
             {queryType === "/" && (
               <QueryLinks
                 selected={selected}
                 query={queryString}
-                insertComputation={insertComputation}
+                insertComputation={insertComputationSimple}
               />
             )}
             {queryType === "." && (
@@ -693,14 +622,29 @@ export function Query({
                 query={queryString}
                 reset={reset}
                 holdActions={holdActions}
-                insertComputation={insertComputation}
+                insertComputation={insertComputationSimple}
               />
             )}
             {!queryType && func && (
-              <Option isSelected={true} onEnter={() => {}} Icon={BoltIcon}>
+              <Option
+                value={func}
+                isSelected={true}
+                onEnter={() => {}}
+                Icon={BoltIcon}
+              >
                 Indsæt funktion: "{queryString}()"
               </Option>
             )}
+            {showOptions &&
+              filteredOptions.map((option, i) => (
+                <Option
+                  value={option}
+                  isSelected={selected === i}
+                  onEnter={onOptionEnter}
+                >
+                  {getOptionLabel(option)}
+                </Option>
+              ))}
           </div>
         </div>
       </div>
@@ -725,19 +669,99 @@ function useOnEnter(callback: () => void, deps: any[]) {
   }, deps);
 }
 
+function QueryColors({
+  insertComputation,
+  selected,
+  setToken,
+  initialColor,
+}: any) {
+  const [color, setColor] = React.useState(initialColor || "#ffffff");
+
+  const { data } = useSWR("COLORS", {
+    revalidateOnMount: false,
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+    revalidateIfStale: false,
+  });
+
+  let label = "";
+
+  if (data) {
+    label += getColorName(color.slice(1), data[0], data[1]);
+  }
+
+  const onEnter = React.useCallback((color: string) => {
+    if (setToken) {
+      setToken({ color });
+    } else {
+      insertComputation([{ color }]);
+    }
+  }, []);
+
+  const current = selected < 0 ? selected : selected % 1;
+
+  return (
+    <>
+      <div className="w-full flex mb-1 gap-2">
+        <ColorPicker color={color} onChange={setColor} />
+        <div
+          className="grow-0 shrink-0 w-10 h-40 rounded"
+          style={{ backgroundColor: color }}
+        />
+      </div>
+      <Option
+        value={color}
+        onEnter={onEnter}
+        isSelected={current === 0}
+        Icon={CubeIcon}
+        secondaryText={`${label} (${color})`}
+      >
+        Indsæt farve
+      </Option>
+      {/*<div className="flex justify-between text-gray-400 text-sm select-text">
+        <span
+          onMouseDown={(ev) => ev.preventDefault()}
+          onClick={() => {
+            navigator.clipboard.writeText(label);
+          }}
+        >
+          {label}
+        </span>
+        <span
+          onMouseDown={(ev) => ev.preventDefault()}
+          onClick={() => {
+            navigator.clipboard.writeText(color);
+          }}
+        >
+          {color}
+        </span>
+        </div>*/}
+    </>
+  );
+}
+
 function QueryComponents({
   query,
   selected,
   insertBlock,
   insertComputation,
-  options: defaultOptions,
+  options: optionsFromProps,
 }: {
   query: string;
   selected: number;
   insertBlock: (comp: EditorComputation) => void;
   insertComputation: (comp: EditorComputation) => void;
-  options?: string[];
+  options?: RegularOptions;
 }) {
+  const defaultOptions = React.useMemo(() => {
+    if (!optionsFromProps) return;
+
+    const options = optionsFromProps.filter(
+      (el) => typeof el === "object" && el.type === "element"
+    ) as { type: "element"; name: string }[];
+    return options.map((el) => el.name);
+  }, [optionsFromProps]);
+
   const { libraries } = useClientConfig();
   let options = libraries
     .map((library) =>
@@ -765,9 +789,8 @@ function QueryComponents({
 
   const current = selected < 0 ? selected : selected % filtered.length;
 
-  useOnEnter(() => {
-    const config = filtered[current];
-    if (config) {
+  const onEnter = React.useCallback(
+    (config: (typeof filtered)[number]) => {
       if (config.inline) {
         insertComputation([
           createComponent(config.name, {
@@ -783,19 +806,17 @@ function QueryComponents({
           }),
         ]);
       }
-    }
-  }, [query, selected]);
+    },
+    [insertComputation, insertBlock]
+  );
 
   return (
     <>
       {filtered.map((el, index) => (
         <Option
           key={`${el.libraryName}:${el.name}`}
-          onEnter={() => {
-            insertBlock([
-              createComponent(el.name, { library: el.libraryName, libraries }),
-            ]);
-          }}
+          value={el}
+          onEnter={onEnter}
           isSelected={index === current}
           Icon={CubeIcon}
           secondaryText={markMatchingString(el.name, query)}
@@ -847,6 +868,18 @@ function QueryCommands({
 
   let options: any[] = [];
 
+  const onSearchEnter = React.useCallback(() => setIsSearching(true), []);
+  const onAIEnter = React.useCallback(() => console.log("BIP BOP"), []);
+
+  const onEnter = React.useCallback(
+    (id: DocumentId) => {
+      () => {
+        insertBlock([{ dref: id }]);
+      };
+    },
+    [insertBlock]
+  );
+
   if (!isSearching) {
     options = [
       {
@@ -860,9 +893,7 @@ function QueryCommands({
         secondary: `"${searchQuery.substring(0, 20)}${
           searchQuery.length > 20 ? " ..." : ""
         }"`,
-        onEnter() {
-          setIsSearching(true);
-        },
+        onEnter: onSearchEnter,
         onEnterLabel: "Slå op",
         Icon: MagnifyingGlassIcon,
       },
@@ -873,9 +904,7 @@ function QueryCommands({
             {markMatchingString("AI-kommando", query)}
           </div>
         ),
-        onEnter() {
-          console.log("BIP BOP");
-        },
+        onEnter: onAIEnter,
         onEnterLabel: "Slå op",
         Icon: RocketLaunchIcon,
         secondary: `"${searchQuery.substring(0, 20)}${
@@ -889,9 +918,7 @@ function QueryCommands({
             {markMatchingString("Skift mellem matematik/tekst", query)}
           </div>
         ),
-        onEnter() {
-          console.log("BIP BOP");
-        },
+        onEnter: onAIEnter,
         onEnterLabel: "Skift",
         Icon: CalculatorIcon,
       },
@@ -902,9 +929,7 @@ function QueryCommands({
       label: el.values[LABEL_ID],
       secondary: el.id,
       Icon: DocumentIcon,
-      onEnter() {
-        insertBlock([{ dref: el.id }]);
-      },
+      onEnter,
       onEnterLabel: "Tilføj",
       onArrowRight() {},
       onArrowRightLabel: "Se felter",
@@ -913,15 +938,12 @@ function QueryCommands({
 
   const current = selected < 0 ? selected : selected % options.length;
 
-  useOnEnter(() => {
-    options[current]?.onEnter();
-  }, [options, query, selected]);
-
   return (
     <>
       {options.map((el, index) => (
         <Option
           key={el.id}
+          value={el.id}
           onEnter={el.onEnter}
           onEnterLabel={el.onEnterLabel}
           onArrowRight={el.onArrowRight}
@@ -984,6 +1006,22 @@ function QueryLinks({
     inactive: !app,
   });
 
+  const onAppEnter = React.useCallback((id: string) => {
+    setApp(id);
+  }, []);
+
+  const onEnter = React.useCallback(
+    (id: DocumentId) => {
+      const fieldImport: FieldImport = {
+        id: createId(1),
+        fref: computeFieldId(id, URL_ID),
+        args: {},
+      };
+      insertComputation([fieldImport], Boolean(parentUrl));
+    },
+    [parentUrl, query]
+  );
+
   if (!app) {
     options =
       apps?.map((el) => ({
@@ -991,9 +1029,7 @@ function QueryLinks({
         label: el.label,
         // secondaryText: "Vis links",
         Icon: ComputerDesktopIcon,
-        onEnter() {
-          setApp(el.id);
-        },
+        onEnter: onAppEnter,
         onEnterLabel: "Vis links",
       })) ?? [];
   } else if (list) {
@@ -1006,14 +1042,7 @@ function QueryLinks({
           onEnterLabel: "Indsæt",
           // secondaryText: "Vis links",
           Icon: LinkIcon,
-          onEnter() {
-            const fieldImport: FieldImport = {
-              id: createId(1),
-              fref: computeFieldId(el.id, URL_ID),
-              args: {},
-            };
-            insertComputation([fieldImport], Boolean(parentUrl));
-          },
+          onEnter,
         });
         return acc;
       }
@@ -1023,21 +1052,12 @@ function QueryLinks({
 
   const current = selected < 0 ? selected : selected % options.length;
 
-  useOnEnter(() => {
-    const option = options[current];
-    if (option) {
-      option.onEnter();
-    }
-  }, [query, selected]);
-
-  if (list) {
-  }
-
   return (
     <>
       {options.map(
         ({ id, label, secondaryText, Icon, onEnter, onEnterLabel }, index) => (
           <Option
+            value={id}
             onEnter={onEnter}
             onEnterLabel={onEnterLabel}
             isSelected={index === current}
@@ -1180,7 +1200,6 @@ function QueryFiles({
     const offset = 1 + previewOption;
     const option = files[offset + current];
     if (option) {
-      console.log("OPTION", option);
       insertComputation([{ src: option.name }]);
     }
   }, [query, files, previewOption, current]);
@@ -1356,76 +1375,5 @@ function File({ name, organization }: { name: string; organization: string }) {
         </video>
       )}
     </>
-  );
-}
-
-function Option({
-  isSelected,
-  onEnter,
-  onEnterLabel,
-  onArrowRight,
-  onArrowRightLabel,
-  children,
-  secondaryText,
-  Icon,
-}: {
-  isSelected: boolean;
-  onEnter: () => void;
-  onEnterLabel?: string;
-  onArrowRight?: () => void;
-  onArrowRightLabel?: string;
-  children: React.ReactNode;
-  secondaryText?: React.ReactNode;
-  Icon?: React.FC<any>;
-}) {
-  return (
-    <div
-      className={cl(
-        "group pl-3 pr-2 h-10 shrink-0 rounded text-sm hover:bg-gray-700 transition-colors",
-        isSelected && "ring-1 ring-gray-700",
-        "flex items-center justify-between"
-      )}
-      onMouseDown={(ev) => {
-        ev.preventDefault();
-      }}
-      onClick={onEnter}
-    >
-      <div className="flex gap-3 items-center text-white text-opacity-90">
-        <div>{Icon && <Icon className="w-4 h-4" />}</div>{" "}
-        <div>
-          {children}
-          {secondaryText && (
-            <div className="text-xs text-gray-300 text-opacity-75 -mt-0.5">
-              {secondaryText}
-            </div>
-          )}
-        </div>
-      </div>
-      {isSelected && (
-        <div className="flex">
-          {onArrowRight && (
-            <button
-              className={cl(
-                "text-gray-300 text-opacity-50 text-xs flex gap-2 py-1.5 px-3 rounded",
-                "peer hover:bg-gray-600 transition-colors"
-              )}
-            >
-              {onArrowRightLabel ?? "indsæt"}
-              <ArrowRightIcon className="w-4 h-4" />
-            </button>
-          )}
-          <button
-            className={cl(
-              "text-gray-300 text-opacity-50 text-xs flex gap-2 py-1.5 px-3 rounded",
-              onArrowRight &&
-                "group-hover:bg-gray-600 peer-hover:bg-transparent transition-colors"
-            )}
-          >
-            {onEnterLabel ?? "indsæt"}
-            <ArrowUturnRightIcon className="w-4 h-4 rotate-180" />
-          </button>
-        </div>
-      )}
-    </div>
   );
 }
