@@ -210,6 +210,10 @@ function equals(compute1: EditorComputation, compute2: EditorComputation) {
       if (value1.src !== value2.src) {
         result = false;
       }
+    } else if (symb.isCustomToken(value2)) {
+      if (value1.name !== value2.name) {
+        result = false;
+      }
     } else if (symb.isColorToken(value2)) {
       if (value1.color !== value2.color) {
         result = false;

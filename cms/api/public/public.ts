@@ -90,6 +90,7 @@ export const public_ = createRoute({
     },
     async mutation({ namespace, url, config }, { dbName, slug }) {
       const page = await fetchSinglePage(url, namespace ?? "", dbName, config);
+      console.log("PAGE", page);
       return success(page);
     },
   }),

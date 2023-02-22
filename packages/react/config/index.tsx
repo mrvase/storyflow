@@ -11,6 +11,8 @@ import {
   StoryConfig,
   StoryProps,
   PropConfigArray,
+  StoryLibrary,
+  ExtendedOptions,
 } from "@storyflow/frontend/types";
 import * as React from "react";
 import { cms } from "../src/CMSElement";
@@ -108,7 +110,7 @@ export const registerLibraryConfigs = (configs: LibraryConfig[]) => {
   LIBRARY_CONFIGS = [...configs, defaultLibraryConfig];
 };
 
-export const createComponent = <T extends PropConfigArray>(
+export const createComponent = <T extends PropConfigArray<ExtendedOptions>>(
   component: ExtendedPartialConfig<T>["component"],
   config: PartialConfig<T>
 ): ExtendedPartialConfig<T> => {
@@ -127,7 +129,7 @@ function modifyValues<T extends object>(
   );
 }
 
-export function modifyChild<T extends PropConfigArray>(
+export function modifyChild<T extends PropConfigArray<ExtendedOptions>>(
   child: ExtendedPartialConfig<T>,
   props: number | StoryProps<T>,
   overwritingProps?: StoryProps<T>
@@ -152,7 +154,7 @@ export function modifyChild<T extends PropConfigArray>(
 
 export const createFullConfig = <T extends ExtendedLibraryConfig>(
   config: T
-) => {
+): [LibraryConfig, Library, StoryLibrary] => {
   const entries = Object.entries(config.components);
   const componentConfigs: any = {};
   const components: any = {};
@@ -240,8 +242,11 @@ export const createFullConfig = <T extends ExtendedLibraryConfig>(
             options: Object.entries(prop.options).map(
               ([key, value]: [string, any]) =>
                 value.typespace
-                  ? `${config.name}:${value.typespace}/${key}`
-                  : `${config.name}:${key}`
+                  ? {
+                      name: `${config.name}:${value.typespace}/${key}`,
+                      type: "element",
+                    }
+                  : { name: `${config.name}:${key}`, type: "element" }
             ),
           };
         }
@@ -296,7 +301,7 @@ export const createFullConfig = <T extends ExtendedLibraryConfig>(
       name: config.name,
       components: stories,
     } as { name: string; components: Record<string, Story[]> },
-  ] as const;
+  ];
 };
 
 export const getLibraries = () => {

@@ -26,6 +26,16 @@ export const Content = createComponent(
             type: "string",
             name: "backgroundColor",
             label: "Baggrundsfarve",
+            options: ["#f0f", "#0f0"],
+          },
+          {
+            type: "string",
+            name: "color",
+            label: "Tekstfarve",
+            options: [
+              { name: "theme1", label: "Temafarve 1", value: "#f0f" },
+              { name: "theme2", label: "Temafarve 2", value: "#0f0" },
+            ],
           },
         ],
       },
@@ -35,6 +45,7 @@ export const Content = createComponent(
         props: {
           style: {
             backgroundColor: "#f0f",
+            color: "#0f0",
           },
           content: ["hej med dig"],
         },
@@ -43,7 +54,7 @@ export const Content = createComponent(
         label: "En anden farve",
         props: {
           style: {
-            backgroundColor: "#f0f",
+            backgroundColor: "#0f0",
           },
           content: ["hej med dig"],
         },

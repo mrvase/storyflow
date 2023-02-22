@@ -1,7 +1,7 @@
 import { Value } from "@storyflow/backend/types";
 
 export const getPreview = (output: Value[]) => {
-  const valueAsString = (value: any) => {
+  const valueAsString = (value: any, placeholders: boolean) => {
     if (typeof value === "boolean") {
       return value ? "SAND" : "FALSK";
     }
@@ -9,12 +9,14 @@ export const getPreview = (output: Value[]) => {
       return value.toFixed(2).replace(".", ",").replace(",00", "");
     }
     if (Array.isArray(value)) {
+      if (!placeholders) return "";
       return "type" in value ? `{ ${value.type} }` : "[Liste]";
     }
     if (value === null) {
       return "";
     }
     if (typeof value === "object") {
+      if (!placeholders) return "";
       return "type" in value ? `{ ${value.type} }` : "{Dokument}";
     }
     return `${value}`;
@@ -23,9 +25,10 @@ export const getPreview = (output: Value[]) => {
     return "";
   }
   if (output.length === 1) {
-    return valueAsString(output[0]);
+    return valueAsString(output[0], false);
   }
 
   // return `[${output.length} elementer]`;
-  return `[${output.map((el) => valueAsString(el)).join(", ")}]`;
+  console.log("OUTPUT", output);
+  return `[${output.map((el) => valueAsString(el, true)).join(", ")}]`;
 };

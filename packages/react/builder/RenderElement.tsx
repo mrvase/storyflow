@@ -50,6 +50,18 @@ const getImageObject = (name: string) => {
 const calculateProp = (config: PropConfig, prop: any, index: number) => {
   const type = config.type;
   const value = prop[index % prop.length];
+  if (value !== null && typeof value === "object" && "name" in value) {
+    const option = Array.isArray(config.options)
+      ? config.options.find(
+          (el): el is { value: any } | { name: any } =>
+            typeof el === "object" && el.name === value.name
+        )
+      : undefined;
+    if (option && "value" in option) return option.value;
+  }
+  if (value !== null && typeof value === "object" && "color" in value) {
+    return value.color;
+  }
   if (["image", "video"].includes(type) && prop.length > 0) {
     const src = value?.src ?? "";
     if (
@@ -200,7 +212,6 @@ function RenderElementWithProps({
 
   const props = React.useMemo(() => {
     const props = calculatePropsFromConfig(config.props);
-    console.log("RENDERED PROPS", props);
     return props;
   }, [uncomputedProps, index]);
 
