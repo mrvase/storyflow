@@ -25,7 +25,7 @@ import {
   VariableIcon,
 } from "@heroicons/react/24/outline";
 import { useFileLabel } from "../../files";
-import { useFieldOptions } from "../default/OptionsContext";
+import { useFieldOptions } from "../default/FieldOptionsContext";
 import { Option, RegularOptions } from "@storyflow/frontend/types";
 import useSWR from "swr";
 import { getColorName, hexColorToRgb, isHexColor } from "../../utils/colors";

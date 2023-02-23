@@ -29,6 +29,5 @@ export const getPreview = (output: Value[]) => {
   }
 
   // return `[${output.length} elementer]`;
-  console.log("OUTPUT", output);
   return `[${output.map((el) => valueAsString(el, true)).join(", ")}]`;
 };

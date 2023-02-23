@@ -33,7 +33,7 @@ function InlineLayoutElementDecorator({
 
   const id = useFieldId();
 
-  const parentPath = pathString ? `${pathString}/${parentProp?.name}` : "";
+  const parentPath = pathString ? `${pathString}/${parentProp}` : "";
   const pathToLabel = `${id}${parentPath ? "." : ""}${parentPath}.${
     value.id
   }/label`;

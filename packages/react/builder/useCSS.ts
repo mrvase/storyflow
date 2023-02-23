@@ -3,6 +3,15 @@ import React from "react";
 let isInserted = false;
 
 const css = `
+* {
+  pointer-events: none !important;
+}
+
+[data-clickable-element="true"],
+[data-clickable-element="true"] * {
+  pointer-events: auto !important;
+}
+
 .cms-option {
   height: 2.5rem;
   display: flex;
@@ -13,6 +22,7 @@ const css = `
   font-size: 0.875rem;
   font-weight: 300;
 }
+
 .cms-option:hover {
   background-color: #fff1;
 }
@@ -32,8 +42,6 @@ const css = `
 
 export function useCSS() {
   React.useInsertionEffect(() => {
-    // As explained earlier, we don't recommend runtime injection of <style> tags.
-    // But if you have to do it, then it's important to do in useInsertionEffect.
     if (!isInserted) {
       isInserted = true;
       const style = document.createElement("style");

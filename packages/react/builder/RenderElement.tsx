@@ -5,7 +5,7 @@ import {
   PropConfigArray,
   ValueArray,
 } from "@storyflow/frontend/types";
-import { AddPathSegment, ExtendPath, usePath } from "./contexts";
+import { ExtendPath, usePath } from "./contexts";
 import {
   focusCMSElement,
   getSiblings,
@@ -81,10 +81,10 @@ const calculateProp = (config: PropConfig, prop: any, index: number) => {
     return Number(value || 0);
   } else if (type === "string") {
     return String(value || "");
-  } else if (type === "children" && prop.length > 0) {
+  } else if (type === "children") {
     return (
       <ExtendPath extend={config.name} spacer="/">
-        <RenderComponent parentProp={config} />
+        <RenderComponent parentProp={config.name} />
       </ExtendPath>
     );
   }
@@ -93,19 +93,12 @@ const calculateProp = (config: PropConfig, prop: any, index: number) => {
 
 export default function RenderElement({
   type,
-  parentProp,
   props: propsFromProps,
 }: {
   type: string;
-  parentProp: PropConfig | null;
   props?: Record<string, ValueArray>;
 }) {
   const path = usePath();
-
-  if (type === "Text") {
-    // we want to select parent element;
-    return <p>{propsFromProps!.text[0] as string}</p>;
-  }
 
   const uncomputedProps =
     propsFromProps ?? (useValue(path) as Record<string, ValueArray>);
@@ -154,36 +147,18 @@ export default function RenderElement({
     };
   }, []);
 
-  const segment = React.useMemo(
-    (): PathSegment => ({
-      id: path.split(".").slice(-1)[0],
-      label: config.label ?? type,
-      parentProp: parentProp
-        ? {
-            label: parentProp.label,
-            name: parentProp.name,
-          }
-        : null,
-    }),
-    [path, type]
-  );
-
   if (key.length === 1) {
-    return (
-      <AddPathSegment segment={segment}>
-        <RenderElementWithProps config={config} props={uncomputedProps} />
-      </AddPathSegment>
-    );
+    return <RenderElementWithProps config={config} props={uncomputedProps} />;
   }
 
   return (
-    <AddPathSegment segment={segment}>
-      {key.map((key, index) => (
+    <>
+      {key.map((_, index) => (
         <IndexContext.Provider key={index} value={index}>
           <RenderElementWithProps config={config} props={uncomputedProps} />
         </IndexContext.Provider>
       ))}
-    </AddPathSegment>
+    </>
   );
 }
 

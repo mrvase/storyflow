@@ -1,10 +1,14 @@
-import { MongoClient } from "mongodb";
+import { MongoClient, MongoClientOptions } from "mongodb";
 
 const MONGO_URL = process.env.MONGO_URL as string;
 
 const uri = `${MONGO_URL}?retryWrites=true&w=majority`;
 
-const options = {};
+const options: MongoClientOptions = {
+  connectTimeoutMS: 5000,
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 5000,
+};
 
 export type ClientPromise = Promise<MongoClient>;
 

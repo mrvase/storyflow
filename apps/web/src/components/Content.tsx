@@ -23,13 +23,13 @@ export const Content = createComponent(
         label: "Styling",
         props: [
           {
-            type: "string",
+            type: "color",
             name: "backgroundColor",
             label: "Baggrundsfarve",
             options: ["#f0f", "#0f0"],
           },
           {
-            type: "string",
+            type: "color",
             name: "color",
             label: "Tekstfarve",
             options: [

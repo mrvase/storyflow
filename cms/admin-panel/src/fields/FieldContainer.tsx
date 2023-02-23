@@ -36,6 +36,7 @@ import { BuilderPathProvider, useBuilderPath } from "./BuilderPath";
 import { useArticlePageContext } from "../articles/ArticlePageContext";
 import { useLocalStorage } from "../state/useLocalStorage";
 import useTabs from "../layout/useTabs";
+import { getConfigFromType, useClientConfig } from "../client-config";
 
 type Props = {
   fieldConfig: FieldConfig;
@@ -217,6 +218,7 @@ export function PathMap({
   path: Path;
   setPath: (value: Path) => void;
 }) {
+  const { libraries } = useClientConfig();
   return (
     <div className="text-sm font-light text-white/50 flex items-center gap-2 flex-wrap">
       <button
@@ -226,8 +228,8 @@ export function PathMap({
       >
         <LabelText />
       </button>
-      {path.map(({ id, label, parentProp }, index) => (
-        <React.Fragment key={id}>
+      {path.map((el, index) => (
+        <React.Fragment key={el.id}>
           <div className="opacity-75">
             <ChevronRightIcon className="w-3 h-3" />
           </div>
@@ -236,13 +238,9 @@ export function PathMap({
             onClick={() => setPath(path.slice(0, index + 1))}
             className="hover:underline text-yellow-400 flexitems-center"
           >
-            {/*
-            {parentProp !== null && (
-              <span className="opacity-50">{parentProp.label}</span>
-            )}
-            <span className="opacity-50">&nbsp;·&nbsp;</span>
-            */}
-            {label}
+            {el && "label" in el
+              ? el.label
+              : getConfigFromType(el.type, libraries)?.label}
           </button>
         </React.Fragment>
       ))}

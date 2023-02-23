@@ -5,6 +5,7 @@ import type {
 } from "@storyflow/frontend/types";
 import { getConfigByType } from "./getConfigByType";
 
+/*
 const isRenderable = (
   el: any
 ): el is string | number | { id: string; type: string } => {
@@ -70,3 +71,4 @@ export const createRenderArray = (
     return a;
   }, [] as RenderArray);
 };
+*/

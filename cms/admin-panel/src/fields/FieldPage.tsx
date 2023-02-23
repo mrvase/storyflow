@@ -190,6 +190,27 @@ const useElementActions = ({
     });
   }, [libraries, computation, parentPath, elementId]);
 
+  const editorComputationToBlocks = () => {
+    if (!computation) return [];
+    const blocks: { index: number; length: number }[] = [];
+    let length = 0;
+    tools.forEach(
+      computation,
+      (value, index) => {
+        length++;
+        if (tools.isLayoutElement(value)) {
+          blocks.push({
+            index,
+            length,
+          });
+          length = 0;
+        }
+      },
+      true
+    );
+    return blocks;
+  };
+
   React.useEffect(() => {
     return listeners.moveComponent.subscribe(({ parent, from, to }) => {
       if (!computation) return;

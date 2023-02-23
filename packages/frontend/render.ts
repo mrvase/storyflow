@@ -1,11 +1,6 @@
-import {
-  LibraryConfig,
-  RenderArray,
-  ValueArray,
-} from "@storyflow/frontend/types";
-/*
-import { getConfigByType } from "./getConfigByType";
-const isRenderable = (
+import type { RenderArray, ValueArray } from "./types";
+
+export const isRenderable = (
   el: any
 ): el is string | number | { id: string; type: string } => {
   if (el === "") return false;
@@ -15,29 +10,29 @@ const isRenderable = (
   );
 };
 
-const isHeadingElement = (el: any): number => {
+export const isHeadingElement = (el: any): number => {
   return typeof el === "string"
     ? (el.match(/^(\#+)\s.+/)?.[1] ?? "").length
     : 0;
 };
 
-const isInlineElement = (
+export const isInlineElement = (
   el: any,
-  configs: LibraryConfig[]
+  getDisplayType: (type: string) => boolean
 ): el is string | number | { id: string; type: string } => {
   if (["string", "number"].includes(typeof el)) {
     return true;
   }
   if (typeof el === "object" && "type" in el) {
     if (el.type === "Link") return true;
-    return Boolean(getConfigByType(el.type, configs)?.inline);
+    return getDisplayType(el.type);
   }
   return false;
 };
 
 export const createRenderArray = (
   value: ValueArray,
-  configs: LibraryConfig[]
+  getDisplayType: (type: string) => boolean
 ) => {
   return value.reduce((a, c) => {
     if (!isRenderable(c)) {
@@ -48,7 +43,7 @@ export const createRenderArray = (
       a.push({ $heading: [heading, (c as string).substring(heading + 1)] });
       return a;
     }
-    if (!isInlineElement(c, configs)) {
+    if (!isInlineElement(c, getDisplayType)) {
       a.push(c);
       return a;
     }
@@ -70,4 +65,3 @@ export const createRenderArray = (
     return a;
   }, [] as RenderArray);
 };
-*/

@@ -40,14 +40,12 @@ export const useSelectedToken = (callback: (token: Token) => void) => {
       });
 
       if (state) callback(state.value);
-      if (!state) console.log("setting to undefined");
       setTokenNode(state);
     };
     return mergeRegister(
       editor.registerCommand(
         FOCUS_COMMAND,
         () => {
-          console.log("focus");
           update(editor.getEditorState());
           return false;
         },
@@ -56,14 +54,12 @@ export const useSelectedToken = (callback: (token: Token) => void) => {
       editor.registerCommand(
         BLUR_COMMAND,
         () => {
-          console.log("blur");
           setTokenNode(undefined);
           return false;
         },
         COMMAND_PRIORITY_EDITOR
       ),
       editor.registerUpdateListener(({ editorState }) => {
-        console.log("update");
         update(editorState);
       })
     );
@@ -78,8 +74,6 @@ export const useSelectedToken = (callback: (token: Token) => void) => {
       node?.setToken(value);
     });
   };
-
-  console.log("TOKEN", token);
 
   return [token, setToken] as [typeof token, typeof setToken];
 };

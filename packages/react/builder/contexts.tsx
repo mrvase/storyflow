@@ -32,6 +32,7 @@ export function BuilderSelectionProvider({
   const listeners = React.useRef<Set<(selection: Path) => void>>(new Set());
 
   const setSelection = (newSelection: Path) => {
+    console.log("NEW SELECTION", newSelection);
     selection.current = newSelection;
     listeners.current.forEach((callback) => callback(newSelection));
   };
@@ -76,10 +77,14 @@ export function BuilderSelectionProvider({
 
 export function AddPathSegment({
   children,
-  segment,
+  id,
+  type,
+  parentProp,
 }: {
   children: React.ReactNode;
-  segment: PathSegment;
+  id: string;
+  type: string;
+  parentProp: string | null;
 }) {
   const [subscribe, select, deselect] = useBuilderSelection();
 
@@ -87,11 +92,11 @@ export function AddPathSegment({
     return [
       subscribe,
       (selection) => {
-        select([segment, ...selection]);
+        select([{ id, type, parentProp }, ...selection]);
       },
       deselect,
     ];
-  }, [segment]);
+  }, [id, type, parentProp]);
 
   return (
     <BuilderSelectionContext.Provider value={ctx}>

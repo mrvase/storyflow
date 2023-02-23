@@ -203,12 +203,22 @@ export type ComputationBlock = {
 
 export type FieldType = "default" | "url" | "slug";
 
+export type RestrictTo =
+  | "string"
+  | "number"
+  | "boolean"
+  | "date"
+  | "color"
+  | "image"
+  | "video"
+  | "children";
+
 export type FieldConfig<T extends FieldType = FieldType> = {
   id: FieldId;
   label: string;
   type: T;
   template?: DocumentId;
-  restrictTo?: string;
+  restrictTo?: RestrictTo;
 };
 
 export type TemplateRef = {

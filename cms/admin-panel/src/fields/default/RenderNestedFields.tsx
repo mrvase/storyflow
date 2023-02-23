@@ -38,7 +38,8 @@ import {
   PropGroup,
   RegularOptions,
 } from "@storyflow/frontend/types";
-import { OptionsContext } from "./OptionsContext";
+import { FieldOptionsContext } from "./FieldOptionsContext";
+import { FieldRestrictionsContext } from "../FieldTypeContext";
 
 export function RenderFetcher({
   id,
@@ -242,7 +243,9 @@ export function RenderLayoutElement({
     );
   }, [path, initialValue]);
 
-  const initialProps = getConfigFromType(type, libraries)?.props ?? [];
+  const config = getConfigFromType(type, libraries);
+
+  const initialProps = config?.props ?? [];
 
   const [key] = useGlobalState<Value[]>(extendPath(id, `${path}/key`));
 
@@ -286,7 +289,7 @@ export function RenderLayoutElement({
               <ChevronLeftIcon className="w-3 h-3" />
             </button>
           </div>
-          {fullPath.slice(-1)[0]?.label ?? ""}
+          {config?.label}
           <button
             className="ml-auto mr-5 w-4 h-4 flex-center rounded-full bg-gray-700"
             onClick={toggleListIsOpen}
@@ -462,21 +465,32 @@ function RenderNestedFields({
             "id" in el ? el.id.slice(4) : "name" in el ? el.name : el.arg;
           name = group ? extendPath(group, String(name), "#") : name;
           const initialValue = values[name] ?? [];
-          return (
-            <OptionsContext.Provider
-              value={"options" in el ? el.options ?? null : null}
-            >
-              <RenderNestedField
-                key={name}
-                id={id}
-                path={path}
-                initialValue={initialValue}
-                label={label}
-                name={name}
-                hidden={hidden}
-              />
-            </OptionsContext.Provider>
+
+          const field = (
+            <RenderNestedField
+              key={name}
+              id={id}
+              path={path}
+              initialValue={initialValue}
+              label={label}
+              name={name}
+              hidden={hidden}
+            />
           );
+
+          if ("type" in el) {
+            return (
+              <FieldRestrictionsContext.Provider value={el.type}>
+                <FieldOptionsContext.Provider
+                  value={"options" in el ? el.options ?? null : null}
+                >
+                  {field}
+                </FieldOptionsContext.Provider>
+              </FieldRestrictionsContext.Provider>
+            );
+          }
+
+          return field;
         })}
       </div>
     </IfActive>
@@ -516,7 +530,7 @@ function RenderNestedField({
         </div>
         {label}
       </div>
-      <ParentProp label={label} name={`${name}`}>
+      <ParentProp name={`${name}`}>
         <WritableDefaultField
           id={id}
           path={extendPath(path, `${name}`, "/")}

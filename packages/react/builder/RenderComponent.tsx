@@ -1,11 +1,13 @@
 import * as React from "react";
-import { ExtendPath, usePath } from "./contexts";
+import { AddPathSegment, ExtendPath, usePath } from "./contexts";
 import RenderElement, { IndexContext } from "./RenderElement";
 import { useValue } from "../builder/RenderBuilder";
-import { Component, PropConfig, ValueArray } from "@storyflow/frontend/types";
-import { createRenderArray } from "../config/createRenderArray";
+import { Component, ValueArray } from "@storyflow/frontend/types";
+import { createRenderArray } from "@storyflow/frontend/render";
+// import { createRenderArray } from "../config/createRenderArray";
 import { ParseRichText } from "../src/ParseRichText";
 import { getLibraries, getLibraryConfigs } from "../config";
+import { getConfigByType } from "../config/getConfigByType";
 
 const getDefaultComponent = (type: string) => {
   // we use this only to get the default render components
@@ -20,9 +22,9 @@ const getDefaultComponent = (type: string) => {
 };
 
 export default function RenderComponent({
-  parentProp,
+  parentProp = null,
 }: {
-  parentProp: PropConfig | null;
+  parentProp?: string | null;
 }) {
   const path = usePath();
 
@@ -33,21 +35,36 @@ export default function RenderComponent({
   const renderArray = React.useMemo(() => {
     const valueAtIndex = value[index];
     const value_ = Array.isArray(valueAtIndex) ? valueAtIndex : value;
-    return createRenderArray(value_, getLibraryConfigs());
+    const configs = getLibraryConfigs();
+    return createRenderArray(value_, (type: string) =>
+      Boolean(getConfigByType(type, configs)?.inline)
+    );
   }, [value, index]);
 
-  const createElement = (element: {
+  const createElement = ({
+    id,
+    type,
+    parent,
+  }: {
     id: string;
     type: string;
     parent?: string;
   }) => {
     return (
       <ExtendPath
-        key={element.id}
-        extend={element.parent ? `${element.parent}.${element.id}` : element.id}
-        reset={Boolean(element.parent)}
+        key={id}
+        extend={parent ? `${parent}.${id}` : id}
+        reset={Boolean(parent)}
       >
-        <RenderElement type={element.type} parentProp={parentProp} />
+        <AddPathSegment
+          {...{
+            id,
+            type,
+            parentProp,
+          }}
+        >
+          <RenderElement type={type} />
+        </AddPathSegment>
       </ExtendPath>
     );
   };
@@ -56,7 +73,8 @@ export default function RenderComponent({
     <>
       {renderArray.map((block, i1) => {
         if ("$heading" in block) {
-          const Component = getDefaultComponent(`H${block.$heading[0]}`)!;
+          const type = `H${block.$heading[0]}`;
+          const Component = getDefaultComponent(type)!;
           const string = String(block.$heading[1]);
           return (
             <Component key={i1}>
@@ -65,7 +83,8 @@ export default function RenderComponent({
           );
         }
         if ("$text" in block) {
-          const Component = getDefaultComponent("Text")!;
+          const type = "Text";
+          const Component = getDefaultComponent(type)!;
           return (
             <Component key={i1}>
               {block.$text.map((el, i2) => {
@@ -83,67 +102,66 @@ export default function RenderComponent({
         }
         return createElement(block);
       })}
-      {value.length === 0 && (
-        <div
-          onClick={() => {
-            /*
+      {value.length === 0 && <AddComponent />}
+    </>
+  );
+}
+
+const AddComponent = () => {
+  return (
+    <div
+      data-clickable-element="true"
+      onClick={() => {
+        /*
             dispatchers.createComponent.dispatch({
               path,
               name: "",
               library: "",
             })
             */
-          }}
+      }}
+      style={{
+        position: "relative",
+        zIndex: 2, // above click tracker
+        height: "100%",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        fontFamily: "sans-serif",
+        pointerEvents: "auto",
+        cursor: "default",
+      }}
+    >
+      <div
+        style={{
+          padding: "0.25rem 0.25rem",
+          borderRadius: "999px",
+          backgroundColor: "rgb(224 230 235)",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          fontSize: "0.75rem",
+          color: "rgb(107 114 128)",
+        }}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={1.5}
+          stroke="currentColor"
           style={{
-            position: "relative",
-            zIndex: 2, // above click tracker
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            padding: "0.75rem",
-            backgroundColor: "rgb(249 250 251)",
-            border: "1px dashed rgb(156 163 175)",
-            fontFamily: "sans-serif",
-            borderRadius: "4px",
-            pointerEvents: "auto",
-            cursor: "default",
+            width: "1rem",
+            height: "1rem",
           }}
         >
-          <div
-            style={{
-              padding: "0.25rem 0.75rem",
-              borderRadius: "999px",
-              backgroundColor: "rgb(224 230 235)",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              fontSize: "0.75rem",
-              letterSpacing: "0.025rem",
-              color: "rgb(107 114 128)",
-            }}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-              style={{
-                width: "1rem",
-                height: "1rem",
-                marginRight: "0.25rem",
-              }}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 4.5v15m7.5-7.5h-15"
-              />
-            </svg>
-            TILFØJ
-          </div>
-        </div>
-      )}
-    </>
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 4.5v15m7.5-7.5h-15"
+          />
+        </svg>
+      </div>
+    </div>
   );
-}
+};

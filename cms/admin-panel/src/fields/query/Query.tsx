@@ -74,19 +74,29 @@ import {
 import { useFiles } from "../../files";
 import { Spinner } from "../../elements/Spinner";
 import { useUrlInfo } from "../../users";
-import { LibraryConfig, RegularOptions } from "@storyflow/frontend/types";
+import type {
+  LibraryConfig,
+  RegularOptions,
+  Option,
+} from "@storyflow/frontend/types";
 import { useIsFocused } from "../../editor/react/useIsFocused";
 import { useRestorableSelection } from "./useRestorableSelection";
 import { useSelectedToken } from "./useSelectedToken";
 import { useYPosition } from "./useYPosition";
-import { QueryType, isAdjacent, isTextInsert, getQueryType } from "./helpers";
-import { useFieldOptions } from "../default/OptionsContext";
+import {
+  QueryType,
+  isAdjacent,
+  isTextInsert,
+  getQueryType,
+  sortByDomNode,
+} from "./helpers";
+import { useFieldOptions } from "../default/FieldOptionsContext";
 import { ColorPicker } from "../../elements/ColorPicker/ColorPicker";
+import { hexToRgba } from "../../elements/ColorPicker/convert";
 import useSWR from "swr";
 import { getColorName } from "../../utils/colors";
-import { Option } from "./Option";
-
-export type TextOps = [{ index: number; insert: [string]; remove?: 0 }];
+import { Option as OptionComponent } from "./Option";
+import { useFieldRestriction } from "../FieldTypeContext";
 
 const insertComputation = async (
   editor: LexicalEditor,
@@ -174,6 +184,54 @@ const insertComputation = async (
       { tag: "cms-command" }
     );
   });
+};
+
+type ItemRef = { id: string; ref: React.MutableRefObject<HTMLElement> };
+
+const IndexManagerContext = React.createContext<
+  | [
+      getIndex: (id: string) => number,
+      registerItem: (ref: ItemRef) => () => void
+    ]
+  | null
+>(null);
+
+const IndexManager = ({ children }: { children: React.ReactNode }) => {
+  const [list, setList] = React.useState<ItemRef[]>([]);
+
+  const registerItem = ({ id, ref }: ItemRef) => {
+    setList((list) => {
+      const index = list.findIndex((item) => item.id === id);
+      if (index === -1) {
+        return sortByDomNode([...list, { id, ref }]);
+      } else {
+        return list;
+      }
+    });
+    return () => {
+      setList((list) =>
+        sortByDomNode(
+          list.filter((item) => item.id !== id),
+          ({ ref }) => ref.current
+        )
+      );
+    };
+  };
+
+  const getIndex = (id: string) => {
+    return list.findIndex((item) => item.id === id);
+  };
+
+  const ctx = React.useMemo(
+    () => [getIndex, registerItem] as [typeof getIndex, typeof registerItem],
+    [list]
+  );
+
+  return (
+    <IndexManagerContext.Provider value={ctx}>
+      {children}
+    </IndexManagerContext.Provider>
+  );
 };
 
 const insertBlock = async (
@@ -355,7 +413,6 @@ export function Query({
       editor.registerCommand(
         BLUR_COMMAND,
         () => {
-          console.log("blur escape");
           escape();
           return false;
         },
@@ -365,7 +422,6 @@ export function Query({
         CLICK_COMMAND,
         () => {
           if (!token && !options) {
-            console.log("click escape");
             escape();
           }
           return false;
@@ -384,7 +440,17 @@ export function Query({
   const queryString =
     queryType && query.startsWith(queryType) ? query.slice(1) : query;
   const func = functions.includes(queryString as any);
-  const showOptions = isFocused && options && options.length > 0;
+
+  const restrictTo = useFieldRestriction();
+
+  const typesWithManagedOptions = ["children", "color"];
+
+  const showOptions =
+    isFocused &&
+    !typesWithManagedOptions.includes(restrictTo ?? "") &&
+    options &&
+    options.length > 0;
+
   const show = Boolean(queryType || func || showOptions);
 
   React.useEffect(() => {
@@ -421,7 +487,6 @@ export function Query({
   }, [show]);
 
   const escape = () => {
-    console.log("@QUERY ESCAPE");
     setQuery("");
     setQueryType(null);
     push((prev, noop) => {
@@ -436,7 +501,6 @@ export function Query({
   };
 
   const reset = () => {
-    console.log("@QUERY RESET");
     setQuery("");
     setQueryType(null);
     resetEditorQuery();
@@ -591,6 +655,7 @@ export function Query({
                 initialColor={
                   token && "color" in token ? token.color : undefined
                 }
+                options={restrictTo === "color" ? options : []}
               />
             )}
             {queryType === "<" && (
@@ -599,7 +664,7 @@ export function Query({
                 query={queryString}
                 insertBlock={insertBlockSimple}
                 insertComputation={insertComputationSimple}
-                options={options}
+                options={restrictTo === "children" ? options ?? [] : []}
               />
             )}
             {queryType === "@" && (
@@ -626,24 +691,24 @@ export function Query({
               />
             )}
             {!queryType && func && (
-              <Option
+              <OptionComponent
                 value={func}
                 isSelected={true}
                 onEnter={() => {}}
                 Icon={BoltIcon}
               >
                 Indsæt funktion: "{queryString}()"
-              </Option>
+              </OptionComponent>
             )}
             {showOptions &&
               filteredOptions.map((option, i) => (
-                <Option
+                <OptionComponent
                   value={option}
                   isSelected={selected === i}
                   onEnter={onOptionEnter}
                 >
                   {getOptionLabel(option)}
-                </Option>
+                </OptionComponent>
               ))}
           </div>
         </div>
@@ -674,8 +739,11 @@ function QueryColors({
   selected,
   setToken,
   initialColor,
+  options,
 }: any) {
   const [color, setColor] = React.useState(initialColor || "#ffffff");
+  const [hoverColor, setHoverColor] = React.useState<string>();
+  const selectedColor = color;
 
   const { data } = useSWR("COLORS", {
     revalidateOnMount: false,
@@ -687,7 +755,7 @@ function QueryColors({
   let label = "";
 
   if (data) {
-    label += getColorName(color.slice(1), data[0], data[1]);
+    label += getColorName(selectedColor.slice(1), data[0], data[1]);
   }
 
   const onEnter = React.useCallback((color: string) => {
@@ -698,26 +766,80 @@ function QueryColors({
     }
   }, []);
 
-  const current = selected < 0 ? selected : selected % 1;
+  const current = selected < 0 ? selected : selected % (1 + options.length);
+
+  const isColorLight = (color: string) => {
+    const rgb = hexToRgba(color);
+    return (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000 > 127;
+  };
+
+  const isLight = isColorLight(selectedColor);
+
+  const optionColors = options
+    .map((el: any) =>
+      typeof el === "object" && "value" in el
+        ? el.value
+        : typeof el === "string"
+        ? el
+        : null
+    )
+    .filter(Boolean);
 
   return (
     <>
-      <div className="w-full flex mb-1 gap-2">
-        <ColorPicker color={color} onChange={setColor} />
-        <div
-          className="grow-0 shrink-0 w-10 h-40 rounded"
-          style={{ backgroundColor: color }}
-        />
-      </div>
-      <Option
+      <OptionComponent
         value={color}
         onEnter={onEnter}
         isSelected={current === 0}
         Icon={CubeIcon}
-        secondaryText={`${label} (${color})`}
+        secondaryText={`${label} (${selectedColor})`}
+        style={{
+          backgroundColor: selectedColor,
+          color: isLight ? "rgba(0 0 0 / 90%)" : "rgba(255 255 255 / 90%)",
+        }}
       >
         Indsæt farve
-      </Option>
+      </OptionComponent>
+      <div
+        className={cl(
+          "p-1 rounded hover:ring-1 ring-gray-600 ring-inset",
+          current === 0 && "bg-gray-700"
+        )}
+      >
+        <ColorPicker color={color} onChange={setColor} />
+      </div>
+      <div
+        className="flex gap-1"
+        onMouseLeave={() => {
+          setHoverColor(undefined);
+        }}
+      >
+        {optionColors.map((color: any, i: number) => (
+          <div
+            className={cl(
+              "w-10 h-10 p-1 rounded hover:ring-1 ring-gray-600 ring-inset",
+              current === i + 1 && "bg-gray-700"
+            )}
+            onMouseEnter={() => {
+              setHoverColor(color);
+            }}
+          >
+            <div
+              className="w-8 h-8 rounded-sm flex-center"
+              style={{
+                backgroundColor: color,
+                color: isColorLight(color)
+                  ? "rgba(0 0 0 / 90%)"
+                  : "rgba(255 255 255 / 90%)",
+              }}
+            >
+              {current === i + 1 && (
+                <ArrowUturnRightIcon className="w-4 h-4 rotate-180" />
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
       {/*<div className="flex justify-between text-gray-400 text-sm select-text">
         <span
           onMouseDown={(ev) => ev.preventDefault()}
@@ -751,15 +873,12 @@ function QueryComponents({
   selected: number;
   insertBlock: (comp: EditorComputation) => void;
   insertComputation: (comp: EditorComputation) => void;
-  options?: RegularOptions;
+  options: RegularOptions;
 }) {
   const defaultOptions = React.useMemo(() => {
-    if (!optionsFromProps) return;
-
-    const options = optionsFromProps.filter(
-      (el) => typeof el === "object" && el.type === "element"
-    ) as { type: "element"; name: string }[];
-    return options.map((el) => el.name);
+    return (optionsFromProps as Option[]).filter(
+      (el): el is string => typeof el === "string"
+    );
   }, [optionsFromProps]);
 
   const { libraries } = useClientConfig();
@@ -773,7 +892,7 @@ function QueryComponents({
     )
     .flat(1);
 
-  if (defaultOptions) {
+  if (defaultOptions.length > 0) {
     options = options.filter((el) =>
       defaultOptions.includes(`${el.libraryName}:${el.name}`)
     );
@@ -813,7 +932,7 @@ function QueryComponents({
   return (
     <>
       {filtered.map((el, index) => (
-        <Option
+        <OptionComponent
           key={`${el.libraryName}:${el.name}`}
           value={el}
           onEnter={onEnter}
@@ -822,7 +941,7 @@ function QueryComponents({
           secondaryText={markMatchingString(el.name, query)}
         >
           {markMatchingString(el.label, query)}
-        </Option>
+        </OptionComponent>
       ))}
     </>
   );
@@ -941,7 +1060,7 @@ function QueryCommands({
   return (
     <>
       {options.map((el, index) => (
-        <Option
+        <OptionComponent
           key={el.id}
           value={el.id}
           onEnter={el.onEnter}
@@ -953,7 +1072,7 @@ function QueryCommands({
           Icon={el.Icon}
         >
           {el.label}
-        </Option>
+        </OptionComponent>
       ))}
     </>
   );
@@ -1056,7 +1175,7 @@ function QueryLinks({
     <>
       {options.map(
         ({ id, label, secondaryText, Icon, onEnter, onEnterLabel }, index) => (
-          <Option
+          <OptionComponent
             value={id}
             onEnter={onEnter}
             onEnterLabel={onEnterLabel}
@@ -1065,7 +1184,7 @@ function QueryLinks({
             Icon={Icon}
           >
             {label}
-          </Option>
+          </OptionComponent>
         )
       )}
     </>

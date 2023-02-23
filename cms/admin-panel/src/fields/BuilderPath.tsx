@@ -14,8 +14,10 @@ export const BuilderPathContext = React.createContext<PathContextType | null>(
 
 export const stringifyPath = (path: PathSegment[]) => {
   let string = "";
-  path.forEach(({ id, parentProp }) => {
-    string += `${parentProp ? `/${parentProp.name}` : ""}.${id}`;
+  path.forEach((el) => {
+    string += `${
+      "parentProp" in el && el.parentProp ? `/${el.parentProp}` : ""
+    }.${el.id}`;
   });
   return string.slice(1);
 };
@@ -28,12 +30,12 @@ export function BuilderPathProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const id = useFieldId();
-
   const [path, setPathInternal] = React.useState<Path>([]);
 
   const listeners = useIframeListeners();
   const dispatchers = useIframeDispatchers();
+
+  console.log("PATH", path);
 
   React.useEffect(() => {
     return listeners.selection.subscribe((path) => {

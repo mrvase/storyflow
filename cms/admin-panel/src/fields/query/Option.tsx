@@ -17,6 +17,7 @@ export function Option<T>({
   children,
   secondaryText,
   Icon,
+  style,
 }: {
   isSelected: boolean;
   onEnter: (value: T) => void;
@@ -27,6 +28,7 @@ export function Option<T>({
   children: React.ReactNode;
   secondaryText?: React.ReactNode;
   Icon?: React.FC<any>;
+  style?: any;
 }) {
   const editor = useEditorContext();
 
@@ -49,21 +51,34 @@ export function Option<T>({
   return (
     <div
       className={cl(
-        "group pl-3 pr-2 h-10 shrink-0 rounded text-sm hover:bg-gray-750 transition-colors",
-        isSelected && "ring-1 ring-inset ring-gray-700",
-        "flex items-center justify-between"
+        "group pl-3 pr-2 h-10 shrink-0 rounded text-sm cursor-default",
+        isSelected && "bg-gray-750",
+        "hover:ring-1 hover:ring-inset hover:ring-gray-700",
+        "flex items-center justify-between",
+        !style && "transition-colors"
       )}
+      style={style}
       onMouseDown={(ev) => {
         ev.preventDefault();
       }}
       onClick={onClick}
     >
-      <div className="flex gap-3 items-center text-white text-opacity-90">
+      <div
+        className={cl(
+          "flex gap-3 items-center",
+          !style && "text-white text-opacity-90"
+        )}
+      >
         <div>{Icon && <Icon className="w-4 h-4" />}</div>
         <div>
           {children}
           {secondaryText && (
-            <div className="text-xs text-gray-300 text-opacity-75 -mt-0.5">
+            <div
+              className={cl(
+                "text-xs -mt-0.5",
+                !style && "text-gray-300 text-opacity-75"
+              )}
+            >
               {secondaryText}
             </div>
           )}
@@ -74,8 +89,9 @@ export function Option<T>({
           {onArrowRight && (
             <button
               className={cl(
-                "text-gray-300 text-opacity-50 text-xs flex gap-2 py-1.5 px-3 rounded",
-                "peer hover:bg-gray-600 transition-colors"
+                "text-xs flex gap-2 py-1.5 px-3 rounded",
+                "peer hover:bg-gray-600 transition-colors",
+                !style && "text-gray-300 text-opacity-50"
               )}
             >
               {onArrowRightLabel ?? "indsæt"}
@@ -84,7 +100,8 @@ export function Option<T>({
           )}
           <button
             className={cl(
-              "text-gray-300 text-opacity-50 text-xs flex gap-2 py-1.5 px-3 rounded",
+              "text-xs flex gap-2 py-1.5 px-3 rounded",
+              !style && "text-gray-300 text-opacity-50",
               onArrowRight &&
                 "group-hover:bg-gray-600 peer-hover:bg-transparent transition-colors"
             )}

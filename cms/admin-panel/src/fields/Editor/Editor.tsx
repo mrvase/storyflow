@@ -11,11 +11,10 @@ import {
   EditorProvider,
   useEditorContext,
 } from "../../editor/react/EditorProvider";
-import { AnyOp, Target, ComputationOp } from "shared/operations";
+import { Target, ComputationOp } from "shared/operations";
 import React from "react";
 import { $getComputation, $initializeEditor } from "./transforms";
 import {
-  Computation,
   EditorComputation,
   FieldId,
   FunctionName,
@@ -27,10 +26,8 @@ import { useFieldFocus } from "../../field-focus";
 import { HeadingNode } from "../../editor/react/HeadingNode";
 import { DocumentNode } from "../decorators/DocumentNode";
 import { $getRoot } from "lexical";
-import { decodeEditorComputation } from "shared/editor-computation";
 import { Query } from "../query/Query";
 import { type QueueListener } from "@storyflow/state";
-import { PropConfig, RegularOptions } from "@storyflow/frontend/types";
 
 const editorConfig = {
   namespace: "EDITOR",

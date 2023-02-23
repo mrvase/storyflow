@@ -98,7 +98,6 @@ function ImportDecorator({
             {
               id: fieldImport.id,
               label: fieldImport.id,
-              parentProp: null,
             },
           ]);
         }

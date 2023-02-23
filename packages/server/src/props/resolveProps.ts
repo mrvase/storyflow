@@ -1,11 +1,12 @@
-import { createRenderArray } from "./createRenderArray";
-import {
+// import { createRenderArray } from "./createRenderArray";
+import type {
   LibraryConfig,
   PropConfigArray,
   ValueArray,
 } from "@storyflow/frontend/types";
-import { Value } from "@storyflow/backend/types";
+import { createRenderArray } from "@storyflow/frontend/render";
 import { getConfigByType } from "./getConfigByType";
+import { Value } from "@storyflow/backend/types";
 import { extendPath } from "@storyflow/backend/extendPath";
 
 const BUCKET_NAME = "awss3stack-mybucket15d133bf-1wx5fzxzweii4";
@@ -22,6 +23,10 @@ const getImageObject = (name: string, slug: string) => {
     width,
     height,
   };
+};
+
+const createDisplayTypeGetter = (libraries: LibraryConfig[]) => {
+  return (type: string) => Boolean(getConfigByType(type, libraries)?.inline);
 };
 
 export const resolveProps = (
@@ -59,7 +64,7 @@ export const resolveProps = (
                   value = {
                     $children: createRenderArray(
                       Array.isArray(value) ? value : array,
-                      options.libraries
+                      createDisplayTypeGetter(options.libraries)
                     ),
                   };
                   return [name, value];
@@ -131,5 +136,8 @@ export const resolveProps = (
       return acc;
     }, []);
   };
-  return createRenderArray(recursive(value, ctx), options.libraries);
+  return createRenderArray(
+    recursive(value, ctx),
+    createDisplayTypeGetter(options.libraries)
+  );
 };

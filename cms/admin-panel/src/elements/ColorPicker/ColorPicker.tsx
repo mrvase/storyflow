@@ -33,7 +33,7 @@ const SaturationBase = ({
       style={{
         backgroundColor: hsvaToHslString({ h: hsva.h, s: 100, v: 100, a: 1 }),
       }}
-      className="saturation relative w-full h-32 rounded-t"
+      className="saturation relative w-full h-32 rounded-l-sm -mr-1 shadow-lg"
     >
       <Interactive
         onMove={handleMove}
@@ -61,18 +61,18 @@ const HueBase = ({
   onChange: (newHue: { h: number }) => void;
 }) => {
   const handleMove = (interaction: Interaction) => {
-    onChange({ h: 360 * interaction.left });
+    onChange({ h: 360 * interaction.top });
   };
 
   const handleKey = (offset: Interaction) => {
     // Hue measured in degrees of the color circle ranging from 0 to 360
     onChange({
-      h: clamp(hue + offset.left * 360, 0, 360),
+      h: clamp(hue + offset.top * 360, 0, 360),
     });
   };
 
   return (
-    <div className="relative w-full h-8 hue rounded-b">
+    <div className="relative w-8 h-32 hue rounded-sm ring-1 ring-inset ring-white/25">
       <Interactive
         onMove={handleMove}
         onKey={handleKey}
@@ -82,7 +82,7 @@ const HueBase = ({
         aria-valuemin="0"
       >
         <Pointer
-          left={hue / 360}
+          top={hue / 360}
           color={hsvaToHslString({ h: hue, s: 100, v: 100, a: 1 })}
         />
       </Interactive>
@@ -103,7 +103,7 @@ export const ColorPicker = ({
   const [hsva, updateHsva] = useColorManipulation(color, onChange);
 
   return (
-    <div className="w-full flex flex-col rounded border-1 border-white">
+    <div className="w-full flex rounded-sm">
       <Saturation hsva={hsva} onChange={updateHsva} />
       <Hue hue={hsva.h} onChange={updateHsva} />
     </div>

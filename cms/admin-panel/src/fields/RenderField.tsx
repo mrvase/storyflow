@@ -13,6 +13,7 @@ import { FieldContainer } from "./FieldContainer";
 import UrlField from "./UrlField";
 import { ServerPackage } from "@storyflow/state";
 import { FieldIdContext } from "./FieldIdContext";
+import { FieldRestrictionsContext } from "./FieldTypeContext";
 
 const Components: { [K in FieldType]: React.FC<FieldProps<K>> } = {
   default: DefaultField,
@@ -57,25 +58,27 @@ export function RenderField<T extends FieldType>({
 
   return (
     <FieldIdContext.Provider value={id}>
-      <FieldContainer
-        index={index}
-        fieldConfig={fieldConfig}
-        dragHandleProps={dragHandleProps}
-        template={template}
-        initialValue={value}
-      >
-        <NoList>
-          <Component
-            {...{
-              id,
-              version,
-              value,
-              fieldConfig,
-              history,
-            }}
-          />
-        </NoList>
-      </FieldContainer>
+      <FieldRestrictionsContext.Provider value={fieldConfig.restrictTo ?? null}>
+        <FieldContainer
+          index={index}
+          fieldConfig={fieldConfig}
+          dragHandleProps={dragHandleProps}
+          template={template}
+          initialValue={value}
+        >
+          <NoList>
+            <Component
+              {...{
+                id,
+                version,
+                value,
+                fieldConfig,
+                history,
+              }}
+            />
+          </NoList>
+        </FieldContainer>
+      </FieldRestrictionsContext.Provider>
     </FieldIdContext.Provider>
   );
 }

@@ -42,23 +42,16 @@ import { TemplateHeader } from "./TemplateHeader";
 import { getPreview } from "./getPreview";
 import { useIsFocused } from "../../editor/react/useIsFocused";
 
-export const ParentPropContext = React.createContext<{
-  name: string;
-  label: string;
-} | null>(null);
+export const ParentPropContext = React.createContext<string | null>(null);
 
 export const ParentProp = ({
   children,
   name,
-  label,
 }: {
   children: React.ReactNode;
   name: string;
-  label: string;
 }) => (
-  <ParentPropContext.Provider
-    value={React.useMemo(() => ({ name, label }), [name, label])}
-  >
+  <ParentPropContext.Provider value={name}>
     {children}
   </ParentPropContext.Provider>
 );

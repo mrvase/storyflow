@@ -32,7 +32,6 @@ function LayoutElementDecorator({
   const selectClick = React.useRef(false);
 
   const { libraries } = useClientConfig();
-
   const config = getConfigFromType(value.type, libraries);
 
   const libraryLabel = libraries.find(
@@ -61,8 +60,7 @@ function LayoutElementDecorator({
               ...ps,
               {
                 id: value.id,
-                label: config?.label ?? value.type,
-                // type: value.type,
+                type: value.type,
                 parentProp: parentProp,
               },
             ]);

@@ -158,7 +158,7 @@ describe("calculator - functions", () => {
 
     return test(computation, result, imports);
   });
-  it.only("replaces parameter with args 1", () => {
+  it("replaces parameter with args 1", () => {
     const computation: Computation = [
       { id: "imp", fref: "a" as FieldId, args: {} },
     ];

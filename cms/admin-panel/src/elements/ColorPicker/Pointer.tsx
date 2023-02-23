@@ -2,11 +2,11 @@ import React from "react";
 
 export const Pointer = ({
   color,
-  left,
-  top = 0.5,
+  left = 0.5,
+  top,
 }: {
-  top?: number;
-  left: number;
+  top: number;
+  left?: number;
   color: string;
 }): JSX.Element => {
   const style = {

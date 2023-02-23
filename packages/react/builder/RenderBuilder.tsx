@@ -21,8 +21,10 @@ export const log: typeof console.log = LOG
 
 export const stringifyPath = (path: Path) => {
   let string = "";
-  path.forEach(({ id, parentProp }) => {
-    string += `${parentProp ? `/${parentProp.name}` : ""}.${id}`;
+  path.forEach((el) => {
+    string += `${
+      "parentProp" in el && el.parentProp ? `/${el.parentProp}` : ""
+    }.${el.id}`;
   });
   return string.slice(1);
 };
@@ -229,7 +231,7 @@ export function RenderBuilder() {
           <Frame>
             {id && (
               <ExtendPath extend={id}>
-                <RenderComponent parentProp={null} />
+                <RenderComponent />
               </ExtendPath>
             )}
           </Frame>
@@ -246,10 +248,11 @@ const Frame = ({ children }: { children: React.ReactNode }) => {
   React.useEffect(() => {
     const onClick = (ev: MouseEvent) => {
       const target = ev.target;
-      if (
-        target instanceof HTMLElement &&
-        target.dataset["cmsEventControl"] === "true"
-      ) {
+      const hasCMSParent = Boolean(
+        target instanceof Element &&
+          target.closest('[data-clickable-element="true"]')
+      );
+      if (hasCMSParent) {
         return;
       }
       deselect([]);
@@ -543,9 +546,19 @@ function Dialog({
         display: "flex",
         alignItems: "center",
         padding: "1rem",
-        pointerEvents: isOpen ? "all" : "none",
+        transition: "opacity 300ms ease-out",
+        backgroundColor: "rgba(0,0,0,0.3)",
+        ...(isOpen
+          ? {
+              opacity: 1,
+            }
+          : {
+              opacity: 0,
+            }),
+        pointerEvents: isOpen ? "auto" : "none",
       }}
       onClick={close}
+      data-clickable-element={isOpen ? "true" : undefined}
     >
       <div
         style={{
@@ -554,18 +567,14 @@ function Dialog({
           maxWidth: "360px",
           borderRadius: "1rem",
           margin: "0 auto",
-          transition: "transform 300ms ease-out, opacity 300ms ease-out",
+          transition: "transform 300ms ease-out",
           overflowY: "auto",
           ...(isOpen
             ? {
-                opacity: 1,
                 transform: `scale(1)`,
-                pointerEvents: "all",
               }
             : {
-                opacity: 0,
                 transform: `scale(0.95)`,
-                pointerEvents: "none",
               }),
         }}
       >

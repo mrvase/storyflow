@@ -18,6 +18,7 @@ export type Element = ExtendedType<"Element", object>;
 
 type PropTypes = {
   string: string;
+  color: string;
   image: {
     src: string;
     width: number;
@@ -38,7 +39,6 @@ export type Option =
   | number
   | ({
       label?: string;
-      type?: "element" | "color" | "tailwind" | "custom";
     } & (
       | {
           value: string | number;
@@ -186,11 +186,13 @@ export type ClientConfig = {
   libraries: LibraryConfig[];
 };
 
-export type PathSegment = {
-  id: string;
-  label: string;
-  parentProp: { name: string; label: string } | null;
-};
+export type PathSegment =
+  | {
+      id: string;
+      type: string;
+      parentProp: string | null;
+    }
+  | { id: string; label: string };
 
 export type Path = PathSegment[];
 

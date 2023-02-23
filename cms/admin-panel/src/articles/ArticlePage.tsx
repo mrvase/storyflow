@@ -21,6 +21,7 @@ import {
   DocumentConfig,
   DocumentId,
   FieldId,
+  RestrictTo,
   TemplateFieldId,
 } from "@storyflow/backend/types";
 import { NoList, useDragItem } from "@storyflow/dnd";
@@ -247,7 +248,7 @@ export function FieldToolbar({
     label: el.label ?? el.id,
   }));
 
-  const restrictToOptions = [{ id: "number", label: "Tal" }];
+  const restrictToOptions = [{ id: "number" as "number", label: "Tal" }];
 
   return (
     <Content.Toolbar>
@@ -266,7 +267,7 @@ export function FieldToolbar({
         }
         options={templateOptions}
       />
-      <Content.ToolbarMenu<{ id: string; label: string }>
+      <Content.ToolbarMenu<{ id: RestrictTo; label: string }>
         icon={FunnelIcon}
         label="Begræns til"
         onSelect={(el) => setConfig("restrictTo", el.id)}

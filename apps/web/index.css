@@ -146,7 +146,7 @@ a {
 
 .hue {
   background: linear-gradient(
-    to right,
+    to bottom,
     #f00 0%,
     #ff0 17%,
     #0f0 33%,

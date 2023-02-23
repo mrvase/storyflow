@@ -3,6 +3,10 @@ import { useBuilderSelection, usePath } from "./contexts";
 import { dispatchers } from "./events";
 import { stringifyPath } from "./RenderBuilder";
 
+const splitPath = (path: string): [parent: string, element: string] => {
+  return [path.split(".").slice(0, -1).join("."), path.split(".").slice(-1)[0]];
+};
+
 const PlusIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -11,9 +15,9 @@ const PlusIcon = () => (
     strokeWidth={1.5}
     stroke="currentColor"
     style={{
-      width: "16px",
-      height: "16px",
-      color: "white",
+      width: "14px",
+      height: "14px",
+      color: "rgba(0, 0, 0, 0.8)",
     }}
   >
     <path
@@ -24,24 +28,32 @@ const PlusIcon = () => (
   </svg>
 );
 
-export const useCMSElement = (
-  props: React.ComponentProps<"div">
-): React.ComponentProps<"div"> & {
-  "data-parent": string;
-  "data-element": string;
-} => {
-  const path = usePath();
-  const [subscribe, select] = useBuilderSelection();
+const btnStyle = {
+  display: "block",
+  position: "absolute",
+  width: "18px",
+  height: "18px",
+  padding: "2px",
+  backgroundColor: "rgb(253 224 71)",
+} as {};
+
+export const EventHandler = ({ path }: { path: string }) => {
+  const [parent, element] = splitPath(path);
+
   const [isSelected, setIsSelected] = React.useState(false);
 
+  const [inset, setInset] = React.useState<boolean>(true);
+
+  const measureHeight = React.useCallback((node: HTMLElement | null) => {
+    if (node) {
+      const { height, width } = node.getBoundingClientRect();
+      setInset(height > 50 && width > 50);
+    }
+  }, []);
+
+  const [subscribe, select] = useBuilderSelection();
   React.useEffect(() => {
     return subscribe((currentPath) => {
-      console.log(
-        "CURRENT PATH",
-        currentPath,
-        stringifyPath(currentPath),
-        path
-      );
       if (stringifyPath(currentPath) === path.split(".").slice(1).join(".")) {
         setIsSelected(true);
       } else if (isSelected) {
@@ -50,17 +62,87 @@ export const useCMSElement = (
     });
   }, [isSelected]);
 
-  const btnStyle = {
-    display: "block",
-    position: "absolute",
-    width: "22px",
-    height: "22px",
-    borderRadius: "10px",
-    backgroundColor: "rgb(253 224 71)",
-  } as {};
+  const events = useDragEvents(path);
 
-  const parent = path.split(".").slice(0, -1).join(".");
-  const element = path.split(".").slice(-1)[0];
+  return (
+    <span
+      ref={measureHeight}
+      onDragStart={isSelected ? events.onDragStart : undefined}
+      onDragEnd={isSelected ? events.onDragEnd : undefined}
+      draggable={isSelected ? "true" : "false"}
+      style={{
+        position: "absolute",
+        zIndex: 1,
+        left: "0px",
+        right: "0px",
+        top: "0px",
+        bottom: "0px",
+        outlineWidth: "1px",
+        outlineOffset: "-1px",
+        ...(isSelected && {
+          outlineStyle: "solid",
+          outlineColor: "rgb(253 224 71)",
+        }),
+      }}
+      onFocus={(ev) => {
+        ev.stopPropagation();
+        select([]);
+      }}
+      tabIndex={0}
+      onMouseDown={(ev) => ev.stopPropagation()}
+      onClick={(ev) => ev.preventDefault() /* avoid linking */}
+      data-cms-event-control="true"
+      data-clickable-element="true"
+      data-element={element}
+      data-parent={parent}
+    >
+      <span
+        data-indicator={element}
+        style={{
+          position: "absolute",
+          top: "calc(50% - 10px)",
+          left: "calc(50% - 10px)",
+          width: "20px",
+          height: "20px",
+          borderRadius: "10px",
+          backgroundColor: "rgb(253 224 71)",
+          opacity: 0,
+          transition: "opacity 75ms ease-out",
+          pointerEvents: "none",
+        }}
+      />
+      {isSelected && (
+        <>
+          <span
+            style={{
+              ...btnStyle,
+              ...(inset
+                ? { top: 0, left: 0, borderRadius: "0px 0px 2px 0px" }
+                : { top: -16, left: -16, borderRadius: "2px 2px 0px 2px" }),
+            }}
+            onMouseDown={(ev) => ev.preventDefault()}
+          >
+            <PlusIcon />
+          </span>
+          <span
+            style={{
+              ...btnStyle,
+              ...(inset
+                ? { bottom: 0, right: 0, borderRadius: "2px 0px 0px 0px" }
+                : { bottom: -16, right: -16, borderRadius: "0px 2px 2px 2px" }),
+            }}
+            onMouseDown={(ev) => ev.preventDefault()}
+          >
+            <PlusIcon />
+          </span>
+        </>
+      )}
+    </span>
+  );
+};
+
+const useDragEvents = (path: string) => {
+  const [parent, element] = splitPath(path);
 
   const [isDragging, setIsDragging] = React.useState(false);
 
@@ -130,7 +212,6 @@ export const useCMSElement = (
 
   const onDragEnd = (ev: React.DragEvent) => {
     ev.stopPropagation();
-    console.log("DRAG END");
     const currentIndex = rects.current.findIndex((el) => el.id === element);
     if (next.current !== null && currentIndex !== next.current) {
       const el = document.querySelector(
@@ -148,76 +229,17 @@ export const useCMSElement = (
     next.current = null;
   };
 
-  const blocker = (
-    <span
-      onDragStart={isSelected ? onDragStart : undefined}
-      onDragEnd={isSelected ? onDragEnd : undefined}
-      draggable={isSelected ? "true" : "false"}
-      style={{
-        position: "absolute",
-        zIndex: 1,
-        left: "0px",
-        right: "0px",
-        top: "0px",
-        bottom: "0px",
-        pointerEvents: "auto",
-        outlineWidth: "2px",
-        borderRadius: "1px",
-        outlineOffset: "-2px",
-        ...(isSelected && {
-          outlineStyle: "solid",
-          outlineColor: "rgb(253 224 71)",
-        }),
-      }}
-      onClick={(ev) => ev.preventDefault() /* avoid linking */}
-      data-cms-event-control="true"
-    >
-      <span
-        data-indicator={element}
-        style={{
-          position: "absolute",
-          top: "calc(50% - 10px)",
-          left: "calc(50% - 10px)",
-          width: "20px",
-          height: "20px",
-          borderRadius: "10px",
-          backgroundColor: "rgb(253 224 71)",
-          opacity: 0,
-          transition: "opacity 75ms ease-out",
-          pointerEvents: "none",
-        }}
-      />
-      {/*isSelected && (
-        <>
-          <span
-            style={{
-              ...btnStyle,
-              top: 2,
-              left: 2,
-              borderRadius: "0px 0px 20px 0px",
-            }}
-          >
-            <PlusIcon />
-          </span>
-          <span
-            style={{
-              ...btnStyle,
-              bottom: 2,
-              right: 2,
-              borderRadius: "20px 0px 0px 0px",
-              padding: "6px 0px 0px 6px",
-            }}
-          >
-            <PlusIcon />
-          </span>
-        </>
-          )*/}
-    </span>
-  );
+  return { onDragStart, onDragEnd };
+};
+
+export const useCMSElement = (
+  props: React.ComponentProps<"div">
+): React.ComponentProps<"div"> => {
+  const path = usePath();
 
   let children: any = (
     <>
-      {blocker}
+      <EventHandler path={path} />
       {props.children}
     </>
   );
@@ -225,7 +247,7 @@ export const useCMSElement = (
   if (typeof props.children === "function") {
     children = (...args: any[]) => (
       <>
-        {blocker}
+        <EventHandler path={path} />
         {(props.children as any)(...args)}
       </>
     );
@@ -233,17 +255,12 @@ export const useCMSElement = (
 
   return {
     ...props,
+    tabIndex: -1,
     style: {
       position: "relative" as "relative",
       pointerEvents: "none" as "none",
       outline: "none",
-      // opacity: isDragging ? 0.5 : undefined,
       ...props.style,
-    },
-    onFocus: (ev: React.FocusEvent<HTMLDivElement, Element>) => {
-      ev.stopPropagation();
-      select([]);
-      props.onFocus?.(ev);
     },
     /*
     onBlur: (ev: React.FocusEvent<HTMLDivElement, Element>) => {
@@ -252,9 +269,6 @@ export const useCMSElement = (
       props.onBlur?.(ev);
     },
     */
-    ["data-parent"]: parent,
-    ["data-element"]: element,
-    tabIndex: 0,
     children,
   };
 };
