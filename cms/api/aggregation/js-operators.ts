@@ -88,7 +88,7 @@ export const operators: Operators<any> = {
   in(val1, val2) {
     return val2.includes(val1);
   },
-  concat(...strings: string[]) {
+  concat(strings: string[]) {
     return strings.reduce((a, c) => `${a}${c}`);
   },
   type(val: any) {
@@ -249,5 +249,8 @@ export const operators: Operators<any> = {
       array.sort((a, b) => (compare(a[key], b[key], value!) ? 1 : -1));
     });
     return array;
+  },
+  trim(input: string) {
+    return input.trim();
   },
 };

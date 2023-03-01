@@ -65,15 +65,18 @@ export const useSelectedToken = (callback: (token: Token) => void) => {
     );
   }, [editor]);
 
-  const token = tokenNode?.value;
+  const setToken = React.useCallback(
+    (value: Token) => {
+      if (!tokenNode) return;
+      editor.update(() => {
+        const node = $getNodeByKey(tokenNode.key) as TokenNode | null;
+        node?.setToken(value);
+      });
+    },
+    [editor, tokenNode]
+  );
 
-  const setToken = (value: Token) => {
-    if (!tokenNode) return;
-    editor.update(() => {
-      const node = $getNodeByKey(tokenNode.key) as TokenNode | null;
-      node?.setToken(value);
-    });
-  };
+  const token = tokenNode?.value;
 
   return [token, setToken] as [typeof token, typeof setToken];
 };

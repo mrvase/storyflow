@@ -280,7 +280,7 @@ function Toolbar({
 
   return (
     <div className="flex mb-5">
-      <div className="mt-5 mr-5">
+      <div className="mt-3.5 -ml-2.5 mr-5">
         <Content.ToolbarButton
           icon={ChevronLeftIcon}
           onClick={() => {
@@ -290,11 +290,11 @@ function Toolbar({
           Tilbage
         </Content.ToolbarButton>
       </div>
-      <div className="mt-5 mr-auto flex items-center">
+      <div className="mt-3.5 mr-auto flex items-center">
         <PathMap path={path} setPath={setPath} />
       </div>
-      {isNative && <FieldToolbar documentId={documentId} fieldId={id} />}
-      <div className="mt-5 ml-2">
+      {/* isNative && <FieldToolbar documentId={documentId} fieldId={id} /> */}
+      <div className="mt-3.5 ml-2">
         <Content.ToolbarButton>Publicer ændringer</Content.ToolbarButton>
       </div>
     </div>
@@ -454,6 +454,8 @@ const computeComponentRecord = (
     libraries: LibraryConfig[];
   }
 ): ValueRecord => {
+  console.log("COMPUTING", id, initialValue);
+
   const recursivelyGetRecordFromComputation = (
     path: string,
     initialValue: Computation
@@ -463,53 +465,64 @@ const computeComponentRecord = (
       state.set(() => calculateFn(id, initialValue, { imports, client }));
     }
     const value = state.value!;
-    const children = value.reduce((acc, element) => {
-      if (!tools.isLayoutElement(element)) {
-        return acc;
-      }
-      const newPath = element.parent ?? path;
+    console.log("path", path, initialValue, value);
 
-      // TODO: this can be made more performant
-      const components = libraries
-        .reduce(
-          (acc: ComponentConfig[], library) =>
-            acc.concat(
-              Object.values(library.components).map((el) => ({
-                ...el,
-                name: extendPath(library.name, el.name, ":"),
-              }))
-            ),
-          []
-        )
-        .flat(1);
-
-      const propConfigArray = components.find(
-        (el) => el.name === element.type
-      )?.props;
-
-      const propKeys =
-        propConfigArray?.reduce((acc: string[], el) => {
-          if (el.type === "group") {
-            acc.push(...el.props.map((child) => `${el.name}#${child.name}`));
-            return acc;
-          }
-          acc.push(el.name);
+    const getRecord = (value: Value[]): {} => {
+      return value.reduce((acc, element) => {
+        if (Array.isArray(element)) {
+          // this should propably just flat it infinitely out
+          return Object.assign(acc, getRecord(element));
+        } else if (!tools.isLayoutElement(element)) {
           return acc;
-        }, []) ?? Object.keys(element.props);
+        }
+        const newPath = element.parent ?? path;
 
-      propKeys.push("key");
+        console.log("NEW PATH", newPath, element);
 
-      const props = propKeys.reduce((acc, key) => {
-        return Object.assign(
-          acc,
-          recursivelyGetRecordFromComputation(
-            extendPath(newPath, `${element.id}/${key}`),
-            element.props[key] ?? []
+        // TODO: this can be made more performant
+        const components = libraries
+          .reduce(
+            (acc: ComponentConfig[], library) =>
+              acc.concat(
+                Object.values(library.components).map((el) => ({
+                  ...el,
+                  name: extendPath(library.name, el.name, ":"),
+                }))
+              ),
+            []
           )
-        );
+          .flat(1);
+
+        const propConfigArray = components.find(
+          (el) => el.name === element.type
+        )?.props;
+
+        const propKeys =
+          propConfigArray?.reduce((acc: string[], el) => {
+            if (el.type === "group") {
+              acc.push(...el.props.map((child) => `${el.name}#${child.name}`));
+              return acc;
+            }
+            acc.push(el.name);
+            return acc;
+          }, []) ?? Object.keys(element.props);
+
+        propKeys.push("key");
+
+        const props = propKeys.reduce((acc, key) => {
+          return Object.assign(
+            acc,
+            recursivelyGetRecordFromComputation(
+              extendPath(newPath, `${element.id}/${key}`),
+              element.props[key] ?? []
+            )
+          );
+        }, {});
+        return Object.assign(acc, props);
       }, {});
-      return Object.assign(acc, props);
-    }, {});
+    };
+
+    const children = getRecord(value);
 
     return {
       [path]: value,

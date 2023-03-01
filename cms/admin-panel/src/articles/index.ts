@@ -44,7 +44,7 @@ type ArticleListOperation = {
 
 let int: { current: ReturnType<typeof setInterval> | null } = { current: null };
 
-const queue = createQueue<ArticleListOperation>("articles", {
+const queue = createQueue<ArticleListOperation>("documents", {
   clientId: null,
 }).initialize(0, []);
 
@@ -254,13 +254,13 @@ export const useArticleListMutation = () => {
   });
 
   return (operation: ArticleListOperation) => {
-    pushAndRetry("articles", operation, mutate, queue);
+    pushAndRetry("documents", operation, mutate, queue);
   };
 };
 
 export const useSaveArticle = (folder: string) => {
   return SWRClient.articles.save.useMutation({
-    cacheUpdate: (id, mutate) => {
+    cacheUpdate: ({ id }, mutate) => {
       mutate(["getList", folder], (ps, result) => {
         if (!result) {
           return ps;

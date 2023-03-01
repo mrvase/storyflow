@@ -1,4 +1,3 @@
-import "../../styles.css";
 import { registerLibraries, RenderPage } from "@storyflow/react";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -34,20 +33,35 @@ function Stories() {
 
   const currentComponent = stories.components[currentKey];
   const current = currentComponent?.[currentIndex];
-
   const body = iframe?.contentDocument?.body;
 
-  const [showMenu, toggleMenu] = React.useReducer((v) => !v, true);
+  const [showMenu, setMenu] = React.useState(false);
 
-  React.useEffect(() => {
+  const toggleMenu = () => {
+    setMenu((showMenu) => {
+      localStorage.setItem("viewer-show-menu", String(!showMenu));
+      return !showMenu;
+    });
+  };
+
+  React.useLayoutEffect(() => {
+    setMenu(localStorage.getItem("viewer-show-menu") !== "false");
     const onKeyDown = (ev: KeyboardEvent) => {
       if (ev.key === "k" && ev.metaKey) {
         toggleMenu();
       }
     };
     document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, []);
+    if (iframe) {
+      iframe.contentDocument!.addEventListener("keydown", onKeyDown);
+    }
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      if (iframe) {
+        iframe.contentDocument!.removeEventListener("keydown", onKeyDown);
+      }
+    };
+  }, [iframe]);
 
   return (
     <div className="bg-gray-100 fixed inset-0 flex">

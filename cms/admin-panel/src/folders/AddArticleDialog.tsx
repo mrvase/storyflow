@@ -68,62 +68,66 @@ export function AddArticleDialog({
     >
       <form
         onSubmit={async (ev) => {
-          ev.preventDefault();
-          const id = await generateId();
-          const defaultValues = template
-            ? await getDefaultValuesFromTemplateAsync(template, client)
-            : null;
-          const compute = (defaultValues?.compute ?? []).map((block) => ({
-            id: replaceDocumentId(block.id, id),
-            value: block.value.map((el) =>
-              tools.isFieldImport(el)
-                ? {
-                    ...el,
-                    fref:
-                      getDocumentId(block.id) === getDocumentId(el.fref)
-                        ? replaceDocumentId(el.fref, id)
-                        : el.fref,
-                  }
-                : el
-            ),
-          }));
-          const values = Object.assign(defaultValues?.values ?? {}, {
-            [CREATION_DATE_ID]: [new Date()],
-          });
-          if (parentUrl) {
-            compute.push(...parentUrl.imports);
-
-            compute.push({
-              id: parentUrl.id,
-              value: parentUrl.value,
+          try {
+            ev.preventDefault();
+            const id = await generateId();
+            const defaultValues = template
+              ? await getDefaultValuesFromTemplateAsync(template, client)
+              : null;
+            const compute = (defaultValues?.compute ?? []).map((block) => ({
+              id: replaceDocumentId(block.id, id),
+              value: block.value.map((el) =>
+                tools.isFieldImport(el)
+                  ? {
+                      ...el,
+                      fref:
+                        getDocumentId(block.id) === getDocumentId(el.fref)
+                          ? replaceDocumentId(el.fref, id)
+                          : el.fref,
+                    }
+                  : el
+              ),
+            }));
+            const values = Object.assign(defaultValues?.values ?? {}, {
+              [CREATION_DATE_ID]: [new Date()],
             });
+            if (parentUrl) {
+              compute.push(...parentUrl.imports);
 
-            compute.push({
-              id: computeFieldId(id, URL_ID),
-              value: [
-                { "(": true },
-                { id: createId(1), fref: parentUrl.id },
-                slug,
-                { ")": "url" },
+              compute.push({
+                id: parentUrl.id,
+                value: parentUrl.value,
+              });
+
+              compute.push({
+                id: computeFieldId(id, URL_ID),
+                value: [
+                  { "(": true },
+                  { id: createId(1), fref: parentUrl.id },
+                  slug,
+                  { ")": "url" },
+                ],
+              });
+
+              values[URL_ID] = [extendPath(parentUrl.url, slug, "/")];
+              values[LABEL_ID] = [label];
+            }
+            mutateArticles({
+              folder,
+              actions: [
+                {
+                  type: "insert",
+                  id,
+                  values,
+                  compute,
+                },
               ],
             });
-
-            values[URL_ID] = [extendPath(parentUrl.url, slug, "/")];
-            values[LABEL_ID] = [label];
+            navigateTab(`${current}/d-${restoreId(id)}`, { navigate: true });
+            close();
+          } catch (err) {
+            console.log(err);
           }
-          mutateArticles({
-            folder,
-            actions: [
-              {
-                type: "insert",
-                id,
-                values,
-                compute,
-              },
-            ],
-          });
-          navigateTab(`${current}/d-${restoreId(id)}`, { navigate: true });
-          close();
         }}
       >
         <div className="text-sm font-normal mb-1">Navn</div>

@@ -239,7 +239,7 @@ export const folders = createRoute({
       const insertDocumentsPromise =
         insertDocuments.length === 0
           ? { acknowledged: true }
-          : db.collection<DBDocument>("articles").insertMany(insertDocuments);
+          : db.collection<DBDocument>("documents").insertMany(insertDocuments);
 
       const [insertFoldersResult, insertDocumentsResult, ...updateResults] =
         await Promise.all([

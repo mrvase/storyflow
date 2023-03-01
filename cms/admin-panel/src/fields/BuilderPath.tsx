@@ -35,11 +35,13 @@ export function BuilderPathProvider({
   const listeners = useIframeListeners();
   const dispatchers = useIframeDispatchers();
 
-  console.log("PATH", path);
-
   React.useEffect(() => {
     return listeners.selection.subscribe((path) => {
       // check if path is from own field.
+      if (path[path.length - 1].id.match(/\[\d+\]/)) {
+        setPathInternal(path.slice(0, -1));
+        return;
+      }
       setPathInternal(path);
     });
   }, []);

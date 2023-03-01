@@ -24,6 +24,7 @@ export const Link = createComponent(
         type: "string",
         name: "label",
         label: "Label",
+        searchable: true,
       },
     ],
     inline: true,

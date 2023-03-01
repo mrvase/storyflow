@@ -14,7 +14,7 @@ import ReactDOM from "react-dom";
 import { getLibraryConfigs } from "../config";
 import { useCSS } from "./useCSS";
 
-const LOG = false;
+const LOG = true;
 export const log: typeof console.log = LOG
   ? (...args) => console.log("$$", ...args)
   : (...args) => {};

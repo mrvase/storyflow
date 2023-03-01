@@ -227,11 +227,12 @@ export type ValueArray = (
   | ValueArray
 )[];
 
-export type RenderArray = (
+export type RenderElement =
   | LayoutElement
   | { $text: (string | number | LayoutElement)[] }
-  | { $heading: [number, string] }
-)[];
+  | { $heading: [number, string] };
+
+export type RenderArray = (RenderElement | { $children: RenderElement[] })[];
 
 export type ComponentProps<C extends PartialConfig> = {
   [Key in C["props"][number]["name"]]: NameToType<

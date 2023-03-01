@@ -57,7 +57,7 @@ const createCalculationStage = (
             $.objectToArray($doc.values),
             (el) =>
               ({
-                id: $.concat($doc.id, el.k) as FieldId,
+                id: $.concat([$doc.id, el.k]) as FieldId,
                 result: el.v as FlatComputation,
               } as any)
           ),
@@ -196,7 +196,7 @@ const createCalculationStage = (
               imports: string[];
               depth: number;
             })[],
-            $doc.updates as Update[],
+            $doc.updates,
             $doc.derivatives
           ),
           (acc, cur) => {
@@ -239,6 +239,11 @@ const createCalculationStage = (
                                 () =>
                                   $.concatArrays(acc, [
                                     $.mergeObjects(nestedImport, {
+                                      // Add empty import array to avoid type error when looking for base depth in the subsequent iteration.
+                                      // One might wonder if not it should contain actual imports so that it would be found when looking for base depth.
+                                      // But all its imports are added here as nested imports as well containing the higher depth.
+                                      // They will therefore stay when deduplication happens later.
+                                      imports: [],
                                       depth: $.add([
                                         baseDepth,
                                         1,

@@ -20,11 +20,11 @@ export function App() {
               <DragDropContext>
                 <Preload />
                 <CollabProvider>
-                  <IdGenerator>
-                    <ClientConfigProvider>
+                  <ClientConfigProvider>
+                    <IdGenerator>
                       <Layout />
-                    </ClientConfigProvider>
-                  </IdGenerator>
+                    </IdGenerator>
+                  </ClientConfigProvider>
                 </CollabProvider>
               </DragDropContext>
             </FoldersProvider>

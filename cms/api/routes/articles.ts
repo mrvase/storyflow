@@ -15,6 +15,7 @@ import {
   FlatComputationRecord,
   TemplateFieldId,
   NonNestedComputation,
+  SearchableProps,
 } from "@storyflow/backend/types";
 import { ModifyResult, ObjectId, WithId } from "mongodb";
 import clientPromise from "../mongo/mongoClient";
@@ -33,7 +34,7 @@ import {
 import { AnyOp, targetTools } from "shared/operations";
 import { createComputationTransformer, fieldConfig } from "shared/fieldConfig";
 import { modifyNestedChild } from "@storyflow/backend/traverse";
-import { inputConfig } from "shared/inputConfig";
+import { getPickedDocumentIds, inputConfig } from "shared/inputConfig";
 import {
   flattenComputation,
   getChildrenFromFlatComputation,
@@ -42,6 +43,7 @@ import {
   restoreComputation,
 } from "@storyflow/backend/flatten";
 import {
+  computeFieldId,
   getDocumentId,
   getTemplateFieldId,
   isTemplateField,
@@ -50,6 +52,7 @@ import {
 import { createStages, Update } from "../aggregation/stages";
 import util from "util";
 import { LABEL_ID, URL_ID } from "@storyflow/backend/templates";
+import { symb } from "@storyflow/backend/symb";
 
 export const removeObjectId = <T extends { _id: any }>({
   _id,
@@ -261,7 +264,7 @@ export const articles = createRoute({
       const db = (await clientPromise).db(dbName);
 
       const articles = (
-        (await db.collection("articles").find({ folder }).toArray()) ?? []
+        (await db.collection("documents").find({ folder }).toArray()) ?? []
       ).map(removeObjectId) as DBDocument[];
 
       /*
@@ -295,7 +298,7 @@ export const articles = createRoute({
 
       const articles = (
         (await db
-          .collection("articles")
+          .collection("documents")
           .find({ [`values.${LABEL_ID}`]: { $regex: string, $options: "i" } })
           .toArray()) ?? []
       ).map(removeObjectId) as DBDocument[];
@@ -328,7 +331,7 @@ export const articles = createRoute({
       const db = (await clientPromise).db(dbName);
 
       const article = await db
-        .collection("articles")
+        .collection("documents")
         .findOne<WithId<DBDocument>>({ id });
 
       if (!article) {
@@ -392,7 +395,7 @@ export const articles = createRoute({
       }, {} as Record<string, { [key: string]: any[] }>);
 
       const result = await db
-        .collection("articles")
+        .collection("documents")
         .find<WithId<DBDocument>>(filters)
         .sort({ _id: -1 })
         .toArray();
@@ -419,7 +422,7 @@ export const articles = createRoute({
       const db = (await clientPromise).db(dbName);
 
       const article = await db
-        .collection("articles")
+        .collection("documents")
         .findOne<WithId<DBDocument>>({ id });
 
       if (!article) {
@@ -466,7 +469,7 @@ export const articles = createRoute({
         record: ComputationRecord,
         getArticles: (ids: DocumentId[]) => Promise<DBDocument[]>
       ) => {
-        let flatData = flatten(record);
+        let flatData = flatten(record, {});
 
         const externalFieldIds = deduplicate(
           Array.from(flatData.importMap.values()).flat(1)
@@ -485,7 +488,7 @@ export const articles = createRoute({
 
         let importsRecord = getImports(externalFieldIds, importedArticles);
 
-        flatData = flatten(importsRecord, flatData);
+        flatData = flatten(importsRecord, {}, flatData);
 
         return getSortedValues(id as DocumentId, flatData);
       };
@@ -496,7 +499,7 @@ export const articles = createRoute({
 
         const fetch = async () => {
           const array = await db
-            .collection("articles")
+            .collection("documents")
             .find<WithId<DBDocument>>({
               id: {
                 $in: Array.from(collectedIds),
@@ -579,7 +582,7 @@ export const articles = createRoute({
           { $documents: inserts },
           ...createStages([]),
           createUnsetStage(),
-          { $merge: "articles" },
+          { $merge: "documents" },
         ])
         .next()
         .then(() => ({ acknowledged: true }))
@@ -588,7 +591,7 @@ export const articles = createRoute({
       const result: { acknowledged: boolean }[] = await Promise.all([
         ...(inserts.length
           ? inserts.map((insert) =>
-              db.collection("articles").updateOne(
+              db.collection("documents").updateOne(
                 { id: insert.id },
                 [
                   {
@@ -611,7 +614,7 @@ export const articles = createRoute({
             )
           : []),
         ...(removes.length
-          ? [db.collection("articles").deleteMany({ id: { $in: removes } })]
+          ? [db.collection("documents").deleteMany({ id: { $in: removes } })]
           : []),
         client
           .del(...removes)
@@ -645,7 +648,7 @@ export const articles = createRoute({
     async mutation(input, { dbName, slug }) {
       const db = (await clientPromise).db(dbName);
 
-      // let shortId = input.shortId ?? (await getShortIds("articles", 1, db))[0];
+      // let shortId = input.shortId ?? (await getShortIds("documents", 1, db))[0];
 
       const articles: DBDocument[] = input.map((article) => ({
         ...article,
@@ -663,7 +666,7 @@ export const articles = createRoute({
         console.log("ERROR", err);
       }
 
-      const result = await db.collection("articles").insertMany(articles);
+      const result = await db.collection("documents").insertMany(articles);
 
       return success(result.acknowledged);
     },
@@ -680,7 +683,7 @@ export const articles = createRoute({
       const db = (await clientPromise).db(dbName);
 
       const result = await db
-        .collection("articles")
+        .collection("documents")
         .deleteOne({ _id: new ObjectId(_id) });
 
       if (!result.acknowledged) {
@@ -696,13 +699,16 @@ export const articles = createRoute({
       return ctx.use(globals);
     },
     schema() {
-      return z.string();
+      return z.object({
+        id: z.string(),
+        searchable: z.record(z.record(z.boolean())),
+      });
     },
-    async mutation(id, { dbName, slug }) {
+    async mutation({ id, searchable }, { dbName, slug }) {
       const db = (await clientPromise).db(dbName);
 
       const [article, histories] = await Promise.all([
-        db.collection("articles").findOne({ id }) as Promise<
+        db.collection("documents").findOne({ id }) as Promise<
           WithId<DBDocument>
         >,
         (
@@ -721,6 +727,15 @@ export const articles = createRoute({
       }
 
       let documentConfig = article.config;
+
+      /*
+      IMPORTANT ASSUMPTION 1
+      We do NOT know the values of the document's imports (even though they are stored in the document).
+      We need to fetch them first.
+      The catch: we cannot fetch all imports in the first pass, since some import
+      ids are computed from other imports (with "pick" function).
+      */
+
       const computationRecord = getComputationRecord(article);
 
       // TODO delete own fields from computationRecord that are not in documentConfig.
@@ -754,20 +769,26 @@ export const articles = createRoute({
         }
       });
 
-      let flatData = flatten(computationRecord);
+      let flatData = flatten(computationRecord, searchable);
+
+      console.log(
+        "FLAT DATA",
+        util.inspect(flatData, { depth: null, colors: true })
+      );
 
       const externalFieldIds = deduplicate(
         Array.from(flatData.importMap.values()).flat(1)
       ).filter((el) => !el.startsWith(id)) as FieldId[];
 
-      const externalDocumentIds = externalFieldIds.reduce(
-        (acc: DocumentId[], cur) => {
-          const docId = getDocumentId(cur as FieldId);
+      const getDocumentIds = (fieldIds: FieldId[]) => {
+        return fieldIds.reduce((acc: DocumentId[], cur) => {
+          const docId = getDocumentId(cur);
           if (!acc.includes(docId)) acc.push(docId);
           return acc;
-        },
-        []
-      );
+        }, []);
+      };
+
+      const externalDocumentIds = getDocumentIds(externalFieldIds);
 
       /*
       const isPureDocumentField = (comp: FlatComputation, imports:) => {
@@ -791,32 +812,27 @@ export const articles = createRoute({
       }
       */
 
-      const getDrefs = (fieldId: FieldId, record: FlatComputationRecord) => {
-        const comp = record[fieldId];
-        if (!comp) return [];
-        return comp.reduce((refs, el, index) => {
-          if (el !== null && typeof el === "object" && "dref" in el) {
-            refs.push(el.dref);
-          } else if (index > 0 && Array.isArray(el) && el[0] === "p") {
-            // if updated field has pick, we may need to include derivative again
-            const former = comp[index - 1];
-            if (
-              former !== null &&
-              typeof former === "object" &&
-              "fref" in former
-            ) {
-              // may not yet be available
-              refs.push(...getDrefs(former.fref, record));
-            }
-          }
-          return refs;
-        }, [] as DocumentId[]);
-      };
-
       const drefs: DocumentId[] = [];
 
+      // we need to consider drefs for two purposes:
+      // a) an updated field might resolve to a dref in which case an external import of the field
+      //    could run a "pick" on it, and we need the drefs to create derivatives.
+      // b) the updated field runs a "pick" on an import itself, and we need to fetch
+      //    the picked field. Things to take into account:
+      //    a) If it picks from an internal field, the ids have been found through flatten().
+      //    b) If it picks from an external field, we cannot obtain the dref before we have fetched the external field.
+
+      // Before fetching imports, we can handle:
+      // 1) the updated fields that resolve to drefs should be used to produce derivatives
+
+      // After fetching imports, we can handle:
+      // 1') the updated fields that resolve to drefs should be used to produce derivatives
+      // 2) the updated fields that picks from an external field should be used to produce field import ids.
+
       updatedFieldsIds.forEach((fieldId) => {
-        drefs.push(...getDrefs(fieldId, flatData.record));
+        // even though we are not concerned with picked document ids,
+        // we can use the same function to get drefs
+        drefs.push(...getPickedDocumentIds(fieldId, flatData.record));
       });
 
       drefs.forEach((ref) => {
@@ -825,8 +841,10 @@ export const articles = createRoute({
         }
       });
 
+      console.log("EXTERNAL", externalDocumentIds);
+
       const importedArticles = await db
-        .collection("articles")
+        .collection("documents")
         .find<WithId<DBDocument>>({
           id: {
             $in: externalDocumentIds,
@@ -848,25 +866,68 @@ export const articles = createRoute({
         a different value now that it is imported back into the article.
       */
 
-      flatData = flatten(importsRecord, flatData);
+      flatData = flatten(importsRecord, searchable, flatData);
 
       const newDrefs: DocumentId[] = [];
+      const newExternalFieldIds: FieldId[] = [];
 
       updatedFieldsIds.forEach((fieldId) => {
-        // some imported values may now have become available
-        getDrefs(fieldId, flatData.record).forEach((id) => {
+        // 1')
+        getPickedDocumentIds(fieldId, flatData.record).forEach((id) => {
           if (!drefs.includes(id)) {
             newDrefs.push(id);
           }
         });
+        // 2)
+        const check = [fieldId, ...(flatData.nestedMap.get(fieldId) ?? [])];
+        check.forEach((id, index) => {
+          const comp = flatData.record[id];
+          if (!comp) return;
+          comp.forEach((el) => {
+            if (index > 0 && symb.isDBSymbol(el, "p")) {
+              const prev = comp[index - 1];
+              if (symb.isFieldImport(prev)) {
+                const drefs = getPickedDocumentIds(prev.fref, flatData.record);
+                drefs.forEach((dref) => {
+                  const newFieldId = computeFieldId(dref, el.p);
+                  if (!externalFieldIds.includes(newFieldId)) {
+                    newExternalFieldIds.push(newFieldId);
+                  }
+                });
+              }
+            }
+          });
+        });
       });
 
-      if (newDrefs.length) {
-        throw new Error("Need to implement second order query on drefs");
+      const newExternalDocumentIds = [
+        ...getDocumentIds(newExternalFieldIds),
+        ...newDrefs,
+      ].filter((el) => !externalDocumentIds.includes(el));
+
+      if (newExternalDocumentIds.length) {
+        await db
+          .collection("documents")
+          .find<WithId<DBDocument>>({
+            id: {
+              $in: newExternalDocumentIds,
+            },
+          })
+          .forEach((doc) => {
+            importedArticles.push(doc);
+          });
       }
 
-      const drefArticles = importedArticles.filter((doc) =>
-        drefs.includes(doc.id)
+      if (newExternalFieldIds) {
+        let extraImportsRecord = getImports(
+          newExternalFieldIds,
+          importedArticles
+        );
+        flatData = flatten(extraImportsRecord, searchable, flatData);
+      }
+
+      const drefArticles = importedArticles.filter(
+        (doc) => drefs.includes(doc.id) || newDrefs.includes(doc.id)
       );
 
       const { compute, values } = getSortedValues(id as DocumentId, flatData);
@@ -897,7 +958,13 @@ export const articles = createRoute({
 
       console.log(
         "DERIVATIVES",
-        util.inspect(derivatives, { depth: null, colors: true })
+        util.inspect(
+          derivatives.map((el) => ({
+            ...el,
+            value: [],
+          })),
+          { depth: null, colors: true }
+        )
       );
 
       const cached: FieldId[] = [];
@@ -907,7 +974,7 @@ export const articles = createRoute({
         }
       });
 
-      const result1 = (await db.collection("articles").findOneAndUpdate(
+      const result1 = (await db.collection("documents").findOneAndUpdate(
         { id },
         [
           {
@@ -928,8 +995,7 @@ export const articles = createRoute({
 
       if (result1.ok) {
         const doc = result1.value!;
-        const compute = doc.compute;
-        const values = doc.values;
+        // includes imports by default
         const record = getFlatComputationRecord(doc);
         const cachedValues = (doc as typeof doc & {
           cached: Value[][];
@@ -949,7 +1015,8 @@ export const articles = createRoute({
             id,
             depth: 0,
             value,
-            result: values[getTemplateFieldId(id)] ?? cachedRecord[id] ?? [],
+            result:
+              doc.values[getTemplateFieldId(id)] ?? cachedRecord[id] ?? [],
             _imports,
             imports: [], // should just be empty
           };
@@ -957,7 +1024,10 @@ export const articles = createRoute({
 
         console.log(
           "UPDATES",
-          util.inspect(updates, { depth: null, colors: true })
+          util.inspect(
+            updates.map((el) => el.imports),
+            { depth: null, colors: true }
+          )
         );
 
         /*
@@ -965,7 +1035,7 @@ export const articles = createRoute({
         then I could send urls back to the client for revalidation.
         */
 
-        await db.collection("articles").updateMany(
+        await db.collection("documents").updateMany(
           {
             "compute.id": { $in: updates.map((el) => el.id) },
             id: { $ne: id },
@@ -1015,7 +1085,7 @@ export const articles = createRoute({
       const lastBuild = lastBuildCounter?.value?.counter ?? 0;
 
       const articles = await db
-        .collection("articles")
+        .collection("documents")
         .find({
           ...(namespace
             ? { folder: minimizeId(namespace) }
@@ -1061,26 +1131,27 @@ const getImports = (
   importIds.forEach((id) => {
     const article = importedArticles.find((el) => el.id === getDocumentId(id));
     if (article) {
-      const fields = getComputationRecord(article);
+      const fields = getComputationRecord(article, { includeImports: true });
       const value = fields[id];
       if (value) {
-        const addImports = (id: FieldId, value: Computation) => {
+        const addImport = (id: FieldId, value: Computation) => {
           record[id] = value;
-          const imports = inputConfig.getImportIds(value);
-          imports.forEach((importId) => {
+
+          // handle its own imports
+          inputConfig.getImportIds(value, fields).forEach((importId) => {
             if (importId in record) return;
             if (importId.startsWith(article.id)) {
-              addImports(importId, fields[importId]);
+              addImport(importId, fields[importId]);
             } else {
               const block = article.compute.find((el) => el.id === importId)!;
               // elements used for restoration are all in imports
               const value = restoreComputation(block.value, article.compute);
-              addImports(importId, value);
+              addImport(importId, value);
             }
           });
         };
 
-        addImports(id, value);
+        addImport(id, value);
         return;
       }
     }
@@ -1091,13 +1162,16 @@ const getImports = (
   return record;
 };
 
+type FlatData = {
+  record: FlatComputationRecord;
+  importMap: Map<string, string[]>;
+  nestedMap: Map<string, string[]>;
+};
+
 const flatten = (
   computationRecord: ComputationRecord,
-  initialValues: {
-    record?: FlatComputationRecord;
-    importMap?: Map<string, string[]>;
-    nestedMap?: Map<string, string[]>;
-  } = {}
+  searchable: SearchableProps,
+  initialValues: Partial<FlatData> = {}
 ) => {
   const record: FlatComputationRecord = initialValues.record ?? {};
   let importMap = initialValues.importMap ?? new Map<string, string[]>();
@@ -1107,7 +1181,10 @@ const flatten = (
     if (fieldId in record) return;
 
     const flattenedComputation = flattenComputation(
-      computation as NonNestedComputation
+      computation as NonNestedComputation,
+      (type: string, name: string) => {
+        return searchable[type]?.[name] ?? false;
+      }
     );
 
     Object.entries(flattenedComputation).map(([id, value]) => {
@@ -1120,7 +1197,7 @@ const flatten = (
     const segments = path.split(".");
     const current = segments[segments.length - 1] || base;
 
-    const ids = inputConfig.getImportIds(value);
+    const ids = inputConfig.getImportIds(value, computationRecord);
     importMap.set(current, ids);
 
     if (path === "") return current as FieldId;
@@ -1209,6 +1286,7 @@ const getSortedValues = (
 
   // SORT BY AND REMOVE DEPTH
   computeWithDepth.sort((a, b) => b.depth - a.depth);
+
   const compute = computeWithDepth.map(({ depth, ...el }) => el);
 
   return { values, compute };
@@ -1351,7 +1429,7 @@ const getFlatImportsWithDuplicates = (
   const imports = [{ value: flatComputation, depth: parentDepth }]
     .concat(flatArray)
     .reduce((acc, { value, depth }) => {
-      inputConfig.getImportIds(value).forEach((id) => {
+      inputConfig.getImportIds(value, record).forEach((id) => {
         const comp = record[id] ?? [];
         acc.push(
           { id, value: comp, depth: depth + 1 },

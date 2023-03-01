@@ -28,15 +28,21 @@ export default function RenderComponent({
 }) {
   const path = usePath();
 
-  const value = useValue(path) as ValueArray;
+  const value = useValue(path) as ValueArray | undefined;
 
   const index = React.useContext(IndexContext);
 
   const renderArray = React.useMemo(() => {
+    /*
     const valueAtIndex = value[index];
-    const value_ = Array.isArray(valueAtIndex) ? valueAtIndex : value;
+    const value_ =
+      Array.isArray(valueAtIndex) && valueAtIndex.length === 1
+        ? valueAtIndex
+        : value;
+    */
     const configs = getLibraryConfigs();
-    return createRenderArray(value_, (type: string) =>
+    if (!value) return [];
+    return createRenderArray(value, (type: string) =>
       Boolean(getConfigByType(type, configs)?.inline)
     );
   }, [value, index]);
@@ -69,40 +75,84 @@ export default function RenderComponent({
     );
   };
 
+  console.log("RENDER ARRAY", value, renderArray);
+
   return (
     <>
-      {renderArray.map((block, i1) => {
-        if ("$heading" in block) {
-          const type = `H${block.$heading[0]}`;
-          const Component = getDefaultComponent(type)!;
-          const string = String(block.$heading[1]);
-          return (
-            <Component key={i1}>
-              <ParseRichText>{string}</ParseRichText>
-            </Component>
-          );
-        }
-        if ("$text" in block) {
-          const type = "Text";
-          const Component = getDefaultComponent(type)!;
-          return (
-            <Component key={i1}>
-              {block.$text.map((el, i2) => {
-                if (typeof el === "object") {
-                  return createElement(el);
-                }
-                return (
-                  <ParseRichText key={`${i1}-${i2}`}>
-                    {String(el)}
-                  </ParseRichText>
-                );
-              })}
-            </Component>
-          );
-        }
-        return createElement(block);
-      })}
-      {value.length === 0 && <AddComponent />}
+      {renderArray.reduce((acc, block, index) => {
+        const isChildArray = "$children" in block;
+        const renderChildren = "$children" in block ? block.$children : [block];
+
+        acc.push(
+          ...renderChildren.map((block, childIndex) => {
+            if ("$heading" in block) {
+              const type = `H${block.$heading[0]}`;
+              const Component = getDefaultComponent(type)!;
+              const string = String(block.$heading[1]);
+              /*
+              /*
+              <ExtendPath
+                key={`${index}-${childIndex}`}
+                extend={`[${index}]`}
+              >
+                <AddPathSegment
+                  {...{
+                    id: `[${index}]`,
+                    type,
+                    parentProp,
+                  }}
+                >
+                </AddPathSegment>
+              </ExtendPath>
+              */
+              return (
+                <Component key={index}>
+                  <ParseRichText>{string}</ParseRichText>
+                </Component>
+              );
+            }
+            if ("$text" in block) {
+              const type = "Text";
+              const Component = getDefaultComponent(type)!;
+              /*
+              <ExtendPath
+                key={`${index}-${childIndex}`}
+                extend={`[${index}]`}
+              >
+                <AddPathSegment
+                  {...{
+                    id: `[${index}]`,
+                    type,
+                    parentProp,
+                  }}
+                >
+                </AddPathSegment>
+              </ExtendPath>
+              */
+              return (
+                <Component key={index}>
+                  {block.$text.map((el, textElementIndex) => {
+                    if (typeof el === "object") {
+                      return createElement(el);
+                    }
+                    return (
+                      <ParseRichText
+                        key={`${index}-${childIndex}-${textElementIndex}`}
+                      >
+                        {String(el)}
+                      </ParseRichText>
+                    );
+                  })}
+                </Component>
+              );
+            }
+            return createElement(block);
+          })
+        );
+
+        return acc;
+      }, [] as React.ReactNode[])}
+      {value && value.length === 0 && <AddComponent />}
     </>
   );
 }

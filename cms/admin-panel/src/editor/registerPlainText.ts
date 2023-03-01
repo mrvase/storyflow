@@ -413,7 +413,17 @@ export function registerPlainText(
               const text = clipboardData.getData("text/plain");
 
               if (text != null) {
-                selection.insertRawText(text);
+                if ($isRangeSelection(selection)) {
+                  const lines = text.split(/\r?\n/).filter((el) => el !== "");
+                  const linesLength = lines.length;
+
+                  for (let i = 0; i < linesLength; i++) {
+                    selection.insertText(lines[i]);
+                    if (i < linesLength - 1) {
+                      selection.insertParagraph();
+                    }
+                  }
+                }
               }
             }
           },

@@ -22,11 +22,20 @@ import { symb } from "./symb";
 import { calculateSync } from "./calculate";
 
 export const toFlatComputation = (
-  value: NonNestedComputation
+  value: NonNestedComputation,
+  isSearchable: (type: string, name: string) => boolean
 ): FlatComputation => {
   return value.map((el) => {
     if (symb.isLayoutElement(el)) {
-      return { ...el, props: Object.keys(el.props) } as FlatLayoutElement;
+      return {
+        ...el,
+        props: Object.fromEntries(
+          Object.entries(el.props).map(([key]) => [
+            key,
+            isSearchable(el.type, key),
+          ])
+        ),
+      } as FlatLayoutElement;
     } else if (symb.isFieldImport(el)) {
       const { args, ...newEl } = el;
       return newEl as FlatFieldImport;
@@ -40,11 +49,12 @@ export const toFlatComputation = (
 };
 
 export const flattenComputation = (
-  value: NonNestedComputation
+  value: NonNestedComputation,
+  isSearchable: (type: string, name: string) => boolean
 ): FlatComputationRecord => {
   const result = new Map<string, FlatComputation>();
   traverse(value, (value, path) => {
-    result.set(path, toFlatComputation(value));
+    result.set(path, toFlatComputation(value, isSearchable));
   });
   return Object.fromEntries(result.entries());
 };
@@ -58,7 +68,7 @@ export const traverseFlatComputation = (
     if (el === null || typeof el !== "object") return el;
     if ("type" in el) {
       const props = Object.fromEntries(
-        el.props.map((key) => {
+        Object.keys(el.props).map((key) => {
           const computation = compute.find(({ id }) =>
             id.match(new RegExp(`${el.id}\/${key}\#?`))
           );
@@ -187,6 +197,7 @@ export const getFlatComputationRecord = ({
         value as FlatComputation,
       ])
     ),
+    // computes should overwrite values since they are more fundamental (values are derived from computes)
     ...Object.fromEntries(compute.map(({ id, value }) => [id, value])),
   };
 };

@@ -70,7 +70,7 @@ export const users = createRoute({
           .collection("counters")
           .insertMany([
             { name: "folders", counter: 0 },
-            { name: "articles", counter: 0 },
+            { name: "documents", counter: 0 },
           ]),
         client
           .db(db)
@@ -166,7 +166,7 @@ export const users = createRoute({
       } else {
         const orgUser = await client
           .db(db)
-          .collection("articles")
+          .collection("documents")
           .findOne({
             [`values.${USER_ID}`]: user.email,
           });

@@ -29,6 +29,7 @@ import { useFieldOptions } from "../default/FieldOptionsContext";
 import { Option, RegularOptions } from "@storyflow/frontend/types";
 import useSWR from "swr";
 import { getColorName, hexColorToRgb, isHexColor } from "../../utils/colors";
+import { useFieldRestriction } from "../FieldTypeContext";
 
 /*
 export const getTokenType = (value: TokenString) => {
@@ -44,9 +45,27 @@ export const getTokenType = (value: TokenString) => {
 };
 */
 
+type OptionObject = { name: string; label?: string; value?: string };
+
 function TokenDecorator({ nodeKey, token }: { nodeKey: string; token: Token }) {
+  const restrictTo = useFieldRestriction();
+
+  let option: OptionObject | undefined;
+
+  if ("name" in token) {
+    const options = useFieldOptions();
+
+    option = (options as Option[]).find(
+      (option): option is OptionObject =>
+        typeof option === "object" && option.name === token.name
+    );
+  }
+
   if ("color" in token) {
     return <ColorDecorator nodeKey={nodeKey} token={token} />;
+  }
+  if (restrictTo === "color" && option) {
+    return <ColorDecorator nodeKey={nodeKey} option={option} />;
   }
   if ("name" in token) {
     return <CustomDecorator nodeKey={nodeKey} token={token} />;
@@ -61,13 +80,6 @@ function CustomDecorator({
   nodeKey: string;
   token: CustomToken;
 }) {
-  const { data } = useSWR("COLORS", {
-    revalidateOnMount: false,
-    revalidateOnFocus: false,
-    revalidateOnReconnect: false,
-    revalidateIfStale: false,
-  });
-
   const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
   const selectClick = React.useRef(false);
 
@@ -79,10 +91,6 @@ function CustomDecorator({
   );
 
   let label = option && "label" in option ? option.label : token.name;
-
-  if (data && option && "value" in option && isHexColor(option.value)) {
-    label += ` (${getColorName(option.value.slice(1), data[0], data[1])})`;
-  }
 
   return (
     <span
@@ -140,15 +148,39 @@ function FileDecorator({
   );
 }
 
-function ColorDecorator({
-  nodeKey,
-  token,
-}: {
-  nodeKey: string;
-  token: ColorToken;
-}) {
+function ColorDecorator(
+  props:
+    | {
+        nodeKey: string;
+        token: ColorToken;
+      }
+    | {
+        nodeKey: string;
+        option: OptionObject;
+      }
+) {
+  const { nodeKey } = props;
+
+  const { data } = useSWR("COLORS", {
+    revalidateOnMount: false,
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+    revalidateIfStale: false,
+  });
+
   const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
   const selectClick = React.useRef(false);
+
+  let label: string | undefined;
+  let color: string;
+
+  if ("option" in props) {
+    label = "label" in props.option ? props.option.label : props.option.name;
+    color = "value" in props.option ? props.option.value! : "#ffffff";
+  } else {
+    color = props.token.color;
+    label = getColorName(color.slice(1), data[0], data[1]).split(" / ")[0];
+  }
 
   return (
     <span
@@ -166,10 +198,10 @@ function ColorDecorator({
     >
       <span className="flex-center gap-2">
         <SwatchIcon className="w-4 h-4 inline" />
-        {token.color}
+        {label}
         <div
           className="w-4 h-4 rounded ring-1 ring-inset ring-white/50"
-          style={{ backgroundColor: token.color }}
+          style={{ backgroundColor: color }}
         />
       </span>
     </span>

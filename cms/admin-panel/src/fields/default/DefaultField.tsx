@@ -2,7 +2,10 @@ import React from "react";
 import Editor from "../Editor/Editor";
 import { FieldProps } from "../RenderField";
 import { targetTools, ComputationOp } from "shared/operations";
-import { useEditorContext } from "../../editor/react/EditorProvider";
+import {
+  useEditorContext,
+  useIsFocusedContext,
+} from "../../editor/react/EditorProvider";
 import { ContentEditable } from "../../editor/react/ContentEditable";
 import { useIsEmpty } from "../../editor/react/useIsEmpty";
 import { useSingular, useGlobalState } from "../../state/state";
@@ -290,6 +293,7 @@ export function WritableDefaultField({
       setComputation(func);
       const encoded = func();
       const decoded = decodeEditorComputation(encoded, transform);
+      console.log("COMPUTATION:", encoded, decoded);
       setOutput(() => calculateFn(id, decoded, { client, imports }));
       setFunction(() =>
         calculateFn(id, decoded, { client, imports, returnFunction: true })
@@ -311,11 +315,7 @@ export function WritableDefaultField({
         transform={transform}
       >
         <div className={cl("relative", hidden && "hidden")}>
-          {isEmpty && (
-            <div className="absolute pointer-events-none px-14 font-light opacity-25 select-none">
-              Ikke udfyldt
-            </div>
-          )}
+          <Placeholder />
           <ContentEditable
             className={cl(
               "peer grow editor outline-none px-14 pb-5 font-light selection:bg-gray-700",
@@ -385,6 +385,18 @@ export function FocusBg() {
   );
 }
 
+export function Placeholder() {
+  const editor = useEditorContext();
+  const isFocused = useIsFocused(editor);
+  const isEmpty = useIsEmpty(editor);
+  return isEmpty ? (
+    <div className="absolute pointer-events-none px-14 font-light opacity-25 select-none">
+      {isFocused ? 'Tast "@" for genveje' : "Ikke udfyldt"}
+    </div>
+  ) : null;
+}
+
+/*
 export function Placeholder({ className }: { className?: string }) {
   const editor = useEditorContext();
   const isEmpty = useIsEmpty(editor);
@@ -400,3 +412,4 @@ export function Placeholder({ className }: { className?: string }) {
     </div>
   ) : null;
 }
+*/

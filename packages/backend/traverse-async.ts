@@ -27,7 +27,7 @@ export const traverseFlatComputationAsync = async (
       if ("type" in el) {
         const props = Object.fromEntries(
           await Promise.all(
-            el.props.map(async (name) => {
+            Object.keys(el.props).map(async (name) => {
               const computation = compute.find(({ id }) =>
                 id.match(new RegExp(`${el.id}\/${name}\#?`))
               )!;

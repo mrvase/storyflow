@@ -1,3 +1,4 @@
+import { RegularOptions } from "@storyflow/frontend/types";
 import { tools } from "shared/editor-tools";
 import { ComputationOp } from "shared/operations";
 
@@ -61,3 +62,33 @@ export function sortByDomNode<T>(
     return 0;
   });
 }
+
+export const getOptionLabel = (option: RegularOptions[number]) => {
+  return typeof option === "object"
+    ? option.label ?? ("value" in option ? option.value : option.name)
+    : option;
+};
+
+export const markMatchingString = (
+  string: string,
+  query: string
+): React.ReactNode => {
+  let i = 0;
+  let stringLower = string.toLowerCase();
+  let queryLower = query.toLowerCase();
+  while (stringLower[i] === queryLower[i]) {
+    i++;
+    if (i >= string.length || i >= query.length) {
+      break;
+    }
+  }
+
+  return i > 0 ? (
+    <>
+      <strong className="whitespace-pre">{string.substring(0, i)}</strong>
+      <span className="whitespace-pre opacity-80">{string.substring(i)}</span>
+    </>
+  ) : (
+    <span className="whitespace-pre opacity-80">{string}</span>
+  );
+};

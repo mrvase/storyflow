@@ -1,4 +1,5 @@
 import React from "react";
+import cl from "clsx";
 import { Interaction, Interactive } from "./Interactive";
 import { Pointer } from "./Pointer";
 import { hsvaToHslString } from "./convert";
@@ -96,14 +97,16 @@ const Saturation = React.memo(SaturationBase);
 export const ColorPicker = ({
   color = "#fff",
   onChange,
+  className,
 }: {
   color: string;
   onChange: (value: string) => void;
+  className?: string;
 }): JSX.Element => {
   const [hsva, updateHsva] = useColorManipulation(color, onChange);
 
   return (
-    <div className="w-full flex rounded-sm">
+    <div className={cl("flex", className)}>
       <Saturation hsva={hsva} onChange={updateHsva} />
       <Hue hue={hsva.h} onChange={updateHsva} />
     </div>

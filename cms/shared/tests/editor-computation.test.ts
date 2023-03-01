@@ -261,9 +261,10 @@ describe("editor computation - arrays", () => {
   });
 });
 
+const imp = () => ({ id: "", fref: "" as FieldId, args: {} });
+
 describe("editor computation - auto-merging around imports", () => {
   it("auto-merges imports with adjacent strings", () => {
-    const imp = () => ({ id: "", fref: "" as FieldId, args: {} });
     expectEquivalence(
       ["a", imp(), "a"],
       [{ "{": true }, "a", imp(), "a", { "}": true }]
@@ -290,7 +291,9 @@ describe("editor computation - auto-merging around imports", () => {
         "a",
         imp(),
         "a",
+        { "}": true },
         { dref: "" as DocumentId },
+        { "{": true },
         imp(),
         "a",
         { "}": true },
@@ -317,7 +320,41 @@ describe("editor computation - auto-merging around imports", () => {
     ];
     expectEquivalence(client, db);
   });
-  it("does not auto-merge when break-separated", () => {
+  it("does not merge non-mergeable drefs", () => {
+    const client: EditorComputation = [
+      "a",
+      { dref: "" as DocumentId },
+      { dref: "" as DocumentId },
+      { dref: "" as DocumentId },
+      "c",
+    ];
+    const db: Computation = [
+      "a",
+      { dref: "" as DocumentId },
+      { dref: "" as DocumentId },
+      { dref: "" as DocumentId },
+      "c",
+    ];
+    expectEquivalence(client, db);
+  });
+  it("does not merge non-mergeable nested documents", () => {
+    const client: EditorComputation = [
+      "a",
+      { id: "" as DocumentId, values: {} },
+      { id: "" as DocumentId, values: {} },
+      { id: "" as DocumentId, values: {} },
+      "c",
+    ];
+    const db: Computation = [
+      "a",
+      { id: "" as DocumentId, values: {} },
+      { id: "" as DocumentId, values: {} },
+      { id: "" as DocumentId, values: {} },
+      "c",
+    ];
+    expectEquivalence(client, db);
+  });
+  it("does auto-merge when linebreak-separated", () => {
     const client: EditorComputation = [
       "a",
       { id: "", fref: "" as FieldId, args: {} },
@@ -340,11 +377,9 @@ describe("editor computation - auto-merging around imports", () => {
       "a",
       { id: "", fref: "" as FieldId, args: {} },
       "b",
-      { "}": true },
-      { n: true },
+      { "/": true },
       { id: "", fref: "" as FieldId, args: {} },
-      { n: true },
-      { "{": true },
+      { "/": true },
       "hejsa",
       { "(": true },
       { "(": true },
@@ -359,9 +394,37 @@ describe("editor computation - auto-merging around imports", () => {
     ];
     expectEquivalence(client, db);
   });
+  it("auto-merges 1 linebreak with string", () => {
+    const client: EditorComputation = [{ n: true }, "a"];
+    const db: Computation = [{ "{": true }, { "/": true }, "a", { "}": true }];
+    expectEquivalence(client, db);
+  });
+  it("auto-merges 2 linebreak with string", () => {
+    const client: EditorComputation = [{ n: true }, { n: true }, "a"];
+    const db: Computation = [
+      { "{": true },
+      { "/": true },
+      { "/": true },
+      "a",
+      { "}": true },
+    ];
+    expectEquivalence(client, db);
+  });
+  it("auto-merges 2 linebreak with string", () => {
+    const client: EditorComputation = [imp(), { n: true }, { n: true }, "a"];
+    const db: Computation = [
+      { "{": true },
+      imp(),
+      { "/": true },
+      { "/": true },
+      "a",
+      { "}": true },
+    ];
+    expectEquivalence(client, db);
+  });
 });
 
-describe("editor computation - equivalence with syntax errors", () => {
+describe("editor computation - equivalence with OPERATOR syntax errors", () => {
   it("bijectively transforms operator lacking its left side 1", () => {
     const client: EditorComputation = [{ _: "*" }, 2];
     const db: Computation = [{ "(": true }, null as any, 2, { ")": "*" }];
@@ -422,6 +485,21 @@ describe("editor computation - equivalence with syntax errors", () => {
     ];
     expectEquivalence(client, db);
   });
+  /* TODO - FAILS
+  it("non-matched parentheses 1", () => {
+    const client: EditorComputation = [{ "(": true }, 2];
+    const db: Computation = [{ "(": true }, 2];
+    expectEquivalence(client, db);
+  });
+  it("non-matched parentheses 2", () => {
+    const client: EditorComputation = [2, { ")": true }];
+    const db: Computation = [2, { ")": true }];
+    expectEquivalence(client, db);
+  });
+  */
+});
+
+describe("editor computation - equivalence with COMMA syntax errors", () => {
   it("bijectively transforms comma lacking a left side value", () => {
     const client: EditorComputation = [{ ",": true }, 2];
     const db: Computation = [null as any, 2];
@@ -459,18 +537,65 @@ describe("editor computation - equivalence with syntax errors", () => {
     ];
     expectEquivalence(client, db);
   });
-  /* TODO - FAILS
-  it("non-matched parentheses 1", () => {
-    const client: EditorComputation = [{ "(": true }, 2];
-    const db: Computation = [{ "(": true }, 2];
+});
+
+describe("editor computation - equivalence with COMMA / MERGEABLE syntax errors", () => {
+  it("nullifies 1 comma between mergeables and non-mergeables", () => {
+    const client: EditorComputation = [
+      "hej",
+      imp(),
+      "test",
+      { ",": true },
+      { dref: "" as DocumentId },
+    ];
+    const db: Computation = [
+      { "{": true },
+      "hej",
+      imp(),
+      "test",
+      { "}": true },
+      null as any,
+      { dref: "" as DocumentId },
+    ];
     expectEquivalence(client, db);
   });
-  it("non-matched parentheses 2", () => {
-    const client: EditorComputation = [2, { ")": true }];
-    const db: Computation = [2, { ")": true }];
+
+  it("nullifies 2 comma between mergeables and non-mergeables", () => {
+    const client: EditorComputation = [
+      "hej",
+      imp(),
+      "test",
+      { ",": true },
+      { ",": true },
+      { dref: "" as DocumentId },
+    ];
+    const db: Computation = [
+      { "{": true },
+      "hej",
+      imp(),
+      "test",
+      { "}": true },
+      null as any,
+      null as any,
+      { dref: "" as DocumentId },
+    ];
     expectEquivalence(client, db);
   });
-  */
+
+  it("nullifies 1 comma between non-mergeables", () => {
+    const client: EditorComputation = [
+      { dref: "" as DocumentId },
+      { ",": true },
+      { dref: "" as DocumentId },
+    ];
+    const db: Computation = [
+      { dref: "" as DocumentId },
+      null as any,
+      null as any,
+      { dref: "" as DocumentId },
+    ];
+    expectEquivalence(client, db);
+  });
 });
 
 describe("editor computation - pick", () => {

@@ -7,6 +7,34 @@ import { COMMAND_PRIORITY_HIGH, KEY_ENTER_COMMAND } from "lexical";
 import React from "react";
 import { useEditorContext } from "../../editor/react/EditorProvider";
 
+export function useOptionEvents<T>({
+  isSelected,
+  onEnter,
+  value,
+}: {
+  isSelected: boolean;
+  onEnter: (value: T) => void;
+  value: T;
+}) {
+  const editor = useEditorContext();
+  React.useEffect(() => {
+    if (isSelected) {
+      return editor.registerCommand(
+        KEY_ENTER_COMMAND,
+        (ev) => {
+          ev?.preventDefault();
+          onEnter(value);
+          return true;
+        },
+        COMMAND_PRIORITY_HIGH
+      );
+    }
+  }, [isSelected, onEnter, value]);
+
+  const onClick = React.useCallback(() => onEnter(value), [onEnter, value]);
+  return { onClick };
+}
+
 export function Option<T>({
   isSelected,
   onEnter,
@@ -30,23 +58,7 @@ export function Option<T>({
   Icon?: React.FC<any>;
   style?: any;
 }) {
-  const editor = useEditorContext();
-
-  React.useEffect(() => {
-    if (isSelected) {
-      return editor.registerCommand(
-        KEY_ENTER_COMMAND,
-        (ev) => {
-          ev?.preventDefault();
-          onEnter(value);
-          return true;
-        },
-        COMMAND_PRIORITY_HIGH
-      );
-    }
-  }, [isSelected, onEnter, value]);
-
-  const onClick = React.useCallback(() => onEnter(value), [onEnter, value]);
+  const { onClick } = useOptionEvents({ isSelected, onEnter, value });
 
   return (
     <div

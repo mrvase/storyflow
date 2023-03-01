@@ -166,7 +166,7 @@ export const $getComputation = (node: LexicalNode) => {
       if (children) {
         for (let i = 0; i < children.length; i++) {
           const child = children[i];
-          if (i > 0 && $isBlockNode(child)) {
+          if (i > 0 && $isBlockNode(child) && $isBlockNode(children[i - 1])) {
             content = tools.concat(content, [{ n: true }]);
           }
           if ($isHeadingNode(child)) {
@@ -485,12 +485,21 @@ export function $initializeEditor(
       );
     };
 
-    const arr = tools
-      .split(initialState, (el) => tools.isLineBreak(el) || isBlockElement(el))
+    const arrSplit = tools.split(
+      initialState,
+      (el) => tools.isLineBreak(el) || isBlockElement(el)
+    );
+
+    const arr = arrSplit
+      // we need to do this filter before the other one since the other one needs
+      // to check both the current and next element
+      .filter((el) => el.length > 0)
       .filter(
         (el, index, arr) =>
-          el.length > 0 &&
-          (!tools.isLineBreak(el[0]) || typeof arr[index + 1]?.[0] !== "string")
+          // strings create paragraphs themselves
+          !tools.isLineBreak(el[0]) ||
+          index === arr.length - 1 ||
+          tools.isLineBreak(arr[index + 1]?.[0])
       );
 
     if (!arr.length) {

@@ -8,36 +8,17 @@ import {
   FlatFieldImport,
   DocumentId,
   PrimitiveValue,
-  Fetcher,
-  DocumentImport,
   TemplateFieldId,
   FlatValue,
   PossiblyNestedFlatComputation,
+  FlatLayoutElement,
+  DBSymbol,
+  FlatPlaceholder,
 } from "@storyflow/backend/types";
 
 type Parameter = { x: number; value?: PrimitiveValue };
 
-type FlatPlaceholderNext =
-  | Parameter
-  | DocumentImport
-  | FlatFieldImport
-  | Fetcher;
-
-type SharedSymbolNext =
-  | { "(": true }
-  | { ")": true }
-  | { "[": true }
-  | { "]": true }
-  | { n: true };
-
-type DBSymbol =
-  | SharedSymbolNext
-  | { "{": true }
-  | { "}": true }
-  | { ")": Operator | FunctionName }
-  | { p: TemplateFieldId };
-
-export type FlatComputation = (FlatValue | FlatPlaceholderNext | DBSymbol)[];
+export type FlatComputation = (FlatValue | FlatPlaceholder | DBSymbol)[];
 
 type ComputationBlock = {
   id: FieldId;
@@ -113,6 +94,39 @@ const compute = (
           )
         )
     )
+    /*
+    .case($.eq(operator, "}"), () => [
+      [
+        $.trim(
+          $.reduce(
+            acc.value,
+            (acc, cur) =>
+              $.reduceWithIndex(
+                cur,
+                (acc, cur, index) =>
+                  $.cond(
+                    $.in($.type(cur), ["object", "array"]),
+                    () => $.concat([acc, " "]),
+                    () =>
+                      $.cond(
+                        $.gt(index, 0),
+                        () =>
+                          $.concat([
+                            $.trim(acc),
+                            " ",
+                            $.toString(cur as string),
+                          ]),
+                        () => $.concat([acc, $.toString(cur as string)])
+                      )
+                  ),
+                acc
+              ),
+            ""
+          )
+        ),
+      ],
+    ])
+    */
     .case($.eq(operator, "}"), () => [
       $.filter(
         $.reduce(
@@ -135,7 +149,7 @@ const compute = (
                       () => $.concatArrays(acc, [$.toString(cur as string)]),
                       () =>
                         $.concatArrays($.pop(acc), [
-                          $.concat($.last(acc), $.toString(cur as string)),
+                          $.concat([$.last(acc), $.toString(cur as string)]),
                         ])
                     )
                 ),
@@ -184,10 +198,10 @@ const compute = (
                           ),
                           () =>
                             $.concatArrays($.pop(acc), [
-                              $.concat(
+                              $.concat([
                                 $.toString($.last(acc)),
-                                $.toString(cur)
-                              ),
+                                $.toString(cur),
+                              ]),
                             ]),
                           () => $.concatArrays(acc, [cur])
                         ),
@@ -203,12 +217,12 @@ const compute = (
                   $.reduce(
                     values,
                     (acc, cur) =>
-                      $.concat(
+                      $.concat([
                         acc,
                         $.switch()
                           .case($.isNumber(cur), () => $.toString(cur))
                           .case($.eq($.type(cur), "string"), () =>
-                            $.concat(
+                            $.concat([
                               $.cond(
                                 $.and(
                                   $.eq(operator, "url"),
@@ -227,11 +241,11 @@ const compute = (
                                   () => "[^\\w\\-]"
                                 ),
                                 "i"
-                              )
-                            )
+                              ),
+                            ])
                           )
-                          .default(() => "")
-                      ),
+                          .default(() => ""),
+                      ]),
                     ""
                   )
                 )
@@ -359,6 +373,12 @@ const replaceAllWithRegex = (
   );
 };
 
+type IgnorableImport = { fref: string; ignore: boolean };
+type FlatComputationWithIgnorableImport = (
+  | FlatComputation[number]
+  | IgnorableImport
+)[];
+
 export const calculate = (
   $: Operators<DBDocument>,
   block: ComputationBlock,
@@ -375,23 +395,24 @@ export const calculate = (
               next: $.switch()
                 .case(isObjectWithProp($, cur, "type", "string"), () =>
                   $.concatArrays(
-                    [{ "(": true }, ""] as FlatComputation,
+                    [{ "(": true }, ""] as FlatComputationWithIgnorableImport,
                     $.reduce(
-                      (cur as any).props,
-                      (acc, el: string) =>
+                      $.objectToArray((cur as FlatLayoutElement).props),
+                      (acc, el) =>
                         $.concatArrays(acc, [
                           {
-                            fref: $.concat((cur as any).id, "/", el),
-                          } as FlatFieldImport,
+                            fref: $.concat([(cur as any).id, "/", el.k]),
+                            ignore: $.not(el.v),
+                          },
                         ]),
-                      [] as FlatComputation
+                      [] as FlatComputationWithIgnorableImport
                     ),
-                    ["", { ")": true }] as FlatComputation
+                    ["", { ")": true }] as FlatComputationWithIgnorableImport
                   )
                 )
                 .case(pick, () =>
                   $.concatArrays(
-                    [{ "(": true }] as FlatComputation,
+                    [{ "(": true }] as FlatComputationWithIgnorableImport,
                     $.reduce(
                       acc.value,
                       (acc, comp) =>
@@ -404,7 +425,7 @@ export const calculate = (
                                 $.concatArrays(acc, [
                                   { "[": true },
                                   {
-                                    fref: $.concat(
+                                    fref: $.concat([
                                       (
                                         el as Narrow<
                                           typeof el,
@@ -416,8 +437,8 @@ export const calculate = (
                                           typeof cur,
                                           { p: TemplateFieldId }
                                         >
-                                      ).p
-                                    ),
+                                      ).p,
+                                    ]),
                                   } as FieldImport,
                                   {
                                     "]": true,
@@ -427,7 +448,7 @@ export const calculate = (
                                 $.concatArrays(acc, [
                                   { "[": true },
                                   {
-                                    fref: $.concat(
+                                    fref: $.concat([
                                       (el as Narrow<typeof el, { id: string }>)
                                         .id,
                                       "/",
@@ -436,8 +457,8 @@ export const calculate = (
                                           typeof cur,
                                           { p: TemplateFieldId }
                                         >
-                                      ).p
-                                    ),
+                                      ).p,
+                                    ]),
                                   } as FieldImport,
                                   {
                                     "]": true,
@@ -446,9 +467,9 @@ export const calculate = (
                             ),
                           acc
                         ),
-                      [] as FlatComputation
+                      [] as FlatComputationWithIgnorableImport
                     ),
-                    [{ ")": true }] as FlatComputation
+                    [{ ")": true }] as FlatComputationWithIgnorableImport
                   )
                 )
                 .default(() => [cur]),
@@ -470,13 +491,13 @@ export const calculate = (
                     .let({
                       imp: $.cond(
                         isObjectWithProp($, cur, "fref", "string"),
-                        () => cur as FieldImport,
+                        () => cur as FieldImport | IgnorableImport,
                         () => null
                       ),
                     })
                     .let(({ imp }) => ({
                       args: $.cond(
-                        $.toBool(imp),
+                        $.toBool((imp as FieldImport).id), // do not look for args if it is ignorable import
                         () =>
                           $.map(
                             $.range(0, 2),
@@ -484,11 +505,11 @@ export const calculate = (
                               $.find(imports, (el) =>
                                 $.eq(
                                   el.id,
-                                  $.concat(
+                                  $.concat([
                                     (imp as FieldImport).id,
                                     "/",
-                                    $.toString(index)
-                                  ) as FieldId
+                                    $.toString(index),
+                                  ]) as FieldId
                                 )
                               ) as ComputationBlock & {
                                 result: PossiblyNestedFlatComputation;
@@ -509,10 +530,19 @@ export const calculate = (
                         () => null
                       ),
                     }))
-                    .let(({ importedField, args }) => ({
-                      next: $.cond(
-                        $.toBool(importedField),
-                        () =>
+                    .let(({ imp, importedField, args }) => ({
+                      next: $.switch()
+                        .case(
+                          $.and(
+                            $.toBool(imp),
+                            $.or(
+                              $.not($.toBool(importedField)),
+                              $.toBool((imp as IgnorableImport).ignore)
+                            )
+                          ),
+                          () => []
+                        )
+                        .case($.toBool(importedField), () =>
                           $.concatArrays(
                             [{ "(": true }] as FlatComputation,
                             $.cond(
@@ -535,11 +565,11 @@ export const calculate = (
                                 )
                             ),
                             [{ ")": true }] as FlatComputation
-                          ),
-                        () => [cur] as FlatComputation
-                      ),
+                          )
+                        )
+                        .default(() => [cur]),
                     }))
-                    .return(({ imp, args, importedField, next }) => {
+                    .return(({ imp, args, next }) => {
                       // console.log("IMP", imp, args);
                       return $.mergeObjects(
                         $.reduce(
@@ -592,6 +622,7 @@ export const calculate = (
                                         )
                                     )
                                     // if "n": IGNORE
+                                    // if "/": DO NOT IGNORE - will be handled by merge
                                     .case(
                                       $.eq($.type((cur as any).n), "bool"),
                                       () => acc
@@ -712,11 +743,11 @@ export const calculate = (
                                   $.toBool($.at(args, index)),
                                   () =>
                                     $.concatArrays(acc, [
-                                      $.concat(
+                                      $.concat([
                                         (imp as FieldImport).id,
                                         "/",
-                                        $.toString(index)
-                                      ),
+                                        $.toString(index),
+                                      ]),
                                     ]),
                                   () => acc
                                 ),

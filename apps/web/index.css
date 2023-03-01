@@ -3,7 +3,7 @@
 @tailwind components;
 
 .bg-button {
-  @apply bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-700/60 dark:to-gray-725/60;
+  @apply bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-700/60 dark:to-gray-725/60 backdrop-blur-md;
 }
 
 .bg-button-teal {
@@ -69,6 +69,10 @@ a {
 .editor h3 {
   font-weight: bold;
   font-style: italic;
+}
+
+.editor p + p {
+  margin-top: 10px;
 }
 
 .editor > * {

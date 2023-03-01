@@ -2,12 +2,15 @@ import { Menu } from "@headlessui/react";
 import {
   AdjustmentsHorizontalIcon,
   ArrowUpTrayIcon,
+  BoltIcon,
   DocumentDuplicateIcon,
   FunnelIcon,
   ListBulletIcon,
   PencilSquareIcon,
+  PlusIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
+import { extendPath } from "@storyflow/backend/extendPath";
 import { FIELDS } from "@storyflow/backend/fields";
 import { getComputationRecord } from "@storyflow/backend/flatten";
 import {
@@ -22,9 +25,11 @@ import {
   DocumentId,
   FieldId,
   RestrictTo,
+  SearchableProps,
   TemplateFieldId,
 } from "@storyflow/backend/types";
 import { NoList, useDragItem } from "@storyflow/dnd";
+import { PropConfigArray } from "@storyflow/frontend/types";
 import { ServerPackage } from "@storyflow/state";
 import cl from "clsx";
 import React from "react";
@@ -35,6 +40,7 @@ import {
   useDocumentLabel,
   useSaveArticle,
 } from ".";
+import { getComponentType, useClientConfig } from "../client-config";
 import { MenuTransition } from "../elements/transitions/MenuTransition";
 import { useFolder, useTemplateFolder } from "../folders";
 import Content from "../layout/components/Content";
@@ -155,17 +161,82 @@ function Toolbar({ id, config }: { id: DocumentId; config: DocumentConfig }) {
     );
   }
 
+  const fields = [
+    {
+      label: "Label",
+      item: () => ({
+        ...FIELDS.label,
+        id: computeFieldId(id, FIELDS.label.id),
+      }),
+    },
+    {
+      label: "Slug",
+      item: () => ({
+        ...FIELDS.slug,
+        id: computeFieldId(id, FIELDS.slug.id),
+      }),
+    },
+    {
+      label: "Side",
+      item: {
+        ...FIELDS.page,
+        id: computeFieldId(id, FIELDS.page.id),
+      },
+    },
+    {
+      label: "Layout",
+      item: {
+        ...FIELDS.layout,
+        id: computeFieldId(id, FIELDS.layout.id),
+      },
+    },
+    {
+      label: "Omdirigering",
+      item: {
+        ...FIELDS.redirect,
+        id: computeFieldId(id, FIELDS.redirect.id),
+      },
+    },
+    {
+      label: "Offentlig",
+      item: {
+        ...FIELDS.published,
+        id: computeFieldId(id, FIELDS.published.id),
+      },
+    },
+    {
+      label: "Udgivelsesdato",
+      item: {
+        ...FIELDS.released,
+        id: computeFieldId(id, FIELDS.released.id),
+      },
+    },
+    {
+      label: "Bruger",
+      item: {
+        ...FIELDS.user,
+        id: computeFieldId(id, FIELDS.user.id),
+      },
+    },
+  ];
+
   return (
     <Content.Toolbar>
       <NoList>
         <DragButton
-          label={"Nyt felt"}
+          label={"Indsæt felt"}
           item={() => ({
             id: createFieldId(id),
             label: "",
             type: "default",
           })}
         />
+        <Content.ToolbarMenu label={"Indsæt specialfelt"} icon={BoltIcon}>
+          {fields.map((el) => (
+            <DragOption key={el.label} {...el} />
+          ))}
+        </Content.ToolbarMenu>
+        {/*
         <DragButton
           label={"Label"}
           item={() => ({
@@ -222,6 +293,7 @@ function Toolbar({ id, config }: { id: DocumentId; config: DocumentConfig }) {
             id: computeFieldId(id, FIELDS.user.id),
           }}
         />
+        */}
       </NoList>
     </Content.Toolbar>
   );
@@ -248,7 +320,11 @@ export function FieldToolbar({
     label: el.label ?? el.id,
   }));
 
-  const restrictToOptions = [{ id: "number" as "number", label: "Tal" }];
+  const restrictToOptions = [
+    { id: "number" as "number", label: "Tal" },
+    { id: "image" as "image", label: "Billede" },
+    { id: "color" as "color", label: "Farve" },
+  ];
 
   return (
     <Content.Toolbar>
@@ -436,42 +512,38 @@ const Page = ({
   );
 };
 
-function SaveButton({
-  id,
-  folder,
-  isModified,
-}: {
-  id: string;
-  folder: string;
-  isModified: boolean;
-}) {
-  const collab = useCollab();
-  const [isLoading, setIsLoading] = React.useState(false);
-  const saveArticle = useSaveArticle(folder);
-  return (
-    <div className="relative z-0">
-      {isLoading && (
-        <div className="absolute inset-0 bg-amber-500 animate-ping rounded-lg opacity-50 pointer-events-none" />
-      )}
-      <Content.Button
-        icon={ArrowUpTrayIcon}
-        onClick={async () => {
-          if (isLoading) return;
-          setIsLoading(true);
-          await collab.sync(true);
-          const result = await saveArticle(id);
-          setIsLoading(false);
-        }}
-        className={isModified ? "text-amber-300" : "text-green-300"}
-      />
-    </div>
-  );
-}
-
 function NewSaveButton({ id, folder }: { id: string; folder: string }) {
   const collab = useCollab();
   const [isLoading, setIsLoading] = React.useState(false);
   const saveArticle = useSaveArticle(folder);
+
+  const { libraries } = useClientConfig();
+
+  const searchable: SearchableProps = React.useMemo(() => {
+    const searchableProps: SearchableProps = {};
+    for (const lib of libraries) {
+      for (const comp of Object.values(lib.components)) {
+        const type = getComponentType(lib.name, comp.name);
+        searchableProps[type] = {};
+        const handleProps = (props: PropConfigArray, group?: string) => {
+          for (const prop of props) {
+            if (prop.type === "group") {
+              handleProps(prop.props, prop.name);
+              continue;
+            } else {
+              const name = extendPath(group ?? "", prop.name, "#");
+              const searchable =
+                prop.type === "children" || prop.searchable || false;
+              searchableProps[type][name] = searchable;
+            }
+          }
+        };
+        handleProps(comp.props);
+      }
+    }
+    return searchableProps;
+  }, [libraries]);
+
   return (
     <div className="relative ml-5">
       {/*isLoading && (
@@ -485,7 +557,7 @@ function NewSaveButton({ id, folder }: { id: string; folder: string }) {
           if (isLoading) return;
           setIsLoading(true);
           await collab.sync(true);
-          const result = await saveArticle(id);
+          const result = await saveArticle({ id, searchable });
           setIsLoading(false);
         }}
       >
@@ -513,8 +585,28 @@ function DragButton({ item, label }: { label: string; item: any }) {
     <Content.ToolbarButton
       ref={ref as React.MutableRefObject<HTMLButtonElement | null>}
       {...dragHandleProps}
+      icon={PlusIcon}
+      className="cursor-grab"
     >
       {label}
     </Content.ToolbarButton>
+  );
+}
+
+export function DragOption({ label, item }: { label: string; item: any }) {
+  const { ref, dragHandleProps, state } = useDragItem({
+    id: `ny-blok-2-${label}`,
+    type: "fields",
+    item,
+    mode: "move",
+  });
+
+  return (
+    <Content.ToolbarMenuOption
+      ref={ref as React.MutableRefObject<HTMLButtonElement | null>}
+      {...dragHandleProps}
+      label={label}
+      className="cursor-grab"
+    />
   );
 }

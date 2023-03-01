@@ -1,10 +1,4 @@
-import {
-  Value,
-  FieldId,
-  FieldImport,
-  Computation,
-  FlatComputation,
-} from "./types";
+import { Value, FieldId, FieldImport, Computation } from "./types";
 import { symb } from "./symb";
 
 /*
@@ -303,10 +297,11 @@ function calculate(
 
           if (state) {
             return state.then((value) => {
+              const updatedValue = value.map((x) =>
+                symb.isLayoutElement(x) ? { ...x, parent: el.fref } : x
+              );
               if (hasArgs) {
-                acc.loop3.array = value.map((x) =>
-                  symb.isLayoutElement(x) ? { ...x, parent: el.fref } : x
-                );
+                acc.loop3.array = updatedValue;
 
                 acc.loop3.array.unshift({ "(": true });
                 acc.loop3.array.push({ ")": true });
@@ -319,7 +314,7 @@ function calculate(
                 }) as Value[];
               } else {
                 // or return default value
-                acc.value.push(value); // implicit array
+                acc.value.push(updatedValue); // implicit array
                 acc.loop2.index++;
                 acc.loop2.resolved = false;
 
@@ -377,33 +372,38 @@ function calculate(
           acc.value = latest.concat([spreadImplicitArrays(acc.value)]);
         } else if (
           symb.isDBSymbol(el, ")") ||
+          symb.isDBSymbol(el, "]") ||
           symb.isDBSymbol(el, "}") ||
-          symb.isDBSymbol(el, "]")
+          symb.isDBSymbol(el, "/")
         ) {
           const latest = acc.stack[acc.stack.length - 1];
-          acc.stack.pop();
-          acc.value = latest.concat(
+          const result = latest.concat(
             (() => {
-              if ("}" in el) {
-                return [
-                  acc.value.reduce(
-                    (acc, cur) =>
-                      cur.reduce((acc, cur, index) => {
-                        if (
-                          index === 0 && // <-- this protects array boundaries within imports
-                          typeof acc[acc.length - 1] === "string" &&
-                          ["string", "number"].includes(typeof cur)
-                        ) {
-                          return [
-                            ...acc.slice(0, -1),
-                            `${acc[acc.length - 1]}${cur}`,
-                          ];
-                        }
-                        return [...acc, cur] as FlatComputation;
-                      }, acc),
-                    [""] as FlatComputation
-                  ),
-                ];
+              if ("}" in el || "/" in el) {
+                if (acc.value.length === 0) {
+                  return [[""]];
+                } else if (acc.value.length === 1 && acc.value[0].length > 1) {
+                  // this takes a paragraph consisting of an implicit array
+                  // and returning it as an explicit array.
+                  // The implicit array usually originates from a single import with multiple elements.
+                  return [[acc.value[0]]];
+                } else {
+                  return [
+                    // ignores implicit arrays
+                    acc.value.reduce((acc, [cur]) => {
+                      if (
+                        typeof acc[acc.length - 1] === "string" &&
+                        ["string", "number"].includes(typeof cur)
+                      ) {
+                        return [
+                          ...acc.slice(0, -1),
+                          `${acc[acc.length - 1]}${cur}`,
+                        ];
+                      }
+                      return [...acc, cur] as Value[];
+                    }),
+                  ];
+                }
               } else if ("]" in el) {
                 return [[spreadImplicitArrays(acc.value)]];
               } else if (el[")"] === "sum") {
@@ -587,6 +587,14 @@ function calculate(
               }
             })()
           );
+          if (symb.isDBSymbol(el, "/")) {
+            acc.stack.pop();
+            acc.stack.push(result);
+            acc.value = [];
+          } else {
+            acc.stack.pop();
+            acc.value = result;
+          }
         } else if (symb.isFetcher(el)) {
           const state = getState(`${id}.${el.id}` as FieldId, false);
           if (state) {

@@ -30,6 +30,6 @@ export const createComponent = (
   return {
     id: createId(1),
     type,
-    props: Object.fromEntries(config.props.map(({ name }) => [name, []])),
+    props: {},
   };
 };

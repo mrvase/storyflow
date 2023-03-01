@@ -10,7 +10,7 @@ import { cookieOptions } from "../cookie-options";
 import { error, success } from "@storyflow/result";
 import { globals } from "../middleware/globals";
 import { fetchSinglePage } from "@storyflow/server";
-import { URL_ID } from "@storyflow/backend/templates";
+import { PAGE_ID, URL_ID } from "@storyflow/backend/templates";
 import type {} from "@storyflow/frontend/types";
 import { extendPath } from "@storyflow/backend/extendPath";
 import { minimizeId } from "@storyflow/backend/ids";
@@ -94,6 +94,44 @@ export const public_ = createRoute({
       return success(page);
     },
   }),
+  search: createProcedure({
+    middleware(ctx) {
+      return ctx.use(corsFactory("allow-all"), authorization);
+    },
+    schema() {
+      return z.string();
+    },
+    async mutation(query, { dbName }) {
+      const client = await clientPromise;
+      const articles = await client
+        .db(dbName)
+        .collection("documents")
+        .aggregate([
+          {
+            $search: {
+              index: dbName,
+              text: {
+                query,
+                path: `values.${PAGE_ID}`,
+              },
+              highlight: {
+                path: `values.${PAGE_ID}`,
+              },
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              value: `$values.${PAGE_ID}`,
+              score: { $meta: "searchScore" },
+              highlight: { $meta: "searchHighlights" },
+            },
+          },
+        ])
+        .toArray();
+      return success(articles.map((el) => el));
+    },
+  }),
   getPaths: createProcedure({
     middleware(ctx) {
       return ctx.use(corsFactory("allow-all"), authorization);
@@ -105,7 +143,7 @@ export const public_ = createRoute({
       const client = await clientPromise;
       const articles = await client
         .db(dbName)
-        .collection("articles")
+        .collection("documents")
         .find({
           ...(namespace
             ? { folder: minimizeId(namespace) }

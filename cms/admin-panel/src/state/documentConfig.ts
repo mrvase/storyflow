@@ -97,6 +97,11 @@ export const useDocumentConfig = (
               // reordering of fields
               const { index, insert, remove } = action;
               newTemplate.splice(index, remove ?? 0, ...(insert ?? []));
+              (insert ?? []).forEach((el) => {
+                if ("label" in el) {
+                  updatedLabels.set(el.id, el.label);
+                }
+              });
             });
             sheetUpdate = true;
           } else if (targetTools.isOperation(operation, "property")) {

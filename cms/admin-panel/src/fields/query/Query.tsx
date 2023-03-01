@@ -1,28 +1,18 @@
 import cl from "clsx";
 import {
-  DocumentId,
+  ColorToken,
   EditorComputation,
   FieldId,
-  FieldImport,
   functions,
-  Value,
 } from "@storyflow/backend/types";
-import { LABEL_ID, URL_ID } from "@storyflow/backend/templates";
-import { computeFieldId, createId } from "@storyflow/backend/ids";
 import {
   ArrowUturnRightIcon,
   AtSymbolIcon,
   BoltIcon,
-  CalculatorIcon,
   ChevronLeftIcon,
-  ComputerDesktopIcon,
-  CubeIcon,
-  DocumentIcon,
   HashtagIcon,
   LinkIcon,
-  MagnifyingGlassIcon,
   PhotoIcon,
-  RocketLaunchIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import {
@@ -47,38 +37,20 @@ import {
 } from "lexical";
 import React from "react";
 import { useClientConfig } from "../../client-config";
-import { SWRClient } from "../../client";
 import { $isImportNode } from "../decorators/ImportNode";
 import { useEditorContext } from "../../editor/react/EditorProvider";
 import { mergeRegister } from "../../editor/utils/mergeRegister";
-import { useAppFolders } from "../../folders";
 import { tools } from "shared/editor-tools";
 import { ComputationOp } from "shared/operations";
-import { useGlobalState } from "../../state/state";
-import {
-  getFileExtension,
-  getFileType,
-  getFileTypeFromExtension,
-  getImageSize,
-  getVideoSize,
-} from "../../utils/file";
+import { getFileType } from "../../utils/file";
 import { spliceTextWithNodes } from "../Editor/spliceTextWithNodes";
-import { createComponent } from "../Editor/createComponent";
 import {
-  $getComputation,
   $getIndexFromPoint,
   $getNodeFromIndex,
   $isBlockNode,
   getNodesFromComputation,
 } from "../Editor/transforms";
-import { useFiles } from "../../files";
-import { Spinner } from "../../elements/Spinner";
-import { useUrlInfo } from "../../users";
-import type {
-  LibraryConfig,
-  RegularOptions,
-  Option,
-} from "@storyflow/frontend/types";
+import type { LibraryConfig, RegularOptions } from "@storyflow/frontend/types";
 import { useIsFocused } from "../../editor/react/useIsFocused";
 import { useRestorableSelection } from "./useRestorableSelection";
 import { useSelectedToken } from "./useSelectedToken";
@@ -88,15 +60,17 @@ import {
   isAdjacent,
   isTextInsert,
   getQueryType,
-  sortByDomNode,
+  getOptionLabel,
 } from "./helpers";
 import { useFieldOptions } from "../default/FieldOptionsContext";
-import { ColorPicker } from "../../elements/ColorPicker/ColorPicker";
-import { hexToRgba } from "../../elements/ColorPicker/convert";
-import useSWR from "swr";
-import { getColorName } from "../../utils/colors";
 import { Option as OptionComponent } from "./Option";
 import { useFieldRestriction } from "../FieldTypeContext";
+import { useIsEmpty } from "../../editor/react/useIsEmpty";
+import { QueryFiles } from "./QueryFiles";
+import { QueryComponents } from "./QueryComponents";
+import { QueryCommands } from "./QueryCommands";
+import { QueryLinks } from "./QueryLinks";
+import { QueryColors } from "./QueryColors";
 
 const insertComputation = async (
   editor: LexicalEditor,
@@ -186,54 +160,6 @@ const insertComputation = async (
   });
 };
 
-type ItemRef = { id: string; ref: React.MutableRefObject<HTMLElement> };
-
-const IndexManagerContext = React.createContext<
-  | [
-      getIndex: (id: string) => number,
-      registerItem: (ref: ItemRef) => () => void
-    ]
-  | null
->(null);
-
-const IndexManager = ({ children }: { children: React.ReactNode }) => {
-  const [list, setList] = React.useState<ItemRef[]>([]);
-
-  const registerItem = ({ id, ref }: ItemRef) => {
-    setList((list) => {
-      const index = list.findIndex((item) => item.id === id);
-      if (index === -1) {
-        return sortByDomNode([...list, { id, ref }]);
-      } else {
-        return list;
-      }
-    });
-    return () => {
-      setList((list) =>
-        sortByDomNode(
-          list.filter((item) => item.id !== id),
-          ({ ref }) => ref.current
-        )
-      );
-    };
-  };
-
-  const getIndex = (id: string) => {
-    return list.findIndex((item) => item.id === id);
-  };
-
-  const ctx = React.useMemo(
-    () => [getIndex, registerItem] as [typeof getIndex, typeof registerItem],
-    [list]
-  );
-
-  return (
-    <IndexManagerContext.Provider value={ctx}>
-      {children}
-    </IndexManagerContext.Provider>
-  );
-};
-
 const insertBlock = async (
   editor: LexicalEditor,
   insert: EditorComputation,
@@ -278,12 +204,6 @@ const insertBlock = async (
   });
 };
 
-const getOptionLabel = (option: RegularOptions[number]) => {
-  return typeof option === "object"
-    ? option.label ?? ("value" in option ? option.value : option.name)
-    : option;
-};
-
 export function Query({
   push,
   children,
@@ -303,24 +223,48 @@ export function Query({
   const editor = useEditorContext();
   const { libraries } = useClientConfig();
   const options = useFieldOptions() ?? undefined;
+  const restrictTo = useFieldRestriction();
 
-  const [queryType, setQueryType] = React.useState<QueryType | null>(null);
+  const [promptedQueryType, setPromptedQueryType] =
+    React.useState<QueryType | null>(null);
   const [query, setQuery] = React.useState("");
 
-  const [token, setToken] = useSelectedToken(() => {});
+  const [token_, setToken] = useSelectedToken(() => {});
+  const token = (() => {
+    if (token_ && "name" in token_) {
+      const option = options?.find(
+        (el) => typeof el === "object" && el.name === token_.name
+      ) as { name: string; value?: unknown } | undefined;
+      if (
+        option &&
+        restrictTo === "color" &&
+        "value" in option &&
+        typeof option.value === "string"
+      ) {
+        return { color: option.value } as ColorToken;
+      }
+    }
+    return token_;
+  })();
 
   const isFocused = useIsFocused(editor);
+  const isEmpty = useIsEmpty(editor);
 
-  React.useEffect(() => {
-    if (token)
+  const queryType = (() => {
+    if (promptedQueryType) return promptedQueryType;
+    if (token) {
       if ("src" in token) {
-        setQueryType(".");
+        return ".";
       } else if ("color" in token) {
-        setQueryType("#");
-      } else {
-        setQueryType(null);
+        return "#";
       }
-  }, [token]);
+    }
+    if (isFocused && isEmpty) {
+      if (restrictTo === "color") return "#";
+      if (restrictTo === "image") return ".";
+    }
+    return null;
+  })();
 
   const pushWithQuery = React.useCallback(
     (next: ComputationOp["ops"], tags: Set<string>) => {
@@ -340,9 +284,9 @@ export function Query({
             if (
               !(!isTextInsert(prev) && isTextInsert(next)) &&
               (!nextIsSymbolInsert ||
-                queryType === "@" ||
-                queryType === "." ||
-                (queryType === "/" && nextIsSymbolInsert === "/"))
+                promptedQueryType === "@" ||
+                promptedQueryType === "." ||
+                (promptedQueryType === "/" && nextIsSymbolInsert === "/"))
             ) {
               let insert: EditorComputation = [];
               let remove = 0;
@@ -390,19 +334,18 @@ export function Query({
           const query = latest[0].insert[0];
           const index = latest[0].index;
           setQuery(query);
-          const queryType = getQueryType(query, index);
-          console.log("QUERY", query, queryType);
-          setQueryType(queryType);
+          const newQueryType = getQueryType(query, index);
+          setPromptedQueryType(newQueryType);
         } else {
           setQuery("");
-          setQueryType(null);
+          setPromptedQueryType(null);
           result.push(noop);
         }
         console.log("PUSH RESULT", ...result);
         return result;
       });
     },
-    [push, queryType, options]
+    [push, promptedQueryType, options]
   );
 
   const [hold, holdActions] = useRestorableSelection();
@@ -438,57 +381,75 @@ export function Query({
   }, [query, queryType]);
 
   const queryString =
-    queryType && query.startsWith(queryType) ? query.slice(1) : query;
-  const func = functions.includes(queryString as any);
+    promptedQueryType && query.startsWith(promptedQueryType)
+      ? query.slice(1)
+      : query;
 
-  const restrictTo = useFieldRestriction();
+  const promptedFunction = functions.includes(queryString as any);
 
-  const typesWithManagedOptions = ["children", "color"];
-
-  const showOptions =
-    isFocused &&
-    !typesWithManagedOptions.includes(restrictTo ?? "") &&
+  const hasOptions =
     options &&
-    options.length > 0;
+    options.length > 0 &&
+    !["children", "color"].includes(restrictTo as any);
 
-  const show = Boolean(queryType || func || showOptions);
+  const [showOptions, setShowOptions] = React.useState(false);
 
   React.useEffect(() => {
-    if (!show) return;
-    return mergeRegister(
-      editor.registerCommand(
+    if (hasOptions) {
+      setShowOptions(isFocused);
+    }
+  }, [isFocused]);
+
+  const show = Boolean(queryType || promptedFunction || showOptions);
+
+  React.useEffect(() => {
+    if (show) {
+      return mergeRegister(
+        editor.registerCommand(
+          KEY_ARROW_DOWN_COMMAND,
+          (ev) => {
+            ev?.preventDefault();
+            setSelected((ps) => ps + 1);
+            return true;
+          },
+          COMMAND_PRIORITY_HIGH
+        ),
+        editor.registerCommand(
+          KEY_ARROW_UP_COMMAND,
+          (ev) => {
+            ev?.preventDefault();
+            setSelected((ps) => (ps > -1 ? ps - 1 : 0));
+            return true;
+          },
+          COMMAND_PRIORITY_HIGH
+        ),
+        editor.registerCommand(
+          KEY_ESCAPE_COMMAND,
+          (ev) => {
+            ev?.preventDefault();
+            escape();
+            return true;
+          },
+          COMMAND_PRIORITY_HIGH
+        )
+      );
+    } else if (hasOptions) {
+      return editor.registerCommand(
         KEY_ARROW_DOWN_COMMAND,
         (ev) => {
           ev?.preventDefault();
-          setSelected((ps) => ps + 1);
+          setShowOptions(true);
           return true;
         },
         COMMAND_PRIORITY_HIGH
-      ),
-      editor.registerCommand(
-        KEY_ARROW_UP_COMMAND,
-        (ev) => {
-          ev?.preventDefault();
-          setSelected((ps) => (ps > -1 ? ps - 1 : 0));
-          return true;
-        },
-        COMMAND_PRIORITY_HIGH
-      ),
-      editor.registerCommand(
-        KEY_ESCAPE_COMMAND,
-        (ev) => {
-          ev?.preventDefault();
-          escape();
-          return true;
-        },
-        COMMAND_PRIORITY_HIGH
-      )
-    );
-  }, [show]);
+      );
+    }
+  }, [show, hasOptions]);
 
   const escape = () => {
     setQuery("");
-    setQueryType(null);
+    setPromptedQueryType(null);
+    setShowOptions(false);
     push((prev, noop) => {
       if (!prev) {
         return [];
@@ -502,7 +463,8 @@ export function Query({
 
   const reset = () => {
     setQuery("");
-    setQueryType(null);
+    setPromptedQueryType(null);
+    setShowOptions(false);
     resetEditorQuery();
   };
 
@@ -561,7 +523,8 @@ export function Query({
       );
       if (success) {
         setQuery("");
-        setQueryType(null);
+        setPromptedQueryType(null);
+        setShowOptions(false);
       }
     },
     [editor, query, libraries]
@@ -577,7 +540,8 @@ export function Query({
       );
       if (success) {
         setQuery("");
-        setQueryType(null);
+        setPromptedQueryType(null);
+        setShowOptions(false);
       }
     },
     [editor, query, libraries]
@@ -690,9 +654,9 @@ export function Query({
                 insertComputation={insertComputationSimple}
               />
             )}
-            {!queryType && func && (
+            {!promptedQueryType && promptedFunction && (
               <OptionComponent
-                value={func}
+                value={promptedFunction}
                 isSelected={true}
                 onEnter={() => {}}
                 Icon={BoltIcon}
@@ -714,785 +678,6 @@ export function Query({
         </div>
       </div>
       {React.useMemo(() => children(pushWithQuery), [pushWithQuery])}
-    </>
-  );
-}
-
-function useOnEnter(callback: () => void, deps: any[]) {
-  const editor = useEditorContext();
-
-  React.useEffect(() => {
-    return editor.registerCommand(
-      KEY_ENTER_COMMAND,
-      (ev) => {
-        ev?.preventDefault();
-        callback();
-        return true;
-      },
-      COMMAND_PRIORITY_HIGH
-    );
-  }, deps);
-}
-
-function QueryColors({
-  insertComputation,
-  selected,
-  setToken,
-  initialColor,
-  options,
-}: any) {
-  const [color, setColor] = React.useState(initialColor || "#ffffff");
-  const [hoverColor, setHoverColor] = React.useState<string>();
-  const selectedColor = color;
-
-  const { data } = useSWR("COLORS", {
-    revalidateOnMount: false,
-    revalidateOnFocus: false,
-    revalidateOnReconnect: false,
-    revalidateIfStale: false,
-  });
-
-  let label = "";
-
-  if (data) {
-    label += getColorName(selectedColor.slice(1), data[0], data[1]);
-  }
-
-  const onEnter = React.useCallback((color: string) => {
-    if (setToken) {
-      setToken({ color });
-    } else {
-      insertComputation([{ color }]);
-    }
-  }, []);
-
-  const current = selected < 0 ? selected : selected % (1 + options.length);
-
-  const isColorLight = (color: string) => {
-    const rgb = hexToRgba(color);
-    return (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000 > 127;
-  };
-
-  const isLight = isColorLight(selectedColor);
-
-  const optionColors = options
-    .map((el: any) =>
-      typeof el === "object" && "value" in el
-        ? el.value
-        : typeof el === "string"
-        ? el
-        : null
-    )
-    .filter(Boolean);
-
-  return (
-    <>
-      <OptionComponent
-        value={color}
-        onEnter={onEnter}
-        isSelected={current === 0}
-        Icon={CubeIcon}
-        secondaryText={`${label} (${selectedColor})`}
-        style={{
-          backgroundColor: selectedColor,
-          color: isLight ? "rgba(0 0 0 / 90%)" : "rgba(255 255 255 / 90%)",
-        }}
-      >
-        Indsæt farve
-      </OptionComponent>
-      <div
-        className={cl(
-          "p-1 rounded hover:ring-1 ring-gray-600 ring-inset",
-          current === 0 && "bg-gray-700"
-        )}
-      >
-        <ColorPicker color={color} onChange={setColor} />
-      </div>
-      <div
-        className="flex gap-1"
-        onMouseLeave={() => {
-          setHoverColor(undefined);
-        }}
-      >
-        {optionColors.map((color: any, i: number) => (
-          <div
-            className={cl(
-              "w-10 h-10 p-1 rounded hover:ring-1 ring-gray-600 ring-inset",
-              current === i + 1 && "bg-gray-700"
-            )}
-            onMouseEnter={() => {
-              setHoverColor(color);
-            }}
-          >
-            <div
-              className="w-8 h-8 rounded-sm flex-center"
-              style={{
-                backgroundColor: color,
-                color: isColorLight(color)
-                  ? "rgba(0 0 0 / 90%)"
-                  : "rgba(255 255 255 / 90%)",
-              }}
-            >
-              {current === i + 1 && (
-                <ArrowUturnRightIcon className="w-4 h-4 rotate-180" />
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-      {/*<div className="flex justify-between text-gray-400 text-sm select-text">
-        <span
-          onMouseDown={(ev) => ev.preventDefault()}
-          onClick={() => {
-            navigator.clipboard.writeText(label);
-          }}
-        >
-          {label}
-        </span>
-        <span
-          onMouseDown={(ev) => ev.preventDefault()}
-          onClick={() => {
-            navigator.clipboard.writeText(color);
-          }}
-        >
-          {color}
-        </span>
-        </div>*/}
-    </>
-  );
-}
-
-function QueryComponents({
-  query,
-  selected,
-  insertBlock,
-  insertComputation,
-  options: optionsFromProps,
-}: {
-  query: string;
-  selected: number;
-  insertBlock: (comp: EditorComputation) => void;
-  insertComputation: (comp: EditorComputation) => void;
-  options: RegularOptions;
-}) {
-  const defaultOptions = React.useMemo(() => {
-    return (optionsFromProps as Option[]).filter(
-      (el): el is string => typeof el === "string"
-    );
-  }, [optionsFromProps]);
-
-  const { libraries } = useClientConfig();
-  let options = libraries
-    .map((library) =>
-      Object.values(library.components).map((component) => ({
-        ...component,
-        libraryName: library.name,
-        libraryLabel: library.label,
-      }))
-    )
-    .flat(1);
-
-  if (defaultOptions.length > 0) {
-    options = options.filter((el) =>
-      defaultOptions.includes(`${el.libraryName}:${el.name}`)
-    );
-  } else {
-    options = options.filter((el) => !el.hidden);
-  }
-
-  const filtered = query
-    ? options.filter(({ label }) =>
-        label.toLowerCase().startsWith(query.toLowerCase())
-      )
-    : options;
-
-  const current = selected < 0 ? selected : selected % filtered.length;
-
-  const onEnter = React.useCallback(
-    (config: (typeof filtered)[number]) => {
-      if (config.inline) {
-        insertComputation([
-          createComponent(config.name, {
-            library: config.libraryName,
-            libraries,
-          }),
-        ]);
-      } else {
-        insertBlock([
-          createComponent(config.name, {
-            library: config.libraryName,
-            libraries,
-          }),
-        ]);
-      }
-    },
-    [insertComputation, insertBlock]
-  );
-
-  return (
-    <>
-      {filtered.map((el, index) => (
-        <OptionComponent
-          key={`${el.libraryName}:${el.name}`}
-          value={el}
-          onEnter={onEnter}
-          isSelected={index === current}
-          Icon={CubeIcon}
-          secondaryText={markMatchingString(el.name, query)}
-        >
-          {markMatchingString(el.label, query)}
-        </OptionComponent>
-      ))}
-    </>
-  );
-}
-
-const markMatchingString = (string: string, query: string): React.ReactNode => {
-  let i = 0;
-  let stringLower = string.toLowerCase();
-  let queryLower = query.toLowerCase();
-  while (stringLower[i] === queryLower[i]) {
-    i++;
-    if (i >= string.length || i >= query.length) {
-      break;
-    }
-  }
-
-  return i > 0 ? (
-    <>
-      <strong className="whitespace-pre">{string.substring(0, i)}</strong>
-      <span className="whitespace-pre opacity-80">{string.substring(i)}</span>
-    </>
-  ) : (
-    <span className="whitespace-pre opacity-80">{string}</span>
-  );
-};
-
-function QueryCommands({
-  query,
-  selected,
-  insertBlock,
-}: {
-  query: string;
-  selected: number;
-  insertBlock: (comp: EditorComputation) => void;
-}) {
-  const searchQuery = query.match(/\"([^\"]*)/)?.[1] ?? query;
-
-  const [isSearching, setIsSearching] = React.useState(false);
-
-  const { data } = SWRClient.articles.getByLabel.useQuery(searchQuery, {
-    inactive: !isSearching,
-  });
-
-  let options: any[] = [];
-
-  const onSearchEnter = React.useCallback(() => setIsSearching(true), []);
-  const onAIEnter = React.useCallback(() => console.log("BIP BOP"), []);
-
-  const onEnter = React.useCallback(
-    (id: DocumentId) => {
-      () => {
-        insertBlock([{ dref: id }]);
-      };
-    },
-    [insertBlock]
-  );
-
-  if (!isSearching) {
-    options = [
-      {
-        id: 0,
-        label: (
-          <div className="flex items-center">
-            {markMatchingString("Søg efter dokument", query)}
-            {/*<EllipsisHorizontalIcon className="w-4 h-4 opacity-75" />*/}
-          </div>
-        ),
-        secondary: `"${searchQuery.substring(0, 20)}${
-          searchQuery.length > 20 ? " ..." : ""
-        }"`,
-        onEnter: onSearchEnter,
-        onEnterLabel: "Slå op",
-        Icon: MagnifyingGlassIcon,
-      },
-      {
-        id: 1,
-        label: (
-          <div className="flex items-center">
-            {markMatchingString("AI-kommando", query)}
-          </div>
-        ),
-        onEnter: onAIEnter,
-        onEnterLabel: "Slå op",
-        Icon: RocketLaunchIcon,
-        secondary: `"${searchQuery.substring(0, 20)}${
-          searchQuery.length > 20 ? " ..." : ""
-        }"`,
-      },
-      {
-        id: 2,
-        label: (
-          <div className="flex items-center">
-            {markMatchingString("Skift mellem matematik/tekst", query)}
-          </div>
-        ),
-        onEnter: onAIEnter,
-        onEnterLabel: "Skift",
-        Icon: CalculatorIcon,
-      },
-    ];
-  } else {
-    options = (data ?? []).map((el) => ({
-      id: el.id,
-      label: el.values[LABEL_ID],
-      secondary: el.id,
-      Icon: DocumentIcon,
-      onEnter,
-      onEnterLabel: "Tilføj",
-      onArrowRight() {},
-      onArrowRightLabel: "Se felter",
-    }));
-  }
-
-  const current = selected < 0 ? selected : selected % options.length;
-
-  return (
-    <>
-      {options.map((el, index) => (
-        <OptionComponent
-          key={el.id}
-          value={el.id}
-          onEnter={el.onEnter}
-          onEnterLabel={el.onEnterLabel}
-          onArrowRight={el.onArrowRight}
-          onArrowRightLabel={el.onArrowRightLabel}
-          isSelected={index === current}
-          secondaryText={el.secondary}
-          Icon={el.Icon}
-        >
-          {el.label}
-        </OptionComponent>
-      ))}
-    </>
-  );
-}
-
-function QueryLinks({
-  query,
-  selected,
-  insertComputation,
-}: {
-  query: string;
-  selected: number;
-  insertComputation: (insert: EditorComputation, removeExtra?: boolean) => void;
-}) {
-  const editor = useEditorContext();
-
-  const getPrevSymbol = () => {
-    return editor.getEditorState().read(() => {
-      const selection = $getSelection();
-      if (!$isRangeSelection(selection) || !selection.isCollapsed()) return;
-      const index = $getIndexFromPoint(selection.anchor) - (query.length + 1);
-      if (index === 0) return;
-      const computation = $getComputation($getRoot());
-      return tools.at(computation, index - 1);
-    });
-  };
-
-  const [linkParent, setLinkParent] = React.useState<FieldImport | null>(null);
-
-  const [parentUrl] = useGlobalState<Value[]>(linkParent?.fref);
-
-  React.useEffect(() => {
-    const symbol = getPrevSymbol();
-    if (tools.isFieldImport(symbol)) {
-      setLinkParent(symbol);
-    }
-  }, []);
-
-  const fullQuery = parentUrl?.[0] ? `${parentUrl[0]}/${query}` : query;
-
-  let options: any[] = [];
-
-  const apps = useAppFolders();
-
-  const [app, setApp] = React.useState(
-    apps?.length === 1 ? apps[0].id : undefined
-  );
-
-  const { data: list } = SWRClient.articles.getList.useQuery(app as string, {
-    inactive: !app,
-  });
-
-  const onAppEnter = React.useCallback((id: string) => {
-    setApp(id);
-  }, []);
-
-  const onEnter = React.useCallback(
-    (id: DocumentId) => {
-      const fieldImport: FieldImport = {
-        id: createId(1),
-        fref: computeFieldId(id, URL_ID),
-        args: {},
-      };
-      insertComputation([fieldImport], Boolean(parentUrl));
-    },
-    [parentUrl, query]
-  );
-
-  if (!app) {
-    options =
-      apps?.map((el) => ({
-        id: el.id,
-        label: el.label,
-        // secondaryText: "Vis links",
-        Icon: ComputerDesktopIcon,
-        onEnter: onAppEnter,
-        onEnterLabel: "Vis links",
-      })) ?? [];
-  } else if (list) {
-    options = list.articles.reduce((acc, el) => {
-      const url = (el.values[URL_ID]?.[0] as string) || "";
-      if (url.startsWith(fullQuery.toLowerCase())) {
-        acc.push({
-          id: el.id,
-          label: markMatchingString(url, fullQuery) || "[forside]",
-          onEnterLabel: "Indsæt",
-          // secondaryText: "Vis links",
-          Icon: LinkIcon,
-          onEnter,
-        });
-        return acc;
-      }
-      return acc;
-    }, [] as any[]);
-  }
-
-  const current = selected < 0 ? selected : selected % options.length;
-
-  return (
-    <>
-      {options.map(
-        ({ id, label, secondaryText, Icon, onEnter, onEnterLabel }, index) => (
-          <OptionComponent
-            value={id}
-            onEnter={onEnter}
-            onEnterLabel={onEnterLabel}
-            isSelected={index === current}
-            secondaryText={secondaryText}
-            Icon={Icon}
-          >
-            {label}
-          </OptionComponent>
-        )
-      )}
-    </>
-  );
-}
-
-function useFileInput(setLabel?: (label: string) => void) {
-  const [dragging, setDragging] = React.useState(false);
-  const [preview, setPreview] = React.useState<string | null>(null);
-  const [file, setFile] = React.useState<null | File>(null);
-
-  const state = {
-    file,
-    preview,
-  };
-
-  const enteredElement = React.useRef<HTMLLabelElement | null>(null);
-
-  const setFileOnUpload = async (newFile: File) => {
-    const type = getFileType(newFile.type);
-    if (type === null) return;
-    if (["image", "video"].includes(type)) {
-      setPreview(URL.createObjectURL(newFile));
-    }
-    setLabel?.(newFile.name.replace(/(.*)\.[^.]+$/, "$1"));
-    setFile(newFile);
-  };
-
-  const onChange = (ev: React.ChangeEvent<HTMLInputElement>) => {
-    const newFile = ev.target.files?.[0] ?? null;
-    if (newFile) {
-      setFileOnUpload(newFile);
-    }
-  };
-
-  const onDragOver = (ev: React.DragEvent<HTMLLabelElement>) => {
-    if (ev.dataTransfer.types.includes("Files")) {
-      enteredElement.current = ev.currentTarget;
-      ev.preventDefault();
-      ev.stopPropagation();
-    }
-  };
-
-  const onDrop = (ev: React.DragEvent<HTMLLabelElement>) => {
-    if (ev.dataTransfer.types.includes("Files")) {
-      ev.preventDefault();
-      ev.stopPropagation();
-      setDragging(false);
-      const newFile = ev.dataTransfer.files?.[0];
-      if (newFile) setFileOnUpload(newFile);
-    }
-  };
-
-  const onDragEnter = (ev: React.DragEvent<HTMLLabelElement>) => {
-    if (ev.dataTransfer.types.includes("Files")) {
-      ev.preventDefault();
-      ev.stopPropagation();
-      setDragging(true);
-    }
-  };
-
-  const onDragLeave = (ev: React.DragEvent<HTMLLabelElement>) => {
-    if (ev.dataTransfer.types.includes("Files")) {
-      ev.preventDefault();
-      ev.stopPropagation();
-      if (enteredElement.current === ev.target) {
-        setDragging(false);
-        enteredElement.current = null;
-      }
-    }
-  };
-
-  const resetFile = () => {
-    setFile(null);
-    setPreview(null);
-    setLabel?.("");
-  };
-
-  const actions = {
-    onChange,
-    dragEvents: {
-      onDragOver,
-      onDrop,
-      onDragEnter,
-      onDragLeave,
-    },
-    resetFile,
-  };
-
-  return [state, actions] as [typeof state, typeof actions];
-}
-
-function QueryFiles({
-  query,
-  selected,
-  reset,
-  holdActions,
-  insertComputation,
-}: {
-  query: string;
-  selected: number;
-  reset: () => void;
-
-  holdActions: {
-    hold: () => void;
-    restore: () => void;
-  };
-  insertComputation: (computation: EditorComputation) => void;
-}) {
-  const { organization } = useUrlInfo();
-
-  const searchQuery = query.match(/\"([^\"]*)/)?.[1] ?? query;
-
-  const [files, upload] = useFiles();
-
-  const [label, setLabel] = React.useState("");
-
-  const [{ file, preview }, { onChange, dragEvents, resetFile }] = useFileInput(
-    (label: string) => {
-      if (!query) setLabel(label);
-      holdActions.restore();
-    }
-  );
-
-  const previewOption = preview ? 1 : 0;
-
-  const optionsLength = files.length + 1 + previewOption;
-
-  const current = selected < 0 ? selected : selected % optionsLength;
-
-  useOnEnter(() => {
-    const offset = 1 + previewOption;
-    const option = files[offset + current];
-    if (option) {
-      insertComputation([{ src: option.name }]);
-    }
-  }, [query, files, previewOption, current]);
-
-  const initialCurrent = React.useRef<number | null>(current);
-
-  React.useEffect(() => {
-    if (current !== initialCurrent.current) {
-      const el = document.querySelector(`[data-image-preview="${current}"]`);
-      if (el) el.scrollIntoView();
-      initialCurrent.current = null; // stop blocking at initialCurrent
-    }
-  }, [current]);
-
-  const [isUploading, setIsUploading] = React.useState(false);
-
-  return (
-    <div className="flex items-start gap-3 overflow-x-auto no-scrollbar p-[1px] -m-[1px]">
-      <div className="shrink-0 flex flex-col">
-        <label
-          className={cl(
-            "rounded bg-[#ffffff05] p-3 m-0 hover:bg-gray-700 transition-colors text-sm text-center w-52 shrink-0",
-            current === 0 && "ring-1 ring-gray-700"
-          )}
-          data-image-preview="0"
-          onMouseDown={(ev) => {
-            ev.preventDefault();
-          }}
-          onClick={async (ev) => {
-            if (preview) {
-              ev.preventDefault();
-              if (!file) return;
-              const type = getFileType(file.type);
-              if (!type) return;
-              setIsUploading(true);
-              let size: {
-                width?: number;
-                height?: number;
-                size?: number;
-              } | null = {
-                size: file.size,
-              };
-              if (["image", "video"].includes(type)) {
-                const measure = type === "image" ? getImageSize : getVideoSize;
-                size = await measure(preview);
-              }
-              const src = await upload(file, query || label, size);
-              if (!src) return;
-              resetFile();
-              setIsUploading(false);
-              insertComputation([{ src }]);
-            } else {
-              holdActions.hold();
-            }
-          }}
-          {...dragEvents}
-        >
-          <input
-            type="file"
-            className="absolute w-0 h-0 opacity-0"
-            onChange={onChange}
-          />
-          <div className="relative w-full aspect-[4/3] flex-center mb-2">
-            {preview ? (
-              <img
-                src={preview}
-                className="max-w-full max-h-full w-auto h-auto"
-              />
-            ) : (
-              <span className="text-gray-300 text-opacity-75">Tilføj fil</span>
-            )}
-
-            <div
-              className={cl(
-                "absolute inset-0 bg-black/50 flex-center transition-opacity",
-                isUploading ? "opacity-100" : "opacity-0"
-              )}
-            >
-              {isUploading && <Spinner />}
-            </div>
-          </div>
-          <div className="truncate w-full">
-            {query || label || "Ingen label"}
-          </div>
-        </label>
-        {preview && (
-          <div className="flex gap-2 w-full">
-            <button
-              className={cl(
-                "grow shrink basis-0 bg-[#ffffff05] mt-2 px-3 py-1.5 rounded flex-center hover:bg-gray-700 text-gray-300 text-opacity-75 text-sm",
-                current === 1 && "ring-1 ring-gray-700"
-              )}
-              data-image-preview="1"
-              onMouseDown={(ev) => {
-                ev.preventDefault();
-              }}
-              onClick={() => {
-                resetFile();
-              }}
-            >
-              Kasser
-            </button>
-          </div>
-        )}
-      </div>
-      {files.map(({ name, label }, index) => (
-        <FileContainer
-          name={name}
-          label={label}
-          index={index + 1 + previewOption}
-          isSelected={current === index + 1 + previewOption}
-          organization={organization}
-          insertComputation={insertComputation}
-        />
-      ))}
-    </div>
-  );
-}
-
-function FileContainer({
-  isSelected,
-  index,
-  name,
-  label,
-  organization,
-  insertComputation,
-}: {
-  isSelected: boolean;
-  index: number;
-  name: string;
-  label: string;
-  organization: string;
-  insertComputation: (computation: EditorComputation) => void;
-}) {
-  return (
-    <div
-      className={cl(
-        "rounded bg-[#ffffff05] p-3 hover:bg-gray-700 transition-colors text-sm text-center w-52 shrink-0",
-        isSelected && "ring-1 ring-gray-700"
-      )}
-      onMouseDown={(ev) => {
-        ev.preventDefault();
-        insertComputation([{ src: name }]);
-      }}
-      data-image-preview={`${index}`}
-    >
-      <div className="w-full aspect-[4/3] flex-center mb-2">
-        <File name={name} organization={organization} />
-      </div>
-      <div className="truncate w-full">{label}</div>
-    </div>
-  );
-}
-
-function File({ name, organization }: { name: string; organization: string }) {
-  const type = getFileTypeFromExtension(getFileExtension(name) ?? "");
-  const src = `https://awss3stack-mybucket15d133bf-1wx5fzxzweii4.s3.eu-west-1.amazonaws.com/${organization}/${name}`;
-  return (
-    <>
-      {type === "image" && (
-        <img src={src} className="max-w-full max-h-full w-auto h-auto" />
-      )}
-      {type === "video" && (
-        <video
-          style={{ width: "100%", height: "auto" }}
-          autoPlay
-          muted
-          playsInline
-          loop
-        >
-          <source src={src} id="video_here" />
-          Your browser does not support HTML5 video.
-        </video>
-      )}
     </>
   );
 }

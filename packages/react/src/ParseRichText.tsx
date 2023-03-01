@@ -50,6 +50,7 @@ export const markdownToHTML = (string: string) => {
 };
 
 export const ParseRichText = ({ children }: { children: string }) => {
+  if (children === "") return <span>&nbsp;</span>;
   return (
     <span dangerouslySetInnerHTML={{ __html: markdownToHTML(children) }} />
   );

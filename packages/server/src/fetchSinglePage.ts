@@ -80,7 +80,7 @@ function fetchFetcher(fetcher: Fetcher, db: string): Promise<NestedDocument[]> {
 
     const result = await client
       .db(db)
-      .collection("articles")
+      .collection("documents")
       .find<WithId<DBDocument>>(filters)
       .sort({ _id: -1 })
       .toArray();
@@ -134,7 +134,7 @@ export async function fetchSinglePage(
 
   const doc = await client
     .db(db)
-    .collection("articles")
+    .collection("documents")
     .findOne<DBDocument>({
       ...(namespace && { folder: minimizeId(namespace) }),
       [`values.${FIELDS.url.id}`]:

@@ -72,7 +72,7 @@ export type Operators<DocumentType extends Record<string, any>> = {
   ) => T extends [...any, infer Last] ? Last : T[number];
   at: <Input>(arr: Array<Input>, index: number) => Input;
   anyElementTrue: (arr: any[]) => boolean;
-  concat: (...strings: string[]) => string;
+  concat: (strings: string[]) => string;
   type: (
     value: any
   ) =>
@@ -131,6 +131,7 @@ export type Operators<DocumentType extends Record<string, any>> = {
     input: T[],
     sortBy: Partial<Record<keyof T, 1 | -1>>
   ) => T[];
+  trim: (input: string) => string;
   /*
   literal: <T>(val: T) => T;
   reverseArray: <T extends any[]>(arr: T) => T;

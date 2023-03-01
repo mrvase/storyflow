@@ -60,7 +60,7 @@ const getUrlImports = (article: DBDocument) => {
   const imports = new Set<ComputationBlock>();
 
   const recursive = (value: Computation) => {
-    inputConfig.getImportIds(value).forEach((id) => {
+    inputConfig.getImportIds(value, {}).forEach((id) => {
       const block = article.compute.find((el) => el.id === id) ?? {
         id,
         value: getConfig("url").initialValue as FlatComputation,

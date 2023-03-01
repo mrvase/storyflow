@@ -121,43 +121,30 @@ function slice(compute: EditorComputation, _start: number, _end?: number) {
 function concat(compute: EditorComputation, ...args: EditorComputation[]) {
   const concatTwo = (arg1: EditorComputation, arg2: EditorComputation) => {
     if (
-      typeof arg1[arg1.length - 1] === "string" &&
-      typeof arg2[0] === "string"
-    ) {
-      return [
-        ...arg1.slice(0, -1),
-        `${arg1[arg1.length - 1]}${arg2[0]}`,
-        ...arg2.slice(1),
-      ];
-    }
-    if (
       typeof arg1[arg1.length - 1] === "number" &&
       typeof arg2[0] === "number"
     ) {
       const transform = (el: string) =>
         arg1[arg1.length - 1] !== 0 ? Number(el) : el;
       // the zero will disappear if we merge 0 and number to one
-
-      return [
-        ...arg1.slice(0, -1),
-        transform(`${arg1[arg1.length - 1]}${arg2[0]}`),
-        ...arg2.slice(1),
-      ];
+      const merged = `${arg1[arg1.length - 1]}${arg2[0]}`;
+      return [...arg1.slice(0, -1), transform(merged), ...arg2.slice(1)];
+    }
+    if (
+      ["string", "number"].includes(typeof arg1[arg1.length - 1]) &&
+      ["string", "number"].includes(typeof arg2[0])
+    ) {
+      let merged: string | number = `${arg1[arg1.length - 1]}${arg2[0]}`;
+      if (merged.match(/\d+\.\d+/)) merged = Number(merged);
+      return [...arg1.slice(0, -1), merged, ...arg2.slice(1)];
     }
     return [...arg1, ...arg2];
   };
-  const value: EditorComputation = args.reduce(
-    (a: EditorComputation, c) => concatTwo(a, c),
-    compute
-  );
+  const value: EditorComputation = args.reduce((a: EditorComputation, c) => {
+    return concatTwo(a, c);
+  }, compute);
   return value;
 }
-
-const compareArrays = (arr1: any[], arr2: any[]) => {
-  return (
-    arr1.length === arr2.length && arr1.every((el, index) => el === arr2[index])
-  );
-};
 
 function getType(value: EditorComputation[number] | undefined) {
   if (value === null) return "null";

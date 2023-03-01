@@ -46,25 +46,6 @@ const isSeparator = <T extends "," | "n" = "," | "n">(
   return (key === "," && specify !== "n") || (key === "n" && specify !== ",");
 };
 
-const isNonMergeable = (
-  el:
-    | DbFunction
-    | Value
-    | Placeholder
-    | { ",": true }
-    | { "/": true }
-    | { n: true }
-    | Token
-) => {
-  // non-mergeables are nested documents, document imoports, and fetchers.
-  return (
-    isObject(el) &&
-    ("dref" in el || ("id" in el && "values" in el) || "filters" in el)
-  );
-};
-
-const isMergeBreaker = (el: any) => isSeparator(el, ",") || isNonMergeable(el);
-
 const addTransform = (
   db: Computation,
   transform: FunctionName
@@ -124,11 +105,11 @@ export const encodeEditorComputation = (
         const nestedAddition =
           ["*", "/"].includes(parentOperator as string) &&
           ["+", "-"].includes(el.type);
-        if (nestedAddition || el.type === "bracket") {
+        if (nestedAddition || el.type === "paren") {
           flattened.push({ "(": true });
         }
         flattened.push(...flatten(el.group, el.type));
-        if (nestedAddition || el.type === "bracket") {
+        if (nestedAddition || el.type === "paren") {
           flattened.push({ ")": true });
         }
       } else {
@@ -186,7 +167,7 @@ export const encodeEditorComputation = (
         saved.push(fieldImport);
       } else {
         let group = value;
-        saved.push({ group, type: "bracket" }); // TODO: Should be function!
+        saved.push({ group, type: "paren" }); // TODO: Should be function!
       }
       value = saved;
       stack.pop();
@@ -203,7 +184,7 @@ export const encodeEditorComputation = (
       }
       saved.push({
         group: value.filter((el) => el !== null),
-        type: "bracket",
+        type: "paren",
       });
       value = saved;
       stack.pop();
@@ -212,9 +193,7 @@ export const encodeEditorComputation = (
       if (
         typeof prev !== "undefined" &&
         !tools.isDBSymbol(prev, "n") &&
-        !tools.isDBSymbol(el, "n") &&
-        !isMergeBreaker(prev) &&
-        !isMergeBreaker(el)
+        !tools.isDBSymbol(el, "n")
       ) {
         value.push({ ",": true });
       }
@@ -224,8 +203,6 @@ export const encodeEditorComputation = (
         value.push(el);
       } else if (tools.isDBSymbol(el, "n")) {
         value.push(el);
-      } else if (tools.isDBSymbol(el, "/")) {
-        value.push({ n: true });
       } else if (tools.isFileToken(el)) {
         value.push(el);
       } else if (tools.isColorToken(el)) {
@@ -248,7 +225,6 @@ type DbFunction = {
     | Placeholder
     | { ",": true }
     | { n: true }
-    | { "/": true }
     | Token
   )[];
   operation: string | null;
@@ -265,25 +241,17 @@ export const decodeEditorComputation = (
 
   client.forEach((el, index) => {
     if (tools.isSymbol(el, "(")) {
-      // An opening bracket always creates a group with operation null
-      // and the operation stays null. So when we enter children groups,
-      // we know we can return to the latest bracket group by returning
-      // to the parent with operation null.
       const func = { parameters: [], operation: null, parent: current };
       current.parameters.push(func);
       current = func;
     } else if (tools.isSymbol(el, ")")) {
-      // we first return to the level introduced by the opening bracket
-      // (see comment above)
       while (current.operation !== null) {
+        // we need to first return to the level introduced by the matching parenthesis
         current = current.parent!;
       }
-      // and then return to the parent that the bracket group was originally pushed to
+      // and then go to the parent
       current = current.parent!;
     } else if (tools.isSymbol(el, ",") || tools.isSymbol(el, "n")) {
-      // the only case in which we are in a group where the operation is not null
-      // is when it has been set to an operator (and not a function name - these are only added when the group is left).
-      // Since there cannot be a comma or an n in a group with an operator, we return to the parent.
       while (current.operation !== null) {
         current = current.parent!;
       }
@@ -360,7 +328,6 @@ export const decodeEditorComputation = (
       | Value
       | Placeholder
       | { ",": true }
-      | { "/": true }
       | { n: true }
       | Token
     )[]
@@ -370,13 +337,13 @@ export const decodeEditorComputation = (
     let lastEnd = -1;
     while (i < params.length) {
       const el = params[i];
-      if (!isMergeBreaker(el)) {
+      if (!isSeparator(el)) {
         let start = i;
-        while (start - 1 > lastEnd && !isMergeBreaker(params[start - 1])) {
+        while (start - 1 > lastEnd && !isSeparator(params[start - 1])) {
           start -= 1;
         }
         let end = i;
-        while (end + 1 < params.length && !isMergeBreaker(params[end + 1])) {
+        while (end + 1 < params.length && !isSeparator(params[end + 1])) {
           end += 1;
         }
         if (start !== end) {
@@ -394,13 +361,10 @@ export const decodeEditorComputation = (
     if (value.operation !== "merge") {
       const mergeableSpans = getMergeableSpans(value.parameters);
       if (mergeableSpans.length > 0) {
-        // wrap spans in merge operations
         mergeableSpans.forEach(([start, end]) => {
           const removed = value.parameters.splice(start, end - start + 1);
           value.parameters.splice(start, 0, {
-            parameters: removed.map((el) =>
-              isObject(el) && "n" in el ? { "/": true } : el
-            ),
+            parameters: removed,
             operation: "merge",
             parent: value,
           });
@@ -409,37 +373,6 @@ export const decodeEditorComputation = (
     }
 
     const flattened: DBElement[] = [];
-
-    value.parameters.forEach((el, index) => {
-      if (isObject(el) && "parameters" in el) {
-        flattened.push(...flatten(el));
-      } else if (isSeparator(el, ",")) {
-        if (index === 0) {
-          flattened.push(null as any);
-        }
-
-        const prev = value.parameters[index - 1];
-        const next = value.parameters[index + 1];
-        if (isSeparator(prev, ",")) {
-          flattened.push(null as any);
-        }
-
-        if (index === value.parameters.length - 1) {
-          flattened.push(null as any);
-        }
-
-        if (isNonMergeable(prev)) {
-          flattened.push(null as any);
-        }
-        if (isNonMergeable(next)) {
-          flattened.push(null as any);
-        }
-        // else do nothing
-      } else {
-        flattened.push(el);
-      }
-    });
-
     const isRoot = value.parent === null;
 
     const childIsAddition =
@@ -448,26 +381,47 @@ export const decodeEditorComputation = (
       "operation" in value.parameters[0] &&
       ["+", "-"].includes(value.parameters[0].operation as string);
 
-    const isAutoBracket =
+    const isAutoParen =
       childIsAddition &&
       value.operation === null &&
       ["*", "/"].includes(value.parent?.operation as string);
 
-    if (!isRoot && !isAutoBracket) {
-      let openingBracket: Computation[number] = { "(": true };
-      let closingBracket: Computation[number] = { ")": true };
-
+    if (!isRoot && !isAutoParen) {
       if (value.operation === "merge") {
-        openingBracket = { "{": true };
-        closingBracket = { "}": true };
-      } else if (value.operation === "pick") {
-        closingBracket = { p: value.pick! };
-      } else if (value.operation !== null) {
-        closingBracket = { ")": value.operation as "+" };
+        flattened.push({ "{": true });
+      } else {
+        flattened.push({ "(": true });
       }
+    }
 
-      flattened.unshift(openingBracket);
-      flattened.push(closingBracket);
+    value.parameters.forEach((el, index) => {
+      if (isObject(el) && "parameters" in el) {
+        flattened.push(...flatten(el));
+      } else if (isSeparator(el, ",")) {
+        if (index === 0) {
+          flattened.push(null as any);
+        } else if (isSeparator(value.parameters[index - 1], ",")) {
+          flattened.push(null as any);
+        }
+        if (index === value.parameters.length - 1) {
+          flattened.push(null as any);
+        }
+        // else do nothing
+      } else {
+        flattened.push(el);
+      }
+    });
+
+    if (!isRoot && !isAutoParen) {
+      if (value.operation === "merge") {
+        flattened.push({ "}": true });
+      } else if (value.operation === "pick") {
+        flattened.push({ p: value.pick! });
+      } else if (value.operation !== null) {
+        flattened.push({ ")": value.operation as "+" });
+      } else {
+        flattened.push({ ")": true });
+      }
     }
 
     return flattened;

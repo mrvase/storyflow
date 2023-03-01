@@ -1,9 +1,9 @@
-import type { RenderArray, ValueArray } from "./types";
+import type { RenderArray, RenderElement, ValueArray } from "./types";
 
 export const isRenderable = (
   el: any
 ): el is string | number | { id: string; type: string } => {
-  if (el === "") return false;
+  // if (el === "") return false;
   return (
     ["string", "number"].includes(typeof el) ||
     (typeof el === "object" && "type" in el)
@@ -30,11 +30,29 @@ export const isInlineElement = (
   return false;
 };
 
-export const createRenderArray = (
+export function createRenderArray(
   value: ValueArray,
-  getDisplayType: (type: string) => boolean
-) => {
+  getDisplayType: (type: string) => boolean,
+  nested?: false
+): RenderArray;
+export function createRenderArray(
+  value: ValueArray,
+  getDisplayType: (type: string) => boolean,
+  nested: true
+): RenderElement[];
+export function createRenderArray(
+  value: ValueArray,
+  getDisplayType: (type: string) => boolean,
+  nested: boolean = false
+) {
   return value.reduce((a, c) => {
+    if (Array.isArray(c)) {
+      const children = createRenderArray(c, getDisplayType, true);
+      (a as RenderArray).push(
+        ...(!nested ? [{ $children: children }] : children)
+      );
+      return a;
+    }
     if (!isRenderable(c)) {
       return a;
     }
@@ -63,5 +81,5 @@ export const createRenderArray = (
       $text: [c],
     });
     return a;
-  }, [] as RenderArray);
-};
+  }, [] as RenderArray | RenderElement[]);
+}

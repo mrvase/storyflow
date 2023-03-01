@@ -62,7 +62,7 @@ const defaultLibrary: LibraryConfig = {
       name: "Link",
       props: [
         { name: "href", type: "string", label: "URL" },
-        { name: "label", type: "string", label: "Label" },
+        { name: "label", type: "string", label: "Label", searchable: true },
       ],
       inline: true,
     },
@@ -144,6 +144,8 @@ export function ClientConfigProvider({
                 "https://kfs-ltc.vercel.app/api/config":
                   "http://localhost:3002/api/config",
                 "https://www.paaskelejr.dk/api/config":
+                  "http://localhost:3003/api/config",
+                "semper-magasin.vercel.app/api/config":
                   "http://localhost:3003/api/config",
               }[configUrl] ?? configUrl;
           }

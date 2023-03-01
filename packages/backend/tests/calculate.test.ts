@@ -542,7 +542,7 @@ describe("calculator merge", () => {
     return test(computation, result, imports);
   });
 
-  it("should merge with respect for paragraphs in imports", () => {
+  it("should disregard paragraphs in imports if they are added inline", () => {
     const computation: Computation = [
       { "{": true },
       "a",
@@ -562,7 +562,34 @@ describe("calculator merge", () => {
       },
     ];
 
-    const result: Value[] = ["ahej", "test", "goddagc"];
+    const result: Value[] = ["ahejc"];
+
+    return test(computation, result, imports);
+  });
+
+  it("should merge with respect for paragraphs in imports if they are on a new line", () => {
+    const computation: Computation = [
+      { "{": true },
+      "a",
+      { "/": true },
+      {
+        id: "imp",
+        fref: "a" as FieldId,
+        args: {},
+      },
+      { "/": true },
+      "c",
+      { "}": true },
+    ];
+
+    const imports: ComputationBlock[] = [
+      {
+        id: "a",
+        value: ["hej", "test", "goddag"],
+      },
+    ];
+
+    const result: Value[] = ["a", ["hej", "test", "goddag"], "c"];
 
     return test(computation, result, imports);
   });
@@ -589,6 +616,21 @@ describe("calculator merge", () => {
       },
       "c",
     ];
+    return test(computation, result);
+  });
+
+  it("should add empty string between adjacent linebreaks", () => {
+    const computation: Computation = [
+      { "{": true },
+      "a",
+      { "/": true },
+      { "/": true },
+      "b",
+      { "}": true },
+    ];
+
+    const result: Value[] = ["a", "", "b"];
+
     return test(computation, result);
   });
 });

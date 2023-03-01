@@ -1,8 +1,11 @@
 import {
   Computation,
+  ComputationRecord,
+  DocumentId,
   EditorComputation,
   FieldId,
   FlatComputation,
+  FlatComputationRecord,
 } from "@storyflow/backend/types";
 import { ComputationOp } from "./operations";
 import { tools } from "./editor-tools";
@@ -14,10 +17,70 @@ type SomeComputation = (Computation[number] | FlatComputation[number])[];
 export type InputConfig = {
   getNextState: (value: Computation, operation: ComputationOp) => Computation;
   getSpliceableValue: (value: Computation) => EditorComputation;
-  getImportIds: (value: SomeComputation) => FieldId[];
+  getImportIds: (
+    value: SomeComputation,
+    pool: ComputationRecord | FlatComputationRecord
+  ) => FieldId[];
 };
 
-const getImportIds = (value: SomeComputation) => {
+export const getPickedDocumentIds = (
+  fref: FieldId,
+  pool: ComputationRecord | FlatComputationRecord
+) => {
+  /*
+  This function is very greedy.
+  It does not care about the logic of the computation.
+  Some drefs might never be included in the result of the computation, for instance if they are part of a condition.
+  But we count them in anyways.
+  E.g: [
+    { "(": true },
+      { "(": true },
+        { dref: "a"},
+        "a" or "b",
+      { ")": "=" },
+      { dref: "b"},
+      { dref: "c" },
+    { ")": "if"}
+  ]
+  This can only return { dref: "b" } and { dref: "c" }, but we count { dref: "a" } in also for the sake of simplicity.
+
+  TODO: Should handle picked nested document ids as well
+  TODO: Does not get drefs/nd-ids from parameters
+  TODO: Does not get drefs/nd-ids from nested document fields
+
+  Assumptions:
+  - pick always takes a field import as argument, not direct document imports
+  */
+
+  const drefs: DocumentId[] = [];
+
+  const value = pool[fref];
+  if (!value) return [];
+
+  value.forEach((c, i) => {
+    if (tools.isFieldImport(c)) {
+      drefs.push(...getPickedDocumentIds(c.fref, pool));
+    } else if (i > 0 && tools.isDBSymbol(c, "p")) {
+      const prev = value[i - 1];
+      if (tools.isFieldImport(prev)) {
+        const secondaryDrefs = getPickedDocumentIds(prev.fref, pool);
+        secondaryDrefs.forEach((dref) => {
+          const id = computeFieldId(dref, c.p);
+          drefs.push(...getPickedDocumentIds(id, pool));
+        });
+      }
+    } else if (tools.isDocumentImport(c)) {
+      drefs.push(c.dref);
+    }
+  }, [] as FieldId[]);
+
+  return drefs;
+};
+
+const getImportIds = (
+  value: SomeComputation,
+  pool: ComputationRecord | FlatComputationRecord
+) => {
   const imports: FieldId[] = [];
 
   value.forEach((c, i) => {
@@ -25,8 +88,9 @@ const getImportIds = (value: SomeComputation) => {
       imports.push(c.fref);
     } else if (i > 0 && tools.isDBSymbol(c, "p")) {
       const prev = value[i - 1];
-      if (tools.isDocumentImport(prev)) {
-        imports.push(computeFieldId(prev.dref, c.p));
+      if (tools.isFieldImport(prev)) {
+        const drefs = getPickedDocumentIds(prev.fref, pool);
+        drefs.forEach((dref) => imports.push(computeFieldId(dref, c.p)));
       }
     }
   }, [] as FieldId[]);

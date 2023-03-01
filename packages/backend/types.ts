@@ -34,12 +34,13 @@ export type DBSymbol =
   | SharedSymbol
   | { "{": true }
   | { "}": true }
+  | { "/": true }
   | { ")": Operator | FunctionName }
   | { p: TemplateFieldId };
 
 type SharedSymbolKey = "(" | ")" | "[" | "]" | "n";
 export type EditorSymbolKey = SharedSymbolKey | "_" | ",";
-export type DBSymbolKey = SharedSymbolKey | "{" | "}" | "p";
+export type DBSymbolKey = SharedSymbolKey | "{" | "}" | "/" | "p";
 
 export type EditorComputation = (Value | Placeholder | EditorSymbol)[];
 export type Computation = (Value | Placeholder | DBSymbol)[];
@@ -91,7 +92,7 @@ export type ValueRecord<Key extends string = string> = Record<Key, Value[]>;
 export type FlatLayoutElement = {
   id: string;
   type: string;
-  props: string[];
+  props: Record<string, boolean>;
 };
 
 export type LayoutElement = {
@@ -137,7 +138,6 @@ export type Fetcher = {
 
 export type CustomToken = {
   name: string;
-  kind?: string;
 };
 
 export type FileToken = {
@@ -275,3 +275,5 @@ export interface Settings {
     configUrl: string;
   }[];
 }
+
+export type SearchableProps = Record<string, Record<string, boolean>>;

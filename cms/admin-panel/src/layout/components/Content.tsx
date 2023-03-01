@@ -86,23 +86,25 @@ const ToolbarButton = React.forwardRef<
   React.ComponentProps<"button"> & {
     icon?: React.FC<{ className: string }>;
     active?: boolean;
-    chevron?: boolean;
+    selected?: boolean;
   }
->(({ icon: Icon, active, chevron, ...props }, ref) => {
+>(({ icon: Icon, active, selected, ...props }, ref) => {
   return (
     <button
       ref={ref}
       {...props}
       className={cl(
-        "ring-button text-gray-800 dark:text-white flex-center gap-1.5 text-xs font-light py-1 px-2 rounded transition-colors whitespace-nowrap",
+        "ring-button flex-center gap-1.5 text-xs font-light py-1 px-2 rounded transition-colors whitespace-nowrap",
         active ? "bg-button-active" : "bg-button",
-        props.className ||
-          "text-opacity-90 hover:text-opacity-100 dark:text-opacity-90 dark:hover:text-opacity-100"
+        selected === false
+          ? "text-gray-800 dark:text-white text-opacity-50 dark:text-opacity-50"
+          : "text-button",
+        props.className
       )}
     >
       {Icon && <Icon className="w-3 h-3" />}
       {props.children}
-      {chevron &&
+      {typeof selected === "boolean" &&
         (active ? (
           <ChevronUpIcon className="w-3 h-3" />
         ) : (
@@ -116,19 +118,21 @@ function ToolbarMenu<T extends { label: string; disabled?: boolean }>({
   icon,
   label,
   selected,
-  options,
-  onSelect,
   onClear,
-  multi,
+  ...props
 }: {
   icon: React.FC<{ className: string }>;
   label: string;
   selected?: T[] | T | null;
-  options: T[];
-  onSelect: (value: T) => void;
   onClear?: () => void;
-  multi?: boolean;
-}) {
+} & (
+  | {
+      options: T[];
+      onSelect: (value: T) => void;
+      multi?: boolean;
+    }
+  | { children: React.ReactElement[] }
+)) {
   const selectedArray = selected
     ? Array.isArray(selected)
       ? selected
@@ -143,19 +147,15 @@ function ToolbarMenu<T extends { label: string; disabled?: boolean }>({
             as={ToolbarButton}
             active={open}
             data-focus-remain="true"
-            chevron
+            selected={Boolean(selectedArray && selectedArray.length > 0)}
             icon={icon}
-            className={cl(
-              (!selectedArray || selectedArray.length === 0) &&
-                "text-opacity-50 dark:text-opacity-50"
-            )}
           >
             {selectedArray?.map((el) => el.label).join(", ") || label}
           </Menu.Button>
           <MenuTransition show={open} className="absolute z-10">
             <Menu.Items
               static
-              className="bg-white dark:bg-gray-800 mt-1 rounded shadow flex flex-col outline-none overflow-hidden w-52"
+              className="bg-button mt-1 rounded shadow flex flex-col outline-none overflow-hidden w-52 ring-1 ring-inset ring-white/10"
               data-focus-remain="true"
             >
               {selected && onClear && (
@@ -173,32 +173,23 @@ function ToolbarMenu<T extends { label: string; disabled?: boolean }>({
                   )}
                 </Menu.Item>
               )}
-              {options.map((el) => (
-                <Menu.Item>
-                  {({ active }) => (
-                    <button
-                      className={cl(
-                        "py-1.5 px-2 hover:bg-gray-750 font-light flex items-center gap-2",
-                        active && "bg-gray-750",
-                        el.disabled && "text-gray-500"
-                      )}
+              {"children" in props
+                ? props.children
+                : props.options.map((el) => (
+                    <ToolbarMenuOption
+                      disabled={el.disabled}
+                      selected={
+                        props.multi
+                          ? selectedArray?.some((s) => s === el)
+                          : undefined
+                      }
                       onClick={(ev) => {
-                        if (multi || el.disabled) ev.preventDefault();
-                        if (!el.disabled) onSelect(el);
+                        if (props.multi || el.disabled) ev.preventDefault();
+                        if (!el.disabled) props.onSelect(el);
                       }}
-                    >
-                      {multi && (
-                        <div className="w-4 h-4 flex-center rounded bg-gray-700">
-                          {selectedArray?.some((s) => s === el) ? (
-                            <CheckIcon className="w-3 h-3" />
-                          ) : null}
-                        </div>
-                      )}
-                      <span className="truncate">{el.label}</span>
-                    </button>
-                  )}
-                </Menu.Item>
-              ))}
+                      label={el.label}
+                    />
+                  ))}
             </Menu.Items>
           </MenuTransition>
         </div>
@@ -206,6 +197,39 @@ function ToolbarMenu<T extends { label: string; disabled?: boolean }>({
     </Menu>
   );
 }
+
+const ToolbarMenuOption = React.forwardRef<
+  HTMLButtonElement,
+  React.ComponentProps<"button"> & {
+    icon?: React.FC<{ className: string }>;
+    label: string;
+    disabled?: boolean;
+    selected?: boolean;
+  }
+>(({ label, disabled, selected, ...props }, ref) => {
+  return (
+    <Menu.Item>
+      {({ active }) => (
+        <button
+          {...props}
+          className={cl(
+            "py-1.5 px-2 font-light flex items-center gap-2 text-sm",
+            active && "rounded ring-1 ring-inset ring-white/10",
+            disabled && "text-gray-500",
+            props.className
+          )}
+        >
+          {typeof selected === "boolean" && (
+            <div className="w-4 h-4 flex-center rounded bg-gray-700">
+              {selected ? <CheckIcon className="w-3 h-3" /> : null}
+            </div>
+          )}
+          <span className="truncate">{label}</span>
+        </button>
+      )}
+    </Menu.Item>
+  );
+});
 
 const Header = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
@@ -247,4 +271,5 @@ export default Object.assign(Content, {
   Toolbar,
   ToolbarButton,
   ToolbarMenu,
+  ToolbarMenuOption,
 });

@@ -84,7 +84,6 @@ export function Reconciler({
       }
 
       if (update) {
-        console.log("COMPUTATION:", result);
         setValue(() => result);
       }
     });

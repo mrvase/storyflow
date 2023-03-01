@@ -223,7 +223,7 @@ export const operators: Operators<any> = {
   in(val1, val2) {
     return { $in: [val1, val2] } as unknown as boolean;
   },
-  concat(...strings: string[]) {
+  concat(strings: string[]) {
     return { $concat: strings } as unknown as string;
   },
   type(val: any) {
@@ -458,6 +458,11 @@ export const operators: Operators<any> = {
       },
       [] as typeof input
     );
+  },
+  trim(input) {
+    return {
+      $trim: { input },
+    } as unknown as string;
   },
 };
 
