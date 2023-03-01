@@ -75,8 +75,6 @@ export default function RenderComponent({
     );
   };
 
-  console.log("RENDER ARRAY", value, renderArray);
-
   return (
     <>
       {renderArray.reduce((acc, block, index) => {
@@ -106,7 +104,7 @@ export default function RenderComponent({
               </ExtendPath>
               */
               return (
-                <Component key={index}>
+                <Component key={`${index}-${childIndex}`}>
                   <ParseRichText>{string}</ParseRichText>
                 </Component>
               );
@@ -130,7 +128,7 @@ export default function RenderComponent({
               </ExtendPath>
               */
               return (
-                <Component key={index}>
+                <Component key={`${index}-${childIndex}`}>
                   {block.$text.map((el, textElementIndex) => {
                     if (typeof el === "object") {
                       return createElement(el);

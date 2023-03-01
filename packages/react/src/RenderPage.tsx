@@ -44,38 +44,50 @@ const Component = ({
 }) => {
   return (
     <>
-      {data.map((d, i1) => {
-        if ("type" in d && d.type === "Outlet") {
-          return <React.Fragment key="Outlet">{children}</React.Fragment>;
-        }
-        if ("$heading" in d) {
-          const Component = getDefaultComponent(`H${d.$heading[0]}`)!;
-          const string = String(d.$heading[1]);
-          return (
-            <Component key={i1}>
-              <ParseRichText>{string}</ParseRichText>
-            </Component>
-          );
-        }
-        if ("$text" in d) {
-          const Component = getDefaultComponent("Text")!;
-          return (
-            <Component key={i1}>
-              {d.$text.map((el, i2) => {
-                if (typeof el === "object") {
-                  return <Element key={el.id} data={el} children={children} />;
-                }
-                return (
-                  <ParseRichText key={`${i1}-${i2}`}>
-                    {String(el)}
-                  </ParseRichText>
-                );
-              })}
-            </Component>
-          );
-        }
-        return <Element key={d.id} data={d} children={children} />;
-      })}
+      {data.reduce((acc, d, index) => {
+        const isChildArray = "$children" in d;
+        const renderChildren = "$children" in d ? d.$children : [d];
+        acc.push(
+          ...renderChildren.map((d, childIndex) => {
+            if ("type" in d && d.type === "Outlet") {
+              return <React.Fragment key="Outlet">{children}</React.Fragment>;
+            }
+            if ("$heading" in d) {
+              const Component = getDefaultComponent(`H${d.$heading[0]}`)!;
+              const string = String(d.$heading[1]);
+              return (
+                <Component key={`${index}-${childIndex}`}>
+                  <ParseRichText>{string}</ParseRichText>
+                </Component>
+              );
+            }
+            if ("$text" in d) {
+              const Component = getDefaultComponent("Text")!;
+              return (
+                <Component key={`${index}-${childIndex}`}>
+                  {d.$text.map((el, textElementIndex) => {
+                    if (typeof el === "object") {
+                      return (
+                        <Element key={el.id} data={el} children={children} />
+                      );
+                    }
+                    return (
+                      <ParseRichText
+                        key={`${index}-${childIndex}${textElementIndex}`}
+                      >
+                        {String(el)}
+                      </ParseRichText>
+                    );
+                  })}
+                </Component>
+              );
+            }
+            return <Element key={d.id} data={d} children={children} />;
+          })
+        );
+
+        return acc;
+      }, [] as React.ReactNode[])}
     </>
   );
 };

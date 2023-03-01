@@ -14,6 +14,7 @@ import { PAGE_ID, URL_ID } from "@storyflow/backend/templates";
 import type {} from "@storyflow/frontend/types";
 import { extendPath } from "@storyflow/backend/extendPath";
 import { minimizeId } from "@storyflow/backend/ids";
+import { DBDocument } from "@storyflow/backend";
 
 const sessionStorage = createSessionStorage({
   cookie: cookieOptions,
@@ -129,7 +130,7 @@ export const public_ = createRoute({
           },
         ])
         .toArray();
-      return success(articles.map((el) => el));
+      return success(articles as DBDocument[]);
     },
   }),
   getPaths: createProcedure({
