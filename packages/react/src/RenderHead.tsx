@@ -1,4 +1,5 @@
-import { createHeadTags, Metadata } from "@storyflow/frontend/head";
+import type { Metadata } from "@storyflow/frontend/types";
+import { createHeadTags } from "@storyflow/frontend/head";
 
 export function RenderHead({
   data,

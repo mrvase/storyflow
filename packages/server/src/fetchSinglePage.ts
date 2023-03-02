@@ -17,10 +17,12 @@ import type {
 } from "@storyflow/backend/types";
 import type { FetchPageResult, LibraryConfig } from "@storyflow/frontend/types";
 import { WithId } from "mongodb";
-import { resolveProps } from "./props/resolveProps";
 import { minimizeId } from "@storyflow/backend/ids";
 
 let CACHE: Record<string, Promise<NestedDocument[]>> = {};
+
+const BUCKET_NAME = "awss3stack-mybucket15d133bf-1wx5fzxzweii4";
+const BUCKET_REGION = "eu-west-1";
 
 function fetchFetcher(fetcher: Fetcher, db: string): Promise<NestedDocument[]> {
   const fetch = async () => {
@@ -96,35 +98,11 @@ function fetchFetcher(fetcher: Fetcher, db: string): Promise<NestedDocument[]> {
   );
 }
 
-const defaultLibrary: LibraryConfig = {
-  name: "",
-  label: "Default",
-  components: {
-    Outlet: {
-      label: "Outlet",
-      name: "Outlet",
-      props: [],
-    },
-    Link: {
-      label: "Link",
-      name: "Link",
-      props: [
-        { name: "href", type: "string", label: "URL" },
-        { name: "label", type: "string", label: "Label" },
-      ],
-      inline: true,
-    },
-  },
-};
-
 export async function fetchSinglePage(
   url: string,
   namespace: string,
-  db: string,
-  clientLibraries: LibraryConfig[]
+  db: string
 ): Promise<FetchPageResult | null> {
-  const libraries = [...clientLibraries, defaultLibrary];
-
   const client = await clientPromise;
 
   const regex = `^${url
@@ -182,20 +160,12 @@ export async function fetchSinglePage(
     return content;
   };
 
+  const imageUrl = `https://${BUCKET_NAME}.s3.${BUCKET_REGION}.amazonaws.com/${slug}`;
+
   const [layout, redirect, page, title] = await Promise.all([
-    getByPower(FIELDS.layout.id).then((el) =>
-      resolveProps(el, {
-        libraries,
-        slug,
-      })
-    ),
+    getByPower(FIELDS.layout.id),
     getByPower(FIELDS.redirect.id),
-    getByPower(FIELDS.page.id).then((el) =>
-      resolveProps(el, {
-        libraries,
-        slug,
-      })
-    ),
+    getByPower(FIELDS.page.id),
     getByPower(FIELDS.label.id),
   ]);
 
@@ -205,6 +175,7 @@ export async function fetchSinglePage(
     head: {
       ...(isType(title, "string") && { title: title[0] }),
     },
+    imageUrl,
   };
 }
 

@@ -15,6 +15,8 @@ import type {} from "@storyflow/frontend/types";
 import { minimizeId } from "@storyflow/backend/ids";
 import { DBDocument } from "@storyflow/backend";
 
+import util from "util";
+
 const sessionStorage = createSessionStorage({
   cookie: cookieOptions,
 });
@@ -26,7 +28,7 @@ const authorization = async (ctx: MiddlewareContext) => {
     session.get("api-user") ?? null;
 
   if (!user) {
-    let auth = ctx.req.headers["authorization"];
+    let auth = ctx.req.headers["x-storyflow"] as string;
 
     if (!auth) {
       throw error({ message: "Not authorized.", status: 401 });
@@ -85,12 +87,11 @@ export const public_ = createRoute({
       return z.object({
         namespace: z.string().optional(),
         url: z.string(),
-        config: z.array(z.any()),
       });
     },
-    async mutation({ namespace, url, config }, { dbName, slug }) {
-      const page = await fetchSinglePage(url, namespace ?? "", dbName, config);
-      console.log("PAGE", page);
+    async query({ namespace, url }, { dbName }) {
+      console.log("REQUESTING PAGE", dbName, url);
+      const page = await fetchSinglePage(url, namespace ?? "", dbName);
       return success(page);
     },
   }),

@@ -1,51 +1,36 @@
-import { FetchPageResult } from "@storyflow/react";
-import { type Result, unwrap } from "@storyflow/result";
+import { FetchPageResult, resolveFetchPageResult } from "@storyflow/react";
 import { config } from "../components";
-// import { fetchSinglePage } from "@storyflow/server";
 
 const IS_DEV = process.env.NODE_ENV === "development";
 
-/*
-export const request: (
-  url: string
-) => Promise<{ layout: any | null; page: any | null } | null> = cache(
-  async (url: string) => {
-    return fetchSinglePage(url, "dashboard-625y", [config]);
-  }
-);
-*/
 const apiKey = Buffer.from(process.env.API_KEY as string).toString("base64");
-const domain = IS_DEV ? "http://localhost:3000" : "https://www.storyflow.dk";
-
-const defaultResult: FetchPageResult = {
-  page: null,
-  layout: null,
-  head: {},
-};
+const domain = IS_DEV ? "http://localhost:3000" : "http://www.storyflow.dk";
 
 export const request = async (url: string) => {
-  return await fetch(`${domain}/api/public/get`, {
-    method: "post",
+  const fetchUrl = `${domain}/api/public/get?query[namespace]=${
+    process.env.NAMESPACE ?? ""
+  }&query[url]=${url}`;
+  console.log("FETCHING", fetchUrl);
+  return await fetch(fetchUrl, {
     headers: {
-      Authorization: `Basic ${apiKey}`,
-      "Content-Type": "application/json",
+      "x-storyflow": apiKey,
     },
-    body: JSON.stringify({
-      query: {
-        url,
-        config: [config],
-        namespace: process.env.NAMESPACE ?? "",
-      },
-    }),
-    credentials: "include",
   }).then(async (res) => {
     try {
       const json = await res.json();
-      return unwrap(json as Result<FetchPageResult | null>, defaultResult);
+      if (
+        json !== null &&
+        typeof json === "object" &&
+        "success" in json &&
+        json.success === true
+      ) {
+        const result = json.result as FetchPageResult;
+        return resolveFetchPageResult(result, [config]);
+      }
     } catch (err) {
       console.error(err);
+      return null;
     }
-    return defaultResult;
   });
 };
 
@@ -54,15 +39,22 @@ export const requestPaths = async () => {
     `${domain}/api/public/getPaths?query=${process.env.NAMESPACE ?? ""}`,
     {
       method: "get",
+      cache: "force-cache",
       headers: {
-        Authorization: `Basic ${apiKey}`,
+        "x-storyflow": apiKey,
       },
-      credentials: "include",
     }
   ).then(async (res) => {
     try {
       const json = await res.json();
-      return unwrap(json as Result<string[]>, [] as string[]);
+      if (
+        json !== null &&
+        typeof json === "object" &&
+        "success" in json &&
+        json.success === true
+      ) {
+        return json.result as string[];
+      }
     } catch (err) {
       console.error(err);
     }

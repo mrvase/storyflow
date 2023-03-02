@@ -9,4 +9,5 @@ export {
 export { ParseRichText } from "./src/ParseRichText";
 export { cms, CMSElement } from "./src/CMSElement";
 
+export { resolveFetchPageResult } from "@storyflow/frontend/resolveProps";
 export type { FetchPageResult } from "@storyflow/frontend/types";

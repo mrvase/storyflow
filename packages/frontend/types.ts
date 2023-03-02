@@ -1,5 +1,3 @@
-import { Metadata } from "./head";
-
 export interface ComponentType<P extends ComponentProps<ComponentConfig>> {
   (value: P): any;
 }
@@ -215,17 +213,33 @@ export type NestedDocument = {
   values: Record<string, any>;
 };
 
+export type DocumentImport = {
+  dref: string;
+};
+
 export type FileToken = {
   src: string;
+};
+
+export type ColorToken = {
+  color: string;
+};
+
+export type CustomToken = {
+  name: string;
 };
 
 export type ValueArray = (
   | string
   | number
   | boolean
+  | Date
   | LayoutElement
   | NestedDocument
   | FileToken
+  | ColorToken
+  | CustomToken
+  | DocumentImport
   | ValueArray
 )[];
 
@@ -248,8 +262,69 @@ export type Component<C extends PartialConfig> = ComponentType<
   ComponentProps<C>
 >;
 
+type Twitter = {
+  cardType?: string;
+  site?: string;
+  handle?: string;
+};
+
+type Facebook = {
+  appId?: string;
+};
+
+type OpenGraph = {
+  title?: string;
+  description?: string;
+  type?: string;
+  site_name?: string;
+  url?: string;
+  images?: OpenGraphMedia[];
+  videos?: OpenGraphMedia[];
+};
+
+type OpenGraphMedia = {
+  url?: string;
+  secure_url?: string;
+  type?: string;
+  width?: string;
+  height?: string;
+  alt?: string;
+};
+
+type Alternate = {
+  href: string;
+  hrefLang: string;
+};
+
+type Robots = {
+  noindex?: boolean;
+  nofollow?: boolean;
+  nosnippet?: boolean;
+  noarchive?: boolean;
+  noimageindex?: boolean;
+  notranslate?: boolean;
+};
+
+export type Metadata = {
+  title?: string;
+  description?: string;
+  canonical?: string;
+  twitter?: Twitter;
+  facebook?: Facebook;
+  openGraph?: OpenGraph;
+  alternates?: Alternate[];
+  robots?: Robots;
+};
+
 export type FetchPageResult = {
+  page: ValueArray | null;
+  layout: ValueArray | null;
+  head: Metadata;
+  imageUrl: string;
+};
+export type ResolvedFetchPageResult = {
   page: RenderArray | null;
   layout: RenderArray | null;
   head: Metadata;
+  imageUrl: string;
 };

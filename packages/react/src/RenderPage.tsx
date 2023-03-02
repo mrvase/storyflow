@@ -119,7 +119,7 @@ const Element = ({
   return <CMSComponent {...props} />;
 };
 
-export const RenderPage = ({ data }: { data: any[] }) => (
+export const RenderPage = ({ data }: { data: any[] | undefined | null }) => (
   <Component data={data ?? []} />
 );
 
@@ -127,7 +127,7 @@ export const RenderSingleLayout = ({
   data,
   children,
 }: {
-  data: any[];
+  data: any[] | undefined | null;
   children: React.ReactNode;
 }) => {
   if (!data || data.length === 0) return <>{children}</>;

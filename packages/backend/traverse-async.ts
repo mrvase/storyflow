@@ -11,7 +11,6 @@ import {
   NestedDocument,
   Value,
 } from "./types";
-import type { LibraryConfig } from "@storyflow/frontend/types";
 
 export const traverseFlatComputationAsync = async (
   value: FlatComputation,

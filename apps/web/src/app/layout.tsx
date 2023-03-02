@@ -31,6 +31,3 @@ export default async function Layout({
 
   return content;
 }
-
-export const dynamic = "force-static";
-export const dynamicParams = false;

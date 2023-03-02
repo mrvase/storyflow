@@ -1,13 +1,18 @@
-// import { createRenderArray } from "./createRenderArray";
 import type {
+  FetchPageResult,
   LibraryConfig,
   PropConfigArray,
   ValueArray,
-} from "@storyflow/frontend/types";
-import { createRenderArray } from "@storyflow/frontend/render";
+} from "../types";
+import { createRenderArray } from "../render";
 import { getConfigByType } from "./getConfigByType";
-import { ComputationRecord, Value } from "@storyflow/backend/types";
-import { extendPath } from "@storyflow/backend/extendPath";
+// import { ComputationRecord, Value } from "@storyflow/backend/types";
+
+type ComputationRecord = Record<string, ValueArray>;
+
+export const extendPath = (old: string, add: string, spacer: string = ".") => {
+  return [old, add].filter(Boolean).join(spacer);
+};
 
 const getImageObject = (name: string, url: string) => {
   const src = `${url}/${name}`;
@@ -26,8 +31,47 @@ const createDisplayTypeGetter = (libraries: LibraryConfig[]) => {
   return (type: string) => Boolean(getConfigByType(type, libraries)?.inline);
 };
 
+const defaultLibrary: LibraryConfig = {
+  name: "",
+  label: "Default",
+  components: {
+    Outlet: {
+      label: "Outlet",
+      name: "Outlet",
+      props: [],
+    },
+    Link: {
+      label: "Link",
+      name: "Link",
+      props: [
+        { name: "href", type: "string", label: "URL" },
+        { name: "label", type: "string", label: "Label" },
+      ],
+      inline: true,
+    },
+  },
+};
+
+export const resolveFetchPageResult = (
+  result: FetchPageResult,
+  configs: LibraryConfig[]
+) => {
+  const options = {
+    imageUrl: result.imageUrl,
+    libraries: [defaultLibrary, ...configs],
+  };
+
+  return {
+    ...result,
+    page: result.page ? resolveProps(result.page, options) : result.page,
+    layout: result.layout
+      ? resolveProps(result.layout, options)
+      : result.layout,
+  };
+};
+
 export const resolveProps = (
-  value: Value[],
+  value: ValueArray,
   options: { imageUrl: string; libraries: LibraryConfig[] },
   ctx: { index: number } = { index: 0 }
 ) => {
@@ -47,7 +91,7 @@ export const resolveProps = (
         const propValue = propRecord[propKey];
         if (type === "children") {
           let propValueArray = propValue
-            ? recursive(propValue as Value[], {
+            ? recursive(propValue as ValueArray, {
                 index: finalIndex,
               }) ?? []
             : [];
@@ -114,7 +158,7 @@ export const resolveProps = (
     );
   };
 
-  const recursive = (value: Value[], ctx: { index: number }): ValueArray => {
+  const recursive = (value: ValueArray, ctx: { index: number }): ValueArray => {
     return value.reduce((acc: ValueArray, el) => {
       if (el !== null && typeof el === "object" && "type" in el) {
         const config = getConfigByType(el.type, options.libraries);

@@ -10,13 +10,3 @@ export const staticParams = async (depth: number) => {
     );
   });
 };
-
-/*
-export const staticParams = async (array: string[]) => {
-  return array.map((url) => {
-    return Object.fromEntries(
-      url.split("/").map((el, index) => [`${index + 1}`, el])
-    );
-  });
-};
-*/
