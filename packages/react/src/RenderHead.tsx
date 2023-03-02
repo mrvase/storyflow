@@ -1,10 +1,10 @@
-import { createHeadTags } from "@storyflow/frontend/head";
+import { createHeadTags, Metadata } from "@storyflow/frontend/head";
 
 export function RenderHead({
   data,
   transformTitle,
 }: {
-  data: Record<string, any> | null;
+  data?: Metadata;
   transformTitle?: (title: string) => string;
 }) {
   const title =

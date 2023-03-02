@@ -32,7 +32,7 @@ const createDisplayTypeGetter = (libraries: LibraryConfig[]) => {
 export const resolveProps = (
   value: Value[],
   options: { slug: string; libraries: LibraryConfig[] },
-  ctx: { index: number }
+  ctx: { index: number } = { index: 0 }
 ) => {
   const recursive = (value: Value[], ctx: { index: number }): ValueArray => {
     return value.reduce((acc: ValueArray, el) => {

@@ -8,3 +8,5 @@ export {
 } from "./config";
 export { ParseRichText } from "./src/ParseRichText";
 export { cms, CMSElement } from "./src/CMSElement";
+
+export type { FetchPageResult } from "@storyflow/frontend/types";

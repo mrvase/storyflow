@@ -1,6 +1,60 @@
 type Props = Record<string, string>;
 type Tag = [string, Props, string?];
 
+type Twitter = {
+  cardType?: string;
+  site?: string;
+  handle?: string;
+};
+
+type Facebook = {
+  appId?: string;
+};
+
+type OpenGraph = {
+  title?: string;
+  description?: string;
+  type?: string;
+  site_name?: string;
+  url?: string;
+  images?: OpenGraphMedia[];
+  videos?: OpenGraphMedia[];
+};
+
+type OpenGraphMedia = {
+  url?: string;
+  secure_url?: string;
+  type?: string;
+  width?: string;
+  height?: string;
+  alt?: string;
+};
+
+type Alternate = {
+  href: string;
+  hrefLang: string;
+};
+
+type Robots = {
+  noindex?: boolean;
+  nofollow?: boolean;
+  nosnippet?: boolean;
+  noarchive?: boolean;
+  noimageindex?: boolean;
+  notranslate?: boolean;
+};
+
+export type Metadata = {
+  title?: string;
+  description?: string;
+  canonical?: string;
+  twitter?: Twitter;
+  facebook?: Facebook;
+  openGraph?: OpenGraph;
+  alternates?: Alternate[];
+  robots?: Robots;
+};
+
 export function createHeadTags({
   title,
   description,
@@ -10,7 +64,7 @@ export function createHeadTags({
   openGraph,
   alternates,
   robots = {},
-}: any) {
+}: Metadata) {
   const tags: Map<string, Tag> = new Map();
 
   const addTag = (
@@ -88,7 +142,8 @@ export function createHeadTags({
     if (facebook.appId) addMetaWithProp("fb:app_id", facebook.appId);
   }
   if (openGraph) {
-    addOGProp("url", openGraph.url || canonical);
+    if (openGraph.url || canonical)
+      addOGProp("url", (openGraph.url || canonical)!);
     if (openGraph.title) addOGProp("title", openGraph.title);
     if (openGraph.description) addOGProp("description", openGraph.description);
     if (openGraph.site_name) addOGProp("site_name", openGraph.site_name);
@@ -102,7 +157,7 @@ export function createHeadTags({
     }
 
     if (openGraph.videos) {
-      openGraph.images.forEach(addMedium("video"));
+      openGraph.videos.forEach(addMedium("video"));
     }
   }
 

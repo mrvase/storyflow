@@ -168,7 +168,6 @@ export default function AppPage({
 
   const addArticleWithUrl = (parent: DBDocument) => {
     setDialogIsOpen("add-article");
-    const record = getComputationRecord(parent);
     setParentUrl({
       ...getUrlField(parent),
       imports: getUrlImports(parent),
@@ -368,6 +367,7 @@ function RefreshButton({
               domain: "",
               revalidateUrl,
             });
+            console.log(namespace, urls);
             await fetch(revalidateUrl, {
               body: JSON.stringify(unwrap(urls, []).map((el) => `/${el}`)),
               method: "POST",

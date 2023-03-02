@@ -15,7 +15,7 @@ import type {
   TemplateFieldId,
   Value,
 } from "@storyflow/backend/types";
-import type { LibraryConfig, RenderArray } from "@storyflow/frontend/types";
+import type { FetchPageResult, LibraryConfig } from "@storyflow/frontend/types";
 import { WithId } from "mongodb";
 import { resolveProps } from "./props/resolveProps";
 import { minimizeId } from "@storyflow/backend/ids";
@@ -122,7 +122,7 @@ export async function fetchSinglePage(
   namespace: string,
   db: string,
   clientLibraries: LibraryConfig[]
-) {
+): Promise<FetchPageResult | null> {
   const libraries = [...clientLibraries, defaultLibrary];
 
   const client = await clientPromise;
@@ -157,9 +157,9 @@ export async function fetchSinglePage(
     })) as ComputationBlock[]),
   ];
 
-  const getByPower = async (
-    id: TemplateFieldId
-  ): Promise<RenderArray | Value[] | undefined> => {
+  const slug = db.split("-").slice(0, -1).join("-");
+
+  const getByPower = async (id: TemplateFieldId): Promise<Value[]> => {
     const fieldId = computeFieldId(doc.id, id);
     const computation = blocks.find((el) => el.id === fieldId)?.value;
 
@@ -170,8 +170,6 @@ export async function fetchSinglePage(
     // caching
     fetchers.forEach((fetcher) => fetchFetcher(fetcher, db));
 
-    const slug = db.split("-").slice(0, -1).join("-");
-
     const content = await calculateFlatComputationAsync(
       fieldId,
       computation,
@@ -181,25 +179,23 @@ export async function fetchSinglePage(
       }
     );
 
-    if ([FIELDS.layout.id, FIELDS.page.id].includes(id)) {
-      return resolveProps(
-        content,
-        {
-          libraries,
-          slug,
-        },
-        {
-          index: 0,
-        }
-      );
-    }
     return content;
   };
 
   const [layout, redirect, page, title] = await Promise.all([
-    getByPower(FIELDS.layout.id),
+    getByPower(FIELDS.layout.id).then((el) =>
+      resolveProps(el, {
+        libraries,
+        slug,
+      })
+    ),
     getByPower(FIELDS.redirect.id),
-    getByPower(FIELDS.page.id),
+    getByPower(FIELDS.page.id).then((el) =>
+      resolveProps(el, {
+        libraries,
+        slug,
+      })
+    ),
     getByPower(FIELDS.label.id),
   ]);
 
@@ -207,7 +203,21 @@ export async function fetchSinglePage(
     layout: layout ?? null,
     page: page ?? null,
     head: {
-      ...(title && { title }),
+      ...(isType(title, "string") && { title: title[0] }),
     },
   };
 }
+
+type Type = {
+  string: string;
+  number: number;
+  boolean: boolean;
+  date: Date;
+  object: Record<string, any>;
+  array: any[];
+};
+
+const isType = <T extends keyof Type>(
+  el: any,
+  type: T
+): el is [Type[T], ...any] => Array.isArray(el) && typeof el[0] === type;

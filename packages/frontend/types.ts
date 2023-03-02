@@ -1,3 +1,5 @@
+import { Metadata } from "./head";
+
 export interface ComponentType<P extends ComponentProps<ComponentConfig>> {
   (value: P): any;
 }
@@ -245,3 +247,9 @@ export type ComponentProps<C extends PartialConfig> = {
 export type Component<C extends PartialConfig> = ComponentType<
   ComponentProps<C>
 >;
+
+export type FetchPageResult = {
+  page: RenderArray | null;
+  layout: RenderArray | null;
+  head: Metadata;
+};

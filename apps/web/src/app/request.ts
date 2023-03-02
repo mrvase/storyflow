@@ -1,3 +1,4 @@
+import { FetchPageResult } from "@storyflow/react";
 import { type Result, unwrap } from "@storyflow/result";
 import { config } from "../components";
 // import { fetchSinglePage } from "@storyflow/server";
@@ -15,6 +16,12 @@ export const request: (
 */
 const apiKey = Buffer.from(process.env.API_KEY as string).toString("base64");
 const domain = IS_DEV ? "http://localhost:3000" : "https://www.storyflow.dk";
+
+const defaultResult: FetchPageResult = {
+  page: null,
+  layout: null,
+  head: {},
+};
 
 export const request = async (url: string) => {
   return await fetch(`${domain}/api/public/get`, {
@@ -34,22 +41,11 @@ export const request = async (url: string) => {
   }).then(async (res) => {
     try {
       const json = await res.json();
-      return unwrap(
-        json as Result<{ page: any; layout: any; head: any } | null>,
-        {
-          page: null,
-          layout: null,
-          head: null,
-        }
-      );
+      return unwrap(json as Result<FetchPageResult | null>, defaultResult);
     } catch (err) {
       console.error(err);
     }
-    return {
-      page: null,
-      layout: null,
-      head: null,
-    };
+    return defaultResult;
   });
 };
 
