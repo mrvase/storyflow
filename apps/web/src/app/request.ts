@@ -35,27 +35,27 @@ export const request = async (url: string) => {
 };
 
 export const requestPaths = async () => {
-  return await fetch(
-    `${domain}/api/public/getPaths?query=${process.env.NAMESPACE ?? ""}`,
-    {
-      headers: {
-        "x-storyflow": apiKey,
-      },
-    }
-  ).then(async (res) => {
-    try {
-      const json = await res.json();
-      if (
-        json !== null &&
-        typeof json === "object" &&
-        "success" in json &&
-        json.success === true
-      ) {
-        return json.result as string[];
+  try {
+    const res = await fetch(
+      `${domain}/api/public/getPaths?query=${process.env.NAMESPACE ?? ""}`,
+      {
+        headers: {
+          "x-storyflow": apiKey,
+        },
       }
-    } catch (err) {
-      console.error(err);
+    );
+    const json = await res.json();
+    if (
+      json !== null &&
+      typeof json === "object" &&
+      "success" in json &&
+      json.success === true
+    ) {
+      console.log("REQUESTING PATHS RESULT", json);
+      return json.result as string[];
     }
-    return [] as string[];
-  });
+  } catch (err) {
+    console.error(err);
+  }
+  return [] as string[];
 };
