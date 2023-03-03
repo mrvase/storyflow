@@ -37,7 +37,7 @@ export const request = async (url: string) => {
 };
 
 export const requestPaths = async () => {
-  console.log("REQUESTING PATHS");
+  console.log("REQUESTING PATHS", apiKey, process.env.NAMESPACE);
   try {
     const res = await fetch(
       `${domain}/api/public/getPaths?query=${process.env.NAMESPACE ?? ""}`,
