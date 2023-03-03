@@ -55,7 +55,7 @@ export const requestPaths = async () => {
       }
     } catch (err) {
       console.error(err);
-      return [] as string[];
     }
+    return [] as string[];
   });
 };
