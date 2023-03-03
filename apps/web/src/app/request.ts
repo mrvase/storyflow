@@ -11,27 +11,27 @@ export const request = async (url: string) => {
     process.env.NAMESPACE ?? ""
   }&query[url]=${url}`;
   console.log("FETCHING", fetchUrl);
-  return await fetch(fetchUrl, {
-    headers: {
-      "x-storyflow": apiKey,
-    },
-  }).then(async (res) => {
-    try {
-      const json = await res.json();
-      if (
-        json !== null &&
-        typeof json === "object" &&
-        "success" in json &&
-        json.success === true
-      ) {
-        const result = json.result as FetchPageResult;
-        return resolveFetchPageResult(result, [config]);
-      }
-    } catch (err) {
-      console.error(err);
-      return null;
+  try {
+    const res = await fetch(fetchUrl, {
+      headers: {
+        "x-storyflow": apiKey,
+      },
+    });
+    const json = await res.json();
+    if (
+      json !== null &&
+      typeof json === "object" &&
+      "success" in json &&
+      json.success === true
+    ) {
+      const result = json.result as FetchPageResult | null;
+      if (!result) return null;
+      return resolveFetchPageResult(result, [config]);
     }
-  });
+  } catch (err) {
+    console.error(err);
+    return null;
+  }
 };
 
 export const requestPaths = async () => {

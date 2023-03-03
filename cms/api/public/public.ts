@@ -15,8 +15,6 @@ import type {} from "@storyflow/frontend/types";
 import { minimizeId } from "@storyflow/backend/ids";
 import { DBDocument } from "@storyflow/backend";
 
-import util from "util";
-
 const sessionStorage = createSessionStorage({
   cookie: cookieOptions,
 });
@@ -141,6 +139,8 @@ export const public_ = createRoute({
       return z.string().optional();
     },
     async query(namespace, { dbName, slug }) {
+      console.log("REQUESTIN PATHS");
+
       const client = await clientPromise;
       const articles = await client
         .db(dbName)
@@ -159,12 +159,9 @@ export const public_ = createRoute({
 
       const urls = articles.map((el) => {
         return el.values[URL_ID][0] as string;
-        /*
-        return namespace
-          ? value.replace(new RegExp(`^${namespace}\/?`), "")
-          : value;
-        */
       });
+
+      console.log("GOT PATHS", urls);
 
       return success(urls);
     },
