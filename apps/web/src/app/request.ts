@@ -17,9 +17,9 @@ export const request = async (url: string) => {
     const res = await fetch(fetchUrl, {
       method: "GET",
       cache: "force-cache",
-      headers: {
+      headers: new Headers({
         "x-storyflow": apiKey,
-      },
+      }),
     });
     const json = await res.json();
     if (
@@ -46,9 +46,9 @@ export const requestPaths = async () => {
       {
         method: "GET",
         cache: "force-cache",
-        headers: {
+        headers: new Headers({
           "x-storyflow": apiKey,
-        },
+        }),
       }
     );
     const json = await res.json();
