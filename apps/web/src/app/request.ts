@@ -6,7 +6,7 @@ const IS_DEV = process.env.NODE_ENV === "development";
 const apiKey = Buffer.from(process.env.API_KEY as string).toString("base64");
 const domain = IS_DEV
   ? "http://localhost:3000"
-  : "https://storyflow-mrvase.vercel.app/";
+  : "https://storyflow-mrvase.vercel.app";
 
 export const request = async (url: string) => {
   const fetchUrl = `${domain}/api/public/get?query[namespace]=${
