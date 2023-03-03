@@ -112,7 +112,7 @@ export function QueryFiles({
 
   holdActions: {
     hold: () => void;
-    restore: () => void;
+    release: () => void;
   };
   insertComputation: (computation: EditorComputation) => void;
 }) {
@@ -127,7 +127,7 @@ export function QueryFiles({
   const [{ file, preview }, { onChange, dragEvents, resetFile }] = useFileInput(
     (label: string) => {
       if (!query) setLabel(label);
-      holdActions.restore();
+      holdActions.release();
     }
   );
 
@@ -199,6 +199,7 @@ export function QueryFiles({
               setIsUploading(false);
               insertComputation([{ src }]);
             } else {
+              console.log("HOLD");
               holdActions.hold();
             }
           }}
@@ -311,7 +312,11 @@ function File({ name, organization }: { name: string; organization: string }) {
   return (
     <>
       {type === "image" && (
-        <img src={src} className="max-w-full max-h-full w-auto h-auto" />
+        <img
+          src={src}
+          className="max-w-full max-h-full w-auto h-auto"
+          loading="lazy"
+        />
       )}
       {type === "video" && (
         <video

@@ -250,6 +250,12 @@ export function Query({
   const isFocused = useIsFocused(editor);
   const isEmpty = useIsEmpty(editor);
 
+  const defaultQueryType =
+    {
+      color: "#",
+      image: ".",
+    }[(restrictTo as string) ?? ""] ?? null;
+
   const queryType = (() => {
     if (promptedQueryType) return promptedQueryType;
     if (token) {
@@ -259,9 +265,8 @@ export function Query({
         return "#";
       }
     }
-    if (isFocused && isEmpty) {
-      if (restrictTo === "color") return "#";
-      if (restrictTo === "image") return ".";
+    if (isEmpty) {
+      return defaultQueryType;
     }
     return null;
   })();
@@ -351,28 +356,31 @@ export function Query({
   const [hold, holdActions] = useRestorableSelection();
 
   React.useEffect(() => {
-    if (hold) return;
     return mergeRegister(
       editor.registerCommand(
         BLUR_COMMAND,
         () => {
-          escape();
+          console.log("blur", hold.current);
+          if (!hold.current) escape();
           return false;
         },
         COMMAND_PRIORITY_EDITOR
-      ),
+      )
+      /*
       editor.registerCommand(
         CLICK_COMMAND,
         () => {
-          if (!token && !options) {
+          if (!token && !options && !hold.current) {
+            console.log("blick");
             escape();
           }
           return false;
         },
         COMMAND_PRIORITY_EDITOR
       )
+      */
     );
-  }, [push, hold, token, options]);
+  }, [push, token, options]);
 
   const [selected, setSelected] = React.useState(0);
 
@@ -395,12 +403,16 @@ export function Query({
   const [showOptions, setShowOptions] = React.useState(false);
 
   React.useEffect(() => {
-    if (hasOptions) {
+    if (hasOptions && !hold.current) {
       setShowOptions(isFocused);
     }
   }, [isFocused]);
 
-  const show = Boolean(queryType || promptedFunction || showOptions);
+  console.log("queryType", queryType, showOptions);
+
+  const show =
+    (isFocused || hold.current) &&
+    Boolean(queryType || promptedFunction || showOptions);
 
   React.useEffect(() => {
     if (show) {
@@ -447,6 +459,7 @@ export function Query({
   }, [show, hasOptions]);
 
   const escape = () => {
+    console.log("ESCAPE");
     setQuery("");
     setPromptedQueryType(null);
     setShowOptions(false);
@@ -462,6 +475,7 @@ export function Query({
   };
 
   const reset = () => {
+    console.log("RESET");
     setQuery("");
     setPromptedQueryType(null);
     setShowOptions(false);
