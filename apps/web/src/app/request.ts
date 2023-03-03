@@ -4,7 +4,7 @@ import { config } from "../components";
 const IS_DEV = process.env.NODE_ENV === "development";
 
 const apiKey = Buffer.from(process.env.API_KEY as string).toString("base64");
-const domain = IS_DEV ? "http://localhost:3000" : "http://www.storyflow.dk";
+const domain = IS_DEV ? "http://localhost:3000" : "https://www.storyflow.dk";
 
 export const request = async (url: string) => {
   const fetchUrl = `${domain}/api/public/get?query[namespace]=${
@@ -38,8 +38,6 @@ export const requestPaths = async () => {
   return await fetch(
     `${domain}/api/public/getPaths?query=${process.env.NAMESPACE ?? ""}`,
     {
-      method: "get",
-      cache: "force-cache",
       headers: {
         "x-storyflow": apiKey,
       },
@@ -57,7 +55,7 @@ export const requestPaths = async () => {
       }
     } catch (err) {
       console.error(err);
+      return [] as string[];
     }
-    return [] as string[];
   });
 };

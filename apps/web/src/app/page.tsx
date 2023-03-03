@@ -7,3 +7,5 @@ export default async function Page({ params }: { params: any }) {
 
   return <RenderPage data={data?.page} />;
 }
+
+export const dynamicParams = false;

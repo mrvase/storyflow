@@ -139,7 +139,7 @@ export const public_ = createRoute({
       return z.string().optional();
     },
     async query(namespace, { dbName, slug }) {
-      console.log("REQUESTIN PATHS");
+      console.log("REQUESTING PATHS");
 
       const client = await clientPromise;
       const articles = await client
