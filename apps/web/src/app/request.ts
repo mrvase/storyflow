@@ -13,6 +13,8 @@ export const request = async (url: string) => {
   console.log("FETCHING", fetchUrl);
   try {
     const res = await fetch(fetchUrl, {
+      method: "GET",
+      cache: "force-cache",
       headers: new Headers({
         "x-storyflow": apiKey,
       }),
@@ -39,6 +41,8 @@ export const requestPaths = async () => {
     const res = await fetch(
       `${domain}/api/public/getPaths?query=${process.env.NAMESPACE ?? ""}`,
       {
+        method: "GET",
+        cache: "force-cache",
         headers: new Headers({
           "x-storyflow": apiKey,
         }),

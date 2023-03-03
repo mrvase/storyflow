@@ -189,11 +189,16 @@ export default function FolderPage({
                   {folder?.template ? "Skabelon" : "Tilføj skabelon"}
                 </Content.ToolbarButton>
                 {folder && (
-                  <DomainsButton
-                    parentDomains={parentDomains ?? undefined}
-                    domains={folder.domains}
-                    mutate={mutate}
-                  />
+                  <>
+                    <DomainsButton
+                      parentDomains={parentDomains ?? undefined}
+                      domains={folder.domains}
+                      mutate={mutate}
+                    />
+                    <div className="text-xs text-gray-600 font-light flex-center h-6 ring-1 ring-inset ring-gray-700 px-2 rounded cursor-default">
+                      ID: {restoreId(folder.id)} ({folder.id})
+                    </div>
+                  </>
                 )}
               </Content.Toolbar>
             ) : null

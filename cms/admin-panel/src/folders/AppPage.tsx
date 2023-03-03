@@ -249,8 +249,8 @@ export default function AppPage({
                       domains={folder.domains}
                       mutate={mutate}
                     />
-                    <div className="text-xs text-gray-300 font-light flex-center h-6 ring-1 ring-inset ring-white/10 px-2 rounded cursor-default">
-                      ID: {restoreId(folder.id)}
+                    <div className="text-xs text-gray-600 font-light flex-center h-6 ring-1 ring-inset ring-gray-700 px-2 rounded cursor-default">
+                      ID: {restoreId(folder.id)} ({folder.id})
                     </div>
                   </>
                 )}
