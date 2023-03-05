@@ -21,6 +21,7 @@
     "@storyflow/state": "workspace:*",
     "@upstash/redis": "^1.16.0",
     "bcryptjs": "^2.4.3",
+    "openai": "^3.2.1",
     "qs": "^6.11.0",
     "shared": "workspace:*",
     "zod": "^3.20.2"

@@ -75,7 +75,7 @@ function Content({
 
 const Toolbar = ({ children }: { children: React.ReactNode }) => {
   return (
-    <div className="max-w-6xl mt-3.5 flex gap-2 pl-9 overflow-x-auto no-scrollbar">
+    <div className="max-w-6xl py-1 mt-2.5 flex gap-2 pl-9 overflow-x-auto no-scrollbar">
       {children}
     </div>
   );
@@ -159,19 +159,7 @@ function ToolbarMenu<T extends { label: string; disabled?: boolean }>({
               data-focus-remain="true"
             >
               {selected && onClear && (
-                <Menu.Item>
-                  {({ active }) => (
-                    <div
-                      className={cl(
-                        "py-1.5 px-3 hover:bg-gray-750 font-light",
-                        active && "bg-teal-700"
-                      )}
-                      onClick={onClear}
-                    >
-                      Fjern
-                    </div>
-                  )}
-                </Menu.Item>
+                <ToolbarMenuOption onClick={onClear} label="Fjern" />
               )}
               {"children" in props
                 ? props.children

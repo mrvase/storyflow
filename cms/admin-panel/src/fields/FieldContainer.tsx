@@ -404,18 +404,22 @@ function Label({
     });
   };
 
-  return isEditable ? (
+  /*
+  isEditable ? (
     <EditableLabel
       value={label}
       onChange={onChange}
       className="text-sm text-gray-400 placeholder:text-gray-300 dark:placeholder:text-gray-500 font-normal"
     />
-  ) : (
+  ) : 
+  */
+
+  return (
     <span
       className={cl(
-        "text-sm font-normal",
+        "text-sm font-normal select-none",
         isNative ? "text-gray-400" : "text-teal-600/90 dark:text-teal-400/90",
-        isLink && "cursor-alias"
+        isLink ? "cursor-alias" : "cursor-default"
       )}
       onMouseDown={(ev) => {
         if (isLink) {

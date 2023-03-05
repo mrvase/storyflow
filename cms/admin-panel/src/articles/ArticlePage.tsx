@@ -3,12 +3,13 @@ import {
   AdjustmentsHorizontalIcon,
   ArrowUpTrayIcon,
   BoltIcon,
+  CheckIcon,
   DocumentDuplicateIcon,
   FunnelIcon,
   ListBulletIcon,
-  PencilSquareIcon,
   PlusIcon,
   TrashIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { extendPath } from "@storyflow/backend/extendPath";
 import { FIELDS } from "@storyflow/backend/fields";
@@ -33,6 +34,7 @@ import { PropConfigArray } from "@storyflow/frontend/types";
 import { ServerPackage } from "@storyflow/state";
 import cl from "clsx";
 import React from "react";
+import { flushSync } from "react-dom";
 import { DocumentConfigOp, PropertyOp, targetTools } from "shared/operations";
 import {
   useArticle,
@@ -48,7 +50,11 @@ import { useSegment } from "../layout/components/SegmentContext";
 import { useOnLoadHandler } from "../layout/onLoadHandler";
 import { getPathFromSegment } from "../layout/utils";
 import { useCollab } from "../state/collaboration";
-import { useDocumentConfig, useFieldConfig } from "../state/documentConfig";
+import {
+  useDocumentConfig,
+  useFieldConfig,
+  useLabel,
+} from "../state/documentConfig";
 import { useLocalStorage } from "../state/useLocalStorage";
 import { FocusOrchestrator, useFocusedIds } from "../utils/useIsFocused";
 import { ArticlePageContext } from "./ArticlePageContext";
@@ -328,9 +334,7 @@ export function FieldToolbar({
 
   return (
     <Content.Toolbar>
-      <div className="text-xs text-gray-300 font-light flex-center h-6 ring-1 ring-inset ring-white/10 px-2 rounded cursor-default">
-        Felt: {config?.label || "Ingen label"}
-      </div>
+      <FieldLabel id={fieldId} template={documentId} />
       <Content.ToolbarMenu<{ id: DocumentId; label: string }>
         icon={ListBulletIcon}
         label="Vælg template"
@@ -378,6 +382,160 @@ export function FieldToolbar({
         </Content.ToolbarButton>
       )}
     </Content.Toolbar>
+  );
+}
+
+function FieldLabel({ id, template }: { id: FieldId; template?: DocumentId }) {
+  const label = useLabel(id, template);
+
+  const articleId = id.slice(0, 4);
+
+  const { push } = useCollab().mutate<PropertyOp>(articleId, articleId);
+
+  const onChange = (value: string) => {
+    push({
+      target: targetTools.stringify({
+        field: "any",
+        operation: "property",
+        location: id,
+      }),
+      ops: [
+        {
+          name: "label",
+          value: value,
+        },
+      ],
+    });
+  };
+  return <EditableLabel label="Label" value={label} onChange={onChange} />;
+}
+
+export function EditableLabel({
+  value: initialValue,
+  onChange,
+  className,
+  label,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  className?: string;
+  label?: string;
+}) {
+  const ref = React.useRef<HTMLInputElement | null>(null);
+
+  const [isEditing, setIsEditing] = React.useState(false);
+
+  const [value, setValue] = React.useState(initialValue);
+
+  React.useLayoutEffect(() => {
+    setValue(initialValue);
+    setWidth();
+  }, [initialValue]);
+
+  React.useLayoutEffect(() => setWidth(), [isEditing]);
+
+  const setWidth = () => {
+    if (ref.current) {
+      ref.current.style.width = "0px";
+      let value = ref.current.value;
+      if (value === "") ref.current.value = "Ingen label";
+      const newWidth = ref.current.scrollWidth;
+      if (value === "") ref.current.value = "";
+      ref.current.style.width = `${newWidth}px`;
+    }
+  };
+
+  const handleChange = (ev: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = ev.target.value;
+    flushSync(() => {
+      setValue(newValue);
+    });
+    setWidth();
+  };
+
+  const rejected = React.useRef(false);
+
+  const accept = () => {
+    if (!rejected.current) {
+      if (value !== initialValue) {
+        onChange(value);
+      }
+    } else {
+      rejected.current = false;
+    }
+  };
+
+  const reject = () => {
+    setValue(initialValue);
+    rejected.current = true;
+  };
+
+  const id = React.useId();
+
+  return (
+    <div
+      className={cl(
+        "relative text-xs text-gray-300 font-light flex h-6 ring-1 ring-inset rounded",
+        isEditing ? "ring-gray-600" : "ring-gray-750 hover:ring-gray-600"
+      )}
+      data-focus-remain="true"
+    >
+      {label && (
+        <label className="relative -z-10 h-6 px-2 flex-center bg-gray-750 rounded">
+          {label}
+        </label>
+      )}
+      <input
+        id={id}
+        ref={ref}
+        value={isEditing ? value : initialValue}
+        onChange={handleChange}
+        type="text"
+        className={cl(
+          "outline-none padding-0 margin-0 bg-transparent h-6 items-center px-2",
+          className
+        )}
+        placeholder="Ingen label"
+        onFocus={() => {
+          setIsEditing(true);
+          rejected.current = false;
+        }}
+        onBlur={() => {
+          setIsEditing(false);
+          accept();
+        }}
+        onKeyDown={(ev) => {
+          if (ev.key.toLowerCase() === "enter") {
+            ref.current?.blur();
+          }
+          if (ev.key.toLowerCase() === "escape") {
+            reject();
+            ref.current?.blur();
+          }
+        }}
+      />
+      {isEditing && (
+        <>
+          <div
+            className="relative -z-10 h-6 w-6 flex-center bg-gray-750 rounded"
+            onMouseDown={() => {
+              accept();
+            }}
+          >
+            <CheckIcon className="w-3 h-3" />
+          </div>
+          <div
+            className="relative -z-10 h-6 w-6 flex-center bg-gray-750 rounded"
+            onMouseDown={(ev) => {
+              ev.preventDefault();
+              reject();
+            }}
+          >
+            <XMarkIcon className="w-3 h-3" />
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
@@ -482,7 +640,7 @@ const Page = ({
                 {(article) => (
                   <RenderTemplate
                     key={getVersionKey(owner.versions)} // for rerendering
-                    id={article.id}
+                    id={id}
                     owner={owner.id}
                     values={{
                       ...getComputationRecord(article),

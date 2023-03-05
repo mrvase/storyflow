@@ -18,6 +18,7 @@ import { Tab } from "../types";
 import cl from "clsx";
 import { useLocalStorage } from "../../state/useLocalStorage";
 import { useCollab } from "../../state/collaboration";
+import { CommandLine } from "./CommandLine";
 
 export default function TabBar({
   tabs,
@@ -152,31 +153,7 @@ export default function TabBar({
   );
 }
 
-function CommandLine() {
-  const [isFocused, setIsFocused] = React.useState(false);
-  return (
-    <div
-      className={cl(
-        "w-full flex justify-start items-start rounded-md border border-gray-200 dark:border-gray-800",
-        isFocused ? "bg-gray-50 dark:bg-gray-850" : "bg-white dark:bg-gray-900",
-        "transition-colors ease-out"
-      )}
-    >
-      <input
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => setIsFocused(false)}
-        type="text"
-        className={cl(
-          "w-full h-full flex items-center bg-transparent outline-none px-3 font-light placeholder:text-gray-400/50"
-        )}
-        placeholder="Indtast kommando"
-      />
-      <StatusButton />
-    </div>
-  );
-}
-
-function StatusButton() {
+export function StatusButton() {
   const [isModified, setIsModified] = React.useState(false);
   const [collabState, setCollabState] = React.useState<"loading" | "done">(
     "done"
