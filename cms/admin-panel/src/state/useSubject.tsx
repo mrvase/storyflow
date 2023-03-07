@@ -1,7 +1,6 @@
 import React from "react";
-import { useSyncExternalStore } from "react";
 
-export function useSubject<Payload>(initialState: Payload) {
+export function useSubject<Payload>(initialValue: Payload) {
   const subs = new Set<(payload: Payload) => void>();
   const subscribe = (callback: (payload: Payload) => void) => {
     subs.add(callback);
@@ -10,7 +9,7 @@ export function useSubject<Payload>(initialState: Payload) {
     };
   };
 
-  let snapshot = initialState;
+  let snapshot = initialValue;
 
   const notify = (payload: Payload) => {
     snapshot = payload;
@@ -28,10 +27,37 @@ export function useSubject<Payload>(initialState: Payload) {
   ];
 }
 
-export function useReactSubject<Payload>(initialState: Payload) {
-  const [subscribe, notify, getSnapshot] = React.useMemo(
-    () => useSubject(initialState),
-    []
+export function createReactSubject<
+  Payload extends number | string | boolean | object
+>() {
+  let uninitialized = Symbol();
+
+  const [subscribe, setState, getSnapshot] = useSubject<Payload | Symbol>(
+    uninitialized
   );
-  return [subscribe, notify] as [typeof subscribe, typeof notify];
+
+  return function useSubject(initialValue: Payload | (() => Payload)) {
+    const state = React.useSyncExternalStore(
+      (callback) => {
+        let value = getSnapshot();
+        if (value === uninitialized) {
+          setState(
+            typeof initialValue === "function" ? initialValue() : initialValue
+          );
+        }
+        return subscribe(callback);
+      },
+      () => {
+        let value = getSnapshot();
+        if (value === uninitialized) {
+          setState(
+            typeof initialValue === "function" ? initialValue() : initialValue
+          );
+        }
+        return value;
+      }
+    );
+
+    return [state, setState] as [Payload, (value: Payload) => void];
+  };
 }

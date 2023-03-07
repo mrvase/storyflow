@@ -41,7 +41,7 @@ export const useTabUrl = (): [
     ) => {
       const url = `${urlInfoSegment}${tabUrl}`;
 
-      const id = segment.match(/^\/~\d+/)?.[0];
+      const id = segment.match(/^\/~\d+/)?.[0]; // result: /~[number]
 
       if (id === undefined) {
         console.warn(
@@ -53,7 +53,11 @@ export const useTabUrl = (): [
       const index = url.match(id)?.index;
 
       if (index === undefined) {
-        const result = `${url}${segment}`;
+        const result =
+          id === "/~0"
+            ? `${urlInfoSegment}${segment}${tabUrl}`
+            : `${url}${segment}`;
+        console.log("RESULT", result, urlInfoSegment, segment, tabUrl);
         if (navigateOption) navigate(result);
         return result;
       }
@@ -68,7 +72,7 @@ export const useTabUrl = (): [
 
       return result;
     },
-    [pathname]
+    [pathname, urlInfoSegment, tabUrl]
   );
 
   return [tabUrl, navigateTab];

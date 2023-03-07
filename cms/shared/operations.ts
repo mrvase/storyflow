@@ -1,36 +1,47 @@
 import {
   EditorComputation,
   DocumentConfigItem,
-  Filter,
   FieldType,
+  Space,
+  DBFolder,
 } from "@storyflow/backend/types";
 
 type GetKeyFromValue<Record extends { [key: string]: any }, Value> = keyof {
   [K in keyof Record as Value extends Record[K] ? K : never]: any;
 };
 
-export const operations = {
+const operations = {
   any: "0",
   computation: "1",
+  /*
   fetcher: "2",
   "filter-list": "3",
   filter: "4",
+  */
   property: "5",
   "document-config": "6",
+  "add-folder": "7",
+  "delete-folder": "8",
+  "folder-spaces": "9",
+  "space-items": "10",
 } as const;
 
-export type OperationType = Exclude<keyof typeof operations, "any">;
-
-export type OperationRecord = {
+type OperationRecord = {
   computation: ComputationOp;
+  /*
   fetcher: FetcherOp;
   "filter-list": FilterListOp;
   filter: FilterOp;
+  */
   property: PropertyOp;
   "document-config": DocumentConfigOp;
+  "add-folder": AddFolderOp;
+  "delete-folder": DeleteFolderOp;
+  "folder-spaces": FolderSpacesOp;
+  "space-items": SpaceItemsOp;
 };
 
-export const fields = {
+const fields = {
   any: "0",
   default: "1",
   url: "3",
@@ -85,9 +96,20 @@ export type Toggle<Name = string, T = string> = {
  */
 export type ComputationOp = DocumentOp<Splice<EditorComputation[number]>>;
 
+export type AddFolderOp = DocumentOp<DBFolder>;
+export type DeleteFolderOp = DocumentOp<string>;
+
+export type FolderSpacesOp = DocumentOp<Splice<Space>>;
+export type FolderOp = PropertyOp | FolderSpacesOp;
+
+export type SpaceItemsOp = DocumentOp<Splice<string>>;
+export type SpaceOp = PropertyOp | SpaceItemsOp;
+
+/*
 export type FetcherOp = DocumentOp<Toggle<"folder", string>>;
 export type FilterListOp = DocumentOp<Splice<Filter>>;
 export type FilterOp = DocumentOp<Toggle<"template" | "operation", string>>;
+*/
 
 export type PropertyOp = DocumentOp<Toggle<string, any>>;
 export type DocumentConfigOp = DocumentOp<Splice<DocumentConfigItem>>;

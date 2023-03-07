@@ -20,7 +20,6 @@ import {
 import { ModifyResult, ObjectId, WithId } from "mongodb";
 import clientPromise from "../mongo/mongoClient";
 import { globals } from "../middleware/globals";
-import { Redis } from "@upstash/redis";
 import {
   filterServerPackages,
   ServerPackage,
@@ -53,26 +52,24 @@ import { createStages, Update } from "../aggregation/stages";
 import util from "util";
 import { LABEL_ID, URL_ID } from "@storyflow/backend/templates";
 import { symb } from "@storyflow/backend/symb";
+import {
+  ZodServerPackage,
+  ZodDocumentOp,
+  ZodToggle,
+  ZodSplice,
+} from "../collab-utils/zod";
+import {
+  client,
+  getHistoriesFromIds,
+  sortHistories,
+  resetHistory,
+  modifyValues,
+} from "../collab-utils/redis-client";
 
 export const removeObjectId = <T extends { _id: any }>({
   _id,
   ...rest
 }: T): Omit<T, "_id"> => rest;
-
-const client = new Redis({
-  url: "https://eu1-renewed-albacore-38555.upstash.io",
-  token:
-    "AZabASQgMTJiNTQ4YjQtN2Q1ZS00YWUwLWE4MDAtNmQ4MDM5NDdhMTBkYmFkZDBkOTI4ZWRhNGIzYWE0OGNmMjVhMGY4YmE3YzQ=",
-});
-
-const modifyValues = <T extends { [key: string]: any }, U>(
-  obj: T,
-  callback: (value: T[keyof T]) => U
-) => {
-  return Object.fromEntries(
-    Object.entries(obj).map(([key, value]) => [key, callback(value)])
-  );
-};
 
 const removeProps = <T extends object, P extends string[]>(
   obj: T,
@@ -85,51 +82,6 @@ const removeProps = <T extends object, P extends string[]>(
     }
   });
   return newObject;
-};
-
-const getHistoriesFromIds = async (slug: string, keys: string[]) => {
-  if (keys.length === 0) return {};
-
-  let getPipeline = client.pipeline();
-
-  keys.forEach((key) => {
-    getPipeline.lrange(`${slug}:${key}`, 0, -1);
-  });
-
-  const result = await getPipeline.exec();
-
-  const object = Object.fromEntries(
-    result.map((value, index) => [
-      `${keys[index]}`,
-      (value ?? []) as ServerPackage<any>[],
-    ])
-  );
-
-  return object;
-};
-
-const resetHistory = async (slug: string, id: string) => {
-  const pipeline = client.pipeline();
-  try {
-    pipeline.del(`${slug}:${id}`);
-    // pipeline.lpush(id, JSON.stringify(VERSION));
-    return await pipeline.exec();
-  } catch (err) {
-    console.log(err);
-  }
-};
-
-const sortHistories = (
-  array: ServerPackage<any>[]
-): Record<string, ServerPackage<any>[]> => {
-  return array.reduce((acc: Record<string, ServerPackage<any>[]>, cur) => {
-    if (!acc[cur[0]]) {
-      acc[cur[0]] = [];
-    }
-    const a = acc[cur[0]];
-    a.push(cur as never);
-    return acc;
-  }, {});
 };
 
 /*
@@ -154,49 +106,8 @@ export const ZodBlock: z.ZodType<ComputationBlock> = z.lazy(() =>
 );
 */
 
-const ZodFieldRef = z.lazy(() =>
-  z.object({ id: z.string(), label: z.string(), type: z.string().optional() })
-);
-
-const ZodTemplateItem = z.lazy(() =>
-  z.union([
-    z.object({ template: z.string() }),
-    z.object({ text: z.string(), level: z.number() }),
-    ZodFieldRef,
-    z.array(ZodFieldRef),
-  ])
-);
-
-export const ZodServerPackage = <T extends z.ZodType>(Operation: T) =>
-  z.tuple([
-    z.string(), // key
-    z.union([z.string(), z.number()]).nullable(), // clientId
-    z.number(), // previous
-    z.array(Operation),
-  ]);
-
-export const ZodDocumentOp = <T extends z.ZodType>(Action: T) =>
-  z.object({
-    target: z.string(),
-    mode: z.string().optional(),
-    ops: z.array(Action),
-  });
-
-export const ZodSplice = <T extends z.ZodType>(Action: T) =>
-  z.object({
-    index: z.number(),
-    remove: z.number().optional(),
-    insert: z.array(Action).optional(),
-  });
-
-export const ZodToggle = <T extends z.ZodType>(Value: T) =>
-  z.object({
-    name: z.string(),
-    value: Value,
-  });
-
 export const articles = createRoute({
-  fields: createProcedure({
+  sync: createProcedure({
     middleware(ctx) {
       return ctx.use(globals);
     },

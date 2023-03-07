@@ -8,10 +8,13 @@ interface StaticStorage<T> {
 }
 
 export const createStaticStore = <
-  State extends string | boolean | number | object | null | undefined
+  State extends string | boolean | number | object | null | undefined,
+  Store extends StaticStorage<State>
 >(
-  store: StaticStorage<State>
+  createStore: (old?: Store) => Store
 ) => {
+  let store = createStore();
+
   const subscribers = new Map<string, Set<() => void>>();
 
   const subscribe = (key: string, callback: () => void) => {
@@ -32,6 +35,11 @@ export const createStaticStore = <
 
   const notify = (key: string) => {
     subscribers.get(key)?.forEach((el) => el());
+    const root = subscribers.get("");
+    if (root && root.size) {
+      store = createStore(store);
+      root.forEach((el) => el());
+    }
   };
 
   const deleteOne = (key: string) => {
@@ -54,29 +62,57 @@ export const createStaticStore = <
     }
   };
 
-  function useKey(
-    key: string
+  function useStore() {
+    const state = React.useSyncExternalStore(
+      (callback) => {
+        return subscribe("", callback);
+      },
+      () => store
+    );
+
+    return state;
+  }
+
+  function useKey<InitialState extends State | undefined>(
+    key: string,
+    initialState?: InitialState | (() => InitialState)
   ): [
-    state: State | undefined,
+    state: InitialState & (State | undefined),
     setState: (value: State | ((ps: State) => State)) => void
   ];
-  function useKey<SelectedState>(
+  function useKey<InitialState extends State | undefined, SelectedState>(
     key: string,
+    initialState: InitialState | (() => InitialState),
     selector: (value: State | undefined) => SelectedState
   ): [
     state: SelectedState | undefined,
     setState: (value: State | ((ps: State | undefined) => State)) => void
   ];
-  function useKey<SelectedState>(
+  function useKey<InitialState extends State | undefined, SelectedState>(
     key: string,
+    initialState?: InitialState | (() => InitialState),
     selector?: (value: State | undefined) => SelectedState
   ): [
-    state: State | SelectedState | undefined,
+    state: (InitialState & (State | undefined)) | SelectedState | undefined,
     setState: (value: State | ((ps: State | undefined) => State)) => void
   ] {
+    const setInitialState = () => {
+      if (initialState !== undefined && get(key) === undefined) {
+        const value =
+          typeof initialState === "function" ? initialState() : initialState;
+        set(key, value);
+      }
+    };
+
     const state = React.useSyncExternalStore(
-      (callback) => subscribe(key, callback),
-      () => (selector ? selector(get(key)) : get(key))
+      (callback) => {
+        setInitialState();
+        return subscribe(key, callback);
+      },
+      () => {
+        setInitialState();
+        return selector ? selector(get(key)) : get(key);
+      }
     );
 
     const setter = (value: State | ((ps: State | undefined) => State)) => {
@@ -84,7 +120,7 @@ export const createStaticStore = <
       set(key, result);
     };
 
-    return [state, setter];
+    return [state as any, setter];
   }
 
   return {
@@ -94,6 +130,7 @@ export const createStaticStore = <
     notify,
     deleteOne,
     deleteMany,
+    useStore,
     useKey,
   };
 };

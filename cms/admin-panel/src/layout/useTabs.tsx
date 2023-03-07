@@ -2,6 +2,7 @@ import React from "react";
 import { useTabUrl } from "./utils";
 import { Tab, UrlTab } from "./types";
 import { createKey } from "@storyflow/dnd/utils";
+import { extendPath } from "@storyflow/backend/extendPath";
 
 const getTabsFromUrl = (url: string) => {
   let tabs: UrlTab[] = [];
@@ -39,9 +40,9 @@ export default function useTabs() {
     mergeTabs(getTabsFromUrl(url), [])
   );
 
-  const addTab = () => {
+  const addTab = (url?: string) => {
     const index = Math.max(...tabs.map((el) => el.index)) + 1;
-    navigateTab(`/~${index}`); // since the index does not exist, this is appended to the url
+    navigateTab(extendPath(`/~${index}`, url ?? "", "/")); // since the index does not exist, this is appended to the url
   };
 
   React.useLayoutEffect(() => {

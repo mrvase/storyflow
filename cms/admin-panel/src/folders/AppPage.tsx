@@ -1,21 +1,11 @@
 import React from "react";
-import { useTabUrl } from "../layout/utils";
-// import { useFolderTree } from "../folders/useFolderTree";
 import { getPathFromSegment } from "../layout/utils";
-import Table from "../articles/components/Table";
 import Content from "../layout/components/Content";
-import { useFolder, useFolderMutation } from ".";
 import {
   ArrowPathIcon,
   ComputerDesktopIcon,
-  PlusIcon,
-  TrashIcon,
 } from "@heroicons/react/24/outline";
-import {
-  getDocumentLabel,
-  useArticleList,
-  useArticleListMutation,
-} from "../articles";
+import { useArticleList } from "../articles";
 import { useSegment } from "../layout/components/SegmentContext";
 import { useOnLoadHandler } from "../layout/onLoadHandler";
 import { computeFieldId, minimizeId, restoreId } from "@storyflow/backend/ids";
@@ -28,13 +18,13 @@ import {
   DBDocument,
   FieldId,
   FlatComputation,
-  ComputationRecord,
+  DBFolder,
 } from "@storyflow/backend/types";
 import {
   getComputationRecord,
   getFlatComputationRecord,
 } from "@storyflow/backend/flatten";
-import { fieldConfig, getConfig } from "shared/fieldConfig";
+import { getConfig } from "shared/fieldConfig";
 import { URL_ID } from "@storyflow/backend/templates";
 import { useClient } from "../client";
 import { useClientConfig } from "../client-config";
@@ -43,10 +33,13 @@ import { useLocalStorage } from "../state/useLocalStorage";
 import { DomainsButton } from "./FolderPage";
 import { FolderDomainsContext, FolderDomainsProvider } from "./folder-domains";
 import { inputConfig } from "shared/inputConfig";
+import { useFolder, useFolderCollab } from "../state/collab-folder";
+import { targetTools } from "shared/operations";
+import { AppSpace } from "./spaces/AppSpace";
 
 const AppPageContext = React.createContext<{
   addArticleWithUrl: (parent: DBDocument) => void;
-  urls: { id: string; value: string; indent: number }[];
+  urls: { id: FieldId; value: string; indent: number }[];
 } | null>(null);
 
 export const useAppPageContext = () => {
@@ -110,7 +103,10 @@ export default function AppPage({
   const path = getPathFromSegment(current);
 
   const [type, urlId] = path.split("/").slice(-1)[0].split("-");
-  const folderLookupId = urlId ? minimizeId(urlId) : undefined;
+  if (!urlId) {
+    throw new Error("Invalid url");
+  }
+  const folderLookupId = minimizeId(urlId);
   const folder = useFolder(folderLookupId);
 
   const { articles } = useArticleList(folder?.id);
@@ -129,7 +125,7 @@ export default function AppPage({
           ...el,
           url,
           indent: getUrlLength(url),
-          urlId: `${el.id}${URL_ID}`,
+          urlId: computeFieldId(el.id, URL_ID),
         };
       })
       .sort((a, b) => {
@@ -139,7 +135,7 @@ export default function AppPage({
     const ordered: (DBDocument & {
       indent: number;
       url: string;
-      urlId: string;
+      urlId: FieldId;
     })[] = [];
 
     articlesWithLengths.forEach((article) => {
@@ -156,7 +152,7 @@ export default function AppPage({
     return ordered;
   }, [articles]);
 
-  useOnLoadHandler(Boolean(articles), onLoad);
+  useOnLoadHandler(true, onLoad);
 
   const [dialogIsOpen, setDialogIsOpen] = React.useState<null | string>(null);
   const [parentUrl, setParentUrl] = React.useState<null | {
@@ -186,32 +182,30 @@ export default function AppPage({
     [orderedArticles]
   );
 
-  const mutate = useFolderMutation(folder?.id ?? "");
-
-  const form = React.useRef<HTMLFormElement | null>(null);
-
-  const mutateArticles = useArticleListMutation();
-
-  const handleDelete = () => {
-    if (form.current && folder?.id) {
-      const data = new FormData(form.current);
-      const ids = Array.from(data.keys());
-      if (ids.length) {
-        mutateArticles({
-          folder: folder.id,
-          actions: ids.map((id) => ({
-            type: "remove",
-            id,
-          })),
-        });
-      }
-    }
+  const collab = useFolderCollab();
+  const mutateProp = <T extends keyof DBFolder>(
+    name: T,
+    value: DBFolder[T]
+  ) => {
+    return collab.mutate("folders", folder.id).push({
+      target: targetTools.stringify({
+        location: "",
+        operation: "property",
+      }),
+      ops: [
+        {
+          name,
+          value,
+        },
+      ],
+    });
   };
 
   const config = useClientConfig(folder?.domains?.[0]);
 
   const parentDomains = React.useContext(FolderDomainsContext);
-  const [isEditing] = useLocalStorage<boolean>("editing-articles", false);
+
+  const [isEditing] = [true]; //useLocalStorage<boolean>("editing-articles", false);
 
   return (
     <AppPageContext.Provider value={ctx}>
@@ -227,12 +221,7 @@ export default function AppPage({
                 <EditableLabel
                   value={folder?.label ?? ""}
                   onChange={(value) => {
-                    if (folder) {
-                      mutate({
-                        name: "label",
-                        value,
-                      });
-                    }
+                    mutateProp("label", value);
                   }}
                   className={cl("font-medium", "text-yellow-300")}
                 />
@@ -247,7 +236,7 @@ export default function AppPage({
                     <DomainsButton
                       parentDomains={parentDomains ?? undefined}
                       domains={folder.domains}
-                      mutate={mutate}
+                      mutate={(domains) => mutateProp("domains", domains)}
                     />
                     <div className="text-xs text-gray-600 font-light flex-center h-6 ring-1 ring-inset ring-gray-700 px-2 rounded cursor-default">
                       ID: {restoreId(folder.id)} ({folder.id})
@@ -289,49 +278,14 @@ export default function AppPage({
               type={type}
             />
           )}
-          {folder && articles ? (
-            <div className="flex flex-col px-5">
-              <div className="flex items-center ml-9 mb-1 justify-between">
-                <h2 className=" text-gray-400">Data</h2>
-                <div className="flex gap-2">
-                  <button
-                    className="px-3 rounded py-1.5 ring-button text-button"
-                    onClick={handleDelete}
-                  >
-                    <TrashIcon className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-              <form ref={form} onSubmit={(ev) => ev.preventDefault()}>
-                <Table
-                  rows={orderedArticles.map((el) => ({
-                    id: restoreId(el.id),
-                    columns: [
-                      { value: getDocumentLabel(el) },
-                      {
-                        value: (
-                          <button
-                            className="rounded px-2 py-0.5 text-sm text-gray-800 dark:text-white text-opacity-50 hover:text-opacity-100 dark:text-opacity-50 dark:hover:text-opacity-100 ring-button flex items-center gap-2 whitespace-nowrap"
-                            onClick={(ev) => {
-                              ev.stopPropagation();
-                              addArticleWithUrl(el);
-                            }}
-                          >
-                            <PlusIcon className="w-3 h-3" /> Tilføj underside
-                          </button>
-                        ),
-                      },
-                    ],
-                    indent: el.indent,
-                  }))}
-                />
-              </form>
-            </div>
-          ) : (
-            <div className="text-center py-5 text-xl font-bold text-gray-300">
-              Vent et øjeblik
-            </div>
-          )}
+          <div className="flex flex-col px-5">
+            <AppSpace
+              index={0}
+              folderId={folder.id}
+              spaceId={""}
+              hidden={!isSelected}
+            />
+          </div>
         </Content>
         {children}
       </FolderDomainsProvider>

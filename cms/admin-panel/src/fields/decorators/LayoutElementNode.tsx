@@ -42,7 +42,7 @@ function LayoutElementDecorator({
     <div className="py-0.5">
       <div
         className={cl(
-          "relative text-gray-800 dark:text-gray-200",
+          "relative text-gray-800 dark:text-gray-200 cursor-default",
           "flex items-center rounded px-2 py-0.5 text-sm bg-gray-100 dark:bg-gray-800 selection:bg-transparent",
           isSelected && "ring-1 ring-amber-300",
           !isSelected && "ring-1 ring-gray-200 dark:ring-gray-700",

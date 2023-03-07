@@ -27,7 +27,7 @@ import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { useLocalStorage } from "../state/useLocalStorage";
 import { useClientConfig } from "../client-config";
 import { createComponent } from "./Editor/createComponent";
-import { useCollab } from "../state/collaboration";
+import { useDocumentCollab } from "../state/collab-document";
 import { useArticlePageContext } from "../articles/ArticlePageContext";
 import { Client, useClient } from "../client";
 import { FieldToolbar } from "../articles/ArticlePage";
@@ -321,7 +321,7 @@ export function FieldPage({
   const documentId = getDocumentId(id);
   const templateFieldId = getTemplateFieldId(id);
 
-  const { push } = useCollab().mutate<ComputationOp>(
+  const { push } = useDocumentCollab().mutate<ComputationOp>(
     documentId,
     templateFieldId
   );

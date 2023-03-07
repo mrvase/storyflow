@@ -13,6 +13,7 @@ import LocationBar from "./LocationBar";
 import { ErrorBoundary, FallbackProps } from "react-error-boundary";
 import AppPage from "../../folders/AppPage";
 import { useLocation, useAction } from "@storyflow/router";
+import { SystemPage } from "./SystemPage";
 
 const BranchFocusContext = React.createContext<{
   isFocused: boolean;
@@ -154,8 +155,6 @@ export default function Branch({
 
   const style = getTranslateDragEffect(state);
 
-  const selectedLength = selected.split("/").length;
-
   return (
     <>
       <BranchFocusContext.Provider
@@ -192,73 +191,13 @@ export default function Branch({
             />
             <ErrorBoundary FallbackComponent={ErrorFallback} resetKeys={[top]}>
               <div className="h-[calc(100vh-92px)] relative overflow-hidden">
-                {segments
-                  .slice()
-                  .reverse()
-                  .reduce((children, segment) => {
-                    const [type] = segment.split("/").slice(-1)[0].split("-");
-                    if (type.startsWith("~") /** root */ || type === "f") {
-                      return (
-                        <SegmentProvider
-                          key={segment}
-                          current={segment}
-                          full={tab.segment}
-                        >
-                          <FolderPage
-                            isOpen={selectedLength >= segment.split("/").length}
-                            isSelected={selected === segment}
-                            onLoad={() => select(segment)}
-                            numberOfVisibleTabs={numberOfVisibleTabs}
-                          >
-                            {children}
-                          </FolderPage>
-                        </SegmentProvider>
-                      );
-                    } else if (type === "a") {
-                      return (
-                        <SegmentProvider
-                          key={segment}
-                          current={segment}
-                          full={tab.segment}
-                        >
-                          <AppPage
-                            isOpen={selectedLength >= segment.split("/").length}
-                            isSelected={selected === segment}
-                            onLoad={() => select(segment)}
-                            numberOfVisibleTabs={numberOfVisibleTabs}
-                          >
-                            {children}
-                          </AppPage>
-                        </SegmentProvider>
-                      );
-                    } else if (type === "d" || type === "t") {
-                      return (
-                        <SegmentProvider
-                          key={segment}
-                          current={segment}
-                          full={tab.segment}
-                        >
-                          <BuilderProvider
-                            isOpen={
-                              selectedLength >= tab.segment.split("/").length
-                            }
-                            onLoad={() => select(tab.segment)}
-                          >
-                            <ArticlePage
-                              isOpen={
-                                selectedLength >= segment.split("/").length
-                              }
-                              isSelected={selected === segment}
-                              onLoad={() => select(segment)}
-                            >
-                              {children}
-                            </ArticlePage>
-                          </BuilderProvider>
-                        </SegmentProvider>
-                      );
-                    }
-                    return null;
-                  }, null as React.ReactNode)}
+                <Pages
+                  tab={tab}
+                  numberOfVisibleTabs={numberOfVisibleTabs}
+                  segments={segments}
+                  selected={selected}
+                  select={select}
+                />
               </div>
             </ErrorBoundary>
           </div>
@@ -269,6 +208,90 @@ export default function Branch({
   );
 }
 
-function RenderWithError() {
-  return <>{Math.random() > 0.5 ? ({ hejsa: "test" } as any) : "hejsa"}</>;
+function Pages({
+  segments,
+  numberOfVisibleTabs,
+  tab,
+  selected,
+  select,
+}: {
+  tab: Tab;
+  numberOfVisibleTabs: number;
+  segments: string[];
+  selected: string;
+  select: (s: string) => void;
+}) {
+  const selectedLength = selected.split("/").length;
+
+  if (segments.some((x) => x.endsWith("folders"))) {
+    return <SystemPage />;
+  }
+
+  return (
+    <>
+      {segments
+        .slice()
+        .reverse()
+        .reduce((children, segment) => {
+          const [type] = segment.split("/").slice(-1)[0].split("-");
+          if (type.startsWith("~") /** root */ || type === "f") {
+            return (
+              <SegmentProvider
+                key={segment}
+                current={segment}
+                full={tab.segment}
+              >
+                <FolderPage
+                  isOpen={selectedLength >= segment.split("/").length}
+                  isSelected={selected === segment}
+                  onLoad={() => select(segment)}
+                  numberOfVisibleTabs={numberOfVisibleTabs}
+                >
+                  {children}
+                </FolderPage>
+              </SegmentProvider>
+            );
+          } else if (type === "a") {
+            return (
+              <SegmentProvider
+                key={segment}
+                current={segment}
+                full={tab.segment}
+              >
+                <AppPage
+                  isOpen={selectedLength >= segment.split("/").length}
+                  isSelected={selected === segment}
+                  onLoad={() => select(segment)}
+                  numberOfVisibleTabs={numberOfVisibleTabs}
+                >
+                  {children}
+                </AppPage>
+              </SegmentProvider>
+            );
+          } else if (type === "d" || type === "t") {
+            return (
+              <SegmentProvider
+                key={segment}
+                current={segment}
+                full={tab.segment}
+              >
+                <BuilderProvider
+                  isOpen={selectedLength >= tab.segment.split("/").length}
+                  onLoad={() => select(tab.segment)}
+                >
+                  <ArticlePage
+                    isOpen={selectedLength >= segment.split("/").length}
+                    isSelected={selected === segment}
+                    onLoad={() => select(segment)}
+                  >
+                    {children}
+                  </ArticlePage>
+                </BuilderProvider>
+              </SegmentProvider>
+            );
+          }
+          return null;
+        }, null as React.ReactNode)}
+    </>
+  );
 }

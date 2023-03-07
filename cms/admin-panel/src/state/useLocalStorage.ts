@@ -25,9 +25,10 @@ const createJSONLocalStorage = () => {
 
 type Value = string | boolean | number | object | null;
 
-export const ls = createStaticStore<Value | undefined>(
-  createJSONLocalStorage()
-);
+export const ls = createStaticStore<
+  Value | undefined,
+  ReturnType<typeof createJSONLocalStorage>
+>(() => createJSONLocalStorage());
 
 export const useLocalStorage = <T extends Value>(
   name: string,

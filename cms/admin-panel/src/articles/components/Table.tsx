@@ -1,18 +1,9 @@
-import React from "react";
 import cl from "clsx";
 import { useTabUrl } from "../../layout/utils";
-import { useSegment } from "../../layout/components/SegmentContext";
-import {
-  ArrowTopRightOnSquareIcon,
-  CheckIcon,
-  LinkIcon,
-} from "@heroicons/react/24/outline";
+import { useUnsafeSegment } from "../../layout/components/SegmentContext";
+import { CheckIcon } from "@heroicons/react/24/outline";
 import { useDragItem } from "@storyflow/dnd";
 import { minimizeId } from "@storyflow/backend/ids";
-import { useFieldFocus } from "../../field-focus";
-import { addDocumentImport } from "../../custom-events";
-import { useCurrentFolder } from "../../folders/FolderPage";
-import { DocumentId } from "@storyflow/backend/types";
 
 export default function Table({
   rows,
@@ -37,8 +28,8 @@ export default function Table({
         ))}
         {rows.length === 0 ? (
           <tr className="border-t border-gray-100 dark:border-gray-800">
-            <td className="w-8 p-3 text-[0px]">
-              <input type="checkbox" className="w-4 h-4 invisible" />
+            <td className="w-[1%] p-3 text-[0px]">
+              <div className="w-3" />
             </td>
             <td className="p-3 text-sm text-gray-500">Ingen elementer</td>
           </tr>
@@ -59,7 +50,9 @@ function Row({
 }) {
   const [, navigateTab] = useTabUrl();
 
-  const { current } = useSegment();
+  const segment = useUnsafeSegment();
+
+  let current = segment ? segment.current : null;
 
   const { dragHandleProps, ref } = useDragItem<HTMLTableRowElement, string>({
     id,
@@ -81,22 +74,39 @@ function Row({
         return (
           <td
             key={index}
-            className={cl(
-              "p-2.5 border-0",
-              typeof el.value !== "string" ? "w-[1%]" : "w-full"
-            )}
-            onClick={() => {
-              navigateTab(`${current}/d-${id}`);
-            }}
+            className={cl("p-2.5 border-0", "w-full")}
+            onClick={
+              current !== null
+                ? () => {
+                    navigateTab(`${current}/d-${id}`);
+                  }
+                : undefined
+            }
           >
+            {}
             {index === 0 && indent ? (
-              <span className="opacity-50 text-xs mr-3 align-middle">
-                {Array.from({ length: indent }, (_, x) => (
-                  <>- - - - </>
-                ))}
-              </span>
-            ) : null}
-            {el.value}
+              <div className="mr-3 flex items-center">
+                <svg
+                  viewBox="0 0 8 5"
+                  strokeWidth={0.25}
+                  stroke="currentColor"
+                  fill="none"
+                  className="h-5 w-8 shrink-0 opacity-25 mr-2"
+                  style={{
+                    marginLeft: `${(indent - 1) * 2.5}rem`,
+                  }}
+                >
+                  <path
+                    d="M 1 1.5 L 1 3 L 7 3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <span>{el.value}</span>
+              </div>
+            ) : (
+              el.value
+            )}
           </td>
         );
       })}
@@ -126,27 +136,6 @@ function Row({
 }
 
 function Checkbox({ id }: { id: string }) {
-  const [focused] = useFieldFocus();
-
-  const folder = useCurrentFolder();
-
-  if (focused) {
-    return (
-      <button
-        className="p-2.5"
-        onMouseDown={(ev) => {
-          ev.preventDefault();
-          addDocumentImport.dispatch({
-            documentId: minimizeId(id) as DocumentId,
-            templateId: folder?.template,
-          });
-        }}
-      >
-        <LinkIcon className="w-4 h-4" />
-      </button>
-    );
-  }
-
   return (
     <label className="block p-2.5">
       <div className="w-4 h-4 relative z-0 flex-center">

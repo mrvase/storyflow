@@ -20,11 +20,10 @@ import {
   DocumentConfigOp,
   AnyOp,
 } from "shared/operations";
-import { useFolder } from "../folders";
 import { RenderField } from "../fields/RenderField";
 import { URL_ID } from "@storyflow/backend/templates";
 import { getComputationRecord } from "@storyflow/backend/flatten";
-import { useCollab } from "../state/collaboration";
+import { useDocumentCollab } from "../state/collab-document";
 import { ServerPackage } from "@storyflow/state";
 import { getVersionKey } from "./ArticlePage";
 import { GetArticle } from "./GetArticle";
@@ -49,7 +48,7 @@ export function RenderTemplate({
   const isMain = id === owner;
 
   const { push } = isMain
-    ? useCollab().mutate<DocumentConfigOp>(owner, owner)
+    ? useDocumentCollab().mutate<DocumentConfigOp>(owner, owner)
     : { push: () => {} };
 
   const onChange = React.useCallback(

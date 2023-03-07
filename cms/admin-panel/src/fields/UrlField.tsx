@@ -12,7 +12,8 @@ import {
   TemplateFieldId,
 } from "@storyflow/backend/types";
 import { createId, getDocumentId, restoreId } from "@storyflow/backend/ids";
-import { createQueueCache, useCollab } from "../state/collaboration";
+import { createQueueCache } from "../state/collaboration";
+import { useDocumentCollab } from "../state/collab-document";
 import { targetTools, ComputationOp } from "shared/operations";
 import { useSingular, useGlobalState } from "../state/state";
 import { calculateFn } from "./default/calculateFn";
@@ -123,7 +124,7 @@ export default function UrlField({
 
   const url = getUrlStringFromValue(id, output);
 
-  const actions = useCollab().mutate<ComputationOp>(
+  const actions = useDocumentCollab().mutate<ComputationOp>(
     id.slice(0, 4),
     id.slice(4)
   );
@@ -238,7 +239,7 @@ export default function UrlField({
 
   const singular = useSingular(id);
 
-  const collab = useCollab();
+  const collab = useDocumentCollab();
 
   React.useLayoutEffect(() => {
     const queue = collab
@@ -300,19 +301,23 @@ export default function UrlField({
     parentSlugs.unshift("");
   }
 
+  console.log("PARENTS", parents);
+
   return (
     <div className="px-5">
       <div className="pr-8">
         <div className="outline-none rounded font-light flex items-start">
-          <Link
-            to={replacePage(parents[0]?.id ?? "")}
-            className={cl(
-              "cursor-default rounded-full truncate text-sm shrink-0 opacity-50 hover:opacity-100 transition-opacity",
-              "p-1 -ml-1 mr-4"
-            )}
-          >
-            <HomeIcon className="w-4 h-4" />
-          </Link>
+          {parents[0] && parents[0].id !== getDocumentId(id) && (
+            <Link
+              to={replacePage(parents[0]?.id ?? "")}
+              className={cl(
+                "cursor-default rounded-full truncate text-sm shrink-0 opacity-50 hover:opacity-100 transition-opacity",
+                "p-1 -ml-1 mr-4"
+              )}
+            >
+              <HomeIcon className="w-4 h-4" />
+            </Link>
+          )}
           <div className="flex items-center pb-2 h-8">
             {parentSlugs.slice(1).map((el, index) => (
               <React.Fragment key={parents[index + 1]?.id}>
@@ -385,13 +390,28 @@ export default function UrlField({
               <PlusIcon className="w-4 h-4" />
             </button>
             <div className="flex flex-wrap gap-2">
-              {children.map((el) => (
+              {children.map((el, index) => (
                 <Link
                   key={el.id}
                   to={replacePage(el.id)}
-                  className="px-3 rounded-full bg-gray-100 dark:bg-gray-750 text-sm font-light"
+                  className="group text-sm font-light flex-center gap-2"
                 >
-                  {getDocumentLabel(el)}
+                  <svg
+                    viewBox="0 0 24 16"
+                    className="w-6 h-4 opacity-25"
+                    strokeWidth={1}
+                    stroke="currentColor"
+                    fill="none"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d={index === 0 ? "M 1 3 L 1 9 L 23 9" : "M 1 9 L 23 9"}
+                    />
+                  </svg>
+                  <span className="opacity-50 group-hover:opacity-100">
+                    {getDocumentLabel(el)}
+                  </span>
                 </Link>
               ))}
             </div>

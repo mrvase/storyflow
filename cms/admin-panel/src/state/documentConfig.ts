@@ -5,7 +5,7 @@ import {
   FieldConfig,
   FieldId,
 } from "@storyflow/backend/types";
-import { useCollab } from "./collaboration";
+import { useDocumentCollab } from "./collab-document";
 import { PropertyOp, targetTools, DocumentConfigOp } from "shared/operations";
 import { getFieldConfig, setFieldConfig } from "shared/getFieldConfig";
 import { createPurger, createStaticStore } from "./StaticStore";
@@ -19,9 +19,15 @@ import {
 } from "@storyflow/backend/ids";
 import { ServerPackage } from "@storyflow/state";
 
-export const labels = createStaticStore(new Map<string, string | undefined>());
+export const labels = createStaticStore<
+  string | undefined,
+  Map<string, string | undefined>
+>(() => new Map());
 
-export const configs = createStaticStore(new Map<string, DocumentConfig>());
+export const configs = createStaticStore<
+  DocumentConfig,
+  Map<string, DocumentConfig>
+>(() => new Map());
 
 export const labelsPurger = createPurger((templateId: string) => {
   labels.deleteMany((id) => {
@@ -41,10 +47,12 @@ export const useDocumentConfig = (
     version?: number;
   }
 ) => {
-  const [config, setConfig] = configs.useKey(templateId);
+  const [config, setConfig] = configs.useKey(templateId, data.config);
+  /*
   if (!config && data.config) {
     setConfig(data.config);
   }
+  */
 
   React.useEffect(() => {
     return templatesPurger(templateId);
@@ -71,7 +79,7 @@ export const useDocumentConfig = (
 
   const singular = useSingular(templateId);
 
-  const collab = useCollab();
+  const collab = useDocumentCollab();
 
   React.useEffect(() => {
     const queue = collab
@@ -153,7 +161,7 @@ export function useFieldConfig(
   let config: FieldConfig | undefined;
 
   if (isNative) {
-    [config] = configs.useKey(templateDocumentId, (value) => {
+    [config] = configs.useKey(templateDocumentId, undefined, (value) => {
       if (!value) return;
       return getFieldConfig(value, fieldId);
     });
@@ -166,7 +174,10 @@ export function useFieldConfig(
     );
   }
 
-  const { push } = useCollab().mutate<PropertyOp>(documentId, documentId);
+  const { push } = useDocumentCollab().mutate<PropertyOp>(
+    documentId,
+    documentId
+  );
 
   const setter = <Name extends keyof FieldConfig>(
     name: Name,

@@ -8,7 +8,7 @@ import {
 import { ComputationOp, targetTools } from "shared//operations";
 import { createComponent } from "../Editor/createComponent";
 import { getInfoFromType, useClientConfig } from "../../client-config";
-import { useCollab } from "../../state/collaboration";
+import { useDocumentCollab } from "../../state/collab-document";
 
 export default function Actions({
   id,
@@ -21,7 +21,7 @@ export default function Actions({
   type: string | undefined;
   parentPath?: string;
 }) {
-  const { push } = useCollab().mutate<ComputationOp>(
+  const { push } = useDocumentCollab().mutate<ComputationOp>(
     id.slice(0, 4),
     id.slice(4, 16)
   );

@@ -1,4 +1,3 @@
-import React from "react";
 import {
   createQueueMap,
   onInterval,
@@ -16,8 +15,6 @@ import {
 } from "@storyflow/state";
 import { AnyOp } from "shared/operations";
 import { clone } from "../utils/clone";
-import { useContextWithError } from "../utils/contextError";
-import { useClient } from "../client";
 import { useSubject } from "./useSubject";
 
 export type QueueOptions<Operation extends DefaultOperation> = {
@@ -26,31 +23,12 @@ export type QueueOptions<Operation extends DefaultOperation> = {
   mergeableNoop?: Operation;
 };
 
-export const CollabContext = React.createContext<ReturnType<
-  typeof createDocumentCollaboration
-> | null>(null);
-
-export const useCollab = () => useContextWithError(CollabContext, "Collab");
-
-export function CollabProvider({ children }: { children: React.ReactNode }) {
-  const client = useClient();
-
-  const collab = React.useMemo(() => {
-    return createDocumentCollaboration(client.articles.fields.mutation);
-  }, [client]);
-
-  React.useLayoutEffect(() => {
-    return collab.syncOnInterval();
-  }, []);
-
-  return (
-    <CollabContext.Provider value={collab}>{children}</CollabContext.Provider>
-  );
-}
-
-function createDocumentCollaboration(
-  mutation: Parameters<typeof syncQueueMap<AnyOp>>[1]
+export function createDocumentCollaboration(
+  mutation: Parameters<typeof syncQueueMap<AnyOp>>[1],
+  options: { duration?: number } = {}
 ) {
+  const { duration = 3500 } = options;
+
   const queues = createQueueMap<AnyOp, WithUndoRedo<Queue<AnyOp>>>();
 
   let lastSync = 0;
@@ -64,6 +42,7 @@ function createDocumentCollaboration(
   const [registerEventListener, emitEvent] = useSubject<"loading" | "done">(
     "done"
   );
+
   const [registerMutationListener, emitMutation] = useSubject<string>("");
 
   const sync = async (force?: boolean) => {
@@ -74,8 +53,6 @@ function createDocumentCollaboration(
     emitEvent("done");
     return result;
   };
-
-  const duration = 3500;
 
   const syncOnInterval = () => {
     return onInterval(

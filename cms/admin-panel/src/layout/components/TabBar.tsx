@@ -17,7 +17,7 @@ import TabButton from "./TabButton";
 import { Tab } from "../types";
 import cl from "clsx";
 import { useLocalStorage } from "../../state/useLocalStorage";
-import { useCollab } from "../../state/collaboration";
+import { useDocumentCollab } from "../../state/collab-document";
 import { CommandLine } from "./CommandLine";
 
 export default function TabBar({
@@ -40,28 +40,48 @@ export default function TabBar({
     true
   );
 
+  /*
   const [isEditing, setIsEditing] = useLocalStorage<boolean>(
     "editing-articles",
     false
   );
+  */
 
   return (
     <div
-      className={cl("flex px-2 pb-2 gap-2", "text-gray-600 dark:text-gray-200")}
+      className={cl(
+        "h-12 flex px-2 pb-2 gap-2",
+        "text-gray-600 dark:text-gray-200"
+      )}
     >
-      <button
-        className={cl(
-          "text-sm h-10 w-10 shrink-0 flex-center rounded-md transition-[color,box-shadow]",
-          "bg-button ring-button text-button"
-        )}
-        onClick={() => setNavIsOpen((ps) => !ps)}
+      <div
+        className="transition-[opacity,width,margin-right]"
+        style={
+          navIsOpen
+            ? {
+                width: "0rem",
+                marginRight: "-0.5rem",
+                opacity: 0,
+                pointerEvents: "none",
+              }
+            : { width: "2.5rem", marginRight: "0rem", opacity: 1 }
+        }
       >
-        {navIsOpen ? (
-          <ChevronLeftIcon className="w-4 h-4" />
-        ) : (
-          <Bars3Icon className="w-4 h-4" />
-        )}
-      </button>
+        <button
+          className={cl(
+            "text-sm h-10 w-10 shrink-0 flex-center rounded-md transition-[color,box-shadow]",
+            "bg-button ring-button text-button"
+          )}
+          onClick={() => setNavIsOpen((ps) => !ps)}
+        >
+          {navIsOpen ? (
+            <ChevronLeftIcon className="w-4 h-4" />
+          ) : (
+            <Bars3Icon className="w-4 h-4" />
+          )}
+        </button>
+      </div>
+      {/*
       <button
         className={cl(
           "text-sm h-10 w-10 shrink-0 flex-center rounded-md transition-[color,background-color,box-shadow]",
@@ -72,6 +92,7 @@ export default function TabBar({
       >
         <WrenchScrewdriverIcon className="w-4 h-4" />
       </button>
+      */}
       <CommandLine />
       {/*
       <div
@@ -139,7 +160,7 @@ export default function TabBar({
         </button>*/}
       <button
         className="text-sm h-10 w-10 shrink-0 px-2 flex-center rounded-md bg-white dark:bg-gray-850 border border-gray-200 dark:border-gray-800 text-gray-300 hover:text-white hover:bg-opacity-100 transition-colors"
-        onClick={addTab}
+        onClick={() => addTab()}
       >
         <PlusIcon className="w-4 h-4" />
       </button>
@@ -210,7 +231,7 @@ export function StatusButton() {
     }
   };
 
-  const collab = useCollab();
+  const collab = useDocumentCollab();
 
   React.useEffect(() => {
     return collab.registerEventListener((event) => {
