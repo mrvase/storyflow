@@ -88,7 +88,7 @@ export function FolderItem({
         style={style}
       >
         <div
-          className="w-4 h-4 mr-3 shrink-0 opacity-75 cursor-grab"
+          className="w-4 h-4 mr-3 shrink-0 opacity-25 hover:opacity-100 transition-opacity cursor-grab"
           {...dragHandleProps}
         >
           <DragIcon className="w-4 h-4" />

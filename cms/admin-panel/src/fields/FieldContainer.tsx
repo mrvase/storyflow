@@ -13,7 +13,7 @@ import { FieldPage } from "./FieldPage";
 import { useSegment } from "../layout/components/SegmentContext";
 import { useTabUrl } from "../layout/utils";
 import { PropertyOp, targetTools } from "shared/operations";
-import { restoreId } from "@storyflow/backend/ids";
+import { getDocumentId, restoreId } from "@storyflow/backend/ids";
 import { useLabel } from "../state/documentConfig";
 import {
   Computation,
@@ -381,7 +381,7 @@ function Label({
 
   const label = useLabel(id, template);
 
-  const articleId = id.slice(0, 4);
+  const articleId = getDocumentId(id);
 
   const { push } = useDocumentCollab().mutate<PropertyOp>(articleId, articleId);
 

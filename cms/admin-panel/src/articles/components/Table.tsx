@@ -15,7 +15,7 @@ export default function Table({
   }[];
 }) {
   return (
-    <table className={cl("w-full leading-none font-light -mx-2.5")} border={0}>
+    <table className={cl("w-full leading-none font-light")} border={0}>
       <thead>
         <tr className="font-normal">
           <td className=""></td>

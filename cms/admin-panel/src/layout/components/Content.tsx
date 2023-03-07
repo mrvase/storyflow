@@ -5,9 +5,13 @@ import {
   CheckIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  CogIcon,
+  MinusIcon,
+  PlusIcon,
 } from "@heroicons/react/24/outline";
 import { Menu } from "@headlessui/react";
 import { MenuTransition } from "../../elements/transitions/MenuTransition";
+import { useLocalStorage } from "../../state/useLocalStorage";
 
 function Content({
   children,
@@ -39,7 +43,7 @@ function Content({
       {header && (
         <div
           className={cl(
-            "pt-12 pb-5 px-5 mb-6 sticky -top-10 z-50 border-b border-gray-100 dark:border-gray-800",
+            "pt-12 pb-5 px-5 mb-6 sticky -top-10 z-50 border-b border-gray-100 dark:border-gray-800 max-w-6xl",
             "bg-white dark:bg-gray-850" // need bg color because it is sticky
             // isFocused ? "dark:bg-gray-850" : "dark:bg-gray-900"
             // "bg-gradient-to-b from-gray-850 to-rose-800"
@@ -47,18 +51,19 @@ function Content({
         >
           <div
             className={cl(
-              "flex justify-between max-w-6xl",
+              "flex justify-between",
               isFocused ? "opacity-100" : "opacity-50"
             )}
           >
             <div className="text-gray-800 text-2xl leading-none dark:text-white">
               {header}
             </div>
-            {buttons}
+            <div className="flex flex-center">
+              {buttons}
+              <SettingsButton />
+            </div>
           </div>
-          <div className={isFocused ? "opacity-100" : "opacity-50"}>
-            {toolbar}
-          </div>
+          <ToolbarWrapper toolbar={toolbar} isFocused={isFocused} />
         </div>
       )}
       {!header && toolbar && (
@@ -73,9 +78,57 @@ function Content({
   );
 }
 
+function SettingsButton() {
+  const [isOpen, setIsOpen] = useLocalStorage<boolean>("toolbar-open", true);
+
+  return (
+    <>
+      {!isOpen && (
+        <button
+          className="mt-0.5 ml-4 opacity-25 hover:opacity-100 transition-opacity"
+          onClick={() => setIsOpen(true)}
+        >
+          <CogIcon className="w-5 h-5" />
+        </button>
+      )}
+    </>
+  );
+}
+
+function ToolbarWrapper({
+  toolbar,
+  isFocused,
+}: {
+  toolbar?: React.ReactNode;
+  isFocused?: boolean;
+}) {
+  const [isOpen, setIsOpen] = useLocalStorage<boolean>("toolbar-open", true);
+
+  return (
+    <>
+      {isOpen && (
+        <div
+          className={cl(
+            "flex items-center max-w-6xl mt-4",
+            isFocused ? "opacity-100" : "opacity-50"
+          )}
+        >
+          <div
+            className="w-4 mr-4 opacity-25 hover:opacity-100 transition-opacity"
+            onClick={() => setIsOpen(false)}
+          >
+            <MinusIcon className="w-4 h-4" />
+          </div>
+          {toolbar}
+        </div>
+      )}
+    </>
+  );
+}
+
 const Toolbar = ({ children }: { children: React.ReactNode }) => {
   return (
-    <div className="max-w-6xl py-1 mt-4 flex gap-2 pl-9 overflow-x-auto no-scrollbar">
+    <div className="flex p-1 gap-2 overflow-x-auto no-scrollbar">
       {children}
     </div>
   );

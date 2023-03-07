@@ -19,6 +19,7 @@ import { getComputationRecord } from "@storyflow/backend/flatten";
 import {
   computeFieldId,
   createFieldId,
+  getDocumentId,
   minimizeId,
 } from "@storyflow/backend/ids";
 import { URL_ID } from "@storyflow/backend/templates";
@@ -342,7 +343,7 @@ export function FieldToolbar({
 function FieldLabel({ id, template }: { id: FieldId; template?: DocumentId }) {
   const label = useLabel(id, template);
 
-  const articleId = id.slice(0, 4);
+  const articleId = getDocumentId(id);
 
   const { push } = useDocumentCollab().mutate<PropertyOp>(articleId, articleId);
 
@@ -564,7 +565,7 @@ const Page = ({
   const folder = useFolder(article.folder);
 
   const templateId =
-    folder?.type === "app" ? URL_ID.slice(0, 4) : folder?.template;
+    folder?.type === "app" ? getDocumentId(URL_ID) : folder?.template;
 
   const owner = article;
 

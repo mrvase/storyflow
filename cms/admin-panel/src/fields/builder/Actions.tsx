@@ -9,6 +9,8 @@ import { ComputationOp, targetTools } from "shared//operations";
 import { createComponent } from "../Editor/createComponent";
 import { getInfoFromType, useClientConfig } from "../../client-config";
 import { useDocumentCollab } from "../../state/collab-document";
+import { getDocumentId, getTemplateFieldId } from "@storyflow/backend/ids";
+import { FieldId } from "@storyflow/backend/types";
 
 export default function Actions({
   id,
@@ -16,14 +18,14 @@ export default function Actions({
   type,
   parentPath,
 }: {
-  id: string;
+  id: FieldId;
   index: number | undefined;
   type: string | undefined;
   parentPath?: string;
 }) {
   const { push } = useDocumentCollab().mutate<ComputationOp>(
-    id.slice(0, 4),
-    id.slice(4, 16)
+    getDocumentId(id),
+    getTemplateFieldId(id)
   );
 
   const { libraries } = useClientConfig();

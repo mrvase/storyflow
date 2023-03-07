@@ -11,8 +11,8 @@ function Space({
 }) {
   return (
     <div>
-      <div className="flex items-center mb-3.5 h-7">
-        <div className="cursor-grab">
+      <div className="flex items-center mb-3.5 h-7 px-5">
+        <div className="cursor-grab opacity-25 hover:opacity-100 transition-opacity">
           <DragIcon className="w-4 h-4 mr-5" />
         </div>
         <h2 className="text-gray-400">{label}</h2>

@@ -178,7 +178,7 @@ export default function FolderPage({
             </>
           )}
           {folder ? (
-            <div className="flex flex-col gap-8 px-5">
+            <div className="flex flex-col gap-8">
               {(folder.spaces ?? []).map((space, index) => {
                 if (space.type === "folders") {
                   return (

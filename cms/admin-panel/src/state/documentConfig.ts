@@ -210,7 +210,7 @@ export function useLabel(fieldId: FieldId, overwritingTemplate?: DocumentId) {
   /* the updated label */
   const [label] = labels.useKey(fieldId);
 
-  const templateId = overwritingTemplate ?? fieldId.slice(4, 8);
+  const templateId = overwritingTemplate ?? getTemplateDocumentId(fieldId);
   const article = useArticleTemplate(templateId);
 
   const initialLabel = React.useMemo(() => {

@@ -278,7 +278,7 @@ export default function AppPage({
               type={type}
             />
           )}
-          <div className="flex flex-col px-5">
+          <div className="flex flex-col">
             <AppSpace
               index={0}
               folderId={folder.id}

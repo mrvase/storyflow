@@ -11,7 +11,13 @@ import {
   FieldId,
   TemplateFieldId,
 } from "@storyflow/backend/types";
-import { createId, getDocumentId, restoreId } from "@storyflow/backend/ids";
+import {
+  createId,
+  getDocumentId,
+  getTemplateDocumentId,
+  getTemplateFieldId,
+  restoreId,
+} from "@storyflow/backend/ids";
 import { createQueueCache } from "../state/collaboration";
 import { useDocumentCollab } from "../state/collab-document";
 import { targetTools, ComputationOp } from "shared/operations";
@@ -125,8 +131,8 @@ export default function UrlField({
   const url = getUrlStringFromValue(id, output);
 
   const actions = useDocumentCollab().mutate<ComputationOp>(
-    id.slice(0, 4),
-    id.slice(4)
+    getDocumentId(id),
+    getTemplateFieldId(id)
   );
 
   const parentUrl = url.split("/").slice(0, -1).join("/");
@@ -184,7 +190,7 @@ export default function UrlField({
     });
   };
 
-  const [values, setValues] = useGlobalContext(id.slice(0, 4), {
+  const [values, setValues] = useGlobalContext(getDocumentId(id), {
     param1: "",
     param2: "",
     param3: "",
@@ -243,7 +249,7 @@ export default function UrlField({
 
   React.useLayoutEffect(() => {
     const queue = collab
-      .getOrAddQueue(id.slice(0, 4), id.slice(4), {
+      .getOrAddQueue(getDocumentId(id), getTemplateFieldId(id), {
         transform: (a) => a,
       })
       .initialize(version, history ?? []);
@@ -301,13 +307,11 @@ export default function UrlField({
     parentSlugs.unshift("");
   }
 
-  console.log("PARENTS", parents);
-
   return (
     <div className="px-5">
       <div className="pr-8">
         <div className="outline-none rounded font-light flex items-start">
-          {parents[0] && parents[0].id !== getDocumentId(id) && (
+          {parents[0] && parents[0].id !== getDocumentId(id) ? (
             <Link
               to={replacePage(parents[0]?.id ?? "")}
               className={cl(
@@ -317,6 +321,8 @@ export default function UrlField({
             >
               <HomeIcon className="w-4 h-4" />
             </Link>
+          ) : (
+            <div className="w-9 h-4" />
           )}
           <div className="flex items-center pb-2 h-8">
             {parentSlugs.slice(1).map((el, index) => (
@@ -381,7 +387,7 @@ export default function UrlField({
             />
           )}
         </div>
-        {id.slice(4, 8) === URL_ID.slice(0, 4) && (
+        {getTemplateDocumentId(id) === getDocumentId(URL_ID) && (
           <div className="flex items-center pb-5">
             <button
               className="p-1 -ml-1 mr-4 opacity-50 hover:opacity-100 transition-opacity"

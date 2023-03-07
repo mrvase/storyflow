@@ -41,8 +41,8 @@ const useState = (
     let label: string = "";
     if (!id) return [label, value];
     if (id.startsWith("ctx:")) {
-      const { id } = useArticlePageContext();
-      value = useGlobalContext(id, id.slice(4))[0][id.slice(4)];
+      const { id: documentId } = useArticlePageContext();
+      value = useGlobalContext(documentId, id.slice(4))[0][id.slice(4)];
       label = id.slice(4);
     } else {
       value = useGlobalState<Value[]>(id)[0];

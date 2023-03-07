@@ -145,7 +145,7 @@ export default function DefaultField({
   React.useLayoutEffect(() => {
     /* MUST be useLayoutEffect to run before children useEffects that use the queue */
     collab
-      .getOrAddQueue<ComputationOp>(id.slice(0, 4), id.slice(4), {
+      .getOrAddQueue<ComputationOp>(getDocumentId(id), getTemplateFieldId(id), {
         transform: createComputationTransformer(initialValue),
         mergeableNoop: { target: "0:0:", ops: [] },
       })

@@ -139,8 +139,6 @@ export function IdGenerator({ children }: { children: React.ReactNode }) {
     [workspaceId]
   );
 
-  console.log("WORKSPACE ID", workspaceId);
-
   if (!workspaceId) {
     return null;
   }

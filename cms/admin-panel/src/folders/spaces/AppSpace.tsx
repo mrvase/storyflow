@@ -117,7 +117,11 @@ export function AppSpace({
           </>
         }
       >
-        <form ref={form} onSubmit={(ev) => ev.preventDefault()}>
+        <form
+          ref={form}
+          onSubmit={(ev) => ev.preventDefault()}
+          className="px-2.5"
+        >
           <Table rows={rows} />
         </form>
       </Space>
