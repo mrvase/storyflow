@@ -7,6 +7,8 @@ import {
   DocumentDuplicateIcon,
   FunnelIcon,
   ListBulletIcon,
+  PencilIcon,
+  PencilSquareIcon,
   PlusIcon,
   TrashIcon,
   XMarkIcon,
@@ -44,12 +46,13 @@ import {
 } from ".";
 import { getComponentType, useClientConfig } from "../client-config";
 import { MenuTransition } from "../elements/transitions/MenuTransition";
-import { useFolder, useTemplateFolder } from "../folders";
+import { useTemplateFolder } from "../folders";
 import Content from "../layout/components/Content";
 import { useSegment } from "../layout/components/SegmentContext";
 import { useOnLoadHandler } from "../layout/onLoadHandler";
 import { getPathFromSegment } from "../layout/utils";
-import { useCollab } from "../state/collaboration";
+import { useDocumentCollab } from "../state/collab-document";
+import { useFolder } from "../state/collab-folder";
 import {
   useDocumentConfig,
   useFieldConfig,
@@ -69,7 +72,7 @@ export const getVersionKey = (versions?: Record<TemplateFieldId, number>) => {
 function useIsModified(id: string, initial: boolean, key: number) {
   const [isModified, setIsModified] = React.useState(initial);
 
-  const collab = useCollab();
+  const collab = useDocumentCollab();
 
   React.useEffect(() => {
     return collab.registerMutationListener((doc) => {
@@ -109,7 +112,7 @@ export const ArticleContent = ({
 }) => {
   const isModified = useIsModified(id, initialIsModified, version);
 
-  const [isEditing] = useLocalStorage<boolean>("editing-articles", false);
+  const [isEditing] = [true]; //useLocalStorage<boolean>("editing-articles", false);
 
   return (
     <Content
@@ -142,7 +145,7 @@ export const ArticleContent = ({
           <span className="text-xs opacity-50 font-light ml-5 cursor-default hover:underline">
             ændret d. 22/2 10:33
           </span>
-          {folder && <NewSaveButton id={id} folder={folder} />}
+          {folder && <SaveButton id={id} folder={folder} />}
         </div>
       }
       toolbar={isEditing ? toolbar : undefined}
@@ -163,7 +166,13 @@ function Toolbar({ id, config }: { id: DocumentId; config: DocumentConfig }) {
 
   if (index >= 0) {
     return (
-      <FieldToolbar documentId={id} fieldId={ids[0] as FieldId} index={index} />
+      <FieldToolbar
+        // needed because it relies on useFieldConfig which is assumed to be static
+        key={ids[0]}
+        documentId={id}
+        fieldId={ids[0] as FieldId}
+        index={index}
+      />
     );
   }
 
@@ -242,64 +251,6 @@ function Toolbar({ id, config }: { id: DocumentId; config: DocumentConfig }) {
             <DragOption key={el.label} {...el} />
           ))}
         </Content.ToolbarMenu>
-        {/*
-        <DragButton
-          label={"Label"}
-          item={() => ({
-            ...FIELDS.label,
-            id: computeFieldId(id, FIELDS.label.id),
-          })}
-        />
-        <DragButton
-          label={"Slug"}
-          item={() => ({
-            ...FIELDS.slug,
-            id: computeFieldId(id, FIELDS.slug.id),
-          })}
-        />
-        <DragButton
-          label={"Side"}
-          item={{
-            ...FIELDS.page,
-            id: computeFieldId(id, FIELDS.page.id),
-          }}
-        />
-        <DragButton
-          label={"Layout"}
-          item={{
-            ...FIELDS.layout,
-            id: computeFieldId(id, FIELDS.layout.id),
-          }}
-        />
-        <DragButton
-          label={"Omdirigering"}
-          item={{
-            ...FIELDS.redirect,
-            id: computeFieldId(id, FIELDS.redirect.id),
-          }}
-        />
-        <DragButton
-          label={"Offentlig"}
-          item={{
-            ...FIELDS.published,
-            id: computeFieldId(id, FIELDS.published.id),
-          }}
-        />
-        <DragButton
-          label={"Udgivelsesdato"}
-          item={{
-            ...FIELDS.released,
-            id: computeFieldId(id, FIELDS.released.id),
-          }}
-        />
-        <DragButton
-          label={"Bruger"}
-          item={{
-            ...FIELDS.user,
-            id: computeFieldId(id, FIELDS.user.id),
-          }}
-        />
-        */}
       </NoList>
     </Content.Toolbar>
   );
@@ -316,7 +267,10 @@ export function FieldToolbar({
 }) {
   const [config, setConfig] = useFieldConfig(fieldId);
 
-  const { push } = useCollab().mutate<DocumentConfigOp>(documentId, documentId);
+  const { push } = useDocumentCollab().mutate<DocumentConfigOp>(
+    documentId,
+    documentId
+  );
 
   const templateFolder = useTemplateFolder()?.id;
   const { articles: templates } = useArticleList(templateFolder);
@@ -390,7 +344,7 @@ function FieldLabel({ id, template }: { id: FieldId; template?: DocumentId }) {
 
   const articleId = id.slice(0, 4);
 
-  const { push } = useCollab().mutate<PropertyOp>(articleId, articleId);
+  const { push } = useDocumentCollab().mutate<PropertyOp>(articleId, articleId);
 
   const onChange = (value: string) => {
     push({
@@ -475,61 +429,69 @@ export function EditableLabel({
   return (
     <div
       className={cl(
-        "relative text-xs text-gray-300 font-light flex h-6 ring-1 ring-inset rounded",
-        isEditing ? "ring-gray-600" : "ring-gray-750 hover:ring-gray-600"
+        " text-xs text-gray-300 font-light flex h-6 ring-1 rounded",
+        isEditing ? "ring-gray-600" : "ring-button"
       )}
       data-focus-remain="true"
     >
-      {label && (
-        <label className="relative -z-10 h-6 px-2 flex-center bg-gray-750 rounded">
-          {label}
-        </label>
-      )}
-      <input
-        id={id}
-        ref={ref}
-        value={isEditing ? value : initialValue}
-        onChange={handleChange}
-        type="text"
-        className={cl(
-          "outline-none padding-0 margin-0 bg-transparent h-6 items-center px-2",
-          className
+      <label className="flex">
+        {label && (
+          <div className="h-6 px-2 flex-center bg-gray-750 rounded">
+            {label}
+          </div>
         )}
-        placeholder="Ingen label"
-        onFocus={() => {
-          setIsEditing(true);
-          rejected.current = false;
-        }}
-        onBlur={() => {
-          setIsEditing(false);
-          accept();
-        }}
-        onKeyDown={(ev) => {
-          if (ev.key.toLowerCase() === "enter") {
-            ref.current?.blur();
-          }
-          if (ev.key.toLowerCase() === "escape") {
-            reject();
-            ref.current?.blur();
-          }
-        }}
-      />
+        <input
+          id={id}
+          ref={ref}
+          value={isEditing ? value : initialValue}
+          onChange={handleChange}
+          type="text"
+          className={cl(
+            "outline-none padding-0 margin-0 bg-transparent h-6 items-center px-2",
+            className
+          )}
+          placeholder="Ingen label"
+          onFocus={() => {
+            setIsEditing(true);
+            rejected.current = false;
+          }}
+          onBlur={() => {
+            setIsEditing(false);
+            accept();
+          }}
+          onKeyDown={(ev) => {
+            if (ev.key.toLowerCase() === "enter") {
+              ref.current?.blur();
+            }
+            if (ev.key.toLowerCase() === "escape") {
+              reject();
+              ref.current?.blur();
+            }
+          }}
+        />
+        {!isEditing && (
+          <div className="mr-2 h-full flex-center cursor-text">
+            <PencilSquareIcon className="w-3 h-3" />
+          </div>
+        )}
+      </label>
       {isEditing && (
         <>
           <div
-            className="relative -z-10 h-6 w-6 flex-center bg-gray-750 rounded"
-            onMouseDown={() => {
+            className="h-6 w-6 flex-center bg-gray-750 hover:bg-green-700/60 transition-colors rounded-l"
+            onMouseDown={(ev) => {
               accept();
             }}
+            onClick={(ev) => {}}
           >
             <CheckIcon className="w-3 h-3" />
           </div>
           <div
-            className="relative -z-10 h-6 w-6 flex-center bg-gray-750 rounded"
+            className="h-6 w-6 flex-center bg-gray-750 hover:bg-red-700/50 transition-colors rounded-r"
             onMouseDown={(ev) => {
-              ev.preventDefault();
               reject();
             }}
+            onClick={(ev) => {}}
           >
             <XMarkIcon className="w-3 h-3" />
           </div>
@@ -640,7 +602,7 @@ const Page = ({
                 {(article) => (
                   <RenderTemplate
                     key={getVersionKey(owner.versions)} // for rerendering
-                    id={id}
+                    id={article.id}
                     owner={owner.id}
                     values={{
                       ...getComputationRecord(article),
@@ -670,8 +632,8 @@ const Page = ({
   );
 };
 
-function NewSaveButton({ id, folder }: { id: string; folder: string }) {
-  const collab = useCollab();
+function SaveButton({ id, folder }: { id: string; folder: string }) {
+  const collab = useDocumentCollab();
   const [isLoading, setIsLoading] = React.useState(false);
   const saveArticle = useSaveArticle(folder);
 
@@ -710,7 +672,7 @@ function NewSaveButton({ id, folder }: { id: string; folder: string }) {
         </div>
       )*/}
       <button
-        className="relative z-0 bg-button-teal ring-button text-button rounded px-3 py-1 font-light flex-center gap-2 text-sm overflow-hidden"
+        className="relative z-0 bg-button-teal ring-button-teal text-button rounded px-3 py-1 font-light flex-center gap-2 text-sm overflow-hidden"
         onClick={async () => {
           if (isLoading) return;
           setIsLoading(true);
@@ -733,7 +695,7 @@ function NewSaveButton({ id, folder }: { id: string; folder: string }) {
 
 function DragButton({ item, label }: { label: string; item: any }) {
   const { ref, dragHandleProps, state } = useDragItem({
-    id: `ny-blok-2-${label}`,
+    id: `new-field-${label}`,
     type: "fields",
     item,
     mode: "move",
@@ -752,7 +714,7 @@ function DragButton({ item, label }: { label: string; item: any }) {
 }
 
 export function DragOption({ label, item }: { label: string; item: any }) {
-  const { ref, dragHandleProps, state } = useDragItem({
+  const { ref, dragHandleProps } = useDragItem({
     id: `ny-blok-2-${label}`,
     type: "fields",
     item,

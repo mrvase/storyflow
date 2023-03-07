@@ -19,7 +19,11 @@
 }
 
 .ring-button {
-  @apply ring-1 ring-inset ring-black/5 dark:ring-white/5 hover:ring-black/20 dark:hover:ring-white/20;
+  @apply ring-1 ring-gray-200 hover:ring-gray-300 dark:ring-gray-700 dark:hover:ring-gray-600 duration-75 transition-[color,box-shadow]; /* ring-1 ring-inset ring-black/5 dark:ring-white/5 hover:ring-black/20 dark:hover:ring-white/20; */
+}
+
+.ring-button-teal {
+  @apply ring-1 ring-teal-200 hover:ring-teal-300 dark:ring-teal-600 dark:hover:ring-teal-500 duration-75 transition-[color,box-shadow]; /* ring-1 ring-inset ring-black/5 dark:ring-white/5 hover:ring-black/20 dark:hover:ring-white/20; */
 }
 
 .text-button {

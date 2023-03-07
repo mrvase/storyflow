@@ -14,11 +14,9 @@ import {
 } from "@heroicons/react/24/outline";
 import React from "react";
 import Loader from "../../elements/Loader";
-import { useFolders } from "../../folders/folders-context";
 import { Tab } from "../types";
 import useLocationLabel from "../useLocationLabel";
 import { useTabUrl } from "../utils";
-import { useBranchIsFocused } from "./Branch";
 
 export default function LocationBar({
   tab,
@@ -41,6 +39,8 @@ export default function LocationBar({
 }) {
   const [, navigateTab] = useTabUrl();
 
+  const isSystemWindow = tab.segment.startsWith("/~0");
+
   const segmentsMemo = React.useRef<string[]>([]);
   const prevSegment = React.useRef<string>("");
 
@@ -56,8 +56,7 @@ export default function LocationBar({
     prevSegment.current = tab.segment;
   }, [tab.segment]);
 
-  const { folders } = useFolders();
-
+  /*
   const [query, setQuery] = React.useState("");
 
   const suggestion = React.useMemo(() => {
@@ -68,23 +67,43 @@ export default function LocationBar({
       el.label.toLowerCase().startsWith(query.toLowerCase())
     );
   }, [query]);
+  */
+
+  if (isSystemWindow) {
+    return (
+      <div
+        className={cl(
+          "h-11 shrink-0 grow-0 flex items-center pl-5 text-sm font-light",
+          "bg-white dark:bg-gray-850"
+        )}
+      >
+        <button
+          className="shrink-0 ml-auto mr-2 flex items-center justify-center h-full px-3"
+          onMouseDown={(ev) => ev.stopPropagation()} // prevent focus
+          onClick={(ev) => {
+            ev.stopPropagation();
+            navigateTab(tab.segment, { close: true });
+          }}
+        >
+          <XMarkIcon className="w-4 h-4" />
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div
       className={cl(
-        "h-12 shrink-0 overflow-x-auto text-gray-600 dark:text-white",
+        "h-11 shrink-0 grow-0 overflow-x-auto text-gray-600 dark:text-white",
         "bg-white dark:bg-gray-850"
         // isFocused ? "bg-white dark:bg-gray-850" : "bg-white dark:bg-gray-900"
       )}
     >
       <div
-        className={cl(
-          "h-full flex pl-2",
-          isFocused ? "opacity-100" : "opacity-25"
-        )}
+        className={cl("h-full flex", isFocused ? "opacity-100" : "opacity-25")}
         {...dragHandleProps}
       >
-        <div className="flex gap-2 h-full overflow-x-auto no-scrollbar grow">
+        <div className="flex gap-2 pl-2 h-full overflow-x-auto no-scrollbar grow">
           {segments.map((el) => (
             <LocationBarItem
               key={el}
@@ -93,6 +112,7 @@ export default function LocationBar({
               onHover={() => setSelected(el)}
             />
           ))}
+          {/*
           <div className="flex h-full grow text-[0px] relative">
             <div className="px-1 h-full flex items-center text-sm absolute pointer-events-none opacity-50">
               <span className="text-transparent">
@@ -115,8 +135,8 @@ export default function LocationBar({
               onChange={(ev) => setQuery(ev.target.value)}
             />
           </div>
+        */}
         </div>
-
         <button
           className={cl(
             "shrink-0 ml-auto mr-2 flex items-center justify-center h-full px-3",
@@ -215,7 +235,7 @@ function LocationBarItem({
   return (
     <button
       className={cl(
-        "px-3 my-2 h-7 text-sm leading-none rounded-md font-light ring-inset transition-shadow",
+        "px-3 my-2 h-7 text-sm leading-none rounded-md font-light",
         type === "template"
           ? "bg-teal-800"
           : /*

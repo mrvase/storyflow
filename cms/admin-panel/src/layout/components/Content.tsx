@@ -39,7 +39,7 @@ function Content({
       {header && (
         <div
           className={cl(
-            "pt-12 pb-6 px-5 mb-6 sticky -top-10 z-50 border-b border-gray-100 dark:border-gray-800",
+            "pt-12 pb-5 px-5 mb-6 sticky -top-10 z-50 border-b border-gray-100 dark:border-gray-800",
             "bg-white dark:bg-gray-850" // need bg color because it is sticky
             // isFocused ? "dark:bg-gray-850" : "dark:bg-gray-900"
             // "bg-gradient-to-b from-gray-850 to-rose-800"
@@ -75,7 +75,7 @@ function Content({
 
 const Toolbar = ({ children }: { children: React.ReactNode }) => {
   return (
-    <div className="max-w-6xl py-1 mt-2.5 flex gap-2 pl-9 overflow-x-auto no-scrollbar">
+    <div className="max-w-6xl py-1 mt-4 flex gap-2 pl-9 overflow-x-auto no-scrollbar">
       {children}
     </div>
   );
@@ -94,7 +94,7 @@ const ToolbarButton = React.forwardRef<
       ref={ref}
       {...props}
       className={cl(
-        "ring-button flex-center gap-1.5 text-xs font-light py-1 px-2 rounded transition-colors whitespace-nowrap",
+        "ring-button flex-center gap-1.5 text-xs font-light py-1 px-2 rounded whitespace-nowrap",
         active ? "bg-button-active" : "bg-button",
         selected === false
           ? "text-gray-800 dark:text-white text-opacity-50 dark:text-opacity-50"

@@ -1,8 +1,8 @@
 import { useArticle, useDocumentLabel } from "../articles";
 import { SWRClient } from "../client";
-import { useFolders } from "../folders/folders-context";
 import { minimizeId } from "@storyflow/backend/ids";
 import { getPathFromSegment } from "./utils";
+import { useFolder } from "../state/collab-folder";
 
 export default function useLocationLabel(segment: string) {
   const path = getPathFromSegment(segment);
@@ -18,8 +18,6 @@ export default function useLocationLabel(segment: string) {
     inactive: type !== "d" && type !== "t",
   });
 
-  const { folders, error: folderError } = useFolders();
-
   const loadingState = {
     type: "loading",
     label: "",
@@ -28,9 +26,9 @@ export default function useLocationLabel(segment: string) {
   const articleLabel = useDocumentLabel(article);
 
   if (type === "f" || type === "a") {
-    const loading = (!listData && !listError) || (!folders && !folderError);
+    const folder = useFolder(id);
 
-    const folder = folders?.find((el) => el.id === id);
+    const loading = !listData && !listError;
 
     if (loading) return loadingState;
 

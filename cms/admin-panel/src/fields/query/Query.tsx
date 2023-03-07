@@ -408,8 +408,6 @@ export function Query({
     }
   }, [isFocused]);
 
-  console.log("queryType", queryType, showOptions);
-
   const show =
     (isFocused || hold.current) &&
     Boolean(queryType || promptedFunction || showOptions);

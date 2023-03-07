@@ -1,6 +1,6 @@
 import { ServerPackage, unwrapServerPackage } from "@storyflow/state";
 import { createServerPackage } from "@storyflow/state";
-import { AnyOp, DocumentOp, OperationRecord, Splice } from "./operations";
+import { AnyOp, DocumentOp, Splice } from "./operations";
 
 const getClientId = (pkg: ServerPackage<any>) => {
   return unwrapServerPackage(pkg).clientId;
@@ -80,20 +80,14 @@ const getArrayMethods = <Operation extends AnyOp>(
 };
 */
 
-export function createSpliceTransformer<
-  OperationType extends keyof OperationRecord
->(
-  getInitialValue: (operation: OperationRecord[OperationType]) => any[],
-  _getArrayMethods?: (
-    operation: OperationRecord[OperationType]
-  ) => ArrayMethods | undefined
-) {
-  type T = any; // InputToOp[InputType] extends DocumentOp<Splice<infer T>> ? T : never;
-  type Operation = OperationRecord[OperationType];
-  type SpliceAction = Splice<T>;
-  type SpliceChar = [SpliceAction | null, number];
-  type SpliceState = SpliceChar[];
+type SpliceAction = Splice<any>;
+type SpliceChar = [SpliceAction | null, number];
+type SpliceState = SpliceChar[];
 
+export function createSpliceTransformer<Operation extends AnyOp>(
+  getInitialValue: (operation: Operation) => any[],
+  _getArrayMethods?: (operation: Operation) => ArrayMethods | undefined
+) {
   const getArrayMethods = (operation: Operation) => {
     return _getArrayMethods?.(operation) ?? defaultArrayMethods;
   };
@@ -281,7 +275,7 @@ export function createSpliceTransformer<
                     const operation: SpliceAction = {
                       index: elIndex,
                       remove: 1,
-                      insert: [] as T[],
+                      insert: [] as any[],
                     };
                     acc.push(operation);
                   }

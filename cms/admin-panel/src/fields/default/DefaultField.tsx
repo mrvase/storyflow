@@ -31,7 +31,7 @@ import { tools } from "shared/editor-tools";
 import { stringifyPath, useBuilderPath } from "../BuilderPath";
 import { useFieldConfig } from "../../state/documentConfig";
 import { getDocumentId, getTemplateFieldId } from "@storyflow/backend/ids";
-import { useCollab } from "../../state/collaboration";
+import { useDocumentCollab } from "../../state/collab-document";
 import { useClient } from "../../client";
 import { Plus } from "./Plus";
 import {
@@ -140,7 +140,7 @@ export default function DefaultField({
     []
   );
 
-  const collab = useCollab();
+  const collab = useDocumentCollab();
 
   React.useLayoutEffect(() => {
     /* MUST be useLayoutEffect to run before children useEffects that use the queue */
@@ -245,7 +245,7 @@ export function WritableDefaultField({
     [output]
   );
 
-  const collab = useCollab();
+  const collab = useDocumentCollab();
 
   const actions = React.useMemo(
     () =>
@@ -322,7 +322,7 @@ export function WritableDefaultField({
               "preview text-base leading-6"
               // mode === null || mode === "slug" ? "calculator" : ""
             )}
-            data-value={preview !== output[0] ? preview : ""}
+            data-value={preview !== `${computation[0]}` ? preview : ""}
           />
           <Plus />
         </div>

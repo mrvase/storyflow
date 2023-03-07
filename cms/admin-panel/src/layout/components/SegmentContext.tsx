@@ -29,3 +29,7 @@ export const useSegment = () => {
   }
   return ctx;
 };
+
+export const useUnsafeSegment = () => {
+  return React.useContext(SegmentContext);
+};

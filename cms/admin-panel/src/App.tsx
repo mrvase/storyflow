@@ -8,27 +8,30 @@ import { FoldersProvider } from "./folders/folders-context";
 import { IdGenerator } from "./id-generator";
 import Layout from "./layout/components/Layout";
 import { Preload } from "./preload";
-import { CollabProvider } from "./state/collaboration";
+import { DocumentCollabProvider } from "./state/collab-document";
+import { FolderCollabProvider } from "./state/collab-folder";
 
 export function App() {
   return (
     <SWRConfig value={{ provider }}>
       <Router>
         <QueryContextProvider>
-          <FieldFocusProvider>
-            <FoldersProvider>
+          <Preload />
+          <FoldersProvider>
+            <FieldFocusProvider>
               <DragDropContext>
-                <Preload />
-                <CollabProvider>
-                  <ClientConfigProvider>
-                    <IdGenerator>
-                      <Layout />
-                    </IdGenerator>
-                  </ClientConfigProvider>
-                </CollabProvider>
+                <FolderCollabProvider>
+                  <DocumentCollabProvider>
+                    <ClientConfigProvider>
+                      <IdGenerator>
+                        <Layout />
+                      </IdGenerator>
+                    </ClientConfigProvider>
+                  </DocumentCollabProvider>
+                </FolderCollabProvider>
               </DragDropContext>
-            </FoldersProvider>
-          </FieldFocusProvider>
+            </FieldFocusProvider>
+          </FoldersProvider>
         </QueryContextProvider>
       </Router>
     </SWRConfig>

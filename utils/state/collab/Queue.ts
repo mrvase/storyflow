@@ -16,13 +16,17 @@ type QueueForEach<Operation extends DefaultOperation> = (
   }
 ) => void;
 
-export type QueueListener<Operation extends DefaultOperation> = (props: {
+export type QueueListenerParam<Operation extends DefaultOperation> = {
   forEach: QueueForEach<Operation>;
   trackedForEach: QueueForEach<Operation>;
   version: number | null;
   origin: "push" | "pull" | "initial";
   primary: boolean;
-}) => void;
+};
+
+export type QueueListener<Operation extends DefaultOperation> = (
+  param: QueueListenerParam<Operation>
+) => void;
 
 export type QueueTransformStrategy<Operation extends DefaultOperation> = (
   packages: ServerPackage<Operation>[]
@@ -41,6 +45,7 @@ export interface Queue<Operation extends DefaultOperation> {
     listener: QueueListener<Operation>,
     tracker?: QueueTracker<Operation>
   ) => () => void;
+  run: (listener: QueueListener<Operation>) => this;
   sync: (
     callback: (
       pkg: ServerPackage<Operation>
@@ -232,17 +237,23 @@ export function createQueue<Operation extends DefaultOperation>(
     trackerArg?: QueueTracker<Operation>
   ) {
     const tracker = trackerArg ?? createQueueTracker();
+    listeners.set(listener, tracker);
+    run(listener);
+    return () => {
+      listeners.delete(listener);
+    };
+  }
+
+  function run(listener: QueueListener<Operation>) {
+    const tracker = listeners.get(listener)!;
     listener({
       forEach: forEach,
-      trackedForEach: tracker.trackForEach(forEach),
+      trackedForEach: tracker ? tracker.trackForEach(forEach) : forEach,
       version: state.version,
       origin: "pull",
       primary: listeners.size === 0,
     });
-    listeners.set(listener, tracker);
-    return () => {
-      listeners.delete(listener);
-    };
+    return queue;
   }
 
   function _pull(packages: ServerPackage<Operation>[]) {
@@ -461,6 +472,7 @@ export function createQueue<Operation extends DefaultOperation>(
     sync,
     push,
     register,
+    run,
     isInactive,
     forEach,
     initialize,

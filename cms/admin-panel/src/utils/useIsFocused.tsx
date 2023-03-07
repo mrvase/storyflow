@@ -1,18 +1,40 @@
 import React from "react";
 import { createStaticStore } from "../state/StaticStore";
 
-const IsFocusedContext = React.createContext<ReturnType<
-  typeof createStaticStore<Record<string, boolean>>
-> | null>(null);
+const IsFocusedContext = React.createContext<{
+  groupId: string;
+  store: ReturnType<
+    typeof createStaticStore<
+      Record<string, boolean>,
+      Map<string, Record<string, boolean>>
+    >
+  >;
+} | null>(null);
+
+const key = "main";
 
 export function FocusOrchestrator({ children }: { children: React.ReactNode }) {
+  const groupId = React.useId();
+
   const store = React.useMemo(
-    () => createStaticStore<Record<string, boolean>>(new Map([["", {}]])),
+    () =>
+      createStaticStore<
+        Record<string, boolean>,
+        Map<string, Record<string, boolean>>
+      >(() => new Map([[key, {}]])),
     []
   );
 
+  const ctx = React.useMemo(
+    () => ({
+      groupId,
+      store,
+    }),
+    [groupId]
+  );
+
   return (
-    <IsFocusedContext.Provider value={store}>
+    <IsFocusedContext.Provider value={ctx}>
       {children}
     </IsFocusedContext.Provider>
   );
@@ -21,7 +43,7 @@ export function FocusOrchestrator({ children }: { children: React.ReactNode }) {
 export function useFocusedIds() {
   const ctx = React.useContext(IsFocusedContext);
   if (!ctx) return [];
-  const obj = ctx.useKey("")[0];
+  const obj = ctx.store.useKey(key)[0];
   return React.useMemo(
     () =>
       Object.entries(obj ?? {})
@@ -44,18 +66,26 @@ export default function useIsFocused({
 
   let [isFocused, setIsFocused] = [false, () => {}] as [
     boolean,
-    (value: boolean) => void
+    (value: boolean, additive?: boolean) => void
   ];
 
   if (id && ctx) {
-    const [isFocused_, setIsFocused_] = ctx.useKey(
-      "",
+    const [isFocused_, setIsFocused_] = ctx.store.useKey(
+      key,
+      undefined,
       (record) => record?.[id]
     );
     isFocused = isFocused_ ?? false;
-    setIsFocused = (value: boolean) => {
+    setIsFocused = (value: boolean, additive) => {
       setIsFocused_((oldRecord) => {
-        let record = { ...(oldRecord ?? {}) };
+        let record = oldRecord ?? {};
+        if (value && !additive) {
+          record = Object.fromEntries(
+            Object.entries(record).map(([id]) => [id, false])
+          );
+        } else {
+          record = { ...record };
+        }
         record[id] = value;
         return record;
       });
@@ -104,6 +134,10 @@ export default function useIsFocused({
           if (element.getAttribute("data-focus-remain")) {
             noDeselect = true;
           }
+          if (ctx && element.getAttribute("data-focus-group") === ctx.groupId) {
+            // handled by sibling
+            noDeselect = true;
+          }
         });
 
         if (noSelect) return;
@@ -134,6 +168,7 @@ export default function useIsFocused({
     onMouseDown: (ev: React.MouseEvent<HTMLElement>) => {
       if (holdShiftKey && ev.shiftKey) {
         ev.preventDefault();
+        /*
         const el = document.querySelector(
           `[data-selectable="${uniqueId}"]`
         ) as HTMLElement | null;
@@ -141,6 +176,7 @@ export default function useIsFocused({
           el.focus();
           window.getSelection()?.collapse(el, 0);
         }
+        */
       }
 
       if (holdShiftKey === true && !ev.shiftKey) {
@@ -158,10 +194,11 @@ export default function useIsFocused({
       }
 
       setTimeout(() => {
-        setIsFocused(true);
+        setIsFocused(true, multiple && ev.shiftKey);
       });
     },
     "data-selectable": uniqueId,
+    ...(ctx && { "data-focus-group": ctx.groupId }),
   };
 
   return { isFocused, handlers, id: uniqueId };

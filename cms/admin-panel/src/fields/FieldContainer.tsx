@@ -1,17 +1,13 @@
 import cl from "clsx";
 import { useSortableItem } from "@storyflow/dnd";
 import {
-  ArrowsPointingInIcon,
-  ArrowsPointingOutIcon,
   ChevronRightIcon,
   ChevronUpDownIcon,
-  LinkIcon,
   LockClosedIcon,
 } from "@heroicons/react/24/outline";
 import React from "react";
 import { useFieldFocus } from "../field-focus";
 import { BuilderPortal } from "./builder/BuilderPortal";
-import { EditableLabel } from "../elements/EditableLabel";
 import { addImport } from "../custom-events";
 import { FieldPage } from "./FieldPage";
 import { useSegment } from "../layout/components/SegmentContext";
@@ -31,7 +27,7 @@ import { Path } from "@storyflow/frontend/types";
 import { getDefaultField } from "@storyflow/backend/fields";
 import { IframeProvider } from "./builder/BuilderIframe";
 import { useFieldId } from "./FieldIdContext";
-import { useCollab } from "../state/collaboration";
+import { useDocumentCollab } from "../state/collab-document";
 import { BuilderPathProvider, useBuilderPath } from "./BuilderPath";
 import { useArticlePageContext } from "../articles/ArticlePageContext";
 import { useLocalStorage } from "../state/useLocalStorage";
@@ -151,7 +147,7 @@ function LabelBar({
   const articleId = useArticlePageContext().id;
   const isNative = template === articleId;
 
-  const [isEditing] = useLocalStorage<boolean>("editing-articles", false);
+  const [isEditing] = [true]; //useLocalStorage<boolean>("editing-articles", false);
 
   const [, navigateTab] = useTabUrl();
   const { current, full } = useSegment();
@@ -183,7 +179,7 @@ function LabelBar({
             id={fieldConfig.id}
             isNative={isNative}
             template={template}
-            isEditable={isNative && isEditing}
+            // isEditable={isNative && isEditing}
           />
         ) : (
           <PathMap path={path} setPath={setPath} />
@@ -291,7 +287,10 @@ function Dot({
       >
         <div
           {...dragHandleProps}
-          className="group w-6 h-6 p-1 -m-1 translate-y-0.5"
+          className={cl(
+            "group w-6 h-6 p-1 -m-1 translate-y-0.5",
+            isDraggable && "cursor-grab"
+          )}
           /*
           onClick={() => {
             navigateTab(
@@ -371,12 +370,10 @@ function LabelText() {
 function Label({
   id,
   isNative,
-  isEditable,
   template,
 }: {
   id: FieldId;
   isNative?: boolean;
-  isEditable?: boolean;
   template: DocumentId;
 }) {
   const [focused] = useFieldFocus();
@@ -386,7 +383,7 @@ function Label({
 
   const articleId = id.slice(0, 4);
 
-  const { push } = useCollab().mutate<PropertyOp>(articleId, articleId);
+  const { push } = useDocumentCollab().mutate<PropertyOp>(articleId, articleId);
 
   const onChange = (value: string) => {
     push({

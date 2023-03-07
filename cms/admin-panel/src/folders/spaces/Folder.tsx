@@ -13,15 +13,19 @@ import { DBFolder } from "@storyflow/backend/types";
 import { useTabUrl } from "../../layout/utils";
 import { useSegment } from "../../layout/components/SegmentContext";
 import { restoreId } from "@storyflow/backend/ids";
+import { DragIcon } from "./DragIcon";
+import { useFolder } from "../../state/collab-folder";
 
-export default function FolderUI({
+export function FolderItem({
   index,
-  folder,
+  folder: folder_,
 }: {
   index: number;
-  folder: DBFolder;
+  folder: DBFolder | string;
 }) {
   const { current, full } = useSegment();
+
+  const folder = typeof folder_ === "string" ? useFolder(folder_) : folder_;
 
   const typeCode = { data: "f", app: "a" }[folder.type as "data"] ?? "f";
 
@@ -82,19 +86,16 @@ export default function FolderUI({
           colors
         )}
         style={style}
-        {...dragHandleProps}
       >
-        <Icon className="w-5 h-5 mr-3 shrink-0 opacity-75" />{" "}
-        <span className="truncate">{label}</span>
         <div
-          className="ml-auto opacity-20 transition-[opacity,background] w-8 h-8 flex-center hover:bg-black/5 dark:hover:bg-white/5 hover:opacity-80 rounded-md"
-          onClick={(ev) => {
-            ev.preventDefault();
-            ev.stopPropagation();
-            navigateTab(`/~${parseInt(to.slice(2, 4), 10) + 1}/${to.slice(4)}`);
-          }}
+          className="w-4 h-4 mr-3 shrink-0 opacity-75 cursor-grab"
+          {...dragHandleProps}
         >
-          <ArrowTopRightOnSquareIcon className="w-5 h-5" />
+          <DragIcon className="w-4 h-4" />
+        </div>
+        <span className="truncate">{label}</span>
+        <div className="ml-auto transition-opacity w-8 h-8 flex-center rounded-md">
+          <Icon className="w-5 h-5 shrink-0 opacity-25 group-hover:opacity-75 transition-opacity" />{" "}
         </div>
       </Link>
     </div>

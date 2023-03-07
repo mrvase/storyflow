@@ -267,7 +267,23 @@ export interface DBFolder {
   template?: DocumentId;
   domains?: string[];
   children: FolderChild[];
+  spaces?: Space[];
+  versions?: Record<string, number>;
 }
+
+export type FolderSpace = {
+  id: string;
+  type: "folders";
+  items: string[];
+};
+
+export type Space =
+  | FolderSpace
+  | {
+      id: string;
+      type: "documents";
+      folder?: string;
+    };
 
 export interface Settings {
   domains: {

@@ -33,7 +33,7 @@ export const createComputationTransformer = (initialValue: Computation) => {
       return []; // it is safe to assume it is something of length 0
     }
   };
-  return createSpliceTransformer<"computation">(
+  return createSpliceTransformer<ComputationOp>(
     getInitialValue,
     getArrayMethods
   );
