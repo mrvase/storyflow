@@ -1,7 +1,7 @@
 import React from "react";
 import { FieldProps } from "./RenderField";
 import { useGlobalContext } from "../state/context";
-import { addImport } from "../custom-events";
+import { addContext, addImport } from "../custom-events";
 import { SWRClient, useClient } from "../client";
 import {
   Computation,
@@ -350,11 +350,11 @@ export default function UrlField({
             ))}
             {slug === "*" && (
               <button
-                className="px-1.5 h-5 bg-sky-200 dark:bg-sky-900 rounded-full shrink-0 flex-center mr-1.5"
+                className="px-1.5 h-5 bg-fuchsia-200 dark:bg-fuchsia-900 rounded-full shrink-0 flex-center mr-1.5 cursor-alias"
                 onMouseDown={(ev) => {
                   ev.preventDefault();
                   ev.stopPropagation();
-                  addImport.dispatch({ id: "ctx:param1" as any, imports: [] });
+                  addContext.dispatch("param1");
                 }}
               >
                 <StarIcon className="w-3 h-3 mr-1" />{" "}

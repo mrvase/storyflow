@@ -1,11 +1,12 @@
+import { useFolders } from "../state/collab-folder";
 import { useInitialFolders } from "./folders-context";
 
 export const useTemplateFolder = () => {
   const ctx = useInitialFolders();
-  return ctx.folders.find((el) => el.type === "templates");
+  return ctx.folders.find((el) => el.type === "templates")!;
 };
 
 export const useAppFolders = () => {
-  const ctx = useInitialFolders();
-  return ctx.folders?.filter((el) => el.type === "app");
+  const ctx = useFolders();
+  return ctx.filter((el) => el.type === "app");
 };

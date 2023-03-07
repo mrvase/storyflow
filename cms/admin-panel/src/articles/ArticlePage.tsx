@@ -5,6 +5,7 @@ import {
   BoltIcon,
   CheckIcon,
   DocumentDuplicateIcon,
+  DocumentIcon,
   FunnelIcon,
   ListBulletIcon,
   PencilIcon,
@@ -118,22 +119,11 @@ export const ArticleContent = ({
   return (
     <Content
       selected={selected}
+      icon={variant === "template" ? DocumentDuplicateIcon : DocumentIcon}
       header={
-        <Content.Header>
-          <div
-            className={cl(
-              "flex-center h-full font-medium pl-9",
-              variant === "template" && "text-teal-500"
-            )}
-          >
-            {label}
-            {variant === "template" && (
-              <span className="text-sm font-light mt-1 ml-4 text-gray-400">
-                <DocumentDuplicateIcon className="w-4 h-4" />
-              </span>
-            )}
-          </div>
-        </Content.Header>
+        <span className={cl(variant === "template" && "text-teal-500")}>
+          {label}
+        </span>
       }
       buttons={
         <div
@@ -235,7 +225,6 @@ function Toolbar({ id, config }: { id: DocumentId; config: DocumentConfig }) {
       },
     },
   ];
-
   return (
     <Content.Toolbar>
       <NoList>
@@ -252,8 +241,31 @@ function Toolbar({ id, config }: { id: DocumentId; config: DocumentConfig }) {
             <DragOption key={el.label} {...el} />
           ))}
         </Content.ToolbarMenu>
+        <TemplateMenu id={id} />
       </NoList>
     </Content.Toolbar>
+  );
+}
+
+export function TemplateMenu({ id }: { id?: DocumentId }) {
+  const templateFolder = useTemplateFolder()?.id;
+  const { articles: templates } = useArticleList(templateFolder);
+
+  return (
+    <Content.ToolbarMenu label={"Indsæt skabelon"} icon={BoltIcon}>
+      {(templates ?? []).map((el) => (
+        <React.Fragment key={el.id}>
+          {el.id === id ? null : (
+            <DragOption
+              label={el.label ?? el.id}
+              item={{
+                template: el.id,
+              }}
+            />
+          )}
+        </React.Fragment>
+      ))}
+    </Content.ToolbarMenu>
   );
 }
 
@@ -292,7 +304,7 @@ export function FieldToolbar({
       <FieldLabel id={fieldId} template={documentId} />
       <Content.ToolbarMenu<{ id: DocumentId; label: string }>
         icon={ListBulletIcon}
-        label="Vælg template"
+        label="Vælg skabelon"
         onSelect={(el) => setConfig("template", el.id)}
         onClear={() => setConfig("template", undefined)}
         selected={

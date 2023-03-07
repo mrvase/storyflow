@@ -6,9 +6,17 @@ export type FieldId = StringType<"field-id">; // `${DocumentId}${TemplateFieldId
 
 export type Parameter = { x: number; value?: PrimitiveValue };
 
+export type ContextImport = {
+  ctx: string;
+};
+
 // placeholders are meant to be replaced by a value when the computation is executed
-export type Placeholder = Parameter | FieldImport | Fetcher;
-export type FlatPlaceholder = Parameter | FlatFieldImport | Fetcher;
+export type Placeholder = Parameter | FieldImport | Fetcher | ContextImport;
+export type FlatPlaceholder =
+  | Parameter
+  | FlatFieldImport
+  | Fetcher
+  | ContextImport;
 
 // symbols are also meant to be eliminated when the computation is executed,
 // but unlike placeholders, they do not indicate a place for a value
@@ -117,12 +125,12 @@ export type NestedDocument = {
 
 export type FlatFilter = {
   field: TemplateFieldId | "folder" | "";
-  operation: "=" | "<" | ">" | ">=" | "<=" | "";
+  operation: "=" | "!=" | "<" | ">" | ">=" | "<=" | "";
 };
 
 export type Filter = {
   field: TemplateFieldId | "folder" | "";
-  operation: "=" | "<" | ">" | ">=" | "<=" | "";
+  operation: "=" | "!=" | "<" | ">" | ">=" | "<=" | "";
   value: Computation;
 };
 

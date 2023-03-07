@@ -14,9 +14,10 @@ import { getComputationRecord } from "@storyflow/backend/flatten";
 import { getDocumentId } from "@storyflow/backend/ids";
 import { Client } from "../../client";
 import { unwrap } from "@storyflow/result";
+import { extendPath } from "@storyflow/backend/extendPath";
 
 export const calculateFn = (
-  id: FieldId | string,
+  fieldId: FieldId | string,
   value: Computation,
   {
     imports = {},
@@ -28,51 +29,53 @@ export const calculateFn = (
     returnFunction?: boolean;
   }
 ): Value[] => {
-  const getter = (id: FieldId | string, returnFunction: boolean) => {
-    const stateId = returnFunction ? `${id}#function` : id;
+  const getter = (importId: FieldId | string, returnFunction: boolean) => {
+    const stateId = returnFunction ? `${importId}#function` : importId;
 
-    if (id.startsWith("ctx:")) {
-      return context.use<Value[]>(
-        getContextKey(getDocumentId(id as FieldId), id.slice(4))
+    if (importId.startsWith("ctx:")) {
+      const value = context.use<Value[]>(
+        getContextKey(getDocumentId(fieldId as FieldId), importId.slice(4))
       ).value;
+      return value ? [value] : [];
     }
 
-    if (id.indexOf(".") > 0) {
-      return store.use<Value[]>(id).value ?? [];
+    if (importId.indexOf(".") > 0) {
+      return store.use<Value[]>(importId).value ?? [];
     }
 
-    const value = imports[id];
+    const value = imports[importId];
 
     // if (!value) return store.use<Value[]>(id).value ?? [];
     if (value) {
       return store.use<Value[]>(stateId, () =>
-        calculateFn(id, value, { imports, client, returnFunction })
+        calculateFn(importId, value, { imports, client, returnFunction })
       ).value;
     }
 
-    const asyncFn = fetchArticle(getDocumentId(id as FieldId), client).then(
-      (article) => {
-        // returning undefined makes sure that the field is not initialized,
-        // so that if the field is initialized elsewhere, this field will react to it.
-        // (e.g. a not yet saved article)
-        if (!article) return undefined;
-        const all = getComputationRecord(article, { includeImports: true });
-        const value = all[id as FieldId];
-        if (!value) return undefined;
-        const fn = () =>
-          calculateFn(id, value, { imports: all, client, returnFunction });
-        return fn;
-      }
-    );
+    const asyncFn = fetchArticle(
+      getDocumentId(importId as FieldId),
+      client
+    ).then((article) => {
+      // returning undefined makes sure that the field is not initialized,
+      // so that if the field is initialized elsewhere, this field will react to it.
+      // (e.g. a not yet saved article)
+      if (!article) return undefined;
+      const all = getComputationRecord(article, { includeImports: true });
+      const value = all[importId as FieldId];
+      if (!value) return undefined;
+      const fn = () =>
+        calculateFn(importId, value, { imports: all, client, returnFunction });
+      return fn;
+    });
 
     return store.useAsync(stateId, asyncFn).value ?? [];
   };
 
-  const result = calculateSync(id, value, getter, { returnFunction });
+  const result = calculateSync(fieldId, value, getter, { returnFunction });
   return result;
 };
 
-export const fetchFn = (fetcher: Fetcher, client: Client) => {
+export const fetchFn = (path: string, fetcher: Fetcher, client: Client) => {
   const isFetcherFetchable = (
     fetcher: Fetcher
   ): fetcher is Fetcher & {
@@ -94,10 +97,24 @@ export const fetchFn = (fetcher: Fetcher, client: Client) => {
     );
   };
 
-  if (isFetcherFetchable(fetcher)) {
-    return client.articles.getListFromFilters.query(fetcher).then((res) => {
-      return unwrap(res, []);
-    });
+  const reactiveFetcher: Fetcher = {
+    ...fetcher,
+    filters: fetcher.filters.map((filter, index) => ({
+      ...filter,
+      value:
+        store.use<Value[]>(extendPath(path, `${index}`, "/")).value ??
+        filter.value,
+    })),
+  };
+
+  console.log("FETCHER", fetcher, reactiveFetcher);
+
+  if (isFetcherFetchable(reactiveFetcher)) {
+    return client.articles.getListFromFilters
+      .query(reactiveFetcher)
+      .then((res) => {
+        return unwrap(res, []);
+      });
   } else {
     return [];
   }

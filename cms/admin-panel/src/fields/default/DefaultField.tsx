@@ -207,10 +207,6 @@ export function WritableDefaultField({
     () => initialEditorValue
   );
 
-  const isEmpty =
-    computation.length === 0 ||
-    (computation.length === 1 && computation[0] === "");
-
   const [, setFunction] = useGlobalState<Computation>(
     `${extendPath(id, path)}#function`,
     () =>

@@ -28,6 +28,7 @@ import { DocumentNode } from "../decorators/DocumentNode";
 import { $getRoot } from "lexical";
 import { Query } from "../query/Query";
 import { type QueueListener } from "@storyflow/state";
+import { ContextNode } from "../decorators/ContextNode";
 
 const editorConfig = {
   namespace: "EDITOR",
@@ -43,6 +44,7 @@ const editorConfig = {
     DocumentNode,
     HeadingNode,
     TokenNode,
+    ContextNode,
   ],
 };
 

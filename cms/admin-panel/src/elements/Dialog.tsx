@@ -1,4 +1,5 @@
 import { Dialog as HeadlessDialog, Transition } from "@headlessui/react";
+import { XMarkIcon } from "@heroicons/react/24/outline";
 import React from "react";
 
 export default function Dialog({
@@ -30,11 +31,11 @@ export default function Dialog({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black bg-opacity-25" />
+          <div className="fixed inset-0 bg-black bg-opacity-40" />
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4 text-center">
+          <div className="flex min-h-full items-center justify-center p-0 text-center">
             <Transition.Child
               as={React.Fragment}
               enter="ease-out duration-300"
@@ -44,10 +45,21 @@ export default function Dialog({
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <HeadlessDialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-gray-700 p-6 text-left align-middle shadow-xl transition-all">
-                <HeadlessDialog.Title className="text-lg font-medium leading-6 py-2">
-                  {title}
-                </HeadlessDialog.Title>
+              <HeadlessDialog.Panel className="w-full max-w-md transform rounded-2xl bg-white dark:bg-gray-800 p-6 text-left align-middle shadow-xl transition-all">
+                <div className="flex justify-between items-center mb-5">
+                  <HeadlessDialog.Title className="text-lg font-medium leading-6">
+                    {title}
+                  </HeadlessDialog.Title>
+                  <button
+                    className="h-8 w-8 flex-center opacity-50 hover:opacity-100 rounded font-normal text-sm transition-opacity"
+                    onClick={(ev) => {
+                      ev.preventDefault();
+                      close();
+                    }}
+                  >
+                    <XMarkIcon className="w-5 h-5" />
+                  </button>
+                </div>
                 <HeadlessDialog.Description className="my-4">
                   {description}
                 </HeadlessDialog.Description>

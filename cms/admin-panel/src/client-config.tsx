@@ -128,7 +128,7 @@ export function ClientConfigProvider({
     const abortController = new AbortController();
 
     (async () => {
-      const fetchedConfigs = await Promise.all(
+      const fetchedConfigs = await Promise.allSettled(
         data.domains.map(async ({ id, configUrl }) => {
           configUrl = configUrl.endsWith(".dk")
             ? `${configUrl}/api/config`
@@ -150,8 +150,6 @@ export function ClientConfigProvider({
               }[configUrl] ?? configUrl;
           }
 
-          if (!configUrl) return;
-
           const config = await fetch(configUrl, {
             signal: abortController.signal,
           }).then((res) => res.json());
@@ -168,13 +166,18 @@ export function ClientConfigProvider({
       );
 
       if (isMounted) {
-        setConfigs(
-          Object.fromEntries(
-            fetchedConfigs.filter((el): el is Exclude<typeof el, undefined> =>
-              Boolean(el)
-            )
+        const configs = fetchedConfigs
+          .filter(
+            (
+              el
+            ): el is Exclude<
+              typeof el,
+              PromiseRejectedResult | PromiseFulfilledResult<undefined>
+            > => Boolean(el.status === "fulfilled" && el.value)
           )
-        );
+          .map((el) => el.value);
+
+        setConfigs(Object.fromEntries(configs));
       }
     })();
     return () => {

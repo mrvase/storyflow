@@ -9,10 +9,14 @@ import {
   $getSelection,
   $isParagraphNode,
   $isRootNode,
+  GridSelection,
   LexicalNode,
+  NodeSelection,
+  RangeSelection,
 } from "lexical";
 import { mergeRegister } from "../../editor/utils/mergeRegister";
 import {
+  addContext,
   addDocumentImport,
   addFetcher,
   addImport,
@@ -37,32 +41,48 @@ import { useArticleIdGenerator } from "../../id-generator";
 import { $isHeadingNode } from "../../editor/react/HeadingNode";
 import { createComponent } from "./createComponent";
 import { insertComputation } from "./insertComputation";
+import { LibraryConfig } from "@storyflow/frontend/types";
 
-export function ContentPlugin({
-  id,
-  push,
-}: {
-  id?: string;
-  push?: (ops: ComputationOp["ops"]) => void;
-}) {
+export function ContentPlugin({ id }: { id?: string }) {
   const editor = useEditorContext();
 
-  useEditorEvents({ id, push });
+  const { libraries } = useClientConfig();
+
+  useEditorEvents({ id });
 
   useLayoutEffect(() => {
-    return registerPlainText(editor, { allowLineBreaks: true });
-  }, [editor]);
+    return registerPlainText(editor, libraries, { allowLineBreaks: true });
+  }, [editor, libraries]);
 
   return null;
 }
 
-function useEditorEvents({
-  id,
-  push,
-}: {
-  id?: string;
-  push?: (ops: ComputationOp["ops"]) => void;
-}) {
+export function $getLastBlock(
+  selection: RangeSelection | NodeSelection | GridSelection,
+  libraries: LibraryConfig[]
+) {
+  const nodes = selection.getNodes();
+  if (nodes.length === 0) return;
+  let lastNode: LexicalNode | null = nodes[nodes.length - 1];
+  if ($isRootNode(lastNode)) {
+    return lastNode;
+  }
+  while (
+    lastNode &&
+    !$isParagraphNode(lastNode) &&
+    !$isHeadingNode(lastNode) &&
+    !(
+      $isLayoutElementNode(lastNode) &&
+      !isInlineElement(libraries, lastNode.__value)
+    ) &&
+    !$isDocumentNode(lastNode)
+  ) {
+    lastNode = lastNode!.getParent();
+  }
+  return lastNode;
+}
+
+function useEditorEvents({ id }: { id?: string }) {
   const editor = useEditorContext();
   const isFocused = useIsFocusedContext();
 
@@ -79,23 +99,10 @@ function useEditorEvents({
         const node = getNodesFromComputation(computation, libraries)[0];
         const selection = $getSelection();
         if (!selection) return;
-        const nodes = selection.getNodes();
-        if (nodes.length === 0) return;
-        let lastNode: LexicalNode | null = nodes[nodes.length - 1];
+        const lastNode = $getLastBlock(selection, libraries);
         if ($isRootNode(lastNode)) {
           lastNode.append(node);
-          return;
-        }
-        while (
-          lastNode &&
-          !$isParagraphNode(lastNode!) &&
-          !$isHeadingNode(lastNode!) &&
-          !$isLayoutElementNode(lastNode!) &&
-          !$isDocumentNode(lastNode!)
-        ) {
-          lastNode = lastNode!.getParent();
-        }
-        if (lastNode) {
+        } else if (lastNode) {
           const isEmpty = lastNode.getTextContent() === "";
           if (isEmpty) {
             lastNode.insertBefore(node);
@@ -122,7 +129,17 @@ function useEditorEvents({
             },
           ];
 
-          insertComputation(editor, insert, libraries, push);
+          insertComputation(editor, insert, libraries);
+        }),
+
+        addContext.subscribe(async (ctx) => {
+          let insert = [
+            {
+              ctx,
+            },
+          ];
+
+          insertComputation(editor, insert, libraries);
         }),
 
         addDocumentImport.subscribe(async ({ documentId, templateId }) => {
@@ -142,7 +159,7 @@ function useEditorEvents({
           const component = createComponent(name, { library, libraries });
           const computation: EditorComputation = [component];
           if (isInlineElement(libraries, component)) {
-            insertComputation(editor, computation, libraries, push);
+            insertComputation(editor, computation, libraries);
           } else {
             editor.update(() => {
               addBlockElement(computation);

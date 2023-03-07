@@ -60,6 +60,7 @@ const getArticleFromInsert = (
     values: action.values,
     compute: action.compute as ComputationBlock[],
     config: [],
+    ...(action.label && { label: action.label }),
   };
 };
 
@@ -375,7 +376,7 @@ export const getTemplateFieldsAsync = async (
 
 const fallbackLabel = "[Titel]";
 
-export const getDocumentLabel = (doc: DBDocument | undefined) => {
+export const getDocumentLabel = (doc: TemplateDocument | undefined) => {
   if (!doc) return undefined;
   const defaultLabelValue = doc.values[LABEL_ID]?.[0];
   const defaultLabel =
@@ -393,7 +394,7 @@ export const getDocumentLabel = (doc: DBDocument | undefined) => {
   );
 };
 
-export const useDocumentLabel = <T extends DBDocument | undefined>(
+export const useDocumentLabel = <T extends TemplateDocument | undefined>(
   doc: T
 ): T extends undefined ? undefined : string => {
   const defaultLabel = getDocumentLabel(doc);
@@ -406,9 +407,13 @@ export const useDocumentLabel = <T extends DBDocument | undefined>(
     return undefined as any;
   }
 
+  if (doc?.label) {
+    return doc.label as any;
+  }
+
   if (output && output.length > 0) {
     return typeof output[0] === "string" ? output[0] : (fallbackLabel as any);
   }
 
-  return doc?.label ?? defaultLabel ?? (fallbackLabel as any);
+  return defaultLabel ?? (fallbackLabel as any);
 };

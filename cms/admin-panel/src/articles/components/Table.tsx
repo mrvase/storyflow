@@ -142,7 +142,7 @@ function Checkbox({ id }: { id: string }) {
         <input
           name={minimizeId(id)}
           type="checkbox"
-          className="peer w-0 h-0 bg-transparent"
+          className="peer w-0 h-0 opacity-0"
         />
         <div className="absolute inset-0 -z-10 bg-white dark:bg-gray-750 peer-checked:bg-gray-500 rounded transition-colors" />
         <CheckIcon className="w-3 h-3 opacity-0 peer-checked:opacity-100 text-gray-200 transition-opacity" />

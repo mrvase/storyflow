@@ -64,6 +64,7 @@ function fetchFetcher(fetcher: Fetcher, db: string): Promise<NestedDocument[]> {
       ) => {
         const operator = {
           "=": "eq",
+          "!=": "ne",
           ">": "gt",
           "<": "lt",
           ">=": "gte",
@@ -100,7 +101,7 @@ function fetchFetcher(fetcher: Fetcher, db: string): Promise<NestedDocument[]> {
 
 export async function fetchSinglePage(
   url: string,
-  namespace: string,
+  namespaces: string[],
   db: string
 ): Promise<FetchPageResult | null> {
   const client = await clientPromise;
@@ -114,7 +115,9 @@ export async function fetchSinglePage(
     .db(db)
     .collection("documents")
     .findOne<DBDocument>({
-      ...(namespace && { folder: minimizeId(namespace) }),
+      ...(namespaces.length > 0 && {
+        folder: { $in: namespaces.map((n) => minimizeId(n)) },
+      }),
       [`values.${FIELDS.url.id}`]:
         url.indexOf("/") < 0
           ? url

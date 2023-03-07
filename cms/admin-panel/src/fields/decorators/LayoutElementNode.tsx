@@ -174,6 +174,8 @@ export function $createLayoutElementNode(
   return new LayoutElementNode(element);
 }
 
-export function $isLayoutElementNode(node: LexicalNode): boolean {
+export function $isLayoutElementNode(
+  node: LexicalNode
+): node is LayoutElementNode {
   return node instanceof LayoutElementNode;
 }

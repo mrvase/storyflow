@@ -13,7 +13,8 @@ import LocationBar from "./LocationBar";
 import { ErrorBoundary, FallbackProps } from "react-error-boundary";
 import AppPage from "../../folders/AppPage";
 import { useLocation, useAction } from "@storyflow/router";
-import { SystemPage } from "./SystemPage";
+import { SystemFolderPage } from "./SystemFolderPage";
+import { SystemTemplatePage } from "./SystemTemplatePage";
 
 const BranchFocusContext = React.createContext<{
   isFocused: boolean;
@@ -224,7 +225,11 @@ function Pages({
   const selectedLength = selected.split("/").length;
 
   if (segments.some((x) => x.endsWith("folders"))) {
-    return <SystemPage />;
+    return <SystemFolderPage />;
+  }
+
+  if (segments.some((x) => x.endsWith("templates"))) {
+    return <SystemTemplatePage />;
   }
 
   return (

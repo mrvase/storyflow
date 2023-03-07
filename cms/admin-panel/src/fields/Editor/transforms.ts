@@ -54,6 +54,7 @@ import {
 import { EditorComputation, LayoutElement } from "@storyflow/backend/types";
 import { ClientConfig, LibraryConfig } from "@storyflow/frontend/types";
 import { getConfigFromType } from "../../client-config";
+import { $createContextNode, $isContextNode } from "../decorators/ContextNode";
 
 export const isInlineElement = (
   libraries: LibraryConfig[],
@@ -73,6 +74,7 @@ export const $isSymbolNode = (node: LexicalNode) => {
     $isOperatorNode(node) ||
     $isFunctionNode(node) ||
     $isParameterNode(node) ||
+    $isContextNode(node) ||
     $isLayoutElementNode(node) ||
     $isInlineLayoutElementNode(node) ||
     $isDocumentNode(node) ||
@@ -242,6 +244,8 @@ export const $getComputation = (node: LexicalNode) => {
     } else if ($isInlineLayoutElementNode(node)) {
       content = [node.__value];
     } else if ($isDocumentNode(node)) {
+      content = [node.__value];
+    } else if ($isContextNode(node)) {
       content = [node.__value];
     } else if ($isTokenNode(node)) {
       content = [node.__value];
@@ -451,6 +455,9 @@ export const getNodesFromComputation = (
     ) {
       const node = $createTokenNode(el);
       acc.push(node);
+    } else if (tools.isContextImport(el)) {
+      const node = $createContextNode(el);
+      acc.push(node);
     } else if (tools.isSymbol(el, "_")) {
       const node = $createOperatorNode(el["_"]);
       acc.push(node);
@@ -469,6 +476,73 @@ export const getNodesFromComputation = (
   }, [] as LexicalNode[]);
 };
 
+export function $getBlocksFromComputation(
+  initialState: EditorComputation,
+  libraries: LibraryConfig[]
+) {
+  const blocks: LexicalNode[] = [];
+
+  const isBlockElement = (el: EditorComputation[number]) => {
+    return (
+      (tools.isLayoutElement(el) && !isInlineElement(libraries, el)) ||
+      tools.isNestedDocument(el) ||
+      tools.isFetcher(el) ||
+      tools.isDocumentImport(el)
+    );
+  };
+
+  const arrSplit = tools.split(
+    initialState,
+    (el) => tools.isLineBreak(el) || isBlockElement(el)
+  );
+
+  const arr = arrSplit
+    // we need to do this filter before the other one since the other one needs
+    // to check both the current and next element
+    .filter((el) => el.length > 0)
+    .filter(
+      (el, index, arr) =>
+        // strings create paragraphs themselves
+        !tools.isLineBreak(el[0]) ||
+        index === arr.length - 1 ||
+        tools.isLineBreak(arr[index + 1]?.[0])
+    );
+
+  if (!arr.length) {
+    const paragraphNode = $createParagraphNode();
+    blocks.push(paragraphNode);
+    return blocks;
+  }
+
+  arr.forEach((computation) => {
+    if (computation.length === 1 && isBlockElement(computation[0])) {
+      if (tools.isLayoutElement(computation[0])) {
+        blocks.push($createLayoutElementNode(computation[0]));
+      } else {
+        blocks.push($createDocumentNode(computation[0] as any));
+      }
+    } else if (tools.isLineBreak(computation[0])) {
+      const paragraphNode = $createParagraphNode();
+      blocks.push(paragraphNode);
+    } else {
+      const isHeading: false | string =
+        typeof computation[0] === "string" &&
+        (computation[0].match(/^(\#+)\s/)?.[1] ?? false);
+      const paragraphNode = isHeading
+        ? $createHeadingNode(`h${isHeading.length}` as "h1")
+        : $createParagraphNode();
+      computation = isHeading
+        ? tools.slice(computation, 1 + isHeading.length)
+        : computation;
+      const nodes = getNodesFromComputation(computation, libraries);
+      paragraphNode.append(...nodes);
+      blocks.push(paragraphNode);
+    }
+  });
+
+  return blocks;
+}
+
 export function $initializeEditor(
   initialState: EditorComputation,
   libraries: LibraryConfig[]
@@ -476,63 +550,8 @@ export function $initializeEditor(
   const root = $getRoot();
 
   if (root.isEmpty()) {
-    const isBlockElement = (el: EditorComputation[number]) => {
-      return (
-        (tools.isLayoutElement(el) && !isInlineElement(libraries, el)) ||
-        tools.isNestedDocument(el) ||
-        tools.isFetcher(el) ||
-        tools.isDocumentImport(el)
-      );
-    };
-
-    const arrSplit = tools.split(
-      initialState,
-      (el) => tools.isLineBreak(el) || isBlockElement(el)
-    );
-
-    const arr = arrSplit
-      // we need to do this filter before the other one since the other one needs
-      // to check both the current and next element
-      .filter((el) => el.length > 0)
-      .filter(
-        (el, index, arr) =>
-          // strings create paragraphs themselves
-          !tools.isLineBreak(el[0]) ||
-          index === arr.length - 1 ||
-          tools.isLineBreak(arr[index + 1]?.[0])
-      );
-
-    if (!arr.length) {
-      const paragraphNode = $createParagraphNode();
-      root.append(paragraphNode);
-      return;
-    }
-
-    arr.forEach((computation) => {
-      if (computation.length === 1 && isBlockElement(computation[0])) {
-        if (tools.isLayoutElement(computation[0])) {
-          root.append($createLayoutElementNode(computation[0]));
-        } else {
-          root.append($createDocumentNode(computation[0] as any));
-        }
-      } else if (tools.isLineBreak(computation[0])) {
-        const paragraphNode = $createParagraphNode();
-        root.append(paragraphNode);
-      } else {
-        const isHeading: false | string =
-          typeof computation[0] === "string" &&
-          (computation[0].match(/^(\#+)\s/)?.[1] ?? false);
-        const paragraphNode = isHeading
-          ? $createHeadingNode(`h${isHeading.length}` as "h1")
-          : $createParagraphNode();
-        computation = isHeading
-          ? tools.slice(computation, 1 + isHeading.length)
-          : computation;
-        const nodes = getNodesFromComputation(computation, libraries);
-        paragraphNode.append(...nodes);
-        root.append(paragraphNode);
-      }
-    });
+    const blocks = $getBlocksFromComputation(initialState, libraries);
+    root.append(...blocks);
   }
 }
 

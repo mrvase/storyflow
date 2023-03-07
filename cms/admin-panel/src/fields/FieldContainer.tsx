@@ -85,7 +85,7 @@ export function FieldContainer({
 
     dragHandleProps = dragHandlePropsFromHook;
   } else {
-    // dragHandleProps = dragHandlePropsFromProps;
+    dragHandleProps = dragHandlePropsFromProps;
   }
 
   return (

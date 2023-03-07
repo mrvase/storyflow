@@ -88,8 +88,8 @@ export function RenderTemplate({
     [config, push]
   );
 
-  let containerProps = {};
   let dragHandleProps: any = undefined;
+  let containerProps = {};
 
   if (index !== null) {
     const {

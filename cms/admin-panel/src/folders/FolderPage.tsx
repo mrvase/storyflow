@@ -4,8 +4,11 @@ import { getPathFromSegment } from "../layout/utils";
 import Content from "../layout/components/Content";
 import { useTemplateFolder } from ".";
 import {
+  ArrowPathRoundedSquareIcon,
+  DocumentDuplicateIcon,
   FolderIcon,
   GlobeAltIcon,
+  PencilIcon,
   PlusIcon,
 } from "@heroicons/react/24/outline";
 import { useSegment } from "../layout/components/SegmentContext";
@@ -14,7 +17,6 @@ import { minimizeId, restoreId } from "@storyflow/backend/ids";
 import { EditableLabel } from "../elements/EditableLabel";
 import cl from "clsx";
 import { DBFolder } from "@storyflow/backend/types";
-import { useContextWithError } from "../utils/contextError";
 import { useLocalStorage } from "../state/useLocalStorage";
 import { SWRClient } from "../client";
 import { FolderDomainsContext, FolderDomainsProvider } from "./folder-domains";
@@ -24,10 +26,8 @@ import { targetTools } from "shared/operations";
 import { createKey } from "../utils/createKey";
 import { AddTemplateDialog } from "./AddTemplateDialog";
 import { DocumentListSpace } from "./spaces/DocumentListSpace";
-
-const FolderContext = React.createContext<DBFolder | undefined | null>(null);
-export const useCurrentFolder = () =>
-  useContextWithError(FolderContext, "Folder");
+import { useArticleTemplate, useDocumentLabel } from "../articles";
+import { FolderContext } from "./FolderPageContext";
 
 export default function FolderPage({
   isOpen,
@@ -50,8 +50,6 @@ export default function FolderPage({
   const folderLookupId = urlId ? minimizeId(urlId) : "----";
   const folder = useFolder(folderLookupId);
 
-  const templateFolderId = useTemplateFolder()?.id;
-
   useOnLoadHandler(true, onLoad);
 
   const cols = {
@@ -62,8 +60,6 @@ export default function FolderPage({
   }[numberOfVisibleTabs]!;
 
   const [dialogIsOpen, setDialogIsOpen] = React.useState<null | string>(null);
-
-  const [, navigateTab] = useTabUrl();
 
   const [isEditing] = [true]; //useLocalStorage<boolean>("editing-articles", false);
 
@@ -94,37 +90,23 @@ export default function FolderPage({
       <FolderDomainsProvider domains={folder?.domains ?? []}>
         <Content
           selected={isOpen}
+          icon={FolderIcon}
           header={
-            <Content.Header>
-              <div className="flex-center h-full font-medium">
-                <span className="text-sm font-light mt-0.5 mr-5 text-gray-400">
-                  <FolderIcon className="w-4 h-4" />
-                </span>
-                <EditableLabel
-                  value={folder.label ?? ""}
-                  onChange={(value) => {
-                    mutateProp("label", value);
-                  }}
-                  className={cl("font-medium")}
-                />
-              </div>
-            </Content.Header>
+            <EditableLabel
+              value={folder.label ?? ""}
+              onChange={(value) => {
+                mutateProp("label", value);
+              }}
+              className={cl("font-medium")}
+            />
           }
           toolbar={
             isEditing ? (
               <Content.Toolbar>
-                <Content.ToolbarButton
-                  data-focus-remain="true"
-                  onClick={() => {
-                    if (folder?.template) {
-                      navigateTab(`${current}/t-${restoreId(folder.template)}`);
-                      return;
-                    }
-                    setDialogIsOpen("add-template");
-                  }}
-                >
-                  Skabelon
-                </Content.ToolbarButton>
+                <FolderTemplateButton
+                  template={folder?.template}
+                  openDialog={() => setDialogIsOpen("add-template")}
+                />
                 <Content.ToolbarButton
                   data-focus-remain="true"
                   onClick={() => {
@@ -167,13 +149,13 @@ export default function FolderPage({
             ) : null
           }
         >
-          {folder && templateFolderId && (
+          {folder && (
             <>
               <AddTemplateDialog
                 isOpen={dialogIsOpen === "add-template"}
                 close={() => setDialogIsOpen(null)}
                 folderId={folder.id}
-                templateFolder={templateFolderId}
+                currentTemplate={folder.template}
               />
             </>
           )}
@@ -209,6 +191,59 @@ export default function FolderPage({
         {children}
       </FolderDomainsProvider>
     </FolderContext.Provider>
+  );
+}
+
+export function FolderTemplateButton({
+  template,
+  openDialog,
+}: {
+  template?: string;
+  openDialog: () => void;
+}) {
+  const { current } = useSegment();
+  const [, navigateTab] = useTabUrl();
+
+  const article = useArticleTemplate(template);
+  const label = useDocumentLabel(article);
+
+  if (!template) {
+    return (
+      <Content.ToolbarButton
+        data-focus-remain="true"
+        onClick={() => {
+          openDialog();
+        }}
+        icon={DocumentDuplicateIcon}
+      >
+        Tilføj skabelon
+      </Content.ToolbarButton>
+    );
+  }
+
+  return (
+    <Content.ToolbarMenu
+      label={`Skabelon: ${label}`}
+      icon={DocumentDuplicateIcon}
+    >
+      <Content.ToolbarMenuOption
+        icon={PencilIcon}
+        label={`Rediger skabelon "${label}"`}
+        onClick={() => {
+          if (template) {
+            navigateTab(`${current}/t-${restoreId(template)}`);
+            return;
+          }
+        }}
+      />
+      <Content.ToolbarMenuOption
+        icon={ArrowPathRoundedSquareIcon}
+        label="Skift skabelon"
+        onClick={() => {
+          openDialog();
+        }}
+      />
+    </Content.ToolbarMenu>
   );
 }
 

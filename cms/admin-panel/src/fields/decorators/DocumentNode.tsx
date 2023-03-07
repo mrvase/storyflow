@@ -156,7 +156,11 @@ function DocumentDecorator({
           selectClick.current = false;
         }}
       >
-        {docs.length === 0 && <div className="text-center w-full">[TOM]</div>}
+        {docs.length === 0 && (
+          <div className="w-full px-2 py-0.5 select-none">
+            [Ingen resultater · Klik for at indstille]
+          </div>
+        )}
         {docs.map(({ id: docId, values }) => (
           <div key={docId} className="flex w-full py-0.5">
             {!hasTemplate ? (
@@ -239,7 +243,7 @@ function TemplateSelect({
             as="button"
             className="group h-full px-2 hover:bg-white/5 flex-center gap-1 rounded cursor-default transition-colors"
           >
-            Vælg skabelon
+            [Vælg skabelon]
             <ChevronDownIcon className="w-3 h-3 opacity-0 group-hover:opacity-75 transition-opacity" />
           </Menu.Button>
           <MenuTransition show={open} className="absolute z-10">

@@ -79,17 +79,17 @@ const authorization = async (ctx: MiddlewareContext) => {
 export const public_ = createRoute({
   get: createProcedure({
     middleware(ctx) {
-      return ctx.use(corsFactory("allow-all"), authorization);
+      return ctx.use(corsFactory("allow-all"));
     },
     schema() {
       return z.object({
-        namespace: z.string().optional(),
+        namespaces: z.array(z.string()).optional(),
         url: z.string(),
       });
     },
-    async query({ namespace, url }, { dbName }) {
-      console.log("REQUESTING PAGE", dbName, url);
-      const page = await fetchSinglePage(url, namespace ?? "", dbName);
+    async query({ namespaces, url }) {
+      console.log("REQUESTING PAGE", "kfs-fzq6", url);
+      const page = await fetchSinglePage(url, namespaces ?? [], "kfs-fzq6");
       return success(page);
     },
   }),
@@ -136,9 +136,9 @@ export const public_ = createRoute({
       return ctx.use(corsFactory("allow-all"), authorization);
     },
     schema() {
-      return z.string().optional();
+      return z.object({ namespaces: z.array(z.string()).optional() });
     },
-    async query(namespace, { dbName, slug }) {
+    async query({ namespaces }, { dbName, slug }) {
       console.log("REQUESTING PATHS");
 
       const client = await clientPromise;
@@ -146,8 +146,10 @@ export const public_ = createRoute({
         .db(dbName)
         .collection("documents")
         .find({
-          ...(namespace
-            ? { folder: minimizeId(namespace) }
+          ...(namespaces
+            ? {
+                folder: { $in: namespaces.map((n) => minimizeId(n)) },
+              }
             : { [`values.${URL_ID}`]: { $exists: true } }),
           /*
           [`values.${URL_ID}`]: namespace

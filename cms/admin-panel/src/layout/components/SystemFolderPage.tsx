@@ -8,7 +8,7 @@ import { DragIcon } from "../../folders/spaces/DragIcon";
 import { useDragItem } from "@storyflow/dnd";
 import { DBFolder } from "@storyflow/backend/types";
 
-export function SystemPage() {
+export function SystemFolderPage() {
   const form = React.useRef<HTMLFormElement | null>(null);
 
   const folders = useFolders();
@@ -32,19 +32,7 @@ export function SystemPage() {
   };
 
   return (
-    <Content
-      selected
-      header={
-        <Content.Header>
-          <div className="flex-center h-full font-medium">
-            <span className="text-sm font-light mt-0.5 mr-5 text-gray-400">
-              <FolderIcon className="w-4 h-4" />
-            </span>
-            Alle mapper
-          </div>
-        </Content.Header>
-      }
-    >
+    <Content selected icon={FolderIcon} header="Alle mapper">
       <div className="px-5">
         <div>
           <div className="flex items-center ml-9 mb-1 justify-between">

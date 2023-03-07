@@ -1,40 +1,12 @@
 import cl from "clsx";
-import {
-  ArrowDownTrayIcon,
-  ArrowUpTrayIcon,
-  PlusIcon,
-  TrashIcon,
-} from "@heroicons/react/24/outline";
-import {
-  getDocumentId,
-  getTemplateFieldId,
-  minimizeId,
-  replaceDocumentId,
-  restoreId,
-} from "@storyflow/backend/ids";
-import { CREATION_DATE_ID } from "@storyflow/backend/templates";
-import { DocumentId } from "@storyflow/backend/types";
-import React from "react";
-import { tools } from "shared/editor-tools";
-import {
-  fetchArticle,
-  getDefaultValuesFromTemplateAsync,
-  getDocumentLabel,
-  getTemplateFieldsAsync,
-  useArticleList,
-  useArticleListMutation,
-} from "../../articles";
+import { PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { getDocumentId, restoreId } from "@storyflow/backend/ids";
+import { getDocumentLabel, useArticleList } from "../../articles";
 import Table from "../../articles/components/Table";
-import { useClient } from "../../client";
-import { addDocumentImport } from "../../custom-events";
-import { useFieldFocus } from "../../field-focus";
-import { useArticleIdGenerator } from "../../id-generator";
-import { useSegment } from "../../layout/components/SegmentContext";
-import { useTabUrl } from "../../layout/utils";
-import { useCurrentFolder } from "../FolderPage";
 import Space from "./Space";
 import { useAppPageContext } from "../AppPage";
 import Loader from "../../elements/Loader";
+import { useDeleteForm } from "./useDeleteForm";
 
 export function AppSpace({
   spaceId,
@@ -47,27 +19,11 @@ export function AppSpace({
   hidden: boolean;
   index: number;
 }) {
-  const form = React.useRef<HTMLFormElement | null>(null);
-
-  const mutateArticles = useArticleListMutation();
-
-  const handleDelete = () => {
-    if (form.current && folderId) {
-      const data = new FormData(form.current);
-      const ids = Array.from(data.keys());
-      if (ids.length) {
-        mutateArticles({
-          folder: folderId,
-          actions: ids.map((id) => ({
-            type: "remove",
-            id,
-          })),
-        });
-      }
-    }
-  };
+  const { form, handleDelete } = useDeleteForm({ folderId });
 
   const { articles } = useArticleList(folderId);
+
+  const { urls, addArticleWithUrl } = useAppPageContext();
 
   if (!articles) {
     return (
@@ -78,8 +34,6 @@ export function AppSpace({
       </Space>
     );
   }
-
-  const { urls, addArticleWithUrl } = useAppPageContext();
 
   const rows = urls.map((el) => {
     const id = getDocumentId(el.id);
@@ -111,11 +65,7 @@ export function AppSpace({
     <>
       <Space
         label="Sider"
-        buttons={
-          <>
-            <Space.Button icon={TrashIcon} onClick={handleDelete} />
-          </>
-        }
+        buttons={<Space.Button icon={TrashIcon} onClick={handleDelete} />}
       >
         <form
           ref={form}

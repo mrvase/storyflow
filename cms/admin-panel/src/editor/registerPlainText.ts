@@ -10,8 +10,11 @@
 import {
   $createParagraphNode,
   $createTextNode,
+  $getRoot,
   $isNodeSelection,
+  $isRootNode,
   $isTextNode,
+  COPY_COMMAND,
   FORMAT_TEXT_COMMAND,
   KEY_ARROW_DOWN_COMMAND,
   KEY_ARROW_UP_COMMAND,
@@ -45,6 +48,13 @@ import {
 
 import { CAN_USE_BEFORE_INPUT, IS_IOS, IS_SAFARI } from "./utils/environment";
 import { mergeRegister } from "./utils/mergeRegister";
+import {
+  $getBlocksFromComputation,
+  $getComputation,
+} from "../fields/Editor/transforms";
+import { insertComputation } from "../fields/Editor/insertComputation";
+import { LibraryConfig } from "@storyflow/frontend/types";
+import { $getLastBlock } from "../fields/Editor/ContentPlugin";
 
 /**
  * Tre scenarier for tekst
@@ -55,6 +65,7 @@ import { mergeRegister } from "./utils/mergeRegister";
 
 export function registerPlainText(
   editor: LexicalEditor,
+  libraries: LibraryConfig[],
   options: { allowLineBreaks?: boolean } = {}
 ): () => void {
   const removeListener = mergeRegister(
@@ -390,6 +401,48 @@ export function registerPlainText(
       },
       COMMAND_PRIORITY_EDITOR
     ),
+
+    /*
+    editor.registerCommand(
+      COPY_COMMAND,
+      (event) => {
+        const selection = $getSelection();
+
+        if (
+          !$isRangeSelection(selection) ||
+          !(event instanceof ClipboardEvent)
+        ) {
+          return false;
+        }
+
+        const clipboardData = event.clipboardData;
+
+        if (!clipboardData) {
+          return false;
+        }
+
+        const computation = $getComputation($getRoot());
+
+        event.preventDefault();
+
+        clipboardData.setData(
+          "application/x-storyflow-computation",
+          JSON.stringify(computation)
+        );
+
+        let plainString = "";
+        if (selection !== null) {
+          plainString = selection.getTextContent();
+        }
+
+        clipboardData.setData("text/plain", plainString);
+
+        return true;
+      },
+      COMMAND_PRIORITY_EDITOR
+    ),
+    */
+
     editor.registerCommand(
       PASTE_COMMAND,
       (event) => {
@@ -401,15 +454,48 @@ export function registerPlainText(
 
         event.preventDefault();
 
+        const clipboardData =
+          event instanceof InputEvent || event instanceof KeyboardEvent
+            ? null
+            : event.clipboardData;
+
+        if (clipboardData !== null && $isRangeSelection(selection)) {
+          const computation = clipboardData.getData(
+            "application/x-storyflow-computation"
+          );
+
+          if (computation) {
+            try {
+              const payload = JSON.parse(computation);
+              const blocks = $getBlocksFromComputation(payload, libraries);
+              const lastNode = $getLastBlock(selection, libraries);
+              if ($isRootNode(lastNode)) {
+                lastNode.append(...blocks);
+              } else if (lastNode) {
+                const isEmpty = lastNode.getTextContent() === "";
+                if (isEmpty) {
+                  blocks.forEach((node) => {
+                    lastNode.insertBefore(node);
+                  });
+                } else {
+                  blocks
+                    .slice()
+                    .reverse()
+                    .forEach((node) => {
+                      lastNode.insertAfter(node);
+                    });
+                }
+              }
+              return true;
+            } catch (e) {
+              return false;
+            }
+          }
+        }
+
         editor.update(
           () => {
-            const selection = $getSelection();
-            const clipboardData =
-              event instanceof InputEvent || event instanceof KeyboardEvent
-                ? null
-                : event.clipboardData;
-
-            if (clipboardData != null && $isRangeSelection(selection)) {
+            if (clipboardData !== null && $isRangeSelection(selection)) {
               const text = clipboardData.getData("text/plain");
 
               if (text != null) {

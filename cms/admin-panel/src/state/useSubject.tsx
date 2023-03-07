@@ -41,18 +41,18 @@ export function createReactSubject<
       (callback) => {
         let value = getSnapshot();
         if (value === uninitialized) {
-          setState(
-            typeof initialValue === "function" ? initialValue() : initialValue
-          );
+          value =
+            typeof initialValue === "function" ? initialValue() : initialValue;
+          setState(value);
         }
         return subscribe(callback);
       },
       () => {
         let value = getSnapshot();
         if (value === uninitialized) {
-          setState(
-            typeof initialValue === "function" ? initialValue() : initialValue
-          );
+          value =
+            typeof initialValue === "function" ? initialValue() : initialValue;
+          setState(value);
         }
         return value;
       }

@@ -275,6 +275,7 @@ export const articles = createRoute({
             field: z.string(),
             operation: z.union([
               z.literal("="),
+              z.literal("!="),
               z.literal(">"),
               z.literal("<"),
               z.literal(">="),
@@ -291,6 +292,7 @@ export const articles = createRoute({
       const filters = filtersProp.reduce((acc, filter) => {
         const operator = {
           "=": "eq",
+          "!=": "ne",
           ">": "gt",
           "<": "lt",
           ">=": "gte",

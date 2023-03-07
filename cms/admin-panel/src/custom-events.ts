@@ -14,6 +14,7 @@ export const addLayoutElement = createEvent<{ name: string; library: string }>(
 );
 export const addNestedDocument = createEvent("add-nested-document");
 export const addFetcher = createEvent("add-fetcher");
+export const addContext = createEvent<string>("add-context");
 
 export function createEvent<T = undefined>(
   _name: string,

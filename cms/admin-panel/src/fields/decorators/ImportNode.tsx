@@ -14,8 +14,6 @@ import { useIsSelected } from "./useIsSelected";
 import { caretClasses } from "./caret";
 import { useLabel } from "../../state/documentConfig";
 import { useGlobalState } from "../../state/state";
-import { useGlobalContext } from "../../state/context";
-import { useArticlePageContext } from "../../articles/ArticlePageContext";
 import { getPreview } from "../default/getPreview";
 import {
   FieldId,
@@ -36,20 +34,12 @@ const useState = (
       computeFieldId(getDocumentId(templateId), templateId)
     );
     return ["", [`[${label1} · ${label2}]`]];
-  } else {
-    let value: Value[] | undefined;
-    let label: string = "";
-    if (!id) return [label, value];
-    if (id.startsWith("ctx:")) {
-      const { id: documentId } = useArticlePageContext();
-      value = useGlobalContext(documentId, id.slice(4))[0][id.slice(4)];
-      label = id.slice(4);
-    } else {
-      value = useGlobalState<Value[]>(id)[0];
-      label = useLabel(id);
-    }
-    return [label, value];
   }
+
+  if (!id) return ["", []];
+  const value = useGlobalState<Value[]>(id)[0];
+  const label = useLabel(id);
+  return [label, value];
 };
 
 function ImportDecorator({

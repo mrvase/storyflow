@@ -17,6 +17,7 @@ import {
   FileToken,
   ColorToken,
   CustomToken,
+  ContextImport,
 } from "./types";
 
 function isObject(value: any): value is Record<string, any> {
@@ -120,6 +121,10 @@ function isFetcher(value: any): value is Fetcher {
   return isObject(value) && "id" in value && "filters" in value;
 }
 
+function isContextImport(value: any): value is ContextImport {
+  return isObject(value) && "ctx" in value;
+}
+
 function isPrimitiveValue(value: any) {
   return typeof value !== "object";
 }
@@ -138,4 +143,5 @@ export const symb = {
   isFileToken,
   isColorToken,
   isCustomToken,
+  isContextImport,
 };

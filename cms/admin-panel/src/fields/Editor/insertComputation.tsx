@@ -9,7 +9,6 @@ import {
   TextNode,
 } from "lexical";
 import { $getIndexFromPoint, getNodesFromComputation } from "./transforms";
-import { ComputationOp } from "shared/operations";
 import { EditorComputation } from "@storyflow/backend/types";
 import { LibraryConfig } from "@storyflow/frontend/types";
 import { spliceTextWithNodes } from "./spliceTextWithNodes";
@@ -17,8 +16,7 @@ import { spliceTextWithNodes } from "./spliceTextWithNodes";
 export async function insertComputation(
   editor: LexicalEditor,
   insert: EditorComputation,
-  libraries: LibraryConfig[],
-  push?: (ops: ComputationOp["ops"]) => void
+  libraries: LibraryConfig[]
 ) {
   return await new Promise<boolean>((resolve) => {
     editor.update(() => {

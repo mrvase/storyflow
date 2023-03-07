@@ -596,7 +596,19 @@ function calculate(
             acc.value = result;
           }
         } else if (symb.isFetcher(el)) {
-          const state = getState(`${id}.${el.id}` as FieldId, false);
+          const state = getState(`${id}.${el.id}`, false);
+          if (state) {
+            return state.then((value) => {
+              acc.value.push(value);
+              acc.loop3.index++;
+              return calculate(id, compute, getState as any, {
+                ...options,
+                acc,
+              }) as Value[];
+            });
+          }
+        } else if (symb.isContextImport(el)) {
+          const state = getState(`ctx:${el.ctx}`, false);
           if (state) {
             return state.then((value) => {
               acc.value.push(value);

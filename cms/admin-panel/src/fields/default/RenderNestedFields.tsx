@@ -32,7 +32,7 @@ import { getConfigFromType, useClientConfig } from "../../client-config";
 import { useClient } from "../../client";
 import { ParentProp, WritableDefaultField } from "./DefaultField";
 import { useFieldTemplate } from "./useFieldTemplate";
-import { fetchFn } from "./calculateFn";
+import { calculateFn, fetchFn } from "./calculateFn";
 import {
   PropConfig,
   PropGroup,
@@ -40,6 +40,9 @@ import {
 } from "@storyflow/frontend/types";
 import { FieldOptionsContext } from "./FieldOptionsContext";
 import { FieldRestrictionsContext } from "../FieldTypeContext";
+import { useArticlePageContext } from "../../articles/ArticlePageContext";
+import Select from "../../elements/Select";
+import { getTemplateFieldId } from "@storyflow/backend/ids";
 
 export function RenderFetcher({
   id,
@@ -68,17 +71,17 @@ export function RenderFetcher({
 
   const [, setOutput] = useGlobalState<NestedDocument[]>(
     extendPath(id, path),
-    () => fetchFn({ ...fetcher }, client)
+    () => fetchFn(extendPath(id, path), { ...fetcher }, client)
   );
 
   return (
     <IfActive path={path} then="pb-5 focus-permanent" else="hidden">
-      <div>
+      <div className="w-full flex flex-col items-start gap-5">
         {fetcher.filters.map((filter, index) => (
           <FilterComp
             key={index}
             id={id}
-            // path={extendPath(path, `${index}`, "/")}
+            path={extendPath(path, `${index}`, "/")}
             setFetcher={setFetcher}
             index={index}
             filter={filter}
@@ -91,21 +94,23 @@ export function RenderFetcher({
               filters: [...ps.filters, { field: "", operation: "", value: [] }],
             }));
           }}
-          className="flex items-center text-xs opacity-50 cursor-default"
+          className="flex items-center text-xs opacity-25 hover:opacity-100 transition-opacity cursor-default"
         >
-          <div className="w-4 mx-5 flex-center opacity-75 px-13 h-5">
-            <PlusIcon className="w-3 h-3" />
+          <div className="w-4 mx-5 flex-center px-13 h-5">
+            <PlusIcon className="w-4 h-4" />
           </div>
           TILFØJ FILTER
         </div>
         <button
           className={cl(
-            "bg-teal-600 rounded px-3 py-1.5 ml-14 mt-5 text-sm font-light hover:bg-teal-500 transition-colors",
+            "bg-teal-600 rounded px-3 py-1.5 ml-14 text-sm font-light hover:bg-teal-500 transition-colors",
             !isModified && "opacity-50"
           )}
           onClick={() => {
             if (isModified) {
-              setOutput(() => fetchFn({ ...fetcher }, client));
+              setOutput(() =>
+                fetchFn(extendPath(id, path), { ...fetcher }, client)
+              );
               push([
                 {
                   index,
@@ -129,11 +134,13 @@ function FilterComp({
   setFetcher,
   index,
   filter,
+  path,
 }: {
   id: FieldId;
   setFetcher: (callback: (ps: Fetcher) => Fetcher) => void;
   index: number;
   filter: Filter;
+  path: string;
 }) {
   const setFilterValue = React.useCallback(
     (field: string, value: any) =>
@@ -145,16 +152,53 @@ function FilterComp({
     []
   );
 
-  const setValue = React.useCallback(
-    (value: () => EditorComputation) =>
-      setFilterValue("value", decodeEditorComputation(value())),
-    []
+  const { imports } = useArticlePageContext();
+  const client = useClient();
+
+  const [value, setValueOutput] = useGlobalState<Value[]>(
+    extendPath(id, path),
+    () => calculateFn(id, filter.value, { imports, client })
   );
 
+  const setValue = React.useCallback((value: () => EditorComputation) => {
+    const decoded = decodeEditorComputation(value());
+    setFilterValue("value", decoded);
+    setValueOutput(() => calculateFn(id, decoded, { client, imports }));
+  }, []);
+
+  const template = useFieldTemplate(id) ?? [];
+
+  const options = React.useMemo(() => {
+    const options = template.map((el) => {
+      return {
+        label: el.label,
+        value: getTemplateFieldId(el.id) as string,
+      };
+    });
+
+    options.unshift({
+      label: "Mappe",
+      value: "folder",
+    });
+
+    return options;
+  }, [template]);
+
+  const operations = ["=", "!=", ">", ">=", "<", "<="] as const;
+
+  const operationsLabel = {
+    "=": "=",
+    "!=": "≠",
+    ">": ">",
+    ">=": "≥",
+    "<": "<",
+    "<=": "≤",
+  };
+
   return (
-    <div className="flex items-start">
+    <div className="w-full flex items-start pr-5">
       <div
-        className="w-4 mx-5 flex-center opacity-40 px-13 h-5"
+        className="w-4 mx-5 flex-center opacity-25 hover:opacity-100 transition-opacity px-13 h-5"
         onClick={() => {
           setFetcher((ps) => ({
             ...ps,
@@ -162,55 +206,81 @@ function FilterComp({
           }));
         }}
       >
-        <XMarkIcon className="w-3 h-3" />
+        <XMarkIcon className="w-4 h-4" />
       </div>
-      <div className="grow shrink basis-0">
-        <div
-          className={cl("text-sm opacity-50 flex items-center cursor-default")}
-        >
-          Felt
-        </div>
-        <input
-          type="text"
-          value={filter.field}
-          onChange={(ev) => setFilterValue("field", ev.target.value)}
-          className="bg-transparent pt-1 pb-4 outline-none font-light w-full"
-        />
-      </div>
-      <div className="grow shrink basis-0">
-        <div
-          className={cl("text-sm opacity-50 flex items-center cursor-default")}
-        >
-          Operation
-        </div>
-        <input
-          type="text"
-          value={filter.operation}
-          onChange={(ev) => setFilterValue("operation", ev.target.value)}
-          className="bg-transparent pt-1 pb-4 outline-none font-light w-full"
-        />
-      </div>
-      <div className="grow shrink basis-0">
-        <div
-          className={cl("text-sm opacity-50 flex items-center cursor-default")}
-        >
-          Værdi
-        </div>
-        <Editor
-          id={id}
-          initialValue={encodeEditorComputation(filter.value)}
-          setValue={setValue}
-        >
-          <div className={cl("relative")}>
-            <ContentEditable
-              className={cl(
-                "peer grow editor outline-none pt-1 pb-4 font-light selection:bg-gray-700",
-                "preview text-base leading-6"
-                // mode === null || mode === "slug" ? "calculator" : ""
-              )}
-            />
+      <div className="w-full flex gap-3">
+        <div className="w-1/3">
+          <div
+            className={cl(
+              "text-sm opacity-50 flex items-center cursor-default mb-1"
+            )}
+          >
+            Felt
           </div>
-        </Editor>
+          <Select
+            value={filter.field}
+            setValue={(value: string) => setFilterValue("field", value)}
+            options={options}
+          />
+        </div>
+        <div className="w-1/3">
+          <div
+            className={cl(
+              "text-sm opacity-50 flex items-center cursor-default mb-1"
+            )}
+          >
+            Operation
+          </div>
+          <div className="rounded ring-button overflow-x-auto no-scrollbar">
+            <div className="relative flex h-8">
+              <div
+                className="absolute left-0 shrink-0 h-8 w-8 ring-1 ring-inset rounded ring-yellow-300 transition-transform"
+                style={{
+                  transform: `translateX(${
+                    2 * operations.indexOf(filter.operation as any)
+                  }rem)`,
+                }}
+              />
+              {operations.map((el) => (
+                <div
+                  className={cl(
+                    "shrink-0 h-8 w-8 flex-center text-sm font-light cursor-default transition-opacity",
+                    el === filter.operation
+                      ? "opacity-100"
+                      : "opacity-50 hover:opacity-100"
+                  )}
+                  onClick={() => setFilterValue("operation", el)}
+                >
+                  {operationsLabel[el]}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="w-1/3">
+          <div
+            className={cl(
+              "text-sm opacity-50 flex items-center cursor-default mb-1"
+            )}
+          >
+            Værdi
+          </div>
+          <Editor
+            id={id}
+            initialValue={encodeEditorComputation(filter.value)}
+            setValue={setValue}
+          >
+            <div className={cl("relative")}>
+              <ContentEditable
+                className={cl(
+                  "peer grow editor outline-none py-1 px-1.5 rounded font-light selection:bg-gray-700 ring-button",
+                  "preview text-base leading-4"
+                  // mode === null || mode === "slug" ? "calculator" : ""
+                )}
+              />
+            </div>
+          </Editor>
+        </div>
       </div>
     </div>
   );

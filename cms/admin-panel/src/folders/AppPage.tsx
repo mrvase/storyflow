@@ -212,21 +212,15 @@ export default function AppPage({
       <FolderDomainsProvider domains={folder?.domains ?? []}>
         <Content
           selected={isOpen}
+          icon={ComputerDesktopIcon}
           header={
-            <Content.Header>
-              <div className="flex-center h-full font-medium">
-                <span className="text-sm font-light mt-1 mr-5 text-yellow-300">
-                  <ComputerDesktopIcon className="w-4 h-4" />
-                </span>
-                <EditableLabel
-                  value={folder?.label ?? ""}
-                  onChange={(value) => {
-                    mutateProp("label", value);
-                  }}
-                  className={cl("font-medium", "text-yellow-300")}
-                />
-              </div>
-            </Content.Header>
+            <EditableLabel
+              value={folder?.label ?? ""}
+              onChange={(value) => {
+                mutateProp("label", value);
+              }}
+              className={cl("text-yellow-300")}
+            />
           }
           toolbar={
             isEditing ? (
@@ -312,7 +306,7 @@ function RefreshButton({
         </div>
       )*/}
       <button
-        className="relative z-0 bg-button-yellow ring-button text-button rounded px-3 py-1 font-light flex-center gap-2 text-sm overflow-hidden"
+        className="relative z-0 bg-button-yellow ring-button-yellow text-button rounded px-3 py-1 font-light flex-center gap-2 text-sm overflow-hidden"
         onClick={async () => {
           if (revalidateUrl) {
             setIsLoading(true);

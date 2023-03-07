@@ -31,9 +31,10 @@ import { useFieldFocus } from "../../field-focus";
 import { useArticleIdGenerator } from "../../id-generator";
 import { useSegment } from "../../layout/components/SegmentContext";
 import { useTabUrl } from "../../layout/utils";
-import { useCurrentFolder } from "../FolderPage";
+import { useCurrentFolder } from "../FolderPageContext";
 import Space from "./Space";
 import Loader from "../../elements/Loader";
+import { useDeleteForm } from "./useDeleteForm";
 
 export function DocumentListSpace({
   spaceId,
@@ -48,25 +49,7 @@ export function DocumentListSpace({
   index: number;
   rows?: any;
 }) {
-  const form = React.useRef<HTMLFormElement | null>(null);
-
-  const mutateArticles = useArticleListMutation();
-
-  const handleDelete = () => {
-    if (form.current && folderId) {
-      const data = new FormData(form.current);
-      const ids = Array.from(data.keys());
-      if (ids.length) {
-        mutateArticles({
-          folder: folderId,
-          actions: ids.map((id) => ({
-            type: "remove",
-            id,
-          })),
-        });
-      }
-    }
-  };
+  const { form, handleDelete } = useDeleteForm({ folderId });
 
   const { articles } = useArticleList(folderId);
 
