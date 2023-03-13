@@ -17,21 +17,25 @@ import { useGlobalState } from "../../state/state";
 import { getPreview } from "../default/getPreview";
 import {
   FieldId,
-  FieldImport,
-  TemplateFieldId,
+  NestedField,
+  RawFieldId,
   Value,
 } from "@storyflow/backend/types";
 import { useBuilderPath } from "../BuilderPath";
-import { getDocumentId, computeFieldId } from "@storyflow/backend/ids";
+import {
+  getDocumentId,
+  computeFieldId,
+  getTemplateDocumentId,
+} from "@storyflow/backend/ids";
 
 const useState = (
   id: FieldId,
-  templateId?: TemplateFieldId
+  templateId?: RawFieldId
 ): [label: string, value: Value[] | undefined] => {
   if (templateId) {
     const label1 = useLabel(id);
     const label2 = useLabel(
-      computeFieldId(getDocumentId(templateId), templateId)
+      computeFieldId(getTemplateDocumentId(templateId), templateId)
     );
     return ["", [`[${label1} · ${label2}]`]];
   }
@@ -48,7 +52,7 @@ function ImportDecorator({
 }: {
   text: string;
   nodeKey: string;
-  fieldImport: FieldImport;
+  fieldImport: NestedField;
 }) {
   const [, setPath] = useBuilderPath();
 
@@ -58,7 +62,7 @@ function ImportDecorator({
 
   const isColumn = Boolean(fieldImport.pick);
 
-  const [label, value] = useState(fieldImport.fref, fieldImport.pick);
+  const [label, value] = useState(fieldImport.field, fieldImport.pick);
 
   const preview = getPreview(value ?? []);
 
@@ -131,13 +135,13 @@ function convertImportElement(
 export type SerializedImportNode = Spread<
   {
     type: "import";
-    value: FieldImport;
+    value: NestedField;
   },
   SerializedLexicalNode
 >;
 
 export class ImportNode extends DecoratorNode<React.ReactNode> {
-  __value: FieldImport;
+  __value: NestedField;
 
   static getType(): string {
     return "import";
@@ -147,7 +151,7 @@ export class ImportNode extends DecoratorNode<React.ReactNode> {
     return new ImportNode(node.__value, node.__key);
   }
 
-  constructor(fieldImport: FieldImport, key?: NodeKey) {
+  constructor(fieldImport: NestedField, key?: NodeKey) {
     super(key);
     this.__value = fieldImport;
   }
@@ -212,7 +216,7 @@ export class ImportNode extends DecoratorNode<React.ReactNode> {
   }
 }
 
-export function $createImportNode(fieldImport: FieldImport): ImportNode {
+export function $createImportNode(fieldImport: NestedField): ImportNode {
   return new ImportNode(fieldImport);
 }
 

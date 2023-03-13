@@ -1,15 +1,18 @@
 import React from "react";
 import Dialog from "../elements/Dialog";
 import { useArticleList, useArticleListMutation } from "../documents";
-import { useArticleIdGenerator } from "../id-generator";
 import { useFolderCollab } from "./collab/FolderCollabContext";
 import { targetTools } from "shared/operations";
 import { useTabUrl } from "../layout/utils";
 import { useSegment } from "../layout/components/SegmentContext";
-import { restoreId } from "@storyflow/backend/ids";
 import { DialogOption } from "../elements/DialogOption";
 import { DocumentDuplicateIcon, PlusIcon } from "@heroicons/react/24/outline";
 import { useTemplateFolder } from "./folders-context";
+import {
+  useDocumentIdGenerator,
+  useTemplateIdGenerator,
+} from "../id-generator";
+import { DocumentId } from "@storyflow/backend/types";
 
 export function AddTemplateDialog({
   isOpen,
@@ -23,20 +26,19 @@ export function AddTemplateDialog({
   currentTemplate?: string;
 }) {
   const mutateArticles = useArticleListMutation();
-  const generateId = useArticleIdGenerator();
+  const generateTemplateId = useTemplateIdGenerator();
   const [, navigateTab] = useTabUrl();
   const { current } = useSegment();
 
   const collab = useFolderCollab();
 
-  const templateFolder = useTemplateFolder()?.id;
+  const templateFolder = useTemplateFolder()?._id;
 
   const onSubmit = React.useCallback(
     async (type: string, data: FormData) => {
       const label = (data.get("value") as string) ?? "";
-      console.log("LABEL", label, type);
       if (!label) return;
-      const id = type === "new" ? await generateId() : label;
+      const id = type === "new" ? generateTemplateId() : (label as DocumentId);
       collab.mutate("folders", folderId).push({
         target: targetTools.stringify({
           operation: "property",
@@ -57,23 +59,29 @@ export function AddTemplateDialog({
               type: "insert",
               id,
               label,
-              compute: [],
-              values: {},
+              record: {},
             },
           ],
         });
-        navigateTab(`${current}/t-${restoreId(id)}`, { navigate: true });
+        navigateTab(`${current}/t-${id}`, { navigate: true });
       }
       close();
     },
-    [collab, folderId, generateId, mutateArticles, templateFolder, close]
+    [
+      collab,
+      folderId,
+      generateTemplateId,
+      mutateArticles,
+      templateFolder,
+      close,
+    ]
   );
 
   const { articles: templates } = useArticleList(templateFolder);
 
   const templateOptions = (templates ?? []).map((el) => ({
-    value: el.id,
-    label: el.label ?? el.id,
+    value: el._id,
+    label: el.label ?? el._id,
   }));
 
   return (

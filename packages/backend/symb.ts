@@ -3,21 +3,19 @@ import {
   DBSymbolKey,
   Parameter,
   EditorSymbol,
-  DocumentImport,
-  FieldImport,
   FunctionName,
-  LayoutElement,
   NestedDocument,
   Operator,
-  Fetcher,
-  Token,
-  TemplateFieldId,
   EditorSymbolKey,
   operators,
   FileToken,
   ColorToken,
   CustomToken,
-  ContextImport,
+  RawFieldId,
+  NestedField,
+  NestedElement,
+  NestedFolder,
+  ContextToken,
 } from "./types";
 
 function isObject(value: any): value is Record<string, any> {
@@ -64,7 +62,7 @@ function isEditorSymbol<
 function isDBSymbol<T extends DBSymbolKey>(
   value: any,
   key: "p"
-): value is { p: TemplateFieldId };
+): value is { p: RawFieldId };
 function isDBSymbol<T extends ")", F extends Operator | FunctionName>(
   value: any,
   key: T
@@ -86,12 +84,8 @@ function isDBSymbol<T extends DBSymbolKey, F extends Operator | FunctionName>(
   return isObject(value) && key in value && (!func || value[key] === func);
 }
 
-function isFieldImport(value: any): value is FieldImport {
-  return isObject(value) && "fref" in value;
-}
-
-function isDocumentImport(value: any): value is DocumentImport {
-  return isObject(value) && "dref" in value;
+function isNestedField(value: any): value is NestedField {
+  return isObject(value) && "id" in value && "field" in value;
 }
 
 function isLineBreak(value: any): value is Parameter {
@@ -102,12 +96,21 @@ function isParameter(value: any): value is Parameter {
   return isObject(value) && "x" in value;
 }
 
-function isLayoutElement(value: any): value is LayoutElement {
-  return isObject(value) && "type" in value;
+function isNestedElement(value: any): value is NestedElement {
+  return isObject(value) && "id" in value && "element" in value;
+}
+function isNestedFolder(value: any): value is NestedFolder {
+  return isObject(value) && "id" in value && "folder" in value;
 }
 
 function isNestedDocument(value: any): value is NestedDocument {
-  return isObject(value) && "id" in value && "values" in value;
+  return (
+    isObject(value) &&
+    "id" in value &&
+    !isNestedElement(value) &&
+    !isNestedField(value) &&
+    !isNestedFolder(value)
+  );
 }
 
 function isFileToken(value: any): value is FileToken {
@@ -122,11 +125,7 @@ function isCustomToken(value: any): value is CustomToken {
   return isObject(value) && "name" in value;
 }
 
-function isFetcher(value: any): value is Fetcher {
-  return isObject(value) && "id" in value && "filters" in value;
-}
-
-function isContextImport(value: any): value is ContextImport {
+function isContextToken(value: any): value is ContextToken {
   return isObject(value) && "ctx" in value;
 }
 
@@ -137,16 +136,15 @@ function isPrimitiveValue(value: any) {
 export const symb = {
   isEditorSymbol,
   isDBSymbol,
-  isFieldImport,
-  isDocumentImport,
+  isNestedField,
+  isNestedFolder,
   isLineBreak,
   isParameter,
-  isLayoutElement,
+  isNestedElement,
   isNestedDocument,
-  isFetcher,
   isPrimitiveValue,
   isFileToken,
   isColorToken,
   isCustomToken,
-  isContextImport,
+  isContextToken,
 };

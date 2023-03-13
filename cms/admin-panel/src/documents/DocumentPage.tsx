@@ -13,22 +13,21 @@ import {
 } from "@heroicons/react/24/outline";
 import { extendPath } from "@storyflow/backend/extendPath";
 import { FIELDS } from "@storyflow/backend/fields";
-import { getComputationRecord } from "@storyflow/backend/flatten";
 import {
   computeFieldId,
-  createFieldId,
   getDocumentId,
-  minimizeId,
+  getRawDocumentId,
+  getTemplateDocumentId,
 } from "@storyflow/backend/ids";
-import { URL_ID } from "@storyflow/backend/templates";
 import {
   DBDocument,
   DocumentConfig,
   DocumentId,
   FieldId,
+  FolderId,
+  RawFieldId,
   RestrictTo,
   SearchableProps,
-  TemplateFieldId,
 } from "@storyflow/backend/types";
 import { NoList, useDragItem } from "@storyflow/dnd";
 import { PropConfigArray } from "@storyflow/frontend/types";
@@ -53,7 +52,7 @@ import { DocumentPageContext } from "./DocumentPageContext";
 import { GetDocument } from "./GetDocument";
 import { RenderTemplate } from "./RenderTemplate";
 
-export const getVersionKey = (versions?: Record<TemplateFieldId, number>) => {
+export const getVersionKey = (versions?: Record<RawFieldId, number>) => {
   if (!versions) return -1;
   return Object.values(versions).reduce((a, c) => a + c, 0);
 };
@@ -90,7 +89,7 @@ export const DocumentContent = ({
   toolbar,
 }: {
   id: DocumentId;
-  folder: string | undefined;
+  folder: FolderId | undefined;
   selected: boolean;
   label: string;
   children: React.ReactNode;
@@ -212,13 +211,14 @@ function Toolbar({ id, config }: { id: DocumentId; config: DocumentConfig }) {
       },
     },
   ];
+
   return (
     <Content.Toolbar>
       <NoList>
         <DragButton
           label={"Indsæt felt"}
           item={() => ({
-            id: createFieldId(id),
+            id: "",
             label: "",
             type: "default",
           })}
@@ -235,18 +235,18 @@ function Toolbar({ id, config }: { id: DocumentId; config: DocumentConfig }) {
 }
 
 export function TemplateMenu({ id }: { id?: DocumentId }) {
-  const templateFolder = useTemplateFolder()?.id;
+  const templateFolder = useTemplateFolder()?._id;
   const { articles: templates } = useArticleList(templateFolder);
 
   return (
     <Content.ToolbarMenu label={"Indsæt skabelon"} icon={BoltIcon}>
       {(templates ?? []).map((el) => (
-        <React.Fragment key={el.id}>
-          {el.id === id ? null : (
+        <React.Fragment key={el._id}>
+          {el._id === id ? null : (
             <DragOption
-              label={el.label ?? el.id}
+              label={el.label ?? el._id}
               item={{
-                template: el.id,
+                template: el._id,
               }}
             />
           )}
@@ -272,12 +272,12 @@ export function FieldToolbar({
     documentId
   );
 
-  const templateFolder = useTemplateFolder()?.id;
+  const templateFolder = useTemplateFolder()?._id;
   const { articles: templates } = useArticleList(templateFolder);
 
   const templateOptions = (templates ?? []).map((el) => ({
-    id: el.id,
-    label: el.label ?? el.id,
+    id: el._id,
+    label: el.label ?? el._id,
   }));
 
   const restrictToOptions = [
@@ -516,8 +516,7 @@ export function DocumentPage({
 
   const path = getPathFromSegment(current);
   const [type, articleId] = path.split("/").slice(-1)[0].split("-");
-
-  const id = minimizeId(articleId) as DocumentId;
+  const id = articleId as DocumentId;
 
   let { article, histories, error } = useArticle(id);
 
@@ -553,18 +552,20 @@ const Page = ({
   histories: Record<string, ServerPackage<DocumentConfigOp | PropertyOp>[]>;
   children: React.ReactNode;
 }) => {
-  const id = article.id;
+  const id = article._id;
 
   const config = useDocumentConfig(id, {
     config: article.config,
     history: histories[id] ?? [],
-    version: article.versions?.[id] ?? 0,
+    version: article.versions?.[getRawDocumentId(id)] ?? 0,
   });
 
   const folder = useFolder(article.folder);
 
   const templateId =
-    folder?.type === "app" ? getDocumentId(URL_ID) : folder?.template;
+    folder?.type === "app"
+      ? getTemplateDocumentId(FIELDS.url.id)
+      : folder?.template;
 
   const owner = article;
 
@@ -575,12 +576,9 @@ const Page = ({
   const ctx = React.useMemo(
     () => ({
       id,
-      imports: article
-        ? getComputationRecord(article, { includeImports: true })
-        : {},
-      article,
+      record: article.record,
     }),
-    [id, article]
+    [id]
   );
 
   return (
@@ -602,11 +600,11 @@ const Page = ({
                 {(article) => (
                   <RenderTemplate
                     key={getVersionKey(owner.versions)} // for rerendering
-                    id={article.id}
-                    owner={owner.id}
+                    id={article._id}
+                    owner={owner._id}
                     values={{
-                      ...getComputationRecord(article),
-                      ...getComputationRecord(owner),
+                      ...article.record,
+                      ...owner.record,
                     }}
                     config={article.config}
                     histories={histories}
@@ -617,9 +615,9 @@ const Page = ({
             )}
             <RenderTemplate
               key={getVersionKey(owner.versions)} // for rerendering
-              id={owner.id}
-              owner={owner.id}
-              values={getComputationRecord(owner)}
+              id={owner._id}
+              owner={owner._id}
+              values={owner.record}
               config={config}
               versions={owner.versions}
               histories={histories}
@@ -632,7 +630,7 @@ const Page = ({
   );
 };
 
-function SaveButton({ id, folder }: { id: string; folder: string }) {
+function SaveButton({ id, folder }: { id: DocumentId; folder: FolderId }) {
   const collab = useDocumentCollab();
   const [isLoading, setIsLoading] = React.useState(false);
   const saveArticle = useSaveArticle(folder);

@@ -1,11 +1,12 @@
 import React from "react";
-import { DBFolder, Space } from "@storyflow/backend/types";
+import { DBFolder, FolderId, Space, SpaceId } from "@storyflow/backend/types";
 import { AddFolderOp, FolderOp, targetTools } from "shared/operations";
 import { createStaticStore } from "../../state/StaticStore";
 import { useInitialFolders } from "../folders-context";
 import { createReactSubject } from "../../state/useSubject";
 import { QueueListenerParam } from "@storyflow/state/collab/Queue";
 import { createCollaborativeState } from "./createCollaborativeState";
+import { getRawFolderId } from "@storyflow/backend/ids";
 
 const useFoldersSubject = createReactSubject<DBFolder[]>();
 
@@ -65,16 +66,16 @@ export function useFolders() {
   );
 }
 
-export function useFolder(id: string): DBFolder {
+export function useFolder(id: FolderId): DBFolder {
   const { histories } = useInitialFolders();
 
-  const initialFolder = useFolders().find((el) => el.id === id); // support newly added folders
+  const initialFolder = useFolders().find((el) => el._id === id); // support newly added folders
 
   if (!initialFolder) {
     throw new Error("Folder not found");
   }
 
-  const version = initialFolder.versions?.[id] ?? 0;
+  const version = initialFolder.versions?.[getRawFolderId(id)] ?? 0;
   const history = histories[id] ?? [];
 
   return createCollaborativeState(
@@ -111,8 +112,8 @@ export function useSpace<T extends Space>({
   folderId,
   spaceId,
 }: {
-  folderId: string;
-  spaceId: string;
+  folderId: FolderId;
+  spaceId: SpaceId;
 }): T {
   const { histories } = useInitialFolders();
 

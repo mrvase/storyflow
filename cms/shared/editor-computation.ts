@@ -5,10 +5,10 @@ import {
   FunctionName,
   Operator,
   Placeholder,
-  TemplateFieldId,
   Value,
   DBSymbol,
   EditorSymbol,
+  RawFieldId,
 } from "@storyflow/backend/types";
 import { tools } from "./editor-tools";
 
@@ -33,7 +33,7 @@ const isSymbol = (
 
 const isValueOrPlaceholder = (
   el: DBElement | EditorElement
-): el is Value | Placeholder => {
+): el is Exclude<Value, Value[]> | Placeholder => {
   return !isSymbol(el);
 };
 
@@ -180,7 +180,7 @@ export const encodeEditorComputation = (
       if (prevIsValueOrPlaceholder(saved)) {
         saved.push({ ",": true });
       }
-      if (value.length === 1 && tools.isFieldImport(value[0])) {
+      if (value.length === 1 && tools.isNestedField(value[0])) {
         const fieldImport = { ...value[0] };
         fieldImport.pick = el.p;
         saved.push(fieldImport);
@@ -218,7 +218,7 @@ export const encodeEditorComputation = (
       ) {
         value.push({ ",": true });
       }
-      if (tools.isFieldImport(el)) {
+      if (tools.isNestedField(el)) {
         value.push(el);
       } else if (isValueOrPlaceholder(el)) {
         value.push(el);
@@ -244,7 +244,7 @@ export const encodeEditorComputation = (
 type DbFunction = {
   parameters: (
     | DbFunction
-    | Value
+    | Exclude<Value, Value[]>
     | Placeholder
     | { ",": true }
     | { n: true }
@@ -253,7 +253,7 @@ type DbFunction = {
   )[];
   operation: string | null;
   parent: DbFunction | null;
-  pick?: TemplateFieldId;
+  pick?: RawFieldId;
 };
 
 export const decodeEditorComputation = (
@@ -329,7 +329,7 @@ export const decodeEditorComputation = (
       } else {
         current.parameters.push({ ",": true });
       }
-    } else if (tools.isFieldImport(el)) {
+    } else if (tools.isNestedField(el)) {
       if ("pick" in el) {
         let { pick, ...rest } = el;
         current.parameters.push({

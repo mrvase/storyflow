@@ -4,19 +4,15 @@ import {
   CogIcon,
   DocumentIcon,
   FolderIcon,
-  MinusIcon,
   MoonIcon,
   PhotoIcon,
   SunIcon,
   UserIcon,
-  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import React from "react";
 import { useLocalStorage } from "../../state/useLocalStorage";
 import Dialog from "../../elements/Dialog";
 import { SettingsDialog } from "./SettingsDialog";
-import { Link } from "@storyflow/router";
-import useTabs from "../useTabs";
 import { useTabUrl } from "../utils";
 
 export default function Nav() {

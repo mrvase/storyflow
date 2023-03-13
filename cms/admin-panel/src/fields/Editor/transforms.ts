@@ -51,16 +51,16 @@ import {
   matchNonEscapedCharacter,
   splitByNonEscapedCharacter,
 } from "shared/matchNonEscapedCharacter";
-import { EditorComputation, LayoutElement } from "@storyflow/backend/types";
-import { ClientConfig, LibraryConfig } from "@storyflow/frontend/types";
+import { EditorComputation, NestedElement } from "@storyflow/backend/types";
+import { LibraryConfig } from "@storyflow/frontend/types";
 import { getConfigFromType } from "../../client-config";
 import { $createContextNode, $isContextNode } from "../decorators/ContextNode";
 
 export const isInlineElement = (
   libraries: LibraryConfig[],
-  element: LayoutElement
+  element: NestedElement
 ): boolean => {
-  const config = getConfigFromType(element.type, libraries);
+  const config = getConfigFromType(element.element, libraries);
   const result = Boolean(config?.inline);
   return result;
 };
@@ -425,13 +425,13 @@ export const getNodesFromComputation = (
     } else if (tools.isEditorSymbol(el, "(") && typeof el["("] === "string") {
       const node = $createFunctionNode((el as any)[1]);
       acc.push(node);
-    } else if (tools.isFieldImport(el)) {
+    } else if (tools.isNestedField(el)) {
       const node = $createImportNode(el);
       acc.push(node);
     } else if (tools.isParameter(el)) {
       const node = $createParameterNode(`${el["x"]}`);
       acc.push(node);
-    } else if (tools.isLayoutElement(el)) {
+    } else if (tools.isNestedElement(el)) {
       if (isInlineElement(libraries, el)) {
         const node = $createInlineLayoutElementNode(el);
         acc.push(node);
@@ -442,10 +442,7 @@ export const getNodesFromComputation = (
     } else if (tools.isNestedDocument(el)) {
       const node = $createDocumentNode(el);
       acc.push(node);
-    } else if (tools.isFetcher(el)) {
-      const node = $createDocumentNode(el);
-      acc.push(node);
-    } else if (tools.isDocumentImport(el)) {
+    } else if (tools.isNestedFolder(el)) {
       const node = $createDocumentNode(el);
       acc.push(node);
     } else if (
@@ -455,7 +452,7 @@ export const getNodesFromComputation = (
     ) {
       const node = $createTokenNode(el);
       acc.push(node);
-    } else if (tools.isContextImport(el)) {
+    } else if (tools.isContextToken(el)) {
       const node = $createContextNode(el);
       acc.push(node);
     } else if (tools.isEditorSymbol(el, "_")) {
@@ -484,10 +481,9 @@ export function $getBlocksFromComputation(
 
   const isBlockElement = (el: EditorComputation[number]) => {
     return (
-      (tools.isLayoutElement(el) && !isInlineElement(libraries, el)) ||
+      (tools.isNestedElement(el) && !isInlineElement(libraries, el)) ||
       tools.isNestedDocument(el) ||
-      tools.isFetcher(el) ||
-      tools.isDocumentImport(el)
+      tools.isNestedFolder(el)
     );
   };
 
@@ -516,7 +512,7 @@ export function $getBlocksFromComputation(
 
   arr.forEach((computation) => {
     if (computation.length === 1 && isBlockElement(computation[0])) {
-      if (tools.isLayoutElement(computation[0])) {
+      if (tools.isNestedElement(computation[0])) {
         blocks.push($createLayoutElementNode(computation[0]));
       } else {
         blocks.push($createDocumentNode(computation[0] as any));

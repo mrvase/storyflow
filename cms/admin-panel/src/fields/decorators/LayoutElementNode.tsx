@@ -12,7 +12,7 @@ import {
 import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
 import { caretClasses } from "./caret";
-import { LayoutElement } from "@storyflow/backend/types";
+import { NestedElement } from "@storyflow/backend/types";
 import { ParentPropContext } from "../default/DefaultField";
 import { useBuilderPath } from "../BuilderPath";
 import { getConfigFromType, useClientConfig } from "../../client-config";
@@ -21,7 +21,7 @@ function LayoutElementDecorator({
   value,
   nodeKey,
 }: {
-  value: LayoutElement;
+  value: NestedElement;
   nodeKey: string;
 }) {
   const [, setPath] = useBuilderPath();
@@ -32,10 +32,10 @@ function LayoutElementDecorator({
   const selectClick = React.useRef(false);
 
   const { libraries } = useClientConfig();
-  const config = getConfigFromType(value.type, libraries);
+  const config = getConfigFromType(value.element, libraries);
 
   const libraryLabel = libraries.find(
-    (el) => el.name === value.type.split(":")[0]
+    (el) => el.name === value.element.split(":")[0]
   )?.label;
 
   return (
@@ -60,7 +60,7 @@ function LayoutElementDecorator({
               ...ps,
               {
                 id: value.id,
-                type: value.type,
+                type: value.element,
                 parentProp: parentProp,
               },
             ]);
@@ -68,7 +68,7 @@ function LayoutElementDecorator({
           selectClick.current = false;
         }}
       >
-        {config?.label ?? value.type}
+        {config?.label ?? value.element}
         <span className="text-xs text-gray-400 ml-auto">{libraryLabel}</span>
         {/*<button className="group h-full px-2 hover:bg-white/5 flex-center gap-1 rounded cursor-default transition-colors">
           {component.label ?? value.type}{" "}
@@ -88,13 +88,13 @@ function convertImportElement(
 export type SerializedLayoutElementNode = Spread<
   {
     type: "layout-element";
-    value: LayoutElement;
+    value: NestedElement;
   },
   SerializedLexicalNode
 >;
 
 export class LayoutElementNode extends DecoratorNode<React.ReactNode> {
-  __value: LayoutElement;
+  __value: NestedElement;
 
   static getType(): string {
     return "layout-element";
@@ -104,7 +104,7 @@ export class LayoutElementNode extends DecoratorNode<React.ReactNode> {
     return new LayoutElementNode(node.__value, node.__key);
   }
 
-  constructor(value: LayoutElement, key?: NodeKey) {
+  constructor(value: NestedElement, key?: NodeKey) {
     super(key);
     this.__value = value;
   }
@@ -169,7 +169,7 @@ export class LayoutElementNode extends DecoratorNode<React.ReactNode> {
 }
 
 export function $createLayoutElementNode(
-  element: LayoutElement
+  element: NestedElement
 ): LayoutElementNode {
   return new LayoutElementNode(element);
 }

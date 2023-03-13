@@ -3,20 +3,20 @@ import React from "react";
 
 export const context = new Store();
 
-export function getContextKey(articleId: string, key: string) {
-  return `${articleId}/${key}`;
+export function getContextKey(documentId: string, key: string) {
+  return `${documentId}/${key}`;
 }
 
 export function useGlobalContext<
   T extends Record<string, any> = Record<string, any>
->(articleId: string, valuesArg: T | string): [T, (value: Partial<T>) => void] {
+>(documentId: string, valuesArg: T | string): [T, (value: Partial<T>) => void] {
   const sync = React.useMemo(() => {
     const isString = typeof valuesArg === "string";
     const values = isString ? { [valuesArg]: "" } : valuesArg;
     const syncs = batch(() =>
       Object.entries(values).map(([key, value]) => {
         return context.use(
-          getContextKey(articleId, key),
+          getContextKey(documentId, key),
           isString ? undefined! : () => value
         ).sync;
       })
@@ -58,7 +58,7 @@ export function useGlobalContext<
   const setState = (values: Partial<T>) => {
     batch(() => {
       Object.entries(values).forEach(([key, value]) => {
-        context.use(`${articleId}/${key}`).set(() => value);
+        context.use(`${documentId}/${key}`).set(() => value);
       });
     });
   };

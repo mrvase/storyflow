@@ -2,7 +2,6 @@ import { error, isError, success } from "@storyflow/result";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { createProcedure, createRoute } from "@sfrpc/server";
-import { createId, restoreId } from "@storyflow/backend/ids";
 import clientPromise from "../mongo/mongoClient";
 import { globals } from "../middleware/globals";
 import { z } from "zod";
@@ -38,7 +37,7 @@ const createFileName = ({
 
   const hex = (number: number) => number.toString(16);
 
-  let name = restoreId(createId(2));
+  let name = Math.random().toString(16).slice(2, 14);
   name += `-${hex(settingNumber[access])}`;
   name += `-${hex(
     typeNumber[type.split("/")[0] as keyof typeof typeNumber] ?? 0

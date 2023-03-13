@@ -14,8 +14,8 @@ import { useArticle, useArticleTemplate } from "..";
 import {
   computeFieldId,
   getDocumentId,
+  getRawFieldId,
   getTemplateDocumentId,
-  getTemplateFieldId,
 } from "@storyflow/backend/ids";
 import { ServerPackage } from "@storyflow/state";
 
@@ -40,7 +40,7 @@ export const templatesPurger = createPurger((key: string) => {
 });
 
 export const useDocumentConfig = (
-  templateId: string, // template id
+  templateId: DocumentId, // template id
   data: {
     config: DocumentConfig;
     history?: ServerPackage<DocumentConfigOp | PropertyOp>[];
@@ -169,7 +169,7 @@ export function useFieldConfig(
     });
   } else {
     /* should not update reactively */
-    const id = computeFieldId(templateDocumentId, getTemplateFieldId(fieldId));
+    const id = computeFieldId(templateDocumentId, getRawFieldId(fieldId));
     const template = useArticleTemplate(templateDocumentId);
     config = template?.config?.find(
       (el): el is FieldConfig => "id" in el && el.id === id

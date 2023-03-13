@@ -1,8 +1,5 @@
 import cl from "clsx";
-import { Link } from "@storyflow/router";
 import {
-  ChevronLeftIcon,
-  ChevronRightIcon,
   ComputerDesktopIcon,
   DocumentDuplicateIcon,
   DocumentIcon,

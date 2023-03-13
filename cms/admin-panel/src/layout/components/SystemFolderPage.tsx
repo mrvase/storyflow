@@ -2,7 +2,6 @@ import React from "react";
 import Content from "./Content";
 import { FolderIcon, TrashIcon } from "@heroicons/react/24/outline";
 import Table from "../../documents/components/Table";
-import { restoreId } from "@storyflow/backend/ids";
 import { useFolders } from "../../folders/collab/hooks";
 import { DragIcon } from "../../folders/spaces/DragIcon";
 import { useDragItem } from "@storyflow/dnd";
@@ -49,7 +48,7 @@ export function SystemFolderPage() {
           <form ref={form} onSubmit={(ev) => ev.preventDefault()}>
             <Table
               rows={folders.map((el) => ({
-                id: restoreId(el.id),
+                id: el._id,
                 columns: [
                   { value: el.label },
                   {
@@ -67,7 +66,7 @@ export function SystemFolderPage() {
 
 function DragButton({ folder }: { folder: DBFolder }) {
   const { ref, dragHandleProps } = useDragItem({
-    id: `new-folder-${folder.id}`,
+    id: `new-folder-${folder._id}`,
     type: "folders",
     item: folder,
     mode: "move",

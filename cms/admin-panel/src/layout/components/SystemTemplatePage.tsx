@@ -11,13 +11,12 @@ import { useDeleteForm } from "../../folders/spaces/useDeleteForm";
 import Table from "../../documents/components/Table";
 import { useArticleList } from "../../documents";
 import Loader from "../../elements/Loader";
-import { restoreId } from "@storyflow/backend/ids";
 
 export function SystemTemplatePage() {
   const folder = useTemplateFolder();
-  const { form, handleDelete } = useDeleteForm({ folderId: folder.id });
+  const { form, handleDelete } = useDeleteForm({ folderId: folder._id });
 
-  const { articles } = useArticleList(folder.id);
+  const { articles } = useArticleList(folder._id);
 
   if (!articles) {
     return (
@@ -30,7 +29,7 @@ export function SystemTemplatePage() {
   }
 
   const rows = articles.map((el) => ({
-    id: restoreId(el.id),
+    id: el._id,
     columns: [
       {
         value: el.label!,
@@ -60,7 +59,7 @@ export function SystemTemplatePage() {
 
 function DragButton({ folder }: { folder: DBFolder }) {
   const { ref, dragHandleProps } = useDragItem({
-    id: `new-folder-${folder.id}`,
+    id: `new-folder-${folder._id}`,
     type: "folders",
     item: folder,
     mode: "move",

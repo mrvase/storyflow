@@ -1,6 +1,6 @@
 import cl from "clsx";
 import { DropShadow, Sortable } from "@storyflow/dnd";
-import { FolderSpace } from "@storyflow/backend/types";
+import { FolderId, FolderSpace, SpaceId } from "@storyflow/backend/types";
 import { DragResultAction } from "@storyflow/dnd/types";
 import { FolderItem } from "./Folder";
 import { useFolders, useSpace } from "../collab/hooks";
@@ -17,8 +17,8 @@ export function FolderGridSpace({
   hidden,
   index,
 }: {
-  spaceId: string;
-  folderId: string;
+  spaceId: SpaceId;
+  folderId: FolderId;
   hidden: boolean;
   index: number;
 }) {
@@ -71,8 +71,8 @@ function FolderGrid({
   folderId,
   hidden,
 }: {
-  spaceId: string;
-  folderId: string;
+  spaceId: SpaceId;
+  folderId: FolderId;
   hidden: boolean;
 }) {
   const space = useSpace<FolderSpace>({
@@ -85,7 +85,7 @@ function FolderGrid({
   const collab = useFolderCollab();
 
   const folderItems = space.items.map(
-    (id) => (folders ?? []).find((folder) => folder.id === id)!
+    (id) => (folders ?? []).find((folder) => folder._id === id)!
   );
 
   const id = React.useId();
@@ -136,7 +136,7 @@ function FolderGrid({
           </div>
         )}
         {folderItems.map((folder, index) => (
-          <FolderItem folder={folder.id} index={index} key={folder.id} />
+          <FolderItem folder={folder._id} index={index} key={folder._id} />
         ))}
         <DropShadow>
           {(item) => {

@@ -5,7 +5,7 @@ import { authenticator, authorizer } from "./auth";
 import { error, isError, success, unwrap } from "@storyflow/result";
 import clientPromise from "../mongo/mongoClient";
 import { Organization, User } from "../types";
-import { USER_ID } from "@storyflow/backend/templates";
+import { FIELDS } from "@storyflow/backend";
 
 const user = async ({ req, client }: MiddlewareContext) => {
   const user = await authorizer.authorize(req);
@@ -168,7 +168,7 @@ export const users = createRoute({
           .db(db)
           .collection("documents")
           .findOne({
-            [`values.${USER_ID}`]: user.email,
+            [`values.${FIELDS.user.id}`]: user.email,
           });
 
         if (!orgUser) {

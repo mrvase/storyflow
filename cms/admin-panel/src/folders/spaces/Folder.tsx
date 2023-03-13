@@ -9,10 +9,9 @@ import {
 } from "@heroicons/react/24/outline";
 import { useSortableItem } from "@storyflow/dnd";
 import { getTranslateDragEffect } from "../../utils/dragEffects";
-import { DBFolder } from "@storyflow/backend/types";
+import { DBFolder, FolderId } from "@storyflow/backend/types";
 import { useTabUrl } from "../../layout/utils";
 import { useSegment } from "../../layout/components/SegmentContext";
-import { restoreId } from "@storyflow/backend/ids";
 import { DragIcon } from "./DragIcon";
 import { useFolder } from "../collab/hooks";
 
@@ -21,7 +20,7 @@ export function FolderItem({
   folder: folder_,
 }: {
   index: number;
-  folder: DBFolder | string;
+  folder: DBFolder | FolderId;
 }) {
   const { current, full } = useSegment();
 
@@ -29,11 +28,9 @@ export function FolderItem({
 
   const typeCode = { data: "f", app: "a" }[folder.type as "data"] ?? "f";
 
-  const isOpen = full.startsWith(
-    `${current}/${typeCode}-${restoreId(folder.id)}`
-  );
+  const isOpen = full.startsWith(`${current}/${typeCode}-${folder._id}`);
 
-  const to = `${current}/${typeCode}-${restoreId(folder.id)}`;
+  const to = `${current}/${typeCode}-${folder._id}`;
 
   const [, navigateTab] = useTabUrl();
 
@@ -52,7 +49,7 @@ export function FolderItem({
   const label = folder.label;
 
   const { dragHandleProps, ref, state } = useSortableItem({
-    id: folder.id,
+    id: folder._id,
     index,
     item: folder,
   });

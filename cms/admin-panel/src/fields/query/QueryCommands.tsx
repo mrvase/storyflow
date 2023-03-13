@@ -1,5 +1,4 @@
 import { DocumentId, EditorComputation } from "@storyflow/backend/types";
-import { LABEL_ID } from "@storyflow/backend/templates";
 import {
   CalculatorIcon,
   CalendarIcon,
@@ -12,6 +11,8 @@ import { SWRClient } from "../../client";
 import { Option as OptionComponent } from "./Option";
 import { markMatchingString } from "./helpers";
 import { parseDateFromString } from "../../utils/dates";
+import { computeFieldId, FIELDS } from "@storyflow/backend";
+import { calculateFromRecord } from "@storyflow/backend/calculate";
 
 export function QueryCommands({
   query,
@@ -26,7 +27,7 @@ export function QueryCommands({
 
   const [isSearching, setIsSearching] = React.useState(false);
 
-  const { data } = SWRClient.articles.getByLabel.useQuery(searchQuery, {
+  const { data } = SWRClient.documents.getByLabel.useQuery(searchQuery, {
     inactive: !isSearching,
   });
 
@@ -37,7 +38,7 @@ export function QueryCommands({
 
   const onEnter = React.useCallback(
     (id: DocumentId) => {
-      insertBlock([{ dref: id }]);
+      insertBlock([{ id }]);
     },
     [insertBlock]
   );
@@ -110,9 +111,13 @@ export function QueryCommands({
     ];
   } else {
     options = (data ?? []).map((el) => ({
-      id: el.id,
-      label: el.values[LABEL_ID],
-      secondary: el.id,
+      id: el._id,
+      label:
+        calculateFromRecord(
+          computeFieldId(el._id, FIELDS.label.id),
+          el.record
+        )?.[0] ?? "",
+      secondary: el._id,
       Icon: DocumentIcon,
       onEnter,
       onEnterLabel: "Tilføj",

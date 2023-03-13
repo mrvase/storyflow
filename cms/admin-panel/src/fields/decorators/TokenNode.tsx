@@ -70,6 +70,9 @@ function TokenDecorator({ nodeKey, token }: { nodeKey: string; token: Token }) {
   if ("name" in token) {
     return <CustomDecorator nodeKey={nodeKey} token={token} />;
   }
+  if ("ctx" in token) {
+    return null;
+  }
   return <FileDecorator nodeKey={nodeKey} token={token} />;
 }
 

@@ -1,5 +1,5 @@
 import { store } from "../../state/state";
-import { calculateSync } from "@storyflow/backend/calculate";
+import { calculateSync, FetchObject } from "@storyflow/backend/calculate";
 import { context, getContextKey } from "../../state/context";
 import { fetchArticle } from "../../documents";
 import {
@@ -7,48 +7,50 @@ import {
   Value,
   FieldId,
   ComputationRecord,
-  Fetcher,
-  Filter,
+  ContextToken,
 } from "@storyflow/backend/types";
-import { getComputationRecord } from "@storyflow/backend/flatten";
 import { getDocumentId } from "@storyflow/backend/ids";
 import { Client } from "../../client";
-import { unwrap } from "@storyflow/result";
-import { extendPath } from "@storyflow/backend/extendPath";
 
 export const calculateFn = (
   fieldId: FieldId | string,
   value: Computation,
   {
-    imports = {},
+    record = {},
     returnFunction = false,
     client,
   }: {
     client: Client;
-    imports?: ComputationRecord;
+    record?: ComputationRecord;
     returnFunction?: boolean;
   }
 ): Value[] => {
-  const getter = (importId: FieldId | string, returnFunction: boolean) => {
-    const stateId = returnFunction ? `${importId}#function` : importId;
-
-    if (importId.startsWith("ctx:")) {
+  const getter = (
+    importId: FieldId | FetchObject | ContextToken,
+    returnFunction: boolean
+  ) => {
+    if (typeof importId === "object" && "select" in importId) {
+      return [];
+    }
+    if (typeof importId === "object" && "ctx" in importId) {
       const value = context.use<Value[]>(
-        getContextKey(getDocumentId(fieldId as FieldId), importId.slice(4))
+        getContextKey(getDocumentId(fieldId as FieldId), importId.ctx)
       ).value;
       return value ? [value] : [];
     }
+
+    const stateId = returnFunction ? `${importId}#function` : importId;
 
     if (importId.indexOf(".") > 0) {
       return store.use<Value[]>(importId).value ?? [];
     }
 
-    const value = imports[importId];
+    const value = record[importId];
 
     // if (!value) return store.use<Value[]>(id).value ?? [];
     if (value) {
       return store.use<Value[]>(stateId, () =>
-        calculateFn(importId, value, { imports, client, returnFunction })
+        calculateFn(importId, value, { record, client, returnFunction })
       ).value;
     }
 
@@ -60,21 +62,25 @@ export const calculateFn = (
       // so that if the field is initialized elsewhere, this field will react to it.
       // (e.g. a not yet saved article)
       if (!article) return undefined;
-      const all = getComputationRecord(article, { includeImports: true });
-      const value = all[importId as FieldId];
+      const value = article.record[importId as FieldId];
       if (!value) return undefined;
       const fn = () =>
-        calculateFn(importId, value, { imports: all, client, returnFunction });
+        calculateFn(importId, value, {
+          record: article.record,
+          client,
+          returnFunction,
+        });
       return fn;
     });
 
     return store.useAsync(stateId, asyncFn).value ?? [];
   };
 
-  const result = calculateSync(fieldId, value, getter, { returnFunction });
+  const result = calculateSync(value, getter, { returnFunction });
   return result;
 };
 
+/*
 export const fetchFn = (path: string, fetcher: Fetcher, client: Client) => {
   const isFetcherFetchable = (
     fetcher: Fetcher
@@ -119,3 +125,4 @@ export const fetchFn = (path: string, fetcher: Fetcher, client: Client) => {
     return [];
   }
 };
+*/

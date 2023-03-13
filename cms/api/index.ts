@@ -2,7 +2,7 @@ import { createAPI, createHandler } from "@sfrpc/server";
 import type {} from "@sfrpc/types";
 import { NextApiRequest, NextApiResponse } from "next";
 import { ai } from "./routes/ai";
-import { articles } from "./routes/articles";
+import { documents } from "./routes/documents";
 import { files } from "./routes/files";
 import { folders } from "./routes/folders";
 import { ids } from "./routes/ids";
@@ -16,7 +16,7 @@ declare module "@sfrpc/server" {
 }
 
 const api = createAPI({
-  articles,
+  documents,
   folders,
   ids,
   settings,

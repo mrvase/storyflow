@@ -3,31 +3,29 @@ import { createQueue } from "@storyflow/state";
 import React from "react";
 import { Client, SWRClient, useCache } from "../client";
 import {
-  ComputationBlock,
+  ComputationRecord,
   DBDocument,
   DocumentId,
+  FolderId,
   TemplateDocument,
-  FlatComputation,
-  ValueRecord,
 } from "@storyflow/backend/types";
 import { pushAndRetry } from "../utils/retryOnError";
-import { TEMPLATES } from "@storyflow/backend/templates";
 
 type ArticleListMutation =
   | {
       type: "insert";
-      id: string;
+      id: DocumentId;
       label?: string;
-      values: ValueRecord;
-      compute: { id: string; value: FlatComputation }[];
+      record: ComputationRecord;
+      // values: ValueRecord;
     }
   | {
       type: "remove";
-      id: string;
+      id: DocumentId;
     };
 
 type ArticleListOperation = {
-  folder: string;
+  folder: FolderId;
   actions: ArticleListMutation[];
 };
 
@@ -36,16 +34,15 @@ const queue = createQueue<ArticleListOperation>("documents", {
 }).initialize(0, []);
 
 const getArticleFromInsert = (
-  folder: string,
+  folder: FolderId,
   action: ArticleListMutation
 ): DBDocument | undefined => {
   if (action.type !== "insert") return;
   return {
-    id: action.id as DocumentId,
+    _id: action.id as DocumentId,
     folder,
     versions: {},
-    values: action.values,
-    compute: action.compute as ComputationBlock[],
+    record: action.record,
     config: [],
     ...(action.label && { label: action.label }),
   };
@@ -53,11 +50,11 @@ const getArticleFromInsert = (
 
 const optimisticUpdate = (
   articles: DBDocument[],
-  folder: string,
+  folder: FolderId,
   actions: ArticleListMutation[]
 ): DBDocument[] => {
   let inserts: DBDocument[] = [];
-  let removes: string[] = [];
+  let removes: DocumentId[] = [];
 
   actions.forEach((action) => {
     if (action.type === "insert") {
@@ -67,16 +64,13 @@ const optimisticUpdate = (
     }
   });
 
-  return [...articles, ...inserts].filter((el) => !removes.includes(el.id));
+  return [...articles, ...inserts].filter((el) => !removes.includes(el._id));
 };
 
-export function useArticleList(folderId: string | undefined) {
-  const { data, error } = SWRClient.articles.getList.useQuery(
-    folderId as string,
-    {
-      inactive: !folderId,
-    }
-  );
+export function useArticleList(folderId: FolderId | undefined) {
+  const { data, error } = SWRClient.documents.getList.useQuery(folderId!, {
+    inactive: !folderId,
+  });
 
   const [operations, setOperations] = React.useState<ArticleListOperation[]>(
     []
@@ -126,10 +120,10 @@ export async function fetchArticle(
   id: string,
   client: Client
 ): Promise<DBDocument | undefined> {
-  const result = await client.articles.get.query(id, {
+  const result = await client.documents.get.query(id, {
     useCache,
   });
-  return unwrap(result)?.article;
+  return unwrap(result)?.doc;
   /*
   const key = SWRKey(`http://localhost:3001/api/articles/get`, id);
   let exists = SWRCache.get(key);
@@ -157,7 +151,7 @@ export async function fetchArticle(
 }
 
 export function useArticle(
-  articleId: string | undefined,
+  articleId: DocumentId | undefined,
   options: { inactive?: boolean } = {}
 ) {
   const [initialArticle, setInitialArticle] = React.useState(() => {
@@ -168,7 +162,7 @@ export function useArticle(
     return getArticleFromOperations(articleId, operations);
   });
 
-  const { data, error, mutate } = SWRClient.articles.get.useQuery(
+  const { data, error, mutate } = SWRClient.documents.get.useQuery(
     articleId as string,
     {
       inactive: options.inactive || !articleId,
@@ -183,8 +177,8 @@ export function useArticle(
 
   const article = React.useMemo(() => {
     if (!articleId) return undefined;
-    if (data?.article) {
-      return data.article;
+    if (data?.doc) {
+      return data.doc;
     }
     return initialArticle;
   }, [articleId, data, initialArticle]);
@@ -198,29 +192,31 @@ export function useArticle(
 }
 
 export function useArticleTemplate(
-  id: string | undefined,
+  id: DocumentId | undefined,
   options: { inactive?: boolean } = {}
 ): TemplateDocument | undefined {
+  /*
   const defaultTemplate = TEMPLATES.find((el) => el.id === id);
   if (defaultTemplate) {
     return defaultTemplate;
   }
-  const { article } = useArticle(id, options);
+  */
 
+  const { article } = useArticle(id, options);
   return article;
 }
 
 export const useArticleListMutation = () => {
-  const mutate = SWRClient.articles.listOperation.useMutation({
+  const mutate = SWRClient.documents.listOperation.useMutation({
     cacheUpdate: (input, mutate) => {
-      const groups = input.reduce(
-        (acc: Record<string, ArticleListMutation[]>, cur) => {
-          return {
-            [cur.folder]: [...(acc[cur.folder] ?? []), ...cur.actions],
-          };
-        },
-        {}
-      );
+      const groups = input.reduce((acc, cur) => {
+        return {
+          [cur.folder as FolderId]: [
+            ...(acc[cur.folder as FolderId] ?? []),
+            ...(cur.actions as ArticleListMutation[]),
+          ],
+        };
+      }, {} as Record<FolderId, ArticleListMutation[]>);
 
       Object.entries(groups).map(([folder, actions]) => {
         mutate(["getList", folder], (ps, result) => {
@@ -231,7 +227,11 @@ export const useArticleListMutation = () => {
             return ps;
           }
 
-          const articles = optimisticUpdate(ps.articles, folder, actions);
+          const articles = optimisticUpdate(
+            ps.articles,
+            folder as FolderId,
+            actions
+          );
 
           return {
             articles,
@@ -246,14 +246,14 @@ export const useArticleListMutation = () => {
   };
 };
 
-export const useSaveArticle = (folder: string) => {
-  return SWRClient.articles.save.useMutation({
+export const useSaveArticle = (folder: FolderId) => {
+  return SWRClient.documents.save.useMutation({
     cacheUpdate: ({ id }, mutate) => {
       mutate(["getList", folder], (ps, result) => {
         if (!result) {
           return ps;
         }
-        const index = ps.articles.findIndex((el) => el.id === id);
+        const index = ps.articles.findIndex((el) => el._id === id);
         const newArticles = [...ps.articles];
         newArticles[index] = { ...newArticles[index], ...result };
         return {

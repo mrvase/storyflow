@@ -2,32 +2,19 @@ import React from "react";
 import Dialog from "../elements/Dialog";
 import { useArticleListMutation } from "../documents";
 import { getDefaultValuesFromTemplateAsync } from "../documents/template-fields";
-import { useArticleIdGenerator } from "../id-generator";
 import { useTabUrl } from "../layout/utils";
 import { useSegment } from "../layout/components/SegmentContext";
+import { computeFieldId } from "@storyflow/backend/ids";
 import {
-  computeFieldId,
-  createId,
-  getDocumentId,
-  replaceDocumentId,
-  restoreId,
-} from "@storyflow/backend/ids";
-import {
-  Computation,
-  ComputationBlock,
+  ComputationRecord,
   DocumentId,
   FieldId,
-  FlatComputation,
+  FolderId,
 } from "@storyflow/backend/types";
-import { tools } from "shared/editor-tools";
-import {
-  CREATION_DATE_ID,
-  LABEL_ID,
-  URL_ID,
-} from "@storyflow/backend/templates";
 import { useClient } from "../client";
-import { extendPath } from "@storyflow/backend/extendPath";
 import { toSlug } from "../fields/UrlField";
+import { useDocumentIdGenerator, useFieldIdGenerator } from "../id-generator";
+import { FIELDS } from "@storyflow/backend";
 
 export function AddArticleDialog({
   isOpen,
@@ -39,18 +26,17 @@ export function AddArticleDialog({
 }: {
   isOpen: boolean;
   close: () => void;
-  folder: string;
+  folder: FolderId;
   template?: DocumentId;
   parentUrl?: {
     id: FieldId;
-    value: FlatComputation;
+    record: ComputationRecord;
     url: string;
-    imports: ComputationBlock[];
   };
   type: string;
 }) {
   const mutateArticles = useArticleListMutation();
-  const generateId = useArticleIdGenerator();
+  const generateDocumentId = useDocumentIdGenerator();
   const [, navigateTab] = useTabUrl();
   const { current } = useSegment();
   const client = useClient();
@@ -68,60 +54,40 @@ export function AddArticleDialog({
         onSubmit={async (ev) => {
           try {
             ev.preventDefault();
-            const id = await generateId();
-            const defaultValues = template
-              ? await getDefaultValuesFromTemplateAsync(template, client)
-              : null;
-            const compute = (defaultValues?.compute ?? []).map((block) => ({
-              id: replaceDocumentId(block.id, id),
-              value: block.value.map((el) =>
-                tools.isFieldImport(el)
-                  ? {
-                      ...el,
-                      fref:
-                        getDocumentId(block.id) === getDocumentId(el.fref)
-                          ? replaceDocumentId(el.fref, id)
-                          : el.fref,
-                    }
-                  : el
-              ),
-            }));
-            const values = Object.assign(defaultValues?.values ?? {}, {
-              [CREATION_DATE_ID]: [new Date()],
-            });
+            const id = generateDocumentId();
+            const record = template
+              ? await getDefaultValuesFromTemplateAsync(id, template, {
+                  client,
+                  generateDocumentId,
+                })
+              : {};
+
+            record[computeFieldId(id, FIELDS.creation_date.id)] = [new Date()];
+
             if (parentUrl) {
-              compute.push(...parentUrl.imports);
+              Object.assign(record, parentUrl.record);
 
-              compute.push({
-                id: parentUrl.id,
-                value: parentUrl.value,
-              });
+              record[computeFieldId(id, FIELDS.url.id)] = [
+                { "(": true },
+                { id: generateDocumentId(id), field: parentUrl.id },
+                slug,
+                { ")": "url" },
+              ];
 
-              compute.push({
-                id: computeFieldId(id, URL_ID),
-                value: [
-                  { "(": true },
-                  { id: createId(1), fref: parentUrl.id },
-                  slug,
-                  { ")": "url" },
-                ],
-              });
-
-              values[URL_ID] = [extendPath(parentUrl.url, slug, "/")];
-              values[LABEL_ID] = [label];
+              record[computeFieldId(id, FIELDS.label.id)] = [label];
             }
+
             mutateArticles({
               folder,
               actions: [
                 {
                   type: "insert",
                   id,
-                  values,
-                  compute,
+                  record,
                 },
               ],
             });
-            navigateTab(`${current}/d-${restoreId(id)}`, { navigate: true });
+            navigateTab(`${current}/d-${id}`, { navigate: true });
             close();
           } catch (err) {
             console.log(err);

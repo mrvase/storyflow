@@ -1,4 +1,15 @@
-import { Value, FieldId, FieldImport, Computation } from "./types";
+import {
+  Value,
+  FieldId,
+  Computation,
+  NestedField,
+  PossiblyNestedComputation,
+  ComputationRecord,
+  NestedDocumentId,
+  FolderId,
+  ContextToken,
+  RawFieldId,
+} from "./types";
 import { symb } from "./symb";
 
 /*
@@ -50,6 +61,18 @@ filter([0, imp, 4, 5], [1, 2, 3]=1);
 parameters are: [[0, 1, 2, 3, 4, 5], [true, false, false]] (since square brackets spreads the implicit array from the import)
 */
 
+type SortSpec = Record<string, 1 | -1>;
+
+export type FetchObject = {
+  id: NestedDocumentId;
+  folder: FolderId;
+  limit: number;
+  select: RawFieldId;
+  sortBy?: SortSpec;
+};
+
+type Importers = FieldId | FetchObject | ContextToken;
+
 const slugCharacters = [
   [" ", "-"],
   ["Æ", "ae"],
@@ -99,7 +122,7 @@ const levelImplicitAndExplicitArrays = (arr: Value[][]): Value[][] => {
 
 type Loop<T extends Record<string, any> | undefined = undefined> = {
   index: number;
-  array: Computation;
+  array: PossiblyNestedComputation;
   resolved: boolean;
 } & (T extends undefined ? { vars?: never } : { vars: T });
 
@@ -115,7 +138,7 @@ type ThenableSync = {
 
 type Accumulator = {
   isFunc: boolean;
-  func: Computation;
+  func: PossiblyNestedComputation;
   value: Value[][];
   stack: Value[][][];
   loop1: Loop;
@@ -125,25 +148,35 @@ type Accumulator = {
   loop3: Loop;
 };
 
+export function calculateFromRecord(id: FieldId, record: ComputationRecord) {
+  const getter = (id: Importers) => {
+    const value = record[id as FieldId];
+    if (!value || value.length === 0) return;
+    return {
+      then(callback: any): Value[] {
+        return callback(calculate(value, getter));
+      },
+    };
+  };
+
+  return calculate(record[id], getter);
+}
+
 export function calculateSync(
-  id: string,
   compute: Computation,
-  getState: (
-    id: FieldId | string,
-    returnFunction: boolean
-  ) => Value[] | undefined,
+  getState: (id: Importers, returnFunction: boolean) => Value[] | undefined,
   options?: {
     returnFunction?: boolean;
     acc?: Accumulator;
   }
 ) {
-  const getter = (id: string, returnFunction: boolean = false) => {
+  const getter = (id: Importers, returnFunction: boolean = false) => {
     const value = getState(id, returnFunction);
     if (!value || value.length === 0) return;
     return {
       then(callback: any): Value[] {
         return callback(
-          calculate(id, value, getter, {
+          calculate(value, getter, {
             returnFunction,
           })
         );
@@ -151,14 +184,13 @@ export function calculateSync(
     };
   };
 
-  return calculate(id, compute, getter, options);
+  return calculate(compute, getter, options);
 }
 
 export function calculateAsync(
-  id: string,
-  compute: Computation,
+  compute: PossiblyNestedComputation,
   getState: (
-    id: FieldId | string,
+    id: Importers,
     returnFunction: boolean
   ) => ThenableAsync | undefined,
   options?: {
@@ -166,14 +198,13 @@ export function calculateAsync(
     acc?: Accumulator;
   }
 ) {
-  return calculate(id, compute, getState, options);
+  return calculate(compute, getState, options);
 }
 
 function calculate(
-  id: string,
-  compute: Computation,
+  compute: PossiblyNestedComputation,
   getState: (
-    id: FieldId | string,
+    id: Importers,
     returnFunction: boolean
   ) => ThenableAsync | undefined,
   options?: {
@@ -182,19 +213,20 @@ function calculate(
   }
 ): Value[] | Promise<Value[]>;
 function calculate(
-  id: string,
-  compute: Computation,
-  getState: (id: string, returnFunction: boolean) => ThenableSync | undefined,
+  compute: PossiblyNestedComputation,
+  getState: (
+    id: Importers,
+    returnFunction: boolean
+  ) => ThenableSync | undefined,
   options?: {
     returnFunction?: boolean;
     acc?: Accumulator;
   }
 ): Value[];
 function calculate(
-  id: string,
-  compute: Computation,
+  compute: PossiblyNestedComputation,
   getState: (
-    id: string,
+    id: Importers,
     returnFunction: boolean
   ) => ThenableAsync | ThenableSync | undefined,
   options: {
@@ -244,20 +276,16 @@ function calculate(
           ...acc.value.reduce((acc, el) => {
             return el.reduce((acc, el) => {
               if (el !== null && typeof el === "object") {
-                if ("dref" in el) {
+                if ("id" in el) {
                   acc.push(
                     { "[": true },
                     {
-                      fref: `${el.dref}${pick}`,
-                    } as FieldImport,
+                      field: `${el.id}${pick}`,
+                    } as NestedField,
                     {
                       "]": true,
                     }
                   );
-                } else if ("id" in el && "values" in el && pick in el.values) {
-                  acc.push({ "[": true }, ...(el.values[pick] as any), {
-                    "]": true,
-                  });
                 }
               }
               return acc;
@@ -284,21 +312,20 @@ function calculate(
         acc.loop3.index = 0;
 
         acc.loop2.vars.args = [];
-
-        if (symb.isFieldImport(el)) {
+        if (symb.isNestedField(el)) {
           const args = [0, 1, 2].map((index) => {
-            const fieldId = `${id}.${el.id}/${index}`;
+            const fieldId = `${el.id}/${index}` as FieldId;
             return getState(fieldId, false);
           }) as ThenableAsync[] | ThenableSync[];
 
           const hasArgs = args.some((el) => el !== undefined);
 
-          const state = getState(el.fref, hasArgs);
+          const state = getState(el.field, hasArgs);
 
           if (state) {
             return state.then((value) => {
               const updatedValue = value.map((x) =>
-                symb.isLayoutElement(x) ? { ...x, parent: el.fref } : x
+                symb.isNestedElement(x) ? { ...x, parent: el.field } : x
               );
               if (hasArgs) {
                 acc.loop3.array = updatedValue;
@@ -308,7 +335,7 @@ function calculate(
 
                 acc.loop2.vars.args = args;
 
-                return calculate(id, compute, getState as any, {
+                return calculate(compute, getState as any, {
                   ...options,
                   acc,
                 }) as Value[];
@@ -318,7 +345,7 @@ function calculate(
                 acc.loop2.index++;
                 acc.loop2.resolved = false;
 
-                return calculate(id, compute, getState as any, {
+                return calculate(compute, getState as any, {
                   ...options,
                   acc,
                 }) as Value[];
@@ -346,7 +373,7 @@ function calculate(
                 acc.value.push([el.value]);
               }
               acc.loop3.index++;
-              return calculate(id, compute, getState as any, {
+              return calculate(compute, getState as any, {
                 ...options,
                 acc,
               }) as Value[];
@@ -422,7 +449,7 @@ function calculate(
                       a.push(el);
                     }
                     return a;
-                  }, [] as Computation),
+                  }, [] as PossiblyNestedComputation),
                 ];
               }
 
@@ -449,9 +476,9 @@ function calculate(
                           element,
                         ])
                       );
-                    }, [] as Computation[]);
+                    }, [] as PossiblyNestedComputation[]);
                   },
-                  [[]] as Computation[]
+                  [[]] as PossiblyNestedComputation[]
                 )
                 // FILTER IMPORTANT because you can have operations with no input,
                 // which makes reducers below fail. A scenario is when an operation
@@ -595,6 +622,7 @@ function calculate(
             acc.stack.pop();
             acc.value = result;
           }
+          /*
         } else if (symb.isFetcher(el)) {
           const state = getState(`${id}.${el.id}`, false);
           if (state) {
@@ -607,20 +635,21 @@ function calculate(
               }) as Value[];
             });
           }
-        } else if (symb.isContextImport(el)) {
-          const state = getState(`ctx:${el.ctx}`, false);
+        */
+        } else if (symb.isContextToken(el)) {
+          const state = getState(el, false);
           if (state) {
             return state.then((value) => {
               acc.value.push(value);
               acc.loop3.index++;
-              return calculate(id, compute, getState as any, {
+              return calculate(compute, getState as any, {
                 ...options,
                 acc,
               }) as Value[];
             });
           }
         } else {
-          acc.value.push([el as Exclude<Value, FieldImport>]);
+          acc.value.push([el as Exclude<Value, NestedField>]);
         }
 
         acc.loop3.resolved = false;

@@ -18,37 +18,36 @@ import { mergeRegister } from "../../editor/utils/mergeRegister";
 import {
   addContext,
   addDocumentImport,
-  addFetcher,
   addImport,
   addLayoutElement,
   addNestedDocument,
 } from "../../custom-events";
 import { getNodesFromComputation, isInlineElement } from "./transforms";
-import { ComputationOp } from "shared/operations";
-import { createId } from "@storyflow/backend/ids";
 import {
-  EditorComputation,
+  Computation,
   DocumentId,
+  EditorComputation,
   FieldId,
-  TemplateFieldId,
+  RawFieldId,
 } from "@storyflow/backend/types";
 import { useClientConfig } from "../../client-config";
 import { $isLayoutElementNode } from "../decorators/LayoutElementNode";
 import { $isDocumentNode } from "../decorators/DocumentNode";
 import { useFieldConfig } from "../../documents/collab/hooks";
 import { useFieldId } from "../FieldIdContext";
-import { useArticleIdGenerator } from "../../id-generator";
 import { $isHeadingNode } from "../../editor/react/HeadingNode";
 import { createComponent } from "./createComponent";
 import { insertComputation } from "./insertComputation";
 import { LibraryConfig } from "@storyflow/frontend/types";
+import { useDocumentIdGenerator } from "../../id-generator";
+import { getDocumentId } from "@storyflow/backend/ids";
 
-export function ContentPlugin({ id }: { id?: string }) {
+export function ContentPlugin() {
   const editor = useEditorContext();
 
   const { libraries } = useClientConfig();
 
-  useEditorEvents({ id });
+  useEditorEvents();
 
   useLayoutEffect(() => {
     return registerPlainText(editor, libraries, { allowLineBreaks: true });
@@ -82,16 +81,19 @@ export function $getLastBlock(
   return lastNode;
 }
 
-function useEditorEvents({ id }: { id?: string }) {
+function useEditorEvents() {
   const editor = useEditorContext();
   const isFocused = useIsFocusedContext();
 
   const { libraries } = useClientConfig();
 
   const fieldId = useFieldId();
+
+  const documentId = getDocumentId(fieldId) as DocumentId;
+
   const [fieldConfig, setFieldConfig] = useFieldConfig(fieldId);
 
-  const generateId = useArticleIdGenerator();
+  const generateDocumentId = useDocumentIdGenerator();
 
   React.useEffect(() => {
     if (isFocused) {
@@ -116,16 +118,16 @@ function useEditorEvents({ id }: { id?: string }) {
 
       return mergeRegister(
         addImport.subscribe(async ({ id: externalId, templateId, imports }) => {
-          if (id && imports.includes(id)) {
+          if (fieldId && imports.includes(fieldId)) {
             console.error("Tried to add itself");
             return;
           }
-          let insert = [
+          let insert: EditorComputation = [
             {
-              id: createId(1),
-              fref: externalId as FieldId,
-              ...(templateId && { pick: templateId as TemplateFieldId }),
-              args: {},
+              id: generateDocumentId(documentId),
+              field: externalId,
+              ...(templateId && { pick: templateId }),
+              imports: {},
             },
           ];
 
@@ -133,7 +135,7 @@ function useEditorEvents({ id }: { id?: string }) {
         }),
 
         addContext.subscribe(async (ctx) => {
-          let insert = [
+          let insert: EditorComputation = [
             {
               ctx,
             },
@@ -146,7 +148,7 @@ function useEditorEvents({ id }: { id?: string }) {
           editor.update(() => {
             addBlockElement([
               {
-                dref: documentId as DocumentId,
+                id: documentId,
               },
             ]);
           });
@@ -156,8 +158,14 @@ function useEditorEvents({ id }: { id?: string }) {
         }),
 
         addLayoutElement.subscribe(async ({ library, name }) => {
-          const component = createComponent(name, { library, libraries });
+          const component = createComponent(
+            generateDocumentId(documentId),
+            name,
+            { library, libraries }
+          );
+
           const computation: EditorComputation = [component];
+
           if (isInlineElement(libraries, component)) {
             insertComputation(editor, computation, libraries);
           } else {
@@ -167,19 +175,12 @@ function useEditorEvents({ id }: { id?: string }) {
           }
         }),
 
-        addNestedDocument.subscribe(async () => {
-          const id = await generateId();
+        addNestedDocument.subscribe(() => {
           editor.update(() => {
-            addBlockElement([{ id, values: {} }]);
-          });
-        }),
-        addFetcher.subscribe(async () => {
-          const id = await generateId();
-          editor.update(() => {
-            addBlockElement([{ id, filters: [] }]);
+            addBlockElement([{ id: generateDocumentId(documentId) }]);
           });
         })
       );
     }
-  }, [editor, libraries, isFocused]);
+  }, [editor, libraries, isFocused, fieldId, generateDocumentId]);
 }

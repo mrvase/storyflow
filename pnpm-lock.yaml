@@ -118,6 +118,7 @@ importers:
       typescript: ^4.9.4
       vite: ^4.0.4
       vitest: ^0.28.4
+      zod: ^3.20.2
     dependencies:
       '@headlessui/react': 1.7.7_react@18.2.0
       '@heroicons/react': 2.0.13_react@18.2.0
@@ -138,6 +139,7 @@ importers:
       react-resizable-panels: 0.0.29_react@18.2.0
       shared: link:../shared
       swr: 2.0.1_react@18.2.0
+      zod: 3.20.2
     devDependencies:
       '@sfrpc/types': link:../../rpc/types
       '@types/react': 18.0.27

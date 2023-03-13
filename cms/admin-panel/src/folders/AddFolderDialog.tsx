@@ -1,18 +1,14 @@
 import React from "react";
 import Dialog from "../elements/Dialog";
-import { useArticleIdGenerator, useFolderIdGenerator } from "../id-generator";
 import { DocumentId } from "@storyflow/backend/types";
 import { useFolderCollab } from "./collab/FolderCollabContext";
 import { targetTools } from "shared/operations";
 import { useArticleListMutation } from "../documents";
 import { computeFieldId } from "@storyflow/backend/ids";
-import { LABEL_ID, URL_ID } from "@storyflow/backend/templates";
-import {
-  CheckIcon,
-  ComputerDesktopIcon,
-  FolderIcon,
-} from "@heroicons/react/24/outline";
+import { ComputerDesktopIcon, FolderIcon } from "@heroicons/react/24/outline";
 import { DialogOption } from "../elements/DialogOption";
+import { useDocumentIdGenerator, useFolderIdGenerator } from "../id-generator";
+import { FIELDS } from "@storyflow/backend";
 
 export function AddFolderDialog({
   isOpen,
@@ -26,8 +22,8 @@ export function AddFolderDialog({
   spaceId: string;
 }) {
   const mutateArticles = useArticleListMutation();
-  const generateId = useFolderIdGenerator();
-  const generateFrontId = useArticleIdGenerator();
+  const generateFolderId = useFolderIdGenerator();
+  const generateDocumentId = useDocumentIdGenerator();
 
   const collab = useFolderCollab();
 
@@ -36,14 +32,13 @@ export function AddFolderDialog({
       const label = (data.get("value") as string) ?? "";
       if (!label) return;
       const [id, frontId] = await Promise.all([
-        generateId(),
-        type === "app" ? generateFrontId() : ("" as DocumentId),
+        generateFolderId(),
+        type === "app" ? generateDocumentId() : ("" as DocumentId),
       ]);
       const folder = {
         id,
         label,
         type,
-        children: [],
       };
       collab.mutate("folders", "").push({
         target: targetTools.stringify({
@@ -71,19 +66,15 @@ export function AddFolderDialog({
             {
               type: "insert",
               id: frontId,
-              compute: [
-                {
-                  id: computeFieldId(frontId, URL_ID),
-                  value: [{ "(": true }, "", "", { ")": "url" }],
-                },
-                {
-                  id: computeFieldId(frontId, LABEL_ID),
-                  value: ["Forside"],
-                },
-              ],
-              values: {
-                [URL_ID]: [""],
-                [LABEL_ID]: ["Forside"],
+              record: {
+                [computeFieldId(frontId, FIELDS.url.id)]: [""],
+                [computeFieldId(frontId, FIELDS.label.id)]: ["Forside"],
+                [computeFieldId(frontId, FIELDS.url.id)]: [
+                  { "(": true },
+                  "",
+                  "",
+                  { ")": "url" },
+                ],
               },
             },
           ],
@@ -95,8 +86,8 @@ export function AddFolderDialog({
       collab,
       folderId,
       spaceId,
-      generateId,
-      generateFrontId,
+      generateDocumentId,
+      generateFolderId,
       mutateArticles,
       close,
     ]

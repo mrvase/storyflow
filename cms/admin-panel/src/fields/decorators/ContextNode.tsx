@@ -15,13 +15,11 @@ import { caretClasses } from "./caret";
 import { useGlobalContext } from "../../state/context";
 import { useDocumentPageContext } from "../../documents/DocumentPageContext";
 import { getPreview } from "../default/getPreview";
-import { ContextImport, Value } from "@storyflow/backend/types";
-import { useBuilderPath } from "../BuilderPath";
+import { ContextToken, Value } from "@storyflow/backend/types";
 
 const useState = (ctx: string): Value[] | undefined => {
   const { id: documentId } = useDocumentPageContext();
   const [value] = useGlobalContext(documentId, ctx);
-  console.log("VALUE", value);
   return [value[ctx]];
 };
 
@@ -31,7 +29,7 @@ function ContextDecorator({
 }: {
   text: string;
   nodeKey: string;
-  value: ContextImport;
+  value: ContextToken;
 }) {
   const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
 
@@ -81,13 +79,13 @@ function convertImportElement(
 export type SerializedContextNode = Spread<
   {
     type: "context";
-    value: ContextImport;
+    value: ContextToken;
   },
   SerializedLexicalNode
 >;
 
 export class ContextNode extends DecoratorNode<React.ReactNode> {
-  __value: ContextImport;
+  __value: ContextToken;
 
   static getType(): string {
     return "context";
@@ -97,7 +95,7 @@ export class ContextNode extends DecoratorNode<React.ReactNode> {
     return new ContextNode(node.__value, node.__key);
   }
 
-  constructor(value: ContextImport, key?: NodeKey) {
+  constructor(value: ContextToken, key?: NodeKey) {
     super(key);
     this.__value = value;
   }
@@ -162,7 +160,7 @@ export class ContextNode extends DecoratorNode<React.ReactNode> {
   }
 }
 
-export function $createContextNode(value: ContextImport): ContextNode {
+export function $createContextNode(value: ContextToken): ContextNode {
   return new ContextNode(value);
 }
 

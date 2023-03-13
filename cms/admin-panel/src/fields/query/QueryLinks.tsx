@@ -1,11 +1,11 @@
 import {
   DocumentId,
   EditorComputation,
-  FieldImport,
+  FolderId,
+  NestedField,
   Value,
 } from "@storyflow/backend/types";
-import { URL_ID } from "@storyflow/backend/templates";
-import { computeFieldId, createId } from "@storyflow/backend/ids";
+import { computeFieldId, getDocumentId } from "@storyflow/backend/ids";
 import { ComputerDesktopIcon, LinkIcon } from "@heroicons/react/24/outline";
 import { $getRoot, $getSelection, $isRangeSelection } from "lexical";
 import React from "react";
@@ -17,6 +17,10 @@ import { useGlobalState } from "../../state/state";
 import { $getComputation, $getIndexFromPoint } from "../Editor/transforms";
 import { Option as OptionComponent } from "./Option";
 import { markMatchingString } from "./helpers";
+import { FIELDS } from "@storyflow/backend";
+import { calculateFromRecord } from "@storyflow/backend/calculate";
+import { useFieldId } from "../FieldIdContext";
+import { useDocumentIdGenerator } from "../../id-generator";
 
 export function QueryLinks({
   query,
@@ -29,6 +33,10 @@ export function QueryLinks({
 }) {
   const editor = useEditorContext();
 
+  const id = useFieldId();
+  const documentId = getDocumentId(id) as DocumentId;
+  const generateDocumentId = useDocumentIdGenerator();
+
   const getPrevSymbol = () => {
     return editor.getEditorState().read(() => {
       const selection = $getSelection();
@@ -40,13 +48,13 @@ export function QueryLinks({
     });
   };
 
-  const [linkParent, setLinkParent] = React.useState<FieldImport | null>(null);
+  const [linkParent, setLinkParent] = React.useState<NestedField | null>(null);
 
-  const [parentUrl] = useGlobalState<Value[]>(linkParent?.fref);
+  const [parentUrl] = useGlobalState<Value[]>(linkParent?.field);
 
   React.useEffect(() => {
     const symbol = getPrevSymbol();
-    if (tools.isFieldImport(symbol)) {
+    if (tools.isNestedField(symbol)) {
       setLinkParent(symbol);
     }
   }, []);
@@ -58,23 +66,22 @@ export function QueryLinks({
   const apps = useAppFolders();
 
   const [app, setApp] = React.useState(
-    apps?.length === 1 ? apps[0].id : undefined
+    apps?.length === 1 ? apps[0]._id : undefined
   );
 
-  const { data: list } = SWRClient.articles.getList.useQuery(app as string, {
+  const { data: list } = SWRClient.documents.getList.useQuery(app as string, {
     inactive: !app,
   });
 
-  const onAppEnter = React.useCallback((id: string) => {
+  const onAppEnter = React.useCallback((id: FolderId) => {
     setApp(id);
   }, []);
 
   const onEnter = React.useCallback(
     (id: DocumentId) => {
-      const fieldImport: FieldImport = {
-        id: createId(1),
-        fref: computeFieldId(id, URL_ID),
-        args: {},
+      const fieldImport: NestedField = {
+        id: generateDocumentId(documentId),
+        field: computeFieldId(id, FIELDS.url.id),
       };
       insertComputation([fieldImport], Boolean(parentUrl));
     },
@@ -84,7 +91,7 @@ export function QueryLinks({
   if (!app) {
     options =
       apps?.map((el) => ({
-        id: el.id,
+        id: el._id,
         label: el.label,
         // secondaryText: "Vis links",
         Icon: ComputerDesktopIcon,
@@ -93,10 +100,14 @@ export function QueryLinks({
       })) ?? [];
   } else if (list) {
     options = list.articles.reduce((acc, el) => {
-      const url = (el.values[URL_ID]?.[0] as string) || "";
+      const url =
+        (calculateFromRecord(
+          computeFieldId(el._id, FIELDS.url.id),
+          el.record
+        )?.[0] as string) ?? "";
       if (url.startsWith(fullQuery.toLowerCase())) {
         acc.push({
-          id: el.id,
+          id: el._id,
           label: markMatchingString(url, fullQuery) || "[forside]",
           onEnterLabel: "Indsæt",
           // secondaryText: "Vis links",

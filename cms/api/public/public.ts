@@ -10,10 +10,9 @@ import { cookieOptions } from "../cookie-options";
 import { error, success } from "@storyflow/result";
 import { globals } from "../middleware/globals";
 import { fetchSinglePage } from "@storyflow/server";
-import { PAGE_ID, URL_ID } from "@storyflow/backend/templates";
 import type {} from "@storyflow/frontend/types";
-import { minimizeId } from "@storyflow/backend/ids";
-import { DBDocument } from "@storyflow/backend";
+import { DBDocument, FIELDS } from "@storyflow/backend";
+import { ObjectId } from "mongodb";
 
 const sessionStorage = createSessionStorage({
   cookie: cookieOptions,
@@ -111,17 +110,17 @@ export const public_ = createRoute({
               index: dbName,
               text: {
                 query,
-                path: `values.${PAGE_ID}`,
+                path: `values.${FIELDS.page.id}`,
               },
               highlight: {
-                path: `values.${PAGE_ID}`,
+                path: `values.${FIELDS.page.id}`,
               },
             },
           },
           {
             $project: {
               _id: 0,
-              value: `$values.${PAGE_ID}`,
+              value: `$values.${FIELDS.page.id}`,
               score: { $meta: "searchScore" },
               highlight: { $meta: "searchHighlights" },
             },
@@ -148,9 +147,9 @@ export const public_ = createRoute({
         .find({
           ...(namespaces
             ? {
-                folder: { $in: namespaces.map((n) => minimizeId(n)) },
+                folder: { $in: namespaces.map((n) => new ObjectId(n)) },
               }
-            : { [`values.${URL_ID}`]: { $exists: true } }),
+            : { [`values.${FIELDS.url.id}`]: { $exists: true } }),
           /*
           [`values.${URL_ID}`]: namespace
             ? { $regex: `^${namespace}` }
@@ -160,7 +159,7 @@ export const public_ = createRoute({
         .toArray();
 
       const urls = articles.map((el) => {
-        return el.values[URL_ID][0] as string;
+        return el.values[FIELDS.url.id][0] as string;
       });
 
       console.log("GOT PATHS", urls);

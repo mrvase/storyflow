@@ -6,20 +6,15 @@ export type RawDocumentId = Brand<string, "raw-document-id">;
 export type RawFieldId = Brand<string, "raw-field-id">;
 export type DocumentId = Brand<string, "document-id">;
 export type NestedDocumentId = Brand<string, "nested-document-id">;
-export type TemplateFieldId = Brand<string, "template-field-id">;
 export type FieldId = Brand<string, "field-id">;
 export type FolderId = Brand<string, "folder-id">;
 export type SpaceId = Brand<string, "space-id">;
 
 export type ObjectId<BrandedId> = {
   id: unknown;
-  generateHex(): string;
+  toHexString(): string;
 } & {
   [brand]?: BrandedId extends Brand<string, infer TBrand> ? TBrand : never;
-};
-
-const unwindObjectId = <T>(id: ObjectId<T>): T => {
-  return id.generateHex() as T;
 };
 
 // symbols are also meant to be eliminated when the computation is executed,
@@ -47,19 +42,19 @@ export type DBSymbol =
   | { "}": true }
   | { "/": true }
   | { ")": Operator | FunctionName }
-  | { p: TemplateFieldId };
+  | { p: RawFieldId };
 
 type SharedSymbolKey = "(" | ")" | "[" | "]" | "n";
 export type EditorSymbolKey = SharedSymbolKey | "_" | ",";
 export type DBSymbolKey = SharedSymbolKey | "{" | "}" | "/" | "p";
 
-export type ImportRecord = { [key: TemplateFieldId]: boolean };
+export type ImportRecord = { [key: RawFieldId]: boolean };
 
 export type NestedField = {
   id: NestedDocumentId;
   field: FieldId;
   imports?: ImportRecord;
-  pick?: TemplateFieldId;
+  pick?: RawFieldId;
 };
 
 export type LayoutElement = {
@@ -128,7 +123,7 @@ export type PossiblyNestedComputation = (Value | Placeholder | DBSymbol)[];
 
 export type ComputationRecord = { [key: FieldId]: Computation };
 
-export type ValueRecord = Record<TemplateFieldId, Value[]>;
+export type ValueRecord = Record<RawFieldId, Value[]>;
 
 export type ComputationBlock = {
   id: ObjectId<FieldId>;
@@ -207,7 +202,7 @@ export interface DBDocumentRaw {
   folder: ObjectId<FolderId>;
   config: DocumentConfig;
   label?: string;
-  versions?: Record<TemplateFieldId | DocumentId, number>;
+  versions?: Record<RawFieldId | RawDocumentId, number>;
   /* compute */
   ids: ObjectId<NestedDocumentId>[];
   cached?: ObjectId<FieldId>[];
@@ -222,7 +217,7 @@ export interface DBDocument {
   config: DocumentConfig;
   record: ComputationRecord;
   label?: string;
-  versions?: Record<TemplateFieldId | DocumentId, number>;
+  versions?: Record<RawFieldId | RawDocumentId, number>;
 }
 
 export type FolderSpace = {

@@ -13,7 +13,7 @@ import { FieldPage } from "./FieldPage";
 import { useSegment } from "../layout/components/SegmentContext";
 import { useTabUrl } from "../layout/utils";
 import { PropertyOp, targetTools } from "shared/operations";
-import { getDocumentId, restoreId } from "@storyflow/backend/ids";
+import { getDocumentId } from "@storyflow/backend/ids";
 import { useLabel } from "../documents/collab/hooks";
 import {
   Computation,
@@ -30,7 +30,6 @@ import { useFieldId } from "./FieldIdContext";
 import { useDocumentCollab } from "../documents/collab/DocumentCollabContext";
 import { BuilderPathProvider, useBuilderPath } from "./BuilderPath";
 import { useDocumentPageContext } from "../documents/DocumentPageContext";
-import { useLocalStorage } from "../state/useLocalStorage";
 import useTabs from "../layout/useTabs";
 import { getConfigFromType, useClientConfig } from "../client-config";
 
@@ -151,13 +150,11 @@ function LabelBar({
 
   const [, navigateTab] = useTabUrl();
   const { current, full } = useSegment();
-  const isOpen = full.endsWith(`/c-${restoreId(fieldConfig.id)}`);
+  const isOpen = full.endsWith(`/c-${fieldConfig.id}`);
   const [, specialFieldConfig] = getDefaultField(fieldConfig.id);
 
   const fullscreen = () => {
-    navigateTab(
-      isOpen ? `${current}` : `${current}/c-${restoreId(fieldConfig.id)}`
-    );
+    navigateTab(isOpen ? `${current}` : `${current}/c-${fieldConfig.id}`);
   };
 
   return (
@@ -261,7 +258,7 @@ function Dot({
 
   const [, navigateTab] = useTabUrl();
   const { current, full } = useSegment();
-  const isOpen = full.endsWith(`/c-${restoreId(id)}`);
+  const isOpen = full.endsWith(`/c-${id}`);
 
   /*
   const Icon = isOpen
@@ -281,7 +278,7 @@ function Dot({
         onDrop={() => {
           const index = Math.max(...tabs.map((el) => el.index)) + 1;
           const currentUrl = current.split("/").slice(2).join("/");
-          const tab = isOpen ? currentUrl : `${currentUrl}/c-${restoreId(id)}`;
+          const tab = isOpen ? currentUrl : `${currentUrl}/c-${id}`;
           navigateTab(`/~${index}/${tab}`);
         }}
       >

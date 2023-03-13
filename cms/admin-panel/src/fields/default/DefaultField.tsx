@@ -16,33 +16,39 @@ import { getConfig } from "shared/initialValues";
 import { createComputationTransformer } from "shared/computation-tools";
 import {
   Computation,
-  LayoutElement,
   NestedDocument,
   FieldId,
-  FieldImport,
   EditorComputation,
   Value,
+  NestedField,
+  NestedFolder,
+  NestedElement,
+  NestedDocumentId,
 } from "@storyflow/backend/types";
 import { useDocumentPageContext } from "../../documents/DocumentPageContext";
 import { extendPath } from "@storyflow/backend/extendPath";
-import { Fetcher } from "@storyflow/backend/types";
 import { tools } from "shared/editor-tools";
 import { useBuilderPath } from "../BuilderPath";
 import { useFieldConfig } from "../../documents/collab/hooks";
-import { getDocumentId, getTemplateFieldId } from "@storyflow/backend/ids";
+import {
+  getDocumentId,
+  getRawFieldId,
+  isNestedDocumentId,
+} from "@storyflow/backend/ids";
 import { useDocumentCollab } from "../../documents/collab/DocumentCollabContext";
 import { useClient } from "../../client";
 import { Plus } from "./Plus";
 import {
-  RenderLayoutElement,
+  RenderNestedElement,
   RenderNestedDocument,
-  RenderFetcher,
   RenderImportArgs,
+  RenderFolder,
 } from "./RenderNestedFields";
 import { calculateFn } from "./calculateFn";
 import { TemplateHeader } from "./TemplateHeader";
 import { getPreview } from "./getPreview";
 import { useIsFocused } from "../../editor/react/useIsFocused";
+import { useFieldId } from "../FieldIdContext";
 
 export const ParentPropContext = React.createContext<string | null>(null);
 
@@ -80,15 +86,11 @@ export const getVariant = (output: any): Variant => {
 };
 
 export const findImportsFn = (value: Computation) => {
-  return value.filter((el): el is FieldImport => tools.isFieldImport(el));
+  return value.filter((el): el is NestedField => tools.isNestedField(el));
 };
 
-export const findFetchersFn = (value: Computation) => {
-  return value.reduce(
-    (acc, fetcher, index) =>
-      tools.isFetcher(fetcher) ? acc.concat([{ index, fetcher }]) : acc,
-    [] as { index: number; fetcher: Fetcher }[]
-  );
+export const findFoldersFn = (value: Computation) => {
+  return value.filter((el): el is NestedFolder => tools.isNestedFolder(el));
 };
 
 /*
@@ -144,7 +146,7 @@ export default function DefaultField({
   React.useLayoutEffect(() => {
     /* MUST be useLayoutEffect to run before children useEffects that use the queue */
     collab
-      .getOrAddQueue<ComputationOp>(getDocumentId(id), getTemplateFieldId(id), {
+      .getOrAddQueue<ComputationOp>(getDocumentId(id), getRawFieldId(id), {
         transform: createComputationTransformer(initialValue),
         mergeableNoop: { target: "0:0:", ops: [] },
       })
@@ -159,7 +161,6 @@ export default function DefaultField({
       {path.length === 0 && config?.template && <TemplateHeader id={id} />}
       <WritableDefaultField
         id={id}
-        path=""
         hidden={path.length > 0}
         initialValue={initialValue}
         fieldConfig={fieldConfig}
@@ -170,73 +171,73 @@ export default function DefaultField({
 
 export function WritableDefaultField({
   id,
-  path,
   initialValue,
   fieldConfig,
   hidden,
 }: {
   id: FieldId;
-  path: string;
   initialValue: Computation;
   fieldConfig: { type: "default" | "slug" };
   hidden?: boolean;
 }) {
+  const rootId = useFieldId();
   /*
   const [fullPath] = useBuilderPath();
   const isActive =
     stringifyPath(fullPath) === path.split("/").slice(0, -1).join("/");
   */
 
-  const { imports } = useDocumentPageContext();
+  const { record } = useDocumentPageContext();
 
   const client = useClient();
 
-  const [output, setOutput] = useGlobalState<Value[]>(
-    extendPath(id, path),
-    () => calculateFn(id, initialValue, { imports, client })
+  const [output, setOutput] = useGlobalState<Value[]>(id, () =>
+    calculateFn(rootId, initialValue, { record, client })
   );
 
   const transform =
-    path === "" ? getConfig(fieldConfig.type).transform : undefined;
+    id === rootId ? getConfig(fieldConfig.type).transform : undefined;
 
   const initialEditorValue = encodeEditorComputation(initialValue, transform);
 
   const [computation, setComputation] = useGlobalState<EditorComputation>(
-    `${extendPath(id, path)}#computation`,
+    `${id}#computation`,
     () => initialEditorValue
   );
 
-  const [, setFunction] = useGlobalState<Computation>(
-    `${extendPath(id, path)}#function`,
-    () =>
-      calculateFn(id, initialValue, { imports, client, returnFunction: true })
+  const [, setFunction] = useGlobalState<Value[]>(`${id}#function`, () =>
+    calculateFn(rootId, initialValue, { record, client, returnFunction: true })
   );
 
-  const [fieldImports, setFieldImports] = useGlobalState<FieldImport[]>(
-    `${extendPath(id, path)}#imports`,
+  const [fieldImports, setFieldImports] = useGlobalState<NestedField[]>(
+    `${id}#imports`,
     () => findImportsFn(initialValue)
   );
 
-  const [fetchers, setFetchers] = useGlobalState<
-    { fetcher: Fetcher; index: number }[]
-  >(`${extendPath(id, path)}#fetchers`, () => findFetchersFn(initialValue));
+  const [folders, setFolders] = useGlobalState<NestedFolder[]>(
+    `${id}#folders`,
+    () => findFoldersFn(initialValue)
+  );
 
   const preview = getPreview(output);
 
   const target = targetTools.stringify({
     field: fieldConfig.type,
     operation: "computation",
-    location: path,
+    location: id,
   });
 
   const els = React.useMemo(
-    () => output.filter((el): el is LayoutElement => tools.isLayoutElement(el)),
+    () => output.filter((el): el is NestedElement => tools.isNestedElement(el)),
     [output]
   );
 
   const docs = React.useMemo(
     () =>
-      output.filter((el): el is NestedDocument => tools.isNestedDocument(el)),
+      output.filter(
+        (el): el is NestedDocument & { id: NestedDocumentId } =>
+          tools.isNestedDocument(el) && isNestedDocumentId(el.id)
+      ),
     [output]
   );
 
@@ -244,10 +245,7 @@ export function WritableDefaultField({
 
   const actions = React.useMemo(
     () =>
-      collab.boundMutate<ComputationOp>(
-        getDocumentId(id),
-        getTemplateFieldId(id)
-      ),
+      collab.boundMutate<ComputationOp>(getDocumentId(id), getRawFieldId(id)),
     [collab]
   );
 
@@ -281,7 +279,7 @@ export function WritableDefaultField({
     [actions, target]
   );
 
-  const singular = useSingular(`${id}${target}`);
+  const singular = useSingular(`${rootId}${target}`);
 
   const setValue = React.useCallback((func: () => EditorComputation) => {
     singular(() => {
@@ -289,12 +287,12 @@ export function WritableDefaultField({
       const encoded = func();
       const decoded = decodeEditorComputation(encoded, transform);
       console.log("COMPUTATION:", encoded, decoded);
-      setOutput(() => calculateFn(id, decoded, { client, imports }));
+      setOutput(() => calculateFn(rootId, decoded, { client, record }));
       setFunction(() =>
-        calculateFn(id, decoded, { client, imports, returnFunction: true })
+        calculateFn(rootId, decoded, { client, record, returnFunction: true })
       );
       setFieldImports(() => findImportsFn(decoded));
-      setFetchers(() => findFetchersFn(decoded));
+      setFolders(() => findFoldersFn(decoded));
     });
   }, []);
 
@@ -302,7 +300,6 @@ export function WritableDefaultField({
     <>
       <Editor
         target={target}
-        id={id}
         push={push}
         register={actions.register}
         initialValue={initialEditorValue}
@@ -321,41 +318,25 @@ export function WritableDefaultField({
           />
           <Plus />
         </div>
-        {path === "" && <FocusBg />}
+        {id === rootId && <FocusBg />}
       </Editor>
       {els.map((element) => (
-        <RenderLayoutElement
+        <RenderNestedElement
           key={element.id}
-          id={id}
-          path={extendPath(path, element.id)}
-          type={element.type}
-          initialValue={initialValue}
+          nestedDocumentId={element.id}
+          element={element.element}
         />
       ))}
       {docs.map((doc) => (
-        <RenderNestedDocument
-          key={doc.id}
-          id={id}
-          path={extendPath(path, doc.id)}
-          initialValue={initialValue}
-        />
+        <RenderNestedDocument key={doc.id} nestedDocumentId={doc.id} />
       ))}
-      {fetchers.map(({ index, fetcher }) => (
-        <RenderFetcher
-          key={fetcher.id}
-          id={id}
-          path={path}
-          fetcher={fetcher}
-          index={index}
-          push={push}
-        />
+      {folders.map((folder) => (
+        <RenderFolder key={folder.id} nestedDocumentId={folder.id} />
       ))}
       {fieldImports.map((fieldImport) => (
         <RenderImportArgs
           key={fieldImport.id}
-          id={id}
-          path={extendPath(path, fieldImport.id)}
-          initialValue={initialValue}
+          nestedDocumentId={fieldImport.id}
         />
       ))}
     </>

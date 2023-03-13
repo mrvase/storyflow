@@ -1,17 +1,18 @@
 import { createProcedure, createRoute } from "@sfrpc/server";
-import { error, success } from "@storyflow/result";
+import { error, success, unwrap } from "@storyflow/result";
 import { z } from "zod";
 import {
   DBDocument,
+  DBDocumentRaw,
   DBFolder,
+  DBFolderRaw,
   DocumentId,
-  FolderChild,
+  RawDocumentId,
 } from "@storyflow/backend/types";
 import { ObjectId } from "mongodb";
 import clientPromise from "../mongo/mongoClient";
 import { globals } from "../middleware/globals";
-import { LABEL_ID, URL_ID } from "@storyflow/backend/templates";
-import { computeFieldId } from "@storyflow/backend";
+import { computeFieldId, FIELDS } from "@storyflow/backend";
 import {
   ZodDocumentOp,
   ZodServerPackage,
@@ -25,11 +26,21 @@ import {
   sortHistories,
 } from "../collab-utils/redis-client";
 import { ServerPackage } from "@storyflow/state";
+import { unwrapObjectId } from "@storyflow/backend/ids";
 
 export const removeObjectId = <T extends { _id: any }>({
   _id,
   ...rest
 }: T): Omit<T, "_id"> => rest;
+
+const parseFolder = (raw: DBFolderRaw): DBFolder => {
+  const { _id, template, ...rest } = raw;
+  return {
+    _id: unwrapObjectId(raw._id),
+    ...(template && { template: unwrapObjectId(template) }),
+    ...rest,
+  };
+};
 
 export const folders = createRoute({
   get: createProcedure({
@@ -40,11 +51,11 @@ export const folders = createRoute({
       const db = (await clientPromise).db(dbName);
 
       const folders = await db
-        .collection("folders")
-        .find<DBFolder & { _id: ObjectId }>({})
+        .collection<DBFolderRaw>("folders")
+        .find({})
         .toArray();
 
-      const array: DBFolder[] = folders.map(removeObjectId);
+      const array: DBFolder[] = folders.map((el) => parseFolder(el));
 
       const histories = sortHistories(
         (await client.lrange(`${slug}:folders`, 0, -1)) as ServerPackage<any>[]
@@ -107,7 +118,10 @@ export const folders = createRoute({
         let keys = Object.keys(input);
 
         if (keys.length) {
-          histories = await getHistoriesFromIds(slug, Object.keys(input));
+          histories = await getHistoriesFromIds(
+            slug,
+            Object.keys(input) as RawDocumentId[]
+          );
         }
 
         const result = modifyValues(histories, (array) => sortHistories(array));
@@ -120,6 +134,7 @@ export const folders = createRoute({
     },
   }),
 
+  /*
   update: createProcedure({
     middleware(ctx) {
       return ctx.use(globals);
@@ -284,24 +299,24 @@ export const folders = createRoute({
             "frontId" in el && typeof el.frontId === "string"
         )
         .map((el) => {
-          const article: DBDocument = {
-            id: el.frontId,
-            folder: el.id,
+          const article: DBDocumentRaw = {
+            _id: new ObjectId(el.frontId),
+            folder: new ObjectId(el._id),
             versions: {},
             config: [],
             compute: [
               {
-                id: computeFieldId(el.frontId, URL_ID),
+                id: computeFieldId(el.frontId, FIELDS.url.id),
                 value: [{ "(": true }, "", "", { ")": "url" }],
               },
               {
-                id: computeFieldId(el.frontId, LABEL_ID),
+                id: computeFieldId(el.frontId, FIELDS.label.id),
                 value: ["Forside"],
               },
             ],
             values: {
-              [URL_ID]: [""],
-              [LABEL_ID]: ["Forside"],
+              [FIELDS.url.id]: [""],
+              [FIELDS.label.id]: ["Forside"],
             },
           };
           return article;
@@ -340,4 +355,5 @@ export const folders = createRoute({
       return success(array);
     },
   }),
+  */
 });

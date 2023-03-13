@@ -1,70 +1,98 @@
 import { Client } from "../client";
 import {
-  ComputationBlock,
-  DBDocument,
+  ComputationRecord,
   DocumentConfig,
   DocumentId,
   FieldConfig,
-  ValueRecord,
-  TemplateFieldId,
+  NestedDocumentId,
 } from "@storyflow/backend/types";
-import { computeFieldId } from "@storyflow/backend/ids";
-import { TEMPLATES } from "@storyflow/backend/templates";
+import {
+  getDocumentId,
+  isNestedDocumentId,
+  replaceDocumentId,
+} from "@storyflow/backend/ids";
 import { fetchArticle } from "./index";
+import { getComputationEntries } from "shared/computation-tools";
+import { tools } from "shared/editor-tools";
 
 export const getDefaultValuesFromTemplateAsync = async (
-  id: DocumentId,
-  client: Client
-) => {
-  const values: ValueRecord<TemplateFieldId> = {};
-  const compute: ComputationBlock[] = [];
-
-  const getValues = async (id: DocumentId) => {
-    const assignValues = (doc: Pick<DBDocument, "compute" | "values">) => {
-      const computeIds = new Set();
-      doc.compute.forEach((block) => {
-        computeIds.add(block.id);
-        const exists = compute.some(({ id }) => id === block.id);
-        // we handle external imports on the server
-        if (block.id.startsWith(id) && !exists) {
-          compute.push(block);
-        }
-      });
-      Object.assign(
-        values,
-        Object.fromEntries(
-          Object.entries(doc.values).filter(
-            ([key]) =>
-              !computeIds.has(computeFieldId(id, key as TemplateFieldId))
-          )
-        )
-      );
+  newDocumentId: DocumentId,
+  templateId: DocumentId,
+  options: {
+    client: Client;
+    generateDocumentId: {
+      (): DocumentId;
+      (parent: DocumentId): NestedDocumentId;
     };
+  }
+) => {
+  const replaceIds = new Map<
+    DocumentId | NestedDocumentId,
+    DocumentId | NestedDocumentId
+  >();
 
-    /*
-    const defaultTemplate = TEMPLATES.find((el) => el.id === id);
-    if (defaultTemplate) {
-      assignValues(article);
-      return;
-    }
-    */
-    const article = await fetchArticle(id, client);
+  const doc = await fetchArticle(templateId, options.client);
 
-    if (article) {
-      console.log("default article", article);
-      assignValues(article);
+  if (doc) {
+    let record: ComputationRecord = Object.fromEntries(
+      getComputationEntries(doc.record).map(([key, value]) => {
+        if (getDocumentId(key) === doc._id) {
+          replaceIds.set(doc._id, newDocumentId);
 
-      /*
-      const nestedTemplates = article.config
-        .filter((el): el is TemplateRef => "template" in el)
-        .map((el) => el.template as DocumentId);
-      nestedTemplates.forEach((id) => getValues(id));
-      */
-    }
-  };
-  await getValues(id);
+          const newValue = value.map((el) => {
+            if (
+              typeof el === "object" &&
+              el !== null &&
+              "id" in el &&
+              isNestedDocumentId(el.id)
+            ) {
+              const newNestedDocumentId =
+                options.generateDocumentId(newDocumentId);
+              replaceIds.set(el.id, newNestedDocumentId);
+              return {
+                ...el,
+                id: newNestedDocumentId,
+              };
+            }
+            return el;
+          });
 
-  return { values, compute };
+          return [key, newValue];
+        }
+        return [key, value];
+      })
+    );
+
+    record = Object.fromEntries(
+      getComputationEntries(doc.record).map(([key, value]) => {
+        const newKey = replaceIds.has(getDocumentId(key))
+          ? replaceDocumentId(key, replaceIds.get(getDocumentId(key))!)
+          : key;
+
+        const newValue = value.map((el) => {
+          if (
+            tools.isNestedField(el) &&
+            replaceIds.has(getDocumentId(el.field))
+          ) {
+            return {
+              ...el,
+              field: replaceDocumentId(
+                el.field,
+                replaceIds.get(getDocumentId(el.field))!
+              ),
+            };
+          }
+          return el;
+        });
+
+        return [newKey, newValue];
+      })
+    );
+
+    return record;
+  }
+
+  return {};
 };
 
 export const getTemplateFieldsAsync = async (
@@ -84,10 +112,12 @@ export const getTemplateFieldsAsync = async (
           return [el];
         } else if ("template" in el && !templates.has(el.template)) {
           templates.add(el.template);
+          /*
           const defaultTemplate = TEMPLATES.find((dt) => dt.id === el.template);
           if (defaultTemplate) {
             return getFields(defaultTemplate.config);
           }
+          */
           const article = await fetchArticle(el.template, client);
           if (!article) return [];
           return await getFields(article.config);

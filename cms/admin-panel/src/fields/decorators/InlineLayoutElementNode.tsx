@@ -12,7 +12,7 @@ import {
 import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
 import { caretClasses } from "./caret";
-import { LayoutElement, Value } from "@storyflow/backend/types";
+import { NestedElement, Value } from "@storyflow/backend/types";
 import { ParentPropContext } from "../default/DefaultField";
 import { stringifyPath, useBuilderPath } from "../BuilderPath";
 import { getConfigFromType, useClientConfig } from "../../client-config";
@@ -23,7 +23,7 @@ function InlineLayoutElementDecorator({
   value,
   nodeKey,
 }: {
-  value: LayoutElement;
+  value: NestedElement;
   nodeKey: string;
 }) {
   const [path, setPath] = useBuilderPath();
@@ -45,10 +45,12 @@ function InlineLayoutElementDecorator({
   const selectClick = React.useRef(false);
 
   const { libraries } = useClientConfig();
-  const config = getConfigFromType(value.type, libraries);
+  const config = getConfigFromType(value.element, libraries);
 
   const text =
-    typeof output?.[0] === "string" ? output[0] : config?.label ?? value.type;
+    typeof output?.[0] === "string"
+      ? output[0]
+      : config?.label ?? value.element;
 
   return (
     <span
@@ -71,7 +73,7 @@ function InlineLayoutElementDecorator({
             ...ps,
             {
               id: value.id,
-              label: config?.label ?? value.type,
+              label: config?.label ?? value.element,
               parentProp: parentProp,
             },
           ]);
@@ -93,13 +95,13 @@ function convertImportElement(
 export type SerializedInlineLayoutElementNode = Spread<
   {
     type: "inline-layout-element";
-    value: LayoutElement;
+    value: NestedElement;
   },
   SerializedLexicalNode
 >;
 
 export class InlineLayoutElementNode extends DecoratorNode<React.ReactNode> {
-  __value: LayoutElement;
+  __value: NestedElement;
 
   static getType(): string {
     return "inline-layout-element";
@@ -109,7 +111,7 @@ export class InlineLayoutElementNode extends DecoratorNode<React.ReactNode> {
     return new InlineLayoutElementNode(node.__value, node.__key);
   }
 
-  constructor(value: LayoutElement, key?: NodeKey) {
+  constructor(value: NestedElement, key?: NodeKey) {
     super(key);
     this.__value = value;
   }
@@ -174,7 +176,7 @@ export class InlineLayoutElementNode extends DecoratorNode<React.ReactNode> {
 }
 
 export function $createInlineLayoutElementNode(
-  element: LayoutElement
+  element: NestedElement
 ): InlineLayoutElementNode {
   return new InlineLayoutElementNode(element);
 }

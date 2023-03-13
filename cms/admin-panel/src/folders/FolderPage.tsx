@@ -12,10 +12,14 @@ import {
 } from "@heroicons/react/24/outline";
 import { useSegment } from "../layout/components/SegmentContext";
 import { useOnLoadHandler } from "../layout/onLoadHandler";
-import { minimizeId, restoreId } from "@storyflow/backend/ids";
 import { EditableLabel } from "../elements/EditableLabel";
 import cl from "clsx";
-import { DBFolder } from "@storyflow/backend/types";
+import {
+  DBFolder,
+  DocumentId,
+  FolderId,
+  SpaceId,
+} from "@storyflow/backend/types";
 import { SWRClient } from "../client";
 import { FolderDomainsContext, FolderDomainsProvider } from "./folder-domains";
 import { useFolder } from "./collab/hooks";
@@ -28,6 +32,7 @@ import { DocumentListSpace } from "./spaces/DocumentListSpace";
 import { useArticleTemplate } from "../documents";
 import { useDocumentLabel } from "../documents/useDocumentLabel";
 import { FolderContext } from "./FolderPageContext";
+import { ROOT_FOLDER } from "@storyflow/backend/constants";
 
 export default function FolderPage({
   isOpen,
@@ -47,7 +52,7 @@ export default function FolderPage({
   const path = getPathFromSegment(current);
 
   const [, urlId] = path.split("/").slice(-1)[0].split("-");
-  const folderLookupId = urlId ? minimizeId(urlId) : "----";
+  const folderLookupId = (urlId ?? ROOT_FOLDER) as FolderId;
   const folder = useFolder(folderLookupId);
 
   useOnLoadHandler(true, onLoad);
@@ -71,7 +76,7 @@ export default function FolderPage({
     name: T,
     value: DBFolder[T]
   ) => {
-    return collab.mutate("folders", folder.id).push({
+    return collab.mutate("folders", folder._id).push({
       target: targetTools.stringify({
         location: "",
         operation: "property",
@@ -110,7 +115,7 @@ export default function FolderPage({
                 <Content.ToolbarButton
                   data-focus-remain="true"
                   onClick={() => {
-                    collab.mutate("folders", folder.id).push({
+                    collab.mutate("folders", folder._id).push({
                       target: targetTools.stringify({
                         operation: "folder-spaces",
                         location: "",
@@ -141,7 +146,7 @@ export default function FolderPage({
                       mutate={(domains) => mutateProp("domains", domains)}
                     />
                     <div className="text-xs text-gray-600 font-light flex-center h-6 ring-1 ring-inset ring-gray-700 px-2 rounded cursor-default">
-                      ID: {restoreId(folder.id)} ({folder.id})
+                      ID: {folder._id}
                     </div>
                   </>
                 )}
@@ -154,7 +159,7 @@ export default function FolderPage({
               <AddTemplateDialog
                 isOpen={dialogIsOpen === "add-template"}
                 close={() => setDialogIsOpen(null)}
-                folderId={folder.id}
+                folderId={folder._id}
                 currentTemplate={folder.template}
               />
             </>
@@ -168,7 +173,7 @@ export default function FolderPage({
                       key={space.id}
                       index={index}
                       spaceId={space.id}
-                      folderId={folder.id}
+                      folderId={folder._id}
                       hidden={!isSelected}
                     />
                   );
@@ -177,8 +182,8 @@ export default function FolderPage({
               })}
               <DocumentListSpace
                 index={0}
-                spaceId={"any"}
-                folderId={folder.id}
+                spaceId={"" as SpaceId}
+                folderId={folder._id}
                 hidden={!isSelected}
               />
             </div>
@@ -198,7 +203,7 @@ export function FolderTemplateButton({
   template,
   openDialog,
 }: {
-  template?: string;
+  template?: DocumentId;
   openDialog: () => void;
 }) {
   const { current } = useSegment();
@@ -231,7 +236,7 @@ export function FolderTemplateButton({
         label={`Rediger skabelon "${label}"`}
         onClick={() => {
           if (template) {
-            navigateTab(`${current}/t-${restoreId(template)}`);
+            navigateTab(`${current}/t-${template}`);
             return;
           }
         }}

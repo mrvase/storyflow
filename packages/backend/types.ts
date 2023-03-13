@@ -1,29 +1,28 @@
-export type StringType<T extends string> = string & { __type: T }; // could be [key in T]: any
+declare const brand: unique symbol;
 
-export type DocumentId = StringType<"short-id">;
-export type TemplateFieldId = StringType<"template-field-id">;
-export type FieldId = StringType<"field-id">; // `${DocumentId}${TemplateFieldId}`
+export type Brand<T, TBrand extends string> = T & { [brand]: TBrand };
 
-export type Parameter = { x: number; value?: PrimitiveValue };
+export type RawDocumentId = Brand<string, "raw-document-id">;
+export type RawFieldId = Brand<string, "raw-field-id">;
+export type DocumentId = Brand<string, "document-id">;
+export type NestedDocumentId = Brand<string, "nested-document-id">;
+export type FieldId = Brand<string, "field-id">;
+export type RawFolderId = Brand<string, "raw-folder-id">;
+export type FolderId = Brand<string, "folder-id">;
+export type SpaceId = Brand<string, "space-id">;
 
-export type ContextImport = {
-  ctx: string;
+export type BrandedObjectId<BrandedId> = {
+  id: unknown;
+  toHexString(): string;
+} & {
+  [brand]?: BrandedId extends Brand<string, infer TBrand> ? TBrand : never;
 };
-
-// placeholders are meant to be replaced by a value when the computation is executed
-export type Placeholder = Parameter | FieldImport | Fetcher | ContextImport;
-export type FlatPlaceholder =
-  | Parameter
-  | FlatFieldImport
-  | Fetcher
-  | ContextImport;
 
 // symbols are also meant to be eliminated when the computation is executed,
 // but unlike placeholders, they do not indicate a place for a value
 // but define the execution of a function
 // NOTICE! They are characterized by only one key-value pair
 // if this changes, we need to change the symb.equals implementation
-//
 
 export type SharedSymbol =
   | { "(": true }
@@ -44,108 +43,45 @@ export type DBSymbol =
   | { "}": true }
   | { "/": true }
   | { ")": Operator | FunctionName }
-  | { p: TemplateFieldId };
+  | { p: RawFieldId };
 
 type SharedSymbolKey = "(" | ")" | "[" | "]" | "n";
 export type EditorSymbolKey = SharedSymbolKey | "_" | ",";
 export type DBSymbolKey = SharedSymbolKey | "{" | "}" | "/" | "p";
 
-export type EditorComputation = (Value | Placeholder | EditorSymbol)[];
-export type Computation = (Value | Placeholder | DBSymbol)[];
+export type ImportRecord = { [key: RawFieldId]: boolean };
 
-// FlatComputations reside as the value in ComputationBlocks, and they are always
-// the root of the computation.  Nested arrays only occur as a product of calculations,
-// so they cannot be in the FlatComputation.
-export type FlatComputation = (
-  | Exclude<FlatValue, FlatValue[]>
-  | FlatPlaceholder
-  | DBSymbol
-)[];
-
-// These occur when we in the database compute the ComputationBlocks and add
-// the "result" and "function" properties to the block. But this does not
-// create a problem for us.
-export type PossiblyNestedFlatComputation = (
-  | FlatValue
-  | FlatPlaceholder
-  | DBSymbol
-)[];
-
-export type NonNestedComputation = (
-  | Exclude<Value, Value[]>
-  | Placeholder
-  | DBSymbol
-)[];
-
-export type DocumentImport = { dref: DocumentId };
-
-export type FlatFieldImport = {
-  id: string;
-  fref: FieldId;
-  pick?: TemplateFieldId /* pick column */;
+export type NestedField = {
+  id: NestedDocumentId;
+  field: FieldId;
+  imports?: ImportRecord;
+  pick?: RawFieldId;
 };
 
-export type FieldImport = {
-  id: string;
-  fref: FieldId;
-  args: { [key: number]: Computation } /* only used on client */;
-  pick?: TemplateFieldId /* pick column */;
-};
-
-export type FlatComputationRecord = { [key: string]: FlatComputation };
-export type ComputationRecord = { [key: string]: Computation };
-
-export type ValueRecord<Key extends string = string> = Record<Key, Value[]>;
-
-export type FlatLayoutElement = {
-  id: string;
-  type: string;
-  props: Record<string, boolean>;
-};
-
-export type LayoutElement = {
-  id: string;
-  type: string;
-  props: ComputationRecord;
+export type NestedElement = {
+  id: NestedDocumentId;
+  element: string;
+  imports?: ImportRecord;
   parent?: string;
 };
 
-export type FlatNestedDocument = {
-  id: DocumentId;
-  values?: string[];
-  // not included in import because it is not used there,
-  // but if it belongs to the doc, it lists the ids of the fields it contains
+export type NestedFolder = {
+  id: NestedDocumentId;
+  folder: FolderId;
+  imports?: ImportRecord;
 };
 
 export type NestedDocument = {
-  id: DocumentId;
-  values: ComputationRecord;
+  id: DocumentId | NestedDocumentId;
   path?: string;
-};
-
-export type FlatFilter = {
-  field: TemplateFieldId | "folder" | "";
-  operation: "=" | "!=" | "<" | ">" | ">=" | "<=" | "";
-};
-
-export type Filter = {
-  field: TemplateFieldId | "folder" | "";
-  operation: "=" | "!=" | "<" | ">" | ">=" | "<=" | "";
-  value: Computation;
-};
-
-export type FlatFetcher = {
-  id: string;
-  filters: FlatFilter[];
-};
-
-export type Fetcher = {
-  id: string;
-  filters: Filter[];
 };
 
 export type CustomToken = {
   name: string;
+};
+
+export type ContextToken = {
+  ctx: string;
 };
 
 export type FileToken = {
@@ -156,25 +92,44 @@ export type ColorToken = {
   color: string;
 };
 
-export type Token = CustomToken | FileToken | ColorToken;
+export type Parameter = { x: number; value?: PrimitiveValue };
+
+// placeholders are meant to be replaced by a value when the computation is executed
+export type Placeholder = Parameter | NestedField;
+
+export type Token = CustomToken | ContextToken | FileToken | ColorToken;
 
 export type PrimitiveValue = string | number | boolean | Date;
 
-export type FlatValue =
-  | PrimitiveValue
-  | FlatLayoutElement
-  | FlatNestedDocument
-  | DocumentImport
-  | Token
-  | FlatValue[];
-
 export type Value =
   | PrimitiveValue
-  | LayoutElement
+  | NestedElement
   | NestedDocument
-  | DocumentImport
+  | NestedFolder
   | Token
   | Value[];
+
+// Nested arrays only occur as a product of calculations.
+export type Computation = (Exclude<Value, Value[]> | Placeholder | DBSymbol)[];
+
+export type EditorComputation = (
+  | Exclude<Value, Value[]>
+  | Placeholder
+  | EditorSymbol
+)[];
+
+// These occur when we in the database compute the ComputationBlocks and add
+// the "result" and "function" properties to the block.
+export type PossiblyNestedComputation = (Value | Placeholder | DBSymbol)[];
+
+export type ComputationRecord = { [key: FieldId]: Computation };
+
+export type ValueRecord = Record<RawFieldId, Value[]>;
+
+export type ComputationBlock = {
+  id: BrandedObjectId<FieldId>;
+  value: Computation;
+};
 
 export const operators = [
   "*",
@@ -203,11 +158,6 @@ export const functions = [
 ] as const;
 
 export type FunctionName = (typeof functions)[number];
-
-export type ComputationBlock = {
-  id: FieldId;
-  value: FlatComputation;
-};
 
 export type FieldType = "default" | "url" | "slug";
 
@@ -248,39 +198,32 @@ export type DocumentConfig = DocumentConfigItem[];
 
 export type TemplateDocument = Omit<DBDocument, "version" | "folder">;
 
-export interface DBDocument {
-  id: DocumentId;
-  folder: string;
+export interface DBDocumentRaw {
+  _id: BrandedObjectId<DocumentId>;
+  folder: BrandedObjectId<FolderId>;
   config: DocumentConfig;
-  values: ValueRecord<TemplateFieldId>;
-  compute: ComputationBlock[];
   label?: string;
-  versions?: Record<TemplateFieldId | DocumentId, number>;
+  versions?: Record<RawFieldId | RawDocumentId, number>;
+  /* compute */
+  ids: BrandedObjectId<NestedDocumentId>[];
+  cached: Value[][];
+  compute: ComputationBlock[];
+  values: ValueRecord;
+  /* */
 }
 
-export type FolderChild =
-  | {
-      id: string;
-      index: string;
-      after: string | null;
-    }
-  | {
-      remove: string;
-    };
-
-export interface DBFolder {
-  id: string;
-  type: "data" | "app" | "root" | "templates";
-  label: string;
-  template?: DocumentId;
-  domains?: string[];
-  children: FolderChild[];
-  spaces?: Space[];
-  versions?: Record<string, number>;
+export interface DBDocument {
+  _id: DocumentId;
+  folder: FolderId;
+  config: DocumentConfig;
+  record: ComputationRecord;
+  // values: ValueRecord;
+  label?: string;
+  versions?: Record<RawFieldId | RawDocumentId, number>;
 }
 
 export type FolderSpace = {
-  id: string;
+  id: SpaceId;
   type: "folders";
   items: string[];
 };
@@ -288,10 +231,30 @@ export type FolderSpace = {
 export type Space =
   | FolderSpace
   | {
-      id: string;
+      id: SpaceId;
       type: "documents";
-      folder?: string;
+      folder?: FolderId;
     };
+
+export interface DBFolderRaw {
+  _id: BrandedObjectId<FolderId>;
+  type: "data" | "app";
+  label: string;
+  template?: BrandedObjectId<DocumentId>;
+  domains?: string[];
+  spaces?: Space[];
+  versions?: Record<RawFolderId | SpaceId, number>;
+}
+
+export interface DBFolder {
+  _id: FolderId;
+  type: "data" | "app";
+  label: string;
+  template?: DocumentId;
+  domains?: string[];
+  spaces?: Space[];
+  versions?: Record<RawFolderId | SpaceId, number>;
+}
 
 export interface Settings {
   domains: {

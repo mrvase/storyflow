@@ -1,38 +1,26 @@
 import React from "react";
-import Editor from "../Editor/Editor";
 import { ComputationOp } from "shared/operations";
-import { ContentEditable } from "../../editor/react/ContentEditable";
 import { useGlobalState } from "../../state/state";
-import {
-  decodeEditorComputation,
-  encodeEditorComputation,
-} from "shared/editor-computation";
 import cl from "clsx";
 import {
   Computation,
-  LayoutElement,
-  NestedDocument,
   FieldId,
-  FieldImport,
-  EditorComputation,
   Value,
+  NestedDocumentId,
+  FolderId,
+  RawFieldId,
+  ComputationRecord,
 } from "@storyflow/backend/types";
 import {
   Bars3Icon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  PlusIcon,
-  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { extendPath } from "@storyflow/backend/extendPath";
-import { Fetcher, Filter } from "@storyflow/backend/types";
-import { tools } from "shared/editor-tools";
 import { stringifyPath, useBuilderPath } from "../BuilderPath";
 import { getConfigFromType, useClientConfig } from "../../client-config";
-import { useClient } from "../../client";
 import { ParentProp, WritableDefaultField } from "./DefaultField";
 import { useFieldTemplate } from "./useFieldTemplate";
-import { calculateFn, fetchFn } from "./calculateFn";
 import {
   PropConfig,
   PropGroup,
@@ -40,286 +28,92 @@ import {
 } from "@storyflow/frontend/types";
 import { FieldOptionsContext } from "./FieldOptionsContext";
 import { FieldRestrictionsContext } from "../FieldTypeContext";
+import {
+  computeFieldId,
+  getIdFromString,
+  getRawFieldId,
+  replaceDocumentId,
+} from "@storyflow/backend/ids";
+import { useFieldId } from "../FieldIdContext";
 import { useDocumentPageContext } from "../../documents/DocumentPageContext";
-import Select from "../../elements/Select";
-import { getTemplateFieldId } from "@storyflow/backend/ids";
 
-export function RenderFetcher({
-  id,
-  path: parentPath,
-  fetcher: currentFetcher,
-  index,
-  push,
+export function RenderFolder({
+  nestedDocumentId,
 }: {
-  id: FieldId;
-  path: string;
-  fetcher: Fetcher;
-  index: number;
-  push: (ops: ComputationOp["ops"]) => void;
+  nestedDocumentId: NestedDocumentId;
 }) {
-  const path = extendPath(parentPath, currentFetcher.id);
-  const [, setPath] = useBuilderPath();
+  const id = useFieldId();
+  const template = useFieldTemplate(id) ?? [];
+  const isActive = useIsActive(nestedDocumentId);
 
-  const [fetcher, _setFetcher] = React.useState(currentFetcher);
-  const [isModified, setIsModified] = React.useState(false);
-  const setFetcher: typeof _setFetcher = (value) => {
-    setIsModified(true);
-    _setFetcher(value);
-  };
+  const { record } = useDocumentPageContext();
 
-  const client = useClient();
-
-  const [, setOutput] = useGlobalState<NestedDocument[]>(
-    extendPath(id, path),
-    () => fetchFn(extendPath(id, path), { ...fetcher }, client)
-  );
-
-  return (
-    <IfActive path={path} then="pb-5 focus-permanent" else="hidden">
-      <div className="w-full flex flex-col items-start gap-5">
-        {fetcher.filters.map((filter, index) => (
-          <FilterComp
-            key={index}
-            id={id}
-            path={extendPath(path, `${index}`, "/")}
-            setFetcher={setFetcher}
-            index={index}
-            filter={filter}
-          />
-        ))}
-        <div
-          onClick={() => {
-            setFetcher((ps) => ({
-              ...ps,
-              filters: [...ps.filters, { field: "", operation: "", value: [] }],
-            }));
-          }}
-          className="flex items-center text-xs opacity-25 hover:opacity-100 transition-opacity cursor-default"
-        >
-          <div className="w-4 mx-5 flex-center px-13 h-5">
-            <PlusIcon className="w-4 h-4" />
-          </div>
-          TILFØJ FILTER
-        </div>
-        <button
-          className={cl(
-            "bg-teal-600 rounded px-3 py-1.5 ml-14 text-sm font-light hover:bg-teal-500 transition-colors",
-            !isModified && "opacity-50"
-          )}
-          onClick={() => {
-            if (isModified) {
-              setOutput(() =>
-                fetchFn(extendPath(id, path), { ...fetcher }, client)
-              );
-              push([
-                {
-                  index,
-                  insert: [{ ...fetcher }],
-                  remove: 1,
-                },
-              ]);
-              setPath(() => []);
-              setIsModified(false);
-            }
-          }}
-        >
-          Aktiver ændringer
-        </button>
-      </div>
-    </IfActive>
-  );
-}
-function FilterComp({
-  id,
-  setFetcher,
-  index,
-  filter,
-  path,
-}: {
-  id: FieldId;
-  setFetcher: (callback: (ps: Fetcher) => Fetcher) => void;
-  index: number;
-  filter: Filter;
-  path: string;
-}) {
-  const setFilterValue = React.useCallback(
-    (field: string, value: any) =>
-      setFetcher((ps) => {
-        const filters = [...ps.filters];
-        filters[index] = { ...filters[index], [field]: value };
-        return { ...ps, filters };
-      }),
-    []
-  );
-
-  const { imports } = useDocumentPageContext();
-  const client = useClient();
-
-  const [value, setValueOutput] = useGlobalState<Value[]>(
-    extendPath(id, path),
-    () => calculateFn(id, filter.value, { imports, client })
-  );
-
-  const setValue = React.useCallback((value: () => EditorComputation) => {
-    const decoded = decodeEditorComputation(value());
-    setFilterValue("value", decoded);
-    setValueOutput(() => calculateFn(id, decoded, { client, imports }));
+  const values = React.useMemo(() => {
+    return Object.fromEntries(
+      template.map((el) => {
+        const id = replaceDocumentId(el.id, nestedDocumentId);
+        return [id, record[id] ?? []];
+      })
+    ) as ComputationRecord;
   }, []);
 
-  const template = useFieldTemplate(id) ?? [];
-
-  const options = React.useMemo(() => {
-    const options = template.map((el) => {
-      return {
-        label: el.label,
-        value: getTemplateFieldId(el.id) as string,
-      };
-    });
-
-    options.unshift({
-      label: "Mappe",
-      value: "folder",
-    });
-
-    return options;
-  }, [template]);
-
-  const operations = ["=", "!=", ">", ">=", "<", "<="] as const;
-
-  const operationsLabel = {
-    "=": "=",
-    "!=": "≠",
-    ">": ">",
-    ">=": "≥",
-    "<": "<",
-    "<=": "≤",
-  };
-
   return (
-    <div className="w-full flex items-start pr-5">
-      <div
-        className="w-4 mx-5 flex-center opacity-25 hover:opacity-100 transition-opacity px-13 h-5"
-        onClick={() => {
-          setFetcher((ps) => ({
-            ...ps,
-            filters: ps.filters.filter((el) => el !== filter),
-          }));
-        }}
-      >
-        <XMarkIcon className="w-4 h-4" />
-      </div>
-      <div className="w-full flex gap-3">
-        <div className="w-1/3">
-          <div
-            className={cl(
-              "text-sm opacity-50 flex items-center cursor-default mb-1"
-            )}
-          >
-            Felt
-          </div>
-          <Select
-            value={filter.field}
-            setValue={(value: string) => setFilterValue("field", value)}
-            options={options}
-          />
-        </div>
-        <div className="w-1/3">
-          <div
-            className={cl(
-              "text-sm opacity-50 flex items-center cursor-default mb-1"
-            )}
-          >
-            Operation
-          </div>
-          <div className="rounded ring-button overflow-x-auto no-scrollbar">
-            <div className="relative flex h-8">
-              <div
-                className="absolute left-0 shrink-0 h-8 w-8 ring-1 ring-inset rounded ring-yellow-300 transition-transform"
-                style={{
-                  transform: `translateX(${
-                    2 * operations.indexOf(filter.operation as any)
-                  }rem)`,
-                }}
-              />
-              {operations.map((el) => (
-                <div
-                  className={cl(
-                    "shrink-0 h-8 w-8 flex-center text-sm font-light cursor-default transition-opacity",
-                    el === filter.operation
-                      ? "opacity-100"
-                      : "opacity-50 hover:opacity-100"
-                  )}
-                  onClick={() => setFilterValue("operation", el)}
-                >
-                  {operationsLabel[el]}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-        <div className="w-1/3">
-          <div
-            className={cl(
-              "text-sm opacity-50 flex items-center cursor-default mb-1"
-            )}
-          >
-            Værdi
-          </div>
-          <Editor
-            id={id}
-            initialValue={encodeEditorComputation(filter.value)}
-            setValue={setValue}
-          >
-            <div className={cl("relative")}>
-              <ContentEditable
-                className={cl(
-                  "peer grow editor outline-none py-1 px-1.5 rounded font-light selection:bg-gray-700 ring-button",
-                  "preview text-base leading-4"
-                  // mode === null || mode === "slug" ? "calculator" : ""
-                )}
-              />
-            </div>
-          </Editor>
-        </div>
-      </div>
-    </div>
+    <RenderNestedFields
+      nestedDocumentId={nestedDocumentId}
+      hidden={!isActive}
+      values={values}
+      template={template}
+    />
   );
 }
 
-export function RenderLayoutElement({
-  id,
-  type,
-  path,
-  initialValue,
+export function RenderNestedElement({
+  nestedDocumentId,
+  element,
 }: {
-  id: FieldId;
-  type: string;
-  path: string;
-  initialValue: Computation;
+  nestedDocumentId: NestedDocumentId;
+  element: string;
 }) {
-  const [fullPath, setPath] = useBuilderPath();
-
-  const element = path.split(".").slice(-1)[0]; // e
+  const [, setPath] = useBuilderPath();
+  const id = useFieldId();
 
   const { libraries } = useClientConfig();
 
-  const initialElement = React.useMemo(() => {
-    if (!element) return;
-
-    // initialValue is always the direct parent
-    return initialValue?.find(
-      (el): el is LayoutElement =>
-        tools.isLayoutElement(el) && el.id === element
-    );
-  }, [path, initialValue]);
-
-  const config = getConfigFromType(type, libraries);
+  const config = getConfigFromType(element, libraries);
 
   const initialProps = config?.props ?? [];
 
-  const [key] = useGlobalState<Value[]>(extendPath(id, `${path}/key`));
+  const { record } = useDocumentPageContext();
+
+  const values = React.useMemo(() => {
+    return Object.fromEntries(
+      initialProps.reduce((acc, prop) => {
+        if (prop.type === "group") {
+          const props = prop.props.map((innerProp) => {
+            const id = computeFieldId(
+              nestedDocumentId,
+              getIdFromString(extendPath(prop.name, innerProp.name, "#"))
+            );
+            return [id, record[id] ?? []] as [FieldId, Computation];
+          });
+          acc.push(...props);
+        } else {
+          const id = computeFieldId(
+            nestedDocumentId,
+            getIdFromString(prop.name)
+          );
+          acc.push([id, record[id] ?? []]);
+        }
+        return acc;
+      }, [] as [FieldId, Computation][])
+    ) as ComputationRecord;
+  }, [initialProps, record]);
+
+  const keyId = getIdFromString("key");
+  const [key] = useGlobalState<Value[]>(extendPath(id, keyId));
 
   const [listIsOpen_, toggleListIsOpen] = React.useReducer((ps) => !ps, false);
+
   React.useEffect(() => {
     if (!listIsOpen_ && (key?.length ?? 0) > 0) {
       console.log("SET IS OPEN");
@@ -330,8 +124,6 @@ export function RenderLayoutElement({
   const listIsOpen = listIsOpen_ || (key?.length ?? 0) > 0;
 
   const [tab, setTab] = React.useState(0);
-
-  const props = initialElement?.props ?? {};
 
   const groups = initialProps.filter(
     (el): el is PropGroup<RegularOptions> => el.type === "group"
@@ -345,7 +137,7 @@ export function RenderLayoutElement({
 
   const tabs = ["Egenskaber", ...groups.map((el) => el.label)];
 
-  const isActive = useIsActive(path);
+  const isActive = useIsActive(nestedDocumentId);
 
   return (
     <>
@@ -369,16 +161,16 @@ export function RenderLayoutElement({
         </div>
       </div>
       <div className={!listIsOpen || !isActive ? "hidden" : ""}>
-        <RenderNestedField
-          id={id}
-          hidden={!isActive || !listIsOpen}
-          path={path}
-          initialValue={props["key"] ?? []}
-          label={"Lav til liste"}
-          labelColor="blue"
-          icon={Bars3Icon}
-          name="key"
-        />
+        <ParentProp name="key">
+          <RenderNestedField
+            nestedFieldId={computeFieldId(nestedDocumentId, keyId)}
+            hidden={!isActive || !listIsOpen}
+            initialValue={values[computeFieldId(nestedDocumentId, keyId)]}
+            label={"Lav til liste"}
+            labelColor="blue"
+            icon={Bars3Icon}
+          />
+        </ParentProp>
       </div>
       {tabs.length > 1 && (
         <div className={cl("pl-14 mb-5 flex gap-2", !isActive && "hidden")}>
@@ -401,18 +193,16 @@ export function RenderLayoutElement({
         </div>
       )}
       <RenderNestedFields
-        id={id}
+        nestedDocumentId={nestedDocumentId}
         hidden={!isActive || tab !== 0}
-        path={path}
-        values={props}
+        values={values}
         template={leftoverProps}
       />
       {groups.map((group, index) => (
         <RenderNestedFields
-          id={id}
+          nestedDocumentId={nestedDocumentId}
           hidden={!isActive || tab !== index + 1}
-          path={path}
-          values={props}
+          values={values}
           template={group.props}
           group={group.name}
         />
@@ -421,73 +211,57 @@ export function RenderLayoutElement({
   );
 }
 export function RenderNestedDocument({
-  id,
-  path,
-  initialValue,
+  nestedDocumentId,
 }: {
-  id: FieldId;
-  path: string;
-  initialValue: Computation;
+  nestedDocumentId: NestedDocumentId;
 }) {
-  const docId = path.split(".").slice(-1)[0];
-
+  const id = useFieldId();
   const template = useFieldTemplate(id) ?? [];
 
-  const initialDoc = React.useMemo(() => {
-    if (!docId) return;
+  const isActive = useIsActive(nestedDocumentId);
 
-    return initialValue.find(
-      (el): el is NestedDocument =>
-        tools.isNestedDocument(el) && el.id === docId
-    );
-  }, [path, initialValue]);
+  const { record } = useDocumentPageContext();
 
-  const isActive = useIsActive(path);
+  const values = React.useMemo(() => {
+    return Object.fromEntries(
+      template.map((el) => {
+        const id = replaceDocumentId(el.id, nestedDocumentId);
+        return [id, record[id] ?? []];
+      })
+    ) as ComputationRecord;
+  }, []);
 
   return (
     <RenderNestedFields
-      id={id}
+      nestedDocumentId={nestedDocumentId}
       hidden={!isActive}
-      path={path}
-      values={initialDoc?.values ?? {}}
+      values={values}
       template={template}
     />
   );
 }
+
 export function RenderImportArgs({
-  id,
-  path,
-  initialValue,
+  nestedDocumentId,
 }: {
-  id: FieldId;
-  path: string;
-  initialValue: Computation;
+  nestedDocumentId: NestedDocumentId;
 }) {
-  const importId = path.split(".").slice(-1)[0];
-
-  const initialImport = React.useMemo(() => {
-    if (!importId) return;
-    return initialValue.find(
-      (el): el is FieldImport => tools.isFieldImport(el) && el.id === importId
-    );
-  }, [path, initialValue]);
-
-  const isActive = useIsActive(path);
+  const isActive = useIsActive(nestedDocumentId);
 
   return (
     <RenderNestedFields
-      id={id}
+      nestedDocumentId={nestedDocumentId}
       hidden={!isActive}
-      path={path}
-      values={initialImport?.args ?? {}}
+      values={{}}
       template={[{ arg: 0, label: "Parameter 1" }]}
     />
   );
 }
 
-function useIsActive(path: string) {
+function useIsActive(nestedDocumentId: NestedDocumentId) {
   const [fullPath] = useBuilderPath();
-  return stringifyPath(fullPath) === path;
+  const last = fullPath[fullPath.length - 1];
+  return last.id === nestedDocumentId;
 }
 
 function IfActive({
@@ -510,40 +284,41 @@ function IfActive({
 }
 
 function RenderNestedFields({
-  id,
-  path,
+  nestedDocumentId,
   values,
   template,
   group,
   hidden,
 }: {
-  id: FieldId;
-  path: string;
-  values: Record<string, Computation>;
+  nestedDocumentId: NestedDocumentId;
+  values: ComputationRecord;
   template:
-    | ({ arg: number; label: string } | { id: string; label: string })[]
+    | ({ arg: number; label: string } | { id: FieldId; label: string })[]
     | readonly PropConfig<RegularOptions>[];
   hidden: boolean;
   group?: string;
 }) {
   return (
-    <IfActive then="focus-permanent" path={path}>
+    <IfActive then="focus-permanent" path={nestedDocumentId}>
       <div>
         {template.map((el) => {
           const label = el.label;
-          let name =
-            "id" in el ? el.id.slice(4) : "name" in el ? el.name : el.arg;
-          name = group ? extendPath(group, String(name), "#") : name;
-          const initialValue = values[name] ?? [];
+          let rawFieldId =
+            "id" in el
+              ? getRawFieldId(el.id)
+              : "name" in el
+              ? getIdFromString(extendPath(group ?? "", el.name, "#"))
+              : (`${el.arg}`.padStart(12, "0") as RawFieldId);
+
+          const fieldId = computeFieldId(nestedDocumentId, rawFieldId);
+
+          const initialValue = values[fieldId] ?? [];
 
           const field = (
             <RenderNestedField
-              key={name}
-              id={id}
-              path={path}
+              nestedFieldId={fieldId}
               initialValue={initialValue}
               label={label}
-              name={name}
               hidden={hidden}
             />
           );
@@ -554,7 +329,7 @@ function RenderNestedFields({
                 <FieldOptionsContext.Provider
                   value={"options" in el ? el.options ?? null : null}
                 >
-                  {field}
+                  <ParentProp name={el.name}>{field}</ParentProp>
                 </FieldOptionsContext.Provider>
               </FieldRestrictionsContext.Provider>
             );
@@ -568,20 +343,16 @@ function RenderNestedFields({
 }
 
 function RenderNestedField({
-  path,
+  nestedFieldId,
   label,
   labelColor,
-  name,
-  id,
   initialValue,
   hidden,
   icon: Icon = ChevronRightIcon,
 }: {
-  path: string;
+  nestedFieldId: FieldId;
   label: string;
   labelColor?: "blue";
-  name: string | number;
-  id: FieldId;
   initialValue: Computation;
   hidden: boolean;
   icon?: React.FC<{ className?: string }>;
@@ -600,15 +371,12 @@ function RenderNestedField({
         </div>
         {label}
       </div>
-      <ParentProp name={`${name}`}>
-        <WritableDefaultField
-          id={id}
-          path={extendPath(path, `${name}`, "/")}
-          initialValue={initialValue}
-          fieldConfig={{ type: "default" }}
-          hidden={hidden}
-        />
-      </ParentProp>
+      <WritableDefaultField
+        id={nestedFieldId}
+        initialValue={initialValue}
+        fieldConfig={{ type: "default" }}
+        hidden={hidden}
+      />
     </>
   );
 }

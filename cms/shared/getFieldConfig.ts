@@ -1,8 +1,8 @@
-import { getTemplateFieldId } from "@storyflow/backend/ids";
+import { getRawFieldId } from "@storyflow/backend/ids";
 import { FieldConfig, DocumentConfig, FieldId } from "@storyflow/backend/types";
 
 const compareTemplateFieldId = (id1: FieldId, id2: FieldId) => {
-  return getTemplateFieldId(id1) === getTemplateFieldId(id2);
+  return getRawFieldId(id1) === getRawFieldId(id2);
 };
 
 export const getTemplateFields = (template: DocumentConfig) => {

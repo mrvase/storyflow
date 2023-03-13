@@ -3,7 +3,6 @@ import { useTabUrl } from "../../layout/utils";
 import { useUnsafeSegment } from "../../layout/components/SegmentContext";
 import { CheckIcon } from "@heroicons/react/24/outline";
 import { useDragItem } from "@storyflow/dnd";
-import { minimizeId } from "@storyflow/backend/ids";
 
 export default function Table({
   rows,
@@ -57,7 +56,7 @@ function Row({
   const { dragHandleProps, ref } = useDragItem<HTMLTableRowElement, string>({
     id,
     type: "article",
-    item: minimizeId(id),
+    item: id,
     mode: "link",
   });
 
@@ -139,11 +138,7 @@ function Checkbox({ id }: { id: string }) {
   return (
     <label className="block p-2.5">
       <div className="w-4 h-4 relative z-0 flex-center">
-        <input
-          name={minimizeId(id)}
-          type="checkbox"
-          className="peer w-0 h-0 opacity-0"
-        />
+        <input name={id} type="checkbox" className="peer w-0 h-0 opacity-0" />
         <div className="absolute inset-0 -z-10 bg-white dark:bg-gray-750 peer-checked:bg-gray-500 rounded transition-colors" />
         <CheckIcon className="w-3 h-3 opacity-0 peer-checked:opacity-100 text-gray-200 transition-opacity" />
       </div>

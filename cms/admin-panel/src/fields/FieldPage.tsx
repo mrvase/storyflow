@@ -14,8 +14,8 @@ import { ComputationOp, targetTools } from "shared/operations";
 import { store, useGlobalState } from "../state/state";
 import {
   Computation,
-  ComputationBlock,
   ComputationRecord,
+  DocumentId,
   EditorComputation,
   FieldId,
   Value,
@@ -30,11 +30,10 @@ import { createComponent } from "./Editor/createComponent";
 import { useDocumentCollab } from "../documents/collab/DocumentCollabContext";
 import { useDocumentPageContext } from "../documents/DocumentPageContext";
 import { Client, useClient } from "../client";
-import { FieldToolbar } from "../documents/DocumentPage";
 import {
   getDocumentId,
+  getRawFieldId,
   getTemplateDocumentId,
-  getTemplateFieldId,
 } from "@storyflow/backend/ids";
 import { ChevronLeftIcon } from "@heroicons/react/24/outline";
 import { useSegment } from "../layout/components/SegmentContext";
@@ -46,6 +45,7 @@ import {
   LibraryConfig,
   Path,
 } from "@storyflow/frontend/types";
+import { useDocumentIdGenerator } from "../id-generator";
 
 const useBuilderRendered = ({
   listeners,
@@ -98,6 +98,9 @@ const useElementActions = ({
     });
   }, []);
 
+  const documentId = getDocumentId(id) as DocumentId;
+  const generateDocumentId = useDocumentIdGenerator();
+
   const { libraries } = useClientConfig();
   React.useEffect(() => {
     return listeners.createComponent.subscribe(({ path, name, library }) => {
@@ -110,12 +113,17 @@ const useElementActions = ({
         ops: [
           {
             index: 0,
-            insert: [createComponent(name, { library, libraries })],
+            insert: [
+              createComponent(generateDocumentId(documentId), name, {
+                library,
+                libraries,
+              }),
+            ],
           },
         ],
       });
     });
-  }, [libraries]);
+  }, [libraries, generateDocumentId]);
 
   React.useEffect(() => {
     return listeners.changeComponent.subscribe(({ library, name }) => {
@@ -125,7 +133,7 @@ const useElementActions = ({
       tools.forEach(
         computation,
         (value, i) => {
-          if (tools.isLayoutElement(value) && value.id === elementId) {
+          if (tools.isNestedElement(value) && value.id === elementId) {
             index = i;
             return true;
           }
@@ -146,13 +154,18 @@ const useElementActions = ({
         ops: [
           {
             index,
-            insert: [createComponent(name, { library, libraries })],
+            insert: [
+              createComponent(generateDocumentId(documentId), name, {
+                library,
+                libraries,
+              }),
+            ],
             remove: 1,
           },
         ],
       });
     });
-  }, [libraries, computation, parentPath, elementId]);
+  }, [libraries, computation, parentPath, elementId, generateDocumentId]);
 
   React.useEffect(() => {
     return listeners.deleteComponent.subscribe(() => {
@@ -162,7 +175,7 @@ const useElementActions = ({
       tools.forEach(
         computation,
         (value, i) => {
-          if (tools.isLayoutElement(value) && value.id === elementId) {
+          if (tools.isNestedElement(value) && value.id === elementId) {
             index = i;
             return true;
           }
@@ -198,7 +211,7 @@ const useElementActions = ({
       computation,
       (value, index) => {
         length++;
-        if (tools.isLayoutElement(value)) {
+        if (tools.isNestedElement(value)) {
           blocks.push({
             index,
             length,
@@ -221,7 +234,7 @@ const useElementActions = ({
       tools.forEach(
         computation,
         (value, index) => {
-          if (tools.isLayoutElement(value)) {
+          if (tools.isNestedElement(value)) {
             i++;
           }
           if (i === from) {
@@ -319,7 +332,7 @@ export function FieldPage({
   const rendered = useBuilderRendered({ listeners });
 
   const documentId = getDocumentId(id);
-  const templateFieldId = getTemplateFieldId(id);
+  const templateFieldId = getRawFieldId(id);
 
   const { push } = useDocumentCollab().mutate<ComputationOp>(
     documentId,
@@ -431,7 +444,7 @@ const recordifyComponent = (
     [startPath]: item,
   };
   item.forEach((element) => {
-    if (tools.isLayoutElement(element)) {
+    if (tools.isNestedElement(element)) {
       Object.entries(element.props).forEach(([key, value]) => {
         const path = extendPath(startPath, `${element.id}/${key}`);
         Object.assign(record, recordifyComponent(path, value));
@@ -445,11 +458,11 @@ const computeComponentRecord = (
   id: FieldId,
   initialValue: Computation,
   {
-    imports = {},
+    record = {},
     client,
     libraries,
   }: {
-    imports?: ComputationRecord;
+    record?: ComputationRecord;
     client: Client;
     libraries: LibraryConfig[];
   }
@@ -462,7 +475,7 @@ const computeComponentRecord = (
   ): ValueRecord => {
     const state = store.use<Value[]>(path);
     if (!state.initialized()) {
-      state.set(() => calculateFn(id, initialValue, { imports, client }));
+      state.set(() => calculateFn(id, initialValue, { record, client }));
     }
     const value = state.value!;
     console.log("path", path, initialValue, value);
@@ -472,7 +485,7 @@ const computeComponentRecord = (
         if (Array.isArray(element)) {
           // this should propably just flat it infinitely out
           return Object.assign(acc, getRecord(element));
-        } else if (!tools.isLayoutElement(element)) {
+        } else if (!tools.isNestedElement(element)) {
           return acc;
         }
         const newPath = element.parent ?? path;
@@ -494,7 +507,7 @@ const computeComponentRecord = (
           .flat(1);
 
         const propConfigArray = components.find(
-          (el) => el.name === element.type
+          (el) => el.name === element.element
         )?.props;
 
         const propKeys =
@@ -544,7 +557,7 @@ function PropagateStatePlugin({
   dispatchers: ReturnType<typeof createEventsFromCMSToIframe>;
   initialValue: Computation;
 }) {
-  const { imports } = useDocumentPageContext();
+  const { record } = useDocumentPageContext();
 
   const client = useClient();
 
@@ -553,7 +566,7 @@ function PropagateStatePlugin({
   // state initialized in ComponentField
   const [tree] = useGlobalState<ComponentRecord>(`${id}/record`, () => {
     return computeComponentRecord(id, initialValue, {
-      imports,
+      record,
       client,
       libraries,
     });

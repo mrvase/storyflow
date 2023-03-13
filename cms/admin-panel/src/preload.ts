@@ -42,11 +42,11 @@ export function Preload() {
     if (!preloaded) {
       preloaded = true;
       (async () => {
-        const data = await client.articles.getList.query(TEMPLATE_FOLDER_ID);
+        const data = await client.documents.getList.query(TEMPLATE_FOLDER_ID);
         const result = unwrap(data);
         if (result) {
           result.articles.forEach((article) => {
-            const key = queryKey(`${API_URL}/articles/get`, article.id, ctx);
+            const key = queryKey(`${API_URL}/articles/get`, article._id, ctx);
             const exists = cache.get(key);
             if (!exists) {
               cache.set(key, {

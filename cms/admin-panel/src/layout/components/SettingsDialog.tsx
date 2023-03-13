@@ -1,9 +1,8 @@
 import cl from "clsx";
 import { PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
-import React, { use } from "react";
+import React from "react";
 import { SWRClient, useClient } from "../../client";
 import { Settings } from "@storyflow/backend/types";
-import { createId } from "@storyflow/backend/ids";
 import { Spinner } from "../../elements/Spinner";
 import { isSuccess, unwrap } from "@storyflow/result";
 import { useUrlInfo } from "../../users";
@@ -114,7 +113,11 @@ export function SettingsDialog({ close }: { close: () => void }) {
             onClick={() =>
               setUrls((ps) => [
                 ...ps,
-                { id: createId(1), configUrl: "", new: true },
+                {
+                  id: Math.random().toString(16).slice(2, 14),
+                  configUrl: "",
+                  new: true,
+                },
               ])
             }
           >

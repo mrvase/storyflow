@@ -177,15 +177,15 @@ function equals(compute1: EditorComputation, compute2: EditorComputation) {
     if (getType(value1) !== getType(value2)) {
       result = false;
       // from now on they are the same type
-    } else if (symb.isFieldImport(value2)) {
+    } else if (symb.isNestedField(value2)) {
       if (value1.id !== value2.id) {
         result = false;
       }
-    } else if (symb.isDocumentImport(value2)) {
-      if (value1.dref !== value2.dref) {
+    } else if (symb.isNestedDocument(value2)) {
+      if (value1.id !== value2.id) {
         result = false;
       }
-    } else if (symb.isLayoutElement(value2)) {
+    } else if (symb.isNestedElement(value2)) {
       if (value1.id !== value2.id) {
         result = false;
       }

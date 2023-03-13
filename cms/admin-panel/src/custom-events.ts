@@ -1,8 +1,8 @@
-import { DocumentId, FieldId, TemplateFieldId } from "@storyflow/backend/types";
+import { DocumentId, FieldId, RawFieldId } from "@storyflow/backend/types";
 
 export const addImport = createEvent<{
   id: FieldId;
-  templateId?: TemplateFieldId;
+  templateId?: RawFieldId;
   imports: string[];
 }>("add-import");
 export const addDocumentImport = createEvent<{

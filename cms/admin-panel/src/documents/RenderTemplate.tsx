@@ -1,10 +1,6 @@
 import React from "react";
 import { DropShadow, Sortable, useSortableItem } from "@storyflow/dnd";
-import {
-  createFieldId,
-  getTemplateFieldId,
-  replaceDocumentId,
-} from "@storyflow/backend/ids";
+import { getRawFieldId, replaceDocumentId } from "@storyflow/backend/ids";
 import {
   ComputationRecord,
   DBDocument,
@@ -15,11 +11,11 @@ import {
 import { getTranslateDragEffect } from "../utils/dragEffects";
 import { targetTools, DocumentConfigOp, AnyOp } from "shared/operations";
 import { RenderField } from "../fields/RenderField";
-import { getComputationRecord } from "@storyflow/backend/flatten";
 import { useDocumentCollab } from "./collab/DocumentCollabContext";
 import { ServerPackage } from "@storyflow/state";
 import { getVersionKey } from "./DocumentPage";
 import { GetDocument } from "./GetDocument";
+import { useFieldIdGenerator } from "../id-generator";
 
 export function RenderTemplate({
   id,
@@ -44,6 +40,8 @@ export function RenderTemplate({
     ? useDocumentCollab().mutate<DocumentConfigOp>(owner, owner)
     : { push: () => {} };
 
+  const generateFieldId = useFieldIdGenerator();
+
   const onChange = React.useCallback(
     (actions: any) => {
       if (!isMain) return;
@@ -52,7 +50,10 @@ export function RenderTemplate({
         const { type, index } = action;
 
         if (type === "add") {
-          const templateItem = action.item;
+          const templateItem = {
+            ...action.item,
+            id: action.item || generateFieldId(owner),
+          };
           ops.push({
             index,
             insert: [templateItem],
@@ -117,9 +118,9 @@ export function RenderTemplate({
           {(article) => (
             <RenderTemplate
               key={getVersionKey(versions)} // for rerendering
-              id={article.id}
+              id={article._id}
               owner={owner}
-              values={{ ...values, ...getComputationRecord(article) }}
+              values={{ ...values, ...article.record }}
               config={article.config}
               histories={histories}
               versions={versions}
@@ -140,9 +141,7 @@ export function RenderTemplate({
       );
     }
 
-    const fieldId = fieldConfig.id
-      ? replaceDocumentId(fieldConfig.id, owner)
-      : createFieldId(owner, id);
+    const fieldId = replaceDocumentId(fieldConfig.id, owner);
 
     const value = values[fieldId] ?? null;
 
@@ -155,8 +154,8 @@ export function RenderTemplate({
           ...fieldConfig,
           id: fieldId,
         }}
-        version={versions?.[getTemplateFieldId(fieldId)] ?? 0}
-        history={histories[getTemplateFieldId(fieldId)] ?? []}
+        version={versions?.[getRawFieldId(fieldId)] ?? 0}
+        history={histories[getRawFieldId(fieldId)] ?? []}
         index={index}
         dragHandleProps={dragHandleProps}
         template={id}

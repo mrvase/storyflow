@@ -18,7 +18,7 @@ export function DocumentCollabProvider({
   const client = useClient();
 
   const collab = React.useMemo(() => {
-    return createDocumentCollaboration(client.articles.sync.mutation);
+    return createDocumentCollaboration(client.documents.sync.mutation);
   }, [client]);
 
   React.useLayoutEffect(() => {

@@ -8,24 +8,18 @@ import {
 import { useArticleList } from "../documents";
 import { useSegment } from "../layout/components/SegmentContext";
 import { useOnLoadHandler } from "../layout/onLoadHandler";
-import { computeFieldId, minimizeId, restoreId } from "@storyflow/backend/ids";
+import { computeFieldId } from "@storyflow/backend/ids";
 import { EditableLabel } from "../elements/EditableLabel";
 import cl from "clsx";
 import { AddArticleDialog } from "./AddArticleDialog";
 import {
-  ComputationBlock,
-  Computation,
   DBDocument,
   FieldId,
-  FlatComputation,
   DBFolder,
+  ComputationRecord,
+  FolderId,
+  SpaceId,
 } from "@storyflow/backend/types";
-import {
-  getComputationRecord,
-  getFlatComputationRecord,
-} from "@storyflow/backend/flatten";
-import { getConfig } from "shared/initialValues";
-import { URL_ID } from "@storyflow/backend/templates";
 import { useClient } from "../client";
 import { useClientConfig } from "../client-config";
 import { unwrap } from "@storyflow/result";
@@ -35,10 +29,11 @@ import { useFolder } from "./collab/hooks";
 import { useFolderCollab } from "./collab/FolderCollabContext";
 import { targetTools } from "shared/operations";
 import { AppSpace } from "./spaces/AppSpace";
-import { getImportIds } from "shared/computation-tools";
+import { getFieldRecord, getGraph } from "shared/computation-tools";
+import { FIELDS } from "@storyflow/backend";
 
 const AppPageContext = React.createContext<{
-  addArticleWithUrl: (parent: DBDocument) => void;
+  addArticleWithUrl: (parent: Pick<DBDocument, "_id" | "record">) => void;
   urls: { id: FieldId; value: string; indent: number }[];
 } | null>(null);
 
@@ -46,43 +41,6 @@ export const useAppPageContext = () => {
   const ctx = React.useContext(AppPageContext);
   if (!ctx) throw new Error("FolderPageContext.Provider not found.");
   return ctx;
-};
-
-const getUrlImports = (article: DBDocument) => {
-  const record = getComputationRecord(article);
-  const imports = new Set<ComputationBlock>();
-
-  const recursive = (value: Computation) => {
-    getImportIds(value, {}).forEach((id) => {
-      const block = article.compute.find((el) => el.id === id) ?? {
-        id,
-        value: getConfig("url").initialValue as FlatComputation,
-      };
-      imports.add(block);
-      const computation = record[id] ?? getConfig("url").initialValue;
-      recursive(computation);
-    });
-  };
-
-  const id = computeFieldId(article.id, URL_ID);
-  const value = record[id];
-
-  if (value) recursive(value);
-
-  return Array.from(imports);
-};
-
-const getUrlField = (article: DBDocument) => {
-  const record = getFlatComputationRecord(article);
-  const id = computeFieldId(article.id, URL_ID);
-  const value = record[id] ?? getConfig("url").initialValue;
-  const url = (article.values[URL_ID]?.[0] as string) ?? "";
-
-  return {
-    id,
-    value,
-    url,
-  };
 };
 
 export default function AppPage({
@@ -108,10 +66,10 @@ export default function AppPage({
     throw new Error("Invalid url");
   }
 
-  const folderLookupId = minimizeId(urlId);
+  const folderLookupId = urlId as FolderId;
   const folder = useFolder(folderLookupId);
 
-  const { articles } = useArticleList(folder?.id);
+  const { articles } = useArticleList(folder?._id);
 
   const orderedArticles = React.useMemo(() => {
     if (!articles) return [];
@@ -122,16 +80,17 @@ export default function AppPage({
 
     const articlesWithLengths = articles
       .map((el) => {
-        const { url } = getUrlField(el);
+        const urlId = computeFieldId(el._id, FIELDS.url.id);
+        const url = (el.record[urlId]?.[0] as string) ?? "";
         return {
           ...el,
           url,
           indent: getUrlLength(url),
-          urlId: computeFieldId(el.id, URL_ID),
+          urlId,
         };
       })
       .sort((a, b) => {
-        return a.indent - b.indent || (a.id > b.id ? -1 : 1);
+        return a.indent - b.indent || (a._id > b._id ? -1 : 1);
       });
 
     const ordered: (DBDocument & {
@@ -159,16 +118,17 @@ export default function AppPage({
   const [dialogIsOpen, setDialogIsOpen] = React.useState<null | string>(null);
   const [parentUrl, setParentUrl] = React.useState<null | {
     id: FieldId;
-    value: FlatComputation;
+    record: ComputationRecord;
     url: string;
-    imports: ComputationBlock[];
   }>(null);
 
-  const addArticleWithUrl = (parent: DBDocument) => {
+  const addArticleWithUrl = (parent: Pick<DBDocument, "_id" | "record">) => {
+    const urlId = computeFieldId(parent._id, FIELDS.url.id);
     setDialogIsOpen("add-article");
     setParentUrl({
-      ...getUrlField(parent),
-      imports: getUrlImports(parent),
+      id: urlId,
+      url: (parent.record[urlId]?.[0] as string) ?? "",
+      record: getFieldRecord(parent.record, urlId, getGraph(parent.record)),
     });
   };
 
@@ -189,7 +149,7 @@ export default function AppPage({
     name: T,
     value: DBFolder[T]
   ) => {
-    return collab.mutate("folders", folder.id).push({
+    return collab.mutate("folders", folder._id).push({
       target: targetTools.stringify({
         location: "",
         operation: "property",
@@ -235,7 +195,7 @@ export default function AppPage({
                       mutate={(domains) => mutateProp("domains", domains)}
                     />
                     <div className="text-xs text-gray-600 font-light flex-center h-6 ring-1 ring-inset ring-gray-700 px-2 rounded cursor-default">
-                      ID: {restoreId(folder.id)} ({folder.id})
+                      ID: {folder._id}
                     </div>
                   </>
                 )}
@@ -255,7 +215,7 @@ export default function AppPage({
               </span>
               {folder && config.revalidateUrl && (
                 <RefreshButton
-                  namespace={restoreId(folder.id)}
+                  namespace={folder._id}
                   revalidateUrl={config.revalidateUrl}
                 />
               )}
@@ -269,7 +229,7 @@ export default function AppPage({
                 setDialogIsOpen(null);
                 setParentUrl(null);
               }}
-              folder={folder.id}
+              folder={folder._id}
               parentUrl={parentUrl ?? undefined}
               type={type}
             />
@@ -277,8 +237,8 @@ export default function AppPage({
           <div className="flex flex-col">
             <AppSpace
               index={0}
-              folderId={folder.id}
-              spaceId={""}
+              folderId={folder._id}
+              spaceId={"" as SpaceId}
               hidden={!isSelected}
             />
           </div>
@@ -312,7 +272,7 @@ function RefreshButton({
         onClick={async () => {
           if (revalidateUrl) {
             setIsLoading(true);
-            const urls = await client.articles.revalidate.query({
+            const urls = await client.documents.revalidate.query({
               namespace,
               domain: "",
               revalidateUrl,

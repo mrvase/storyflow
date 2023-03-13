@@ -1,4 +1,5 @@
 import { DBFolder } from "@storyflow/backend/types";
+import { TEMPLATE_FOLDER } from "@storyflow/backend/constants";
 import { ServerPackage } from "@storyflow/state";
 import React from "react";
 import { SWRClient } from "../client";
@@ -17,7 +18,7 @@ export const useInitialFolders = () => {
 
 export const useTemplateFolder = () => {
   const ctx = useInitialFolders();
-  return ctx.folders.find((el) => el.type === "templates")!;
+  return ctx.folders.find((el) => el._id === TEMPLATE_FOLDER)!;
 };
 
 export const FoldersProvider = ({

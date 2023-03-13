@@ -29,6 +29,7 @@ import { $getRoot } from "lexical";
 import { Query } from "../query/Query";
 import { type QueueListener } from "@storyflow/state";
 import { ContextNode } from "../decorators/ContextNode";
+import { useFieldId } from "../FieldIdContext";
 
 const editorConfig = {
   namespace: "EDITOR",
@@ -48,7 +49,8 @@ const editorConfig = {
   ],
 };
 
-function FocusPlugin({ id }: { id: string }) {
+function FocusPlugin() {
+  const id = useFieldId();
   const editor = useEditorContext();
   const isFocused = useIsFocused(editor);
   const [, setFocused] = useFieldFocus();
@@ -69,7 +71,6 @@ function FocusPlugin({ id }: { id: string }) {
 }
 
 export default function Editor({
-  id,
   push,
   register,
   initialValue,
@@ -78,7 +79,6 @@ export default function Editor({
   setValue,
   transform,
 }: {
-  id: FieldId;
   target?: Target;
   push?: (
     payload:
@@ -103,9 +103,9 @@ export default function Editor({
         $initializeEditor(initialValue ?? [], libraries);
       }}
     >
-      <ContentPlugin id={id} />
+      <ContentPlugin />
       <DecoratorPlugin />
-      <FocusPlugin id={id} />
+      <FocusPlugin />
       {push && register && target ? (
         <Query push={push}>
           {(pushWithQuery) => (

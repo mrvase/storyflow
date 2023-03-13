@@ -1,9 +1,10 @@
 import { Narrow, Operators } from "./types";
 import {
+  Computation,
   ComputationBlock,
   DBDocument,
+  DBDocumentRaw,
   FieldId,
-  FlatComputation,
   Value,
 } from "@storyflow/backend/types";
 import { calculate } from "./calculate";
@@ -34,7 +35,7 @@ const queryArrayProp = <T extends Array<object>>(
 
 const createCalculationStage = (
   $: Operators<
-    DBDocument & {
+    DBDocumentRaw & {
       updates: Update[];
       derivatives: Update[];
       statics: ComputationBlock[];
@@ -58,7 +59,7 @@ const createCalculationStage = (
             (el) =>
               ({
                 id: $.concat([$doc.id, el.k]) as FieldId,
-                result: el.v as FlatComputation,
+                result: el.v as Computation,
               } as any)
           ),
           (el) => $.not($.in(el.id, queryArrayProp($doc.compute).id))

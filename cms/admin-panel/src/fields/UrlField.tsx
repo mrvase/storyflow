@@ -9,14 +9,14 @@ import {
   DocumentId,
   EditorComputation,
   FieldId,
-  TemplateFieldId,
+  RawFieldId,
+  Value,
 } from "@storyflow/backend/types";
 import {
-  createId,
+  computeFieldId,
   getDocumentId,
+  getRawFieldId,
   getTemplateDocumentId,
-  getTemplateFieldId,
-  restoreId,
 } from "@storyflow/backend/ids";
 import { createQueueCache } from "../state/collaboration";
 import { useDocumentCollab } from "../documents/collab/DocumentCollabContext";
@@ -44,8 +44,12 @@ import {
   decodeEditorComputation,
   encodeEditorComputation,
 } from "shared/editor-computation";
-import { calculateSync } from "@storyflow/backend/calculate";
-import { URL_ID } from "@storyflow/backend/templates";
+import {
+  calculateFromRecord,
+  calculateSync,
+} from "@storyflow/backend/calculate";
+import { FIELDS } from "@storyflow/backend";
+import { useDocumentIdGenerator } from "../id-generator";
 
 export const toSlug = (value: string) =>
   value
@@ -56,7 +60,7 @@ export const toSlug = (value: string) =>
     .replace(/\s/g, "-")
     .replace(/[^\w\/\*\-]/g, "");
 
-const getUrlStringFromValue = (id: string, value: Computation) => {
+const getUrlStringFromValue = (value: Value[] | Computation) => {
   const getString = (val: any[]) => {
     return Array.isArray(val) && typeof val[0] === "string" ? val[0] : "";
   };
@@ -64,7 +68,7 @@ const getUrlStringFromValue = (id: string, value: Computation) => {
   return getString(
     value.length === 1
       ? value
-      : calculateSync(id, value, () => undefined, {
+      : calculateSync(value as Computation, () => undefined, {
           returnFunction: false,
         })
   );
@@ -72,10 +76,15 @@ const getUrlStringFromValue = (id: string, value: Computation) => {
 
 const useRelatedPages = (articleId: DocumentId, initialUrl: string) => {
   const { article } = useArticle(articleId);
-  const { data: list } = SWRClient.articles.getList.useQuery(article!.folder);
+  const { data: list } = SWRClient.documents.getList.useQuery(article!.folder);
 
   const getUrl = (article: DBDocument) => {
-    return (article.values[URL_ID]?.[0] as string) ?? "";
+    return (
+      (calculateFromRecord(
+        computeFieldId(article._id, FIELDS.url.id),
+        article.record
+      )[0] as string) ?? ""
+    );
   };
 
   let slugs = initialUrl.split("/").slice(0, -1);
@@ -115,7 +124,9 @@ export default function UrlField({
     );
   }
 
-  const { article, imports } = useDocumentPageContext();
+  const documentId = getDocumentId(id) as DocumentId;
+
+  const { record } = useDocumentPageContext();
 
   const initialValue = React.useMemo(
     () => (value?.length > 0 ? value : getConfig("url").initialValue),
@@ -126,14 +137,14 @@ export default function UrlField({
 
   const [output, setOutput] = useGlobalState<[string]>(
     id,
-    () => calculateFn(id, initialValue, { imports, client }) as [string]
+    () => calculateFn(id, initialValue, { record, client }) as [string]
   );
 
-  const url = getUrlStringFromValue(id, output);
+  const url = getUrlStringFromValue(output);
 
   const actions = useDocumentCollab().mutate<ComputationOp>(
-    getDocumentId(id),
-    getTemplateFieldId(id)
+    documentId,
+    getRawFieldId(id)
   );
 
   const parentUrl = url.split("/").slice(0, -1).join("/");
@@ -198,16 +209,15 @@ export default function UrlField({
   });
 
   const [parents, children] = useRelatedPages(
-    getDocumentId(id),
-    getUrlStringFromValue(
-      id,
-      calculateFn(id, initialValue, { imports, client })
-    )
+    documentId,
+    getUrlStringFromValue(calculateFromRecord(id, record))
   );
 
   const [isFocused, setIsFocused] = React.useState(false);
 
   const ctx = useAppPageContext();
+
+  const generateDocumentId = useDocumentIdGenerator();
 
   React.useEffect(() => {
     if (isFocused) {
@@ -217,12 +227,12 @@ export default function UrlField({
             console.error("Tried to add itself");
             return;
           }
-          let insert = [
+          let insert: EditorComputation = [
             {
-              id: createId(1),
-              fref: externalId as FieldId,
-              ...(templateId && { pick: templateId as TemplateFieldId }),
-              args: {},
+              id: generateDocumentId(documentId),
+              field: externalId as FieldId,
+              ...(templateId && { pick: templateId as RawFieldId }),
+              imports: {},
             },
           ];
           actions.push({
@@ -250,7 +260,7 @@ export default function UrlField({
 
   React.useLayoutEffect(() => {
     const queue = collab
-      .getOrAddQueue(getDocumentId(id), getTemplateFieldId(id), {
+      .getOrAddQueue(getDocumentId(id), getRawFieldId(id), {
         transform: (a) => a,
       })
       .initialize(version, history ?? []);
@@ -270,7 +280,7 @@ export default function UrlField({
             calculateFn(
               id,
               decodeEditorComputation(result, getConfig("url").transform),
-              { imports, client }
+              { record, client }
             ) as [string]
         );
       });
@@ -295,10 +305,9 @@ export default function UrlField({
   const [, navigateTab] = useTabUrl();
 
   const replacePage = (id: string) =>
-    navigateTab(
-      `${current.split("/").slice(0, -1).join("/")}/d-${restoreId(id)}`,
-      { navigate: false }
-    );
+    navigateTab(`${current.split("/").slice(0, -1).join("/")}/d-${id}`, {
+      navigate: false,
+    });
 
   let parentSlugs = parentUrl.split("/");
   if (parentSlugs[0] !== "") {
@@ -309,9 +318,9 @@ export default function UrlField({
     <div className="px-5">
       <div className="pr-8">
         <div className="outline-none rounded font-light flex items-start">
-          {parents[0] && parents[0].id !== getDocumentId(id) ? (
+          {parents[0] && parents[0]._id !== getDocumentId(id) ? (
             <Link
-              to={replacePage(parents[0]?.id ?? "")}
+              to={replacePage(parents[0]?._id ?? "")}
               className={cl(
                 "cursor-default rounded-full truncate text-sm shrink-0 opacity-50 hover:opacity-100 transition-opacity",
                 "p-1 -ml-1 mr-4"
@@ -324,9 +333,9 @@ export default function UrlField({
           )}
           <div className="flex items-center pb-2 h-8">
             {parentSlugs.slice(1).map((el, index) => (
-              <React.Fragment key={parents[index + 1]?.id}>
+              <React.Fragment key={parents[index + 1]?._id}>
                 <Link
-                  to={replacePage(parents[index + 1]?.id ?? "")}
+                  to={replacePage(parents[index + 1]?._id ?? "")}
                   className={cl(
                     "cursor-default rounded-full bg-gray-100 dark:bg-gray-750 truncate text-sm shrink-0",
                     "px-3"
@@ -385,19 +394,24 @@ export default function UrlField({
             />
           )}
         </div>
-        {getTemplateDocumentId(id) === getDocumentId(URL_ID) && (
+        {getTemplateDocumentId(id) === getTemplateDocumentId(FIELDS.url.id) && (
           <div className="flex items-center pb-5">
             <button
               className="p-1 -ml-1 mr-4 opacity-50 hover:opacity-100 transition-opacity"
-              onClick={() => ctx.addArticleWithUrl(article)}
+              onClick={() =>
+                ctx.addArticleWithUrl({
+                  _id: documentId,
+                  record,
+                })
+              }
             >
               <PlusIcon className="w-4 h-4" />
             </button>
             <div className="flex flex-wrap gap-2">
               {children.map((el, index) => (
                 <Link
-                  key={el.id}
-                  to={replacePage(el.id)}
+                  key={el._id}
+                  to={replacePage(el._id)}
                   className="group text-sm font-light flex-center gap-2"
                 >
                   <svg
