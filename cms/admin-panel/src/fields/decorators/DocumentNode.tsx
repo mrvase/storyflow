@@ -30,15 +30,15 @@ import {
   LinkIcon,
 } from "@heroicons/react/24/outline";
 import { useFieldId } from "../FieldIdContext";
-import { useFieldConfig } from "../../state/documentConfig";
+import { useFieldConfig } from "../../documents/collab/hooks";
 import { Menu } from "@headlessui/react";
 import { MenuTransition } from "../../elements/transitions/MenuTransition";
-import { useTemplateFolder } from "../../folders";
-import { useArticle, useArticleList } from "../../articles";
+import { useTemplateFolder } from "../../folders/folders-context";
+import { useArticle, useArticleList } from "../../documents";
 import { useFieldTemplate } from "../default/useFieldTemplate";
 import { calculateFn } from "../default/calculateFn";
 import { useGlobalState } from "../../state/state";
-import { useArticlePageContext } from "../../articles/ArticlePageContext";
+import { useDocumentPageContext } from "../../documents/DocumentPageContext";
 import { computeFieldId, getTemplateFieldId } from "@storyflow/backend/ids";
 import { useClient } from "../../client";
 import { getComputationRecord } from "@storyflow/backend/flatten";
@@ -119,7 +119,7 @@ function DocumentDecorator({
 
   const parentFieldId = useFieldId();
 
-  const { imports } = useArticlePageContext();
+  const { imports } = useDocumentPageContext();
 
   return (
     <div className="py-0.5">

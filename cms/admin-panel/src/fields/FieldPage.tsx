@@ -27,10 +27,10 @@ import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { useLocalStorage } from "../state/useLocalStorage";
 import { useClientConfig } from "../client-config";
 import { createComponent } from "./Editor/createComponent";
-import { useDocumentCollab } from "../state/collab-document";
-import { useArticlePageContext } from "../articles/ArticlePageContext";
+import { useDocumentCollab } from "../documents/collab/DocumentCollabContext";
+import { useDocumentPageContext } from "../documents/DocumentPageContext";
 import { Client, useClient } from "../client";
-import { FieldToolbar } from "../articles/ArticlePage";
+import { FieldToolbar } from "../documents/DocumentPage";
 import {
   getDocumentId,
   getTemplateDocumentId,
@@ -544,7 +544,7 @@ function PropagateStatePlugin({
   dispatchers: ReturnType<typeof createEventsFromCMSToIframe>;
   initialValue: Computation;
 }) {
-  const { imports } = useArticlePageContext();
+  const { imports } = useDocumentPageContext();
 
   const client = useClient();
 

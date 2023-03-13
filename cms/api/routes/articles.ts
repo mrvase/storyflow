@@ -31,9 +31,14 @@ import {
   encodeEditorComputation,
 } from "shared/editor-computation";
 import { AnyOp, targetTools } from "shared/operations";
-import { createComputationTransformer, fieldConfig } from "shared/fieldConfig";
+import { getConfig } from "shared/initialValues";
+import { createComputationTransformer } from "shared/computation-tools";
 import { modifyNestedChild } from "@storyflow/backend/traverse";
-import { getPickedDocumentIds, inputConfig } from "shared/inputConfig";
+import {
+  getImportIds,
+  getNextState,
+  getPickedDocumentIds,
+} from "shared/computation-tools";
 import {
   flattenComputation,
   getChildrenFromFlatComputation,
@@ -1051,7 +1056,7 @@ const getImports = (
           record[id] = value;
 
           // handle its own imports
-          inputConfig.getImportIds(value, fields).forEach((importId) => {
+          getImportIds(value, fields).forEach((importId) => {
             if (importId in record) return;
             if (importId.startsWith(article.id)) {
               addImport(importId, fields[importId]);
@@ -1110,7 +1115,7 @@ const flatten = (
     const segments = path.split(".");
     const current = segments[segments.length - 1] || base;
 
-    const ids = inputConfig.getImportIds(value, computationRecord);
+    const ids = getImportIds(value, computationRecord);
     importMap.set(current, ids);
 
     if (path === "") return current as FieldId;
@@ -1234,7 +1239,7 @@ const transformField = (
       isType(type, "url") ||
       isType(type, "slug")
     ) {
-      return fieldConfig[type].initialValue;
+      return getConfig(type).initialValue;
     }
     return null;
   };
@@ -1249,27 +1254,21 @@ const transformField = (
 
   let value = defaultValue;
 
-  let transform = fieldConfig[type].transform;
+  let transform = getConfig(type).transform;
 
   transformer(pkgs).forEach((pkg) => {
     unwrapServerPackage(pkg).operations.forEach((operation) => {
       const { input, location } = targetTools.parse(operation.target);
       if (location === "") {
         value = decodeEditorComputation(
-          inputConfig.getNextState(
-            encodeEditorComputation(value, transform) as Computation,
-            operation
-          ) as EditorComputation,
+          getNextState(encodeEditorComputation(value, transform), operation),
           transform
         );
       } else {
         const path = targetTools.getLocation(operation.target);
         const result = modifyNestedChild(value, path.split("."), (value) => {
-          const encoded = encodeEditorComputation(value) as Computation;
-          const transformed = inputConfig.getNextState(
-            encoded,
-            operation
-          ) as EditorComputation;
+          const encoded = encodeEditorComputation(value);
+          const transformed = getNextState(encoded, operation);
           const decoded = decodeEditorComputation(transformed);
           return decoded;
         });
@@ -1297,7 +1296,7 @@ const transformDocumentConfig = (
           newConfig.splice(index, remove ?? 0, ...(insert ?? []));
         });
       } else if (targetTools.isOperation(operation, "property")) {
-        const fieldId = targetTools.getLocation(operation.target);
+        const fieldId = targetTools.getLocation(operation.target) as FieldId;
         operation.ops.forEach((action) => {
           newConfig = setFieldConfig(newConfig, fieldId, (ps) => ({
             ...ps,
@@ -1342,7 +1341,7 @@ const getFlatImportsWithDuplicates = (
   const imports = [{ value: flatComputation, depth: parentDepth }]
     .concat(flatArray)
     .reduce((acc, { value, depth }) => {
-      inputConfig.getImportIds(value, record).forEach((id) => {
+      getImportIds(value, record).forEach((id) => {
         const comp = record[id] ?? [];
         acc.push(
           { id, value: comp, depth: depth + 1 },

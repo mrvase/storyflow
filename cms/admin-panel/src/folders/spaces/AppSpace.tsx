@@ -1,8 +1,9 @@
 import cl from "clsx";
 import { PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { getDocumentId, restoreId } from "@storyflow/backend/ids";
-import { getDocumentLabel, useArticleList } from "../../articles";
-import Table from "../../articles/components/Table";
+import { useArticleList } from "../../documents";
+import { getDocumentLabel } from "../../documents/useDocumentLabel";
+import Table from "../../documents/components/Table";
 import Space from "./Space";
 import { useAppPageContext } from "../AppPage";
 import Loader from "../../elements/Loader";

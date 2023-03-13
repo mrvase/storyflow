@@ -1,7 +1,7 @@
 import { store } from "../../state/state";
 import { calculateSync } from "@storyflow/backend/calculate";
 import { context, getContextKey } from "../../state/context";
-import { fetchArticle } from "../../articles";
+import { fetchArticle } from "../../documents";
 import {
   Computation,
   Value,

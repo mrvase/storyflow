@@ -1,7 +1,7 @@
 import React from "react";
-import { useContextWithError } from "../utils/contextError";
-import { useClient } from "../client";
-import { createDocumentCollaboration } from "./collaboration";
+import { useContextWithError } from "../../utils/contextError";
+import { useClient } from "../../client";
+import { createDocumentCollaboration } from "../../state/collaboration";
 
 export const DocumentCollabContext = React.createContext<ReturnType<
   typeof createDocumentCollaboration

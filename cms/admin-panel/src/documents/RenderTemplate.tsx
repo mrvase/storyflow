@@ -5,7 +5,6 @@ import {
   getTemplateFieldId,
   replaceDocumentId,
 } from "@storyflow/backend/ids";
-import { useDocumentConfig } from "../state/documentConfig";
 import {
   ComputationRecord,
   DBDocument,
@@ -14,19 +13,13 @@ import {
   HeadingConfig,
 } from "@storyflow/backend/types";
 import { getTranslateDragEffect } from "../utils/dragEffects";
-import {
-  PropertyOp,
-  targetTools,
-  DocumentConfigOp,
-  AnyOp,
-} from "shared/operations";
+import { targetTools, DocumentConfigOp, AnyOp } from "shared/operations";
 import { RenderField } from "../fields/RenderField";
-import { URL_ID } from "@storyflow/backend/templates";
 import { getComputationRecord } from "@storyflow/backend/flatten";
-import { useDocumentCollab } from "../state/collab-document";
+import { useDocumentCollab } from "./collab/DocumentCollabContext";
 import { ServerPackage } from "@storyflow/state";
-import { getVersionKey } from "./ArticlePage";
-import { GetArticle } from "./GetArticle";
+import { getVersionKey } from "./DocumentPage";
+import { GetDocument } from "./GetDocument";
 
 export function RenderTemplate({
   id,
@@ -120,7 +113,7 @@ export function RenderTemplate({
 
     if ("template" in fieldConfig && !("id" in fieldConfig)) {
       return (
-        <GetArticle id={fieldConfig.template} key={fieldConfig.template}>
+        <GetDocument id={fieldConfig.template} key={fieldConfig.template}>
           {(article) => (
             <RenderTemplate
               key={getVersionKey(versions)} // for rerendering
@@ -133,7 +126,7 @@ export function RenderTemplate({
               index={index}
             />
           )}
-        </GetArticle>
+        </GetDocument>
       );
     }
 

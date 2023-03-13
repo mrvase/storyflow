@@ -1,9 +1,9 @@
 import React from "react";
 import Content from "./Content";
 import { FolderIcon, TrashIcon } from "@heroicons/react/24/outline";
-import Table from "../../articles/components/Table";
+import Table from "../../documents/components/Table";
 import { restoreId } from "@storyflow/backend/ids";
-import { useFolders } from "../../state/collab-folder";
+import { useFolders } from "../../folders/collab/hooks";
 import { DragIcon } from "../../folders/spaces/DragIcon";
 import { useDragItem } from "@storyflow/dnd";
 import { DBFolder } from "@storyflow/backend/types";

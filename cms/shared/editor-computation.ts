@@ -264,7 +264,7 @@ export const decodeEditorComputation = (
   let current: DbFunction = value;
 
   client.forEach((el, index) => {
-    if (tools.isSymbol(el, "(")) {
+    if (tools.isEditorSymbol(el, "(")) {
       // An opening bracket always creates a group with operation null
       // and the operation stays null. So when we enter children groups,
       // we know we can return to the latest bracket group by returning
@@ -272,7 +272,7 @@ export const decodeEditorComputation = (
       const func = { parameters: [], operation: null, parent: current };
       current.parameters.push(func);
       current = func;
-    } else if (tools.isSymbol(el, ")")) {
+    } else if (tools.isEditorSymbol(el, ")")) {
       // we first return to the level introduced by the opening bracket
       // (see comment above)
       while (current.operation !== null) {
@@ -280,7 +280,7 @@ export const decodeEditorComputation = (
       }
       // and then return to the parent that the bracket group was originally pushed to
       current = current.parent!;
-    } else if (tools.isSymbol(el, ",") || tools.isSymbol(el, "n")) {
+    } else if (tools.isEditorSymbol(el, ",") || tools.isEditorSymbol(el, "n")) {
       // the only case in which we are in a group where the operation is not null
       // is when it has been set to an operator (and not a function name - these are only added when the group is left).
       // Since there cannot be a comma or an n in a group with an operator, we return to the parent.
@@ -289,10 +289,10 @@ export const decodeEditorComputation = (
       }
       current.parameters.push(el);
     } else if (
-      tools.isSymbol(el, "+") ||
-      tools.isSymbol(el, "-") ||
-      tools.isSymbol(el, "*") ||
-      tools.isSymbol(el, "/")
+      tools.isEditorSymbol(el, "+") ||
+      tools.isEditorSymbol(el, "-") ||
+      tools.isEditorSymbol(el, "*") ||
+      tools.isEditorSymbol(el, "/")
     ) {
       if (current.operation !== el["_"]) {
         if (

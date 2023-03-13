@@ -2,9 +2,9 @@ import React from "react";
 import Dialog from "../elements/Dialog";
 import { useArticleIdGenerator, useFolderIdGenerator } from "../id-generator";
 import { DocumentId } from "@storyflow/backend/types";
-import { useFolderCollab } from "../state/collab-folder";
+import { useFolderCollab } from "./collab/FolderCollabContext";
 import { targetTools } from "shared/operations";
-import { useArticleListMutation } from "../articles";
+import { useArticleListMutation } from "../documents";
 import { computeFieldId } from "@storyflow/backend/ids";
 import { LABEL_ID, URL_ID } from "@storyflow/backend/templates";
 import {

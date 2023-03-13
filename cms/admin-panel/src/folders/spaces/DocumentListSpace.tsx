@@ -18,13 +18,15 @@ import React from "react";
 import { tools } from "shared/editor-tools";
 import {
   fetchArticle,
-  getDefaultValuesFromTemplateAsync,
-  getDocumentLabel,
-  getTemplateFieldsAsync,
   useArticleList,
   useArticleListMutation,
-} from "../../articles";
-import Table from "../../articles/components/Table";
+} from "../../documents";
+import { getDocumentLabel } from "../../documents/useDocumentLabel";
+import {
+  getDefaultValuesFromTemplateAsync,
+  getTemplateFieldsAsync,
+} from "../../documents/template-fields";
+import Table from "../../documents/components/Table";
 import { useClient } from "../../client";
 import { addDocumentImport } from "../../custom-events";
 import { useFieldFocus } from "../../field-focus";

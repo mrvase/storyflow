@@ -5,7 +5,7 @@ import {
   ArrowPathIcon,
   ComputerDesktopIcon,
 } from "@heroicons/react/24/outline";
-import { useArticleList } from "../articles";
+import { useArticleList } from "../documents";
 import { useSegment } from "../layout/components/SegmentContext";
 import { useOnLoadHandler } from "../layout/onLoadHandler";
 import { computeFieldId, minimizeId, restoreId } from "@storyflow/backend/ids";
@@ -24,18 +24,18 @@ import {
   getComputationRecord,
   getFlatComputationRecord,
 } from "@storyflow/backend/flatten";
-import { getConfig } from "shared/fieldConfig";
+import { getConfig } from "shared/initialValues";
 import { URL_ID } from "@storyflow/backend/templates";
 import { useClient } from "../client";
 import { useClientConfig } from "../client-config";
 import { unwrap } from "@storyflow/result";
-import { useLocalStorage } from "../state/useLocalStorage";
 import { DomainsButton } from "./FolderPage";
 import { FolderDomainsContext, FolderDomainsProvider } from "./folder-domains";
-import { inputConfig } from "shared/inputConfig";
-import { useFolder, useFolderCollab } from "../state/collab-folder";
+import { useFolder } from "./collab/hooks";
+import { useFolderCollab } from "./collab/FolderCollabContext";
 import { targetTools } from "shared/operations";
 import { AppSpace } from "./spaces/AppSpace";
+import { getImportIds } from "shared/computation-tools";
 
 const AppPageContext = React.createContext<{
   addArticleWithUrl: (parent: DBDocument) => void;
@@ -53,7 +53,7 @@ const getUrlImports = (article: DBDocument) => {
   const imports = new Set<ComputationBlock>();
 
   const recursive = (value: Computation) => {
-    inputConfig.getImportIds(value, {}).forEach((id) => {
+    getImportIds(value, {}).forEach((id) => {
       const block = article.compute.find((el) => el.id === id) ?? {
         id,
         value: getConfig("url").initialValue as FlatComputation,
@@ -98,14 +98,16 @@ export default function AppPage({
   numberOfVisibleTabs: number;
   children?: React.ReactNode;
 }) {
-  const { current, full } = useSegment();
+  const { current } = useSegment();
 
   const path = getPathFromSegment(current);
 
   const [type, urlId] = path.split("/").slice(-1)[0].split("-");
+
   if (!urlId) {
     throw new Error("Invalid url");
   }
+
   const folderLookupId = minimizeId(urlId);
   const folder = useFolder(folderLookupId);
 

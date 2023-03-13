@@ -3,7 +3,7 @@ import { TemplateDocument } from "@storyflow/backend/types";
 import { useArticle } from ".";
 import { TEMPLATES } from "@storyflow/backend/templates";
 
-export const GetArticle = ({
+export const GetDocument = ({
   id,
   children,
 }: {

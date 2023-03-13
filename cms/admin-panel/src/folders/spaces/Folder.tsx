@@ -14,7 +14,7 @@ import { useTabUrl } from "../../layout/utils";
 import { useSegment } from "../../layout/components/SegmentContext";
 import { restoreId } from "@storyflow/backend/ids";
 import { DragIcon } from "./DragIcon";
-import { useFolder } from "../../state/collab-folder";
+import { useFolder } from "../collab/hooks";
 
 export function FolderItem({
   index,

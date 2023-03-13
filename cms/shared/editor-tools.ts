@@ -299,8 +299,6 @@ function split(
   return array;
 }
 
-function join(value: EditorComputation) {}
-
 export const tools = {
   at,
   equals,

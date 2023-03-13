@@ -7,21 +7,14 @@ import {
   FlatComputation,
   FlatComputationRecord,
 } from "@storyflow/backend/types";
-import { ComputationOp } from "./operations";
+import { ComputationOp, targetTools } from "./operations";
 import { tools } from "./editor-tools";
 import { encodeEditorComputation } from "./editor-computation";
 import { computeFieldId } from "@storyflow/backend/ids";
+import { createSpliceTransformer } from "./splice-transform";
+import { getNestedChild } from "@storyflow/backend/traverse";
 
 type SomeComputation = (Computation[number] | FlatComputation[number])[];
-
-export type InputConfig = {
-  getNextState: (value: Computation, operation: ComputationOp) => Computation;
-  getSpliceableValue: (value: Computation) => EditorComputation;
-  getImportIds: (
-    value: SomeComputation,
-    pool: ComputationRecord | FlatComputationRecord
-  ) => FieldId[];
-};
 
 export const getPickedDocumentIds = (
   fref: FieldId,
@@ -77,7 +70,7 @@ export const getPickedDocumentIds = (
   return drefs;
 };
 
-const getImportIds = (
+export const getImportIds = (
   value: SomeComputation,
   pool: ComputationRecord | FlatComputationRecord
 ) => {
@@ -98,7 +91,10 @@ const getImportIds = (
   return imports;
 };
 
-const getNextState = (compute: EditorComputation, operation: ComputationOp) => {
+export const getNextState = (
+  compute: EditorComputation,
+  operation: ComputationOp
+) => {
   /**
    * if it is root, it should remove arguments before altering
    */
@@ -134,8 +130,32 @@ const getNextState = (compute: EditorComputation, operation: ComputationOp) => {
   return newValue;
 };
 
-export const inputConfig: InputConfig = {
-  getImportIds,
-  getSpliceableValue: (value) => encodeEditorComputation(value),
-  getNextState: getNextState as any,
+const getArrayMethods = (operation: ComputationOp) => {
+  // const { input } = targetTools.parse(operation.target);
+  return {
+    splice: tools.slice,
+    getLength: tools.getLength,
+  };
+};
+
+export const createComputationTransformer = (initialValue: Computation) => {
+  const getInitialValue = (operation: ComputationOp) => {
+    const { location: path, input } = targetTools.parse(operation.target);
+
+    if (path === "") {
+      return encodeEditorComputation(initialValue);
+    }
+
+    try {
+      const child = getNestedChild(initialValue, path.split("."));
+      if (!child) throw "error";
+      return encodeEditorComputation(child);
+    } catch (err) {
+      return []; // it is safe to assume it is something of length 0
+    }
+  };
+  return createSpliceTransformer<ComputationOp>(
+    getInitialValue,
+    getArrayMethods
+  );
 };

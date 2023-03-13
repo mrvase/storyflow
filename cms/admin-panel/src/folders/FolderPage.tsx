@@ -2,7 +2,6 @@ import React from "react";
 import { useTabUrl } from "../layout/utils";
 import { getPathFromSegment } from "../layout/utils";
 import Content from "../layout/components/Content";
-import { useTemplateFolder } from ".";
 import {
   ArrowPathRoundedSquareIcon,
   DocumentDuplicateIcon,
@@ -17,16 +16,17 @@ import { minimizeId, restoreId } from "@storyflow/backend/ids";
 import { EditableLabel } from "../elements/EditableLabel";
 import cl from "clsx";
 import { DBFolder } from "@storyflow/backend/types";
-import { useLocalStorage } from "../state/useLocalStorage";
 import { SWRClient } from "../client";
 import { FolderDomainsContext, FolderDomainsProvider } from "./folder-domains";
-import { useFolder, useFolderCollab } from "../state/collab-folder";
+import { useFolder } from "./collab/hooks";
+import { useFolderCollab } from "./collab/FolderCollabContext";
 import { FolderGridSpace } from "./spaces/FolderGridSpace";
 import { targetTools } from "shared/operations";
 import { createKey } from "../utils/createKey";
 import { AddTemplateDialog } from "./AddTemplateDialog";
 import { DocumentListSpace } from "./spaces/DocumentListSpace";
-import { useArticleTemplate, useDocumentLabel } from "../articles";
+import { useArticleTemplate } from "../documents";
+import { useDocumentLabel } from "../documents/useDocumentLabel";
 import { FolderContext } from "./FolderPageContext";
 
 export default function FolderPage({

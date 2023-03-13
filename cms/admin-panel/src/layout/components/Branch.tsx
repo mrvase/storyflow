@@ -6,7 +6,7 @@ import { useSortableItem } from "@storyflow/dnd";
 import { getTranslateDragEffect } from "../../utils/dragEffects";
 import { Tab } from "../types";
 import { SegmentProvider } from "./SegmentContext";
-import ArticlePage from "../../articles/ArticlePage";
+import { DocumentPage } from "../../documents/DocumentPage";
 import useIsFocused from "../../utils/useIsFocused";
 import { BuilderProvider } from "../../fields/builder/BuilderPortal";
 import LocationBar from "./LocationBar";
@@ -284,13 +284,13 @@ function Pages({
                   isOpen={selectedLength >= tab.segment.split("/").length}
                   onLoad={() => select(tab.segment)}
                 >
-                  <ArticlePage
+                  <DocumentPage
                     isOpen={selectedLength >= segment.split("/").length}
                     isSelected={selected === segment}
                     onLoad={() => select(segment)}
                   >
                     {children}
-                  </ArticlePage>
+                  </DocumentPage>
                 </BuilderProvider>
               </SegmentProvider>
             );

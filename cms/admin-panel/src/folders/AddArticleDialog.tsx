@@ -1,9 +1,7 @@
 import React from "react";
 import Dialog from "../elements/Dialog";
-import {
-  getDefaultValuesFromTemplateAsync,
-  useArticleListMutation,
-} from "../articles";
+import { useArticleListMutation } from "../documents";
+import { getDefaultValuesFromTemplateAsync } from "../documents/template-fields";
 import { useArticleIdGenerator } from "../id-generator";
 import { useTabUrl } from "../layout/utils";
 import { useSegment } from "../layout/components/SegmentContext";

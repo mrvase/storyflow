@@ -5,24 +5,13 @@ import { Client, SWRClient, useCache } from "../client";
 import {
   ComputationBlock,
   DBDocument,
-  DocumentConfig,
   DocumentId,
-  FieldConfig,
   TemplateDocument,
   FlatComputation,
-  Value,
   ValueRecord,
-  TemplateRef,
-  TemplateFieldId,
 } from "@storyflow/backend/types";
 import { pushAndRetry } from "../utils/retryOnError";
-import { useGlobalState } from "../state/state";
-import { computeFieldId } from "@storyflow/backend/ids";
-import {
-  CREATION_DATE_ID,
-  LABEL_ID,
-  TEMPLATES,
-} from "@storyflow/backend/templates";
+import { TEMPLATES } from "@storyflow/backend/templates";
 
 type ArticleListMutation =
   | {
@@ -41,8 +30,6 @@ type ArticleListOperation = {
   folder: string;
   actions: ArticleListMutation[];
 };
-
-let int: { current: ReturnType<typeof setInterval> | null } = { current: null };
 
 const queue = createQueue<ArticleListOperation>("documents", {
   clientId: null,
@@ -285,135 +272,4 @@ export const useSaveArticle = (folder: string) => {
       });
     },
   });
-};
-
-export const getDefaultValuesFromTemplateAsync = async (
-  id: DocumentId,
-  client: Client
-) => {
-  const values: ValueRecord<TemplateFieldId> = {};
-  const compute: ComputationBlock[] = [];
-
-  const getValues = async (id: DocumentId) => {
-    const assignValues = (doc: Pick<DBDocument, "compute" | "values">) => {
-      const computeIds = new Set();
-      doc.compute.forEach((block) => {
-        computeIds.add(block.id);
-        const exists = compute.some(({ id }) => id === block.id);
-        // we handle external imports on the server
-        if (block.id.startsWith(id) && !exists) {
-          compute.push(block);
-        }
-      });
-      Object.assign(
-        values,
-        Object.fromEntries(
-          Object.entries(doc.values).filter(
-            ([key]) =>
-              !computeIds.has(computeFieldId(id, key as TemplateFieldId))
-          )
-        )
-      );
-    };
-
-    /*
-    const defaultTemplate = TEMPLATES.find((el) => el.id === id);
-    if (defaultTemplate) {
-      assignValues(article);
-      return;
-    }
-    */
-
-    const article = await fetchArticle(id, client);
-
-    if (article) {
-      console.log("default article", article);
-      assignValues(article);
-
-      /*
-      const nestedTemplates = article.config
-        .filter((el): el is TemplateRef => "template" in el)
-        .map((el) => el.template as DocumentId);
-      nestedTemplates.forEach((id) => getValues(id));
-      */
-    }
-  };
-  await getValues(id);
-
-  return { values, compute };
-};
-
-export const getTemplateFieldsAsync = async (
-  template: DocumentConfig,
-  client: Client
-) => {
-  const templates = new Set();
-  const getFields = async (
-    template: DocumentConfig
-  ): Promise<FieldConfig[]> => {
-    return await Promise.all(
-      template.map(async (el) => {
-        if (Array.isArray(el)) {
-          return el;
-        } else if ("id" in el) {
-          return [el];
-        } else if ("template" in el && !templates.has(el.template)) {
-          templates.add(el.template);
-          const defaultTemplate = TEMPLATES.find((dt) => dt.id === el.template);
-          if (defaultTemplate) {
-            return getFields(defaultTemplate.config);
-          }
-          const article = await fetchArticle(el.template, client);
-          if (!article) return [];
-          return await getFields(article.config);
-        }
-        return [];
-      })
-    ).then((el) => el.flat(1));
-  };
-  return await getFields(template);
-};
-
-const fallbackLabel = "[Titel]";
-
-export const getDocumentLabel = (doc: TemplateDocument | undefined) => {
-  if (!doc) return undefined;
-  const defaultLabelValue = doc.values[LABEL_ID]?.[0];
-  const defaultLabel =
-    typeof defaultLabelValue === "string" ? defaultLabelValue : null;
-  const creationDateString = doc.values[CREATION_DATE_ID]?.[0] as
-    | string
-    | undefined;
-  const creationDate = new Date(creationDateString ?? 0);
-  return (
-    defaultLabel ??
-    `Ny (${new Intl.DateTimeFormat("da-DK", {
-      dateStyle: "medium",
-      timeStyle: "medium",
-    }).format(creationDate)})`
-  );
-};
-
-export const useDocumentLabel = <T extends TemplateDocument | undefined>(
-  doc: T
-): T extends undefined ? undefined : string => {
-  const defaultLabel = getDocumentLabel(doc);
-
-  const [output] = useGlobalState<Value[]>(
-    doc ? computeFieldId(doc.id, LABEL_ID) : undefined
-  );
-
-  if (typeof doc === "undefined") {
-    return undefined as any;
-  }
-
-  if (doc?.label) {
-    return doc.label as any;
-  }
-
-  if (output && output.length > 0) {
-    return typeof output[0] === "string" ? output[0] : (fallbackLabel as any);
-  }
-
-  return defaultLabel ?? (fallbackLabel as any);
 };

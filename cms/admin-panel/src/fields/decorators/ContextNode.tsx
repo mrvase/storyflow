@@ -13,13 +13,13 @@ import cl from "clsx";
 import { useIsSelected } from "./useIsSelected";
 import { caretClasses } from "./caret";
 import { useGlobalContext } from "../../state/context";
-import { useArticlePageContext } from "../../articles/ArticlePageContext";
+import { useDocumentPageContext } from "../../documents/DocumentPageContext";
 import { getPreview } from "../default/getPreview";
 import { ContextImport, Value } from "@storyflow/backend/types";
 import { useBuilderPath } from "../BuilderPath";
 
 const useState = (ctx: string): Value[] | undefined => {
-  const { id: documentId } = useArticlePageContext();
+  const { id: documentId } = useDocumentPageContext();
   const [value] = useGlobalContext(documentId, ctx);
   console.log("VALUE", value);
   return [value[ctx]];

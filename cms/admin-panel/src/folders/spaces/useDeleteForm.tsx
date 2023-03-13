@@ -1,5 +1,5 @@
 import React from "react";
-import { useArticleListMutation } from "../../articles";
+import { useArticleListMutation } from "../../documents";
 
 export function useDeleteForm({ folderId }: { folderId: string }) {
   const form = React.useRef<HTMLFormElement | null>(null);

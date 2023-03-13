@@ -12,7 +12,7 @@ import {
 import cl from "clsx";
 import { useIsSelected } from "./useIsSelected";
 import { caretClasses } from "./caret";
-import { useLabel } from "../../state/documentConfig";
+import { useLabel } from "../../documents/collab/hooks";
 import { useGlobalState } from "../../state/state";
 import { getPreview } from "../default/getPreview";
 import {

@@ -79,7 +79,7 @@ const authorization = async (ctx: MiddlewareContext) => {
 export const public_ = createRoute({
   get: createProcedure({
     middleware(ctx) {
-      return ctx.use(corsFactory("allow-all"));
+      return ctx.use(corsFactory("allow-all"), authorization);
     },
     schema() {
       return z.object({
@@ -87,9 +87,9 @@ export const public_ = createRoute({
         url: z.string(),
       });
     },
-    async query({ namespaces, url }) {
-      console.log("REQUESTING PAGE", "kfs-fzq6", url);
-      const page = await fetchSinglePage(url, namespaces ?? [], "kfs-fzq6");
+    async query({ namespaces, url }, { dbName }) {
+      console.log("REQUESTING PAGE", dbName, url);
+      const page = await fetchSinglePage(url, namespaces ?? [], dbName);
       return success(page);
     },
   }),

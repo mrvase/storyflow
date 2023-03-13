@@ -19,11 +19,11 @@ import {
   restoreId,
 } from "@storyflow/backend/ids";
 import { createQueueCache } from "../state/collaboration";
-import { useDocumentCollab } from "../state/collab-document";
+import { useDocumentCollab } from "../documents/collab/DocumentCollabContext";
 import { targetTools, ComputationOp } from "shared/operations";
-import { useSingular, useGlobalState } from "../state/state";
+import { useGlobalState } from "../state/state";
+import { useSingular } from "../state/useSingular";
 import { calculateFn } from "./default/calculateFn";
-import { IconButton } from "./IconButton";
 import {
   HomeIcon,
   LinkIcon,
@@ -34,11 +34,12 @@ import { useAppPageContext } from "../folders/AppPage";
 import { Link } from "@storyflow/router";
 import { useSegment } from "../layout/components/SegmentContext";
 import { useTabUrl } from "../layout/utils";
-import { getDocumentLabel, useArticle } from "../articles";
-import { getConfig } from "shared/fieldConfig";
-import { inputConfig } from "shared/inputConfig";
+import { useArticle } from "../documents";
+import { getDocumentLabel } from "../documents/useDocumentLabel";
+import { getConfig } from "shared/initialValues";
+import { getNextState } from "shared/computation-tools";
 import cl from "clsx";
-import { useArticlePageContext } from "../articles/ArticlePageContext";
+import { useDocumentPageContext } from "../documents/DocumentPageContext";
 import {
   decodeEditorComputation,
   encodeEditorComputation,
@@ -114,7 +115,7 @@ export default function UrlField({
     );
   }
 
-  const { article, imports } = useArticlePageContext();
+  const { article, imports } = useDocumentPageContext();
 
   const initialValue = React.useMemo(
     () => (value?.length > 0 ? value : getConfig("url").initialValue),
@@ -261,10 +262,7 @@ export default function UrlField({
     return queue.register(({ forEach }) => {
       singular(() => {
         const result = cache(forEach, (prev, { operation }) => {
-          return inputConfig.getNextState(
-            prev as Computation,
-            operation
-          ) as EditorComputation;
+          return getNextState(prev, operation);
         });
 
         setOutput(

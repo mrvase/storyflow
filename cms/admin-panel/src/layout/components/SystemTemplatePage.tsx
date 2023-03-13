@@ -4,13 +4,12 @@ import { DocumentDuplicateIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { DragIcon } from "../../folders/spaces/DragIcon";
 import { useDragItem } from "@storyflow/dnd";
 import { DBFolder } from "@storyflow/backend/types";
-import { DocumentListSpace } from "../../folders/spaces/DocumentListSpace";
-import { useTemplateFolder } from "../../folders";
+import { useTemplateFolder } from "../../folders/folders-context";
 import { FolderContext } from "../../folders/FolderPageContext";
 import Space from "../../folders/spaces/Space";
 import { useDeleteForm } from "../../folders/spaces/useDeleteForm";
-import Table from "../../articles/components/Table";
-import { useArticleList } from "../../articles";
+import Table from "../../documents/components/Table";
+import { useArticleList } from "../../documents";
 import Loader from "../../elements/Loader";
 import { restoreId } from "@storyflow/backend/ids";
 

@@ -8,7 +8,7 @@ import {
 import { ComputationOp, targetTools } from "shared//operations";
 import { createComponent } from "../Editor/createComponent";
 import { getInfoFromType, useClientConfig } from "../../client-config";
-import { useDocumentCollab } from "../../state/collab-document";
+import { useDocumentCollab } from "../../documents/collab/DocumentCollabContext";
 import { getDocumentId, getTemplateFieldId } from "@storyflow/backend/ids";
 import { FieldId } from "@storyflow/backend/types";
 

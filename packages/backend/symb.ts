@@ -24,26 +24,31 @@ function isObject(value: any): value is Record<string, any> {
   return value !== null && typeof value === "object";
 }
 
-function isSymbol<T extends Operator>(value: any, type: T): value is { _: T };
-function isSymbol<T extends "_">(value: any, type: T): value is { _: Operator };
-function isSymbol<T extends ")", F extends FunctionName>(
+function isEditorSymbol<T extends Operator>(
+  value: any,
+  type: T
+): value is { _: T };
+function isEditorSymbol<T extends "_">(
+  value: any,
+  type: T
+): value is { _: Operator };
+function isEditorSymbol<T extends ")", F extends FunctionName>(
   value: any,
   type: T
 ): value is { ")": true | F };
-function isSymbol<T extends EditorSymbolKey>(
+function isEditorSymbol<T extends EditorSymbolKey>(
   value: any,
   type: T
 ): value is { [key in T]: true };
-function isSymbol<T extends ")", F extends FunctionName>(
+function isEditorSymbol<T extends ")", F extends FunctionName>(
   value: any,
   type: T,
   func: F
 ): value is { ")": F };
-function isSymbol<T extends Operator | EditorSymbolKey, F extends FunctionName>(
-  value: any,
-  type?: T,
-  func?: F
-): value is EditorSymbol {
+function isEditorSymbol<
+  T extends Operator | EditorSymbolKey,
+  F extends FunctionName
+>(value: any, type?: T, func?: F): value is EditorSymbol {
   if (!isObject(value)) {
     return false;
   }
@@ -130,7 +135,7 @@ function isPrimitiveValue(value: any) {
 }
 
 export const symb = {
-  isSymbol,
+  isEditorSymbol,
   isDBSymbol,
   isFieldImport,
   isDocumentImport,

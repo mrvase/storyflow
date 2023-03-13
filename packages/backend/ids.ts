@@ -115,3 +115,83 @@ const getConverter = (map: CharMap) => {
 
 export const minimizeId = getConverter(hexToChar);
 export const restoreId = getConverter(charToHex);
+
+const stringToId = (string: string) => {
+  // - case-insensitive
+  // - 0-9 are treated as a-j
+  // - $ and _ are both treated as z
+  // - # is treated on its own
+  // - rest of symbols are ignored
+
+  // we end up with 27 characters. That means 5 characters can be encoded in 3 bits.
+
+  const array = string
+    .toLowerCase()
+    .split("")
+    .filter((el) => el.match(/[0-9a-z$_#]/));
+
+  const groups = Math.ceil(array.length / 5);
+  const numbers = [0, 0];
+
+  // The maximum possible return value is 27 + 27*27 + 27*27^2 + 27*27^3 + 27*27^4=14900787.
+  // This is lower than what can be contained in the corresponding three bits: 257^3=16777216.
+  const radix = 27;
+
+  let nextOffset = 0;
+
+  for (let i = 0; i < groups; i++) {
+    let group = array.splice(0, 5);
+
+    if (group.length === 0) {
+      // nothing to be added
+      return;
+    }
+
+    let number = group
+      .map((el, index) => {
+        let int;
+        if (el === "_" || el === "$") {
+          int = 25; // overlaps with z
+        } else if (el === "#") {
+          int = 26;
+        } else {
+          int = parseInt(el, 36); // 0 - 25
+          int = int >= 10 ? int - 10 : int;
+        }
+        let base = radix ** index;
+        // Adds 1 to make sure 0/a are different from nothing.
+        // This adjusts the range to 1-27
+        return (int + 1) * base;
+      })
+      .reduce((a, c) => a + c);
+
+    // we produce the offset on the basis of the above
+    // calculation in isolation. We then add the former offset afterwards.
+    // This means that the group is only entangled with
+    // the previous one, creating entanglement across
+    // the two numbers.
+
+    const newOffset = (16777216 - number) % 1876429;
+    // ^^ takes what is missing up to the maximum bit value but
+    //    makes sure it is no higher than the difference between
+    //    the maximum bit value and the maximum possible return value.
+
+    number += nextOffset;
+    nextOffset = newOffset; // (256^3 - number) % (256^3 - (27 + 27*27 + 27*27^2 + 27*27^3 + 27*27^4))
+
+    // we do this so that the position of the group
+    // has significance as well.
+    // this ensures that aaaaabbbbbccccc !== cccccbbbbbaaaaa.
+    // Nothing happens to the first and second group.
+    // This ensures that character combinations below 10 chars
+    // are truly unique. After this, uniqueness is lost anyway.
+    number *= 1 + 1000 * Math.floor(i / 2);
+
+    numbers[Number(i % 2)] += number;
+  }
+
+  const toHex = (n: number) => (n & 0xffffff).toString(16).padStart(6, "0");
+  // svarer til % 16777216
+
+  return numbers.map(toHex).join("");
+};

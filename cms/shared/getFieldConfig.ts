@@ -1,10 +1,7 @@
-import { FieldConfig, DocumentConfig } from "@storyflow/backend/types";
+import { getTemplateFieldId } from "@storyflow/backend/ids";
+import { FieldConfig, DocumentConfig, FieldId } from "@storyflow/backend/types";
 
-const getTemplateFieldId = (id: string) => {
-  return id.slice(4);
-};
-
-const compareTemplateFieldId = (id1: string, id2: string) => {
+const compareTemplateFieldId = (id1: FieldId, id2: FieldId) => {
   return getTemplateFieldId(id1) === getTemplateFieldId(id2);
 };
 
@@ -14,7 +11,7 @@ export const getTemplateFields = (template: DocumentConfig) => {
     .flat(1);
 };
 
-export const getFieldConfig = (template: DocumentConfig, id: string) => {
+export const getFieldConfig = (template: DocumentConfig, id: FieldId) => {
   let topIndex: number | null = null;
   let groupIndex: number | null = null;
   let i = -1;
@@ -46,7 +43,7 @@ export const getFieldConfig = (template: DocumentConfig, id: string) => {
 
 export const setFieldConfig = (
   template: DocumentConfig,
-  id: string,
+  id: FieldId,
   callback: (ps: FieldConfig) => FieldConfig
 ) => {
   let topIndex: number | null = null;

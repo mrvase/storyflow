@@ -8,8 +8,8 @@ import { FoldersProvider } from "./folders/folders-context";
 import { IdGenerator } from "./id-generator";
 import Layout from "./layout/components/Layout";
 import { Preload } from "./preload";
-import { DocumentCollabProvider } from "./state/collab-document";
-import { FolderCollabProvider } from "./state/collab-folder";
+import { DocumentCollabProvider } from "./documents/collab/DocumentCollabContext";
+import { FolderCollabProvider } from "./folders/collab/FolderCollabContext";
 
 export function App() {
   return (

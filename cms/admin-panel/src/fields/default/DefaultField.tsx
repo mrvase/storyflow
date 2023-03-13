@@ -2,19 +2,18 @@ import React from "react";
 import Editor from "../Editor/Editor";
 import { FieldProps } from "../RenderField";
 import { targetTools, ComputationOp } from "shared/operations";
-import {
-  useEditorContext,
-  useIsFocusedContext,
-} from "../../editor/react/EditorProvider";
+import { useEditorContext } from "../../editor/react/EditorProvider";
 import { ContentEditable } from "../../editor/react/ContentEditable";
 import { useIsEmpty } from "../../editor/react/useIsEmpty";
-import { useSingular, useGlobalState } from "../../state/state";
+import { useGlobalState } from "../../state/state";
+import { useSingular } from "../../state/useSingular";
 import {
   decodeEditorComputation,
   encodeEditorComputation,
 } from "shared/editor-computation";
 import cl from "clsx";
-import { createComputationTransformer, getConfig } from "shared/fieldConfig";
+import { getConfig } from "shared/initialValues";
+import { createComputationTransformer } from "shared/computation-tools";
 import {
   Computation,
   LayoutElement,
@@ -24,14 +23,14 @@ import {
   EditorComputation,
   Value,
 } from "@storyflow/backend/types";
-import { useArticlePageContext } from "../../articles/ArticlePageContext";
+import { useDocumentPageContext } from "../../documents/DocumentPageContext";
 import { extendPath } from "@storyflow/backend/extendPath";
 import { Fetcher } from "@storyflow/backend/types";
 import { tools } from "shared/editor-tools";
-import { stringifyPath, useBuilderPath } from "../BuilderPath";
-import { useFieldConfig } from "../../state/documentConfig";
+import { useBuilderPath } from "../BuilderPath";
+import { useFieldConfig } from "../../documents/collab/hooks";
 import { getDocumentId, getTemplateFieldId } from "@storyflow/backend/ids";
-import { useDocumentCollab } from "../../state/collab-document";
+import { useDocumentCollab } from "../../documents/collab/DocumentCollabContext";
 import { useClient } from "../../client";
 import { Plus } from "./Plus";
 import {
@@ -188,7 +187,7 @@ export function WritableDefaultField({
     stringifyPath(fullPath) === path.split("/").slice(0, -1).join("/");
   */
 
-  const { imports } = useArticlePageContext();
+  const { imports } = useDocumentPageContext();
 
   const client = useClient();
 

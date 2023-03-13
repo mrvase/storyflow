@@ -5,12 +5,12 @@ import {
   FieldConfig,
   FieldId,
 } from "@storyflow/backend/types";
-import { useDocumentCollab } from "./collab-document";
+import { useDocumentCollab } from "./DocumentCollabContext";
 import { PropertyOp, targetTools, DocumentConfigOp } from "shared/operations";
 import { getFieldConfig, setFieldConfig } from "shared/getFieldConfig";
-import { createPurger, createStaticStore } from "./StaticStore";
-import { useSingular } from "./state";
-import { useArticle, useArticleTemplate } from "../articles";
+import { createPurger, createStaticStore } from "../../state/StaticStore";
+import { useSingular } from "../../state/useSingular";
+import { useArticle, useArticleTemplate } from "..";
 import {
   computeFieldId,
   getDocumentId,
@@ -114,7 +114,9 @@ export const useDocumentConfig = (
             sheetUpdate = true;
           } else if (targetTools.isOperation(operation, "property")) {
             // changing label
-            const fieldId = targetTools.getLocation(operation.target);
+            const fieldId = targetTools.getLocation(
+              operation.target
+            ) as FieldId;
             operation.ops.forEach((action) => {
               newTemplate = setFieldConfig(newTemplate, fieldId, (ps) => ({
                 ...ps,

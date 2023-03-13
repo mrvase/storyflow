@@ -422,7 +422,7 @@ export const getNodesFromComputation = (
     } else if (typeof el === "boolean") {
       const node = $createTextNode(el ? "SAND" : "FALSK");
       acc.push(node);
-    } else if (tools.isSymbol(el, "(") && typeof el["("] === "string") {
+    } else if (tools.isEditorSymbol(el, "(") && typeof el["("] === "string") {
       const node = $createFunctionNode((el as any)[1]);
       acc.push(node);
     } else if (tools.isFieldImport(el)) {
@@ -458,15 +458,15 @@ export const getNodesFromComputation = (
     } else if (tools.isContextImport(el)) {
       const node = $createContextNode(el);
       acc.push(node);
-    } else if (tools.isSymbol(el, "_")) {
+    } else if (tools.isEditorSymbol(el, "_")) {
       const node = $createOperatorNode(el["_"]);
       acc.push(node);
     } else if (
-      tools.isSymbol(el, ",") ||
-      tools.isSymbol(el, "(") ||
-      tools.isSymbol(el, ")") ||
-      tools.isSymbol(el, "[") ||
-      tools.isSymbol(el, "]")
+      tools.isEditorSymbol(el, ",") ||
+      tools.isEditorSymbol(el, "(") ||
+      tools.isEditorSymbol(el, ")") ||
+      tools.isEditorSymbol(el, "[") ||
+      tools.isEditorSymbol(el, "]")
     ) {
       const key = Object.keys(el)[0];
       const node = $createOperatorNode(key);

@@ -1,6 +1,4 @@
-import { Menu } from "@headlessui/react";
 import {
-  AdjustmentsHorizontalIcon,
   ArrowUpTrayIcon,
   BoltIcon,
   CheckIcon,
@@ -8,7 +6,6 @@ import {
   DocumentIcon,
   FunnelIcon,
   ListBulletIcon,
-  PencilIcon,
   PencilSquareIcon,
   PlusIcon,
   TrashIcon,
@@ -40,30 +37,20 @@ import cl from "clsx";
 import React from "react";
 import { flushSync } from "react-dom";
 import { DocumentConfigOp, PropertyOp, targetTools } from "shared/operations";
-import {
-  useArticle,
-  useArticleList,
-  useDocumentLabel,
-  useSaveArticle,
-} from ".";
+import { useArticle, useArticleList, useSaveArticle } from ".";
+import { useDocumentLabel } from "./useDocumentLabel";
 import { getComponentType, useClientConfig } from "../client-config";
-import { MenuTransition } from "../elements/transitions/MenuTransition";
-import { useTemplateFolder } from "../folders";
+import { useTemplateFolder } from "../folders/folders-context";
 import Content from "../layout/components/Content";
 import { useSegment } from "../layout/components/SegmentContext";
 import { useOnLoadHandler } from "../layout/onLoadHandler";
 import { getPathFromSegment } from "../layout/utils";
-import { useDocumentCollab } from "../state/collab-document";
-import { useFolder } from "../state/collab-folder";
-import {
-  useDocumentConfig,
-  useFieldConfig,
-  useLabel,
-} from "../state/documentConfig";
-import { useLocalStorage } from "../state/useLocalStorage";
+import { useDocumentCollab } from "./collab/DocumentCollabContext";
+import { useFolder } from "../folders/collab/hooks";
+import { useDocumentConfig, useFieldConfig, useLabel } from "./collab/hooks";
 import { FocusOrchestrator, useFocusedIds } from "../utils/useIsFocused";
-import { ArticlePageContext } from "./ArticlePageContext";
-import { GetArticle } from "./GetArticle";
+import { DocumentPageContext } from "./DocumentPageContext";
+import { GetDocument } from "./GetDocument";
 import { RenderTemplate } from "./RenderTemplate";
 
 export const getVersionKey = (versions?: Record<TemplateFieldId, number>) => {
@@ -91,7 +78,7 @@ function useIsModified(id: string, initial: boolean, key: number) {
   return isModified;
 }
 
-export const ArticleContent = ({
+export const DocumentContent = ({
   id,
   folder,
   selected,
@@ -514,7 +501,7 @@ export function EditableLabel({
   );
 }
 
-export default function ArticlePage({
+export function DocumentPage({
   isOpen,
   isSelected,
   onLoad,
@@ -598,8 +585,8 @@ const Page = ({
 
   return (
     <FocusOrchestrator>
-      <ArticlePageContext.Provider value={ctx}>
-        <ArticleContent
+      <DocumentPageContext.Provider value={ctx}>
+        <DocumentContent
           version={getVersionKey(article?.versions)}
           id={id}
           variant={type === "template" ? "template" : undefined}
@@ -611,7 +598,7 @@ const Page = ({
         >
           <div className="pb-96 flex flex-col -mt-6">
             {templateId && (
-              <GetArticle id={templateId}>
+              <GetDocument id={templateId}>
                 {(article) => (
                   <RenderTemplate
                     key={getVersionKey(owner.versions)} // for rerendering
@@ -626,7 +613,7 @@ const Page = ({
                     versions={owner.versions}
                   />
                 )}
-              </GetArticle>
+              </GetDocument>
             )}
             <RenderTemplate
               key={getVersionKey(owner.versions)} // for rerendering
@@ -638,9 +625,9 @@ const Page = ({
               histories={histories}
             />
           </div>
-        </ArticleContent>
+        </DocumentContent>
         {children}
-      </ArticlePageContext.Provider>
+      </DocumentPageContext.Provider>
     </FocusOrchestrator>
   );
 };

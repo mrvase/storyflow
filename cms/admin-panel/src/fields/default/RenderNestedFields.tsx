@@ -40,7 +40,7 @@ import {
 } from "@storyflow/frontend/types";
 import { FieldOptionsContext } from "./FieldOptionsContext";
 import { FieldRestrictionsContext } from "../FieldTypeContext";
-import { useArticlePageContext } from "../../articles/ArticlePageContext";
+import { useDocumentPageContext } from "../../documents/DocumentPageContext";
 import Select from "../../elements/Select";
 import { getTemplateFieldId } from "@storyflow/backend/ids";
 
@@ -152,7 +152,7 @@ function FilterComp({
     []
   );
 
-  const { imports } = useArticlePageContext();
+  const { imports } = useDocumentPageContext();
   const client = useClient();
 
   const [value, setValueOutput] = useGlobalState<Value[]>(

@@ -1,7 +1,8 @@
 import React from "react";
-import { getTemplateFieldsAsync, useArticleTemplate } from "../../articles";
+import { useArticleTemplate } from "../../documents";
+import { getTemplateFieldsAsync } from "../../documents/template-fields";
 import { DocumentId, FieldConfig, FieldId } from "@storyflow/backend/types";
-import { useFieldConfig } from "../../state/documentConfig";
+import { useFieldConfig } from "../../documents/collab/hooks";
 import { useClient } from "../../client";
 
 export const useTemplate = (templateId: DocumentId | undefined) => {

@@ -17,7 +17,7 @@ import TabButton from "./TabButton";
 import { Tab } from "../types";
 import cl from "clsx";
 import { useLocalStorage } from "../../state/useLocalStorage";
-import { useDocumentCollab } from "../../state/collab-document";
+import { useDocumentCollab } from "../../documents/collab/DocumentCollabContext";
 import { CommandLine } from "./CommandLine";
 
 export default function TabBar({

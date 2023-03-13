@@ -11,16 +11,11 @@ import { useClientConfig } from "../../client-config";
 import $createRangeSelection from "../../editor/createRangeSelection";
 import { useEditorContext } from "../../editor/react/EditorProvider";
 import { getComputationDiff } from "../../editor/utils/getComputationDiff";
-import { decodeEditorComputation } from "shared/editor-computation";
 import { tools } from "shared/editor-tools";
-import { inputConfig } from "shared/inputConfig";
+import { getNextState } from "shared/computation-tools";
 import { InferAction, Target, ComputationOp } from "shared/operations";
 import { createQueueCache } from "../../state/collaboration";
-import {
-  EditorComputation,
-  Computation,
-  FunctionName,
-} from "@storyflow/backend/types";
+import { EditorComputation, FunctionName } from "@storyflow/backend/types";
 import { LibraryConfig } from "@storyflow/frontend/types";
 import {
   $clearEditor,
@@ -70,10 +65,7 @@ export function Reconciler({
 
       const result = cache(forEach, (prev, { operation }) => {
         if (operation.target === target) {
-          prev = inputConfig.getNextState(
-            prev as Computation,
-            operation
-          ) as EditorComputation;
+          prev = getNextState(prev, operation);
           update = true;
         }
         return prev;

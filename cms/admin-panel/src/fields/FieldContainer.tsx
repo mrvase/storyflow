@@ -14,7 +14,7 @@ import { useSegment } from "../layout/components/SegmentContext";
 import { useTabUrl } from "../layout/utils";
 import { PropertyOp, targetTools } from "shared/operations";
 import { getDocumentId, restoreId } from "@storyflow/backend/ids";
-import { useLabel } from "../state/documentConfig";
+import { useLabel } from "../documents/collab/hooks";
 import {
   Computation,
   DocumentId,
@@ -27,9 +27,9 @@ import { Path } from "@storyflow/frontend/types";
 import { getDefaultField } from "@storyflow/backend/fields";
 import { IframeProvider } from "./builder/BuilderIframe";
 import { useFieldId } from "./FieldIdContext";
-import { useDocumentCollab } from "../state/collab-document";
+import { useDocumentCollab } from "../documents/collab/DocumentCollabContext";
 import { BuilderPathProvider, useBuilderPath } from "./BuilderPath";
-import { useArticlePageContext } from "../articles/ArticlePageContext";
+import { useDocumentPageContext } from "../documents/DocumentPageContext";
 import { useLocalStorage } from "../state/useLocalStorage";
 import useTabs from "../layout/useTabs";
 import { getConfigFromType, useClientConfig } from "../client-config";
@@ -144,7 +144,7 @@ function LabelBar({
 }) {
   const [path, setPath] = useBuilderPath();
 
-  const articleId = useArticlePageContext().id;
+  const articleId = useDocumentPageContext().id;
   const isNative = template === articleId;
 
   const [isEditing] = [true]; //useLocalStorage<boolean>("editing-articles", false);

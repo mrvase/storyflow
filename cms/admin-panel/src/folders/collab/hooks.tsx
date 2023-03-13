@@ -1,51 +1,11 @@
 import React from "react";
-import { useContextWithError } from "../utils/contextError";
-import { useClient } from "../client";
-import { createDocumentCollaboration } from "./collaboration";
-import { ServerPackage } from "@storyflow/state";
 import { DBFolder, Space } from "@storyflow/backend/types";
-import { AddFolderOp, AnyOp, FolderOp, targetTools } from "shared/operations";
-import { useSingular } from "./state";
-import { createStaticStore } from "./StaticStore";
-import { useInitialFolders } from "../folders/folders-context";
-import { createReactSubject } from "./useSubject";
+import { AddFolderOp, FolderOp, targetTools } from "shared/operations";
+import { createStaticStore } from "../../state/StaticStore";
+import { useInitialFolders } from "../folders-context";
+import { createReactSubject } from "../../state/useSubject";
 import { QueueListenerParam } from "@storyflow/state/collab/Queue";
-
-export const FolderCollabContext = React.createContext<ReturnType<
-  typeof createDocumentCollaboration
-> | null>(null);
-
-export const useFolderCollab = () =>
-  useContextWithError(FolderCollabContext, "Collab");
-
-/*
-rokere spaces: document: "folders", key: "folder-id", location: ""
-indenfor space: "folders", key: "folder-id", location: "space-id"
-*/
-
-export function FolderCollabProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const client = useClient();
-
-  const collab = React.useMemo(() => {
-    return createDocumentCollaboration(client.folders.sync.mutation, {
-      duration: 20000,
-    });
-  }, [client]);
-
-  React.useLayoutEffect(() => {
-    return collab.syncOnInterval();
-  }, []);
-
-  return (
-    <FolderCollabContext.Provider value={collab}>
-      {children}
-    </FolderCollabContext.Provider>
-  );
-}
+import { createCollaborativeState } from "./createCollaborativeState";
 
 const useFoldersSubject = createReactSubject<DBFolder[]>();
 
@@ -76,60 +36,6 @@ export const useFolderPaths = () => {
 
   return parents;
 };
-
-function createCollaborativeState<T, Operation extends AnyOp>(
-  stateInitializer: (initialState: () => T) => [T, (value: T) => void],
-  operator: (params: QueueListenerParam<Operation>) => T,
-  {
-    document,
-    key,
-    version,
-    history,
-  }: {
-    document: string;
-    key: string;
-    version: number;
-    history: ServerPackage<Operation>[];
-  }
-) {
-  const collab = useFolderCollab();
-
-  const invalidVersion = React.useCallback(
-    (currentVersion: number | null) => {
-      return version !== currentVersion;
-    },
-    [version]
-  );
-
-  const queue = React.useMemo(() => {
-    return collab
-      .getOrAddQueue<Operation>(document, key, {
-        transform: (pkgs) => pkgs,
-      })
-      .initialize(version, history);
-  }, []);
-
-  const singular = useSingular(`collab/${document}/${key}`);
-
-  React.useEffect(() => {
-    return queue.register((params) =>
-      singular(() => {
-        if (invalidVersion(params.version)) return;
-        setState(operator(params));
-      })
-    );
-  }, []);
-
-  const [state, setState] = stateInitializer(() => {
-    let result: T | null = null;
-    queue.run((params) => {
-      result = operator(params);
-    });
-    return result!;
-  });
-
-  return state;
-}
 
 export function useFolders() {
   const { folders: initialFolders, histories } = useInitialFolders();
@@ -255,3 +161,8 @@ export function useSpace<T extends Space>({
     }
   );
 }
+
+export const useAppFolders = () => {
+  const ctx = useFolders();
+  return ctx.filter((el) => el.type === "app");
+};

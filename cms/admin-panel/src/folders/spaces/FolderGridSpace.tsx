@@ -3,11 +3,8 @@ import { DropShadow, Sortable } from "@storyflow/dnd";
 import { FolderSpace } from "@storyflow/backend/types";
 import { DragResultAction } from "@storyflow/dnd/types";
 import { FolderItem } from "./Folder";
-import {
-  useFolderCollab,
-  useFolders,
-  useSpace,
-} from "../../state/collab-folder";
+import { useFolders, useSpace } from "../collab/hooks";
+import { useFolderCollab } from "../collab/FolderCollabContext";
 import Space from "./Space";
 import { FolderPlusIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import React from "react";

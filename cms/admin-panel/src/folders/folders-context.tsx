@@ -1,38 +1,7 @@
-import { DBFolder, DocumentId, FolderChild } from "@storyflow/backend/types";
-import { createQueue, ServerPackage } from "@storyflow/state";
+import { DBFolder } from "@storyflow/backend/types";
+import { ServerPackage } from "@storyflow/state";
 import React from "react";
 import { SWRClient } from "../client";
-import { pushAndRetry } from "../utils/retryOnError";
-
-export type FolderMutation =
-  | {
-      type: "reorder";
-      children: FolderChild[];
-      insert?:
-        | {
-            id: string;
-            label: string;
-            type: "data";
-          }
-        | {
-            id: string;
-            label: string;
-            type: "app";
-            frontId: DocumentId;
-          };
-    }
-  | { name: "label"; value: string }
-  | { name: "domains"; value: string[] }
-  | { name: "template"; value: string };
-
-export type FolderOperation = {
-  id: string;
-  actions: FolderMutation[];
-};
-
-const queue = createQueue<FolderOperation>("folders", {
-  clientId: null,
-}).initialize(0, []);
 
 const FoldersContext = React.createContext<{
   folders: DBFolder[];
@@ -44,6 +13,11 @@ export const useInitialFolders = () => {
   const ctx = React.useContext(FoldersContext);
   if (!ctx) throw new Error("Found no FoldersProvider");
   return ctx;
+};
+
+export const useTemplateFolder = () => {
+  const ctx = useInitialFolders();
+  return ctx.folders.find((el) => el.type === "templates")!;
 };
 
 export const FoldersProvider = ({
@@ -70,9 +44,3 @@ export const FoldersProvider = ({
     <FoldersContext.Provider value={ctx}>{children}</FoldersContext.Provider>
   );
 };
-
-export const pushFolderAndRetry = (
-  id: string,
-  operation: FolderOperation,
-  mutate: any
-) => pushAndRetry(id, operation, mutate, queue);

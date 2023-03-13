@@ -1,8 +1,9 @@
-import { useArticle, useDocumentLabel } from "../articles";
+import { useArticle } from "../documents";
+import { useDocumentLabel } from "../documents/useDocumentLabel";
 import { SWRClient } from "../client";
 import { minimizeId } from "@storyflow/backend/ids";
 import { getPathFromSegment } from "./utils";
-import { useFolder } from "../state/collab-folder";
+import { useFolder } from "../folders/collab/hooks";
 
 export default function useLocationLabel(segment: string) {
   const path = getPathFromSegment(segment);

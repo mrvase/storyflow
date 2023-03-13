@@ -1,15 +1,15 @@
 import React from "react";
 import Dialog from "../elements/Dialog";
-import { useArticleList, useArticleListMutation } from "../articles";
+import { useArticleList, useArticleListMutation } from "../documents";
 import { useArticleIdGenerator } from "../id-generator";
-import { useFolderCollab } from "../state/collab-folder";
+import { useFolderCollab } from "./collab/FolderCollabContext";
 import { targetTools } from "shared/operations";
 import { useTabUrl } from "../layout/utils";
 import { useSegment } from "../layout/components/SegmentContext";
 import { restoreId } from "@storyflow/backend/ids";
 import { DialogOption } from "../elements/DialogOption";
 import { DocumentDuplicateIcon, PlusIcon } from "@heroicons/react/24/outline";
-import { useTemplateFolder } from ".";
+import { useTemplateFolder } from "./folders-context";
 
 export function AddTemplateDialog({
   isOpen,

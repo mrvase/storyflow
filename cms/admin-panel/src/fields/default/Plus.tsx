@@ -18,7 +18,7 @@ import {
   $isHeadingNode,
 } from "../../editor/react/HeadingNode";
 import { Menu } from "./Menu";
-import { useFieldConfig } from "../../state/documentConfig";
+import { useFieldConfig } from "../../documents/collab/hooks";
 import { useFieldId } from "../FieldIdContext";
 
 export function Plus() {
