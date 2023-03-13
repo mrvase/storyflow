@@ -1,7 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import { useSegment } from "../../layout/components/SegmentContext";
-import { minimizeId } from "@storyflow/backend/ids";
 
 const BuilderContext = React.createContext<{
   ref: HTMLDivElement | null;
@@ -48,7 +47,7 @@ export function BuilderProvider({
     () => ({
       ref,
       isOpen,
-      id: minimizeId(urlId),
+      id: urlId,
     }),
     [ref, isOpen, full]
   );

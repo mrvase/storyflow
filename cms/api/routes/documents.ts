@@ -71,7 +71,7 @@ import {
   isTemplateField,
   unwrapObjectId,
 } from "@storyflow/backend/ids";
-import { FIELDS } from "@storyflow/backend";
+import { FIELDS } from "@storyflow/backend/fields";
 
 const parseDocument = (raw: DBDocumentRaw): DBDocument => {
   const { _id, folder, ids, cached, compute, ...rest } = raw;

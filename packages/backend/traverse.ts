@@ -1,13 +1,7 @@
-import {
-  Computation,
-  FieldId,
-  FieldImport,
-  LayoutElement,
-  NestedDocument,
-} from "./types";
+import { Computation, FieldId, NestedDocument } from "./types";
 import { symb } from "./symb";
 import { extendPath } from "./extendPath";
-import { getDocumentId, getTemplateFieldId } from "./ids";
+import { getDocumentId, getRawFieldId } from "./ids";
 
 export const getChild = (value: Computation, key: string) => {
   if (key.indexOf("/") >= 0) {
@@ -28,7 +22,7 @@ export const getChild = (value: Computation, key: string) => {
     // nested document
     const fieldId = key as FieldId;
     const id = getDocumentId(fieldId);
-    const templateFieldId = getTemplateFieldId(fieldId);
+    const templateFieldId = getRawFieldId(fieldId);
 
     const element = value.find(
       (el): el is NestedDocument => symb.isNestedDocument(el) && el.id === id

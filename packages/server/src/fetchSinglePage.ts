@@ -1,23 +1,19 @@
 import clientPromise from "./mongo/mongoClient";
+import { computeFieldId } from "@storyflow/backend/ids";
+import { FIELDS } from "@storyflow/backend/fields";
 import {
-  FIELDS,
-  computeFieldId,
   calculateFlatComputationAsync,
   findFetchers,
-} from "@storyflow/backend";
+} from "@storyflow/backend/traverse-async";
 import type {
   Computation,
   ComputationBlock,
   DBDocument,
-  Fetcher,
-  Filter,
   NestedDocument,
-  TemplateFieldId,
   Value,
 } from "@storyflow/backend/types";
 import type { FetchPageResult, LibraryConfig } from "@storyflow/frontend/types";
 import { WithId } from "mongodb";
-import { minimizeId } from "@storyflow/backend/ids";
 
 let CACHE: Record<string, Promise<NestedDocument[]>> = {};
 
@@ -116,7 +112,7 @@ export async function fetchSinglePage(
     .collection("documents")
     .findOne<DBDocument>({
       ...(namespaces.length > 0 && {
-        folder: { $in: namespaces.map((n) => minimizeId(n)) },
+        folder: { $in: namespaces },
       }),
       [`values.${FIELDS.url.id}`]:
         url.indexOf("/") < 0

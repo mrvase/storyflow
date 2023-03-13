@@ -17,7 +17,7 @@ import { useGlobalState } from "../../state/state";
 import { $getComputation, $getIndexFromPoint } from "../Editor/transforms";
 import { Option as OptionComponent } from "./Option";
 import { markMatchingString } from "./helpers";
-import { FIELDS } from "@storyflow/backend";
+import { FIELDS } from "@storyflow/backend/fields";
 import { calculateFromRecord } from "@storyflow/backend/calculate";
 import { useFieldId } from "../FieldIdContext";
 import { useDocumentIdGenerator } from "../../id-generator";

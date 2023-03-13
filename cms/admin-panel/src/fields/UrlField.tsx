@@ -48,7 +48,7 @@ import {
   calculateFromRecord,
   calculateSync,
 } from "@storyflow/backend/calculate";
-import { FIELDS } from "@storyflow/backend";
+import { FIELDS } from "@storyflow/backend/fields";
 import { useDocumentIdGenerator } from "../id-generator";
 
 export const toSlug = (value: string) =>

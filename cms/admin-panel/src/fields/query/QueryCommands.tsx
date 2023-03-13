@@ -11,7 +11,8 @@ import { SWRClient } from "../../client";
 import { Option as OptionComponent } from "./Option";
 import { markMatchingString } from "./helpers";
 import { parseDateFromString } from "../../utils/dates";
-import { computeFieldId, FIELDS } from "@storyflow/backend";
+import { FIELDS } from "@storyflow/backend/fields";
+import { computeFieldId } from "@storyflow/backend/ids";
 import { calculateFromRecord } from "@storyflow/backend/calculate";
 
 export function QueryCommands({

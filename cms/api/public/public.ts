@@ -11,7 +11,8 @@ import { error, success } from "@storyflow/result";
 import { globals } from "../middleware/globals";
 import { fetchSinglePage } from "@storyflow/server";
 import type {} from "@storyflow/frontend/types";
-import { DBDocument, FIELDS } from "@storyflow/backend";
+import { DBDocument } from "@storyflow/backend/types";
+import { FIELDS } from "@storyflow/backend/fields";
 import { ObjectId } from "mongodb";
 
 const sessionStorage = createSessionStorage({

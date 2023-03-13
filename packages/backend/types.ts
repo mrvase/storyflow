@@ -240,9 +240,9 @@ export interface DBFolderRaw {
   _id: BrandedObjectId<FolderId>;
   type: "data" | "app";
   label: string;
+  spaces: Space[];
   template?: BrandedObjectId<DocumentId>;
   domains?: string[];
-  spaces?: Space[];
   versions?: Record<RawFolderId | SpaceId, number>;
 }
 
@@ -250,9 +250,9 @@ export interface DBFolder {
   _id: FolderId;
   type: "data" | "app";
   label: string;
+  spaces: Space[];
   template?: DocumentId;
   domains?: string[];
-  spaces?: Space[];
   versions?: Record<RawFolderId | SpaceId, number>;
 }
 

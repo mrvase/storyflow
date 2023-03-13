@@ -8,7 +8,7 @@ import { computeFieldId } from "@storyflow/backend/ids";
 import { ComputerDesktopIcon, FolderIcon } from "@heroicons/react/24/outline";
 import { DialogOption } from "../elements/DialogOption";
 import { useDocumentIdGenerator, useFolderIdGenerator } from "../id-generator";
-import { FIELDS } from "@storyflow/backend";
+import { FIELDS } from "@storyflow/backend/fields";
 
 export function AddFolderDialog({
   isOpen,

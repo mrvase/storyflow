@@ -30,7 +30,7 @@ import { useFolderCollab } from "./collab/FolderCollabContext";
 import { targetTools } from "shared/operations";
 import { AppSpace } from "./spaces/AppSpace";
 import { getFieldRecord, getGraph } from "shared/computation-tools";
-import { FIELDS } from "@storyflow/backend";
+import { FIELDS } from "@storyflow/backend/fields";
 
 const AppPageContext = React.createContext<{
   addArticleWithUrl: (parent: Pick<DBDocument, "_id" | "record">) => void;

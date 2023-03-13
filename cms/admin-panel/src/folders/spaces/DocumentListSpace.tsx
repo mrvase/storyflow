@@ -34,7 +34,7 @@ import { useCurrentFolder } from "../FolderPageContext";
 import Space from "./Space";
 import Loader from "../../elements/Loader";
 import { useDeleteForm } from "./useDeleteForm";
-import { FIELDS } from "@storyflow/backend";
+import { FIELDS } from "@storyflow/backend/fields";
 import { useDocumentIdGenerator } from "../../id-generator";
 
 export function DocumentListSpace({

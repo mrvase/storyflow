@@ -1,23 +1,22 @@
-import { calculateAsync } from "./calculate";
+import { calculateAsync, FetchObject } from "./calculate";
 import { traverseFlatComputation } from "./flatten";
-import { getTemplateFieldId } from "./ids";
 import { symb } from "./symb";
 import {
   Computation,
-  ComputationBlock,
-  Fetcher,
-  FieldImport,
-  FlatComputation,
+  ComputationRecord,
+  ContextToken,
+  FieldId,
   NestedDocument,
+  NestedField,
   Value,
 } from "./types";
 
 export const traverseFlatComputationAsync = async (
-  value: FlatComputation,
-  compute: ComputationBlock[],
-  callback: (block: ComputationBlock | undefined) => Promise<any>,
+  value: Computation,
+  record: ComputationRecord,
+  callback: (id: FieldId, block: Computation | undefined) => Promise<any>,
   options: {
-    fetch: (fetcher: Fetcher) => Promise<NestedDocument[]>;
+    fetch: (fetcher: FetchObject) => Promise<NestedDocument[]>;
   }
 ): Promise<Computation> => {
   const result = await Promise.all(
@@ -26,11 +25,9 @@ export const traverseFlatComputationAsync = async (
       if ("type" in el) {
         const props = Object.fromEntries(
           await Promise.all(
-            Object.keys(el.props).map(async (name) => {
-              const computation = compute.find(({ id }) =>
-                id.match(new RegExp(`${el.id}\/${name}\#?`))
-              )!;
-              const result = await callback(computation);
+            Object.keys({}).map(async (name) => {
+              const computation = record[name as any];
+              const result = await callback(name as any, computation);
               return [name, result];
             })
           )
@@ -42,25 +39,24 @@ export const traverseFlatComputationAsync = async (
         };
       } else if ("fref" in el) {
         const entries = await Promise.all(
-          compute
-            .filter(({ id }) => id.startsWith(el.id))
-            .map(async (el) => [el.id.split("/")[1], await callback(el)])
+          [].map(async (el: any) => [
+            el.id.split("/")[1],
+            await callback(el.id, el),
+          ])
         );
 
         const args = Object.fromEntries(entries);
-        const newEl: FieldImport = { ...el, args };
+        const newEl = { ...el, args };
         return newEl;
-      } else if ("id" in el && "filters" in el) {
-        return { $fetch: await options.fetch(el) };
+      } else if ("id" in el && "select" in el) {
+        return { $fetch: await options.fetch(el as any) };
       } else if ("id" in el) {
         const entries = await Promise.all(
-          compute
-            .filter((el) => el.id.startsWith(el.id))
-            .map(async (el) => [getTemplateFieldId(el.id), await callback(el)])
+          [].map(async (el: any) => [el.id, await callback(el.id, el)])
         );
 
         const values = Object.fromEntries(entries);
-        const newEl: NestedDocument = { ...el, values };
+        const newEl = { ...el, values };
         return newEl;
       } else {
         return el;
@@ -82,63 +78,59 @@ export const traverseFlatComputationAsync = async (
 
 export const calculateFlatComputationAsync = async (
   id: string,
-  value: FlatComputation,
-  compute: ComputationBlock[],
+  value: Computation,
+  record: ComputationRecord,
   options: {
-    fetch: (fetcher: Fetcher) => Promise<NestedDocument[]>;
+    fetch: (fetcher: FetchObject) => Promise<NestedDocument[]>;
   }
 ): Promise<Value[]> => {
   const computation = await traverseFlatComputationAsync(
     value,
-    compute,
-    async (block) => {
-      if (!block) return [];
+    record,
+    async (id, computation) => {
+      if (!computation) return [];
       return await calculateFlatComputationAsync(
-        block.id,
-        block.value,
-        compute,
+        id,
+        computation,
+        record,
         options
       );
     },
     options
   );
 
-  const getter = async (_id: string) => {
-    const id = _id.indexOf(".") > 0 ? _id.split(".")[1] : _id;
-    const computation = compute.find((el) => el.id === id)?.value;
+  const getter = async (id: FieldId | FetchObject | ContextToken) => {
+    const computation = record[id as any];
     if (!computation) return [];
     return await calculateFlatComputationAsync(
-      id,
+      id as any,
       computation,
-      compute,
+      record,
       options
     );
   };
 
   // cannot put cache here apparently.
-  const result = calculateAsync(id, computation, getter);
+  const result = calculateAsync(computation, getter);
   return await result;
 };
 
-export const findFetchers = (
-  value: FlatComputation,
-  compute: ComputationBlock[]
-) => {
-  const results: Fetcher[] = [];
-  const add = (value: FlatComputation | undefined) => {
+export const findFetchers = (value: Computation, record: ComputationRecord) => {
+  const results: FetchObject[] = [];
+  const add = (value: Computation | undefined) => {
     if (value) {
-      results.push(...findFetchers(value, compute));
+      results.push(...findFetchers(value, record));
     }
   };
-  const fetchers = value.filter((el): el is Fetcher => symb.isFetcher(el));
-  const imports = value.filter((el): el is FieldImport =>
-    symb.isFieldImport(el)
+  const fetchers: FetchObject[] = []; // value.filter((el): el is Fetcher => symb.isFetcher(el));
+  const imports = value.filter((el): el is NestedField =>
+    symb.isNestedField(el)
   );
   imports.forEach((imp) => {
-    const comp = compute.find((el) => el.id === imp.fref)!;
-    results.push(...findFetchers(comp.value, compute));
+    const comp = record[imp.field]!;
+    results.push(...findFetchers(comp, record));
   });
   results.push(...fetchers);
-  traverseFlatComputation(value, compute, (value) => add(value?.value));
+  traverseFlatComputation(value, record, (value) => add(value?.value));
   return results;
 };

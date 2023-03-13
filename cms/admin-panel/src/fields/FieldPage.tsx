@@ -31,7 +31,9 @@ import { useDocumentCollab } from "../documents/collab/DocumentCollabContext";
 import { useDocumentPageContext } from "../documents/DocumentPageContext";
 import { Client, useClient } from "../client";
 import {
+  computeFieldId,
   getDocumentId,
+  getIdFromString,
   getRawFieldId,
   getTemplateDocumentId,
 } from "@storyflow/backend/ids";
@@ -436,27 +438,8 @@ export function FieldPage({
 
 export type ComponentRecord = Record<string, Computation>;
 
-const recordifyComponent = (
-  startPath: string,
-  item: Computation
-): ComponentRecord => {
-  let record: ComponentRecord = {
-    [startPath]: item,
-  };
-  item.forEach((element) => {
-    if (tools.isNestedElement(element)) {
-      Object.entries(element.props).forEach(([key, value]) => {
-        const path = extendPath(startPath, `${element.id}/${key}`);
-        Object.assign(record, recordifyComponent(path, value));
-      });
-    }
-  });
-  return record;
-};
-
-const computeComponentRecord = (
-  id: FieldId,
-  initialValue: Computation,
+const getRecordSnapshot = (
+  entry: FieldId,
   {
     record = {},
     client,
@@ -466,33 +449,25 @@ const computeComponentRecord = (
     client: Client;
     libraries: LibraryConfig[];
   }
-): ValueRecord => {
-  console.log("COMPUTING", id, initialValue);
+) => {
+  const finalRecord: ComputationRecord = {};
 
-  const recursivelyGetRecordFromComputation = (
-    path: string,
-    initialValue: Computation
-  ): ValueRecord => {
-    const state = store.use<Value[]>(path);
+  const recursivelyGetRecordFromComputation = (fieldId: FieldId) => {
+    const initialValue = record[fieldId];
+    const state = store.use<Value[]>(fieldId);
     if (!state.initialized()) {
-      state.set(() => calculateFn(id, initialValue, { record, client }));
+      state.set(() => calculateFn(fieldId, initialValue, { record, client }));
     }
     const value = state.value!;
-    console.log("path", path, initialValue, value);
 
-    const getRecord = (value: Value[]): {} => {
+    const getChildren = (value: Value[]): {} => {
       return value.reduce((acc, element) => {
         if (Array.isArray(element)) {
           // this should propably just flat it infinitely out
-          return Object.assign(acc, getRecord(element));
+          return Object.assign(acc, getChildren(element));
         } else if (!tools.isNestedElement(element)) {
           return acc;
         }
-        const newPath = element.parent ?? path;
-
-        console.log("NEW PATH", newPath, element);
-
-        // TODO: this can be made more performant
         const components = libraries
           .reduce(
             (acc: ComponentConfig[], library) =>
@@ -518,7 +493,7 @@ const computeComponentRecord = (
             }
             acc.push(el.name);
             return acc;
-          }, []) ?? Object.keys(element.props);
+          }, []) ?? [];
 
         propKeys.push("key");
 
@@ -526,24 +501,26 @@ const computeComponentRecord = (
           return Object.assign(
             acc,
             recursivelyGetRecordFromComputation(
-              extendPath(newPath, `${element.id}/${key}`),
-              element.props[key] ?? []
+              computeFieldId(element.id, getIdFromString(key))
             )
           );
         }, {});
+
         return Object.assign(acc, props);
       }, {});
     };
 
-    const children = getRecord(value);
+    const children = getChildren(value);
 
-    return {
-      [path]: value,
+    Object.assign(finalRecord, {
+      [fieldId]: value,
       ...children,
-    };
+    });
   };
 
-  return recursivelyGetRecordFromComputation(id, initialValue);
+  recursivelyGetRecordFromComputation(entry);
+
+  return finalRecord;
 };
 
 function PropagateStatePlugin({
@@ -565,7 +542,7 @@ function PropagateStatePlugin({
 
   // state initialized in ComponentField
   const [tree] = useGlobalState<ComponentRecord>(`${id}/record`, () => {
-    return computeComponentRecord(id, initialValue, {
+    return getRecordSnapshot(id, {
       record,
       client,
       libraries,

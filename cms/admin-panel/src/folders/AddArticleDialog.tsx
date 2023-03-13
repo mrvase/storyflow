@@ -14,7 +14,7 @@ import {
 import { useClient } from "../client";
 import { toSlug } from "../fields/UrlField";
 import { useDocumentIdGenerator, useFieldIdGenerator } from "../id-generator";
-import { FIELDS } from "@storyflow/backend";
+import { FIELDS } from "@storyflow/backend/fields";
 
 export function AddArticleDialog({
   isOpen,

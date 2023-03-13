@@ -1,7 +1,7 @@
 import { TemplateDocument, Value } from "@storyflow/backend/types";
 import { useGlobalState } from "../state/state";
 import { computeFieldId } from "@storyflow/backend/ids";
-import { FIELDS } from "@storyflow/backend";
+import { FIELDS } from "@storyflow/backend/fields";
 
 export const fallbackLabel = "[Titel]";
 

@@ -1,18 +1,9 @@
 import { createProcedure, createRoute } from "@sfrpc/server";
 import { error, success, unwrap } from "@storyflow/result";
 import { z } from "zod";
-import {
-  DBDocument,
-  DBDocumentRaw,
-  DBFolder,
-  DBFolderRaw,
-  DocumentId,
-  RawDocumentId,
-} from "@storyflow/backend/types";
-import { ObjectId } from "mongodb";
+import { DBFolder, DBFolderRaw, RawDocumentId } from "@storyflow/backend/types";
 import clientPromise from "../mongo/mongoClient";
 import { globals } from "../middleware/globals";
-import { computeFieldId, FIELDS } from "@storyflow/backend";
 import {
   ZodDocumentOp,
   ZodServerPackage,

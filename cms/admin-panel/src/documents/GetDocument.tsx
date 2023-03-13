@@ -1,8 +1,6 @@
 import React from "react";
 import { DocumentId, TemplateDocument } from "@storyflow/backend/types";
 import { useArticle } from ".";
-import { FIELDS } from "@storyflow/backend";
-import { getTemplateDocumentId } from "@storyflow/backend/ids";
 
 export const GetDocument = ({
   id,
