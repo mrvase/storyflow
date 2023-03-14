@@ -17,8 +17,6 @@ export function CommandLine() {
 
   const hasActions = actions.length > 0;
 
-  console.log("NODE_ENV", process.env.NODE_ENV);
-
   const getResults = async (prompt: string) => {
     if (!prompt || !isDev) return;
     setIsLoading(true);

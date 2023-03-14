@@ -10,6 +10,7 @@ import { mutation, proxyErrorMessage } from "./proxy-client";
 const extendMutate = (
   mutate: ScopedMutator<any>,
   promise: Promise<any>,
+  apiUrl: string,
   apiRoute: string,
   ctx: any,
   {
@@ -22,7 +23,13 @@ const extendMutate = (
 ) => {
   return ([externalProcedure, input]: [string, any], callback: any) => {
     mutate(
-      queryKey(`${apiRoute}/${externalProcedure}`, input, ctx),
+      queryKey(
+        externalProcedure.indexOf("/") > 0
+          ? `${apiUrl}/${externalProcedure}`
+          : `${apiUrl}/${apiRoute}/${externalProcedure}`,
+        input,
+        ctx
+      ),
       async (ps: any) => {
         const result = await promise;
         if (isError(result)) {
@@ -70,6 +77,7 @@ export function createSWRClient<UserAPI extends API>(
                 { inactive, context, ...SWROptions }: UseQueryOptions = {}
               ) => {
                 const ctx = useContext?.();
+
                 return useSWR(
                   () =>
                     inactive
@@ -100,8 +108,9 @@ export function createSWRClient<UserAPI extends API>(
                     const mutator: any = extendMutate(
                       mutate,
                       promise,
-                      `${apiUrl}/${route}`,
-                      ctx,
+                      apiUrl,
+                      route,
+                      getContext(options.context, ctx),
                       options.options
                     );
                     options.cacheUpdate(input, mutator);

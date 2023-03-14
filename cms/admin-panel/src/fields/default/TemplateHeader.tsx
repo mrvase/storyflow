@@ -3,7 +3,11 @@ import cl from "clsx";
 import { FieldId } from "@storyflow/backend/types";
 import { ChevronDownIcon } from "@heroicons/react/24/outline";
 import { addImport } from "../../custom-events";
-import { getRawFieldId } from "@storyflow/backend/ids";
+import {
+  createRawTemplateFieldId,
+  createTemplateFieldId,
+  getRawFieldId,
+} from "@storyflow/backend/ids";
 import { useFieldTemplate } from "./useFieldTemplate";
 import { useFieldFocus } from "../../field-focus";
 
@@ -40,7 +44,7 @@ export function TemplateHeader({ id }: { id: FieldId }) {
                 ev.preventDefault();
                 addImport.dispatch({
                   id,
-                  templateId: getRawFieldId(columnId),
+                  templateId: createRawTemplateFieldId(columnId),
                   imports: [],
                 });
               }

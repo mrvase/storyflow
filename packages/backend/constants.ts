@@ -1,4 +1,13 @@
+import {
+  createDocumentId,
+  ROOT_FOLDER_NUMBER,
+  TEMPLATE_FOLDER_NUMBER,
+} from "./ids";
 import { FolderId } from "./types";
 
-export const ROOT_FOLDER = "000000000000000000000000" as FolderId;
-export const TEMPLATE_FOLDER = "000000000000000000000001" as FolderId;
+export const ROOT_FOLDER = createDocumentId(
+  ROOT_FOLDER_NUMBER
+) as unknown as FolderId;
+export const TEMPLATE_FOLDER = createDocumentId(
+  TEMPLATE_FOLDER_NUMBER
+) as unknown as FolderId;

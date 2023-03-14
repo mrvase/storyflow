@@ -44,13 +44,17 @@ import Content from "../layout/components/Content";
 import { useSegment } from "../layout/components/SegmentContext";
 import { useOnLoadHandler } from "../layout/onLoadHandler";
 import { getPathFromSegment } from "../layout/utils";
-import { useDocumentCollab } from "./collab/DocumentCollabContext";
+import {
+  useDocumentCollab,
+  useDocumentMutate,
+} from "./collab/DocumentCollabContext";
 import { useFolder } from "../folders/collab/hooks";
 import { useDocumentConfig, useFieldConfig, useLabel } from "./collab/hooks";
 import { FocusOrchestrator, useFocusedIds } from "../utils/useIsFocused";
 import { DocumentPageContext } from "./DocumentPageContext";
 import { GetDocument } from "./GetDocument";
 import { RenderTemplate } from "./RenderTemplate";
+import { useFieldIdGenerator } from "../id-generator";
 
 export const getVersionKey = (versions?: Record<RawFieldId, number>) => {
   if (!versions) return -1;
@@ -71,6 +75,7 @@ function useIsModified(id: string, initial: boolean, key: number) {
   }, []);
 
   React.useEffect(() => {
+    console.log("SETTING TO", initial);
     setIsModified(initial);
   }, [key, initial]);
 
@@ -138,6 +143,8 @@ function Toolbar({ id, config }: { id: DocumentId; config: DocumentConfig }) {
   const getFieldIndex = (id: string) => {
     return config.findIndex((el) => "id" in el && el.id === id);
   };
+
+  const generateFieldId = useFieldIdGenerator();
 
   const index = getFieldIndex(ids[0]);
 
@@ -218,7 +225,7 @@ function Toolbar({ id, config }: { id: DocumentId; config: DocumentConfig }) {
         <DragButton
           label={"Indsæt felt"}
           item={() => ({
-            id: "",
+            id: generateFieldId(id),
             label: "",
             type: "default",
           })}
@@ -267,10 +274,7 @@ export function FieldToolbar({
 }) {
   const [config, setConfig] = useFieldConfig(fieldId);
 
-  const { push } = useDocumentCollab().mutate<DocumentConfigOp>(
-    documentId,
-    documentId
-  );
+  const { push } = useDocumentMutate<DocumentConfigOp>(documentId, documentId);
 
   const templateFolder = useTemplateFolder()?._id;
   const { articles: templates } = useArticleList(templateFolder);
@@ -319,7 +323,6 @@ export function FieldToolbar({
           onClick={() => {
             push({
               target: targetTools.stringify({
-                field: "any",
                 operation: "document-config",
                 location: "",
               }),
@@ -344,12 +347,11 @@ function FieldLabel({ id, template }: { id: FieldId; template?: DocumentId }) {
 
   const articleId = getDocumentId(id);
 
-  const { push } = useDocumentCollab().mutate<PropertyOp>(articleId, articleId);
+  const { push } = useDocumentMutate<PropertyOp>(articleId, articleId);
 
   const onChange = (value: string) => {
     push({
       target: targetTools.stringify({
-        field: "any",
         operation: "property",
         location: id,
       }),
@@ -557,7 +559,7 @@ const Page = ({
   const config = useDocumentConfig(id, {
     config: article.config,
     history: histories[id] ?? [],
-    version: article.versions?.[getRawDocumentId(id)] ?? 0,
+    version: article.versions?.[""] ?? 0,
   });
 
   const folder = useFolder(article.folder);
@@ -578,14 +580,16 @@ const Page = ({
       id,
       record: article.record,
     }),
-    [id]
+    [id, article.record]
   );
+
+  console.log("VERSION", article.versions, getVersionKey(article.versions));
 
   return (
     <FocusOrchestrator>
       <DocumentPageContext.Provider value={ctx}>
         <DocumentContent
-          version={getVersionKey(article?.versions)}
+          version={getVersionKey(article.versions)}
           id={id}
           variant={type === "template" ? "template" : undefined}
           folder={article?.folder}

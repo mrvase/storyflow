@@ -62,6 +62,8 @@ export function DocumentListSpace({
     );
   }
 
+  console.log("ROWS", articles);
+
   const rows = articles.map((el) => ({
     id: el._id,
     columns: [
@@ -182,7 +184,7 @@ function AddArticleButton({ folder }: { folder: FolderId }) {
 
   const addArticle = async () => {
     try {
-      const id = await generateDocumentId();
+      const id = generateDocumentId();
       const record = template
         ? await getDefaultValuesFromTemplateAsync(id, template, {
             client,

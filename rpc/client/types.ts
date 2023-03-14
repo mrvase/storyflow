@@ -51,14 +51,23 @@ export type UseQueryOptions = SharedOptions & {
 
 export type UseMutationOptions<
   UserAPI,
-  Route extends keyof UserAPI,
+  DefaultRoute extends keyof UserAPI,
   APIObject extends { mutation: any }
 > = SharedOptions & {
   cacheUpdate?: (
     input: Parameters<APIObject["mutation"]>[0],
-    mutate: <EP extends keyof UserAPI[Route]>(
+    mutate: <
+      Route extends keyof UserAPI = DefaultRoute,
+      EP extends keyof UserAPI[Route] = keyof UserAPI[Route]
+    >(
       query: [
-        key: EP,
+        key:
+          | (Route extends string
+              ? EP extends string
+                ? `${Route}/${EP}`
+                : never
+              : never)
+          | EP,
         input: UserAPI[Route][EP] extends { query: any }
           ? Parameters<UserAPI[Route][EP]["query"]>[0]
           : undefined

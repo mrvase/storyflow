@@ -131,6 +131,6 @@ export const findFetchers = (value: Computation, record: ComputationRecord) => {
     results.push(...findFetchers(comp, record));
   });
   results.push(...fetchers);
-  traverseFlatComputation(value, record, (value) => add(value?.value));
+  traverseFlatComputation(value, record, (value) => add(value?.value as any));
   return results;
 };

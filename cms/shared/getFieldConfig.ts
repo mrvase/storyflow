@@ -1,4 +1,4 @@
-import { getRawFieldId } from "@storyflow/backend/ids";
+import { getRawFieldId, revertTemplateFieldId } from "@storyflow/backend/ids";
 import { FieldConfig, DocumentConfig, FieldId } from "@storyflow/backend/types";
 
 const compareTemplateFieldId = (id1: FieldId, id2: FieldId) => {
@@ -11,7 +11,8 @@ export const getTemplateFields = (template: DocumentConfig) => {
     .flat(1);
 };
 
-export const getFieldConfig = (template: DocumentConfig, id: FieldId) => {
+export const getFieldConfig = (template: DocumentConfig, id_: FieldId) => {
+  const id = id_;
   let topIndex: number | null = null;
   let groupIndex: number | null = null;
   let i = -1;

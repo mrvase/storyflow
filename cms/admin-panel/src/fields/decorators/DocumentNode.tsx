@@ -38,6 +38,7 @@ import { useGlobalState } from "../../state/state";
 import { useDocumentPageContext } from "../../documents/DocumentPageContext";
 import {
   computeFieldId,
+  createTemplateFieldId,
   getRawFieldId,
   isNestedDocumentId,
 } from "@storyflow/backend/ids";
@@ -145,18 +146,11 @@ function DocumentDecorator({
                 </div>
                 {(template ?? []).map(({ id }) => {
                   const initialValue =
-                    record[computeFieldId(docId, getRawFieldId(id))] ??
-                    undefined;
+                    record[createTemplateFieldId(docId, id)] ?? undefined;
                   return (
                     <ValueDisplay
                       key={`${docId}-${id}-${Boolean(initialValue)}`}
-                      id={
-                        isNestedDocumentId(value.id)
-                          ? (`${parentFieldId}.${value.id}/${id.slice(
-                              4
-                            )}` as FieldId)
-                          : computeFieldId(docId, getRawFieldId(id))
-                      }
+                      id={createTemplateFieldId(docId, id)}
                       initialValue={initialValue}
                       record={
                         isNestedDocumentId(value.id) ? documentRecord : record

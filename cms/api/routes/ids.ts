@@ -4,8 +4,6 @@ import { z } from "zod";
 import clientPromise from "../mongo/mongoClient";
 import { globals } from "../middleware/globals";
 
-export const COUNTER_OFFSET = 100;
-
 export const ids = createRoute({
   getWorkspaceId: createProcedure({
     middleware(ctx) {

@@ -92,15 +92,14 @@ export type ColorToken = {
   color: string;
 };
 
-export type Parameter = { x: number; value?: PrimitiveValue };
-
-// placeholders are meant to be replaced by a value when the computation is executed
-export type Placeholder = Parameter | NestedField;
-
 export type Token = CustomToken | ContextToken | FileToken | ColorToken;
 
 export type PrimitiveValue = string | number | boolean | Date;
 
+export type Parameter = { x: number; value?: PrimitiveValue };
+
+// placeholders are meant to be replaced by a value when the computation is executed
+export type Placeholder = Parameter | NestedField;
 export type Value =
   | PrimitiveValue
   | NestedElement
@@ -108,9 +107,39 @@ export type Value =
   | NestedFolder
   | Token
   | Value[];
-
 // Nested arrays only occur as a product of calculations.
 export type Computation = (Exclude<Value, Value[]> | Placeholder | DBSymbol)[];
+
+export type WithBrandedObjectId<T> = T extends {
+  id: NestedDocumentId;
+  field: FieldId;
+}
+  ? Omit<T, "id" | "field"> & {
+      id: BrandedObjectId<NestedDocumentId>;
+      field: BrandedObjectId<FieldId>;
+    }
+  : T extends { id: NestedDocumentId; folder: FolderId }
+  ? Omit<T, "id" | "folder"> & {
+      id: BrandedObjectId<NestedDocumentId>;
+      folder: BrandedObjectId<FolderId>;
+    }
+  : T extends { id: DocumentId | NestedDocumentId }
+  ? Omit<T, "id"> & { id: BrandedObjectId<DocumentId | NestedDocumentId> }
+  : T;
+
+export type DBValue =
+  | PrimitiveValue
+  | WithBrandedObjectId<NestedElement>
+  | WithBrandedObjectId<NestedDocument>
+  | WithBrandedObjectId<NestedFolder>
+  | Token
+  | DBValue[];
+export type DBPlaceholder = Parameter | WithBrandedObjectId<NestedField>;
+export type DBComputation = (
+  | Exclude<DBValue, DBValue[]>
+  | DBPlaceholder
+  | DBSymbol
+)[];
 
 export type EditorComputation = (
   | Exclude<Value, Value[]>
@@ -121,14 +150,19 @@ export type EditorComputation = (
 // These occur when we in the database compute the ComputationBlocks and add
 // the "result" and "function" properties to the block.
 export type PossiblyNestedComputation = (Value | Placeholder | DBSymbol)[];
+export type PossiblyNestedDBComputation = (
+  | DBValue
+  | DBPlaceholder
+  | DBSymbol
+)[];
 
 export type ComputationRecord = { [key: FieldId]: Computation };
 
-export type ValueRecord = Record<RawFieldId, Value[]>;
+export type DBValueRecord = Record<RawFieldId, DBValue[]>;
 
 export type ComputationBlock = {
   id: BrandedObjectId<FieldId>;
-  value: Computation;
+  value: DBComputation;
 };
 
 export const operators = [
@@ -203,12 +237,12 @@ export interface DBDocumentRaw {
   folder: BrandedObjectId<FolderId>;
   config: DocumentConfig;
   label?: string;
-  versions?: Record<RawFieldId | RawDocumentId, number>;
+  versions?: Record<"" | RawFieldId, number>;
   /* compute */
   ids: BrandedObjectId<NestedDocumentId>[];
   cached: Value[][];
   compute: ComputationBlock[];
-  values: ValueRecord;
+  values: DBValueRecord;
   /* */
 }
 
@@ -219,7 +253,7 @@ export interface DBDocument {
   record: ComputationRecord;
   // values: ValueRecord;
   label?: string;
-  versions?: Record<RawFieldId | RawDocumentId, number>;
+  versions?: Record<"" | RawFieldId, number>;
 }
 
 export type FolderSpace = {
@@ -243,7 +277,7 @@ export interface DBFolderRaw {
   spaces: Space[];
   template?: BrandedObjectId<DocumentId>;
   domains?: string[];
-  versions?: Record<RawFolderId | SpaceId, number>;
+  versions?: Record<"" | SpaceId, number>;
 }
 
 export interface DBFolder {
@@ -253,7 +287,7 @@ export interface DBFolder {
   spaces: Space[];
   template?: DocumentId;
   domains?: string[];
-  versions?: Record<RawFolderId | SpaceId, number>;
+  versions?: Record<"" | SpaceId, number>;
 }
 
 export interface Settings {

@@ -11,7 +11,6 @@ type GetKeyFromValue<Record extends { [key: string]: any }, Value> = keyof {
 };
 
 const operations = {
-  any: "0",
   computation: "1",
   /*
   fetcher: "2",
@@ -42,11 +41,10 @@ type OperationRecord = {
 };
 
 const fields = {
-  any: "0",
   default: "1",
   url: "3",
   slug: "4",
-} satisfies Record<FieldType | "any", `${number}`>;
+} satisfies Record<FieldType, `${number}`>;
 
 export type FieldOperation = {
   default: ComputationOp;
@@ -64,7 +62,9 @@ export type Target<
   F extends keyof typeof fields = keyof typeof fields,
   O extends keyof typeof operations = keyof typeof operations,
   L extends string = string
-> = `${(typeof fields)[F]}${typeof splitter}${(typeof operations)[O]}${typeof splitter}${L}`;
+> = `${(typeof fields)[F] | "0"}${typeof splitter}${
+  | (typeof operations)[O]
+  | "0"}${typeof splitter}${L}`;
 
 export interface DocumentOp<T> {
   target: Target<keyof typeof fields, keyof typeof operations, string>;
@@ -120,33 +120,33 @@ export const targetTools = {
     O extends keyof typeof operations,
     L extends string
   >({
-    field = "any" as F,
-    operation = "any" as O,
+    field,
+    operation,
     location,
   }: {
     field?: F;
     operation?: O;
     location: L;
   }): Target<F, O, L> {
-    return `${fields[field]}${splitter}${operations[operation]}${splitter}${location}`;
+    return `${field ? fields[field] : "0"}${splitter}${
+      operation ? operations[operation] : "0"
+    }${splitter}${location}`;
   },
-  parse<L extends string>(
-    string: L
-  ): L extends `${infer F}${typeof splitter}${infer O}${typeof splitter}${infer L}`
-    ? {
-        field: GetKeyFromValue<typeof fields, F>;
-        input: GetKeyFromValue<typeof operations, O>;
-        location: L;
-      }
-    : never {
+  parse(string: string): {
+    field: keyof typeof fields | undefined;
+    operation: keyof typeof operations | undefined;
+    location: string;
+  } {
     const [field, operation, location] = string.split(splitter);
     return {
-      field: Object.entries(fields).find(([, value]) => value === field)![0],
-      input: Object.entries(operations).find(
+      field: Object.entries(fields).find(
+        ([, value]) => value === field
+      )?.[0] as keyof typeof fields | undefined,
+      operation: Object.entries(operations).find(
         ([, value]) => value === operation
-      )![0],
+      )?.[0] as keyof typeof operations | undefined,
       location,
-    } as any;
+    };
   },
   getLocation<
     F extends keyof typeof fields,
@@ -166,6 +166,6 @@ export const targetTools = {
     operation: OperationRecord[keyof OperationRecord],
     input: T
   ): operation is OperationRecord[T] {
-    return targetTools.parse(operation.target).input === input;
+    return targetTools.parse(operation.target).operation === input;
   },
 };

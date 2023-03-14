@@ -71,10 +71,10 @@ export const folders = createRoute({
               ZodDocumentOp(ZodSplice(z.any())),
               ZodDocumentOp(
                 z.object({
-                  id: z.string(),
+                  _id: z.string(),
                   type: z.string(),
-                  children: z.any(),
                   label: z.string(),
+                  spaces: z.any(),
                 })
               ),
               ZodDocumentOp(z.string()),

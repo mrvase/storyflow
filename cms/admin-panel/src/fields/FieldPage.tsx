@@ -19,7 +19,6 @@ import {
   EditorComputation,
   FieldId,
   Value,
-  ValueRecord,
 } from "@storyflow/backend/types";
 import { extendPath } from "@storyflow/backend/extendPath";
 import Content from "../layout/components/Content";
@@ -27,7 +26,7 @@ import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { useLocalStorage } from "../state/useLocalStorage";
 import { useClientConfig } from "../client-config";
 import { createComponent } from "./Editor/createComponent";
-import { useDocumentCollab } from "../documents/collab/DocumentCollabContext";
+import { useDocumentMutate } from "../documents/collab/DocumentCollabContext";
 import { useDocumentPageContext } from "../documents/DocumentPageContext";
 import { Client, useClient } from "../client";
 import {
@@ -336,7 +335,7 @@ export function FieldPage({
   const documentId = getDocumentId(id);
   const templateFieldId = getRawFieldId(id);
 
-  const { push } = useDocumentCollab().mutate<ComputationOp>(
+  const { push } = useDocumentMutate<ComputationOp>(
     documentId,
     templateFieldId
   );

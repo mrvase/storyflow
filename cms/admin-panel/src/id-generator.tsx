@@ -12,6 +12,8 @@ import {
   getRawDocumentId,
   createFieldId,
   createDocumentId,
+  USER_DOCUMENT_OFFSET,
+  USER_TEMPLATE_OFFSET,
 } from "@storyflow/backend/ids";
 
 /*
@@ -48,7 +50,7 @@ const getNextValue = (
   offsets: number[],
   batchSize: number,
   counter: number
-): [result: number, shouldFetch: boolean] => {
+): [result: number | null, shouldFetch: boolean] => {
   /* 
   counter: 15
   offsets: [500, 0]
@@ -62,18 +64,18 @@ const getNextValue = (
 
   const base = Math.floor(next / batchSize) * batchSize;
 
-  const offsetIndex = offsets.findIndex((offset) => base > offset);
+  const offsetIndex = offsets.findIndex((offset) => base >= offset);
   const offset = offsets[offsetIndex];
 
   if (base !== offset) {
     if (offsetIndex <= 0) {
-      throw new Error("No more ids available");
+      return [null, true];
     }
     const nextOffset = offsets[offsetIndex - 1];
     return [nextOffset + (next % batchSize), nextOffset === 0];
   }
 
-  return [next, offset === 0];
+  return [next, offsetIndex === 0];
 };
 
 const IdContext = React.createContext<{
@@ -87,7 +89,7 @@ export function IdGenerator({ children }: { children: React.ReactNode }) {
 
   const { data: workspaceId } = SWRClient.ids.getWorkspaceId.useQuery();
 
-  const getName = (name: string) => `${organization}:${name}`;
+  const getName = (name: string = "ids") => `${organization}:${name}`;
 
   const getItem = (name: string): string | null => {
     if (!workspaceId) {
@@ -111,11 +113,11 @@ export function IdGenerator({ children }: { children: React.ReactNode }) {
       field_offsets: [field_offset],
       docs: [],
     };
-    localStorage.setItem(getName("ids"), JSON.stringify(object));
+    localStorage.setItem(getName(), JSON.stringify(object));
   };
 
   const getObject = () => {
-    const string = getItem(getName("ids"));
+    const string = getItem(getName());
     if (!string) return null;
     try {
       const value = schema.parse(JSON.parse(string));
@@ -125,7 +127,7 @@ export function IdGenerator({ children }: { children: React.ReactNode }) {
       return value;
     } catch (err) {
       console.error(err);
-      localStorage.removeItem(getName("ids"));
+      localStorage.removeItem(getName());
       return null;
     }
   };
@@ -147,9 +149,14 @@ export function IdGenerator({ children }: { children: React.ReactNode }) {
       batchSizes[name],
       counter
     );
-    if (shouldFetch) fetchOffset(name);
+    if (shouldFetch) {
+      fetchOffset(name).then((offset) => commitOffset(name, offset));
+    }
+    if (!nextValue) {
+      throw new Error("No more ids available");
+    }
     localStorage.setItem(
-      getName(name),
+      getName(),
       JSON.stringify({
         ...object,
         [name]: nextValue,
@@ -159,11 +166,11 @@ export function IdGenerator({ children }: { children: React.ReactNode }) {
   };
 
   const getDocumentNumber = () => {
-    return getCounterValue("id");
+    return getCounterValue("id") + USER_DOCUMENT_OFFSET;
   };
 
   const getTemplateNumber = () => {
-    return getCounterValue("template");
+    return getCounterValue("template") + USER_TEMPLATE_OFFSET;
   };
 
   const getFieldNumber = (documentId: DocumentId) => {
@@ -191,7 +198,13 @@ export function IdGenerator({ children }: { children: React.ReactNode }) {
         counter
       );
 
-      if (shouldFetch) fetchOffset("field");
+      if (shouldFetch) {
+        fetchOffset("field").then((offset) => commitOffset("field", offset));
+      }
+
+      if (!nextValue) {
+        throw new Error("No more ids available");
+      }
 
       value = nextValue;
     } else {
@@ -201,7 +214,7 @@ export function IdGenerator({ children }: { children: React.ReactNode }) {
 
     localStorage.setItem(getName(rawId), value.toString());
     localStorage.setItem(
-      getName("ids"),
+      getName(),
       JSON.stringify({
         ...object,
         docs,
@@ -212,12 +225,27 @@ export function IdGenerator({ children }: { children: React.ReactNode }) {
   };
 
   const promises = React.useRef({
-    id: null as (Promise<void> & { abort: () => void }) | null,
-    template: null as (Promise<void> & { abort: () => void }) | null,
-    field: null as (Promise<void> & { abort: () => void }) | null,
+    id: null as (Promise<number> & { abort: () => void }) | null,
+    template: null as (Promise<number> & { abort: () => void }) | null,
+    field: null as (Promise<number> & { abort: () => void }) | null,
   });
 
   const client = useClient();
+
+  const commitOffset = (
+    name: "id" | "template" | "field",
+    offset: number | null
+  ) => {
+    if (offset === null) return;
+    const object = getObjectOrError();
+    localStorage.setItem(
+      getName(),
+      JSON.stringify({
+        ...object,
+        [`${name}_offsets`]: [offset, ...object[`${name}_offsets`]],
+      })
+    );
+  };
 
   const fetchOffset = async (name: "id" | "template" | "field") => {
     if (!promises.current[name]) {
@@ -227,22 +255,7 @@ export function IdGenerator({ children }: { children: React.ReactNode }) {
       });
 
       const promiseExtended = promise
-        .then((result) => {
-          if (promises.current[name]) {
-            // don't do anything if component is unmounted.
-            const object = getObjectOrError();
-            localStorage.setItem(
-              getName("ids"),
-              JSON.stringify({
-                ...object,
-                [`${name}_offsets`]: [
-                  result.result,
-                  ...object[`${name}_offsets`],
-                ],
-              })
-            );
-          }
-        })
+        .then((result) => result.result)
         .finally(() => {
           promises.current[name] = null;
         });

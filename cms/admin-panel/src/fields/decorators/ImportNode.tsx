@@ -22,21 +22,14 @@ import {
   Value,
 } from "@storyflow/backend/types";
 import { useBuilderPath } from "../BuilderPath";
-import {
-  getDocumentId,
-  computeFieldId,
-  getTemplateDocumentId,
-} from "@storyflow/backend/ids";
 
 const useState = (
   id: FieldId,
-  templateId?: RawFieldId
+  pick?: RawFieldId
 ): [label: string, value: Value[] | undefined] => {
-  if (templateId) {
+  if (pick) {
     const label1 = useLabel(id);
-    const label2 = useLabel(
-      computeFieldId(getTemplateDocumentId(templateId), templateId)
-    );
+    const label2 = useLabel(pick);
     return ["", [`[${label1} · ${label2}]`]];
   }
 

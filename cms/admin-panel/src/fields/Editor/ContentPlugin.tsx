@@ -22,14 +22,12 @@ import {
   addLayoutElement,
   addNestedDocument,
 } from "../../custom-events";
-import { getNodesFromComputation, isInlineElement } from "./transforms";
 import {
-  Computation,
-  DocumentId,
-  EditorComputation,
-  FieldId,
-  RawFieldId,
-} from "@storyflow/backend/types";
+  $getLastBlock,
+  getNodesFromComputation,
+  isInlineElement,
+} from "./transforms";
+import { DocumentId, EditorComputation } from "@storyflow/backend/types";
 import { useClientConfig } from "../../client-config";
 import { $isLayoutElementNode } from "../decorators/LayoutElementNode";
 import { $isDocumentNode } from "../decorators/DocumentNode";
@@ -54,31 +52,6 @@ export function ContentPlugin() {
   }, [editor, libraries]);
 
   return null;
-}
-
-export function $getLastBlock(
-  selection: RangeSelection | NodeSelection | GridSelection,
-  libraries: LibraryConfig[]
-) {
-  const nodes = selection.getNodes();
-  if (nodes.length === 0) return;
-  let lastNode: LexicalNode | null = nodes[nodes.length - 1];
-  if ($isRootNode(lastNode)) {
-    return lastNode;
-  }
-  while (
-    lastNode &&
-    !$isParagraphNode(lastNode) &&
-    !$isHeadingNode(lastNode) &&
-    !(
-      $isLayoutElementNode(lastNode) &&
-      !isInlineElement(libraries, lastNode.__value)
-    ) &&
-    !$isDocumentNode(lastNode)
-  ) {
-    lastNode = lastNode!.getParent();
-  }
-  return lastNode;
 }
 
 function useEditorEvents() {

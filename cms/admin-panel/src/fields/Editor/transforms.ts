@@ -14,8 +14,9 @@ import {
   $createLineBreakNode,
   $createTextNode,
   $isParagraphNode,
+  $isRootNode,
 } from "lexical";
-import type { PointType } from "lexical/LexicalSelection";
+import type { GridSelection, PointType } from "lexical/LexicalSelection";
 import {
   $createDocumentNode,
   $isDocumentNode,
@@ -554,4 +555,29 @@ export function $initializeEditor(
 export function $clearEditor() {
   const root = $getRoot();
   root.clear();
+}
+
+export function $getLastBlock(
+  selection: RangeSelection | NodeSelection | GridSelection,
+  libraries: LibraryConfig[]
+) {
+  const nodes = selection.getNodes();
+  if (nodes.length === 0) return;
+  let lastNode: LexicalNode | null = nodes[nodes.length - 1];
+  if ($isRootNode(lastNode)) {
+    return lastNode;
+  }
+  while (
+    lastNode &&
+    !$isParagraphNode(lastNode) &&
+    !$isHeadingNode(lastNode) &&
+    !(
+      $isLayoutElementNode(lastNode) &&
+      !isInlineElement(libraries, lastNode.__value)
+    ) &&
+    !$isDocumentNode(lastNode)
+  ) {
+    lastNode = lastNode!.getParent();
+  }
+  return lastNode;
 }

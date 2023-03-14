@@ -1,3 +1,5 @@
+import { BrandedObjectId, FieldId } from "@storyflow/backend/types";
+
 export type DefineObject<U extends { [key: string]: any }> = {
   let: <P extends { [key: string]: any }>(
     callback: P | ((vars: U) => P)
@@ -83,10 +85,12 @@ export type Operators<DocumentType extends Record<string, any>> = {
     | "null"
     | "undefined"
     | "double"
-    | "date";
+    | "date"
+    | "objectId";
   isNumber: (value: any) => boolean;
   isArray: (value: any) => boolean;
   toString: (input: any) => string;
+  toObjectId: (input: any) => BrandedObjectId<FieldId>;
   toBool: (input: any) => boolean;
   lt: (arg1: number, arg2: number) => boolean;
   lte: (arg1: number, arg2: number) => boolean;
@@ -132,8 +136,8 @@ export type Operators<DocumentType extends Record<string, any>> = {
     sortBy: Partial<Record<keyof T, 1 | -1>>
   ) => T[];
   trim: (input: string) => string;
-  /*
   literal: <T>(val: T) => T;
+  /*
   reverseArray: <T extends any[]>(arr: T) => T;
   */
 };

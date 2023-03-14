@@ -3,6 +3,7 @@ import type {} from "@sfrpc/types";
 import { NextApiRequest, NextApiResponse } from "next";
 import { ai } from "./routes/ai";
 import { documents } from "./routes/documents";
+import { fields } from "./routes/fields";
 import { files } from "./routes/files";
 import { folders } from "./routes/folders";
 import { ids } from "./routes/ids";
@@ -17,6 +18,7 @@ declare module "@sfrpc/server" {
 
 const api = createAPI({
   documents,
+  fields,
   folders,
   ids,
   settings,

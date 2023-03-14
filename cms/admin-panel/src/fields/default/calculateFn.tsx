@@ -27,7 +27,13 @@ export const calculateFn = (
 ): Value[] => {
   const getter = (
     importId: FieldId | FetchObject | ContextToken,
-    returnFunction: boolean
+    {
+      returnFunction,
+      external,
+    }: {
+      returnFunction?: boolean;
+      external?: boolean;
+    } = {}
   ) => {
     if (typeof importId === "object" && "select" in importId) {
       return [];
@@ -52,6 +58,8 @@ export const calculateFn = (
       return store.use<Value[]>(stateId, () =>
         calculateFn(importId, value, { record, client, returnFunction })
       ).value;
+    } else if (!external) {
+      return store.use<Value[]>(stateId).value ?? [];
     }
 
     const asyncFn = fetchArticle(

@@ -1,3 +1,5 @@
+import { BrandedObjectId, FieldId } from "@storyflow/backend/types";
+import { ObjectId } from "mongodb";
 import { Operators, SwitchObject } from "./types";
 
 let count = 0;
@@ -323,6 +325,9 @@ export const operators: Operators<any> = {
   toString(input) {
     return { $toString: input } as unknown as string;
   },
+  toObjectId(input) {
+    return { $toObjectId: input } as unknown as BrandedObjectId<FieldId>;
+  },
   toBool(input) {
     return { $toBool: input } as unknown as boolean;
   },
@@ -464,6 +469,9 @@ export const operators: Operators<any> = {
       $trim: { input },
     } as unknown as string;
   },
+  literal(input) {
+    return { $literal: input } as typeof input;
+  },
 };
 
 let handled = new WeakSet();
@@ -479,6 +487,12 @@ const stringifyProxies = (value: any) => {
       return value.map(recursive);
     }
     if (value !== null && typeof value === "object") {
+      if (value instanceof Date) {
+        return value;
+      }
+      if (value instanceof ObjectId) {
+        return value;
+      }
       return Object.fromEntries(
         Object.entries(value).map(([key, value]) => [key, recursive(value)])
       );

@@ -4,18 +4,21 @@ import {
   DocumentId,
   FieldConfig,
   FieldId,
+  RawFieldId,
 } from "@storyflow/backend/types";
-import { useDocumentCollab } from "./DocumentCollabContext";
+import { useDocumentCollab, useDocumentMutate } from "./DocumentCollabContext";
 import { PropertyOp, targetTools, DocumentConfigOp } from "shared/operations";
 import { getFieldConfig, setFieldConfig } from "shared/getFieldConfig";
 import { createPurger, createStaticStore } from "../../state/StaticStore";
 import { useSingular } from "../../state/useSingular";
-import { useArticle, useArticleTemplate } from "..";
+import { useArticle } from "..";
 import {
   computeFieldId,
   getDocumentId,
   getRawFieldId,
   getTemplateDocumentId,
+  isTemplateField,
+  revertTemplateFieldId,
 } from "@storyflow/backend/ids";
 import { ServerPackage } from "@storyflow/state";
 
@@ -158,68 +161,73 @@ export function useFieldConfig(
   const documentId = getDocumentId(fieldId);
   const templateDocumentId = getTemplateDocumentId(fieldId);
 
-  const isNative = documentId === templateDocumentId;
+  const isNative = !isTemplateField(fieldId);
 
   let config: FieldConfig | undefined;
 
   if (isNative) {
-    [config] = configs.useKey(templateDocumentId, undefined, (value) => {
+    [config] = configs.useKey(documentId, undefined, (value) => {
       if (!value) return;
       return getFieldConfig(value, fieldId);
     });
   } else {
     /* should not update reactively */
-    const id = computeFieldId(templateDocumentId, getRawFieldId(fieldId));
-    const template = useArticleTemplate(templateDocumentId);
+    const id = revertTemplateFieldId(fieldId);
+    const { article: template } = useArticle(templateDocumentId);
     config = template?.config?.find(
       (el): el is FieldConfig => "id" in el && el.id === id
     );
   }
 
-  const { push } = useDocumentCollab().mutate<PropertyOp>(
-    documentId,
-    documentId
-  );
+  const { push } = useDocumentMutate<PropertyOp>(documentId, documentId);
 
-  const setter = <Name extends keyof FieldConfig>(
-    name: Name,
-    payload:
-      | FieldConfig[Name]
-      | ((ps: FieldConfig[Name] | undefined) => FieldConfig[Name])
-      | undefined
-  ) => {
-    if (!isNative) return;
-    const value =
-      typeof payload === "function" ? payload(config?.[name]) : payload;
-    push({
-      target: targetTools.stringify({
-        operation: "property",
-        location: fieldId,
-      }),
-      ops: [
-        {
-          name,
-          value,
-        },
-      ],
-    });
-  };
+  const setter = React.useCallback(
+    <Name extends keyof FieldConfig>(
+      name: Name,
+      payload:
+        | FieldConfig[Name]
+        | ((ps: FieldConfig[Name] | undefined) => FieldConfig[Name])
+        | undefined
+    ) => {
+      if (!isNative) return;
+      const value =
+        typeof payload === "function" ? payload(config?.[name]) : payload;
+      push({
+        target: targetTools.stringify({
+          operation: "property",
+          location: fieldId,
+        }),
+        ops: [
+          {
+            name,
+            value,
+          },
+        ],
+      });
+    },
+    [config, push]
+  );
 
   return [config, setter];
 }
 
-export function useLabel(fieldId: FieldId, overwritingTemplate?: DocumentId) {
+export function useLabel(
+  fieldId: FieldId | RawFieldId,
+  overwritingTemplate?: DocumentId
+) {
   /* the updated label */
-  const [label] = labels.useKey(fieldId);
+  const originalFieldId = revertTemplateFieldId(fieldId, overwritingTemplate);
 
-  const templateId = overwritingTemplate ?? getTemplateDocumentId(fieldId);
-  const article = useArticleTemplate(templateId);
+  const [label] = labels.useKey(originalFieldId);
+
+  const templateId = getDocumentId(originalFieldId) as DocumentId;
+  const { article } = useArticle(templateId);
 
   const initialLabel = React.useMemo(() => {
     if (!article) {
       return undefined;
     }
-    return getFieldConfig(article.config, fieldId)?.label;
+    return getFieldConfig(article.config, originalFieldId)?.label;
   }, [article]);
 
   return label ?? initialLabel ?? "";

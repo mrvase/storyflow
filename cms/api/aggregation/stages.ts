@@ -1,9 +1,10 @@
 import { Narrow, Operators } from "./types";
 import {
+  BrandedObjectId,
   Computation,
   ComputationBlock,
-  DBDocument,
   DBDocumentRaw,
+  DBValue,
   FieldId,
   Value,
 } from "@storyflow/backend/types";
@@ -11,8 +12,8 @@ import { calculate } from "./calculate";
 import { operators } from "./mongo-operators";
 
 export type Update = ComputationBlock & {
-  result: Value[];
-  imports: string[];
+  result: DBValue[];
+  imports: BrandedObjectId<FieldId>[];
   depth: number;
   _imports: (ComputationBlock & { depth: number })[];
 };
@@ -36,10 +37,11 @@ const queryArrayProp = <T extends Array<object>>(
 const createCalculationStage = (
   $: Operators<
     DBDocumentRaw & {
+      idString: string;
       updates: Update[];
       derivatives: Update[];
       statics: ComputationBlock[];
-      cached: string[];
+      cached: BrandedObjectId<FieldId>[];
     }
   >,
   updates: Update[],
@@ -49,19 +51,20 @@ const createCalculationStage = (
   return $.useDocument(($doc) => [
     {
       $set: {
+        idString: $.substrBytes($.toString($doc._id), 12, 24),
+      },
+    },
+    {
+      $set: {
         updates: $.filter(updates, (update) =>
           $.in(update.id, queryArrayProp($doc.compute).id)
         ),
         derivatives,
         statics: $.filter(
-          $.map(
-            $.objectToArray($doc.values),
-            (el) =>
-              ({
-                id: $.concat([$doc.id, el.k]) as FieldId,
-                result: el.v as Computation,
-              } as any)
-          ),
+          $.map($.objectToArray($doc.values), (el) => ({
+            id: $.toObjectId($.concat([$doc.idString, el.k])),
+            result: el.v as Computation,
+          })),
           (el) => $.not($.in(el.id, queryArrayProp($doc.compute).id))
         ),
       },
@@ -149,14 +152,17 @@ const createCalculationStage = (
             (acc, el) =>
               $.cond(
                 $.and(
-                  $.eq($.substrBytes(el.id, 0, 4), $doc.id),
-                  $.ne($.substrBytes(el.id, 0, 4), $.substrBytes(el.id, 4, 4))
+                  $.eq($.substrBytes($.toString(el.id), 0, 12), $doc.idString),
+                  $.ne($.substrBytes($.toString(el.id), 14, 18), "0000")
                 ),
                 () =>
                   $.mergeObjects(
                     acc,
                     $.arrayToObject([
-                      [$.substrBytes(el.id, 4, 12), (el as any).result],
+                      [
+                        $.substrBytes($.toString(el.id), 12, 24),
+                        (el as any).result,
+                      ],
                     ])
                   ),
                 () => acc
@@ -177,7 +183,7 @@ const createCalculationStage = (
                       $doc.compute as (ComputationBlock & {
                         result: Value[];
                       })[],
-                      (el) => $.eq(el.id, id as FieldId)
+                      (el) => $.eq(el.id, id)
                     ),
                     { result: [] as Value[] }
                   ),
@@ -194,7 +200,7 @@ const createCalculationStage = (
         compute: $.reduce(
           $.concatArrays(
             $doc.compute as (ComputationBlock & {
-              imports: string[];
+              imports: BrandedObjectId<FieldId>[];
               depth: number;
             })[],
             $doc.updates,
@@ -214,7 +220,10 @@ const createCalculationStage = (
                 return $.cond(
                   $.or(
                     $.isNumber(baseDepth),
-                    $.eq($.substrBytes(cur.id, 0, 4), $doc.id)
+                    $.eq(
+                      $.substrBytes($.toString(cur.id), 0, 12),
+                      $doc.idString
+                    )
                   ),
                   () =>
                     $.concatArrays(
@@ -262,7 +271,10 @@ const createCalculationStage = (
                 );
               });
           },
-          [] as (ComputationBlock & { imports: string[]; depth: number })[]
+          [] as (ComputationBlock & {
+            imports: BrandedObjectId<FieldId>[];
+            depth: number;
+          })[]
         ),
       },
     },
@@ -291,6 +303,7 @@ const createCalculationStage = (
     },
     {
       $unset: [
+        "idString",
         "updates",
         "derivatives",
         "statics",

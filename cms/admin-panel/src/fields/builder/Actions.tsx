@@ -8,7 +8,7 @@ import {
 import { ComputationOp, targetTools } from "shared//operations";
 import { createComponent } from "../Editor/createComponent";
 import { getInfoFromType, useClientConfig } from "../../client-config";
-import { useDocumentCollab } from "../../documents/collab/DocumentCollabContext";
+import { useDocumentMutate } from "../../documents/collab/DocumentCollabContext";
 import { getDocumentId, getRawFieldId } from "@storyflow/backend/ids";
 import { DocumentId, FieldId } from "@storyflow/backend/types";
 import { useDocumentIdGenerator } from "../../id-generator";
@@ -24,7 +24,7 @@ export default function Actions({
   type: string | undefined;
   parentPath?: string;
 }) {
-  const { push } = useDocumentCollab().mutate<ComputationOp>(
+  const { push } = useDocumentMutate<ComputationOp>(
     getDocumentId(id),
     getRawFieldId(id)
   );

@@ -1,6 +1,6 @@
 import { Redis } from "@upstash/redis";
 import { ServerPackage } from "@storyflow/state";
-import { RawDocumentId } from "@storyflow/backend/types";
+import { DocumentId, RawDocumentId } from "@storyflow/backend/types";
 
 export const client = new Redis({
   url: "https://eu1-renewed-albacore-38555.upstash.io",
@@ -30,7 +30,7 @@ export const getHistoriesFromIds = async (
 
   return object;
 };
-export const resetHistory = async (slug: string, id: RawDocumentId) => {
+export const resetHistory = async (slug: string, id: DocumentId) => {
   const pipeline = client.pipeline();
   try {
     pipeline.del(`${slug}:${id}`);

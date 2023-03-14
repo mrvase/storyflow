@@ -9,8 +9,10 @@ import {
   FolderId,
   ContextToken,
   RawFieldId,
+  DocumentId,
 } from "./types";
 import { symb } from "./symb";
+import { createFieldId } from "./ids";
 
 /*
 The accummulator value would in principle look like this:
@@ -159,25 +161,29 @@ export function calculateFromRecord(id: FieldId, record: ComputationRecord) {
     };
   };
 
-  return calculate(record[id], getter);
+  return calculate(record[id] ?? [], getter);
 }
+
+type GetStateOptions = {
+  returnFunction?: boolean;
+  external?: boolean;
+};
 
 export function calculateSync(
   compute: Computation,
-  getState: (id: Importers, returnFunction: boolean) => Value[] | undefined,
+  getState: (id: Importers, options: GetStateOptions) => Value[] | undefined,
   options?: {
     returnFunction?: boolean;
-    acc?: Accumulator;
   }
 ) {
-  const getter = (id: Importers, returnFunction: boolean = false) => {
-    const value = getState(id, returnFunction);
+  const getter = (id: Importers, options: GetStateOptions) => {
+    const value = getState(id, options);
     if (!value || value.length === 0) return;
     return {
       then(callback: any): Value[] {
         return callback(
           calculate(value, getter, {
-            returnFunction,
+            returnFunction: options.returnFunction,
           })
         );
       },
@@ -191,11 +197,10 @@ export function calculateAsync(
   compute: PossiblyNestedComputation,
   getState: (
     id: Importers,
-    returnFunction: boolean
+    options: GetStateOptions
   ) => ThenableAsync | undefined,
   options?: {
     returnFunction?: boolean;
-    acc?: Accumulator;
   }
 ) {
   return calculate(compute, getState, options);
@@ -205,7 +210,7 @@ function calculate(
   compute: PossiblyNestedComputation,
   getState: (
     id: Importers,
-    returnFunction: boolean
+    options: GetStateOptions
   ) => ThenableAsync | undefined,
   options?: {
     returnFunction?: boolean;
@@ -216,7 +221,7 @@ function calculate(
   compute: PossiblyNestedComputation,
   getState: (
     id: Importers,
-    returnFunction: boolean
+    options: GetStateOptions
   ) => ThenableSync | undefined,
   options?: {
     returnFunction?: boolean;
@@ -227,7 +232,7 @@ function calculate(
   compute: PossiblyNestedComputation,
   getState: (
     id: Importers,
-    returnFunction: boolean
+    options: GetStateOptions
   ) => ThenableAsync | ThenableSync | undefined,
   options: {
     returnFunction?: boolean;
@@ -280,7 +285,7 @@ function calculate(
                   acc.push(
                     { "[": true },
                     {
-                      field: `${el.id}${pick}`,
+                      field: `${el.id.slice(12, 24)}${pick}`,
                     } as NestedField,
                     {
                       "]": true,
@@ -312,15 +317,24 @@ function calculate(
         acc.loop3.index = 0;
 
         acc.loop2.vars.args = [];
-        if (symb.isNestedField(el)) {
-          const args = [0, 1, 2].map((index) => {
-            const fieldId = `${el.id}/${index}` as FieldId;
-            return getState(fieldId, false);
-          }) as ThenableAsync[] | ThenableSync[];
+        if (typeof el === "object" && el !== null && "field" in el) {
+          const args =
+            "id" in el
+              ? ([0, 1, 2].map((index) => {
+                  const fieldId = createFieldId(
+                    index,
+                    el.id as unknown as DocumentId
+                  );
+                  return getState(fieldId, { external: false });
+                }) as ThenableAsync[] | ThenableSync[])
+              : [];
 
           const hasArgs = args.some((el) => el !== undefined);
 
-          const state = getState(el.field, hasArgs);
+          const state = getState(el.field, {
+            returnFunction: hasArgs,
+            external: true,
+          });
 
           if (state) {
             return state.then((value) => {
@@ -637,7 +651,7 @@ function calculate(
           }
         */
         } else if (symb.isContextToken(el)) {
-          const state = getState(el, false);
+          const state = getState(el, { returnFunction: true, external: false });
           if (state) {
             return state.then((value) => {
               acc.value.push(value);

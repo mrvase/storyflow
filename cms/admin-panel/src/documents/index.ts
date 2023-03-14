@@ -10,6 +10,14 @@ import {
   TemplateDocument,
 } from "@storyflow/backend/types";
 import { pushAndRetry } from "../utils/retryOnError";
+import { FIELDS } from "@storyflow/backend/fields";
+import { TEMPLATE_FOLDER } from "@storyflow/backend/constants";
+import {
+  computeFieldId,
+  createFieldId,
+  getFieldNumber,
+  getTemplateDocumentId,
+} from "@storyflow/backend/ids";
 
 type ArticleListMutation =
   | {
@@ -41,7 +49,7 @@ const getArticleFromInsert = (
   return {
     _id: action.id as DocumentId,
     folder,
-    versions: {},
+    versions: { "": 0 },
     record: action.record,
     config: [],
     ...(action.label && { label: action.label }),
@@ -124,36 +132,42 @@ export async function fetchArticle(
     useCache,
   });
   return unwrap(result)?.doc;
-  /*
-  const key = SWRKey(`http://localhost:3001/api/articles/get`, id);
-  let exists = SWRCache.get(key);
-  if (!exists || exists.isLoading === true) {
-    const result = await client.articles.get.query(id);
-    if (isError(result)) {
-      return;
-    }
-    const data = unwrap(result);
-    exists = SWRCache.get(key);
-    if (!exists) {
-      SWRCache.set(key, {
-        data,
-        isValidating: false,
-        isLoading: false,
-        error: undefined,
-      });
-    } else {
-      // cache might not be set yet, if swr has set isLoading = true
-      return data.article;
-    }
-  }
-  return SWRCache.get(key).data.article as Article;
-  */
 }
+
+const TEMPLATES = Object.values(FIELDS).map((el) => {
+  const id = getTemplateDocumentId(el.id);
+
+  const template: DBDocument = {
+    _id: id,
+    folder: TEMPLATE_FOLDER,
+    config: [
+      {
+        id: createFieldId(getFieldNumber(el.id), id),
+        type: el.type,
+        label: el.label,
+      },
+    ],
+    record: {},
+    label: el.label,
+  };
+
+  return template;
+});
 
 export function useArticle(
   articleId: DocumentId | undefined,
   options: { inactive?: boolean } = {}
 ) {
+  const defaultTemplate = TEMPLATES.find((el) => el._id === articleId);
+  if (defaultTemplate) {
+    return {
+      article: defaultTemplate as DBDocument,
+      histories: {},
+      mutate: () => {},
+      error: undefined,
+    };
+  }
+
   const [initialArticle, setInitialArticle] = React.useState(() => {
     const operations: ArticleListOperation[] = [];
     queue.forEach(({ operation }) => {
@@ -191,23 +205,8 @@ export function useArticle(
   };
 }
 
-export function useArticleTemplate(
-  id: DocumentId | undefined,
-  options: { inactive?: boolean } = {}
-): TemplateDocument | undefined {
-  /*
-  const defaultTemplate = TEMPLATES.find((el) => el.id === id);
-  if (defaultTemplate) {
-    return defaultTemplate;
-  }
-  */
-
-  const { article } = useArticle(id, options);
-  return article;
-}
-
 export const useArticleListMutation = () => {
-  const mutate = SWRClient.documents.listOperation.useMutation({
+  const mutate = SWRClient.documents.sync.useMutation({
     cacheUpdate: (input, mutate) => {
       const groups = input.reduce((acc, cur) => {
         return {
@@ -247,9 +246,9 @@ export const useArticleListMutation = () => {
 };
 
 export const useSaveArticle = (folder: FolderId) => {
-  return SWRClient.documents.save.useMutation({
+  return SWRClient.fields.save.useMutation({
     cacheUpdate: ({ id }, mutate) => {
-      mutate(["getList", folder], (ps, result) => {
+      mutate(["documents/getList", folder], (ps, result) => {
         if (!result) {
           return ps;
         }
@@ -260,13 +259,14 @@ export const useSaveArticle = (folder: FolderId) => {
           articles: newArticles,
         };
       });
-      mutate(["get", id], (ps, result) => {
+      mutate(["documents/get", id], (ps, result) => {
         if (!result) {
           return ps;
         }
+        console.log("RESULT", id, result);
         return {
           ...ps,
-          article: result,
+          doc: result,
           histories: {},
         };
       });

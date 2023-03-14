@@ -165,7 +165,7 @@ export function RenderNestedElement({
           <RenderNestedField
             nestedFieldId={computeFieldId(nestedDocumentId, keyId)}
             hidden={!isActive || !listIsOpen}
-            initialValue={values[computeFieldId(nestedDocumentId, keyId)]}
+            initialValue={values[computeFieldId(nestedDocumentId, keyId)] ?? []}
             label={"Lav til liste"}
             labelColor="blue"
             icon={Bars3Icon}
@@ -261,7 +261,7 @@ export function RenderImportArgs({
 function useIsActive(nestedDocumentId: NestedDocumentId) {
   const [fullPath] = useBuilderPath();
   const last = fullPath[fullPath.length - 1];
-  return last.id === nestedDocumentId;
+  return last && last.id === nestedDocumentId;
 }
 
 function IfActive({
@@ -316,6 +316,7 @@ function RenderNestedFields({
 
           const field = (
             <RenderNestedField
+              key={fieldId}
               nestedFieldId={fieldId}
               initialValue={initialValue}
               label={label}
@@ -325,7 +326,7 @@ function RenderNestedFields({
 
           if ("type" in el) {
             return (
-              <FieldRestrictionsContext.Provider value={el.type}>
+              <FieldRestrictionsContext.Provider key={fieldId} value={el.type}>
                 <FieldOptionsContext.Provider
                   value={"options" in el ? el.options ?? null : null}
                 >

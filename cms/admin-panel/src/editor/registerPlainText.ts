@@ -50,11 +50,9 @@ import { CAN_USE_BEFORE_INPUT, IS_IOS, IS_SAFARI } from "./utils/environment";
 import { mergeRegister } from "./utils/mergeRegister";
 import {
   $getBlocksFromComputation,
-  $getComputation,
+  $getLastBlock,
 } from "../fields/Editor/transforms";
-import { insertComputation } from "../fields/Editor/insertComputation";
 import { LibraryConfig } from "@storyflow/frontend/types";
-import { $getLastBlock } from "../fields/Editor/ContentPlugin";
 
 /**
  * Tre scenarier for tekst

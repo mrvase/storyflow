@@ -1,6 +1,7 @@
 import {
   Computation,
   ComputationRecord,
+  DBComputation,
   DBDocumentRaw,
   DocumentId,
   EditorComputation,
@@ -18,7 +19,7 @@ import {
   unwrapObjectId,
 } from "@storyflow/backend/ids";
 import { createSpliceTransformer } from "./splice-transform";
-import { getNestedChild } from "@storyflow/backend/traverse";
+import { getConfig } from "./initialValues";
 
 export const getPickedDocumentIds = (
   fref: FieldId,
@@ -139,21 +140,23 @@ const getArrayMethods = (operation: ComputationOp) => {
   };
 };
 
-export const createComputationTransformer = (initialValue: Computation) => {
+export const createComputationTransformer = (
+  fieldId: FieldId,
+  initialRecord: ComputationRecord
+) => {
   const getInitialValue = (operation: ComputationOp) => {
-    const { location: path, input } = targetTools.parse(operation.target);
+    const { location, field } = targetTools.parse(operation.target);
 
-    if (path === "") {
-      return encodeEditorComputation(initialValue);
+    if (location === "") {
+      let value = initialRecord[fieldId];
+      if (!value) {
+        value = field ? getConfig(field).initialValue : [];
+      }
+      return encodeEditorComputation(value);
     }
 
-    try {
-      const child = getNestedChild(initialValue, path.split("."));
-      if (!child) throw "error";
-      return encodeEditorComputation(child);
-    } catch (err) {
-      return []; // it is safe to assume it is something of length 0
-    }
+    let value = initialRecord[location as FieldId] ?? [];
+    return encodeEditorComputation(value);
   };
   return createSpliceTransformer<ComputationOp>(
     getInitialValue,
@@ -161,17 +164,32 @@ export const createComputationTransformer = (initialValue: Computation) => {
   );
 };
 
+const removeNestedObjectIds = (value: DBComputation): Computation => {
+  return value.map((el) => {
+    if (el === null || typeof el !== "object" || !("id" in el)) return el;
+    return {
+      ...el,
+      id: unwrapObjectId(el.id),
+      ...("field" in el && { field: unwrapObjectId(el.field) }),
+      ...("folder" in el && { folder: unwrapObjectId(el.folder) }),
+    };
+  });
+};
+
 export const getComputationRecord = (
   documentId: DocumentId,
   doc: Pick<DBDocumentRaw, "compute" | "values">
 ): ComputationRecord => {
   const fields = Object.fromEntries(
-    doc.compute.map(({ id, value }) => [unwrapObjectId(id), value])
+    doc.compute.map(({ id, value }) => [
+      unwrapObjectId(id),
+      removeNestedObjectIds(value),
+    ])
   );
   Object.entries(doc.values).forEach(([id, value]) => {
     const fieldId = computeFieldId(documentId, id as RawFieldId);
     if (!(fieldId in fields)) {
-      fields[fieldId] = value as Computation;
+      fields[fieldId] = removeNestedObjectIds(value as DBComputation);
     }
   });
   return fields;
@@ -235,22 +253,30 @@ export const getFieldRecord = (
 
   const fieldRecord: ComputationRecord = {};
 
-  const addDerivatives = (fieldId: FieldId) => {
+  const addWithDerivatives = (fieldId: FieldId) => {
     if (fieldId in fieldRecord) return;
-    fieldRecord[fieldId] = record[fieldId];
-    imports.get(fieldId)?.forEach(addDerivatives);
-    children.get(fieldId)?.forEach(addDerivatives);
+    fieldRecord[fieldId] = record[fieldId] ?? [];
+    imports.get(fieldId)?.forEach(addWithDerivatives);
+    children.get(fieldId)?.forEach(addWithDerivatives);
   };
-  addDerivatives(fieldId);
+
+  addWithDerivatives(fieldId);
 
   return fieldRecord;
 };
 
 export const extractRootRecord = (
   documentId: DocumentId,
-  record: ComputationRecord
+  record: ComputationRecord,
+  options: {
+    excludeImports?: boolean;
+  } = {}
 ) => {
   const graph = getGraph(record);
+
+  if (options.excludeImports) {
+    graph.imports = new Map();
+  }
 
   const rootFieldIds = (Object.keys(record) as FieldId[]).filter((el) =>
     isFieldOfDocument(el, documentId)

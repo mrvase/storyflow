@@ -1,16 +1,26 @@
-import { createDocumentId, getRawFieldId } from "./ids";
+import {
+  createDocumentId,
+  createFieldId,
+  createTemplateFieldId,
+  getRawFieldId,
+  SYSTEM_TEMPLATE_OFFSET,
+} from "./ids";
 import { FieldId, RawFieldId } from "./types";
 
 const assignIds = <T extends Record<string, any>>(
   fields: T
 ): { [Key in keyof T]: T[Key] & { id: RawFieldId } } => {
-  let index = 0;
   return Object.fromEntries(
-    Object.entries(fields).map(([key, value]) => [
+    Object.entries(fields).map(([key, value], index) => [
       key,
       {
         ...value,
-        id: `${createDocumentId(index++)}000000000000` as RawFieldId,
+        id: getRawFieldId(
+          createTemplateFieldId(
+            createDocumentId(0), // is removed again
+            createFieldId(0, createDocumentId(SYSTEM_TEMPLATE_OFFSET + index))
+          )
+        ),
       },
     ])
   ) as any;
@@ -59,10 +69,10 @@ export const FIELDS = assignIds({
   },
 } as const);
 
-export const getDefaultField = (id: FieldId) => {
+export function getDefaultField(id: FieldId) {
   return (
-    Object.entries(FIELDS).find(
-      ([, value]) => value.id === getRawFieldId(id)
-    ) ?? [undefined, undefined]
+    Object.entries(FIELDS).find(([, value]) => {
+      return value.id === getRawFieldId(id);
+    }) ?? [undefined, undefined]
   );
-};
+}

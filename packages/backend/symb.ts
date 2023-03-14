@@ -85,7 +85,7 @@ function isDBSymbol<T extends DBSymbolKey, F extends Operator | FunctionName>(
 }
 
 function isNestedField(value: any): value is NestedField {
-  return isObject(value) && "id" in value && "field" in value;
+  return isObject(value) && "field" in value;
 }
 
 function isLineBreak(value: any): value is Parameter {

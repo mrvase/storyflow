@@ -1,6 +1,6 @@
 import React from "react";
 import Dialog from "../elements/Dialog";
-import { DocumentId } from "@storyflow/backend/types";
+import { DBFolder, DocumentId } from "@storyflow/backend/types";
 import { useFolderCollab } from "./collab/FolderCollabContext";
 import { targetTools } from "shared/operations";
 import { useArticleListMutation } from "../documents";
@@ -35,10 +35,11 @@ export function AddFolderDialog({
         generateFolderId(),
         type === "app" ? generateDocumentId() : ("" as DocumentId),
       ]);
-      const folder = {
-        id,
+      const folder: DBFolder = {
+        _id: id,
         label,
-        type,
+        type: type as "app" | "data",
+        spaces: [],
       };
       collab.mutate("folders", "").push({
         target: targetTools.stringify({

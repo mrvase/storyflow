@@ -10,13 +10,49 @@ import type {
 } from "./types";
 
 /*
+Types
+
 WorkspaceId: [string 1b]
 RawDocumentId: [WorkspaceId 1b][string 5b]
 DocumentId: [RawDocumentId 6b][RawDocumentId 6b]
 ShortTemplateId: [string 2b] (b5 and b6 in RawDocumentId)
 RawFieldId: [WorkspaceId 1b][ShortTemplateId 2b][string 3b]
 FieldId: [RawDocumentId 6b][RawFieldId 6b]
+
 */
+
+const ROOT_PARENT_NUMBER = 0;
+export const ROOT_FOLDER_NUMBER = 1;
+export const TEMPLATE_FOLDER_NUMBER = 2;
+export const SYSTEM_TEMPLATE_OFFSET = 3;
+export const USER_TEMPLATE_OFFSET = 256;
+export const USER_DOCUMENT_OFFSET = 256 ** 2;
+
+const WORKSPACE_ID = "00"; // 1b
+const NULL_TEMPLATE_ID = "0000"; // 2b
+
+const ROOT_PARENT_RAW = `${WORKSPACE_ID}${toHex(ROOT_PARENT_NUMBER, "5b")}`;
+
+/*
+
+Dokumenter
+00 00 00 00 00 00 ubrugt (ingen forælder / ingen template)
+00 00 00 00 00 01 - 00 00 00 00 00 FF bruges af systemet
+-> 00 00 00 00 00 01 root folder
+-> 00 00 00 00 00 02 template folder
+00 00 00 00 01 00 - 00 00 00 00 FF FF bruges til templates
+00 00 00 01 00 00 - FF FF FF FF FF FF bruges til dokumenter
+*/
+
+function toHex(number: number, length: `${number}b`) {
+  const no = parseInt(length, 10);
+  if (no < 1 || no > 6) {
+    throw new Error("Invalid length");
+  } else if (number > 256 ** no) {
+    throw new Error("Number too large");
+  }
+  return number.toString(16).padStart(no * 2, "0");
+}
 
 export const getRawDocumentId = (id: DocumentId | NestedDocumentId) => {
   if (id.length !== 24) {
@@ -32,28 +68,12 @@ export const getRawFolderId = (id: FolderId) => {
   return id.slice(12, 24) as RawFolderId;
 };
 
-export const getRawFieldId = (id: FieldId) => {
+export function getRawFieldId(id: FieldId) {
   if (id.length !== 24) {
     throw new Error(`Invalid field id: ${id}`);
   }
   return id.slice(12, 24) as RawFieldId;
-};
-
-const toHex = (number: number, length: `${number}b`) => {
-  const no = parseInt(length, 10);
-  if (no < 1 || no > 6) {
-    throw new Error("Invalid length");
-  } else if (number > 256 ** no) {
-    throw new Error("Number too large");
-  }
-  return number.toString(16).padStart(no * 2, "0");
-};
-
-const WORKSPACE_ID = `0`;
-
-const NULL_TEMPLATE_ID = `00`;
-
-const ROOT_PARENT = `${WORKSPACE_ID}${toHex(0, "5b")}`;
+}
 
 export function createDocumentId(number: number): DocumentId;
 export function createDocumentId(
@@ -64,37 +84,29 @@ export function createDocumentId(
   number: number,
   parent?: DocumentId
 ): DocumentId | NestedDocumentId {
-  const first = parent ? getRawDocumentId(parent) : ROOT_PARENT;
+  const first = parent ? getRawDocumentId(parent) : ROOT_PARENT_RAW;
   const last = `${WORKSPACE_ID}${toHex(number, "5b")}`;
 
   return `${first}${last}` as DocumentId | NestedDocumentId;
 }
 
-export const getWorkspaceId = (id: DocumentId) => {
-  return getRawDocumentId(id).slice(0, 1);
+export const getWorkspaceId = (id: DocumentId | NestedDocumentId) => {
+  return getRawDocumentId(id).slice(0, 2);
 };
 
-export const createFieldId = (
-  number: number,
-  documentId: DocumentId,
-  templateDocumentId?: DocumentId
-) => {
+export const createFieldId = (number: number, documentId: DocumentId) => {
   const hex = toHex(number, "3b");
 
-  if (templateDocumentId) {
-    return [
-      getRawDocumentId(documentId), // 6b
-      getWorkspaceId(templateDocumentId), // 1b
-      computeShortTemplateId(templateDocumentId), // 2b
-      hex, // 3b
-    ].join("") as FieldId;
-  }
   return [
     getRawDocumentId(documentId),
     WORKSPACE_ID,
     NULL_TEMPLATE_ID,
     hex,
   ].join("") as FieldId;
+};
+
+export const getFieldNumber = (id: FieldId | RawFieldId) => {
+  return parseInt(id.slice(-6), 16);
 };
 
 export const replaceDocumentId = (
@@ -128,18 +140,68 @@ export const computeShortTemplateId = (id: DocumentId) => {
 };
 
 export const getTemplateDocumentId = (id: RawFieldId | FieldId) => {
-  if (id.length === 12) {
-    return `${ROOT_PARENT}${id.slice(2, 6).padStart(12, "0")}` as DocumentId;
+  if (![12, 24].includes(id.length)) {
+    throw new Error(`Invalid field id: ${id}`);
   }
-  if (id.length === 24) {
-    return `${ROOT_PARENT}${id.slice(14, 18).padStart(12, "0")}` as DocumentId;
+
+  const shortId = id.length === 24 ? id.slice(14, 18) : id.slice(2, 6);
+
+  if (shortId === NULL_TEMPLATE_ID && id.length === 24) {
+    return getDocumentId(id as FieldId) as DocumentId;
   }
-  throw new Error(`Invalid field id: ${id}`);
+
+  return `${ROOT_PARENT_RAW}${shortId.padStart(12, "0")}` as DocumentId;
 };
 
 export const isTemplateField = (id: FieldId) => {
-  return getTemplateDocumentId(id).endsWith("0000");
+  return getTemplateDocumentId(id) !== getDocumentId(id);
 };
+
+export const createRawTemplateFieldId = (fieldId: FieldId) => {
+  if (isTemplateField(fieldId)) {
+    return getRawFieldId(fieldId);
+  }
+
+  const fieldDocumentId = getDocumentId(fieldId) as DocumentId;
+  const fieldWorkspaceId = getWorkspaceId(fieldDocumentId);
+  const shortTemplateId = computeShortTemplateId(fieldDocumentId);
+  const hex = fieldId.slice(18, 24);
+
+  return [
+    fieldWorkspaceId, // 1b
+    shortTemplateId, // 2b
+    hex, // 3b
+  ].join("") as RawFieldId;
+};
+
+export const createTemplateFieldId = (
+  documentId: DocumentId | NestedDocumentId,
+  fieldId: FieldId
+) => {
+  if (isTemplateField(fieldId)) {
+    return replaceDocumentId(fieldId, documentId);
+  }
+
+  return [
+    getRawDocumentId(documentId), // 6b
+    createRawTemplateFieldId(fieldId), // 3b
+  ].join("") as FieldId;
+};
+
+export function revertTemplateFieldId(
+  fieldId: FieldId | RawFieldId,
+  overwritingTemplate?: DocumentId
+) {
+  const documentId = getTemplateDocumentId(fieldId);
+  const number = parseInt(documentId.slice(1), 16);
+  if (number < 256 && fieldId.length === 24) {
+    if (overwritingTemplate) {
+      return replaceDocumentId(fieldId as FieldId, overwritingTemplate);
+    }
+    return fieldId as FieldId;
+  }
+  return createFieldId(getFieldNumber(fieldId), documentId);
+}
 
 export const unwrapObjectId = <T>(id: BrandedObjectId<T>): T => {
   return id.toHexString() as T;
@@ -148,7 +210,7 @@ export const unwrapObjectId = <T>(id: BrandedObjectId<T>): T => {
 export const isNestedDocumentId = (
   id: DocumentId | NestedDocumentId
 ): id is NestedDocumentId => {
-  return id.slice(0, 12) !== ROOT_PARENT;
+  return id.slice(0, 12) !== ROOT_PARENT_RAW;
 };
 
 export const isFieldOfDocument = (

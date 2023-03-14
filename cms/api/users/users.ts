@@ -87,7 +87,7 @@ export const users = createRoute({
               spaces: [],
             },
             {
-              _id: new ObjectId(ROOT_FOLDER),
+              _id: new ObjectId(TEMPLATE_FOLDER),
               label: "Skabeloner",
               type: "data",
               spaces: [],

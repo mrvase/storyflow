@@ -4,11 +4,16 @@ import {
   DocumentConfig,
   DocumentId,
   FieldConfig,
+  FieldId,
   NestedDocumentId,
+  RawDocumentId,
 } from "@storyflow/backend/types";
 import {
+  createTemplateFieldId,
   getDocumentId,
+  getRawDocumentId,
   isNestedDocumentId,
+  isTemplateField,
   replaceDocumentId,
 } from "@storyflow/backend/ids";
 import { fetchArticle } from "./index";
@@ -26,59 +31,72 @@ export const getDefaultValuesFromTemplateAsync = async (
     };
   }
 ) => {
-  const replaceIds = new Map<
-    DocumentId | NestedDocumentId,
-    DocumentId | NestedDocumentId
-  >();
+  const newNestedIds = new Map<RawDocumentId, NestedDocumentId>();
 
   const doc = await fetchArticle(templateId, options.client);
 
   if (doc) {
+    const getNewKey = (key: FieldId) => {
+      if (getDocumentId(key) !== doc._id) return key;
+      return createTemplateFieldId(newDocumentId, key);
+    };
+
     let record: ComputationRecord = Object.fromEntries(
       getComputationEntries(doc.record).map(([key, value]) => {
-        if (getDocumentId(key) === doc._id) {
-          replaceIds.set(doc._id, newDocumentId);
+        const newKey = getNewKey(key);
 
-          const newValue = value.map((el) => {
-            if (
-              typeof el === "object" &&
-              el !== null &&
-              "id" in el &&
-              isNestedDocumentId(el.id)
-            ) {
-              const newNestedDocumentId =
-                options.generateDocumentId(newDocumentId);
-              replaceIds.set(el.id, newNestedDocumentId);
-              return {
-                ...el,
-                id: newNestedDocumentId,
-              };
+        const newValue = value.map((el) => {
+          if (
+            typeof el === "object" &&
+            el !== null &&
+            "id" in el &&
+            isNestedDocumentId(el.id)
+          ) {
+            const newNestedId = options.generateDocumentId(newDocumentId);
+            newNestedIds.set(getRawDocumentId(el.id), newNestedId);
+            const newEl = { ...el };
+            newEl.id = newNestedId;
+            if ("field" in newEl && getDocumentId(newEl.field) === doc._id) {
+              newEl.field = getNewKey(newEl.field);
             }
-            return el;
-          });
+            return newEl;
+          }
+          return el;
+        });
 
-          return [key, newValue];
-        }
-        return [key, value];
+        return [newKey, newValue];
       })
     );
 
     record = Object.fromEntries(
-      getComputationEntries(doc.record).map(([key, value]) => {
-        const newKey = replaceIds.has(getDocumentId(key))
-          ? replaceDocumentId(key, replaceIds.get(getDocumentId(key))!)
+      getComputationEntries(record).map(([key, value]) => {
+        const raw = getRawDocumentId(getDocumentId(key));
+        const newKey = newNestedIds.has(raw)
+          ? replaceDocumentId(key, newNestedIds.get(raw)!)
+          : key;
+
+        return [newKey, value];
+      })
+    );
+
+    /*
+    record = Object.fromEntries(
+      getComputationEntries(record).map(([key, value]) => {
+        const raw = getRawDocumentId(getDocumentId(key));
+        const newKey = replaceIds.has(raw)
+          ? replaceDocumentId(key, replaceIds.get(raw)!)
           : key;
 
         const newValue = value.map((el) => {
           if (
             tools.isNestedField(el) &&
-            replaceIds.has(getDocumentId(el.field))
+            replaceIds.has(getRawDocumentId(getDocumentId(el.field)))
           ) {
             return {
               ...el,
               field: replaceDocumentId(
                 el.field,
-                replaceIds.get(getDocumentId(el.field))!
+                replaceIds.get(getRawDocumentId(getDocumentId(el.field)))!
               ),
             };
           }
@@ -88,6 +106,7 @@ export const getDefaultValuesFromTemplateAsync = async (
         return [newKey, newValue];
       })
     );
+    */
 
     return record;
   }

@@ -84,11 +84,11 @@ function FolderGrid({
 
   const collab = useFolderCollab();
 
+  console.log("FOLDERS", folders);
+
   const folderItems = space.items.map(
     (id) => (folders ?? []).find((folder) => folder._id === id)!
   );
-
-  const id = React.useId();
 
   const onChange = React.useCallback(
     (actions: DragResultAction[]) => {

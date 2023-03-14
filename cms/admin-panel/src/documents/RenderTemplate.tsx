@@ -1,6 +1,10 @@
 import React from "react";
 import { DropShadow, Sortable, useSortableItem } from "@storyflow/dnd";
-import { getRawFieldId, replaceDocumentId } from "@storyflow/backend/ids";
+import {
+  createTemplateFieldId,
+  getRawFieldId,
+  replaceDocumentId,
+} from "@storyflow/backend/ids";
 import {
   ComputationRecord,
   DBDocument,
@@ -11,11 +15,10 @@ import {
 import { getTranslateDragEffect } from "../utils/dragEffects";
 import { targetTools, DocumentConfigOp, AnyOp } from "shared/operations";
 import { RenderField } from "../fields/RenderField";
-import { useDocumentCollab } from "./collab/DocumentCollabContext";
+import { useDocumentMutate } from "./collab/DocumentCollabContext";
 import { ServerPackage } from "@storyflow/state";
 import { getVersionKey } from "./DocumentPage";
 import { GetDocument } from "./GetDocument";
-import { useFieldIdGenerator } from "../id-generator";
 
 export function RenderTemplate({
   id,
@@ -37,10 +40,8 @@ export function RenderTemplate({
   const isMain = id === owner;
 
   const { push } = isMain
-    ? useDocumentCollab().mutate<DocumentConfigOp>(owner, owner)
+    ? useDocumentMutate<DocumentConfigOp>(owner, owner)
     : { push: () => {} };
-
-  const generateFieldId = useFieldIdGenerator();
 
   const onChange = React.useCallback(
     (actions: any) => {
@@ -52,7 +53,6 @@ export function RenderTemplate({
         if (type === "add") {
           const templateItem = {
             ...action.item,
-            id: action.item || generateFieldId(owner),
           };
           ops.push({
             index,
@@ -72,7 +72,6 @@ export function RenderTemplate({
       }
       push({
         target: targetTools.stringify({
-          field: "any",
           operation: "document-config",
           location: "",
         }),
@@ -81,6 +80,14 @@ export function RenderTemplate({
     },
     [config, push]
   );
+
+  React.useEffect(() => {
+    console.log("changing onchange config");
+  }, [config]);
+
+  React.useEffect(() => {
+    console.log("changing onchange push");
+  }, [push]);
 
   let dragHandleProps: any = undefined;
   let containerProps = {};
@@ -141,7 +148,9 @@ export function RenderTemplate({
       );
     }
 
-    const fieldId = replaceDocumentId(fieldConfig.id, owner);
+    const fieldId = isMain
+      ? fieldConfig.id
+      : createTemplateFieldId(owner, fieldConfig.id);
 
     const value = values[fieldId] ?? null;
 

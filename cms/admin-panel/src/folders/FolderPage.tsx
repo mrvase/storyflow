@@ -29,7 +29,7 @@ import { targetTools } from "shared/operations";
 import { createKey } from "../utils/createKey";
 import { AddTemplateDialog } from "./AddTemplateDialog";
 import { DocumentListSpace } from "./spaces/DocumentListSpace";
-import { useArticleTemplate } from "../documents";
+import { useArticle } from "../documents";
 import { useDocumentLabel } from "../documents/useDocumentLabel";
 import { FolderContext } from "./FolderPageContext";
 import { ROOT_FOLDER } from "@storyflow/backend/constants";
@@ -146,7 +146,7 @@ export default function FolderPage({
                       mutate={(domains) => mutateProp("domains", domains)}
                     />
                     <div className="text-xs text-gray-600 font-light flex-center h-6 ring-1 ring-inset ring-gray-700 px-2 rounded cursor-default">
-                      ID: {folder._id}
+                      ID: {folder._id.replace(/^0+/, "")}
                     </div>
                   </>
                 )}
@@ -209,7 +209,7 @@ export function FolderTemplateButton({
   const { current } = useSegment();
   const [, navigateTab] = useTabUrl();
 
-  const article = useArticleTemplate(template);
+  const { article } = useArticle(template);
   const label = useDocumentLabel(article);
 
   if (!template) {

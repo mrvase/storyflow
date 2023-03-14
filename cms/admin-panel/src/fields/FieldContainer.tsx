@@ -12,8 +12,6 @@ import { addImport } from "../custom-events";
 import { FieldPage } from "./FieldPage";
 import { useSegment } from "../layout/components/SegmentContext";
 import { useTabUrl } from "../layout/utils";
-import { PropertyOp, targetTools } from "shared/operations";
-import { getDocumentId } from "@storyflow/backend/ids";
 import { useLabel } from "../documents/collab/hooks";
 import {
   Computation,
@@ -27,7 +25,6 @@ import { Path } from "@storyflow/frontend/types";
 import { getDefaultField } from "@storyflow/backend/fields";
 import { IframeProvider } from "./builder/BuilderIframe";
 import { useFieldId } from "./FieldIdContext";
-import { useDocumentCollab } from "../documents/collab/DocumentCollabContext";
 import { BuilderPathProvider, useBuilderPath } from "./BuilderPath";
 import { useDocumentPageContext } from "../documents/DocumentPageContext";
 import useTabs from "../layout/useTabs";
@@ -378,6 +375,7 @@ function Label({
 
   const label = useLabel(id, template);
 
+  /*
   const articleId = getDocumentId(id);
 
   const { push } = useDocumentCollab().mutate<PropertyOp>(articleId, articleId);
@@ -385,7 +383,6 @@ function Label({
   const onChange = (value: string) => {
     push({
       target: targetTools.stringify({
-        field: "any",
         operation: "property",
         location: id,
       }),
@@ -398,7 +395,6 @@ function Label({
     });
   };
 
-  /*
   isEditable ? (
     <EditableLabel
       value={label}

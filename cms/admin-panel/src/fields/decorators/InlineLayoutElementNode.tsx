@@ -55,7 +55,7 @@ function InlineLayoutElementDecorator({
   return (
     <span
       className={cl(
-        "text-gray-100/90 rounded-sm selection:bg-transparent relative",
+        "text-gray-100/90 rounded-sm selection:bg-transparent relative z-0",
         "before:absolute before:-z-10 before:inset-0 before:rounded-t-sm before:bg-gray-50 before:dark:bg-gray-400/20 ",
         "after:absolute after:-z-10 after:w-full after:left-0 after:-bottom-0.5 after:border-b-2 after:border-b-green-300/50 after:rounded-b-sm",
         isSelected ? "ring-2 ring-amber-300" : "dark:ring-gray-600",

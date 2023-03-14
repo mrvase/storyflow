@@ -143,11 +143,13 @@ export default function DefaultField({
 
   const collab = useDocumentCollab();
 
+  const { record } = useDocumentPageContext();
+
   React.useLayoutEffect(() => {
     /* MUST be useLayoutEffect to run before children useEffects that use the queue */
     collab
       .getOrAddQueue<ComputationOp>(getDocumentId(id), getRawFieldId(id), {
-        transform: createComputationTransformer(initialValue),
+        transform: createComputationTransformer(id, record),
         mergeableNoop: { target: "0:0:", ops: [] },
       })
       .initialize(version, history ?? []);
@@ -181,15 +183,8 @@ export function WritableDefaultField({
   hidden?: boolean;
 }) {
   const rootId = useFieldId();
-  /*
-  const [fullPath] = useBuilderPath();
-  const isActive =
-    stringifyPath(fullPath) === path.split("/").slice(0, -1).join("/");
-  */
-
-  const { record } = useDocumentPageContext();
-
   const client = useClient();
+  const { record } = useDocumentPageContext();
 
   const [output, setOutput] = useGlobalState<Value[]>(id, () =>
     calculateFn(rootId, initialValue, { record, client })
@@ -224,7 +219,7 @@ export function WritableDefaultField({
   const target = targetTools.stringify({
     field: fieldConfig.type,
     operation: "computation",
-    location: id,
+    location: id === rootId ? "" : id,
   });
 
   const els = React.useMemo(
@@ -245,7 +240,10 @@ export function WritableDefaultField({
 
   const actions = React.useMemo(
     () =>
-      collab.boundMutate<ComputationOp>(getDocumentId(id), getRawFieldId(id)),
+      collab.boundMutate<ComputationOp>(
+        getDocumentId(rootId),
+        getRawFieldId(rootId)
+      ),
     [collab]
   );
 

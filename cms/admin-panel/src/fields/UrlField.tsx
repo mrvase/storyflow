@@ -19,7 +19,10 @@ import {
   getTemplateDocumentId,
 } from "@storyflow/backend/ids";
 import { createQueueCache } from "../state/collaboration";
-import { useDocumentCollab } from "../documents/collab/DocumentCollabContext";
+import {
+  useDocumentCollab,
+  useDocumentMutate,
+} from "../documents/collab/DocumentCollabContext";
 import { targetTools, ComputationOp } from "shared/operations";
 import { useGlobalState } from "../state/state";
 import { useSingular } from "../state/useSingular";
@@ -142,7 +145,7 @@ export default function UrlField({
 
   const url = getUrlStringFromValue(output);
 
-  const actions = useDocumentCollab().mutate<ComputationOp>(
+  const actions = useDocumentMutate<ComputationOp>(
     documentId,
     getRawFieldId(id)
   );
