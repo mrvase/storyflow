@@ -27,8 +27,32 @@ import {
   NestedDocumentId,
   Operator,
   RawFieldId,
-  WithBrandedObjectId,
 } from "./types";
+
+export type HasBrandedObjectId<T> = T extends {
+  id: NestedDocumentId;
+  field: FieldId;
+}
+  ? Omit<T, "id" | "field"> & {
+      id: BrandedObjectId<NestedDocumentId>;
+      field: BrandedObjectId<FieldId>;
+    }
+  : T extends { id: NestedDocumentId; folder: FolderId }
+  ? Omit<T, "id" | "folder"> & {
+      id: BrandedObjectId<NestedDocumentId>;
+      folder: BrandedObjectId<FolderId>;
+    }
+  : T extends { id: DocumentId | NestedDocumentId }
+  ? Omit<T, "id"> & { id: BrandedObjectId<DocumentId | NestedDocumentId> }
+  : T;
+
+export type HasImports<T> = T extends {
+  id: NestedDocumentId | DocumentId;
+}
+  ? T & {
+      imports?: ImportRecord;
+    }
+  : T;
 
 /*
  * SHARED TOKENS
@@ -36,29 +60,31 @@ import {
 
 export type PrimitiveValue = string | number | boolean | Date;
 
-export type FieldReference = {
-  id: NestedDocumentId;
-  field: FieldId;
-  imports?: ImportRecord;
+export type WithPick = {
   pick?: RawFieldId;
 };
+
+export type NestedField<WithProps extends WithPick | {} = {}> = {
+  id: NestedDocumentId;
+  field: FieldId;
+  inline?: true;
+} & WithProps;
 
 export type NestedElement = {
   id: NestedDocumentId;
   element: string;
-  imports?: ImportRecord;
-  parent?: string;
+  inline?: true;
 };
 
 export type NestedFolder = {
   id: NestedDocumentId;
   folder: FolderId;
-  imports?: ImportRecord;
+  inline?: true;
 };
 
 export type NestedDocument = {
   id: DocumentId | NestedDocumentId;
-  path?: string;
+  inline?: true;
 };
 
 export type NestedEntity = NestedElement | NestedFolder | NestedDocument;
@@ -107,7 +133,7 @@ export type OperativeToken =
 
 export type TokenStream = (
   | Parameter
-  | FieldReference
+  | NestedField<WithPick>
   | LineBreak
   | Value
   | OperativeToken
@@ -115,21 +141,33 @@ export type TokenStream = (
 
 /* SYNTAX TREE */
 
-export type WithSyntaxError = {
-  error: "," | "(" | ")";
-};
+export type WithSyntaxError =
+  | {
+      error: "," | ")";
+    }
+  | {
+      missing: "number";
+    };
 
-export type SyntaxNode<WithErrorOrNever = never> = {
+export type SyntaxNode<
+  WithExtraChildren extends WithSyntaxError | never = never
+> = {
   type: string | null;
-  children: SyntaxTree<WithErrorOrNever>;
+  children: (
+    | SyntaxNode<WithExtraChildren>
+    | Parameter
+    | NestedField
+    | LineBreak
+    | Value
+    | WithExtraChildren
+  )[];
+  payload?: Record<string, any>;
+  open?: true;
 };
 
-export type SyntaxTree<WithErrorOrNever = never> = (
-  | SyntaxNode<WithErrorOrNever>
-  | Value
-  | LineBreak
-  | WithErrorOrNever
-)[];
+export type SyntaxTree<
+  WithExtraChildren extends WithSyntaxError | never = never
+> = SyntaxNode<WithExtraChildren>;
 
 export type TreeRecord = { [key: FieldId]: SyntaxTree<WithSyntaxError> };
 
@@ -137,17 +175,23 @@ export type TreeRecord = { [key: FieldId]: SyntaxTree<WithSyntaxError> };
 
 export type DBOperativeToken =
   | { "(": true }
-  | { ")": true }
+  | { ")": true | false } // false means it does not close anything (syntax error) - should be ignored
   | { "[": true }
   | { "]": true }
   | { "{": true }
-  | { "|": true }
   | { "}": true }
   | { ")": Operator | FunctionName }
   | { p: RawFieldId };
 
-export type DBSyntaxStream = WithBrandedObjectId<
-  Parameter | FieldReference | LineBreak | Value | DBOperativeToken
+export type DBSyntaxStream = HasImports<
+  | Parameter
+  | NestedField
+  | NestedElement
+  | NestedFolder
+  | NestedDocument
+  | LineBreak
+  | Value
+  | DBOperativeToken
 >[];
 
 export type DBStreamBlock = {
@@ -155,6 +199,6 @@ export type DBStreamBlock = {
   v: DBSyntaxStream;
 };
 
-export type DBValue = WithBrandedObjectId<Value>;
+export type DBValue = HasImports<Value>;
 export type DBValueArray = (DBValue | DBValueArray)[];
 export type DBValueRecord = Record<RawFieldId, DBValueArray>;

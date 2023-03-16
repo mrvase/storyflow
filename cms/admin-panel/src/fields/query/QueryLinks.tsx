@@ -21,6 +21,7 @@ import { FIELDS } from "@storyflow/backend/fields";
 import { calculateFromRecord } from "@storyflow/backend/calculate";
 import { useFieldId } from "../FieldIdContext";
 import { useDocumentIdGenerator } from "../../id-generator";
+import { symb } from "@storyflow/backend/symb";
 
 export function QueryLinks({
   query,

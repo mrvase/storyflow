@@ -16,6 +16,7 @@ import {
   NestedElement,
   NestedFolder,
   ContextToken,
+  Token,
 } from "./types";
 
 function isObject(value: any): value is Record<string, any> {
@@ -66,7 +67,7 @@ function isDBSymbol<T extends DBSymbolKey>(
 function isDBSymbol<T extends ")", F extends Operator | FunctionName>(
   value: any,
   key: T
-): value is { ")": true | F };
+): value is { ")": true | false | F };
 function isDBSymbol<T extends DBSymbolKey>(
   value: any,
   key: T
@@ -129,8 +130,19 @@ function isContextToken(value: any): value is ContextToken {
   return isObject(value) && "ctx" in value;
 }
 
-function isPrimitiveValue(value: any) {
-  return typeof value !== "object";
+function isToken(value: any): value is Token {
+  return (
+    isFileToken(value) ||
+    isColorToken(value) ||
+    isCustomToken(value) ||
+    isContextToken(value)
+  );
+}
+
+function isPrimitiveValue(
+  value: any
+): value is string | number | boolean | Date {
+  return typeof value !== "object" || value instanceof Date;
 }
 
 export const symb = {
@@ -147,4 +159,5 @@ export const symb = {
   isColorToken,
   isCustomToken,
   isContextToken,
+  isToken,
 };
