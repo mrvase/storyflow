@@ -62,14 +62,14 @@ export function DocumentListSpace({
     );
   }
 
-  console.log("ROWS", articles);
-
   const rows = articles.map((el) => ({
     id: el._id,
     columns: [
       {
         value: (
-          <LinkableLabel id={el._id}>{getDocumentLabel(el)}</LinkableLabel>
+          <LinkableLabel id={el._id}>
+            {getDocumentLabel(el) || "[Ingen titel]"}
+          </LinkableLabel>
         ),
       },
     ],

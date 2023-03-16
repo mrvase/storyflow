@@ -84,11 +84,11 @@ function FolderGrid({
 
   const collab = useFolderCollab();
 
-  console.log("FOLDERS", folders);
+  const folderItems = space.items
+    .filter(Boolean)
+    .map((id) => (folders ?? []).find((folder) => folder._id === id)!);
 
-  const folderItems = space.items.map(
-    (id) => (folders ?? []).find((folder) => folder._id === id)!
-  );
+  console.log("FOLDERS", folders, space.items, folderItems);
 
   const onChange = React.useCallback(
     (actions: DragResultAction[]) => {
@@ -96,7 +96,7 @@ function FolderGrid({
         if (action.type === "add") {
           return {
             index: action.index,
-            insert: [action.item.id],
+            insert: [action.item._id],
           };
         } else {
           return {
@@ -113,7 +113,7 @@ function FolderGrid({
         ops,
       });
     },
-    [collab]
+    [collab, folderId, spaceId]
   );
 
   return (

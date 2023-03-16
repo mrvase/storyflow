@@ -3,12 +3,10 @@ import {
   FieldId,
   FunctionName,
   Operator,
-  PossiblyNestedDBComputation,
   ComputationBlock,
   NestedElement,
   RawFieldId,
   NestedField,
-  NestedDocumentId,
   Parameter,
   DBDocumentRaw,
   BrandedObjectId,
@@ -22,7 +20,7 @@ type Accummulator = {
   value: DBValue[][];
   stack: DBValue[][][];
   imports: BrandedObjectId<FieldId>[];
-  function: PossiblyNestedDBComputation;
+  function: DBComputation;
 };
 
 const calculateCombinations = (
@@ -519,8 +517,8 @@ export const calculate = (
                                   )
                                 )
                               ) as ComputationBlock & {
-                                result: PossiblyNestedDBComputation;
-                                function: PossiblyNestedDBComputation;
+                                result: DBComputation;
+                                function: DBComputation;
                               }
                           ),
                         () => [null]
@@ -534,8 +532,8 @@ export const calculate = (
                               (imp as WithBrandedObjectId<NestedField>).field
                             )
                           ) as ComputationBlock & {
-                            result: PossiblyNestedDBComputation;
-                            function: PossiblyNestedDBComputation;
+                            result: DBComputation;
+                            function: DBComputation;
                           },
                         () => null
                       ),

@@ -309,5 +309,4 @@ export const tools = {
   match,
   split,
   removeCharacters,
-  ...symb,
 };

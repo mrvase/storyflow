@@ -31,6 +31,7 @@ import { targetTools } from "shared/operations";
 import { AppSpace } from "./spaces/AppSpace";
 import { getFieldRecord, getGraph } from "shared/computation-tools";
 import { FIELDS } from "@storyflow/backend/fields";
+import { calculateFromRecord } from "@storyflow/backend/calculate";
 
 const AppPageContext = React.createContext<{
   addArticleWithUrl: (parent: Pick<DBDocument, "_id" | "record">) => void;
@@ -81,7 +82,8 @@ export default function AppPage({
     const articlesWithLengths = articles
       .map((el) => {
         const urlId = computeFieldId(el._id, FIELDS.url.id);
-        const url = (el.record[urlId]?.[0] as string) ?? "";
+        const url =
+          (calculateFromRecord(urlId, el.record)?.[0] as string) ?? "";
         return {
           ...el,
           url,

@@ -10,6 +10,8 @@ import {
   FolderId,
   RawFieldId,
   ComputationRecord,
+  FieldConfig,
+  FieldType,
 } from "@storyflow/backend/types";
 import {
   Bars3Icon,
@@ -30,6 +32,8 @@ import { FieldOptionsContext } from "./FieldOptionsContext";
 import { FieldRestrictionsContext } from "../FieldTypeContext";
 import {
   computeFieldId,
+  createRawTemplateFieldId,
+  createTemplateFieldId,
   getIdFromString,
   getRawFieldId,
   replaceDocumentId,
@@ -37,13 +41,16 @@ import {
 import { useFieldId } from "../FieldIdContext";
 import { useDocumentPageContext } from "../../documents/DocumentPageContext";
 
+const noTemplate: FieldConfig<FieldType>[] = [];
+
 export function RenderFolder({
   nestedDocumentId,
 }: {
   nestedDocumentId: NestedDocumentId;
 }) {
   const id = useFieldId();
-  const template = useFieldTemplate(id) ?? [];
+  const template = useFieldTemplate(id) ?? noTemplate;
+
   const isActive = useIsActive(nestedDocumentId);
 
   const { record } = useDocumentPageContext();
@@ -51,11 +58,23 @@ export function RenderFolder({
   const values = React.useMemo(() => {
     return Object.fromEntries(
       template.map((el) => {
-        const id = replaceDocumentId(el.id, nestedDocumentId);
+        const id = createTemplateFieldId(nestedDocumentId, el.id);
         return [id, record[id] ?? []];
       })
     ) as ComputationRecord;
-  }, []);
+  }, [template, record]);
+
+  const [, setTemplate] = useGlobalState(`${nestedDocumentId}#template`, () =>
+    template.map((el) => el.id)
+  );
+
+  const prevTemplate = React.useRef(template);
+
+  React.useEffect(() => {
+    if (template !== prevTemplate.current) {
+      setTemplate(() => template.map((el) => el.id));
+    }
+  }, [template]);
 
   return (
     <RenderNestedFields
@@ -229,7 +248,7 @@ export function RenderNestedDocument({
         return [id, record[id] ?? []];
       })
     ) as ComputationRecord;
-  }, []);
+  }, [template, record]);
 
   return (
     <RenderNestedFields
@@ -305,7 +324,7 @@ function RenderNestedFields({
           const label = el.label;
           let rawFieldId =
             "id" in el
-              ? getRawFieldId(el.id)
+              ? createRawTemplateFieldId(el.id)
               : "name" in el
               ? getIdFromString(extendPath(group ?? "", el.name, "#"))
               : (`${el.arg}`.padStart(12, "0") as RawFieldId);

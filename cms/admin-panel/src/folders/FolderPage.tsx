@@ -33,6 +33,8 @@ import { useArticle } from "../documents";
 import { useDocumentLabel } from "../documents/useDocumentLabel";
 import { FolderContext } from "./FolderPageContext";
 import { ROOT_FOLDER } from "@storyflow/backend/constants";
+import { useFieldFocus } from "../field-focus";
+import { addNestedFolder } from "../custom-events";
 
 export default function FolderPage({
   isOpen,
@@ -97,12 +99,11 @@ export default function FolderPage({
           selected={isOpen}
           icon={FolderIcon}
           header={
-            <EditableLabel
-              value={folder.label ?? ""}
+            <FolderLabel
+              folder={folder}
               onChange={(value) => {
                 mutateProp("label", value);
               }}
-              className={cl("font-medium")}
             />
           }
           toolbar={
@@ -196,6 +197,38 @@ export default function FolderPage({
         {children}
       </FolderDomainsProvider>
     </FolderContext.Provider>
+  );
+}
+
+function FolderLabel({
+  folder,
+  onChange,
+}: {
+  folder: DBFolder;
+  onChange: (label: string) => void;
+}) {
+  const [focused] = useFieldFocus();
+
+  return focused ? (
+    <div
+      className="py-0.5 cursor-alias"
+      onMouseDown={(ev) => {
+        if (!focused) return;
+        ev.preventDefault();
+        addNestedFolder.dispatch({
+          folderId: folder._id,
+          templateId: folder.template,
+        });
+      }}
+    >
+      {folder.label ?? ""}
+    </div>
+  ) : (
+    <EditableLabel
+      value={folder.label ?? ""}
+      onChange={onChange}
+      className={cl("font-medium")}
+    />
   );
 }
 

@@ -108,7 +108,7 @@ export type Value =
   | Token
   | Value[];
 // Nested arrays only occur as a product of calculations.
-export type Computation = (Exclude<Value, Value[]> | Placeholder | DBSymbol)[];
+export type Computation = (Value | Placeholder | DBSymbol)[];
 
 export type WithBrandedObjectId<T> = T extends {
   id: NestedDocumentId;
@@ -135,26 +135,12 @@ export type DBValue =
   | Token
   | DBValue[];
 export type DBPlaceholder = Parameter | WithBrandedObjectId<NestedField>;
-export type DBComputation = (
-  | Exclude<DBValue, DBValue[]>
-  | DBPlaceholder
-  | DBSymbol
-)[];
+export type DBComputation = (DBValue | DBPlaceholder | DBSymbol)[];
 
-export type EditorComputation = (
-  | Exclude<Value, Value[]>
-  | Placeholder
-  | EditorSymbol
-)[];
+export type EditorComputation = (Value | Placeholder | EditorSymbol)[];
 
 // These occur when we in the database compute the ComputationBlocks and add
 // the "result" and "function" properties to the block.
-export type PossiblyNestedComputation = (Value | Placeholder | DBSymbol)[];
-export type PossiblyNestedDBComputation = (
-  | DBValue
-  | DBPlaceholder
-  | DBSymbol
-)[];
 
 export type ComputationRecord = { [key: FieldId]: Computation };
 
@@ -298,3 +284,5 @@ export interface Settings {
 }
 
 export type SearchableProps = Record<string, Record<string, boolean>>;
+
+export type SortSpec = Record<string, 1 | -1>;

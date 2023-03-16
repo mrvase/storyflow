@@ -377,55 +377,36 @@ export const documents = createRoute({
     },
     schema() {
       return z.object({
-        filters: z.array(
-          z.object({
-            field: z.string(),
-            operation: z.union([
-              z.literal("="),
-              z.literal("!="),
-              z.literal(">"),
-              z.literal("<"),
-              z.literal(">="),
-              z.literal("<="),
-            ]),
-            value: z.any(),
-          })
-        ),
+        folder: z.string(),
+        sortBy: z
+          .record(z.string(), z.union([z.literal(-1), z.literal(1)]))
+          .optional(),
+        limit: z.number(),
+        filters: z.record(z.string(), z.any()).optional(),
       });
     },
-    async query({ filters: filtersProp }, { dbName }) {
+    async query({ folder, filters: filtersProp, limit }, { dbName }) {
       const db = (await clientPromise).db(dbName);
 
-      const filters = filtersProp.reduce((acc, filter) => {
-        const operator = {
-          "=": "eq",
-          "!=": "ne",
-          ">": "gt",
-          "<": "lt",
-          ">=": "gte",
-          "<=": "lte",
-        };
-        const field =
-          filter.field === "folder" ? "folder" : `values.${filter.field}`;
-        acc[field] = {
-          [`$${operator[filter.operation]}`]:
-            filter.value.length === 1 ? filter.value[0] : filter.value,
-        };
-        return acc;
-      }, {} as Record<string, { [key: string]: any[] }>);
+      const filters = Object.fromEntries(
+        Object.entries(filtersProp ?? {}).map(([key, value]) => {
+          return [`values.${key}`, value];
+        })
+      );
 
       const result = await db
         .collection<DBDocumentRaw>("documents")
-        .find(filters)
+        .find({ folder: new ObjectId(folder), ...filters })
         .sort({ _id: -1 })
+        .limit(limit)
         .toArray();
 
       console.log(filters, result);
 
       return success(
-        result.map((el) => ({
-          id: el._id.toHexString(),
-          values: el.values,
+        result.map(parseDocument).map(({ _id, record }) => ({
+          _id,
+          record,
         }))
       );
     },

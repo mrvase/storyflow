@@ -18,7 +18,6 @@ import {
 } from "@storyflow/backend/ids";
 import { fetchArticle } from "./index";
 import { getComputationEntries } from "shared/computation-tools";
-import { tools } from "shared/editor-tools";
 
 export const getDefaultValuesFromTemplateAsync = async (
   newDocumentId: DocumentId,
@@ -89,7 +88,7 @@ export const getDefaultValuesFromTemplateAsync = async (
 
         const newValue = value.map((el) => {
           if (
-            tools.isNestedField(el) &&
+            symb.isNestedField(el) &&
             replaceIds.has(getRawDocumentId(getDocumentId(el.field)))
           ) {
             return {

@@ -4,7 +4,7 @@ import { computeFieldId } from "@storyflow/backend/ids";
 import { FIELDS } from "@storyflow/backend/fields";
 import { calculateFromRecord } from "@storyflow/backend/calculate";
 
-export const fallbackLabel = "[Titel]";
+export const fallbackLabel = "[Ingen titel]";
 
 export const getDocumentLabel = (doc: TemplateDocument | undefined) => {
   if (!doc) return undefined;
@@ -14,7 +14,7 @@ export const getDocumentLabel = (doc: TemplateDocument | undefined) => {
     doc.record
   )?.[0];
   const defaultLabel =
-    typeof defaultLabelValue === "string" ? defaultLabelValue : null;
+    typeof defaultLabelValue === "string" ? defaultLabelValue.trim() : null;
   const creationDateString = doc.record[
     computeFieldId(doc._id, FIELDS.creation_date.id)
   ]?.[0] as string | undefined;
@@ -42,12 +42,15 @@ export const useDocumentLabel = <T extends TemplateDocument | undefined>(
   }
 
   if (doc?.label) {
-    return doc.label as any;
+    return (doc.label as any).trim() || fallbackLabel;
   }
 
   if (output && output.length > 0) {
-    return typeof output[0] === "string" ? output[0] : (fallbackLabel as any);
+    return (
+      (typeof output[0] === "string" ? output[0] : "")?.trim() ||
+      (fallbackLabel as any)
+    );
   }
 
-  return defaultLabel ?? (fallbackLabel as any);
+  return defaultLabel?.trim() || (fallbackLabel as any);
 };

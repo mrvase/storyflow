@@ -29,10 +29,12 @@ export function useGlobalState<T>(
 
   const state = React.useSyncExternalStore(...s.sync);
 
-  return [
-    state,
-    (fn) => {
+  const setter = React.useCallback(
+    (fn: (value: T | undefined) => Promise<T> | T) => {
       s.set(fn);
     },
-  ];
+    [s]
+  );
+
+  return React.useMemo(() => [state, setter], [state, s]);
 }

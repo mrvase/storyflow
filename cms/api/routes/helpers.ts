@@ -7,6 +7,8 @@ import {
   ComputationRecord,
   DBValueRecord,
   DBComputation,
+  DBValue,
+  Value,
 } from "@storyflow/backend/types";
 import { ObjectId } from "mongodb";
 import {
@@ -45,9 +47,17 @@ export const getImports = (
   return importRecord;
 };
 
-export const addNestedObjectIds = (value: Computation): DBComputation => {
+export function addNestedObjectIds(value: Value[]): DBValue[];
+export function addNestedObjectIds(value: Computation): DBComputation;
+export function addNestedObjectIds(
+  value: Computation | Value[]
+): DBComputation | DBValue[] {
   return value.map((el) => {
-    if (el === null || typeof el !== "object" || !("id" in el)) return el;
+    if (el === null || typeof el !== "object") return el;
+    if (Array.isArray(el)) {
+      return addNestedObjectIds(el);
+    }
+    if (!("id" in el)) return el;
     return {
       ...el,
       id: new ObjectId(el.id),
@@ -55,7 +65,7 @@ export const addNestedObjectIds = (value: Computation): DBComputation => {
       ...("folder" in el && { folder: new ObjectId(el.folder) }),
     };
   });
-};
+}
 
 export function getSortedValues(
   record: ComputationRecord,

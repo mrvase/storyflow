@@ -11,9 +11,20 @@ import { error, success } from "@storyflow/result";
 import { globals } from "../middleware/globals";
 import { fetchSinglePage } from "@storyflow/server";
 import type {} from "@storyflow/frontend/types";
-import { DBDocument } from "@storyflow/backend/types";
+import {
+  ContextToken,
+  DBDocument,
+  DBDocumentRaw,
+} from "@storyflow/backend/types";
 import { FIELDS } from "@storyflow/backend/fields";
 import { ObjectId } from "mongodb";
+import { parseDocument } from "../routes/documents";
+import { getFieldRecord, getGraph } from "shared/computation-tools";
+import { computeFieldId } from "@storyflow/backend/ids";
+import {
+  calculateFromRecordAsync,
+  FetchObject,
+} from "@storyflow/backend/calculate";
 
 const sessionStorage = createSessionStorage({
   cookie: cookieOptions,
@@ -144,7 +155,7 @@ export const public_ = createRoute({
       const client = await clientPromise;
       const articles = await client
         .db(dbName)
-        .collection("documents")
+        .collection<DBDocumentRaw>("documents")
         .find({
           ...(namespaces
             ? {
@@ -159,13 +170,65 @@ export const public_ = createRoute({
         })
         .toArray();
 
-      const urls = articles.map((el) => {
-        return el.values[FIELDS.url.id][0] as string;
-      });
+      const urls = articles
+        .map((el) => {
+          const doc = parseDocument(el);
+          const graph = getGraph(doc.record);
+          return {
+            _id: doc._id,
+            url: el.values[FIELDS.url.id][0] as string,
+            params: getFieldRecord(
+              doc.record,
+              computeFieldId(doc._id, FIELDS.params.id),
+              graph
+            ),
+          };
+        })
+        .sort((a, b) => {
+          if (a.url.length < b.url.length) {
+            return -1;
+          }
+          if (a.url.length > b.url.length) {
+            return 1;
+          }
+          return 0;
+        });
 
-      console.log("GOT PATHS", urls);
+      const dynamicUrls = urls.filter((el) => el.url.indexOf("*") > 0);
+      const ordinaryUrls = urls.filter((el) => el.url.indexOf("*") < 0);
 
-      return success(urls);
+      /*
+      const staticUrls = (
+        await Promise.all(
+          dynamicUrls.map(async ({ _id, url, params }) => {
+            const getter = async (value: FetchObject | ContextToken) => {
+              if ("select" in value) {
+                // do fetch return docs
+
+                return [];
+              }
+              return [];
+            };
+
+            const slugs = await calculateFromRecordAsync(
+              computeFieldId(_id, FIELDS.params.id),
+              params,
+              getter
+            );
+
+            return slugs
+              .map((el) =>
+                typeof el === "string" ? `${url.slice(0, -1)}${el}` : undefined
+              )
+              .filter((el): el is Exclude<typeof el, undefined> => Boolean(el));
+          })
+        )
+      ).flat(1);
+      */
+
+      console.log("GOT PATHS", ordinaryUrls);
+
+      return success(ordinaryUrls.map((el) => el.url));
     },
   }),
   generateKey: createProcedure({

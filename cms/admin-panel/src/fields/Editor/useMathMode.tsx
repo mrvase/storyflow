@@ -1,6 +1,5 @@
 import * as React from "react";
 import { useEditorContext } from "../../editor/react/EditorProvider";
-import { ComputationOp } from "shared/operations";
 import { EditorComputation } from "@storyflow/backend/types";
 import { useClientConfig } from "../../client-config";
 import { operators } from "@storyflow/backend/types";
@@ -39,13 +38,13 @@ export function useMathMode(defaultValue: boolean = false) {
       const textClosers: number[] = [];
  
       computation.forEach((el, index) => {
-        if (tools.isSymbol(el, "(")) {
+        if (symb.isSymbol(el, "(")) {
           numberOpeners.push(index);
-        } else if (tools.isSymbol(el, ")")) {
+        } else if (symb.isSymbol(el, ")")) {
           numberClosers.push(index);
-        } else if (tools.isSymbol(el, "(")) {
+        } else if (symb.isSymbol(el, "(")) {
           textOpeners.push(index);
-        } else if (tools.isSymbol(el, ")")) {
+        } else if (symb.isSymbol(el, ")")) {
           textClosers.push(index);
         }
       });

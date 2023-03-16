@@ -67,6 +67,10 @@ export const FIELDS = assignIds({
     type: "default",
     label: "Brugeremail",
   },
+  params: {
+    type: "default",
+    label: "Dynamiske parametre",
+  },
 } as const);
 
 export function getDefaultField(id: FieldId) {

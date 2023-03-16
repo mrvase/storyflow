@@ -36,6 +36,31 @@ export class Store {
     return state;
   }
 
+  useMany<T>(id: RegExp): [id: string, state: State<T | undefined>][];
+  useMany<T>(
+    id: RegExp,
+    fn: (id: string, value: T | undefined) => Promise<T> | T
+  ): [id: string, state: State<T>][];
+  useMany<T>(
+    id: RegExp,
+    fn?: (id: string, value: T | undefined) => Promise<T> | T
+  ): [id: string, state: State<T | undefined>][] {
+    const matches = [];
+    for (let key of this.map.keys()) {
+      if (key.match(id)) {
+        matches.push(key);
+      }
+    }
+    const results: [id: string, state: State<T | undefined>][] = [];
+    for (let match of matches) {
+      const state = fn
+        ? this.use<T>(match, (value) => fn(match, value))
+        : this.use<T>(match);
+      results.push([match, state as State<T | undefined>]);
+    }
+    return results;
+  }
+
   useAsync<T>(
     id: string,
     fn: Promise<((value: T | undefined) => Promise<T> | T) | undefined>

@@ -47,6 +47,7 @@ import {
   Path,
 } from "@storyflow/frontend/types";
 import { useDocumentIdGenerator } from "../id-generator";
+import { symb } from "@storyflow/backend/symb";
 
 const useBuilderRendered = ({
   listeners,
@@ -134,7 +135,7 @@ const useElementActions = ({
       tools.forEach(
         computation,
         (value, i) => {
-          if (tools.isNestedElement(value) && value.id === elementId) {
+          if (symb.isNestedElement(value) && value.id === elementId) {
             index = i;
             return true;
           }
@@ -176,7 +177,7 @@ const useElementActions = ({
       tools.forEach(
         computation,
         (value, i) => {
-          if (tools.isNestedElement(value) && value.id === elementId) {
+          if (symb.isNestedElement(value) && value.id === elementId) {
             index = i;
             return true;
           }
@@ -212,7 +213,7 @@ const useElementActions = ({
       computation,
       (value, index) => {
         length++;
-        if (tools.isNestedElement(value)) {
+        if (symb.isNestedElement(value)) {
           blocks.push({
             index,
             length,
@@ -235,7 +236,7 @@ const useElementActions = ({
       tools.forEach(
         computation,
         (value, index) => {
-          if (tools.isNestedElement(value)) {
+          if (symb.isNestedElement(value)) {
             i++;
           }
           if (i === from) {
@@ -464,7 +465,7 @@ const getRecordSnapshot = (
         if (Array.isArray(element)) {
           // this should propably just flat it infinitely out
           return Object.assign(acc, getChildren(element));
-        } else if (!tools.isNestedElement(element)) {
+        } else if (!symb.isNestedElement(element)) {
           return acc;
         }
         const components = libraries

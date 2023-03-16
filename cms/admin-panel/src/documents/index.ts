@@ -159,13 +159,17 @@ export function useArticle(
   options: { inactive?: boolean } = {}
 ) {
   const defaultTemplate = TEMPLATES.find((el) => el._id === articleId);
+
   if (defaultTemplate) {
-    return {
-      article: defaultTemplate as DBDocument,
-      histories: {},
-      mutate: () => {},
-      error: undefined,
-    };
+    return React.useMemo(
+      () => ({
+        article: defaultTemplate as DBDocument,
+        histories: {},
+        mutate: () => {},
+        error: undefined,
+      }),
+      []
+    );
   }
 
   const [initialArticle, setInitialArticle] = React.useState(() => {

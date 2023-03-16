@@ -1,4 +1,9 @@
-import { DocumentId, FieldId, RawFieldId } from "@storyflow/backend/types";
+import {
+  DocumentId,
+  FieldId,
+  FolderId,
+  RawFieldId,
+} from "@storyflow/backend/types";
 
 export const addImport = createEvent<{
   id: FieldId;
@@ -9,6 +14,10 @@ export const addDocumentImport = createEvent<{
   documentId: DocumentId;
   templateId: DocumentId | undefined;
 }>("add-document-import");
+export const addNestedFolder = createEvent<{
+  folderId: FolderId;
+  templateId: DocumentId | undefined;
+}>("add-nested-folder");
 export const addLayoutElement = createEvent<{ name: string; library: string }>(
   "add-layout-element"
 );

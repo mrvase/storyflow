@@ -167,7 +167,7 @@ function DocumentDecorator({
   );
 }
 
-function ValueDisplay({
+export function ValueDisplay({
   id,
   initialValue,
   record,

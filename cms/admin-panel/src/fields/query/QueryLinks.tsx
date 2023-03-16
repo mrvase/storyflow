@@ -54,7 +54,7 @@ export function QueryLinks({
 
   React.useEffect(() => {
     const symbol = getPrevSymbol();
-    if (tools.isNestedField(symbol)) {
+    if (symb.isNestedField(symbol)) {
       setLinkParent(symbol);
     }
   }, []);

@@ -21,6 +21,7 @@ import {
   addImport,
   addLayoutElement,
   addNestedDocument,
+  addNestedFolder,
 } from "../../custom-events";
 import {
   $getLastBlock,
@@ -115,6 +116,20 @@ function useEditorEvents() {
           ];
 
           insertComputation(editor, insert, libraries);
+        }),
+
+        addNestedFolder.subscribe(async ({ folderId, templateId }) => {
+          editor.update(() => {
+            addBlockElement([
+              {
+                id: generateDocumentId(documentId),
+                folder: folderId,
+              },
+            ]);
+          });
+          if (templateId && !fieldConfig?.template) {
+            setFieldConfig("template", templateId);
+          }
         }),
 
         addDocumentImport.subscribe(async ({ documentId, templateId }) => {

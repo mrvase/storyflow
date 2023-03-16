@@ -49,6 +49,7 @@ import { TemplateHeader } from "./TemplateHeader";
 import { getPreview } from "./getPreview";
 import { useIsFocused } from "../../editor/react/useIsFocused";
 import { useFieldId } from "../FieldIdContext";
+import { symb } from "@storyflow/backend/symb";
 
 export const ParentPropContext = React.createContext<string | null>(null);
 
@@ -86,11 +87,11 @@ export const getVariant = (output: any): Variant => {
 };
 
 export const findImportsFn = (value: Computation) => {
-  return value.filter((el): el is NestedField => tools.isNestedField(el));
+  return value.filter((el): el is NestedField => symb.isNestedField(el));
 };
 
 export const findFoldersFn = (value: Computation) => {
-  return value.filter((el): el is NestedFolder => tools.isNestedFolder(el));
+  return value.filter((el): el is NestedFolder => symb.isNestedFolder(el));
 };
 
 /*
@@ -209,10 +210,12 @@ export function WritableDefaultField({
     () => findImportsFn(initialValue)
   );
 
+  /*
   const [folders, setFolders] = useGlobalState<NestedFolder[]>(
     `${id}#folders`,
     () => findFoldersFn(initialValue)
   );
+  */
 
   const preview = getPreview(output);
 
@@ -223,7 +226,7 @@ export function WritableDefaultField({
   });
 
   const els = React.useMemo(
-    () => output.filter((el): el is NestedElement => tools.isNestedElement(el)),
+    () => output.filter((el): el is NestedElement => symb.isNestedElement(el)),
     [output]
   );
 
@@ -231,8 +234,13 @@ export function WritableDefaultField({
     () =>
       output.filter(
         (el): el is NestedDocument & { id: NestedDocumentId } =>
-          tools.isNestedDocument(el) && isNestedDocumentId(el.id)
+          symb.isNestedDocument(el) && isNestedDocumentId(el.id)
       ),
+    [output]
+  );
+
+  const folders = React.useMemo(
+    () => output.filter((el): el is NestedFolder => symb.isNestedFolder(el)),
     [output]
   );
 
@@ -290,7 +298,7 @@ export function WritableDefaultField({
         calculateFn(rootId, decoded, { client, record, returnFunction: true })
       );
       setFieldImports(() => findImportsFn(decoded));
-      setFolders(() => findFoldersFn(decoded));
+      // setFolders(() => findFoldersFn(decoded));
     });
   }, []);
 

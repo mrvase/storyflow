@@ -30,6 +30,7 @@ import { Query } from "../query/Query";
 import { type QueueListener } from "@storyflow/state";
 import { ContextNode } from "../decorators/ContextNode";
 import { useFieldId } from "../FieldIdContext";
+import { FolderNode } from "../decorators/FolderNode";
 
 const editorConfig = {
   namespace: "EDITOR",
@@ -46,6 +47,7 @@ const editorConfig = {
     HeadingNode,
     TokenNode,
     ContextNode,
+    FolderNode,
   ],
 };
 

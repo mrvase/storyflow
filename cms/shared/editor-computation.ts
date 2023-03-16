@@ -1,3 +1,4 @@
+import { symb } from "@storyflow/backend/symb";
 import {
   Token,
   Computation,
@@ -10,7 +11,6 @@ import {
   EditorSymbol,
   RawFieldId,
 } from "@storyflow/backend/types";
-import { tools } from "./editor-tools";
 
 type DBElement = Computation[number];
 type EditorElement = EditorComputation[number];
@@ -140,14 +140,14 @@ export const encodeEditorComputation = (
   };
 
   db.forEach((el) => {
-    if (tools.isDBSymbol(el, "(") || tools.isDBSymbol(el, "{")) {
+    if (symb.isDBSymbol(el, "(") || symb.isDBSymbol(el, "{")) {
       stack.push(value);
       value = [];
     } else if (
-      tools.isDBSymbol(el, ")", "+") ||
-      tools.isDBSymbol(el, ")", "-") ||
-      tools.isDBSymbol(el, ")", "*") ||
-      tools.isDBSymbol(el, ")", "/")
+      symb.isDBSymbol(el, ")", "+") ||
+      symb.isDBSymbol(el, ")", "-") ||
+      symb.isDBSymbol(el, ")", "*") ||
+      symb.isDBSymbol(el, ")", "/")
     ) {
       const saved = stack[stack.length - 1];
       if (prevIsValueOrPlaceholder(saved)) {
@@ -175,12 +175,12 @@ export const encodeEditorComputation = (
       });
       value = saved;
       stack.pop();
-    } else if (tools.isDBSymbol(el, "p")) {
+    } else if (symb.isDBSymbol(el, "p")) {
       const saved = stack[stack.length - 1];
       if (prevIsValueOrPlaceholder(saved)) {
         saved.push({ ",": true });
       }
-      if (value.length === 1 && tools.isNestedField(value[0])) {
+      if (value.length === 1 && symb.isNestedField(value[0])) {
         const fieldImport = { ...value[0] };
         fieldImport.pick = el.p;
         saved.push(fieldImport);
@@ -190,12 +190,12 @@ export const encodeEditorComputation = (
       }
       value = saved;
       stack.pop();
-    } else if (tools.isDBSymbol(el, "}")) {
+    } else if (symb.isDBSymbol(el, "}")) {
       const saved = stack[stack.length - 1];
       saved.push(...replaceSeparators(value));
       value = saved;
       stack.pop();
-    } else if (tools.isDBSymbol(el, ")")) {
+    } else if (symb.isDBSymbol(el, ")")) {
       const saved = stack[stack.length - 1];
       if (prevIsValueOrPlaceholder(saved)) {
         // inserts separator between operations
@@ -211,28 +211,28 @@ export const encodeEditorComputation = (
       const prev = value[value.length - 1];
       if (
         typeof prev !== "undefined" &&
-        !tools.isDBSymbol(prev, "n") &&
-        !tools.isDBSymbol(el, "n") &&
+        !symb.isDBSymbol(prev, "n") &&
+        !symb.isDBSymbol(el, "n") &&
         !isMergeBreaker(prev) &&
         !isMergeBreaker(el)
       ) {
         value.push({ ",": true });
       }
-      if (tools.isNestedField(el)) {
+      if (symb.isNestedField(el)) {
         value.push(el);
       } else if (isValueOrPlaceholder(el)) {
         value.push(el);
-      } else if (tools.isDBSymbol(el, "n")) {
+      } else if (symb.isDBSymbol(el, "n")) {
         value.push(el);
-      } else if (tools.isDBSymbol(el, "/")) {
+      } else if (symb.isDBSymbol(el, "/")) {
         value.push({ n: true });
-      } else if (tools.isFileToken(el)) {
+      } else if (symb.isFileToken(el)) {
         value.push(el);
-      } else if (tools.isColorToken(el)) {
+      } else if (symb.isColorToken(el)) {
         value.push(el);
-      } else if (tools.isCustomToken(el)) {
+      } else if (symb.isCustomToken(el)) {
         value.push(el);
-      } else if (tools.isParameter(el)) {
+      } else if (symb.isParameter(el)) {
         value.push(el);
       }
     }
@@ -249,7 +249,6 @@ type DbFunction = {
     | { ",": true }
     | { n: true }
     | { "/": true }
-    | Token
   )[];
   operation: string | null;
   parent: DbFunction | null;
@@ -264,7 +263,7 @@ export const decodeEditorComputation = (
   let current: DbFunction = value;
 
   client.forEach((el, index) => {
-    if (tools.isEditorSymbol(el, "(")) {
+    if (symb.isEditorSymbol(el, "(")) {
       // An opening bracket always creates a group with operation null
       // and the operation stays null. So when we enter children groups,
       // we know we can return to the latest bracket group by returning
@@ -272,7 +271,7 @@ export const decodeEditorComputation = (
       const func = { parameters: [], operation: null, parent: current };
       current.parameters.push(func);
       current = func;
-    } else if (tools.isEditorSymbol(el, ")")) {
+    } else if (symb.isEditorSymbol(el, ")")) {
       // we first return to the level introduced by the opening bracket
       // (see comment above)
       while (current.operation !== null) {
@@ -280,7 +279,7 @@ export const decodeEditorComputation = (
       }
       // and then return to the parent that the bracket group was originally pushed to
       current = current.parent!;
-    } else if (tools.isEditorSymbol(el, ",") || tools.isEditorSymbol(el, "n")) {
+    } else if (symb.isEditorSymbol(el, ",") || symb.isEditorSymbol(el, "n")) {
       // the only case in which we are in a group where the operation is not null
       // is when it has been set to an operator (and not a function name - these are only added when the group is left).
       // Since there cannot be a comma or an n in a group with an operator, we return to the parent.
@@ -289,10 +288,10 @@ export const decodeEditorComputation = (
       }
       current.parameters.push(el);
     } else if (
-      tools.isEditorSymbol(el, "+") ||
-      tools.isEditorSymbol(el, "-") ||
-      tools.isEditorSymbol(el, "*") ||
-      tools.isEditorSymbol(el, "/")
+      symb.isEditorSymbol(el, "+") ||
+      symb.isEditorSymbol(el, "-") ||
+      symb.isEditorSymbol(el, "*") ||
+      symb.isEditorSymbol(el, "/")
     ) {
       if (current.operation !== el["_"]) {
         if (
@@ -329,7 +328,7 @@ export const decodeEditorComputation = (
       } else {
         current.parameters.push({ ",": true });
       }
-    } else if (tools.isNestedField(el)) {
+    } else if (symb.isNestedField(el)) {
       if ("pick" in el) {
         let { pick, ...rest } = el;
         current.parameters.push({
@@ -341,13 +340,13 @@ export const decodeEditorComputation = (
       } else {
         current.parameters.push(el);
       }
-    } else if (tools.isFileToken(el)) {
+    } else if (symb.isFileToken(el)) {
       current.parameters.push(el);
-    } else if (tools.isColorToken(el)) {
+    } else if (symb.isColorToken(el)) {
       current.parameters.push(el);
-    } else if (tools.isCustomToken(el)) {
+    } else if (symb.isCustomToken(el)) {
       current.parameters.push(el);
-    } else if (tools.isParameter(el)) {
+    } else if (symb.isParameter(el)) {
       current.parameters.push(el);
     } else if (isValueOrPlaceholder(el)) {
       current.parameters.push(el);

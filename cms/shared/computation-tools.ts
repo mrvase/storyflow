@@ -3,11 +3,13 @@ import {
   ComputationRecord,
   DBComputation,
   DBDocumentRaw,
+  DBValue,
   DocumentId,
   EditorComputation,
   FieldId,
   NestedDocumentId,
   RawFieldId,
+  Value,
 } from "@storyflow/backend/types";
 import { ComputationOp, targetTools } from "./operations";
 import { tools } from "./editor-tools";
@@ -20,6 +22,7 @@ import {
 } from "@storyflow/backend/ids";
 import { createSpliceTransformer } from "./splice-transform";
 import { getConfig } from "./initialValues";
+import { symb } from "@storyflow/backend/symb";
 
 export const getPickedDocumentIds = (
   fref: FieldId,
@@ -56,18 +59,18 @@ export const getPickedDocumentIds = (
   if (!value) return [];
 
   value.forEach((c, i) => {
-    if (tools.isNestedField(c)) {
+    if (symb.isNestedField(c)) {
       drefs.push(...getPickedDocumentIds(c.field, pool));
-    } else if (i > 0 && tools.isDBSymbol(c, "p")) {
+    } else if (i > 0 && symb.isDBSymbol(c, "p")) {
       const prev = value[i - 1];
-      if (tools.isNestedField(prev)) {
+      if (symb.isNestedField(prev)) {
         const secondaryDrefs = getPickedDocumentIds(prev.field, pool);
         secondaryDrefs.forEach((dref) => {
           const id = computeFieldId(dref, c.p);
           drefs.push(...getPickedDocumentIds(id, pool));
         });
       }
-    } else if (tools.isNestedDocument(c) && !isNestedDocumentId(c.id)) {
+    } else if (symb.isNestedDocument(c) && !isNestedDocumentId(c.id)) {
       drefs.push(c.id);
     }
   }, [] as FieldId[]);
@@ -79,11 +82,11 @@ export const getImportIds = (value: Computation, pool: ComputationRecord) => {
   const imports: FieldId[] = [];
 
   value.forEach((c, i) => {
-    if (tools.isNestedField(c)) {
+    if (symb.isNestedField(c)) {
       imports.push(c.field);
-    } else if (i > 0 && tools.isDBSymbol(c, "p")) {
+    } else if (i > 0 && symb.isDBSymbol(c, "p")) {
       const prev = value[i - 1];
-      if (tools.isNestedField(prev)) {
+      if (symb.isNestedField(prev)) {
         const drefs = getPickedDocumentIds(prev.field, pool);
         drefs.forEach((dref) => imports.push(computeFieldId(dref, c.p)));
       }
@@ -164,9 +167,17 @@ export const createComputationTransformer = (
   );
 };
 
-const removeNestedObjectIds = (value: DBComputation): Computation => {
+function removeNestedObjectIds(value: DBValue[]): Value[];
+function removeNestedObjectIds(value: DBComputation): Computation;
+function removeNestedObjectIds(
+  value: DBComputation | DBValue[]
+): Computation | Value[] {
   return value.map((el) => {
-    if (el === null || typeof el !== "object" || !("id" in el)) return el;
+    if (el === null || typeof el !== "object") return el;
+    if (Array.isArray(el)) {
+      return removeNestedObjectIds(el);
+    }
+    if (!("id" in el)) return el;
     return {
       ...el,
       id: unwrapObjectId(el.id),
@@ -174,7 +185,7 @@ const removeNestedObjectIds = (value: DBComputation): Computation => {
       ...("folder" in el && { folder: unwrapObjectId(el.folder) }),
     };
   });
-};
+}
 
 export const getComputationRecord = (
   documentId: DocumentId,

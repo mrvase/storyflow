@@ -374,7 +374,9 @@ export default function UrlField({
           </div>
           <input
             type="text"
-            className={cl("w-full bg-transparent outline-none pb-2")}
+            className={cl(
+              "w-full bg-transparent outline-none pb-2 placeholder:text-white/25"
+            )}
             value={slug === "*" ? "" : slug}
             onChange={(ev) => handleChange(ev.target.value)}
             onFocus={() => setIsFocused(true)}
@@ -384,6 +386,7 @@ export default function UrlField({
                 handleChange("");
               }
             }}
+            placeholder={slug !== "*" ? "Ikke udfyldt" : ""}
           />
           {slug === "*" && (
             <input

@@ -3,13 +3,14 @@ import {
   FieldId,
   Computation,
   NestedField,
-  PossiblyNestedComputation,
   ComputationRecord,
   NestedDocumentId,
   FolderId,
   ContextToken,
   RawFieldId,
   DocumentId,
+  NestedFolder,
+  SortSpec,
 } from "./types";
 import { symb } from "./symb";
 import { createFieldId } from "./ids";
@@ -62,8 +63,6 @@ const imp = [1, 2, 3]
 filter([0, imp, 4, 5], [1, 2, 3]=1);
 parameters are: [[0, 1, 2, 3, 4, 5], [true, false, false]] (since square brackets spreads the implicit array from the import)
 */
-
-type SortSpec = Record<string, 1 | -1>;
 
 export type FetchObject = {
   id: NestedDocumentId;
@@ -124,7 +123,7 @@ const levelImplicitAndExplicitArrays = (arr: Value[][]): Value[][] => {
 
 type Loop<T extends Record<string, any> | undefined = undefined> = {
   index: number;
-  array: PossiblyNestedComputation;
+  array: Computation;
   resolved: boolean;
 } & (T extends undefined ? { vars?: never } : { vars: T });
 
@@ -140,7 +139,7 @@ type ThenableSync = {
 
 type Accumulator = {
   isFunc: boolean;
-  func: PossiblyNestedComputation;
+  func: Computation;
   value: Value[][];
   stack: Value[][][];
   loop1: Loop;
@@ -152,13 +151,37 @@ type Accumulator = {
 
 export function calculateFromRecord(id: FieldId, record: ComputationRecord) {
   const getter = (id: Importers) => {
-    const value = record[id as FieldId];
+    if (typeof id === "object") {
+      return {
+        then(callback: any): Value[] {
+          return callback([]);
+        },
+      };
+    }
+    const value = record[id];
     if (!value || value.length === 0) return;
     return {
       then(callback: any): Value[] {
         return callback(calculate(value, getter));
       },
     };
+  };
+
+  return calculate(record[id] ?? [], getter);
+}
+
+export function calculateFromRecordAsync(
+  id: FieldId,
+  record: ComputationRecord,
+  fetch: (value: Exclude<Importers, FieldId>) => Promise<Value[]>
+) {
+  const getter = async (id: Importers) => {
+    if (typeof id === "object") {
+      return await fetch(id);
+    }
+    const value = record[id];
+    if (!value || value.length === 0) return;
+    return calculate(value, getter);
   };
 
   return calculate(record[id] ?? [], getter);
@@ -194,7 +217,7 @@ export function calculateSync(
 }
 
 export function calculateAsync(
-  compute: PossiblyNestedComputation,
+  compute: Computation,
   getState: (
     id: Importers,
     options: GetStateOptions
@@ -207,7 +230,7 @@ export function calculateAsync(
 }
 
 function calculate(
-  compute: PossiblyNestedComputation,
+  compute: Computation,
   getState: (
     id: Importers,
     options: GetStateOptions
@@ -218,7 +241,7 @@ function calculate(
   }
 ): Value[] | Promise<Value[]>;
 function calculate(
-  compute: PossiblyNestedComputation,
+  compute: Computation,
   getState: (
     id: Importers,
     options: GetStateOptions
@@ -229,7 +252,7 @@ function calculate(
   }
 ): Value[];
 function calculate(
-  compute: PossiblyNestedComputation,
+  compute: Computation,
   getState: (
     id: Importers,
     options: GetStateOptions
@@ -281,7 +304,18 @@ function calculate(
           ...acc.value.reduce((acc, el) => {
             return el.reduce((acc, el) => {
               if (el !== null && typeof el === "object") {
-                if ("id" in el) {
+                if ("folder" in el) {
+                  acc.push(
+                    { "(": true },
+                    {
+                      ...el,
+                      select: pick,
+                    } as NestedFolder,
+                    {
+                      ")": true,
+                    }
+                  );
+                } else if ("id" in el) {
                   acc.push(
                     { "[": true },
                     {
@@ -364,6 +398,34 @@ function calculate(
                   acc,
                 }) as Value[];
               }
+            });
+          }
+        } else if (typeof el === "object" && el !== null && "select" in el) {
+          const el_: NestedFolder & { select: RawFieldId } = el as any;
+
+          const state = getState(
+            {
+              id: el_.id,
+              folder: el_.folder,
+              limit: 10,
+              select: el_.select,
+            },
+            {
+              external: true,
+            }
+          );
+
+          if (state) {
+            return state.then((value) => {
+              acc.value.push(value); // implicit array
+              acc.loop2.index++;
+              acc.loop2.resolved = false;
+              console.log("STATE", value, [...acc.value]);
+
+              return calculate(compute, getState as any, {
+                ...options,
+                acc,
+              }) as Value[];
             });
           }
         } else {
@@ -463,7 +525,7 @@ function calculate(
                       a.push(el);
                     }
                     return a;
-                  }, [] as PossiblyNestedComputation),
+                  }, [] as Computation),
                 ];
               }
 
@@ -490,9 +552,9 @@ function calculate(
                           element,
                         ])
                       );
-                    }, [] as PossiblyNestedComputation[]);
+                    }, [] as Computation[]);
                   },
-                  [[]] as PossiblyNestedComputation[]
+                  [[]] as Computation[]
                 )
                 // FILTER IMPORTANT because you can have operations with no input,
                 // which makes reducers below fail. A scenario is when an operation
