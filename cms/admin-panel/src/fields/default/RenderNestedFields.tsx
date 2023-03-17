@@ -1,17 +1,15 @@
 import React from "react";
-import { ComputationOp } from "shared/operations";
 import { useGlobalState } from "../../state/state";
 import cl from "clsx";
 import {
-  Computation,
   FieldId,
-  Value,
   NestedDocumentId,
-  FolderId,
   RawFieldId,
-  ComputationRecord,
   FieldConfig,
   FieldType,
+  TreeRecord,
+  SyntaxTree,
+  ValueArray,
 } from "@storyflow/backend/types";
 import {
   Bars3Icon,
@@ -35,11 +33,11 @@ import {
   createRawTemplateFieldId,
   createTemplateFieldId,
   getIdFromString,
-  getRawFieldId,
   replaceDocumentId,
 } from "@storyflow/backend/ids";
 import { useFieldId } from "../FieldIdContext";
 import { useDocumentPageContext } from "../../documents/DocumentPageContext";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
 
 const noTemplate: FieldConfig<FieldType>[] = [];
 
@@ -55,13 +53,13 @@ export function RenderFolder({
 
   const { record } = useDocumentPageContext();
 
-  const values = React.useMemo(() => {
+  const values: TreeRecord = React.useMemo(() => {
     return Object.fromEntries(
       template.map((el) => {
         const id = createTemplateFieldId(nestedDocumentId, el.id);
-        return [id, record[id] ?? []];
+        return [id, record[id] ?? DEFAULT_SYNTAX_TREE];
       })
-    ) as ComputationRecord;
+    );
   }, [template, record]);
 
   const [, setTemplate] = useGlobalState(`${nestedDocumentId}#template`, () =>
@@ -113,7 +111,10 @@ export function RenderNestedElement({
               nestedDocumentId,
               getIdFromString(extendPath(prop.name, innerProp.name, "#"))
             );
-            return [id, record[id] ?? []] as [FieldId, Computation];
+            return [id, record[id] ?? DEFAULT_SYNTAX_TREE] as [
+              FieldId,
+              SyntaxTree
+            ];
           });
           acc.push(...props);
         } else {
@@ -121,15 +122,15 @@ export function RenderNestedElement({
             nestedDocumentId,
             getIdFromString(prop.name)
           );
-          acc.push([id, record[id] ?? []]);
+          acc.push([id, record[id] ?? DEFAULT_SYNTAX_TREE]);
         }
         return acc;
-      }, [] as [FieldId, Computation][])
-    ) as ComputationRecord;
+      }, [] as [FieldId, SyntaxTree][])
+    ) as TreeRecord;
   }, [initialProps, record]);
 
   const keyId = getIdFromString("key");
-  const [key] = useGlobalState<Value[]>(extendPath(id, keyId));
+  const [key] = useGlobalState<ValueArray>(extendPath(id, keyId));
 
   const [listIsOpen_, toggleListIsOpen] = React.useReducer((ps) => !ps, false);
 
@@ -184,7 +185,10 @@ export function RenderNestedElement({
           <RenderNestedField
             nestedFieldId={computeFieldId(nestedDocumentId, keyId)}
             hidden={!isActive || !listIsOpen}
-            initialValue={values[computeFieldId(nestedDocumentId, keyId)] ?? []}
+            initialValue={
+              values[computeFieldId(nestedDocumentId, keyId)] ??
+              DEFAULT_SYNTAX_TREE
+            }
             label={"Lav til liste"}
             labelColor="blue"
             icon={Bars3Icon}
@@ -241,13 +245,13 @@ export function RenderNestedDocument({
 
   const { record } = useDocumentPageContext();
 
-  const values = React.useMemo(() => {
+  const values: TreeRecord = React.useMemo(() => {
     return Object.fromEntries(
       template.map((el) => {
         const id = replaceDocumentId(el.id, nestedDocumentId);
-        return [id, record[id] ?? []];
+        return [id, record[id] ?? DEFAULT_SYNTAX_TREE];
       })
-    ) as ComputationRecord;
+    );
   }, [template, record]);
 
   return (
@@ -310,7 +314,7 @@ function RenderNestedFields({
   hidden,
 }: {
   nestedDocumentId: NestedDocumentId;
-  values: ComputationRecord;
+  values: TreeRecord;
   template:
     | ({ arg: number; label: string } | { id: FieldId; label: string })[]
     | readonly PropConfig<RegularOptions>[];
@@ -331,7 +335,7 @@ function RenderNestedFields({
 
           const fieldId = computeFieldId(nestedDocumentId, rawFieldId);
 
-          const initialValue = values[fieldId] ?? [];
+          const initialValue = values[fieldId] ?? DEFAULT_SYNTAX_TREE;
 
           const field = (
             <RenderNestedField
@@ -373,7 +377,7 @@ function RenderNestedField({
   nestedFieldId: FieldId;
   label: string;
   labelColor?: "blue";
-  initialValue: Computation;
+  initialValue: SyntaxTree;
   hidden: boolean;
   icon?: React.FC<{ className?: string }>;
 }) {

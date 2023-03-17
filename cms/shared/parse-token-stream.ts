@@ -8,8 +8,9 @@ import {
   SyntaxTree,
   TokenStream,
   TokenStreamSymbol,
+  Transform,
   WithSyntaxError,
-} from "@storyflow/backend/types2";
+} from "@storyflow/backend/types";
 import { tokens } from "@storyflow/backend/tokens";
 import { isSymbol } from "@storyflow/backend/symbols";
 
@@ -50,7 +51,7 @@ const isMerge = (
 
 export function parseTokenStream(
   stream: TokenStream,
-  transform?: FunctionName
+  transform?: Transform
 ): SyntaxTree<WithSyntaxError> {
   let root: SyntaxNode<WithSyntaxError> = { children: [], type: null };
 
@@ -119,9 +120,9 @@ export function parseTokenStream(
         current.children.push({ error: "," });
       }
 
-      if (token[")"] && typeof token[")"] !== "boolean") {
-        current.type = token[")"];
-      } else if (token["]"]) {
+      if ((token as any)[")"] && typeof (token as any)[")"] !== "boolean") {
+        current.type = (token as any)[")"];
+      } else if ((token as any)["]"]) {
         current.type = "array";
       }
 
@@ -186,7 +187,7 @@ export function parseTokenStream(
         } else {
           let last;
           if (current.children.length === 0) {
-            last = { error: "missing" };
+            last = { error: "missing" as "missing" };
           } else if (current.children.length === 1 && current.type !== null) {
             // maybe this should not be a special case and do the same as the else below
           } else {
@@ -260,6 +261,13 @@ export function parseTokenStream(
     }
   }
 
+  if (transform) {
+    root.type = transform.type;
+    if (transform.payload) {
+      root.payload = transform.payload;
+    }
+  }
+
   return root;
 }
 
@@ -272,7 +280,7 @@ export function createTokenStream(
   ) => {
     let flattened: TokenStream = [];
 
-    let symbol;
+    let symbol: TokenStreamSymbol | undefined;
 
     if (operators.includes(value.type as any)) {
       symbol = { _: value.type as (typeof operators)[number] };
@@ -317,7 +325,7 @@ export function createTokenStream(
             !(isObject(prev) && "error" in prev && prev.error === "missing") &&
             !next
           ) {
-            flattened.push(symbol);
+            flattened.push(symbol!);
           }
         } else {
           flattened.push({ ",": true });
@@ -337,7 +345,9 @@ export function createTokenStream(
     const isRoot = parent === null;
 
     if (operators.includes(value.type as any)) {
+      // do nothing - handled above
     } else if (value.type === "merge") {
+      // do nothing
     } else if (value.type === "select") {
       (flattened[0] as HasSelect<NestedField>).select = value.payload!.select;
     } else if (!isRoot) {

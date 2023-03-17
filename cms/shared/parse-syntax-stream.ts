@@ -1,3 +1,5 @@
+import { unwrapObjectId } from "@storyflow/backend/ids";
+import { tokens } from "@storyflow/backend/tokens";
 import {
   operators,
   SyntaxNode,
@@ -10,7 +12,10 @@ import {
   Operator,
   FunctionName,
   RawFieldId,
-} from "@storyflow/backend/types2";
+  ValueArray,
+  DBValueArray,
+  DBId,
+} from "@storyflow/backend/types";
 
 function isObject(value: any): value is Record<string, any> {
   return value !== null && typeof value === "object";
@@ -55,7 +60,8 @@ function isSymbol<T extends SymbolKey, F extends Operator | FunctionName>(
 }
 
 export function createSyntaxStream(
-  tree: SyntaxTree<WithSyntaxError>
+  tree: SyntaxTree<WithSyntaxError>,
+  transformId: <T extends string>(id: T) => DBId<T>
 ): DBSyntaxStream {
   const flatten = (
     value: SyntaxNode<WithSyntaxError>,
@@ -68,11 +74,14 @@ export function createSyntaxStream(
         flattened.push(...flatten(el, value));
       } else if (isObject(el) && "id" in el) {
         // handle branded ids
-        flattened.push(el as unknown as HasDBId<typeof el>);
+        flattened.push(addNestedObjectIds([el], transformId)[0]);
+      } else if (Array.isArray(el)) {
+        // handle branded ids
+        flattened.push(addNestedObjectIds(el, transformId));
       } else if (isObject(el) && "error" in el && el.error === ")") {
         flattened.push({ ")": false });
       } else if (isObject(el) && "error" in el) {
-        flattened.push(null as any);
+        flattened.push(null);
       } else {
         flattened.push(el);
       }
@@ -151,7 +160,7 @@ export function parseSyntaxStream(
       current = returnToNullParent(current, parents);
 
       // auto bracket
-      if (["/", "*"].includes(token[")"])) {
+      if (["/", "*"].includes((token as any)[")"])) {
         current.children = current.children.map((child) => {
           if (
             isObject(child) &&
@@ -167,7 +176,7 @@ export function parseSyntaxStream(
         });
       }
 
-      if (operators.includes(token[")"])) {
+      if (operators.includes((token as any)[")"])) {
         current.children = current.children.map((child) => {
           if (isObject(child) && "error" in child && child.error === ",") {
             return { error: "missing" };
@@ -176,8 +185,8 @@ export function parseSyntaxStream(
         });
       }
 
-      if (token[")"] && typeof token[")"] !== "boolean") {
-        current.type = token[")"];
+      if ((token as any)[")"] && typeof (token as any)[")"] !== "boolean") {
+        current.type = (token as any)[")"];
       } else if (isSymbol(token, "]")) {
         current.type = "array";
       } else if (isSymbol(token, "}")) {
@@ -194,6 +203,10 @@ export function parseSyntaxStream(
       // Replaced with { error: "missing" } if we turn out to be in operator.
       // We cannot have erroneous comma in operator.
       current.children.push({ error: "," });
+    } else if (tokens.isNestedEntity(token)) {
+      current.children.push(removeNestedObjectIds([token])[0] as any);
+    } else if (Array.isArray(token)) {
+      current.children.push(removeNestedObjectIds(token));
     } else {
       current.children.push(token as any);
     }
@@ -214,4 +227,51 @@ export function parseSyntaxStream(
   }
 
   return root;
+}
+
+function removeNestedObjectIds(value: DBSyntaxStream): SyntaxStream;
+function removeNestedObjectIds(value: DBValueArray): ValueArray;
+function removeNestedObjectIds(
+  value: DBSyntaxStream | DBValueArray
+): SyntaxStream | ValueArray {
+  return (value as DBSyntaxStream).map((el) => {
+    if (el === null || typeof el !== "object") return el;
+    if (Array.isArray(el)) {
+      return removeNestedObjectIds(el);
+    }
+    if (!("id" in el)) return el;
+    return {
+      ...el,
+      id: unwrapObjectId(el.id),
+      ...("field" in el && { field: unwrapObjectId(el.field) }),
+      ...("folder" in el && { folder: unwrapObjectId(el.folder) }),
+    };
+  });
+}
+
+export function addNestedObjectIds(
+  value: ValueArray,
+  transformId: <T extends string>(id: T) => DBId<T>
+): DBValueArray;
+export function addNestedObjectIds(
+  value: SyntaxStream,
+  transformId: <T extends string>(id: T) => DBId<T>
+): DBSyntaxStream;
+export function addNestedObjectIds(
+  value: ValueArray | SyntaxStream,
+  transformId: <T extends string>(id: T) => DBId<T>
+): DBValueArray | DBSyntaxStream {
+  return value.map((el) => {
+    if (el === null || typeof el !== "object") return el;
+    if (Array.isArray(el)) {
+      return addNestedObjectIds(el, transformId);
+    }
+    if (!("id" in el)) return el;
+    return {
+      ...el,
+      id: transformId(el.id),
+      ...("field" in el && { field: transformId(el.field) }),
+      ...("folder" in el && { folder: transformId(el.folder) }),
+    };
+  });
 }

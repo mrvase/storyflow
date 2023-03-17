@@ -1,19 +1,21 @@
-import { Computation, FieldType, FunctionName } from "@storyflow/backend/types";
+import { FieldType, SyntaxTree } from "@storyflow/backend/types";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
 
-const fieldConfig: Record<
-  FieldType,
-  { initialValue: Computation; transform?: FunctionName }
-> = {
+const fieldConfig: Record<FieldType, { initialValue: SyntaxTree }> = {
   default: {
-    initialValue: [],
+    initialValue: DEFAULT_SYNTAX_TREE,
   },
   url: {
-    initialValue: [{ "(": true }, "", "", { ")": "url" }],
-    transform: "url",
+    initialValue: {
+      type: "url",
+      children: ["", ""],
+    },
   },
   slug: {
-    initialValue: [{ "(": true }, { ")": "slug" }],
-    transform: "slug",
+    initialValue: {
+      type: "slug",
+      children: [],
+    },
   },
 };
 

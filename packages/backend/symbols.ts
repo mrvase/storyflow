@@ -1,4 +1,4 @@
-import { FunctionName, Operator, operators, TokenStreamSymbol } from "./types2";
+import { FunctionName, Operator, operators, TokenStreamSymbol } from "./types";
 
 type KeysOfUnion<T> = T extends T ? keyof T : never;
 type SymbolKey = KeysOfUnion<TokenStreamSymbol>;

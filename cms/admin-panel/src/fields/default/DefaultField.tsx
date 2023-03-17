@@ -7,27 +7,24 @@ import { ContentEditable } from "../../editor/react/ContentEditable";
 import { useIsEmpty } from "../../editor/react/useIsEmpty";
 import { useGlobalState } from "../../state/state";
 import { useSingular } from "../../state/useSingular";
-import {
-  decodeEditorComputation,
-  encodeEditorComputation,
-} from "shared/editor-computation";
 import cl from "clsx";
 import { getConfig } from "shared/initialValues";
-import { createComputationTransformer } from "shared/computation-tools";
 import {
-  Computation,
+  createComputationTransformer,
+  isSyntaxTree,
+} from "shared/computation-tools";
+import {
   NestedDocument,
   FieldId,
-  EditorComputation,
-  Value,
   NestedField,
   NestedFolder,
   NestedElement,
   NestedDocumentId,
+  TokenStream,
+  SyntaxTree,
+  ValueArray,
 } from "@storyflow/backend/types";
 import { useDocumentPageContext } from "../../documents/DocumentPageContext";
-import { extendPath } from "@storyflow/backend/extendPath";
-import { tools } from "shared/editor-tools";
 import { useBuilderPath } from "../BuilderPath";
 import { useFieldConfig } from "../../documents/collab/hooks";
 import {
@@ -49,7 +46,8 @@ import { TemplateHeader } from "./TemplateHeader";
 import { getPreview } from "./getPreview";
 import { useIsFocused } from "../../editor/react/useIsFocused";
 import { useFieldId } from "../FieldIdContext";
-import { symb } from "@storyflow/backend/symb";
+import { createTokenStream, parseTokenStream } from "shared/parse-token-stream";
+import { tokens } from "@storyflow/backend/tokens";
 
 export const ParentPropContext = React.createContext<string | null>(null);
 
@@ -86,38 +84,23 @@ export const getVariant = (output: any): Variant => {
   return null;
 };
 
-export const findImportsFn = (value: Computation) => {
-  return value.filter((el): el is NestedField => symb.isNestedField(el));
-};
+export const findImportsFn = (value: SyntaxTree) => {
+  const imports: NestedField[] = [];
 
-export const findFoldersFn = (value: Computation) => {
-  return value.filter((el): el is NestedFolder => symb.isNestedFolder(el));
-};
-
-/*
-const useDefaultState = ({ initialValue, path, history }: { initialValue: DBComputation, path: string, history: CollabHistory<DefaultOp> }) => {
-  const initialValueFromHistory = React.useMemo(() => {
-    const [, pkgs] = handleServerPackageArray(history);
-    let value = initialValue;
-    pkgs.forEach((pkg) => {
-      unwrapServerPackage(pkg).operations.map((operation) => {
-        value = inputConfig["default"].getNextState(value, operation);
-      });
+  const traverseNode = (node: SyntaxTree) => {
+    node.children.forEach((token) => {
+      if (isSyntaxTree(token)) {
+        traverseNode(token);
+      } else if (tokens.isNestedField(token)) {
+        imports.push(token);
+      }
     });
-    return value;
-  }, []);
+  };
 
-  const { imports } = useArticlePageContext();
-  const parent = useGlobalState(parentPath, () =>
-    calculate(
-      getNestedChild(initialValue, "default", parentPath.split("."))
-        ?.value as DBComputation,
-      id.slice(0, 4),
-      imports as any
-    )
-  );
-}
-*/
+  traverseNode(value);
+
+  return imports;
+};
 
 export default function DefaultField({
   id,
@@ -135,10 +118,7 @@ export default function DefaultField({
   }
 
   const initialValue = React.useMemo(
-    () =>
-      (value?.length ?? 0) > 0
-        ? value
-        : (getConfig(fieldConfig.type).initialValue as Computation),
+    () => value ?? getConfig(fieldConfig.type).initialValue,
     []
   );
 
@@ -179,7 +159,7 @@ export function WritableDefaultField({
   hidden,
 }: {
   id: FieldId;
-  initialValue: Computation;
+  initialValue: SyntaxTree;
   fieldConfig: { type: "default" | "slug" };
   hidden?: boolean;
 }) {
@@ -187,35 +167,29 @@ export function WritableDefaultField({
   const client = useClient();
   const { record } = useDocumentPageContext();
 
-  const [output, setOutput] = useGlobalState<Value[]>(id, () =>
+  const [output, setOutput] = useGlobalState<ValueArray>(id, () =>
     calculateFn(rootId, initialValue, { record, client })
   );
 
-  const transform =
-    id === rootId ? getConfig(fieldConfig.type).transform : undefined;
-
-  const initialEditorValue = encodeEditorComputation(initialValue, transform);
-
-  const [computation, setComputation] = useGlobalState<EditorComputation>(
-    `${id}#computation`,
-    () => initialEditorValue
+  const initialTransform = React.useMemo(
+    () => ({
+      type: initialValue.type,
+      ...(initialValue.payload && { payload: initialValue.payload }),
+    }),
+    [initialValue]
   );
 
-  const [, setFunction] = useGlobalState<Value[]>(`${id}#function`, () =>
-    calculateFn(rootId, initialValue, { record, client, returnFunction: true })
+  const initialEditorValue = createTokenStream(initialValue);
+
+  const [tokenStream, setTokenStream] = useGlobalState<TokenStream>(
+    `${id}#stream`,
+    () => initialEditorValue
   );
 
   const [fieldImports, setFieldImports] = useGlobalState<NestedField[]>(
     `${id}#imports`,
     () => findImportsFn(initialValue)
   );
-
-  /*
-  const [folders, setFolders] = useGlobalState<NestedFolder[]>(
-    `${id}#folders`,
-    () => findFoldersFn(initialValue)
-  );
-  */
 
   const preview = getPreview(output);
 
@@ -225,22 +199,23 @@ export function WritableDefaultField({
     location: id === rootId ? "" : id,
   });
 
-  const els = React.useMemo(
-    () => output.filter((el): el is NestedElement => symb.isNestedElement(el)),
+  const elements = React.useMemo(
+    () =>
+      output.filter((el): el is NestedElement => tokens.isNestedElement(el)),
     [output]
   );
 
-  const docs = React.useMemo(
+  const documents = React.useMemo(
     () =>
       output.filter(
         (el): el is NestedDocument & { id: NestedDocumentId } =>
-          symb.isNestedDocument(el) && isNestedDocumentId(el.id)
+          tokens.isNestedDocument(el) && isNestedDocumentId(el.id)
       ),
     [output]
   );
 
   const folders = React.useMemo(
-    () => output.filter((el): el is NestedFolder => symb.isNestedFolder(el)),
+    () => output.filter((el): el is NestedFolder => tokens.isNestedFolder(el)),
     [output]
   );
 
@@ -287,20 +262,19 @@ export function WritableDefaultField({
 
   const singular = useSingular(`${rootId}${target}`);
 
-  const setValue = React.useCallback((func: () => EditorComputation) => {
-    singular(() => {
-      setComputation(func);
-      const encoded = func();
-      const decoded = decodeEditorComputation(encoded, transform);
-      console.log("COMPUTATION:", encoded, decoded);
-      setOutput(() => calculateFn(rootId, decoded, { client, record }));
-      setFunction(() =>
-        calculateFn(rootId, decoded, { client, record, returnFunction: true })
-      );
-      setFieldImports(() => findImportsFn(decoded));
-      // setFolders(() => findFoldersFn(decoded));
-    });
-  }, []);
+  const setValue = React.useCallback(
+    (func: () => TokenStream) => {
+      singular(() => {
+        setTokenStream(func);
+        const stream = func();
+        const tree = parseTokenStream(stream, initialTransform);
+        console.log("COMPUTATION:", stream, tree);
+        setOutput(() => calculateFn(rootId, tree, { client, record }));
+        setFieldImports(() => findImportsFn(tree));
+      });
+    },
+    [initialTransform]
+  );
 
   return (
     <>
@@ -310,7 +284,6 @@ export function WritableDefaultField({
         register={actions.register}
         initialValue={initialEditorValue}
         setValue={setValue}
-        transform={transform}
       >
         <div className={cl("relative", hidden && "hidden")}>
           <Placeholder />
@@ -320,20 +293,20 @@ export function WritableDefaultField({
               "preview text-base leading-6"
               // mode === null || mode === "slug" ? "calculator" : ""
             )}
-            data-value={preview !== `${computation[0]}` ? preview : ""}
+            data-value={preview !== `${tokenStream[0]}` ? preview : ""}
           />
           <Plus />
         </div>
         {id === rootId && <FocusBg />}
       </Editor>
-      {els.map((element) => (
+      {elements.map((element) => (
         <RenderNestedElement
           key={element.id}
           nestedDocumentId={element.id}
           element={element.element}
         />
       ))}
-      {docs.map((doc) => (
+      {documents.map((doc) => (
         <RenderNestedDocument key={doc.id} nestedDocumentId={doc.id} />
       ))}
       {folders.map((folder) => (

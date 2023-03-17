@@ -3,17 +3,15 @@ import { createQueue } from "@storyflow/state";
 import React from "react";
 import { Client, SWRClient, useCache } from "../client";
 import {
-  ComputationRecord,
+  TreeRecord,
   DBDocument,
   DocumentId,
   FolderId,
-  TemplateDocument,
 } from "@storyflow/backend/types";
 import { pushAndRetry } from "../utils/retryOnError";
 import { FIELDS } from "@storyflow/backend/fields";
 import { TEMPLATE_FOLDER } from "@storyflow/backend/constants";
 import {
-  computeFieldId,
   createFieldId,
   getFieldNumber,
   getTemplateDocumentId,
@@ -24,7 +22,7 @@ type ArticleListMutation =
       type: "insert";
       id: DocumentId;
       label?: string;
-      record: ComputationRecord;
+      record: TreeRecord;
       // values: ValueRecord;
     }
   | {

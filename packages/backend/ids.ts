@@ -1,5 +1,5 @@
 import type {
-  BrandedObjectId,
+  DBId,
   DocumentId,
   FieldId,
   FolderId,
@@ -203,7 +203,8 @@ export function revertTemplateFieldId(
   return createFieldId(getFieldNumber(fieldId), documentId);
 }
 
-export const unwrapObjectId = <T>(id: BrandedObjectId<T>): T => {
+export const unwrapObjectId = <T>(id: DBId<T>): T => {
+  if (typeof id === "string") return id;
   return id.toHexString() as T;
 };
 

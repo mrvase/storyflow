@@ -1,19 +1,24 @@
-import {
-  Value,
-  FieldId,
-  Computation,
-  NestedField,
-  ComputationRecord,
-  NestedDocumentId,
-  FolderId,
-  ContextToken,
-  RawFieldId,
-  DocumentId,
-  NestedFolder,
-  SortSpec,
-} from "./types";
-import { symb } from "./symb";
 import { createFieldId } from "./ids";
+import { tokens } from "./tokens";
+import {
+  LineBreak,
+  NestedFolder,
+  Parameter,
+  SyntaxTree,
+  ValueArray,
+  WithSyntaxError,
+  ContextToken,
+  DocumentId,
+  FieldId,
+  FolderId,
+  FunctionName,
+  NestedDocumentId,
+  NestedField,
+  Operator,
+  RawFieldId,
+  SortSpec,
+  TreeRecord,
+} from "./types";
 
 /*
 The accummulator value would in principle look like this:
@@ -84,12 +89,12 @@ const slugCharacters = [
   ["å", "aa"],
 ];
 
-const spreadImplicitArrays = (arr: Value[][]) =>
+const spreadImplicitArrays = (arr: ValueArray[]) =>
   arr.reduce((acc, cur) => {
     // cur.push(...cur)
     // TODO: Perhaps this function should only do the above.
     // A specific function "single-flat" could take care of flattening single-valued arrays.
-    // This function could then be used by "pick".
+    // This function could then be used by "select".
     cur.forEach((el) => {
       if (Array.isArray(el) && el.length === 1) {
         acc.push(el[0]);
@@ -100,18 +105,8 @@ const spreadImplicitArrays = (arr: Value[][]) =>
     return acc;
   }, []);
 
-const keepImplicitArrays = (arr: Value[][]) =>
-  arr.reduce((acc, cur) => {
-    if (cur.length === 1) {
-      acc.push(...cur);
-    } else {
-      acc.push(cur);
-    }
-    return acc;
-  }, []);
-
-const levelImplicitAndExplicitArrays = (arr: Value[][]): Value[][] => {
-  return arr.reduce((acc: Value[][], cur) => {
+const levelImplicitAndExplicitArrays = (arr: ValueArray[]): ValueArray[] => {
+  return arr.reduce((acc: ValueArray[], cur) => {
     if (Array.isArray(cur[0])) {
       acc.push(cur[0]);
     } else {
@@ -121,294 +116,292 @@ const levelImplicitAndExplicitArrays = (arr: Value[][]): Value[][] => {
   }, []);
 };
 
-type Loop<T extends Record<string, any> | undefined = undefined> = {
-  index: number;
-  array: Computation;
-  resolved: boolean;
-} & (T extends undefined ? { vars?: never } : { vars: T });
-
-type ThenableAsync = {
-  then: (
-    callback: (value: Value[]) => Value[] | PromiseLike<Value[]>
-  ) => Promise<Value[]>;
+const number = (a: unknown, alt: number = 0): number => {
+  return typeof a === "number" ? a : alt;
 };
 
-type ThenableSync = {
-  then: (callback: (value: Value[]) => Value[]) => Value[];
-};
-
-type Accumulator = {
-  isFunc: boolean;
-  func: Computation;
-  value: Value[][];
-  stack: Value[][][];
-  loop1: Loop;
-  loop2: Loop<{
-    args: (ThenableAsync | undefined)[] | (ThenableSync | undefined)[];
-  }>;
-  loop3: Loop;
-};
-
-export function calculateFromRecord(id: FieldId, record: ComputationRecord) {
-  const getter = (id: Importers) => {
-    if (typeof id === "object") {
-      return {
-        then(callback: any): Value[] {
-          return callback([]);
-        },
-      };
-    }
-    const value = record[id];
-    if (!value || value.length === 0) return;
-    return {
-      then(callback: any): Value[] {
-        return callback(calculate(value, getter));
-      },
-    };
-  };
-
-  return calculate(record[id] ?? [], getter);
-}
-
-export function calculateFromRecordAsync(
-  id: FieldId,
-  record: ComputationRecord,
-  fetch: (value: Exclude<Importers, FieldId>) => Promise<Value[]>
-) {
-  const getter = async (id: Importers) => {
-    if (typeof id === "object") {
-      return await fetch(id);
-    }
-    const value = record[id];
-    if (!value || value.length === 0) return;
-    return calculate(value, getter);
-  };
-
-  return calculate(record[id] ?? [], getter);
-}
-
-type GetStateOptions = {
-  returnFunction?: boolean;
-  external?: boolean;
-};
-
-export function calculateSync(
-  compute: Computation,
-  getState: (id: Importers, options: GetStateOptions) => Value[] | undefined,
-  options?: {
-    returnFunction?: boolean;
-  }
-) {
-  const getter = (id: Importers, options: GetStateOptions) => {
-    const value = getState(id, options);
-    if (!value || value.length === 0) return;
-    return {
-      then(callback: any): Value[] {
-        return callback(
-          calculate(value, getter, {
-            returnFunction: options.returnFunction,
-          })
-        );
-      },
-    };
-  };
-
-  return calculate(compute, getter, options);
-}
-
-export function calculateAsync(
-  compute: Computation,
-  getState: (
-    id: Importers,
-    options: GetStateOptions
-  ) => ThenableAsync | undefined,
-  options?: {
-    returnFunction?: boolean;
-  }
-) {
-  return calculate(compute, getState, options);
-}
-
-function calculate(
-  compute: Computation,
-  getState: (
-    id: Importers,
-    options: GetStateOptions
-  ) => ThenableAsync | undefined,
-  options?: {
-    returnFunction?: boolean;
-    acc?: Accumulator;
-  }
-): Value[] | Promise<Value[]>;
-function calculate(
-  compute: Computation,
-  getState: (
-    id: Importers,
-    options: GetStateOptions
-  ) => ThenableSync | undefined,
-  options?: {
-    returnFunction?: boolean;
-    acc?: Accumulator;
-  }
-): Value[];
-function calculate(
-  compute: Computation,
-  getState: (
-    id: Importers,
-    options: GetStateOptions
-  ) => ThenableAsync | ThenableSync | undefined,
-  options: {
-    returnFunction?: boolean;
-    acc?: Accumulator;
-  } = {}
-): Value[] | Promise<Value[]> {
-  let acc: Accumulator = options.acc ?? {
-    isFunc: false,
-    func: [],
-    value: [],
-    stack: [],
-    loop1: {
-      index: 0,
-      array: compute,
-      resolved: false,
-    },
-    loop2: {
-      index: 0,
-      array: [],
-      resolved: false,
-      vars: {
-        args: [],
-      },
-    },
-    loop3: {
-      index: 0,
-      array: [],
-      resolved: false,
-    },
-  };
-
-  for (; acc.loop1.index < acc.loop1.array.length; acc.loop1.index += 1) {
-    if (!acc.loop1.resolved) {
-      acc.loop1.resolved = true;
-      const el = acc.loop1.array[acc.loop1.index];
-
-      acc.loop2.array = [];
-      acc.loop2.index = 0;
-
-      if (symb.isDBSymbol(el, "p")) {
-        const pick = el.p;
-
-        acc.loop2.array.push({ "(": true });
-
-        acc.loop2.array.push(
-          ...acc.value.reduce((acc, el) => {
-            return el.reduce((acc, el) => {
-              if (el !== null && typeof el === "object") {
-                if ("folder" in el) {
-                  acc.push(
-                    { "(": true },
-                    {
-                      ...el,
-                      select: pick,
-                    } as NestedFolder,
-                    {
-                      ")": true,
-                    }
-                  );
-                } else if ("id" in el) {
-                  acc.push(
-                    { "[": true },
-                    {
-                      field: `${el.id.slice(12, 24)}${pick}`,
-                    } as NestedField,
-                    {
-                      "]": true,
-                    }
-                  );
-                }
-              }
-              return acc;
-            }, acc);
-          }, [] as Computation)
-        );
-
-        acc.loop2.array.push({ ")": true });
-
-        const latest = acc.stack[acc.stack.length - 1];
-        acc.value = latest;
-        acc.stack.pop();
+function compute(
+  type: Operator | FunctionName | "merge",
+  value: ValueArray[]
+): ValueArray[] {
+  switch (type) {
+    case "merge":
+      if (value.length === 0) {
+        return [[""]];
+      } else if (value.length === 1 && value[0].length > 1) {
+        // this takes a paragraph consisting of an implicit array
+        // and returning it as an explicit array.
+        // The implicit array usually originates from a single import with multiple elements.
+        return [[value[0]]];
       } else {
-        acc.loop2.array = [el];
+        return [
+          // ignores implicit arrays
+          value.reduce((acc, [cur]) => {
+            if (
+              typeof acc[acc.length - 1] === "string" &&
+              ["string", "number"].includes(typeof cur)
+            ) {
+              return [...acc.slice(0, -1), `${acc[acc.length - 1]}${cur}`];
+            }
+            return [...acc, cur] as ValueArray;
+          }),
+        ];
       }
-    }
+    case "sum":
+      return [
+        [
+          value[0].reduce((a: number, op) => {
+            return a + number(op);
+          }, 0),
+        ],
+      ];
+    case "filter":
+      const parameters = levelImplicitAndExplicitArrays(value);
+      return [
+        parameters[0].reduce((a: ValueArray, el, index) => {
+          if (parameters[1][index]) {
+            a.push(el);
+          }
+          return a;
+        }, []),
+      ];
+    default:
+      break;
+  }
 
-    for (; acc.loop2.index < acc.loop2.array.length; acc.loop2.index += 1) {
-      if (!acc.loop2.resolved) {
-        acc.loop2.resolved = true;
-        const el = acc.loop2.array[acc.loop2.index];
+  const combinations = levelImplicitAndExplicitArrays(value)
+    .reduce(
+      (combinations: ValueArray[], array) => {
+        //
 
-        acc.loop3.array = [];
-        acc.loop3.index = 0;
+        // for each element in array, copy all current combinations with element appended
 
-        acc.loop2.vars.args = [];
-        if (typeof el === "object" && el !== null && "field" in el) {
+        // [[5], [4], [3], [2]] = [[5, 4, 3, 2]]
+        // [[5], [4], [3, 2]] = [[5, 4, 3], [5, 4, 2]]
+        // [[5, 4], [3, 2]] = [[5, 3], [5, 2], [4, 3], [4, 2]]
+        // - we begin with combinations = []
+        // - adds [5]: [[5]],
+        // - adds [4]: [[5], [4]],
+        // - now combinations = [[5], [4]] to which new elements are added
+        // - adds [3]: [[5, 3], [4, 3]]
+        // - adds [2]: [[4, 3], [4, 3], [5, 2], [4, 2]]
+        if (array.length === 0) {
+          // TODO empty array is handled as nothing.
+          // perhaps not what you would expect?
+          return combinations;
+        }
+        return array.reduce((result: ValueArray[], element) => {
+          return result.concat(
+            combinations.map((combination) => [...combination, element])
+          );
+        }, []);
+      },
+      [[]]
+    )
+    // FILTER IMPORTANT because you can have operations with no input,
+    // which makes reducers below fail. A scenario is when an operation
+    // has parameters as inputs with no default value, and it is about
+    // to calculate the default value of the function
+    .filter((el) => el.length);
+
+  switch (type) {
+    case "url":
+    case "slug":
+      return [
+        combinations.map((values) => {
+          let strings = values.map((el) =>
+            ["number", "string"].includes(typeof el) ? `${el}` : ""
+          );
+          return strings
+            .map((string, index) => {
+              if (string === "") {
+                return "";
+              }
+              const matches = Array.from(
+                string.matchAll(type === "url" ? /[^\w\/\*\-]/g : /[^\w\-]/g)
+              );
+
+              let offset = 0;
+
+              matches.forEach((el) => {
+                const match = el[0];
+                const anchor = el.index! + offset;
+                const focus = anchor + match.length;
+                const replacement =
+                  slugCharacters.find(([char]) => char === match)?.[1] ?? "";
+                string =
+                  string.slice(0, anchor) + replacement + string.slice(focus);
+                offset += replacement.length - match.length;
+              });
+
+              return `${string.toLowerCase()}${
+                type === "url" && index !== strings.length - 1 ? "/" : ""
+              }`;
+            })
+            .join("");
+        }),
+      ];
+    case "in":
+      return [
+        [
+          combinations.reduce((acc, op) => {
+            return acc || op[0] === op[1];
+          }, false),
+        ],
+      ];
+    case "concat":
+      return [
+        combinations.reduce((a, values) => {
+          return [
+            ...a,
+            ...values
+              .reduce((a, c) => {
+                if (
+                  ["number", "string"].includes(typeof c) &&
+                  ["number", "string"].includes(typeof a[0])
+                ) {
+                  return [`${a[0]}${c}`, ...a.slice(1)];
+                }
+                return [c, ...a];
+              }, [] as any[])
+              .reverse(),
+          ];
+        }, [] as any[]),
+      ];
+    case "=":
+      return [
+        combinations.map((op) => {
+          return op[0] === op[1];
+        }),
+      ];
+    case "+":
+      return [
+        combinations
+          .map((values) => {
+            return values.reduce((a, c) => number(a) + number(c)) as number;
+          })
+          .flat(1),
+      ];
+    case "-":
+      return [
+        combinations
+          .map((values) => {
+            return values.reduce((a, c) => number(a) - number(c)) as number;
+          })
+          .flat(1),
+      ];
+    case "*":
+      return [
+        combinations
+          .map((values) => {
+            return values.reduce(
+              (a, c) => number(a, 1) * number(c, 1)
+            ) as number;
+          })
+          .flat(1),
+      ];
+    case "/":
+      return [
+        combinations
+          .map((values) => {
+            return values.reduce(
+              (a, c) => number(a, 1) / number(c, 1)
+            ) as number;
+          })
+          .flat(1),
+      ];
+    case "&":
+      return [
+        combinations
+          .map((values) => {
+            return values.reduce((a, c) => Boolean(a && c));
+          })
+          .flat(1),
+      ];
+    case "|":
+      return [
+        combinations
+          .map((values) => {
+            return values.reduce((a, c) => Boolean(a || c));
+          })
+          .flat(1),
+      ];
+    default:
+      return combinations;
+  }
+}
+
+export type StateGetter = {
+  (id: Importers, options: { tree: true; external?: boolean }):
+    | SyntaxTree
+    | undefined;
+  (id: Importers, options: { tree: boolean; external?: boolean }):
+    | SyntaxTree
+    | ValueArray
+    | undefined;
+  (id: Importers, options: { tree?: undefined; external?: boolean }):
+    | ValueArray
+    | undefined;
+};
+
+export function calculate(node: SyntaxTree, getState: StateGetter): ValueArray {
+  const calculateNode = (
+    node: SyntaxTree,
+    args?: (ValueArray | undefined)[]
+  ): ValueArray[] => {
+    let result: ValueArray[] = node.children.reduce(
+      (acc: ValueArray[], child) => {
+        if (typeof child === "object" && "type" in child) {
+          // håndterer noget i paranteser
+          acc.push(...calculateNode(child));
+        } else if (tokens.isNestedField(child)) {
           const args =
-            "id" in el
-              ? ([0, 1, 2].map((index) => {
+            "id" in child
+              ? [0, 1, 2].map((index) => {
                   const fieldId = createFieldId(
                     index,
-                    el.id as unknown as DocumentId
+                    child.id as unknown as DocumentId
                   );
                   return getState(fieldId, { external: false });
-                }) as ThenableAsync[] | ThenableSync[])
-              : [];
+                })
+              : []; // not the case when resulting from select
 
           const hasArgs = args.some((el) => el !== undefined);
 
-          const state = getState(el.field, {
-            returnFunction: hasArgs,
-            external: true,
+          const state = getState(child.field, {
+            tree: hasArgs,
           });
 
           if (state) {
-            return state.then((value) => {
-              const updatedValue = value.map((x) =>
-                symb.isNestedElement(x) ? { ...x, parent: el.field } : x
-              );
-              if (hasArgs) {
-                acc.loop3.array = updatedValue;
-
-                acc.loop3.array.unshift({ "(": true });
-                acc.loop3.array.push({ ")": true });
-
-                acc.loop2.vars.args = args;
-
-                return calculate(compute, getState as any, {
-                  ...options,
-                  acc,
-                }) as Value[];
-              } else {
-                // or return default value
-                acc.value.push(updatedValue); // implicit array
-                acc.loop2.index++;
-                acc.loop2.resolved = false;
-
-                return calculate(compute, getState as any, {
-                  ...options,
-                  acc,
-                }) as Value[];
-              }
-            });
+            if (hasArgs) {
+              acc.push(calculateNode(state as SyntaxTree, args));
+            } else {
+              acc.push(state as ValueArray);
+            }
           }
-        } else if (typeof el === "object" && el !== null && "select" in el) {
-          const el_: NestedFolder & { select: RawFieldId } = el as any;
+        } else if (tokens.isContextToken(child)) {
+          const state = getState(child, { tree: true, external: false });
+          if (state) {
+            acc.push(calculateNode(state));
+          }
+        } else if (tokens.isParameter(child)) {
+          const arg = args && args[child.x];
+          if (arg) {
+            acc.push([arg]);
+          } else if (typeof child.value !== "undefined") {
+            acc.push([child.value]);
+          }
+        } else if (tokens.isLineBreak(child)) {
+          // do nothing
+        } else if (typeof child === "object" && "select" in child) {
+          const child_: NestedFolder & { select: RawFieldId } = child as any;
 
           const state = getState(
             {
-              id: el_.id,
-              folder: el_.folder,
+              id: child_.id,
+              folder: child_.folder,
               limit: 10,
-              select: el_.select,
+              select: child_.select,
             },
             {
               external: true,
@@ -416,336 +409,89 @@ function calculate(
           );
 
           if (state) {
-            return state.then((value) => {
-              acc.value.push(value); // implicit array
-              acc.loop2.index++;
-              acc.loop2.resolved = false;
-              console.log("STATE", value, [...acc.value]);
-
-              return calculate(compute, getState as any, {
-                ...options,
-                acc,
-              }) as Value[];
-            });
+            acc.push([state]);
           }
-        } else {
-          acc.loop3.array = [el];
-        }
-      }
-
-      const { args } = acc.loop2.vars;
-
-      for (; acc.loop3.index < acc.loop3.array.length; acc.loop3.index += 1) {
-        const el = acc.loop3.array[acc.loop3.index];
-        acc.func = acc.func.concat([el]);
-
-        if (symb.isParameter(el)) {
-          const argThenable = args[el.x];
-          if (argThenable) {
-            return argThenable.then((arg) => {
-              if (arg) {
-                acc.value.push(arg); // implicit array
-              } else if (typeof el.value !== "undefined") {
-                acc.value.push([el.value]);
-              }
-              acc.loop3.index++;
-              return calculate(compute, getState as any, {
-                ...options,
-                acc,
-              }) as Value[];
-            });
-          } else {
-            acc.isFunc = true;
-            if (typeof el.value !== "undefined") {
-              acc.value.push([el.value]);
-            }
-          }
-        } else if (symb.isDBSymbol(el, "n")) {
-          // DO NOTHING
         } else if (
-          symb.isDBSymbol(el, "(") ||
-          symb.isDBSymbol(el, "{") ||
-          symb.isDBSymbol(el, "[")
+          typeof child === "object" &&
+          ("missing" in child || "error" in child)
         ) {
-          acc.stack.push(acc.value);
-          acc.value = [];
-        } else if (symb.isDBSymbol(el, ")") && el[")"] === true) {
-          const latest = acc.stack[acc.stack.length - 1];
-          acc.stack.pop();
-          acc.value = latest.concat([spreadImplicitArrays(acc.value)]);
-        } else if (
-          symb.isDBSymbol(el, ")") ||
-          symb.isDBSymbol(el, "]") ||
-          symb.isDBSymbol(el, "}") ||
-          symb.isDBSymbol(el, "/")
-        ) {
-          const latest = acc.stack[acc.stack.length - 1];
-          const result = latest.concat(
-            (() => {
-              if ("}" in el || "/" in el) {
-                if (acc.value.length === 0) {
-                  return [[""]];
-                } else if (acc.value.length === 1 && acc.value[0].length > 1) {
-                  // this takes a paragraph consisting of an implicit array
-                  // and returning it as an explicit array.
-                  // The implicit array usually originates from a single import with multiple elements.
-                  return [[acc.value[0]]];
-                } else {
-                  return [
-                    // ignores implicit arrays
-                    acc.value.reduce((acc, [cur]) => {
-                      if (
-                        typeof acc[acc.length - 1] === "string" &&
-                        ["string", "number"].includes(typeof cur)
-                      ) {
-                        return [
-                          ...acc.slice(0, -1),
-                          `${acc[acc.length - 1]}${cur}`,
-                        ];
-                      }
-                      return [...acc, cur] as Value[];
-                    }),
-                  ];
-                }
-              } else if ("]" in el) {
-                return [[spreadImplicitArrays(acc.value)]];
-              } else if (el[")"] === "sum") {
-                return [
-                  [
-                    acc.value[0].reduce((a: number, op) => {
-                      return a + num(op);
-                    }, 0),
-                  ],
-                ];
-              } else if (el[")"] === "filter") {
-                const parameters = levelImplicitAndExplicitArrays(acc.value);
-                return [
-                  parameters[0].reduce((a, el, index) => {
-                    if (parameters[1][index]) {
-                      a.push(el);
-                    }
-                    return a;
-                  }, [] as Computation),
-                ];
-              }
-
-              const combinations = levelImplicitAndExplicitArrays(acc.value)
-                .reduce(
-                  (combinations, array) => {
-                    //
-
-                    // for each element in array, copy all current combinations with element appended
-
-                    // [[5], [4], [3], [2]] = [[5, 4, 3, 2]]
-                    // [[5], [4], [3, 2]] = [[5, 4, 3], [5, 4, 2]]
-                    // [[5, 4], [3, 2]] = [[5, 3], [5, 2], [4, 3], [4, 2]]
-                    // - we begin with combinations = []
-                    // - adds [5]: [[5]],
-                    // - adds [4]: [[5], [4]],
-                    // - now combinations = [[5], [4]] to which new elements are added
-                    // - adds [3]: [[5, 3], [4, 3]]
-                    // - adds [2]: [[4, 3], [4, 3], [5, 2], [4, 2]]
-                    return array.reduce((result, element) => {
-                      return result.concat(
-                        combinations.map((combination) => [
-                          ...combination,
-                          element,
-                        ])
-                      );
-                    }, [] as Computation[]);
-                  },
-                  [[]] as Computation[]
-                )
-                // FILTER IMPORTANT because you can have operations with no input,
-                // which makes reducers below fail. A scenario is when an operation
-                // has parameters as inputs with no default value, and it is about
-                // to calculate the default value of the function
-                .filter((el) => el.length);
-
-              if (el[")"] === "in") {
-                return [
-                  [
-                    combinations.reduce((acc, op) => {
-                      return acc || op[0] === op[1];
-                    }, false),
-                  ],
-                ];
-              } else if (el[")"] === "concat") {
-                return [
-                  combinations.reduce((a, values) => {
-                    return [
-                      ...a,
-                      ...values
-                        .reduce((a, c) => {
-                          if (
-                            ["number", "string"].includes(typeof c) &&
-                            ["number", "string"].includes(typeof a[0])
-                          ) {
-                            return [`${a[0]}${c}`, ...a.slice(1)];
-                          }
-                          return [c, ...a];
-                        }, [] as any[])
-                        .reverse(),
-                    ];
-                  }, [] as any[]),
-                ];
-                /*
-              return [
-                combinations.map((values) => {
-                  return values.reduce((a, c) => {
-                    return `${string(a)}${string(c)}`;
-                  });
-                }),
-              ];
-              */
-              } else if (el[")"] === "url" || el[")"] === "slug") {
-                return [
-                  combinations.map((values) => {
-                    let strings = values.map((el) =>
-                      ["number", "string"].includes(typeof el)
-                        ? (el as string)
-                        : ""
-                    );
-                    return strings
-                      .map((string, index) => {
-                        if (string === "") {
-                          return "";
-                        }
-                        const matches = Array.from(
-                          string.matchAll(
-                            el[")"] === "url" ? /[^\w\/\*\-]/g : /[^\w\-]/g
-                          )
-                        );
-
-                        let offset = 0;
-
-                        matches.forEach((el) => {
-                          const match = el[0];
-                          const anchor = el.index! + offset;
-                          const focus = anchor + match.length;
-                          const replacement =
-                            slugCharacters.find(
-                              ([char]) => char === match
-                            )?.[1] ?? "";
-                          string =
-                            string.slice(0, anchor) +
-                            replacement +
-                            string.slice(focus);
-                          offset += replacement.length - match.length;
-                        });
-
-                        return `${string.toLowerCase()}${
-                          el[")"] === "url" && index !== strings.length - 1
-                            ? "/"
-                            : ""
-                        }`;
-                      })
-                      .join("");
-                  }),
-                ];
-              } else if (el[")"] === "=") {
-                return [
-                  combinations.map((op) => {
-                    return op[0] === op[1];
-                  }),
-                ];
-              } else if (el[")"] === "+") {
-                return [
-                  combinations
-                    .map((values) => {
-                      return values.reduce((a, c) => num(a) + num(c)) as number;
-                    })
-                    .flat(1),
-                ];
-              } else if (el[")"] === "-") {
-                return [
-                  combinations
-                    .map((values) => {
-                      return values.reduce((a, c) => num(a) - num(c)) as number;
-                    })
-                    .flat(1),
-                ];
-              } else if (el[")"] === "*") {
-                return [
-                  combinations
-                    .map((values) => {
-                      return values.reduce(
-                        (a, c) => num(a, 1) * num(c, 1)
-                      ) as number;
-                    })
-                    .flat(1),
-                ];
-              } else if (el[")"] === "/") {
-                return [
-                  combinations
-                    .map((values) => {
-                      return values.reduce(
-                        (a, c) => num(a, 1) / num(c, 1)
-                      ) as number;
-                    })
-                    .flat(1),
-                ];
-              } else {
-                return combinations;
-              }
-            })()
-          );
-          if (symb.isDBSymbol(el, "/")) {
-            acc.stack.pop();
-            acc.stack.push(result);
-            acc.value = [];
-          } else {
-            acc.stack.pop();
-            acc.value = result;
-          }
-          /*
-        } else if (symb.isFetcher(el)) {
-          const state = getState(`${id}.${el.id}`, false);
-          if (state) {
-            return state.then((value) => {
-              acc.value.push(value);
-              acc.loop3.index++;
-              return calculate(id, compute, getState as any, {
-                ...options,
-                acc,
-              }) as Value[];
-            });
-          }
-        */
-        } else if (symb.isContextToken(el)) {
-          const state = getState(el, { returnFunction: true, external: false });
-          if (state) {
-            return state.then((value) => {
-              acc.value.push(value);
-              acc.loop3.index++;
-              return calculate(compute, getState as any, {
-                ...options,
-                acc,
-              }) as Value[];
-            });
-          }
+          // do nothing
         } else {
-          acc.value.push([el as Exclude<Value, NestedField>]);
+          acc.push([
+            child as Exclude<
+              typeof child,
+              Parameter | LineBreak | unknown[] | WithSyntaxError
+            >,
+          ]);
         }
+        return acc;
+      },
+      []
+    );
 
-        acc.loop3.resolved = false;
-      }
-      acc.loop2.resolved = false;
+    // run function
+
+    if (node.type === "select") {
+      const select = node.payload!.select as RawFieldId;
+      let next: SyntaxTree = {
+        type: null,
+        children: result.reduce((acc: SyntaxTree["children"], el) => {
+          if (tokens.isNestedFolder(el)) {
+            acc.push({
+              type: null,
+              children: [{ ...el, select: select } as NestedFolder],
+            });
+          } else if (tokens.isNestedDocument(el)) {
+            acc.push({
+              type: null,
+              children: [
+                {
+                  field: `${el.id.slice(12, 24)}${select}`,
+                } as NestedField,
+              ],
+            });
+          }
+          acc.push(el);
+          return acc;
+        }, []),
+      };
+      result = [calculate(next, getState)];
     }
-    acc.loop1.resolved = false;
-  }
 
-  const value =
-    acc.isFunc && options.returnFunction
-      ? acc.func
-      : acc.value.reduce((acc, cur) => [...acc, ...cur], []);
+    if (node.type === ("array" as any)) {
+      result = [[spreadImplicitArrays(result)]];
+    } else if (node.type === null) {
+      // brackets
+      result = [spreadImplicitArrays(result)];
+    } else {
+      result = compute(
+        node.type as Exclude<typeof node.type, "select" | "array" | null>,
+        result
+      );
+    }
 
-  return value as Value[];
+    return result;
+  };
+
+  const value = calculateNode(node);
+
+  return value.reduce((acc, cur) => [...acc, ...cur], []);
 }
 
-const num = (a: unknown, alt: number = 0): number => {
-  return typeof a === "number" ? a : alt;
-};
-const string = (a: unknown): string => {
-  return typeof a === "string" || typeof a === "number" ? `${a}` : "";
-};
+export function calculateFromRecord(id: FieldId, record: TreeRecord) {
+  const getter: StateGetter = (id, { external, tree }): any => {
+    if (typeof id === "object") {
+      return [];
+    }
+    const value = record[id];
+    if (!value) return;
+    if (tree) return value;
+    return calculate(value, getter);
+  };
+
+  const tree = record[id];
+
+  if (!tree) return [];
+
+  return calculate(tree, getter);
+}

@@ -1,4 +1,4 @@
-import { DocumentId, EditorComputation } from "@storyflow/backend/types";
+import { DocumentId, TokenStream } from "@storyflow/backend/types";
 import {
   CalculatorIcon,
   CalendarIcon,
@@ -22,7 +22,7 @@ export function QueryCommands({
 }: {
   query: string;
   selected: number;
-  insertBlock: (comp: EditorComputation) => void;
+  insertBlock: (comp: TokenStream) => void;
 }) {
   const searchQuery = query.match(/\"([^\"]*)/)?.[1] ?? query;
 

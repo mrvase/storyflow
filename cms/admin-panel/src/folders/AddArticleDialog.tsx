@@ -6,14 +6,14 @@ import { useTabUrl } from "../layout/utils";
 import { useSegment } from "../layout/components/SegmentContext";
 import { computeFieldId } from "@storyflow/backend/ids";
 import {
-  ComputationRecord,
   DocumentId,
   FieldId,
   FolderId,
+  TreeRecord,
 } from "@storyflow/backend/types";
 import { useClient } from "../client";
 import { toSlug } from "../fields/UrlField";
-import { useDocumentIdGenerator, useFieldIdGenerator } from "../id-generator";
+import { useDocumentIdGenerator } from "../id-generator";
 import { FIELDS } from "@storyflow/backend/fields";
 
 export function AddArticleDialog({
@@ -30,7 +30,7 @@ export function AddArticleDialog({
   template?: DocumentId;
   parentUrl?: {
     id: FieldId;
-    record: ComputationRecord;
+    record: TreeRecord;
     url: string;
   };
   type: string;
@@ -62,19 +62,26 @@ export function AddArticleDialog({
                 })
               : {};
 
-            record[computeFieldId(id, FIELDS.creation_date.id)] = [new Date()];
+            record[computeFieldId(id, FIELDS.creation_date.id)] = {
+              type: null,
+              children: [new Date()],
+            };
 
             if (parentUrl) {
               Object.assign(record, parentUrl.record);
 
-              record[computeFieldId(id, FIELDS.url.id)] = [
-                { "(": true },
-                { id: generateDocumentId(id), field: parentUrl.id },
-                slug,
-                { ")": "url" },
-              ];
+              record[computeFieldId(id, FIELDS.url.id)] = {
+                type: "url",
+                children: [
+                  { id: generateDocumentId(id), field: parentUrl.id },
+                  slug,
+                ],
+              };
 
-              record[computeFieldId(id, FIELDS.label.id)] = [label];
+              record[computeFieldId(id, FIELDS.label.id)] = {
+                type: null,
+                children: [label],
+              };
             }
 
             mutateArticles({

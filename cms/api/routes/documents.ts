@@ -5,8 +5,8 @@ import {
   DBDocument,
   DocumentId,
   FieldId,
-  ComputationRecord,
   DBDocumentRaw,
+  TreeRecord,
 } from "@storyflow/backend/types";
 import { ObjectId } from "mongodb";
 import clientPromise from "../mongo/mongoClient";
@@ -25,7 +25,6 @@ import {
 } from "../collab-utils/redis-client";
 import {
   getDocumentId,
-  getRawDocumentId,
   isFieldOfDocument,
   isNestedDocumentId,
   unwrapObjectId,
@@ -59,7 +58,10 @@ export const documents = createRoute({
                 type: z.literal("insert"),
                 id: z.string(),
                 label: z.string().optional(),
-                record: z.record(z.string(), z.array(z.any())),
+                record: z.record(
+                  z.string(),
+                  z.object({ type: z.string(), children: z.array(z.any()) })
+                ),
               }),
               z.object({
                 type: z.literal("remove"),
@@ -75,7 +77,7 @@ export const documents = createRoute({
 
       const getValues = async (
         documentId: DocumentId,
-        record: ComputationRecord,
+        record: TreeRecord,
         getArticles: (ids: DocumentId[]) => Promise<DBDocument[]>
       ) => {
         let computationRecord = extractRootRecord(documentId, record);
@@ -161,7 +163,7 @@ export const documents = createRoute({
 
                 const promise = getValues(
                   action.id as DocumentId,
-                  action.record,
+                  action.record as TreeRecord,
                   batchQuery.getter
                 ).then((result) => {
                   return { ...doc, ...result };

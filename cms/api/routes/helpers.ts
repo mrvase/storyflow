@@ -1,14 +1,11 @@
 import {
   DBDocument,
   DocumentId,
-  ComputationBlock,
-  Computation,
   FieldId,
-  ComputationRecord,
   DBValueRecord,
-  DBComputation,
-  DBValue,
-  Value,
+  TreeRecord,
+  DBSyntaxStreamBlock,
+  DBSyntaxStream,
 } from "@storyflow/backend/types";
 import { ObjectId } from "mongodb";
 import {
@@ -18,14 +15,17 @@ import {
   getGraph,
 } from "shared/computation-tools";
 import { getDocumentId, getRawFieldId } from "@storyflow/backend/ids";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
+import { createSyntaxStream } from "shared/parse-syntax-stream";
+import { tokens } from "@storyflow/backend/tokens";
 
 export const deduplicate = <T>(arr: T[]): T[] => Array.from(new Set(arr));
 
 export const getImports = (
   importIds: FieldId[],
   importedArticles: DBDocument[]
-): ComputationRecord => {
-  const importRecord: ComputationRecord = {};
+): TreeRecord => {
+  const importRecord: TreeRecord = {};
 
   importIds.forEach((id) => {
     const article = importedArticles.find((el) => el._id === getDocumentId(id));
@@ -41,12 +41,13 @@ export const getImports = (
         return;
       }
     }
-    importRecord[id] = [];
+    importRecord[id] = DEFAULT_SYNTAX_TREE;
   });
 
   return importRecord;
 };
 
+/*
 export function addNestedObjectIds(value: Value[]): DBValue[];
 export function addNestedObjectIds(value: Computation): DBComputation;
 export function addNestedObjectIds(
@@ -66,27 +67,28 @@ export function addNestedObjectIds(
     };
   });
 }
+*/
 
 export function getSortedValues(
-  record: ComputationRecord,
+  record: TreeRecord,
   graph: ComputationGraph
-): { compute: ComputationBlock[] };
+): { compute: DBSyntaxStreamBlock[] };
 export function getSortedValues(
-  record: ComputationRecord,
+  record: TreeRecord,
   graph: ComputationGraph,
   options: {
     keepDepths: true;
   }
-): { compute: (ComputationBlock & { depth: number })[] };
+): { compute: (DBSyntaxStreamBlock & { depth: number })[] };
 export function getSortedValues(
-  record: ComputationRecord,
+  record: TreeRecord,
   graph: ComputationGraph,
   options: {
     returnValuesForDocument: DocumentId;
   }
-): { values: DBValueRecord; compute: ComputationBlock[] };
+): { values: DBValueRecord; compute: DBSyntaxStreamBlock[] };
 export function getSortedValues(
-  record: ComputationRecord,
+  record: TreeRecord,
   graph: ComputationGraph,
   options: {
     returnValuesForDocument?: DocumentId;
@@ -94,19 +96,15 @@ export function getSortedValues(
   } = {}
 ): {
   values?: DBValueRecord;
-  compute: (ComputationBlock & { depth?: number })[];
+  compute: (DBSyntaxStreamBlock & { depth?: number })[];
 } {
-  let computeWithDepth: (ComputationBlock & { depth: number })[] = [];
+  let computeWithDepth: (DBSyntaxStreamBlock & { depth: number })[] = [];
   let values: DBValueRecord = {};
 
   const isPrimitive = (
-    computation: Computation
+    computation: DBSyntaxStream
   ): computation is (string | boolean | number | Date)[] => {
-    return computation.every(
-      (el) =>
-        ["string", "boolean", "number"].includes(typeof el) ||
-        el instanceof Date
-    );
+    return computation.every((el) => tokens.isPrimitiveValue(el));
   };
 
   const depthCache = new Map<FieldId, number>();
@@ -137,15 +135,16 @@ export function getSortedValues(
   };
 
   getComputationEntries(record).map(([fieldId, value]) => {
+    const stream = createSyntaxStream(value, (id) => new ObjectId(id));
     if (
-      isPrimitive(value) &&
+      isPrimitive(stream) &&
       getDocumentId(fieldId) === options.returnValuesForDocument
     ) {
-      values[getRawFieldId(fieldId)] = value;
+      values[getRawFieldId(fieldId)] = stream;
     } else {
       computeWithDepth.push({
-        id: new ObjectId(fieldId),
-        value: addNestedObjectIds(value),
+        k: new ObjectId(fieldId),
+        v: stream,
         depth: getDepth(fieldId),
       });
     }

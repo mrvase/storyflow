@@ -16,9 +16,9 @@ import {
   DBDocument,
   FieldId,
   DBFolder,
-  ComputationRecord,
   FolderId,
   SpaceId,
+  TreeRecord,
 } from "@storyflow/backend/types";
 import { useClient } from "../client";
 import { useClientConfig } from "../client-config";
@@ -31,7 +31,7 @@ import { targetTools } from "shared/operations";
 import { AppSpace } from "./spaces/AppSpace";
 import { getFieldRecord, getGraph } from "shared/computation-tools";
 import { FIELDS } from "@storyflow/backend/fields";
-import { calculateFromRecord } from "@storyflow/backend/calculate";
+import { calculate, calculateFromRecord } from "@storyflow/backend/calculate";
 
 const AppPageContext = React.createContext<{
   addArticleWithUrl: (parent: Pick<DBDocument, "_id" | "record">) => void;
@@ -120,7 +120,7 @@ export default function AppPage({
   const [dialogIsOpen, setDialogIsOpen] = React.useState<null | string>(null);
   const [parentUrl, setParentUrl] = React.useState<null | {
     id: FieldId;
-    record: ComputationRecord;
+    record: TreeRecord;
     url: string;
   }>(null);
 
@@ -129,7 +129,7 @@ export default function AppPage({
     setDialogIsOpen("add-article");
     setParentUrl({
       id: urlId,
-      url: (parent.record[urlId]?.[0] as string) ?? "",
+      url: (calculateFromRecord(urlId, parent.record)?.[0] as string) ?? "",
       record: getFieldRecord(parent.record, urlId, getGraph(parent.record)),
     });
   };

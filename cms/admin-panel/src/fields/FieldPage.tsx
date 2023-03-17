@@ -13,12 +13,12 @@ import { tools } from "shared/editor-tools";
 import { ComputationOp, targetTools } from "shared/operations";
 import { store, useGlobalState } from "../state/state";
 import {
-  Computation,
-  ComputationRecord,
   DocumentId,
-  EditorComputation,
+  TokenStream,
   FieldId,
-  Value,
+  TreeRecord,
+  SyntaxTree,
+  ValueArray,
 } from "@storyflow/backend/types";
 import { extendPath } from "@storyflow/backend/extendPath";
 import Content from "../layout/components/Content";
@@ -47,7 +47,7 @@ import {
   Path,
 } from "@storyflow/frontend/types";
 import { useDocumentIdGenerator } from "../id-generator";
-import { symb } from "@storyflow/backend/symb";
+import { tokens } from "@storyflow/backend/tokens";
 
 const useBuilderRendered = ({
   listeners,
@@ -90,7 +90,7 @@ const useElementActions = ({
   const fullParentPath =
     parentPath !== null ? extendPath(id, parentPath) : null;
 
-  const [computation] = useGlobalState<EditorComputation>(
+  const [computation] = useGlobalState<TokenStream>(
     fullParentPath !== null ? `${fullParentPath}#computation` : undefined
   );
 
@@ -135,7 +135,7 @@ const useElementActions = ({
       tools.forEach(
         computation,
         (value, i) => {
-          if (symb.isNestedElement(value) && value.id === elementId) {
+          if (tokens.isNestedElement(value) && value.id === elementId) {
             index = i;
             return true;
           }
@@ -177,7 +177,7 @@ const useElementActions = ({
       tools.forEach(
         computation,
         (value, i) => {
-          if (symb.isNestedElement(value) && value.id === elementId) {
+          if (tokens.isNestedElement(value) && value.id === elementId) {
             index = i;
             return true;
           }
@@ -213,7 +213,7 @@ const useElementActions = ({
       computation,
       (value, index) => {
         length++;
-        if (symb.isNestedElement(value)) {
+        if (tokens.isNestedElement(value)) {
           blocks.push({
             index,
             length,
@@ -236,7 +236,7 @@ const useElementActions = ({
       tools.forEach(
         computation,
         (value, index) => {
-          if (symb.isNestedElement(value)) {
+          if (tokens.isNestedElement(value)) {
             i++;
           }
           if (i === from) {
@@ -318,12 +318,10 @@ function Toolbar({
 
 export function FieldPage({
   id,
-  initialValue,
   selected,
   children,
 }: {
   id: FieldId;
-  initialValue: Computation;
   selected: boolean;
   children?: React.ReactNode;
 }) {
@@ -379,7 +377,6 @@ export function FieldPage({
         id={id}
         rendered={rendered}
         dispatchers={dispatchers}
-        initialValue={initialValue}
       />
       <PanelGroup
         direction={direction.split("-")[0] as "horizontal" | "vertical"}
@@ -436,7 +433,7 @@ export function FieldPage({
   );
 }
 
-export type ComponentRecord = Record<string, Computation>;
+export type ComponentRecord = Record<string, ValueArray>;
 
 const getRecordSnapshot = (
   entry: FieldId,
@@ -445,27 +442,27 @@ const getRecordSnapshot = (
     client,
     libraries,
   }: {
-    record?: ComputationRecord;
+    record?: TreeRecord;
     client: Client;
     libraries: LibraryConfig[];
   }
 ) => {
-  const finalRecord: ComputationRecord = {};
+  const finalRecord: ComponentRecord = {};
 
   const recursivelyGetRecordFromComputation = (fieldId: FieldId) => {
     const initialValue = record[fieldId];
-    const state = store.use<Value[]>(fieldId);
+    const state = store.use<ValueArray>(fieldId);
     if (!state.initialized()) {
       state.set(() => calculateFn(fieldId, initialValue, { record, client }));
     }
     const value = state.value!;
 
-    const getChildren = (value: Value[]): {} => {
+    const getChildren = (value: ValueArray): {} => {
       return value.reduce((acc, element) => {
         if (Array.isArray(element)) {
           // this should propably just flat it infinitely out
           return Object.assign(acc, getChildren(element));
-        } else if (!symb.isNestedElement(element)) {
+        } else if (!tokens.isNestedElement(element)) {
           return acc;
         }
         const components = libraries
@@ -527,12 +524,10 @@ function PropagateStatePlugin({
   id,
   rendered,
   dispatchers,
-  initialValue,
 }: {
   id: FieldId;
   rendered: boolean;
   dispatchers: ReturnType<typeof createEventsFromCMSToIframe>;
-  initialValue: Computation;
 }) {
   const { record } = useDocumentPageContext();
 

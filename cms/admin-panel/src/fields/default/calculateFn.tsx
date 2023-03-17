@@ -1,34 +1,33 @@
 import { store } from "../../state/state";
-import { calculateSync, FetchObject } from "@storyflow/backend/calculate";
+import {
+  calculate,
+  FetchObject,
+  StateGetter,
+} from "@storyflow/backend/calculate";
 import { context, getContextKey } from "../../state/context";
 import { fetchArticle } from "../../documents";
 import {
-  Computation,
   Value,
   FieldId,
-  ComputationRecord,
   ContextToken,
   NestedDocumentId,
-  FolderId,
   RawFieldId,
-  SortSpec,
-  DBFolder,
   DocumentId,
+  TreeRecord,
+  SyntaxTree,
+  ValueArray,
 } from "@storyflow/backend/types";
 import {
   computeFieldId,
-  createRawTemplateFieldId,
   createTemplateFieldId,
   getDocumentId,
-  getRawDocumentId,
   getRawFieldId,
 } from "@storyflow/backend/ids";
 import { Client } from "../../client";
-import { fetchFolder } from "../../folders";
-import { getTemplateFieldsAsync } from "../../documents/template-fields";
 import { unwrap } from "@storyflow/result";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
 
-type FetcherResult = { _id: DocumentId; record: ComputationRecord }[];
+type FetcherResult = { _id: DocumentId; record: TreeRecord }[];
 
 function createPromise<T>() {
   let props: {
@@ -102,7 +101,7 @@ function createFetcherStore() {
       if (!result) {
         result = createThrottledFetch<FetcherResult>(async (url) => {
           const params = JSON.parse(url) as Omit<FetchObject, "id"> & {
-            filters: Record<RawFieldId, Value[]>;
+            filters: Record<RawFieldId, ValueArray>;
           };
           const result = unwrap(
             await client.documents.getListFromFilters.query(params),
@@ -140,27 +139,16 @@ const fetcherStore = createFetcherStore();
 
 export const calculateFn = (
   fieldId: FieldId | string,
-  value: Computation,
+  value: SyntaxTree,
   {
     record = {},
-    returnFunction = false,
     client,
   }: {
     client: Client;
-    record?: ComputationRecord;
-    returnFunction?: boolean;
+    record?: TreeRecord;
   }
-): Value[] => {
-  const getter = (
-    importId: FieldId | FetchObject | ContextToken,
-    {
-      returnFunction,
-      external,
-    }: {
-      returnFunction?: boolean;
-      external?: boolean;
-    } = {}
-  ) => {
+): ValueArray => {
+  const getter: StateGetter = (importId, { tree, external }): any => {
     if (typeof importId === "object" && "select" in importId) {
       // we want it to react to updates in the template so that new fields are found
       const template = store.use<FieldId[]>(
@@ -173,14 +161,20 @@ export const calculateFn = (
       const filters = Object.fromEntries(
         template.map((id) => {
           const fieldId = createTemplateFieldId(importId.id, id);
-          const state = store.use<Value[]>(fieldId, () =>
-            calculateFn(id as FieldId, record[id as FieldId] ?? [], {
-              record,
-              client,
-              returnFunction: false,
-            })
+          const state = store.use<ValueArray>(fieldId, () =>
+            calculateFn(
+              id as FieldId,
+              record[id as FieldId] ?? DEFAULT_SYNTAX_TREE,
+              {
+                record,
+                client,
+              }
+            )
           );
-          return [getRawFieldId(fieldId), state.value] as [RawFieldId, Value[]];
+          return [getRawFieldId(fieldId), state.value] as [
+            RawFieldId,
+            ValueArray
+          ];
         })
       );
 
@@ -213,49 +207,47 @@ export const calculateFn = (
         promise.then((result_) => state.set(() => result_));
       }
 
-      const values = (state.value ?? []).reduce((acc, { _id, record }) => {
-        const fieldId = computeFieldId(_id, importId.select);
-        const value = record[fieldId] ?? [];
-        const state = store.use<Value[]>(fieldId, () =>
-          calculateFn(fieldId, value, {
-            record,
-            client,
-            returnFunction: false,
-          })
-        ).value;
-        if (state.length > 1) {
-          return [...acc, state];
-        } else if (state.length === 1) {
-          return [...acc, state[0]];
-        }
-        return acc;
-      }, [] as Value[]);
+      const values = (state.value ?? []).reduce(
+        (acc: ValueArray, { _id, record }) => {
+          const fieldId = computeFieldId(_id, importId.select);
+          const value = record[fieldId] ?? DEFAULT_SYNTAX_TREE;
+          const state = store.use<ValueArray>(fieldId, () =>
+            calculateFn(fieldId, value, {
+              record,
+              client,
+            })
+          ).value;
+          if (state.length > 1) {
+            return [...acc, state];
+          } else if (state.length === 1) {
+            return [...acc, state[0]];
+          }
+          return acc;
+        },
+        []
+      );
 
       return values ?? [];
     }
 
     if (typeof importId === "object" && "ctx" in importId) {
-      const value = context.use<Value[]>(
+      const value = context.use<ValueArray>(
         getContextKey(getDocumentId(fieldId as FieldId), importId.ctx)
       ).value;
       return value ? [value] : [];
     }
 
-    const stateId = returnFunction ? `${importId}#function` : importId;
-
-    if (importId.indexOf(".") > 0) {
-      return store.use<Value[]>(importId).value ?? [];
-    }
+    const stateId = tree ? `${importId}#stream` : importId;
+    const defaultValue = tree ? { type: null, children: [] } : [];
 
     const value = record[importId];
 
-    // if (!value) return store.use<Value[]>(id).value ?? [];
     if (value) {
-      return store.use<Value[]>(stateId, () =>
-        calculateFn(importId, value, { record, client, returnFunction })
+      return store.use<ValueArray>(stateId, () =>
+        calculateFn(importId, value, { record, client })
       ).value;
     } else if (!external) {
-      return store.use<Value[]>(stateId).value ?? [];
+      return store.use<ValueArray>(stateId).value ?? defaultValue;
     }
 
     const asyncFn = fetchArticle(
@@ -268,19 +260,23 @@ export const calculateFn = (
       if (!article) return undefined;
       const value = article.record[importId as FieldId];
       if (!value) return undefined;
+
+      // TODO when returning tree, I should somehow give access to this record as well.
+
       const fn = () =>
-        calculateFn(importId, value, {
-          record: article.record,
-          client,
-          returnFunction,
-        });
+        tree
+          ? value
+          : calculateFn(importId, value, {
+              record: article.record,
+              client,
+            });
       return fn;
     });
 
-    return store.useAsync(stateId, asyncFn).value ?? [];
+    return store.useAsync(stateId, asyncFn).value ?? defaultValue;
   };
 
-  const result = calculateSync(value, getter, { returnFunction });
+  const result = calculate(value, getter);
   return result;
 };
 

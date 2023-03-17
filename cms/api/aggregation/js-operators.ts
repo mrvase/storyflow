@@ -1,4 +1,4 @@
-import { BrandedObjectId, FieldId } from "@storyflow/backend/types";
+import { DBId, FieldId } from "@storyflow/backend/types";
 import { Operators, SwitchObject } from "./types";
 
 export const operators: Operators<any> = {
@@ -161,7 +161,7 @@ export const operators: Operators<any> = {
     return String(input);
   },
   toObjectId(input) {
-    return input as BrandedObjectId<FieldId>;
+    return input as DBId<FieldId>;
   },
   toBool(input) {
     return Boolean(input);

@@ -5,7 +5,6 @@ import {
   $isTextNode,
   ElementNode,
   LexicalNode,
-  TextNode,
   $isNodeSelection,
   $isRangeSelection,
   NodeSelection,
@@ -52,12 +51,13 @@ import {
   matchNonEscapedCharacter,
   splitByNonEscapedCharacter,
 } from "shared/matchNonEscapedCharacter";
-import { EditorComputation, NestedElement } from "@storyflow/backend/types";
+import { TokenStream, NestedElement } from "@storyflow/backend/types";
 import { LibraryConfig } from "@storyflow/frontend/types";
 import { getConfigFromType } from "../../client-config";
 import { $createContextNode, $isContextNode } from "../decorators/ContextNode";
 import { $createFolderNode, $isFolderNode } from "../decorators/FolderNode";
-import { symb } from "@storyflow/backend/symb";
+import { tokens } from "@storyflow/backend/tokens";
+import { isSymbol } from "@storyflow/backend/symbols";
 
 export const isInlineElement = (
   libraries: LibraryConfig[],
@@ -164,9 +164,9 @@ export const $getTextContent = (node: LexicalNode, endAt?: string) => {
 export const $getComputation = (node: LexicalNode) => {
   const recursivelyGetContent = (
     node: LexicalNode,
-    prevContent: EditorComputation = []
+    prevContent: TokenStream = []
   ) => {
-    let content: EditorComputation = [];
+    let content: TokenStream = [];
     if ($isElementNode(node)) {
       const children = node.getChildren?.();
       if (children) {
@@ -223,7 +223,7 @@ export const $getComputation = (node: LexicalNode) => {
       content = [node.__value];
     } else if ($isOperatorNode(node)) {
       const operator = node.getTextContent();
-      let compute: EditorComputation = [];
+      let compute: TokenStream = [];
       if (operator === ",") {
         compute = [{ ",": true }];
       } else if (operator === "(") {
@@ -387,13 +387,13 @@ export const $getPointFromIndex = (
 };
 
 export const getNodesFromComputation = (
-  compute: EditorComputation,
+  compute: TokenStream,
   libraries: LibraryConfig[]
 ) => {
   let bold = false;
   let italic = false;
   let skip = 0;
-  return compute.reduce((acc, el, index) => {
+  return compute.reduce((acc: LexicalNode[], el, index) => {
     if (skip > 0) {
       skip--;
       return acc;
@@ -428,16 +428,16 @@ export const getNodesFromComputation = (
     } else if (typeof el === "boolean") {
       const node = $createTextNode(el ? "SAND" : "FALSK");
       acc.push(node);
-    } else if (symb.isEditorSymbol(el, "(") && typeof el["("] === "string") {
+    } else if (isSymbol(el, "(") && typeof el["("] === "string") {
       const node = $createFunctionNode((el as any)[1]);
       acc.push(node);
-    } else if (symb.isNestedField(el)) {
+    } else if (tokens.isNestedField(el)) {
       const node = $createImportNode(el);
       acc.push(node);
-    } else if (symb.isParameter(el)) {
+    } else if (tokens.isParameter(el)) {
       const node = $createParameterNode(`${el["x"]}`);
       acc.push(node);
-    } else if (symb.isNestedElement(el)) {
+    } else if (tokens.isNestedElement(el)) {
       if (isInlineElement(libraries, el)) {
         const node = $createInlineLayoutElementNode(el);
         acc.push(node);
@@ -445,58 +445,58 @@ export const getNodesFromComputation = (
         const node = $createLayoutElementNode(el);
         acc.push(node);
       }
-    } else if (symb.isNestedDocument(el)) {
+    } else if (tokens.isNestedDocument(el)) {
       const node = $createDocumentNode(el);
       acc.push(node);
-    } else if (symb.isNestedFolder(el)) {
+    } else if (tokens.isNestedFolder(el)) {
       const node = $createFolderNode(el);
       acc.push(node);
     } else if (
-      symb.isFileToken(el) ||
-      symb.isColorToken(el) ||
-      symb.isCustomToken(el)
+      tokens.isFileToken(el) ||
+      tokens.isColorToken(el) ||
+      tokens.isCustomToken(el)
     ) {
       const node = $createTokenNode(el);
       acc.push(node);
-    } else if (symb.isContextToken(el)) {
+    } else if (tokens.isContextToken(el)) {
       const node = $createContextNode(el);
       acc.push(node);
-    } else if (symb.isEditorSymbol(el, "_")) {
+    } else if (isSymbol(el, "_")) {
       const node = $createOperatorNode(el["_"]);
       acc.push(node);
     } else if (
-      symb.isEditorSymbol(el, ",") ||
-      symb.isEditorSymbol(el, "(") ||
-      symb.isEditorSymbol(el, ")") ||
-      symb.isEditorSymbol(el, "[") ||
-      symb.isEditorSymbol(el, "]")
+      isSymbol(el, ",") ||
+      isSymbol(el, "(") ||
+      isSymbol(el, ")") ||
+      isSymbol(el, "[") ||
+      isSymbol(el, "]")
     ) {
       const key = Object.keys(el)[0];
       const node = $createOperatorNode(key);
       acc.push(node);
     }
     return acc;
-  }, [] as LexicalNode[]);
+  }, []);
 };
 
 export function $getBlocksFromComputation(
-  initialState: EditorComputation,
+  initialState: TokenStream,
   libraries: LibraryConfig[]
 ) {
   const blocks: LexicalNode[] = [];
 
-  const isBlockElement = (el: EditorComputation[number]) => {
+  const isBlockElement = (el: TokenStream[number]) => {
     return (
-      (symb.isNestedElement(el) && !isInlineElement(libraries, el)) ||
-      symb.isNestedDocument(el) ||
-      symb.isNestedFolder(el) ||
-      symb.isNestedFolder(el)
+      (tokens.isNestedElement(el) && !isInlineElement(libraries, el)) ||
+      tokens.isNestedDocument(el) ||
+      tokens.isNestedFolder(el) ||
+      tokens.isNestedFolder(el)
     );
   };
 
   const arrSplit = tools.split(
     initialState,
-    (el) => symb.isLineBreak(el) || isBlockElement(el)
+    (el) => tokens.isLineBreak(el) || isBlockElement(el)
   );
 
   const arr = arrSplit
@@ -506,9 +506,9 @@ export function $getBlocksFromComputation(
     .filter(
       (el, index, arr) =>
         // strings create paragraphs themselves
-        !symb.isLineBreak(el[0]) ||
+        !tokens.isLineBreak(el[0]) ||
         index === arr.length - 1 ||
-        symb.isLineBreak(arr[index + 1]?.[0])
+        tokens.isLineBreak(arr[index + 1]?.[0])
     );
 
   if (!arr.length) {
@@ -519,14 +519,14 @@ export function $getBlocksFromComputation(
 
   arr.forEach((computation) => {
     if (computation.length === 1 && isBlockElement(computation[0])) {
-      if (symb.isNestedElement(computation[0])) {
+      if (tokens.isNestedElement(computation[0])) {
         blocks.push($createLayoutElementNode(computation[0]));
-      } else if (symb.isNestedFolder(computation[0])) {
+      } else if (tokens.isNestedFolder(computation[0])) {
         blocks.push($createFolderNode(computation[0] as any));
       } else {
         blocks.push($createDocumentNode(computation[0] as any));
       }
-    } else if (symb.isLineBreak(computation[0])) {
+    } else if (tokens.isLineBreak(computation[0])) {
       const paragraphNode = $createParagraphNode();
       blocks.push(paragraphNode);
     } else {
@@ -549,7 +549,7 @@ export function $getBlocksFromComputation(
 }
 
 export function $initializeEditor(
-  initialState: EditorComputation,
+  initialState: TokenStream,
   libraries: LibraryConfig[]
 ): void {
   const root = $getRoot();

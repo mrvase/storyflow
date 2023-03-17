@@ -12,7 +12,7 @@ import {
 import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
 import { caretClasses } from "./caret";
-import { NestedElement, Value } from "@storyflow/backend/types";
+import { NestedElement, ValueArray } from "@storyflow/backend/types";
 import { ParentPropContext } from "../default/DefaultField";
 import { stringifyPath, useBuilderPath } from "../BuilderPath";
 import { getConfigFromType, useClientConfig } from "../../client-config";
@@ -38,7 +38,7 @@ function InlineLayoutElementDecorator({
     value.id
   }/label`;
 
-  const [output] = useGlobalState<Value[]>(pathToLabel);
+  const [output] = useGlobalState<ValueArray>(pathToLabel);
 
   const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
 

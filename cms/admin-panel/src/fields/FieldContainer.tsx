@@ -14,10 +14,10 @@ import { useSegment } from "../layout/components/SegmentContext";
 import { useTabUrl } from "../layout/utils";
 import { useLabel } from "../documents/collab/hooks";
 import {
-  Computation,
   DocumentId,
   FieldConfig,
   FieldId,
+  SyntaxTree,
 } from "@storyflow/backend/types";
 import { getTranslateDragEffect } from "../utils/dragEffects";
 import useIsFocused from "../utils/useIsFocused";
@@ -34,14 +34,12 @@ type Props = {
   fieldConfig: FieldConfig;
   index: number;
   children: React.ReactNode;
-  initialValue: Computation;
   template: DocumentId;
   dragHandleProps?: any;
 };
 
 export function FieldContainer({
   children,
-  initialValue,
   index,
   fieldConfig,
   template,
@@ -104,11 +102,7 @@ export function FieldContainer({
         </div>
         <BuilderPortal id={fieldConfig.id}>
           {(isOpen) => (
-            <FieldPage
-              selected={isOpen}
-              id={fieldConfig.id}
-              initialValue={initialValue}
-            >
+            <FieldPage selected={isOpen} id={fieldConfig.id}>
               <div className={cl("pt-5 -mt-2.5 relative grow shrink basis-0")}>
                 {/*<div
                 className={cl(

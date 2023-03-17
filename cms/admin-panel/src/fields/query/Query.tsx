@@ -1,10 +1,5 @@
 import cl from "clsx";
-import {
-  ColorToken,
-  EditorComputation,
-  FieldId,
-  functions,
-} from "@storyflow/backend/types";
+import { ColorToken, TokenStream, functions } from "@storyflow/backend/types";
 import {
   ArrowUturnRightIcon,
   AtSymbolIcon,
@@ -25,12 +20,10 @@ import {
   $isRootNode,
   $isTextNode,
   BLUR_COMMAND,
-  CLICK_COMMAND,
   COMMAND_PRIORITY_EDITOR,
   COMMAND_PRIORITY_HIGH,
   KEY_ARROW_DOWN_COMMAND,
   KEY_ARROW_UP_COMMAND,
-  KEY_ENTER_COMMAND,
   KEY_ESCAPE_COMMAND,
   LexicalEditor,
   LexicalNode,
@@ -42,7 +35,6 @@ import { useEditorContext } from "../../editor/react/EditorProvider";
 import { mergeRegister } from "../../editor/utils/mergeRegister";
 import { tools } from "shared/editor-tools";
 import { ComputationOp } from "shared/operations";
-import { getFileType } from "../../utils/file";
 import { spliceTextWithNodes } from "../Editor/spliceTextWithNodes";
 import {
   $getIndexFromPoint,
@@ -74,7 +66,7 @@ import { QueryColors } from "./QueryColors";
 
 const insertComputation = async (
   editor: LexicalEditor,
-  insert: EditorComputation,
+  insert: TokenStream,
   remove: number,
   libraries: LibraryConfig[],
   removeExtra?: boolean
@@ -162,7 +154,7 @@ const insertComputation = async (
 
 const insertBlock = async (
   editor: LexicalEditor,
-  insert: EditorComputation,
+  insert: TokenStream,
   remove: number,
   libraries: LibraryConfig[]
 ) => {
@@ -293,7 +285,7 @@ export function Query({
                 promptedQueryType === "." ||
                 (promptedQueryType === "/" && nextIsSymbolInsert === "/"))
             ) {
-              let insert: EditorComputation = [];
+              let insert: TokenStream = [];
               let remove = 0;
               let index = prev[0].index;
 
@@ -525,7 +517,7 @@ export function Query({
   }[queryType ?? ""];
 
   const insertComputationSimple = React.useCallback(
-    async (insert: EditorComputation, removeExtra?: boolean) => {
+    async (insert: TokenStream, removeExtra?: boolean) => {
       const success = await insertComputation(
         editor,
         insert,
@@ -543,7 +535,7 @@ export function Query({
   );
 
   const insertBlockSimple = React.useCallback(
-    async (insert: EditorComputation) => {
+    async (insert: TokenStream) => {
       const success = await insertBlock(
         editor,
         insert,

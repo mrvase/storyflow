@@ -1,19 +1,17 @@
 import {
-  Computation,
-  ComputationRecord,
-  DBComputation,
   DBDocumentRaw,
-  DBValue,
   DocumentId,
-  EditorComputation,
   FieldId,
   NestedDocumentId,
+  NestedField,
   RawFieldId,
-  Value,
+  SyntaxNode,
+  SyntaxTree,
+  TokenStream,
+  TreeRecord,
 } from "@storyflow/backend/types";
 import { ComputationOp, targetTools } from "./operations";
 import { tools } from "./editor-tools";
-import { encodeEditorComputation } from "./editor-computation";
 import {
   computeFieldId,
   isFieldOfDocument,
@@ -22,12 +20,37 @@ import {
 } from "@storyflow/backend/ids";
 import { createSpliceTransformer } from "./splice-transform";
 import { getConfig } from "./initialValues";
-import { symb } from "@storyflow/backend/symb";
+import { createTokenStream } from "./parse-token-stream";
+import { parseSyntaxStream } from "./parse-syntax-stream";
+import { tokens } from "@storyflow/backend/tokens";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
 
-export const getPickedDocumentIds = (
-  fref: FieldId,
-  pool: ComputationRecord
+export const isSyntaxTree = (tree: any): tree is SyntaxTree => {
+  return (
+    tree !== null &&
+    typeof tree === "object" &&
+    "type" in tree &&
+    "children" in tree
+  );
+};
+
+export const traverseSyntaxTree = (
+  tree: SyntaxTree,
+  callback: (token: Exclude<SyntaxTree["children"][number], SyntaxNode>) => void
 ) => {
+  const traverseNode = (node: SyntaxTree) => {
+    node.children.forEach((token) => {
+      if (isSyntaxTree(token)) {
+        traverseNode(token);
+      } else {
+        callback(token);
+      }
+    });
+  };
+  traverseNode(tree);
+};
+
+export const getPickedDocumentIds = (fref: FieldId, pool: TreeRecord) => {
   /*
   This function is very greedy.
   It does not care about the logic of the computation.
@@ -58,6 +81,33 @@ export const getPickedDocumentIds = (
   const value = pool[fref];
   if (!value) return [];
 
+  const traverseNode = (node: SyntaxTree) => {
+    node.children.forEach((token) => {
+      if (isSyntaxTree(token)) {
+        if (token.type === "select") {
+          const child = token.children[0] as NestedField;
+          const secondaryDrefs = getPickedDocumentIds(child.field, pool);
+          secondaryDrefs.forEach((dref) => {
+            const id = computeFieldId(dref, token.payload!.select);
+            drefs.push(...getPickedDocumentIds(id, pool));
+          });
+        } else {
+          traverseNode(token);
+        }
+      } else if (tokens.isNestedField(token)) {
+        drefs.push(...getPickedDocumentIds(token.field, pool));
+      } else if (
+        tokens.isNestedDocument(token) &&
+        !isNestedDocumentId(token.id)
+      ) {
+        drefs.push(token.id);
+      }
+    });
+  };
+
+  traverseNode(value);
+
+  /*
   value.forEach((c, i) => {
     if (symb.isNestedField(c)) {
       drefs.push(...getPickedDocumentIds(c.field, pool));
@@ -74,13 +124,35 @@ export const getPickedDocumentIds = (
       drefs.push(c.id);
     }
   }, [] as FieldId[]);
+  */
 
   return drefs;
 };
 
-export const getImportIds = (value: Computation, pool: ComputationRecord) => {
+export const getImportIds = (value: SyntaxTree, pool: TreeRecord) => {
   const imports: FieldId[] = [];
 
+  const traverseNode = (node: SyntaxTree) => {
+    node.children.forEach((token) => {
+      if (isSyntaxTree(token)) {
+        if (token.type === "select") {
+          const child = token.children[0] as NestedField;
+          const drefs = getPickedDocumentIds(child.field, pool);
+          drefs.forEach((dref) =>
+            imports.push(computeFieldId(dref, token.payload!.select))
+          );
+        } else {
+          traverseNode(token);
+        }
+      } else if (tokens.isNestedField(token)) {
+        imports.push(token.field);
+      }
+    });
+  };
+
+  traverseNode(value);
+
+  /*
   value.forEach((c, i) => {
     if (symb.isNestedField(c)) {
       imports.push(c.field);
@@ -92,12 +164,13 @@ export const getImportIds = (value: Computation, pool: ComputationRecord) => {
       }
     }
   }, [] as FieldId[]);
+  */
 
   return imports;
 };
 
 export const getNextState = (
-  compute: EditorComputation,
+  compute: TokenStream,
   operation: ComputationOp
 ) => {
   /**
@@ -105,7 +178,7 @@ export const getNextState = (
    */
 
   let newValue = compute;
-  let removed: EditorComputation = [];
+  let removed: TokenStream = [];
   operation.ops.forEach((action) => {
     const { index, insert = [], remove = 0 } = action;
     const move = !action.insert && !action.remove;
@@ -145,7 +218,7 @@ const getArrayMethods = (operation: ComputationOp) => {
 
 export const createComputationTransformer = (
   fieldId: FieldId,
-  initialRecord: ComputationRecord
+  initialRecord: TreeRecord
 ) => {
   const getInitialValue = (operation: ComputationOp) => {
     const { location, field } = targetTools.parse(operation.target);
@@ -153,13 +226,13 @@ export const createComputationTransformer = (
     if (location === "") {
       let value = initialRecord[fieldId];
       if (!value) {
-        value = field ? getConfig(field).initialValue : [];
+        value = getConfig(field ?? "default").initialValue;
       }
-      return encodeEditorComputation(value);
+      return createTokenStream(value);
     }
 
-    let value = initialRecord[location as FieldId] ?? [];
-    return encodeEditorComputation(value);
+    let value = initialRecord[location as FieldId] ?? DEFAULT_SYNTAX_TREE;
+    return createTokenStream(value);
   };
   return createSpliceTransformer<ComputationOp>(
     getInitialValue,
@@ -167,47 +240,24 @@ export const createComputationTransformer = (
   );
 };
 
-function removeNestedObjectIds(value: DBValue[]): Value[];
-function removeNestedObjectIds(value: DBComputation): Computation;
-function removeNestedObjectIds(
-  value: DBComputation | DBValue[]
-): Computation | Value[] {
-  return value.map((el) => {
-    if (el === null || typeof el !== "object") return el;
-    if (Array.isArray(el)) {
-      return removeNestedObjectIds(el);
-    }
-    if (!("id" in el)) return el;
-    return {
-      ...el,
-      id: unwrapObjectId(el.id),
-      ...("field" in el && { field: unwrapObjectId(el.field) }),
-      ...("folder" in el && { folder: unwrapObjectId(el.folder) }),
-    };
-  });
-}
-
 export const getComputationRecord = (
   documentId: DocumentId,
   doc: Pick<DBDocumentRaw, "compute" | "values">
-): ComputationRecord => {
+): TreeRecord => {
   const fields = Object.fromEntries(
-    doc.compute.map(({ id, value }) => [
-      unwrapObjectId(id),
-      removeNestedObjectIds(value),
-    ])
+    doc.compute.map(({ k, v }) => [unwrapObjectId(k), parseSyntaxStream(v)])
   );
   Object.entries(doc.values).forEach(([id, value]) => {
     const fieldId = computeFieldId(documentId, id as RawFieldId);
     if (!(fieldId in fields)) {
-      fields[fieldId] = removeNestedObjectIds(value as DBComputation);
+      fields[fieldId] = parseSyntaxStream(value);
     }
   });
   return fields;
 };
 
-export const getComputationEntries = (record: ComputationRecord) => {
-  return Object.entries(record) as [FieldId, Computation][];
+export const getComputationEntries = (record: TreeRecord) => {
+  return Object.entries(record) as [FieldId, SyntaxTree][];
 };
 
 export type ComputationGraph = {
@@ -215,19 +265,26 @@ export type ComputationGraph = {
   children: Map<FieldId, FieldId[]>;
 };
 
-export const getChildrenDocuments = (value: Computation) => {
+export const getChildrenDocuments = (value: SyntaxTree) => {
   const children: NestedDocumentId[] = [];
-  value.forEach((el) => {
-    if (el === null || typeof el !== "object") return el;
-    if ("id" in el && isNestedDocumentId(el.id)) {
-      children.push(el.id);
-    }
-  });
-  return Array.from(children);
+
+  const traverseNode = (node: SyntaxTree) => {
+    node.children.forEach((token) => {
+      if (isSyntaxTree(token)) {
+        traverseNode(token);
+      } else if (tokens.isNestedEntity(token) && isNestedDocumentId(token.id)) {
+        children.push(token.id);
+      }
+    });
+  };
+
+  traverseNode(value);
+
+  return children;
 };
 
 export const getGraph = (
-  computationRecord: ComputationRecord,
+  computationRecord: TreeRecord,
   initialGraph: Partial<ComputationGraph> = {}
 ): ComputationGraph => {
   let imports = initialGraph.imports ?? new Map<FieldId, FieldId[]>();
@@ -256,17 +313,17 @@ export const getGraph = (
 };
 
 export const getFieldRecord = (
-  record: ComputationRecord,
+  record: TreeRecord,
   fieldId: FieldId,
   graph: ComputationGraph
 ) => {
   const { imports, children } = graph;
 
-  const fieldRecord: ComputationRecord = {};
+  const fieldRecord: TreeRecord = {};
 
   const addWithDerivatives = (fieldId: FieldId) => {
     if (fieldId in fieldRecord) return;
-    fieldRecord[fieldId] = record[fieldId] ?? [];
+    fieldRecord[fieldId] = record[fieldId] ?? DEFAULT_SYNTAX_TREE;
     imports.get(fieldId)?.forEach(addWithDerivatives);
     children.get(fieldId)?.forEach(addWithDerivatives);
   };
@@ -278,7 +335,7 @@ export const getFieldRecord = (
 
 export const extractRootRecord = (
   documentId: DocumentId,
-  record: ComputationRecord,
+  record: TreeRecord,
   options: {
     excludeImports?: boolean;
   } = {}
@@ -293,7 +350,7 @@ export const extractRootRecord = (
     isFieldOfDocument(el, documentId)
   );
 
-  const rootRecord: ComputationRecord = {};
+  const rootRecord: TreeRecord = {};
 
   rootFieldIds.forEach((fieldId) => {
     Object.assign(rootRecord, getFieldRecord(record, fieldId, graph));

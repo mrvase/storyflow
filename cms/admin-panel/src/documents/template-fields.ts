@@ -1,23 +1,24 @@
 import { Client } from "../client";
 import {
-  ComputationRecord,
+  TreeRecord,
   DocumentConfig,
   DocumentId,
   FieldConfig,
   FieldId,
   NestedDocumentId,
   RawDocumentId,
+  SyntaxTree,
 } from "@storyflow/backend/types";
 import {
   createTemplateFieldId,
   getDocumentId,
   getRawDocumentId,
   isNestedDocumentId,
-  isTemplateField,
   replaceDocumentId,
 } from "@storyflow/backend/ids";
 import { fetchArticle } from "./index";
-import { getComputationEntries } from "shared/computation-tools";
+import { getComputationEntries, isSyntaxTree } from "shared/computation-tools";
+import { tokens } from "@storyflow/backend/tokens";
 
 export const getDefaultValuesFromTemplateAsync = async (
   newDocumentId: DocumentId,
@@ -40,28 +41,38 @@ export const getDefaultValuesFromTemplateAsync = async (
       return createTemplateFieldId(newDocumentId, key);
     };
 
-    let record: ComputationRecord = Object.fromEntries(
+    let record: TreeRecord = Object.fromEntries(
       getComputationEntries(doc.record).map(([key, value]) => {
         const newKey = getNewKey(key);
 
-        const newValue = value.map((el) => {
-          if (
-            typeof el === "object" &&
-            el !== null &&
-            "id" in el &&
-            isNestedDocumentId(el.id)
-          ) {
-            const newNestedId = options.generateDocumentId(newDocumentId);
-            newNestedIds.set(getRawDocumentId(el.id), newNestedId);
-            const newEl = { ...el };
-            newEl.id = newNestedId;
-            if ("field" in newEl && getDocumentId(newEl.field) === doc._id) {
-              newEl.field = getNewKey(newEl.field);
-            }
-            return newEl;
-          }
-          return el;
-        });
+        const modifyNode = (node: SyntaxTree): SyntaxTree => {
+          return {
+            ...node,
+            children: node.children.map((token) => {
+              if (isSyntaxTree(token)) {
+                return modifyNode(token);
+              } else if (
+                tokens.isNestedEntity(token) &&
+                isNestedDocumentId(token.id)
+              ) {
+                const newNestedId = options.generateDocumentId(newDocumentId);
+                newNestedIds.set(getRawDocumentId(token.id), newNestedId);
+                const newToken = { ...token };
+                newToken.id = newNestedId;
+                if (
+                  "field" in newToken &&
+                  getDocumentId(newToken.field) === doc._id
+                ) {
+                  newToken.field = getNewKey(newToken.field);
+                }
+                return newToken;
+              }
+              return token;
+            }),
+          };
+        };
+
+        const newValue = modifyNode(value);
 
         return [newKey, newValue];
       })

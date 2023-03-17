@@ -4,13 +4,13 @@ import { useGlobalContext } from "../state/context";
 import { addContext, addImport } from "../custom-events";
 import { SWRClient, useClient } from "../client";
 import {
-  Computation,
   DBDocument,
   DocumentId,
-  EditorComputation,
+  TokenStream,
   FieldId,
   RawFieldId,
-  Value,
+  SyntaxTree,
+  ValueArray,
 } from "@storyflow/backend/types";
 import {
   computeFieldId,
@@ -43,16 +43,10 @@ import { getConfig } from "shared/initialValues";
 import { getNextState } from "shared/computation-tools";
 import cl from "clsx";
 import { useDocumentPageContext } from "../documents/DocumentPageContext";
-import {
-  decodeEditorComputation,
-  encodeEditorComputation,
-} from "shared/editor-computation";
-import {
-  calculateFromRecord,
-  calculateSync,
-} from "@storyflow/backend/calculate";
+import { calculate, calculateFromRecord } from "@storyflow/backend/calculate";
 import { FIELDS } from "@storyflow/backend/fields";
 import { useDocumentIdGenerator } from "../id-generator";
+import { createTokenStream, parseTokenStream } from "shared/parse-token-stream";
 
 export const toSlug = (value: string) =>
   value
@@ -63,17 +57,13 @@ export const toSlug = (value: string) =>
     .replace(/\s/g, "-")
     .replace(/[^\w\/\*\-]/g, "");
 
-const getUrlStringFromValue = (value: Value[] | Computation) => {
+const getUrlStringFromValue = (value: ValueArray | SyntaxTree) => {
   const getString = (val: any[]) => {
     return Array.isArray(val) && typeof val[0] === "string" ? val[0] : "";
   };
 
   return getString(
-    value.length === 1
-      ? value
-      : calculateSync(value as Computation, () => undefined, {
-          returnFunction: false,
-        })
+    Array.isArray(value) ? value : calculate(value, () => undefined)
   );
 };
 
@@ -132,7 +122,7 @@ export default function UrlField({
   const { record } = useDocumentPageContext();
 
   const initialValue = React.useMemo(
-    () => (value?.length > 0 ? value : getConfig("url").initialValue),
+    () => value ?? getConfig("url").initialValue,
     []
   );
 
@@ -230,12 +220,12 @@ export default function UrlField({
             console.error("Tried to add itself");
             return;
           }
-          let insert: EditorComputation = [
+          let insert: TokenStream = [
             {
               id: generateDocumentId(documentId),
               field: externalId as FieldId,
               ...(templateId && { pick: templateId as RawFieldId }),
-              imports: {},
+              props: {},
             },
           ];
           actions.push({
@@ -268,9 +258,7 @@ export default function UrlField({
       })
       .initialize(version, history ?? []);
 
-    const cache = createQueueCache(
-      encodeEditorComputation(initialValue, getConfig("url").transform)
-    );
+    const cache = createQueueCache(createTokenStream(initialValue));
 
     return queue.register(({ forEach }) => {
       singular(() => {
@@ -282,7 +270,9 @@ export default function UrlField({
           () =>
             calculateFn(
               id,
-              decodeEditorComputation(result, getConfig("url").transform),
+              parseTokenStream(result, {
+                type: getConfig("url").initialValue.type,
+              }),
               { record, client }
             ) as [string]
         );

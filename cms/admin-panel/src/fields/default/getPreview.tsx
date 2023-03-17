@@ -1,6 +1,6 @@
-import { Value } from "@storyflow/backend/types";
+import { ValueArray } from "@storyflow/backend/types";
 
-export const getPreview = (output: Value[]) => {
+export const getPreview = (output: ValueArray) => {
   const valueAsString = (value: any, placeholders: boolean) => {
     if (typeof value === "boolean") {
       return value ? "SAND" : "FALSK";

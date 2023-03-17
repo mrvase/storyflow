@@ -2,11 +2,11 @@ import { NoList } from "@storyflow/dnd";
 import React from "react";
 import { FieldOperation } from "shared/operations";
 import {
-  Computation,
   DocumentId,
   FieldConfig,
   FieldId,
   FieldType,
+  SyntaxTree,
 } from "@storyflow/backend/types";
 import DefaultField from "./default/DefaultField";
 import { FieldContainer } from "./FieldContainer";
@@ -29,7 +29,7 @@ const getComponent = <T extends FieldType>(
 
 export type FieldProps<T extends FieldType> = {
   id: FieldId;
-  value: Computation;
+  value: SyntaxTree | undefined;
   fieldConfig: FieldConfig<T>;
   version: number;
   history: ServerPackage<FieldOperation[T]>[];
@@ -46,7 +46,7 @@ export function RenderField<T extends FieldType>({
   dragHandleProps,
 }: {
   id: FieldId;
-  value: Computation;
+  value: SyntaxTree | undefined;
   fieldConfig: FieldConfig<T>;
   index: number;
   version: number;
@@ -64,7 +64,6 @@ export function RenderField<T extends FieldType>({
           fieldConfig={fieldConfig}
           dragHandleProps={dragHandleProps}
           template={template}
-          initialValue={value}
         >
           <NoList>
             <Component

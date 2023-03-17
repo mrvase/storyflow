@@ -1,3 +1,22 @@
+/*
+User input -> TokenStream
+TokenStream -> SyntaxTree
+SyntaxTree -> SyntaxStream
+SyntaxStream -> SyntaxTree
+SyntaxTree -> ValueArray
+SyntaxStream -> ValueArray
+SyntaxTree -> TokenStream
+SyntaxTree -> RenderTree
+
+
+User input --> Token Stream
+                 <-[eq]->
+        SyntaxTree<WithSyntaxError>
+          <-[eq]->      --[ss]->
+    SyntaxStream --[ss]-> ValueArray --> RenderTree
+
+*/
+
 declare const brand: unique symbol;
 
 export type Brand<T, TBrand extends string> = T & { [brand]: TBrand };
@@ -11,76 +30,70 @@ export type RawFolderId = Brand<string, "raw-folder-id">;
 export type FolderId = Brand<string, "folder-id">;
 export type SpaceId = Brand<string, "space-id">;
 
-export type BrandedObjectId<BrandedId> = {
+export type DBId<BrandedId> = {
   id: unknown;
   toHexString(): string;
 } & {
   [brand]?: BrandedId extends Brand<string, infer TBrand> ? TBrand : never;
 };
 
-// symbols are also meant to be eliminated when the computation is executed,
-// but unlike placeholders, they do not indicate a place for a value
-// but define the execution of a function
-// NOTICE! They are characterized by only one key-value pair
-// if this changes, we need to change the symb.equals implementation
+export type HasDBId<T> = T extends {
+  id: NestedDocumentId;
+  field: FieldId;
+}
+  ? Omit<T, "id" | "field"> & {
+      id: DBId<NestedDocumentId>;
+      field: DBId<FieldId>;
+    }
+  : T extends { id: NestedDocumentId; folder: FolderId }
+  ? Omit<T, "id" | "folder"> & {
+      id: DBId<NestedDocumentId>;
+      folder: DBId<FolderId>;
+    }
+  : T extends { id: DocumentId | NestedDocumentId }
+  ? Omit<T, "id"> & { id: DBId<DocumentId | NestedDocumentId> }
+  : T;
 
-export type SharedSymbol =
-  | { "(": true }
-  | { ")": true }
-  | { "[": true }
-  | { "]": true }
-  | { n: true };
+export type HasSelect<T> = T extends {
+  id: NestedDocumentId | DocumentId;
+  field: FieldId;
+}
+  ? T & {
+      select?: RawFieldId;
+    }
+  : T;
 
-export type EditorSymbol =
-  | SharedSymbol
-  | { _: Operator }
-  | { ")": FunctionName }
-  | { ",": true };
+/*
+ * SHARED TOKENS
+ */
 
-export type DBSymbol =
-  | SharedSymbol
-  | { "{": true }
-  | { "}": true }
-  | { "/": true }
-  | { ")": Operator | FunctionName }
-  | { p: RawFieldId };
-
-type SharedSymbolKey = SharedSymbol extends { [Key in infer K]: any }
-  ? K
-  : never;
-export type EditorSymbolKey = SharedSymbolKey | "_" | ",";
-export type DBSymbolKey = SharedSymbolKey | "{" | "}" | "/" | "p";
-
-export type ImportRecord = { [key: RawFieldId]: boolean };
+export type PrimitiveValue = string | number | boolean | Date;
 
 export type NestedField = {
   id: NestedDocumentId;
   field: FieldId;
-  imports?: ImportRecord;
-  pick?: RawFieldId;
+  inline?: true;
 };
 
 export type NestedElement = {
   id: NestedDocumentId;
   element: string;
-  imports?: ImportRecord;
-  parent?: string;
+  props: Record<RawFieldId, true>; // searchable props
+  inline?: true;
 };
 
 export type NestedFolder = {
   id: NestedDocumentId;
   folder: FolderId;
-  imports?: ImportRecord;
+  inline?: true;
 };
 
 export type NestedDocument = {
   id: DocumentId | NestedDocumentId;
-  path?: string;
+  inline?: true;
 };
 
-export type CustomToken = {
-  name: string;
-};
+export type NestedEntity = NestedElement | NestedFolder | NestedDocument;
 
 export type ContextToken = {
   ctx: string;
@@ -94,64 +107,120 @@ export type ColorToken = {
   color: string;
 };
 
+export type CustomToken = {
+  name: string;
+};
+
 export type Token = CustomToken | ContextToken | FileToken | ColorToken;
 
-export type PrimitiveValue = string | number | boolean | Date;
-
+export type LineBreak = { n: true };
 export type Parameter = { x: number; value?: PrimitiveValue };
 
-// placeholders are meant to be replaced by a value when the computation is executed
-export type Placeholder = Parameter | NestedField;
-export type Value =
-  | PrimitiveValue
-  | NestedElement
-  | NestedDocument
-  | NestedFolder
-  | Token
-  | Value[];
-// Nested arrays only occur as a product of calculations.
-export type Computation = (Value | Placeholder | DBSymbol)[];
+/**
+ * VALUE ARRAY
+ */
 
-export type WithBrandedObjectId<T> = T extends {
-  id: NestedDocumentId;
-  field: FieldId;
-}
-  ? Omit<T, "id" | "field"> & {
-      id: BrandedObjectId<NestedDocumentId>;
-      field: BrandedObjectId<FieldId>;
-    }
-  : T extends { id: NestedDocumentId; folder: FolderId }
-  ? Omit<T, "id" | "folder"> & {
-      id: BrandedObjectId<NestedDocumentId>;
-      folder: BrandedObjectId<FolderId>;
-    }
-  : T extends { id: DocumentId | NestedDocumentId }
-  ? Omit<T, "id"> & { id: BrandedObjectId<DocumentId | NestedDocumentId> }
-  : T;
+export type Value = PrimitiveValue | Token | NestedEntity;
 
-export type DBValue =
-  | PrimitiveValue
-  | WithBrandedObjectId<NestedElement>
-  | WithBrandedObjectId<NestedDocument>
-  | WithBrandedObjectId<NestedFolder>
-  | Token
-  | DBValue[];
-export type DBPlaceholder = Parameter | WithBrandedObjectId<NestedField>;
-export type DBComputation = (DBValue | DBPlaceholder | DBSymbol)[];
+export type Nested<T> = T | Nested<T>[];
 
-export type EditorComputation = (Value | Placeholder | EditorSymbol)[];
+export type ValueArray = Nested<Value>[];
 
-// These occur when we in the database compute the ComputationBlocks and add
-// the "result" and "function" properties to the block.
+/**
+ * STREAM
+ */
 
-export type ComputationRecord = { [key: FieldId]: Computation };
+type StreamEntity<StreamSymbol> =
+  | StreamSymbol
+  | NestedField
+  | LineBreak
+  | Value
+  | any[] // in principle never nested, but allows us to consider ValueArray as a subset of a stream.
+  | Parameter;
 
-export type DBValueRecord = Record<RawFieldId, DBValue[]>;
+/**
+ * TOKEN STREAM
+ */
 
-export type ComputationBlock = {
-  id: BrandedObjectId<FieldId>;
-  value: DBComputation;
+export type TokenStreamSymbol =
+  | { "(": true }
+  | { ")": true }
+  | { "[": true }
+  | { "]": true }
+  | { ",": true }
+  | { _: Operator }
+  | { ")": FunctionName };
+
+export type TokenStream = HasSelect<StreamEntity<TokenStreamSymbol>>[];
+
+/**
+ * SYNTAX TREE
+ */
+
+export type WithSyntaxError = {
+  error: "," | ")" | "missing";
 };
+
+export type SyntaxNode<
+  WithExtraChildren extends WithSyntaxError | never = never
+> = {
+  type: Operator | FunctionName | "merge" | "select" | "array" | null;
+  children: (
+    | SyntaxNode<WithExtraChildren>
+    | Parameter
+    | NestedField
+    | LineBreak
+    | Value
+    | any[] // like streams, they are never nested, but this allows us to have ValueArray as a child as well.
+    | WithExtraChildren
+  )[];
+  payload?: Record<string, any>;
+  open?: true;
+};
+
+export type SyntaxTree<
+  WithExtraChildren extends WithSyntaxError | never = WithSyntaxError | never
+> = SyntaxNode<WithExtraChildren>;
+
+export type Transform = Pick<SyntaxNode, "type" | "payload">;
+
+export type TreeRecord = { [key: FieldId]: SyntaxTree<WithSyntaxError> };
+
+/**
+ * SYNTAX STREAM
+ */
+
+export type SyntaxStreamSymbol =
+  | { "(": true }
+  | { ")": true | false } // false means it does not close anything (syntax error) - should be ignored
+  | { "[": true }
+  | { "]": true }
+  | { "{": true }
+  | { "}": true }
+  | { ")": Operator | FunctionName }
+  | { p: RawFieldId }
+  | null;
+
+export type SyntaxStream = StreamEntity<SyntaxStreamSymbol>[];
+
+export type DBValue = HasDBId<Value>;
+export type DBValueArray = Nested<DBValue>[];
+
+export type DBSyntaxStream = HasDBId<StreamEntity<SyntaxStreamSymbol>>[];
+
+export type DBSyntaxStreamBlock = {
+  k: DBId<FieldId>;
+  v: DBSyntaxStream;
+};
+
+export type DBValueRecord = Record<RawFieldId, DBValueArray>;
+
+/**
+ *
+ *
+ *
+ *
+ */
 
 export const operators = [
   "*",
@@ -220,15 +289,15 @@ export type DocumentConfig = DocumentConfigItem[];
 export type TemplateDocument = Omit<DBDocument, "version" | "folder">;
 
 export interface DBDocumentRaw {
-  _id: BrandedObjectId<DocumentId>;
-  folder: BrandedObjectId<FolderId>;
+  _id: DBId<DocumentId>;
+  folder: DBId<FolderId>;
   config: DocumentConfig;
   label?: string;
   versions?: Record<"" | RawFieldId, number>;
   /* compute */
-  ids: BrandedObjectId<NestedDocumentId>[];
-  cached: Value[][];
-  compute: ComputationBlock[];
+  ids: DBId<NestedDocumentId>[];
+  cached: ValueArray[];
+  compute: DBSyntaxStreamBlock[];
   values: DBValueRecord;
   /* */
 }
@@ -237,7 +306,7 @@ export interface DBDocument {
   _id: DocumentId;
   folder: FolderId;
   config: DocumentConfig;
-  record: ComputationRecord;
+  record: TreeRecord;
   // values: ValueRecord;
   label?: string;
   versions?: Record<"" | RawFieldId, number>;
@@ -258,11 +327,11 @@ export type Space =
     };
 
 export interface DBFolderRaw {
-  _id: BrandedObjectId<FolderId>;
+  _id: DBId<FolderId>;
   type: "data" | "app";
   label: string;
   spaces: Space[];
-  template?: BrandedObjectId<DocumentId>;
+  template?: DBId<DocumentId>;
   domains?: string[];
   versions?: Record<"" | SpaceId, number>;
 }

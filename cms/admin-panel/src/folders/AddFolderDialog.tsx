@@ -68,14 +68,14 @@ export function AddFolderDialog({
               type: "insert",
               id: frontId,
               record: {
-                [computeFieldId(frontId, FIELDS.url.id)]: [""],
-                [computeFieldId(frontId, FIELDS.label.id)]: ["Forside"],
-                [computeFieldId(frontId, FIELDS.url.id)]: [
-                  { "(": true },
-                  "",
-                  "",
-                  { ")": "url" },
-                ],
+                [computeFieldId(frontId, FIELDS.label.id)]: {
+                  type: null,
+                  children: ["Forside"],
+                },
+                [computeFieldId(frontId, FIELDS.url.id)]: {
+                  type: "url",
+                  children: ["", ""],
+                },
               },
             },
           ],

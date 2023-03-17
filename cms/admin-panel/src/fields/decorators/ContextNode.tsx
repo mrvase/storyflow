@@ -15,9 +15,9 @@ import { caretClasses } from "./caret";
 import { useGlobalContext } from "../../state/context";
 import { useDocumentPageContext } from "../../documents/DocumentPageContext";
 import { getPreview } from "../default/getPreview";
-import { ContextToken, Value } from "@storyflow/backend/types";
+import { ContextToken, ValueArray } from "@storyflow/backend/types";
 
-const useState = (ctx: string): Value[] | undefined => {
+const useState = (ctx: string): ValueArray | undefined => {
   const { id: documentId } = useDocumentPageContext();
   const [value] = useGlobalContext(documentId, ctx);
   return [value[ctx]];

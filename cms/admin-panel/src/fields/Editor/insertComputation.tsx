@@ -9,13 +9,13 @@ import {
   TextNode,
 } from "lexical";
 import { $getIndexFromPoint, getNodesFromComputation } from "./transforms";
-import { EditorComputation } from "@storyflow/backend/types";
+import { TokenStream } from "@storyflow/backend/types";
 import { LibraryConfig } from "@storyflow/frontend/types";
 import { spliceTextWithNodes } from "./spliceTextWithNodes";
 
 export async function insertComputation(
   editor: LexicalEditor,
-  insert: EditorComputation,
+  insert: TokenStream,
   libraries: LibraryConfig[]
 ) {
   return await new Promise<boolean>((resolve) => {

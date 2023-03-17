@@ -1,21 +1,22 @@
 import { Narrow, Operators } from "./types";
 import {
-  BrandedObjectId,
-  Computation,
-  ComputationBlock,
   DBDocumentRaw,
+  DBId,
+  DBSyntaxStream,
+  DBSyntaxStreamBlock,
   DBValue,
+  DBValueArray,
   FieldId,
   Value,
 } from "@storyflow/backend/types";
 import { calculate } from "./calculate";
 import { operators } from "./mongo-operators";
 
-export type Update = ComputationBlock & {
-  result: DBValue[];
-  imports: BrandedObjectId<FieldId>[];
+export type Update = DBSyntaxStreamBlock & {
+  result: DBValueArray;
+  imports: DBId<FieldId>[];
   depth: number;
-  _imports: (ComputationBlock & { depth: number })[];
+  _imports: (DBSyntaxStreamBlock & { depth: number })[];
 };
 
 type Options = {
@@ -40,8 +41,8 @@ const createCalculationStage = (
       idString: string;
       updates: Update[];
       derivatives: Update[];
-      statics: ComputationBlock[];
-      cached: BrandedObjectId<FieldId>[];
+      statics: DBSyntaxStreamBlock[];
+      cached: DBId<FieldId>[];
     }
   >,
   updates: Update[],
@@ -63,7 +64,7 @@ const createCalculationStage = (
         statics: $.filter(
           $.map($.objectToArray($doc.values), (el) => ({
             id: $.toObjectId($.concat([$doc.idString, el.k])),
-            result: el.v as Computation,
+            result: el.v as DBSyntaxStream,
           })),
           (el) => $.not($.in(el.id, queryArrayProp($doc.compute).id))
         ),
@@ -115,7 +116,7 @@ const createCalculationStage = (
               ),
             ]);
           },
-          [] as ComputationBlock[]
+          [] as DBSyntaxStreamBlock[]
         ),
       },
     },
@@ -180,7 +181,7 @@ const createCalculationStage = (
                 $.getField(
                   $.ifNull(
                     $.find(
-                      $doc.compute as (ComputationBlock & {
+                      $doc.compute as (DBSyntaxStreamBlock & {
                         result: Value[];
                       })[],
                       (el) => $.eq(el.id, id)
@@ -199,8 +200,8 @@ const createCalculationStage = (
       $set: {
         compute: $.reduce(
           $.concatArrays(
-            $doc.compute as (ComputationBlock & {
-              imports: BrandedObjectId<FieldId>[];
+            $doc.compute as (DBSyntaxStreamBlock & {
+              imports: DBId<FieldId>[];
               depth: number;
             })[],
             $doc.updates,
@@ -271,8 +272,8 @@ const createCalculationStage = (
                 );
               });
           },
-          [] as (ComputationBlock & {
-            imports: BrandedObjectId<FieldId>[];
+          [] as (DBSyntaxStreamBlock & {
+            imports: DBId<FieldId>[];
             depth: number;
           })[]
         ),
@@ -281,7 +282,7 @@ const createCalculationStage = (
     {
       $set: {
         compute: $.sortArray(
-          $doc.compute as (ComputationBlock & { depth: number })[],
+          $doc.compute as (DBSyntaxStreamBlock & { depth: number })[],
           { depth: -1 }
         ),
       },
@@ -297,7 +298,7 @@ const createCalculationStage = (
               () => acc, // do nothing since the existing one has the highest depth
               () => $.concatArrays(acc, [cur])
             ),
-          [] as ComputationBlock[]
+          [] as DBSyntaxStreamBlock[]
         ),
       },
     },

@@ -5,15 +5,7 @@ import {
 } from "../../editor/react/EditorProvider";
 import useLayoutEffect from "../../editor/react/useLayoutEffect";
 import { registerPlainText } from "../../editor/registerPlainText";
-import {
-  $getSelection,
-  $isParagraphNode,
-  $isRootNode,
-  GridSelection,
-  LexicalNode,
-  NodeSelection,
-  RangeSelection,
-} from "lexical";
+import { $getSelection, $isRootNode } from "lexical";
 import { mergeRegister } from "../../editor/utils/mergeRegister";
 import {
   addContext,
@@ -28,16 +20,12 @@ import {
   getNodesFromComputation,
   isInlineElement,
 } from "./transforms";
-import { DocumentId, EditorComputation } from "@storyflow/backend/types";
+import { DocumentId, TokenStream } from "@storyflow/backend/types";
 import { useClientConfig } from "../../client-config";
-import { $isLayoutElementNode } from "../decorators/LayoutElementNode";
-import { $isDocumentNode } from "../decorators/DocumentNode";
 import { useFieldConfig } from "../../documents/collab/hooks";
 import { useFieldId } from "../FieldIdContext";
-import { $isHeadingNode } from "../../editor/react/HeadingNode";
 import { createComponent } from "./createComponent";
 import { insertComputation } from "./insertComputation";
-import { LibraryConfig } from "@storyflow/frontend/types";
 import { useDocumentIdGenerator } from "../../id-generator";
 import { getDocumentId } from "@storyflow/backend/ids";
 
@@ -71,7 +59,7 @@ function useEditorEvents() {
 
   React.useEffect(() => {
     if (isFocused) {
-      const addBlockElement = (computation: EditorComputation) => {
+      const addBlockElement = (computation: TokenStream) => {
         const node = getNodesFromComputation(computation, libraries)[0];
         const selection = $getSelection();
         if (!selection) return;
@@ -96,12 +84,11 @@ function useEditorEvents() {
             console.error("Tried to add itself");
             return;
           }
-          let insert: EditorComputation = [
+          let insert: TokenStream = [
             {
               id: generateDocumentId(documentId),
               field: externalId,
               ...(templateId && { pick: templateId }),
-              imports: {},
             },
           ];
 
@@ -109,7 +96,7 @@ function useEditorEvents() {
         }),
 
         addContext.subscribe(async (ctx) => {
-          let insert: EditorComputation = [
+          let insert: TokenStream = [
             {
               ctx,
             },
@@ -152,7 +139,7 @@ function useEditorEvents() {
             { library, libraries }
           );
 
-          const computation: EditorComputation = [component];
+          const computation: TokenStream = [component];
 
           if (isInlineElement(libraries, component)) {
             insertComputation(editor, computation, libraries);

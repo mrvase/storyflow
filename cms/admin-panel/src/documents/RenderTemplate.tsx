@@ -1,16 +1,13 @@
 import React from "react";
 import { DropShadow, Sortable, useSortableItem } from "@storyflow/dnd";
+import { createTemplateFieldId, getRawFieldId } from "@storyflow/backend/ids";
 import {
-  createTemplateFieldId,
-  getRawFieldId,
-  replaceDocumentId,
-} from "@storyflow/backend/ids";
-import {
-  ComputationRecord,
+  TreeRecord,
   DBDocument,
   DocumentConfigItem,
   DocumentId,
   HeadingConfig,
+  SyntaxTree,
 } from "@storyflow/backend/types";
 import { getTranslateDragEffect } from "../utils/dragEffects";
 import { targetTools, DocumentConfigOp, AnyOp } from "shared/operations";
@@ -31,7 +28,7 @@ export function RenderTemplate({
 }: {
   id: DocumentId;
   owner: DocumentId;
-  values: ComputationRecord;
+  values: TreeRecord;
   config: DBDocument["config"];
   versions?: DBDocument["versions"];
   histories: Record<string, ServerPackage<AnyOp>[]>;
@@ -152,7 +149,7 @@ export function RenderTemplate({
       ? fieldConfig.id
       : createTemplateFieldId(owner, fieldConfig.id);
 
-    const value = values[fieldId] ?? null;
+    const value: SyntaxTree | undefined = values[fieldId];
 
     return (
       <RenderField

@@ -1,16 +1,16 @@
-import { symb } from "@storyflow/backend/symb";
-import { EditorComputation } from "@storyflow/backend/types";
+import { TokenStream } from "@storyflow/backend/types";
+import { tokens } from "@storyflow/backend/tokens";
 import { matchNonEscapedCharacter } from "./matchNonEscapedCharacter";
 
 function forEach(
-  compute: EditorComputation,
+  compute: TokenStream,
   callback: (value: any, index: number) => boolean | void,
   splitText: boolean = true
 ) {
   let index = 0;
   for (let cIndex = 0; cIndex < compute.length; cIndex++) {
     let el = compute[cIndex];
-    if (!symb.isPrimitiveValue(el)) {
+    if (!tokens.isPrimitiveValue(el)) {
       if (callback(el, index++)) return;
     } else {
       if (typeof el === "boolean") {
@@ -58,10 +58,10 @@ function forEach(
   });
   */
 }
-function getLength(compute: EditorComputation): number {
+function getLength(compute: TokenStream): number {
   return (compute as any).reduce(
-    (sum: number, el: EditorComputation[number]): number => {
-      if (!symb.isPrimitiveValue(el)) {
+    (sum: number, el: TokenStream[number]): number => {
+      if (!tokens.isPrimitiveValue(el)) {
         return sum + 1;
       } else if (typeof el === "boolean") {
         return sum + 1;
@@ -74,7 +74,7 @@ function getLength(compute: EditorComputation): number {
   );
 }
 
-function slice(compute: EditorComputation, _start: number, _end?: number) {
+function slice(compute: TokenStream, _start: number, _end?: number) {
   let start = _start < 0 ? getLength(compute) - _start : _start;
   let end =
     _end === undefined
@@ -82,7 +82,7 @@ function slice(compute: EditorComputation, _start: number, _end?: number) {
       : _end < 0
       ? getLength(compute) + _end
       : _end;
-  let array: EditorComputation = [];
+  let array: TokenStream = [];
   if (start === end) {
     return array;
   }
@@ -104,7 +104,7 @@ function slice(compute: EditorComputation, _start: number, _end?: number) {
       return true;
     }
     let latest = array[array.length - 1];
-    if (!symb.isPrimitiveValue(el)) {
+    if (!tokens.isPrimitiveValue(el)) {
       push(el);
     } else {
       if (typeof el === "string" && typeof latest === "string") {
@@ -118,8 +118,8 @@ function slice(compute: EditorComputation, _start: number, _end?: number) {
   return array;
 }
 
-function concat(compute: EditorComputation, ...args: EditorComputation[]) {
-  const concatTwo = (arg1: EditorComputation, arg2: EditorComputation) => {
+function concat(compute: TokenStream, ...args: TokenStream[]) {
+  const concatTwo = (arg1: TokenStream, arg2: TokenStream) => {
     if (
       typeof arg1[arg1.length - 1] === "number" &&
       typeof arg2[0] === "number"
@@ -140,13 +140,13 @@ function concat(compute: EditorComputation, ...args: EditorComputation[]) {
     }
     return [...arg1, ...arg2];
   };
-  const value: EditorComputation = args.reduce((a: EditorComputation, c) => {
+  const value: TokenStream = args.reduce((a: TokenStream, c) => {
     return concatTwo(a, c);
   }, compute);
   return value;
 }
 
-function getType(value: EditorComputation[number] | undefined) {
+function getType(value: TokenStream[number] | undefined) {
   if (value === null) return "null";
   if (typeof value === "object") {
     // values
@@ -167,7 +167,7 @@ function getType(value: EditorComputation[number] | undefined) {
   return typeof value;
 }
 
-function equals(compute1: EditorComputation, compute2: EditorComputation) {
+function equals(compute1: TokenStream, compute2: TokenStream) {
   if (getLength(compute1) !== getLength(compute2)) {
     return false;
   }
@@ -177,31 +177,31 @@ function equals(compute1: EditorComputation, compute2: EditorComputation) {
     if (getType(value1) !== getType(value2)) {
       result = false;
       // from now on they are the same type
-    } else if (symb.isNestedField(value2)) {
+    } else if (tokens.isNestedField(value2)) {
       if (value1.id !== value2.id) {
         result = false;
       }
-    } else if (symb.isNestedDocument(value2)) {
+    } else if (tokens.isNestedDocument(value2)) {
       if (value1.id !== value2.id) {
         result = false;
       }
-    } else if (symb.isNestedElement(value2)) {
+    } else if (tokens.isNestedElement(value2)) {
       if (value1.id !== value2.id) {
         result = false;
       }
-    } else if (symb.isNestedDocument(value2)) {
+    } else if (tokens.isNestedDocument(value2)) {
       if (value1.id !== value2.id) {
         result = false;
       }
-    } else if (symb.isFileToken(value2)) {
+    } else if (tokens.isFileToken(value2)) {
       if (value1.src !== value2.src) {
         result = false;
       }
-    } else if (symb.isCustomToken(value2)) {
+    } else if (tokens.isCustomToken(value2)) {
       if (value1.name !== value2.name) {
         result = false;
       }
-    } else if (symb.isColorToken(value2)) {
+    } else if (tokens.isColorToken(value2)) {
       if (value1.color !== value2.color) {
         result = false;
       }
@@ -219,9 +219,9 @@ function equals(compute1: EditorComputation, compute2: EditorComputation) {
   return result;
 }
 
-function at(compute: EditorComputation, index: number) {
+function at(compute: TokenStream, index: number) {
   // BEMÆRK: Returnerer altid string og aldrig number
-  let result: EditorComputation[number] | undefined;
+  let result: TokenStream[number] | undefined;
   forEach(compute, (el, i) => {
     if (i < index) {
       return;
@@ -242,8 +242,8 @@ function at(compute: EditorComputation, index: number) {
 }
 
 function match(
-  value: EditorComputation,
-  ...patterns: (string | ((value: EditorComputation[number]) => boolean))[]
+  value: TokenStream,
+  ...patterns: (string | ((value: TokenStream[number]) => boolean))[]
 ) {
   let matches: { index: number; value: string | { n: true } }[] = [];
   forEach(
@@ -270,7 +270,7 @@ function match(
   return matches;
 }
 
-function removeCharacters(value: EditorComputation, pattern: string) {
+function removeCharacters(value: TokenStream, pattern: string) {
   const matches = match(value, pattern);
   let newValue = value;
   matches.reverse().forEach((el) => {
@@ -283,11 +283,11 @@ function removeCharacters(value: EditorComputation, pattern: string) {
 }
 
 function split(
-  value: EditorComputation,
-  ...patterns: (string | ((value: EditorComputation[number]) => boolean))[]
+  value: TokenStream,
+  ...patterns: (string | ((value: TokenStream[number]) => boolean))[]
 ) {
   const matches = match(value, ...patterns);
-  let array: EditorComputation[] = [];
+  let array: TokenStream[] = [];
   let prev = 0;
   matches.forEach((el) => {
     const matchLength = getLength([el.value]);

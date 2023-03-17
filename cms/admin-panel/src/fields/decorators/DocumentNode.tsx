@@ -13,18 +13,18 @@ import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
 import { caretClasses } from "./caret";
 import {
-  Computation,
-  ComputationRecord,
+  SyntaxTree,
+  TreeRecord,
   DocumentId,
   FieldId,
   NestedDocument,
   Value,
+  ValueArray,
 } from "@storyflow/backend/types";
 import { useBuilderPath } from "../BuilderPath";
 import {
   ChevronDownIcon,
   DocumentIcon,
-  FolderArrowDownIcon,
   LinkIcon,
 } from "@heroicons/react/24/outline";
 import { useFieldId } from "../FieldIdContext";
@@ -37,9 +37,7 @@ import { calculateFn } from "../default/calculateFn";
 import { useGlobalState } from "../../state/state";
 import { useDocumentPageContext } from "../../documents/DocumentPageContext";
 import {
-  computeFieldId,
   createTemplateFieldId,
-  getRawFieldId,
   isNestedDocumentId,
 } from "@storyflow/backend/ids";
 import { useClient } from "../../client";
@@ -64,7 +62,7 @@ function DocumentDecorator({
   const template = useFieldTemplate(id);
   const hasTemplate = Boolean(template);
 
-  let docs: (NestedDocument & { record: ComputationRecord })[] = [];
+  let docs: (NestedDocument & { record: TreeRecord })[] = [];
   if (isNestedDocumentId(value.id)) {
     // TODO make reactive
     docs = [{ id: value.id, record: {} }];
@@ -173,19 +171,19 @@ export function ValueDisplay({
   record,
 }: {
   id: FieldId;
-  initialValue: Computation;
-  record: ComputationRecord;
+  initialValue: SyntaxTree;
+  record: TreeRecord;
 }) {
   const client = useClient();
 
-  let output: undefined | Value[];
+  let output: undefined | ValueArray;
 
   if (initialValue) {
     [output] = useGlobalState(id, () =>
       calculateFn(id, initialValue, { record, client })
     );
   } else {
-    [output] = useGlobalState<Value[]>(id);
+    [output] = useGlobalState<ValueArray>(id);
   }
 
   return (

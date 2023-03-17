@@ -9,7 +9,7 @@ import { Option as OptionComponent, useOptionEvents } from "./Option";
 import {
   ColorToken,
   CustomToken,
-  EditorComputation,
+  TokenStream,
   Token,
 } from "@storyflow/backend/types";
 import { Option } from "@storyflow/frontend/types";
@@ -27,7 +27,7 @@ export function QueryColors({
   options = [],
 }: {
   query: string;
-  insertComputation: (comp: EditorComputation) => void;
+  insertComputation: (comp: TokenStream) => void;
   selected: number;
   setToken?: (value: Token) => void;
   initialColor?: string;

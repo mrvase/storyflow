@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useEditorContext } from "../../editor/react/EditorProvider";
-import { EditorComputation } from "@storyflow/backend/types";
+import { TokenStream } from "@storyflow/backend/types";
 import { useClientConfig } from "../../client-config";
 import { operators } from "@storyflow/backend/types";
 import { insertComputation } from "./insertComputation";
@@ -61,7 +61,7 @@ export function useMathMode(defaultValue: boolean = false) {
           Math.max(0, ...numberOpeners) > Math.max(0, ...textOpeners);
       }
       */
-      const insert = (compute: EditorComputation) => {
+      const insert = (compute: TokenStream) => {
         event.preventDefault();
         insertComputation(editor, compute, libraries);
       };

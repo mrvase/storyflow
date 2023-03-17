@@ -2,7 +2,7 @@ import { expect, it } from "vitest";
 import {
   calculate as calculate_,
   StateGetter,
-} from "@storyflow/backend/calculate-new";
+} from "@storyflow/backend/calculate";
 import {
   NestedDocumentId,
   FieldId,
@@ -12,7 +12,7 @@ import {
   ValueArray,
   NestedField,
   SyntaxStream,
-} from "@storyflow/backend/types2";
+} from "@storyflow/backend/types";
 import { parseTokenStream, createTokenStream } from "../../parse-token-stream";
 import {
   createSyntaxStream,
@@ -23,19 +23,16 @@ export type Test = {
   description?: string;
   skip?: boolean;
   tokens: TokenStream;
-  syntax: SyntaxTree<WithSyntaxError>;
+  syntax: SyntaxTree;
   stream: SyntaxStream;
   value?: ValueArray;
 };
 
 export const calculate = (
-  syntax: SyntaxTree<WithSyntaxError>,
-  imports: { id: FieldId; value: SyntaxTree<WithSyntaxError> }[] = []
+  syntax: SyntaxTree,
+  imports: { id: FieldId; value: SyntaxTree }[] = []
 ) => {
-  const getState = (
-    id: Parameters<StateGetter<WithSyntaxError>>[0],
-    options: Parameters<StateGetter<WithSyntaxError>>[1]
-  ) => {
+  const getState: StateGetter = (id, options): any => {
     if (typeof id !== "string") {
       return undefined;
     }
@@ -75,8 +72,12 @@ export const createEnvironment = () => {
 
       // createSyntaxStream
       if ("stream" in test && test.stream) {
-        expect(createSyntaxStream(test.syntax)).toMatchObject(test.stream);
-        expect(test.stream).toMatchObject(createSyntaxStream(test.syntax));
+        expect(
+          createSyntaxStream(test.syntax, (id) => id as any)
+        ).toMatchObject(test.stream);
+        expect(test.stream).toMatchObject(
+          createSyntaxStream(test.syntax, (id) => id as any)
+        );
 
         // parseSyntaxStream
         expect(parseSyntaxStream(test.stream)).toMatchObject(test.syntax);

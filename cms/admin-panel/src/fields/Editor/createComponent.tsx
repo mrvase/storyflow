@@ -23,13 +23,13 @@ export const createComponent = (
     return {
       id,
       element,
-      imports: {},
+      props: {},
     };
   }
 
   return {
     id,
     element,
-    imports: {},
+    props: {},
   };
 };

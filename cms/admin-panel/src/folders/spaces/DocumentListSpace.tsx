@@ -5,15 +5,9 @@ import {
   PlusIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
-import {
-  computeFieldId,
-  getDocumentId,
-  getRawFieldId,
-  replaceDocumentId,
-} from "@storyflow/backend/ids";
+import { computeFieldId } from "@storyflow/backend/ids";
 import { DocumentId, FolderId, SpaceId } from "@storyflow/backend/types";
 import React from "react";
-import { tools } from "shared/editor-tools";
 import {
   fetchArticle,
   useArticleList,
@@ -36,6 +30,7 @@ import Loader from "../../elements/Loader";
 import { useDeleteForm } from "./useDeleteForm";
 import { FIELDS } from "@storyflow/backend/fields";
 import { useDocumentIdGenerator } from "../../id-generator";
+import { calculateFromRecord } from "@storyflow/backend/calculate";
 
 export function DocumentListSpace({
   spaceId,
@@ -153,7 +148,9 @@ function ExportButton() {
     const ids = fields.map((el) => el.id);
     const header = fields.map((el) => el.label);
     const rows = articles.map((el) =>
-      ids.map((id) => JSON.stringify(el.record[id]?.[0]) ?? "")
+      ids.map((id) =>
+        JSON.stringify(calculateFromRecord(id, el.record)?.[0] ?? "")
+      )
     );
     let csvContent =
       "data:text/csv;charset=utf-8," +
@@ -192,7 +189,10 @@ function AddArticleButton({ folder }: { folder: FolderId }) {
           })
         : {};
 
-      record[computeFieldId(id, FIELDS.creation_date.id)] = [new Date()];
+      record[computeFieldId(id, FIELDS.creation_date.id)] = {
+        type: null,
+        children: [new Date()],
+      };
 
       mutateArticles({
         folder,

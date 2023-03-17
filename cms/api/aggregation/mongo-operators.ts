@@ -1,4 +1,4 @@
-import { BrandedObjectId, FieldId } from "@storyflow/backend/types";
+import { DBId, FieldId } from "@storyflow/backend/types";
 import { ObjectId } from "mongodb";
 import { Operators, SwitchObject } from "./types";
 
@@ -326,7 +326,7 @@ export const operators: Operators<any> = {
     return { $toString: input } as unknown as string;
   },
   toObjectId(input) {
-    return { $toObjectId: input } as unknown as BrandedObjectId<FieldId>;
+    return { $toObjectId: input } as unknown as DBId<FieldId>;
   },
   toBool(input) {
     return { $toBool: input } as unknown as boolean;

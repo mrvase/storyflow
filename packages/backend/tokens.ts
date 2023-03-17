@@ -9,7 +9,7 @@ import {
   NestedFolder,
   ContextToken,
   Token,
-} from "./types2";
+} from "./types";
 
 function isObject(value: any): value is Record<string, any> {
   return value !== null && typeof value === "object";
@@ -47,7 +47,7 @@ function isNestedDocument(value: any): value is NestedDocument {
 function isNestedEntity(
   value: any
 ): value is NestedElement | NestedFolder | NestedDocument | NestedField {
-  return "id" in value;
+  return isObject(value) && "id" in value;
 }
 
 function isFileToken(value: any): value is FileToken {

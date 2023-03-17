@@ -17,16 +17,18 @@ import { useGlobalState } from "../../state/state";
 import { getPreview } from "../default/getPreview";
 import {
   FieldId,
+  HasSelect,
   NestedField,
   RawFieldId,
   Value,
+  ValueArray,
 } from "@storyflow/backend/types";
 import { useBuilderPath } from "../BuilderPath";
 
 const useState = (
   id: FieldId,
   pick?: RawFieldId
-): [label: string, value: Value[] | undefined] => {
+): [label: string, value: ValueArray | undefined] => {
   if (pick) {
     const label1 = useLabel(id);
     const label2 = useLabel(pick);
@@ -34,7 +36,7 @@ const useState = (
   }
 
   if (!id) return ["", []];
-  const value = useGlobalState<Value[]>(id)[0];
+  const value = useGlobalState<ValueArray>(id)[0];
   const label = useLabel(id);
   return [label, value];
 };
@@ -45,7 +47,7 @@ function ImportDecorator({
 }: {
   text: string;
   nodeKey: string;
-  fieldImport: NestedField;
+  fieldImport: HasSelect<NestedField>;
 }) {
   const [, setPath] = useBuilderPath();
 
@@ -53,9 +55,9 @@ function ImportDecorator({
 
   const parameters = ["x", "y", "z"];
 
-  const isColumn = Boolean(fieldImport.pick);
+  const isColumn = Boolean(fieldImport.select);
 
-  const [label, value] = useState(fieldImport.field, fieldImport.pick);
+  const [label, value] = useState(fieldImport.field, fieldImport.select);
 
   const preview = getPreview(value ?? []);
 

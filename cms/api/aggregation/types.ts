@@ -1,4 +1,4 @@
-import { BrandedObjectId, FieldId } from "@storyflow/backend/types";
+import { DBId, FieldId } from "@storyflow/backend/types";
 
 export type DefineObject<U extends { [key: string]: any }> = {
   let: <P extends { [key: string]: any }>(
@@ -90,7 +90,7 @@ export type Operators<DocumentType extends Record<string, any>> = {
   isNumber: (value: any) => boolean;
   isArray: (value: any) => boolean;
   toString: (input: any) => string;
-  toObjectId: (input: any) => BrandedObjectId<FieldId>;
+  toObjectId: (input: any) => DBId<FieldId>;
   toBool: (input: any) => boolean;
   lt: (arg1: number, arg2: number) => boolean;
   lte: (arg1: number, arg2: number) => boolean;

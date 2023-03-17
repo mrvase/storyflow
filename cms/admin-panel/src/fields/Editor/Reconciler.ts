@@ -15,7 +15,7 @@ import { tools } from "shared/editor-tools";
 import { getNextState } from "shared/computation-tools";
 import { InferAction, Target, ComputationOp } from "shared/operations";
 import { createQueueCache } from "../../state/collaboration";
-import { EditorComputation, FunctionName } from "@storyflow/backend/types";
+import { TokenStream, FunctionName } from "@storyflow/backend/types";
 import { LibraryConfig } from "@storyflow/frontend/types";
 import {
   $clearEditor,
@@ -32,15 +32,13 @@ export function Reconciler({
   push,
   register,
   setValue,
-  transform,
 }: {
-  initialValue: EditorComputation;
+  initialValue: TokenStream;
   // history: CollabHistory<TextOp | FunctionOp>;
   target: Target;
   push: (ops: ComputationOp["ops"], tags: Set<string>) => void;
   register: (listener: QueueListener<ComputationOp>) => () => void;
-  setValue: (value: () => EditorComputation) => void;
-  transform?: FunctionName;
+  setValue: (value: () => TokenStream) => void;
 }) {
   const editor = useEditorContext();
 
@@ -116,7 +114,7 @@ export function Reconciler({
 
 function reconcile(
   editor: LexicalEditor,
-  value: EditorComputation,
+  value: TokenStream,
   actions: InferAction<ComputationOp>[],
   libraries: LibraryConfig[]
 ) {

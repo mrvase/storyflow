@@ -1,8 +1,8 @@
-import { RawFieldId } from "@storyflow/backend/types2";
+import { RawFieldId } from "@storyflow/backend/types";
 import { describe } from "vitest";
 import { createEnvironment } from "./computation-test";
 
-describe("pick", () => {
+describe("select", () => {
   const { createTests, createImport } = createEnvironment();
   const NestedField = createImport();
   const NestedFieldPick = { ...NestedField, select: "abc" };

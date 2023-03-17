@@ -13,30 +13,14 @@ import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
 import { caretClasses } from "./caret";
 import {
-  ComputationRecord,
+  TreeRecord,
   NestedDocument,
   NestedFolder,
 } from "@storyflow/backend/types";
 import { useBuilderPath } from "../BuilderPath";
-import {
-  DocumentIcon,
-  FolderIcon,
-  LinkIcon,
-} from "@heroicons/react/24/outline";
+import { FolderIcon } from "@heroicons/react/24/outline";
 import { useFieldId } from "../FieldIdContext";
-import { useFieldConfig } from "../../documents/collab/hooks";
 import { useFieldTemplate } from "../default/useFieldTemplate";
-import { useDocumentPageContext } from "../../documents/DocumentPageContext";
-import {
-  computeFieldId,
-  createTemplateFieldId,
-  getRawFieldId,
-  isNestedDocumentId,
-} from "@storyflow/backend/ids";
-import { useClient } from "../../client";
-import { getPreview } from "../default/getPreview";
-import { TEMPLATE_FOLDER } from "@storyflow/backend/constants";
-import { ValueDisplay } from "./DocumentNode";
 import { useFolder } from "../../folders/collab/hooks";
 
 function FolderDecorator({
@@ -63,7 +47,7 @@ function FolderDecorator({
       "child:divide-x child:divide-red-200 child:dark:divide-red-800"
   );
 
-  let docs: (NestedDocument & { record: ComputationRecord })[] = [];
+  let docs: (NestedDocument & { record: TreeRecord })[] = [];
 
   const folder = useFolder(value.folder);
 

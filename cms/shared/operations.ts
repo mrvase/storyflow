@@ -1,9 +1,9 @@
 import {
-  EditorComputation,
   DocumentConfigItem,
   FieldType,
   Space,
   DBFolder,
+  TokenStream,
 } from "@storyflow/backend/types";
 
 type GetKeyFromValue<Record extends { [key: string]: any }, Value> = keyof {
@@ -94,7 +94,7 @@ export type Toggle<Name = string, T = string> = {
 /**
  * OPERATION TYPES
  */
-export type ComputationOp = DocumentOp<Splice<EditorComputation[number]>>;
+export type ComputationOp = DocumentOp<Splice<TokenStream[number]>>;
 
 export type AddFolderOp = DocumentOp<DBFolder>;
 export type DeleteFolderOp = DocumentOp<string>;

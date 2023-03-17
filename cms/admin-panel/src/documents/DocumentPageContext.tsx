@@ -1,9 +1,9 @@
 import React from "react";
-import { ComputationRecord, DBDocument } from "@storyflow/backend/types";
+import { TreeRecord } from "@storyflow/backend/types";
 
 export const DocumentPageContext = React.createContext<{
   id: string;
-  record: ComputationRecord;
+  record: TreeRecord;
 } | null>(null);
 
 export const useDocumentPageContext = () => {

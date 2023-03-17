@@ -1,9 +1,10 @@
 import {
   DocumentId,
-  EditorComputation,
+  TokenStream,
   FolderId,
   NestedField,
   Value,
+  ValueArray,
 } from "@storyflow/backend/types";
 import { computeFieldId, getDocumentId } from "@storyflow/backend/ids";
 import { ComputerDesktopIcon, LinkIcon } from "@heroicons/react/24/outline";
@@ -21,7 +22,7 @@ import { FIELDS } from "@storyflow/backend/fields";
 import { calculateFromRecord } from "@storyflow/backend/calculate";
 import { useFieldId } from "../FieldIdContext";
 import { useDocumentIdGenerator } from "../../id-generator";
-import { symb } from "@storyflow/backend/symb";
+import { tokens } from "@storyflow/backend/tokens";
 
 export function QueryLinks({
   query,
@@ -30,7 +31,7 @@ export function QueryLinks({
 }: {
   query: string;
   selected: number;
-  insertComputation: (insert: EditorComputation, removeExtra?: boolean) => void;
+  insertComputation: (insert: TokenStream, removeExtra?: boolean) => void;
 }) {
   const editor = useEditorContext();
 
@@ -51,11 +52,11 @@ export function QueryLinks({
 
   const [linkParent, setLinkParent] = React.useState<NestedField | null>(null);
 
-  const [parentUrl] = useGlobalState<Value[]>(linkParent?.field);
+  const [parentUrl] = useGlobalState<ValueArray>(linkParent?.field);
 
   React.useEffect(() => {
     const symbol = getPrevSymbol();
-    if (symb.isNestedField(symbol)) {
+    if (tokens.isNestedField(symbol)) {
       setLinkParent(symbol);
     }
   }, []);

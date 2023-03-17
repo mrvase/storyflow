@@ -14,11 +14,7 @@ import {
 import { Target, ComputationOp } from "shared/operations";
 import React from "react";
 import { $getComputation, $initializeEditor } from "./transforms";
-import {
-  EditorComputation,
-  FieldId,
-  FunctionName,
-} from "@storyflow/backend/types";
+import { FunctionName, TokenStream, Transform } from "@storyflow/backend/types";
 import { Reconciler } from "./Reconciler";
 import { useIsFocused } from "../../editor/react/useIsFocused";
 import { useClientConfig } from "../../client-config";
@@ -79,7 +75,6 @@ export default function Editor({
   children = null,
   target,
   setValue,
-  transform,
 }: {
   target?: Target;
   push?: (
@@ -91,9 +86,8 @@ export default function Editor({
         ) => ComputationOp["ops"][])
   ) => void;
   register?: (listener: QueueListener<ComputationOp>) => () => void;
-  initialValue: EditorComputation;
-  setValue: (value: () => EditorComputation) => void;
-  transform?: FunctionName;
+  initialValue: TokenStream;
+  setValue: (value: () => TokenStream) => void;
   children?: React.ReactNode;
 }) {
   const { libraries } = useClientConfig();
@@ -117,7 +111,6 @@ export default function Editor({
               register={register}
               initialValue={initialValue}
               setValue={setValue}
-              transform={transform}
             />
           )}
         </Query>
@@ -132,7 +125,7 @@ export default function Editor({
 function Setter({
   setValue,
 }: {
-  setValue: (callback: () => EditorComputation) => void;
+  setValue: (callback: () => TokenStream) => void;
 }) {
   const editor = useEditorContext();
 

@@ -6,11 +6,16 @@ import {
   DocumentId,
   Value,
   FieldId,
-  ComputationRecord,
   DBDocumentRaw,
   RawDocumentId,
   RawFieldId,
-  BrandedObjectId,
+  DBId,
+  TreeRecord,
+  TokenStream,
+  Transform,
+  SyntaxTree,
+  NestedField,
+  ValueArray,
 } from "@storyflow/backend/types";
 import { ObjectId } from "mongodb";
 import clientPromise from "../mongo/mongoClient";
@@ -21,10 +26,6 @@ import {
   unwrapServerPackage,
 } from "@storyflow/state";
 import { setFieldConfig } from "shared/getFieldConfig";
-import {
-  decodeEditorComputation,
-  encodeEditorComputation,
-} from "shared/editor-computation";
 import { AnyOp, targetTools } from "shared/operations";
 import { getConfig } from "shared/initialValues";
 import {
@@ -33,11 +34,12 @@ import {
   getComputationRecord,
   getFieldRecord,
   getGraph,
+  isSyntaxTree,
 } from "shared/computation-tools";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
 import { getNextState, getPickedDocumentIds } from "shared/computation-tools";
 import { createStages, Update } from "../aggregation/stages";
 import util from "util";
-import { symb } from "@storyflow/backend/symb";
 import {
   ZodServerPackage,
   ZodDocumentOp,
@@ -61,13 +63,11 @@ import {
   isTemplateField,
 } from "@storyflow/backend/ids";
 import { parseDocument } from "./documents";
-import {
-  addNestedObjectIds,
-  deduplicate,
-  getImports,
-  getSortedValues,
-} from "./helpers";
+import { deduplicate, getImports, getSortedValues } from "./helpers";
 import fs from "fs";
+import { createSyntaxStream } from "shared/parse-syntax-stream";
+import { createTokenStream, parseTokenStream } from "shared/parse-token-stream";
+import { tokens } from "@storyflow/backend/tokens";
 
 export const fields = createRoute({
   sync: createProcedure({
@@ -142,7 +142,6 @@ export const fields = createRoute({
     },
     async mutation(input, { dbName, slug }) {
       const documentId = input.id as DocumentId;
-      const rawArticleId = getRawDocumentId(documentId);
       const searchable = input.searchable;
 
       const db = (await clientPromise).db(dbName);
@@ -345,23 +344,29 @@ export const fields = createRoute({
         });
         // 2)
         const check = [fieldId, ...(graph.children.get(fieldId) ?? [])];
-        check.forEach((id, index) => {
-          const comp = fullRecord[id];
-          if (!comp) return;
-          comp.forEach((el) => {
-            if (index > 0 && symb.isDBSymbol(el, "p")) {
-              const prev = comp[index - 1];
-              if (symb.isNestedField(prev)) {
-                const drefs = getPickedDocumentIds(prev.field, fullRecord);
-                drefs.forEach((dref) => {
-                  const newFieldId = computeFieldId(dref, el.p);
-                  if (!externalFieldIds.includes(newFieldId)) {
-                    newExternalFieldIds.push(newFieldId);
-                  }
-                });
-              }
+        check.forEach((id) => {
+          const tree = fullRecord[id];
+          if (!tree) return;
+          const traverseNode = (node: SyntaxTree) => {
+            if (node.type === "select") {
+              const nestedField = node.children[0] as NestedField;
+              const drefs = getPickedDocumentIds(nestedField.field, fullRecord);
+              drefs.forEach((dref) => {
+                const newFieldId = computeFieldId(dref, node.payload!.select);
+                if (!externalFieldIds.includes(newFieldId)) {
+                  newExternalFieldIds.push(newFieldId);
+                }
+              });
             }
-          });
+
+            node.children.forEach((token) => {
+              if (isSyntaxTree(token)) {
+                traverseNode(token);
+              }
+            });
+          };
+
+          traverseNode(tree);
         });
       });
 
@@ -421,14 +426,17 @@ export const fields = createRoute({
           .filter((el) => isFieldOfDocument(el, doc._id))
           .forEach((id) => {
             if (!isTemplateField(id)) return;
-            const value = addNestedObjectIds(doc.record[id]);
+            const value = createSyntaxStream(
+              doc.record[id],
+              (id) => new ObjectId(id)
+            );
             const _imports = getFieldBlocksWithDepths(id, doc.record).filter(
-              (el) => el.id.toHexString() !== id
+              (el) => el.k.toHexString() !== id
             );
             derivatives.push({
-              id: new ObjectId(id),
+              k: new ObjectId(id),
+              v: value,
               depth: 0,
-              value,
               result: doc.values[getRawFieldId(id)],
               // it does exist in values because template field values are always saved to values
               _imports,
@@ -442,13 +450,13 @@ export const fields = createRoute({
         util.inspect(
           derivatives.map((el) => ({
             ...el,
-            value: [],
+            v: [],
           })),
           { depth: null, colors: true }
         )
       );
 
-      const cached: BrandedObjectId<FieldId>[] = [];
+      const cached: DBId<FieldId>[] = [];
       updatedFieldsIds.forEach((id) => {
         if (!(id in values) && !isTemplateField(id)) {
           cached.push(new ObjectId(id));
@@ -481,22 +489,25 @@ export const fields = createRoute({
         // includes imports by default
         const record = parseDocument(doc).record;
         const cachedValues = doc!.cached;
-        const cachedRecord: Record<FieldId, Value[]> = Object.fromEntries(
+        const cachedRecord: Record<FieldId, ValueArray> = Object.fromEntries(
           cached.map((id, index) => [id, cachedValues[index]])
         );
 
         // create updates
 
         const updates: Update[] = Array.from(updatedFieldsIds, (id) => {
-          const value = addNestedObjectIds(record[id]);
+          const value = createSyntaxStream(
+            record[id],
+            (id) => new ObjectId(id)
+          );
           const objectId = new ObjectId(id);
           const _imports = getFieldBlocksWithDepths(id, record).filter(
-            (el) => el.id.toHexString() !== id
+            (el) => el.k.toHexString() !== id
           );
           return {
-            id: objectId,
+            k: objectId,
+            v: value,
             depth: 0,
-            value,
             result: doc.values[getRawFieldId(id)] ?? cachedRecord[id] ?? [],
             _imports,
             imports: [], // should just be empty
@@ -519,7 +530,7 @@ export const fields = createRoute({
 
         await db.collection<DBDocumentRaw>("documents").updateMany(
           {
-            "compute.id": { $in: updates.map((el) => el.id) },
+            "compute.k": { $in: updates.map((el) => el.k) },
             _id: { $ne: new ObjectId(documentId) },
           },
           stages
@@ -537,28 +548,49 @@ export const fields = createRoute({
 
 const transformField = (
   fieldId: FieldId,
-  initialRecord: ComputationRecord,
+  initialRecord: TreeRecord,
   pkgs: ServerPackage<AnyOp>[]
-): ComputationRecord => {
+): TreeRecord => {
   const transformer = createComputationTransformer(fieldId, initialRecord);
 
-  const record: ComputationRecord = {};
+  const updates: Record<
+    FieldId,
+    { transform: Transform | undefined; stream: TokenStream }
+  > = {};
 
   transformer(pkgs).forEach((pkg) => {
     unwrapServerPackage(pkg).operations.forEach((operation) => {
       const { location, field } = targetTools.parse(operation.target);
-      const config = field && location === "" ? getConfig(field) : undefined;
-      const transform = config?.transform;
       const id = location === "" ? fieldId : (location as FieldId);
-      if (!(id in record)) {
-        record[id] = initialRecord[id] ?? config?.initialValue ?? [];
+      if (!(id in updates)) {
+        const initialValue =
+          field && location === ""
+            ? getConfig(field).initialValue
+            : DEFAULT_SYNTAX_TREE;
+
+        const transform =
+          initialValue.type !== null
+            ? {
+                type: initialValue.type,
+                ...(initialValue.payload && { payload: initialValue.payload }),
+              }
+            : undefined;
+
+        updates[id] = {
+          stream: createTokenStream(initialRecord[id] ?? initialValue),
+          transform,
+        };
       }
-      record[id] = decodeEditorComputation(
-        getNextState(encodeEditorComputation(record[id], transform), operation),
-        transform
-      );
+      updates[id].stream = getNextState(updates[id].stream, operation);
     });
   });
+
+  const record: TreeRecord = Object.fromEntries(
+    Object.entries(updates).map(([id, { stream, transform }]) => [
+      id,
+      parseTokenStream(stream, transform),
+    ])
+  );
 
   return record;
 };
@@ -591,10 +623,7 @@ const transformDocumentConfig = (
   return newConfig;
 };
 
-const getFieldBlocksWithDepths = (
-  fieldId: FieldId,
-  record: ComputationRecord
-) => {
+const getFieldBlocksWithDepths = (fieldId: FieldId, record: TreeRecord) => {
   const graph = getGraph(record);
   const fieldRecord = getFieldRecord(record, fieldId, graph);
   const { compute } = getSortedValues(fieldRecord, graph, { keepDepths: true });

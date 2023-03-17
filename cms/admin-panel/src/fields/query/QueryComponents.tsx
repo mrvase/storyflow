@@ -1,4 +1,4 @@
-import { DocumentId, EditorComputation } from "@storyflow/backend/types";
+import { DocumentId, TokenStream } from "@storyflow/backend/types";
 import { CubeIcon } from "@heroicons/react/24/outline";
 import React from "react";
 import { useClientConfig } from "../../client-config";
@@ -19,8 +19,8 @@ export function QueryComponents({
 }: {
   query: string;
   selected: number;
-  insertBlock: (comp: EditorComputation) => void;
-  insertComputation: (comp: EditorComputation) => void;
+  insertBlock: (comp: TokenStream) => void;
+  insertComputation: (comp: TokenStream) => void;
   options: RegularOptions;
 }) {
   const id = useFieldId();
