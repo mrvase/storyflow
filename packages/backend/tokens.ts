@@ -1,89 +1,18 @@
 import {
-  DBSymbol,
-  DBSymbolKey,
   Parameter,
-  EditorSymbol,
-  FunctionName,
   NestedDocument,
-  Operator,
-  EditorSymbolKey,
-  operators,
   FileToken,
   ColorToken,
   CustomToken,
-  RawFieldId,
   NestedField,
   NestedElement,
   NestedFolder,
   ContextToken,
   Token,
-} from "./types";
-import { NestedEntity } from "./types2";
+} from "./types2";
 
 function isObject(value: any): value is Record<string, any> {
   return value !== null && typeof value === "object";
-}
-
-function isEditorSymbol<T extends Operator>(
-  value: any,
-  type: T
-): value is { _: T };
-function isEditorSymbol<T extends "_">(
-  value: any,
-  type: T
-): value is { _: Operator };
-function isEditorSymbol<T extends ")", F extends FunctionName>(
-  value: any,
-  type: T
-): value is { ")": true | F };
-function isEditorSymbol<T extends EditorSymbolKey>(
-  value: any,
-  type: T
-): value is { [key in T]: true };
-function isEditorSymbol<T extends ")", F extends FunctionName>(
-  value: any,
-  type: T,
-  func: F
-): value is { ")": F };
-function isEditorSymbol<
-  T extends Operator | EditorSymbolKey,
-  F extends FunctionName
->(value: any, type?: T, func?: F): value is EditorSymbol {
-  if (!isObject(value)) {
-    return false;
-  }
-  if (type && operators.some((el) => el === type)) {
-    return value._ === type;
-  }
-  if (type && type in value) {
-    return !func || value[type] === func;
-  }
-  return false;
-}
-
-function isDBSymbol<T extends DBSymbolKey>(
-  value: any,
-  key: "p"
-): value is { p: RawFieldId };
-function isDBSymbol<T extends ")", F extends Operator | FunctionName>(
-  value: any,
-  key: T
-): value is { ")": true | false | F };
-function isDBSymbol<T extends DBSymbolKey>(
-  value: any,
-  key: T
-): value is { [key in T]: true };
-function isDBSymbol<T extends ")", F extends Operator | FunctionName>(
-  value: any,
-  key: T,
-  func: F
-): value is { ")": F };
-function isDBSymbol<T extends DBSymbolKey, F extends Operator | FunctionName>(
-  value: any,
-  key: T,
-  func?: F
-): value is DBSymbol {
-  return isObject(value) && key in value && (!func || value[key] === func);
 }
 
 function isNestedField(value: any): value is NestedField {
@@ -152,9 +81,7 @@ function isPrimitiveValue(
   return typeof value !== "object" || value instanceof Date;
 }
 
-export const symb = {
-  isEditorSymbol,
-  isDBSymbol,
+export const tokens = {
   isNestedField,
   isNestedFolder,
   isNestedElement,

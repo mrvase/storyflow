@@ -45,7 +45,9 @@ export type DBSymbol =
   | { ")": Operator | FunctionName }
   | { p: RawFieldId };
 
-type SharedSymbolKey = "(" | ")" | "[" | "]" | "n";
+type SharedSymbolKey = SharedSymbol extends { [Key in infer K]: any }
+  ? K
+  : never;
 export type EditorSymbolKey = SharedSymbolKey | "_" | ",";
 export type DBSymbolKey = SharedSymbolKey | "{" | "}" | "/" | "p";
 
@@ -174,7 +176,6 @@ export const functions = [
   "filter",
   "slug",
   "url",
-  "pick",
 ] as const;
 
 export type FunctionName = (typeof functions)[number];

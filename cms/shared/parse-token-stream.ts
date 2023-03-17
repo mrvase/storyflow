@@ -1,19 +1,17 @@
 import {
   FunctionName,
   functions,
+  HasSelect,
   NestedField,
   operators,
-} from "@storyflow/backend/types";
-import {
   SyntaxNode,
-  DBSyntaxStream,
   SyntaxTree,
   TokenStream,
+  TokenStreamSymbol,
   WithSyntaxError,
-  DBOperativeToken,
-  OperativeToken,
 } from "@storyflow/backend/types2";
-import { symb } from "@storyflow/backend/symb";
+import { tokens } from "@storyflow/backend/tokens";
+import { isSymbol } from "@storyflow/backend/symbols";
 
 function isObject(value: any): value is Record<string, any> {
   return value !== null && typeof value === "object";
@@ -28,16 +26,10 @@ const isInline = (token: SyntaxNode<WithSyntaxError>["children"][number]) => {
     return true;
   }
   return (
-    symb.isPrimitiveValue(token) ||
-    symb.isToken(token) ||
-    symb.isParameter(token)
+    tokens.isPrimitiveValue(token) ||
+    tokens.isToken(token) ||
+    tokens.isParameter(token)
   );
-};
-
-const isMerge = (
-  token: SyntaxNode<WithSyntaxError>["children"][number]
-): token is SyntaxNode<WithSyntaxError> => {
-  return isObject(token) && "type" in token && token.type === "merge";
 };
 
 const returnToNullParent = (
@@ -48,6 +40,12 @@ const returnToNullParent = (
     current = parents.get(current)!;
   }
   return current;
+};
+
+const isMerge = (
+  token: SyntaxNode<WithSyntaxError>["children"][number]
+): token is SyntaxNode<WithSyntaxError> => {
+  return isObject(token) && "type" in token && token.type === "merge";
 };
 
 export function parseTokenStream(
@@ -102,7 +100,7 @@ export function parseTokenStream(
   stream.forEach((token) => {
     let currentIsComma = false;
 
-    if (symb.isEditorSymbol(token, "(") || symb.isEditorSymbol(token, "[")) {
+    if (isSymbol(token, "(") || isSymbol(token, "[")) {
       // An opening bracket always creates a group with operation null
       // and the operation stays null. So when we enter children groups,
       // we know we can return to the latest bracket group by returning
@@ -111,10 +109,7 @@ export function parseTokenStream(
       parents.set(node, current);
       mergePush(node);
       current = node;
-    } else if (
-      symb.isEditorSymbol(token, ")") ||
-      symb.isEditorSymbol(token, "]")
-    ) {
+    } else if (isSymbol(token, ")") || isSymbol(token, "]")) {
       // we first return to the level introduced by the opening bracket
       // (see comment above)
 
@@ -124,8 +119,10 @@ export function parseTokenStream(
         current.children.push({ error: "," });
       }
 
-      if (typeof token[")"] === "string") {
+      if (token[")"] && typeof token[")"] !== "boolean") {
         current.type = token[")"];
+      } else if (token["]"]) {
+        current.type = "array";
       }
 
       // and then return to the parent that the bracket group was originally pushed to
@@ -136,7 +133,7 @@ export function parseTokenStream(
       } else {
         current = parent;
       }
-    } else if (symb.isEditorSymbol(token, ",")) {
+    } else if (isSymbol(token, ",")) {
       // the only case in which we are in a group where the operation is not null
       // is when it has been set to an operator (and not a function name - these are only added when the group is left).
       // Since there cannot be a comma or an n in a group with an operator, we return to the parent.
@@ -155,19 +152,14 @@ export function parseTokenStream(
       // So we only say "prevIsComma" is true if an error has not already been added here.
       // Therefore currentIsComma = !commaIsWrong below.
       currentIsComma = !commaIsWrong;
-    } else if (symb.isEditorSymbol(token, "n")) {
+    } else if (tokens.isLineBreak(token)) {
       // see comment above
       current = returnToNullParent(current, parents);
       if (prevIsComma) {
         current.children.push({ error: "," });
       }
       current.children.push(token);
-    } else if (
-      symb.isEditorSymbol(token, "+") ||
-      symb.isEditorSymbol(token, "-") ||
-      symb.isEditorSymbol(token, "*") ||
-      symb.isEditorSymbol(token, "/")
-    ) {
+    } else if (isSymbol(token, "_")) {
       if (current.type !== token["_"]) {
         if (
           ["+", "-"].includes(token["_"]) &&
@@ -194,7 +186,7 @@ export function parseTokenStream(
         } else {
           let last;
           if (current.children.length === 0) {
-            last = { missing: "number" };
+            last = { error: "missing" };
           } else if (current.children.length === 1 && current.type !== null) {
             // maybe this should not be a special case and do the same as the else below
           } else {
@@ -203,7 +195,7 @@ export function parseTokenStream(
           }
 
           const node: SyntaxNode<WithSyntaxError> = {
-            children: last ? [last] : [],
+            children: last !== undefined ? [last] : [],
             type: token["_"],
           };
           parents.set(node, current);
@@ -213,18 +205,18 @@ export function parseTokenStream(
       } else {
         if (prevIsOperator) {
           // ERROR
-          current.children.push({ missing: "number" });
+          current.children.push({ error: "missing" });
         }
         // nothing
       }
-    } else if (symb.isNestedField(token)) {
-      if ("pick" in token) {
-        let { pick, ...rest } = token;
+    } else if (tokens.isNestedField(token)) {
+      if ("select" in token) {
+        let { select, ...rest } = token;
         const node: SyntaxNode<WithSyntaxError> = {
           children: [rest],
-          type: "pick",
+          type: "select",
           payload: {
-            pick,
+            select,
           },
         };
         parents.set(node, current);
@@ -233,183 +225,26 @@ export function parseTokenStream(
         mergePush(token);
       }
     } else if (
-      symb.isNestedDocument(token) ||
-      symb.isNestedFolder(token) ||
-      symb.isNestedElement(token)
+      tokens.isNestedDocument(token) ||
+      tokens.isNestedFolder(token) ||
+      tokens.isNestedElement(token)
     ) {
       mergePush(token);
-    } else if (symb.isToken(token)) {
+    } else if (tokens.isToken(token)) {
       mergePush(token);
-    } else if (symb.isParameter(token)) {
+    } else if (tokens.isParameter(token)) {
       mergePush(token);
-    } else if (symb.isPrimitiveValue(token)) {
+    } else if (tokens.isPrimitiveValue(token)) {
       mergePush(token);
     }
 
-    prevIsOperator = symb.isEditorSymbol(token, "_");
+    prevIsOperator = isSymbol(token, "_");
     prevIsComma = currentIsComma;
   });
 
   if (prevIsComma) {
     current.children.push({ error: "," });
   }
-
-  if (current !== root) {
-    let i = 0;
-    while (current !== root) {
-      if (!operators.includes(current.type as any)) {
-        current.open = true;
-      }
-      current = parents.get(current)!;
-      if (!current) {
-        throw new Error("Unbalanced brackets");
-      }
-      i++;
-    }
-  }
-
-  return root;
-}
-
-export function createSyntaxStream(
-  tree: SyntaxTree<WithSyntaxError>
-): DBSyntaxStream {
-  const flatten = (
-    value: SyntaxNode<WithSyntaxError>,
-    parent: SyntaxNode<WithSyntaxError> | null
-  ): DBSyntaxStream => {
-    const flattened: DBSyntaxStream = [];
-
-    value.children.forEach((el) => {
-      if (isObject(el) && "children" in el) {
-        flattened.push(...flatten(el, value));
-      } else if (isObject(el) && "id" in el) {
-        // handle branded ids
-        flattened.push(el);
-      } else if (isObject(el) && "error" in el && el.error === ")") {
-        flattened.push({ ")": false });
-      } else if (isObject(el) && "error" in el) {
-        flattened.push(null as any);
-      } else if (isObject(el) && "missing" in el) {
-        flattened.push(null as any);
-      } else {
-        flattened.push(el);
-      }
-    });
-
-    const isRoot = parent === null;
-
-    const childIsAddition =
-      value.children.length === 1 &&
-      isObject(value.children[0]) &&
-      "type" in value.children[0] &&
-      ["+", "-"].includes(value.children[0].type as string);
-
-    const isAutoBracket =
-      childIsAddition &&
-      value.type === null &&
-      ["*", "/"].includes(parent?.type as string);
-
-    if (!isRoot && !isAutoBracket) {
-      let openingBracket: DBOperativeToken = { "(": true };
-      let closingBracket: DBOperativeToken = { ")": true };
-
-      if (value.type === "merge") {
-        openingBracket = { "{": true };
-        closingBracket = { "}": true };
-      } else if (value.type === "pick") {
-        closingBracket = { p: value.payload!.pick };
-      } else if (value.type !== null) {
-        closingBracket = { ")": value.type as "+" };
-      }
-
-      flattened.unshift(openingBracket);
-      if (!value.open) flattened.push(closingBracket);
-    }
-
-    return flattened;
-  };
-
-  let result = [...flatten(tree, null)];
-
-  return result;
-}
-
-export function parseSyntaxStream(
-  stream: DBSyntaxStream
-): SyntaxTree<WithSyntaxError> {
-  let root: SyntaxNode<WithSyntaxError> = { children: [], type: null };
-
-  let parents = new WeakMap<
-    SyntaxNode<WithSyntaxError>,
-    SyntaxNode<WithSyntaxError>
-  >();
-
-  let current: SyntaxNode<WithSyntaxError> = root;
-
-  stream.forEach((token) => {
-    if (symb.isDBSymbol(token, "(") || symb.isDBSymbol(token, "{")) {
-      // An opening bracket always creates a group with operation null
-      // and the operation stays null. So when we enter children groups,
-      // we know we can return to the latest bracket group by returning
-      // to the parent with operation null.
-      const node = { children: [], type: null };
-      parents.set(node, current);
-      current.children.push(node);
-      current = node;
-    } else if (symb.isDBSymbol(token, ")") && token[")"] === false) {
-      current.children.push({ error: ")" });
-    } else if (symb.isDBSymbol(token, ")") || symb.isDBSymbol(token, "}")) {
-      current = returnToNullParent(current, parents);
-
-      // auto bracket
-      if (["/", "*"].includes(token[")"])) {
-        current.children = current.children.map((child) => {
-          if (
-            isObject(child) &&
-            "type" in child &&
-            ["+", "-"].includes(child.type as string)
-          ) {
-            return {
-              type: null,
-              children: [child],
-            };
-          }
-          return child;
-        });
-      }
-
-      if (operators.includes(token[")"])) {
-        current.children = current.children.map((child) => {
-          if (isObject(child) && "error" in child && child.error === ",") {
-            return { missing: "number" };
-          }
-          return child;
-        });
-      }
-
-      if (typeof token[")"] === "string") {
-        current.type = token[")"];
-      } else if (symb.isDBSymbol(token, "}")) {
-        current.type = "merge";
-      }
-
-      const parent = parents.get(current)!;
-      current = parent;
-    } else if (symb.isDBSymbol(token, "n")) {
-      current.children.push(token);
-    } else if (symb.isDBSymbol(token, "p")) {
-      current.type = "pick";
-      current.payload = { pick: token.p };
-      current = returnToNullParent(current, parents);
-    } else if (token === null) {
-      // Replaced with { missing: "number" } if we turn out to be in operator.
-      // We cannot have erroneous comma in operator.
-      current.children.push({ error: "," });
-    } else {
-      current.children.push(token as any);
-    }
-  });
 
   if (current !== root) {
     let i = 0;
@@ -476,10 +311,16 @@ export function createTokenStream(
       } else if (isObject(el) && "error" in el && el.error === ")") {
         flattened.push({ ")": true });
       } else if (isObject(el) && "error" in el) {
-        flattened.push({ ",": true });
-      } else if (isObject(el) && "missing" in el) {
-        if (prev && !(isObject(prev) && "missing" in prev) && !next) {
-          flattened.push(symbol);
+        if (el.error === "missing") {
+          if (
+            prev &&
+            !(isObject(prev) && "error" in prev && prev.error === "missing") &&
+            !next
+          ) {
+            flattened.push(symbol);
+          }
+        } else {
+          flattened.push({ ",": true });
         }
       } else {
         if (addComma(el, prev)) {
@@ -497,13 +338,16 @@ export function createTokenStream(
 
     if (operators.includes(value.type as any)) {
     } else if (value.type === "merge") {
-    } else if (value.type === "pick") {
-      (flattened[0] as NestedField).pick = value.payload!.pick;
+    } else if (value.type === "select") {
+      (flattened[0] as HasSelect<NestedField>).select = value.payload!.select;
     } else if (!isRoot) {
-      let openingBracket: OperativeToken = { "(": true };
-      let closingBracket: OperativeToken = { ")": true };
+      let openingBracket: TokenStreamSymbol = { "(": true };
+      let closingBracket: TokenStreamSymbol = { ")": true };
 
-      if (value.type !== null) {
+      if (value.type === "array") {
+        openingBracket = { "[": true };
+        closingBracket = { "]": true };
+      } else if (value.type !== null) {
         closingBracket = { ")": value.type as (typeof functions)[number] };
       }
 
