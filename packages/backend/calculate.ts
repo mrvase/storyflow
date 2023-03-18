@@ -17,7 +17,7 @@ import {
   Operator,
   RawFieldId,
   SortSpec,
-  TreeRecord,
+  SyntaxTreeRecord,
 } from "./types";
 
 /*
@@ -366,7 +366,7 @@ export function calculate(node: SyntaxTree, getState: StateGetter): ValueArray {
                 })
               : []; // not the case when resulting from select
 
-          const hasArgs = args.some((el) => el !== undefined);
+          const hasArgs = args.some((el) => el !== undefined && el.length > 0);
 
           const state = getState(child.field, {
             tree: hasArgs,
@@ -375,7 +375,7 @@ export function calculate(node: SyntaxTree, getState: StateGetter): ValueArray {
           if (state) {
             if (hasArgs) {
               acc.push(calculateNode(state as SyntaxTree, args));
-            } else {
+            } else if ((state as ValueArray).length > 0) {
               acc.push(state as ValueArray);
             }
           }
@@ -478,7 +478,7 @@ export function calculate(node: SyntaxTree, getState: StateGetter): ValueArray {
   return value.reduce((acc, cur) => [...acc, ...cur], []);
 }
 
-export function calculateFromRecord(id: FieldId, record: TreeRecord) {
+export function calculateFromRecord(id: FieldId, record: SyntaxTreeRecord) {
   const getter: StateGetter = (id, { external, tree }): any => {
     if (typeof id === "object") {
       return [];

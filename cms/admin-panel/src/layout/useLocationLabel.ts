@@ -26,8 +26,6 @@ export default function useLocationLabel(segment: string) {
 
   const articleLabel = useDocumentLabel(article);
 
-  console.log("ARTICLE LABEL", { article, articleLabel });
-
   if (type === "f" || type === "a") {
     const folder = useFolder(id as FolderId);
 

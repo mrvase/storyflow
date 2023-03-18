@@ -12,7 +12,11 @@ export class Store {
   ): State<T>;
   use<T>(
     id: string,
-    fn?: (value: T | undefined) => Promise<T> | T,
+    fn: ((value: T | undefined) => Promise<T> | T) | undefined
+  ): State<T | undefined>;
+  use<T>(
+    id: string,
+    fn?: ((value: T | undefined) => Promise<T> | T) | undefined,
     options: { cluster?: string } = {}
   ): State<T | undefined> {
     let state = this.map.get(id) as State<T | undefined>;

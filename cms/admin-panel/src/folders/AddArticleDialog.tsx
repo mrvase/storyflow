@@ -9,7 +9,7 @@ import {
   DocumentId,
   FieldId,
   FolderId,
-  TreeRecord,
+  SyntaxTreeRecord,
 } from "@storyflow/backend/types";
 import { useClient } from "../client";
 import { toSlug } from "../fields/UrlField";
@@ -30,7 +30,7 @@ export function AddArticleDialog({
   template?: DocumentId;
   parentUrl?: {
     id: FieldId;
-    record: TreeRecord;
+    record: SyntaxTreeRecord;
     url: string;
   };
   type: string;

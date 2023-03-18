@@ -6,8 +6,25 @@ import {
 } from "./computation-test";
 
 describe("auto-merging inline elements and not block elements", () => {
-  const { createTests } = createEnvironment();
+  const { createTests, createImport } = createEnvironment();
+
+  const NestedField = createImport();
+
   createTests([
+    {
+      tokens: ["Hej", NestedField],
+      syntax: {
+        type: null,
+        children: [
+          {
+            type: "merge",
+            children: ["Hej", NestedField],
+          },
+        ],
+      },
+      stream: [{ "{": true }, "Hej", NestedField, { "}": true }],
+    },
+
     {
       tokens: ["Hej", NestedDocumentInline],
       syntax: {

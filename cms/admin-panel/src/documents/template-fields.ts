@@ -1,6 +1,6 @@
 import { Client } from "../client";
 import {
-  TreeRecord,
+  SyntaxTreeRecord,
   DocumentConfig,
   DocumentId,
   FieldConfig,
@@ -41,7 +41,7 @@ export const getDefaultValuesFromTemplateAsync = async (
       return createTemplateFieldId(newDocumentId, key);
     };
 
-    let record: TreeRecord = Object.fromEntries(
+    let record: SyntaxTreeRecord = Object.fromEntries(
       getComputationEntries(doc.record).map(([key, value]) => {
         const newKey = getNewKey(key);
 

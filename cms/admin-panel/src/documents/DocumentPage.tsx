@@ -16,7 +16,6 @@ import { FIELDS } from "@storyflow/backend/fields";
 import {
   computeFieldId,
   getDocumentId,
-  getRawDocumentId,
   getTemplateDocumentId,
 } from "@storyflow/backend/ids";
 import {
@@ -58,7 +57,9 @@ import { useFieldIdGenerator } from "../id-generator";
 
 export const getVersionKey = (versions?: Record<RawFieldId, number>) => {
   if (!versions) return -1;
-  return Object.values(versions).reduce((a, c) => a + c, 0);
+  const values = Object.values(versions);
+  if (!values.length) return -1;
+  return values.reduce((a, c) => a + c);
 };
 
 function useIsModified(id: string, initial: boolean, key: number) {
@@ -528,6 +529,16 @@ export function DocumentPage({
     <>
       {!error && article && (
         <Page
+          key={getVersionKey(article.versions)}
+          // ^ needed to re-render useDocumentConfig to create new queue instance
+          // TODO: Handle new queue instance in a reactive effect instead.
+          // solution. Make queue forEach a pure function that I can use in
+          // createCollaborativeState to initialize state the basis of initial history.
+          // then I do not need the queue instance at render time, and I can move the
+          // initialization to an effect that reacts to version change and re-initializes.
+          // To check version change, I should see if the latest seen index of the first
+          // server package exceeds the version of the document. Then the first package
+          // has not been created up against the current document.
           type={type === "t" ? "template" : "document"}
           isOpen={isOpen}
           article={article}
@@ -582,8 +593,6 @@ const Page = ({
     }),
     [id, article.record]
   );
-
-  console.log("VERSION", article.versions, getVersionKey(article.versions));
 
   return (
     <FocusOrchestrator>

@@ -9,20 +9,23 @@ import {
   Parameter,
   DBDocumentRaw,
   NestedDocument,
-  DBValue,
   DBId,
+  DBValueArray,
+  HasDBId,
+  DBSyntaxStreamBlock,
+  DBSyntaxStream,
 } from "@storyflow/backend/types";
 
 type Accummulator = {
-  value: DBValue[][];
-  stack: DBValue[][][];
+  value: DBValueArray[];
+  stack: DBValueArray[][];
   imports: DBId<FieldId>[];
-  function: DBComputation;
+  function: DBSyntaxStream;
 };
 
 const calculateCombinations = (
   $: Operators<DBDocumentRaw>,
-  value: DBValue[][]
+  value: DBValueArray[]
 ) => {
   return $.reduce(
     levelImplicitAndExplicitArrays($, value),
@@ -36,9 +39,9 @@ const calculateCombinations = (
               $.concatArrays([], combination, [element])
             )
           ),
-        [] as DBValue[][]
+        [] as DBValueArray[]
       ),
-    [[]] as DBValue[][]
+    [[]] as DBValueArray[]
   );
 };
 
@@ -71,7 +74,7 @@ const compute = (
                   ]),
                 acc
               ),
-            [] as DBValue[]
+            [] as DBValueArray
           ),
         })
         .return(({ spread }) =>
@@ -193,10 +196,10 @@ const compute = (
                             ]),
                           () => $.concatArrays(acc, [cur])
                         ),
-                      [] as DBValue[]
+                      [] as DBValueArray
                     )
                   ),
-                [] as DBValue[]
+                [] as DBValueArray
               ),
             ])
             .case($.in(operator, ["url", "slug"]), () => [
@@ -306,8 +309,8 @@ const isObjectWithProp = <Object, Prop extends string>(
 
 const levelImplicitAndExplicitArrays = (
   $: Operators<DBDocumentRaw>,
-  arr: DBValue[][]
-): DBValue[][] => {
+  arr: DBValueArray[]
+): DBValueArray[] => {
   return $.reduce(
     arr,
     (acc, cur) =>
@@ -318,7 +321,7 @@ const levelImplicitAndExplicitArrays = (
           () => cur
         ),
       ]),
-    [] as DBValue[][]
+    [] as DBValueArray[]
   );
 };
 
@@ -362,33 +365,28 @@ const replaceAllWithRegex = (
   );
 };
 
-type IgnorableImport = { field: BrandedObjectId<FieldId>; ignore: boolean };
-type ComputationWithIgnorableImport = (
-  | DBComputation[number]
-  | IgnorableImport
-)[];
+type IgnorableImport = { field: DBId<FieldId>; ignore: boolean };
+type StreamWithIgnorableImport = (DBSyntaxStream[number] | IgnorableImport)[];
 
 export const calculate = (
   $: Operators<DBDocumentRaw>,
-  block: ComputationBlock,
-  imports: ComputationBlock[]
+  block: DBSyntaxStreamBlock,
+  imports: DBSyntaxStreamBlock[]
 ) => {
   return $.define()
     .let({
       result: $.reduce(
-        block.value,
+        block.v,
         (acc, cur) => {
           return $.define()
-            .let({ pick: isObjectWithProp($, cur, "p", "string") })
-            .let(({ pick }) => ({
+            .let({ select: isObjectWithProp($, cur, "p", "string") })
+            .let(({ select }) => ({
               next: $.switch()
                 .case(isObjectWithProp($, cur, "element", "string"), () =>
                   $.concatArrays(
-                    [{ "(": true }, ""] as ComputationWithIgnorableImport,
+                    [{ "(": true }, ""] as StreamWithIgnorableImport,
                     $.reduce(
-                      $.objectToArray(
-                        (cur as WithBrandedObjectId<NestedElement>).imports!
-                      ),
+                      $.objectToArray((cur as HasDBId<NestedElement>).props!),
                       (acc, el) =>
                         $.concatArrays(acc, [
                           {
@@ -396,8 +394,7 @@ export const calculate = (
                               $.concat([
                                 $.substrBytes(
                                   $.toString(
-                                    (cur as WithBrandedObjectId<NestedElement>)
-                                      .id
+                                    (cur as HasDBId<NestedElement>).id
                                   ),
                                   12,
                                   24
@@ -408,14 +405,14 @@ export const calculate = (
                             ignore: $.not(el.v),
                           },
                         ]),
-                      [] as ComputationWithIgnorableImport
+                      [] as StreamWithIgnorableImport
                     ),
-                    ["", { ")": true }] as ComputationWithIgnorableImport
+                    ["", { ")": true }] as StreamWithIgnorableImport
                   )
                 )
-                .case(pick, () =>
+                .case(select, () =>
                   $.concatArrays(
-                    [{ "(": true }] as ComputationWithIgnorableImport,
+                    [{ "(": true }] as StreamWithIgnorableImport,
                     $.reduce(
                       acc.value,
                       (acc, comp) =>
@@ -432,9 +429,7 @@ export const calculate = (
                                       $.concat([
                                         $.substrBytes(
                                           $.toString(
-                                            (
-                                              el as WithBrandedObjectId<NestedDocument>
-                                            ).id
+                                            (el as HasDBId<NestedDocument>).id
                                           ),
                                           12,
                                           24
@@ -447,7 +442,7 @@ export const calculate = (
                                         ).p,
                                       ])
                                     ),
-                                  } as WithBrandedObjectId<NestedField>,
+                                  } as HasDBId<NestedField>,
                                   {
                                     "]": true,
                                   },
@@ -456,14 +451,14 @@ export const calculate = (
                             ),
                           acc
                         ),
-                      [] as ComputationWithIgnorableImport
+                      [] as StreamWithIgnorableImport
                     ),
-                    [{ ")": true }] as ComputationWithIgnorableImport
+                    [{ ")": true }] as StreamWithIgnorableImport
                   )
                 )
                 .default(() => [cur]),
               acc: $.cond(
-                pick,
+                select,
                 () =>
                   $.mergeObjects(acc, {
                     value: $.last(acc.stack),
@@ -480,30 +475,25 @@ export const calculate = (
                     .let({
                       imp: $.cond(
                         isObjectWithProp($, cur, "field", "objectId"),
-                        () =>
-                          cur as
-                            | WithBrandedObjectId<NestedField>
-                            | IgnorableImport,
+                        () => cur as HasDBId<NestedField> | IgnorableImport,
                         () => null
                       ),
                     })
                     .let(({ imp }) => ({
                       args: $.cond(
-                        $.toBool((imp as WithBrandedObjectId<NestedField>).id), // do not look for args if it is ignorable import
+                        $.toBool((imp as HasDBId<NestedField>).id), // do not look for args if it is ignorable import
                         () =>
                           $.map(
                             $.range(0, 2),
                             (index) =>
                               $.find(imports, (el) =>
                                 $.eq(
-                                  el.id,
+                                  el.k,
                                   $.toObjectId(
                                     $.concat([
                                       $.substrBytes(
                                         $.toString(
-                                          (
-                                            imp as WithBrandedObjectId<NestedField>
-                                          ).id
+                                          (imp as HasDBId<NestedField>).id
                                         ),
                                         12,
                                         24
@@ -513,9 +503,9 @@ export const calculate = (
                                     ])
                                   )
                                 )
-                              ) as ComputationBlock & {
-                                result: DBComputation;
-                                function: DBComputation;
+                              ) as DBSyntaxStreamBlock & {
+                                result: DBSyntaxStream;
+                                function: DBSyntaxStream;
                               }
                           ),
                         () => [null]
@@ -524,13 +514,10 @@ export const calculate = (
                         $.toBool(imp),
                         () =>
                           $.find(imports, (el) =>
-                            $.eq(
-                              el.id,
-                              (imp as WithBrandedObjectId<NestedField>).field
-                            )
-                          ) as ComputationBlock & {
-                            result: DBComputation;
-                            function: DBComputation;
+                            $.eq(el.k, (imp as HasDBId<NestedField>).field)
+                          ) as DBSyntaxStreamBlock & {
+                            result: DBSyntaxStream;
+                            function: DBSyntaxStream;
                           },
                         () => null
                       ),
@@ -549,7 +536,7 @@ export const calculate = (
                         )
                         .case($.toBool(importedField), () =>
                           $.concatArrays(
-                            [{ "(": true }] as DBComputation,
+                            [{ "(": true }] as DBSyntaxStream,
                             $.cond(
                               $.anyElementTrue(args),
                               () =>
@@ -559,7 +546,7 @@ export const calculate = (
                                     null
                                   >,
                                   "function"
-                                ) as DBComputation,
+                                ) as DBSyntaxStream,
                               () =>
                                 $.getField(
                                   importedField as Exclude<
@@ -567,9 +554,9 @@ export const calculate = (
                                     null
                                   >,
                                   "result"
-                                ) as DBComputation
+                                ) as DBSyntaxStream
                             ),
-                            [{ ")": true }] as DBComputation
+                            [{ ")": true }] as DBSyntaxStream
                           )
                         )
                         .default(() => [
@@ -760,9 +747,7 @@ export const calculate = (
                                       $.toObjectId(
                                         $.concat([
                                           $.toString(
-                                            (
-                                              imp as WithBrandedObjectId<NestedField>
-                                            ).id
+                                            (imp as HasDBId<NestedField>).id
                                           ),
                                           "00000000000",
                                           $.toString(index),
@@ -771,7 +756,7 @@ export const calculate = (
                                     ]),
                                   () => acc
                                 ),
-                              [] as BrandedObjectId<FieldId>[]
+                              [] as DBId<FieldId>[]
                             )
                           ),
                           function: $.concatArrays(acc.function, next),
@@ -794,7 +779,7 @@ export const calculate = (
       result: $.reduce(
         result.value,
         (acc, cur) => $.concatArrays(acc, cur),
-        [] as DBValue[]
+        [] as DBValueArray
       ),
       imports: result.imports,
       function: result.function,

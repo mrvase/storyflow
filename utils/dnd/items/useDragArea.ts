@@ -21,7 +21,7 @@ export const useDragArea = ({
   const [uniqueId] = React.useState(() => createKey());
 
   React.useEffect(() => {
-    console.log("REGISTERING", id, type, uniqueId);
+    // console.log("REGISTERING", id, type, uniqueId);
     return ctx.registerList({
       id,
       uniqueId,

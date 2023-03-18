@@ -14,7 +14,7 @@ import cl from "clsx";
 import { caretClasses } from "./caret";
 import {
   SyntaxTree,
-  TreeRecord,
+  SyntaxTreeRecord,
   DocumentId,
   FieldId,
   NestedDocument,
@@ -62,7 +62,7 @@ function DocumentDecorator({
   const template = useFieldTemplate(id);
   const hasTemplate = Boolean(template);
 
-  let docs: (NestedDocument & { record: TreeRecord })[] = [];
+  let docs: (NestedDocument & { record: SyntaxTreeRecord })[] = [];
   if (isNestedDocumentId(value.id)) {
     // TODO make reactive
     docs = [{ id: value.id, record: {} }];
@@ -172,7 +172,7 @@ export function ValueDisplay({
 }: {
   id: FieldId;
   initialValue: SyntaxTree;
-  record: TreeRecord;
+  record: SyntaxTreeRecord;
 }) {
   const client = useClient();
 

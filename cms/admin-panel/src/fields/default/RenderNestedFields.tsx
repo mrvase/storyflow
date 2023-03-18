@@ -7,7 +7,7 @@ import {
   RawFieldId,
   FieldConfig,
   FieldType,
-  TreeRecord,
+  SyntaxTreeRecord,
   SyntaxTree,
   ValueArray,
 } from "@storyflow/backend/types";
@@ -53,7 +53,7 @@ export function RenderFolder({
 
   const { record } = useDocumentPageContext();
 
-  const values: TreeRecord = React.useMemo(() => {
+  const values: SyntaxTreeRecord = React.useMemo(() => {
     return Object.fromEntries(
       template.map((el) => {
         const id = createTemplateFieldId(nestedDocumentId, el.id);
@@ -126,7 +126,7 @@ export function RenderNestedElement({
         }
         return acc;
       }, [] as [FieldId, SyntaxTree][])
-    ) as TreeRecord;
+    ) as SyntaxTreeRecord;
   }, [initialProps, record]);
 
   const keyId = getIdFromString("key");
@@ -245,7 +245,7 @@ export function RenderNestedDocument({
 
   const { record } = useDocumentPageContext();
 
-  const values: TreeRecord = React.useMemo(() => {
+  const values: SyntaxTreeRecord = React.useMemo(() => {
     return Object.fromEntries(
       template.map((el) => {
         const id = replaceDocumentId(el.id, nestedDocumentId);
@@ -314,7 +314,7 @@ function RenderNestedFields({
   hidden,
 }: {
   nestedDocumentId: NestedDocumentId;
-  values: TreeRecord;
+  values: SyntaxTreeRecord;
   template:
     | ({ arg: number; label: string } | { id: FieldId; label: string })[]
     | readonly PropConfig<RegularOptions>[];

@@ -224,7 +224,7 @@ export default function UrlField({
             {
               id: generateDocumentId(documentId),
               field: externalId as FieldId,
-              ...(templateId && { pick: templateId as RawFieldId }),
+              ...(templateId && { select: templateId as RawFieldId }),
               props: {},
             },
           ];

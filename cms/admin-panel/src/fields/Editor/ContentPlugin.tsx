@@ -88,7 +88,8 @@ function useEditorEvents() {
             {
               id: generateDocumentId(documentId),
               field: externalId,
-              ...(templateId && { pick: templateId }),
+              ...(templateId && { select: templateId }),
+              inline: true,
             },
           ];
 

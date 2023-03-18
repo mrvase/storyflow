@@ -13,30 +13,34 @@ import { createPurger, createStaticStore } from "../../state/StaticStore";
 import { useSingular } from "../../state/useSingular";
 import { useArticle } from "..";
 import {
-  computeFieldId,
   getDocumentId,
-  getRawFieldId,
   getTemplateDocumentId,
   isTemplateField,
   revertTemplateFieldId,
 } from "@storyflow/backend/ids";
 import { ServerPackage } from "@storyflow/state";
+import { createCollaborativeState } from "../../state/createCollaborativeState";
+import { QueueListenerParam } from "@storyflow/state/collab/Queue";
 
+/*
 export const labels = createStaticStore<
   string | undefined,
   Map<string, string | undefined>
 >(() => new Map());
+*/
 
 export const configs = createStaticStore<
   DocumentConfig,
   Map<string, DocumentConfig>
 >(() => new Map());
 
+/*
 export const labelsPurger = createPurger((templateId: string) => {
   labels.deleteMany((id) => {
     return id.startsWith(templateId);
   });
 });
+*/
 
 export const templatesPurger = createPurger((key: string) => {
   configs.deleteOne(key);
@@ -50,7 +54,6 @@ export const useDocumentConfig = (
     version?: number;
   }
 ) => {
-  const [config, setConfig] = configs.useKey(templateId, data.config);
   /*
   if (!config && data.config) {
     setConfig(data.config);
@@ -61,90 +64,73 @@ export const useDocumentConfig = (
     return templatesPurger(templateId);
   }, []);
 
+  /*
   React.useEffect(() => {
     return labelsPurger(templateId);
   }, []);
+  */
 
   let { mutate } = useArticle(templateId);
 
   const refreshed = React.useRef(false);
 
-  let refreshOnVersionChange = React.useCallback((version: number | null) => {
-    if (version !== data.version) {
-      if (!refreshed.current) {
-        mutate();
-        refreshed.current = true;
-      }
-      return true;
+  let refreshOnVersionChange = React.useCallback(() => {
+    if (!refreshed.current) {
+      // TODO
+      // this exists to mutate doc when queue registers that a document
+      // has been saved, but the current client still uses an earlier document.
+      // However, right now it only check up against the version of the
+      // current client. CIRCULAR! IT DOES NOT MAKE SENSE!
+      refreshed.current = true;
+      mutate();
     }
-    return false;
   }, []); // does not need dependency since it is unmounted on version change
-
-  const singular = useSingular(templateId);
 
   const collab = useDocumentCollab();
 
-  React.useEffect(() => {
-    const queue = collab
-      .getOrAddQueue<DocumentConfigOp | PropertyOp>(templateId, templateId, {
-        transform: (pkgs) => pkgs,
-      })
-      .initialize(data.version ?? 0, data.history ?? []);
+  const operator = React.useCallback(
+    ({ forEach }: QueueListenerParam<DocumentConfigOp | PropertyOp>) => {
+      let newTemplate = [...data.config];
 
-    return queue.register(({ forEach, version }) => {
-      singular(() => {
-        if (refreshOnVersionChange(version)) {
-          return;
+      forEach(({ operation }) => {
+        if (targetTools.isOperation(operation, "document-config")) {
+          operation.ops.forEach((action) => {
+            // reordering of fields
+            const { index, insert, remove } = action;
+            newTemplate.splice(index, remove ?? 0, ...(insert ?? []));
+          });
+        } else if (targetTools.isOperation(operation, "property")) {
+          // changing label
+          const fieldId = targetTools.getLocation(operation.target) as FieldId;
+          operation.ops.forEach((action) => {
+            newTemplate = setFieldConfig(newTemplate, fieldId, (ps) => ({
+              ...ps,
+              [action.name]: action.value,
+            }));
+          });
         }
-
-        let sheetUpdate = false;
-        const updatedLabels = new Map<string, string>();
-
-        let newTemplate = [...data.config];
-
-        forEach(({ operation }) => {
-          if (targetTools.isOperation(operation, "document-config")) {
-            operation.ops.forEach((action) => {
-              // reordering of fields
-              const { index, insert, remove } = action;
-              newTemplate.splice(index, remove ?? 0, ...(insert ?? []));
-              (insert ?? []).forEach((el) => {
-                if ("label" in el) {
-                  updatedLabels.set(el.id, el.label);
-                }
-              });
-            });
-            sheetUpdate = true;
-          } else if (targetTools.isOperation(operation, "property")) {
-            // changing label
-            const fieldId = targetTools.getLocation(
-              operation.target
-            ) as FieldId;
-            operation.ops.forEach((action) => {
-              newTemplate = setFieldConfig(newTemplate, fieldId, (ps) => ({
-                ...ps,
-                [action.name]: action.value,
-              }));
-              sheetUpdate = true;
-              if (action.name === "label") {
-                updatedLabels.set(fieldId, action.value);
-              }
-            });
-          }
-        });
-
-        if (sheetUpdate) {
-          setConfig(newTemplate);
-        }
-
-        updatedLabels.forEach((value, key) => {
-          labels.set(key, value);
-        });
       });
-    });
-  }, []);
+      console.log("$$ ENDS WITH", newTemplate);
 
-  return config ?? data.config;
+      return newTemplate;
+    },
+    [data.config]
+  );
+
+  return createCollaborativeState(
+    collab,
+    (callback) => configs.useKey(templateId, callback),
+    operator,
+    {
+      version: data.version ?? 0,
+      history: data.history ?? [],
+      document: templateId,
+      key: templateId,
+    },
+    {
+      onInvalidVersion: refreshOnVersionChange,
+    }
+  );
 };
 
 export function useFieldConfig(
@@ -217,8 +203,16 @@ export function useLabel(
 ) {
   /* the updated label */
   const originalFieldId = revertTemplateFieldId(fieldId, overwritingTemplate);
+  const documentId = getDocumentId(originalFieldId);
 
-  const [label] = labels.useKey(originalFieldId);
+  const [config] = configs.useKey(documentId);
+
+  const label = React.useMemo(() => {
+    if (!config) {
+      return undefined;
+    }
+    return getFieldConfig(config, originalFieldId)?.label;
+  }, [config]);
 
   const templateId = getDocumentId(originalFieldId) as DocumentId;
   const { article } = useArticle(templateId);

@@ -13,7 +13,7 @@ import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
 import { caretClasses } from "./caret";
 import {
-  TreeRecord,
+  SyntaxTreeRecord,
   NestedDocument,
   NestedFolder,
 } from "@storyflow/backend/types";
@@ -47,7 +47,7 @@ function FolderDecorator({
       "child:divide-x child:divide-red-200 child:dark:divide-red-800"
   );
 
-  let docs: (NestedDocument & { record: TreeRecord })[] = [];
+  let docs: (NestedDocument & { record: SyntaxTreeRecord })[] = [];
 
   const folder = useFolder(value.folder);
 

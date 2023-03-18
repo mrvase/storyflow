@@ -179,6 +179,11 @@ export function WritableDefaultField({
     [initialValue]
   );
 
+  const [tree, setTree] = useGlobalState<SyntaxTree>(
+    `${id}#tree`,
+    () => initialValue
+  );
+
   const initialEditorValue = createTokenStream(initialValue);
 
   const [tokenStream, setTokenStream] = useGlobalState<TokenStream>(
@@ -269,6 +274,7 @@ export function WritableDefaultField({
         const stream = func();
         const tree = parseTokenStream(stream, initialTransform);
         console.log("COMPUTATION:", stream, tree);
+        setTree(() => tree);
         setOutput(() => calculateFn(rootId, tree, { client, record }));
         setFieldImports(() => findImportsFn(tree));
       });

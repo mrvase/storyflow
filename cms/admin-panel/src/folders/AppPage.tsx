@@ -18,7 +18,7 @@ import {
   DBFolder,
   FolderId,
   SpaceId,
-  TreeRecord,
+  SyntaxTreeRecord,
 } from "@storyflow/backend/types";
 import { useClient } from "../client";
 import { useClientConfig } from "../client-config";
@@ -120,7 +120,7 @@ export default function AppPage({
   const [dialogIsOpen, setDialogIsOpen] = React.useState<null | string>(null);
   const [parentUrl, setParentUrl] = React.useState<null | {
     id: FieldId;
-    record: TreeRecord;
+    record: SyntaxTreeRecord;
     url: string;
   }>(null);
 

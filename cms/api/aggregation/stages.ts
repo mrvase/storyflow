@@ -4,7 +4,6 @@ import {
   DBId,
   DBSyntaxStream,
   DBSyntaxStreamBlock,
-  DBValue,
   DBValueArray,
   FieldId,
   Value,
@@ -58,15 +57,15 @@ const createCalculationStage = (
     {
       $set: {
         updates: $.filter(updates, (update) =>
-          $.in(update.id, queryArrayProp($doc.compute).id)
+          $.in(update.k, queryArrayProp($doc.compute).k)
         ),
         derivatives,
         statics: $.filter(
           $.map($.objectToArray($doc.values), (el) => ({
-            id: $.toObjectId($.concat([$doc.idString, el.k])),
+            k: $.toObjectId($.concat([$doc.idString, el.k])),
             result: el.v as DBSyntaxStream,
           })),
-          (el) => $.not($.in(el.id, queryArrayProp($doc.compute).id))
+          (el) => $.not($.in(el.k, queryArrayProp($doc.compute).k))
         ),
       },
     },
@@ -88,8 +87,8 @@ const createCalculationStage = (
         compute: $.filter($doc.compute, (compute) =>
           $.not(
             $.in(
-              compute.id,
-              updates.map((el) => el.id)
+              compute.k,
+              updates.map((el) => el.k)
             )
           )
         ),
@@ -153,15 +152,15 @@ const createCalculationStage = (
             (acc, el) =>
               $.cond(
                 $.and(
-                  $.eq($.substrBytes($.toString(el.id), 0, 12), $doc.idString),
-                  $.ne($.substrBytes($.toString(el.id), 14, 18), "0000")
+                  $.eq($.substrBytes($.toString(el.k), 0, 12), $doc.idString),
+                  $.ne($.substrBytes($.toString(el.k), 14, 18), "0000")
                 ),
                 () =>
                   $.mergeObjects(
                     acc,
                     $.arrayToObject([
                       [
-                        $.substrBytes($.toString(el.id), 12, 24),
+                        $.substrBytes($.toString(el.k), 12, 24),
                         (el as any).result,
                       ],
                     ])
@@ -184,7 +183,7 @@ const createCalculationStage = (
                       $doc.compute as (DBSyntaxStreamBlock & {
                         result: Value[];
                       })[],
-                      (el) => $.eq(el.id, id)
+                      (el) => $.eq(el.k, id)
                     ),
                     { result: [] as Value[] }
                   ),
@@ -212,7 +211,7 @@ const createCalculationStage = (
               .let({
                 baseDepth: $.max(
                   $.map(
-                    $.filter(acc, (el) => $.in(cur.id, el.imports)),
+                    $.filter(acc, (el) => $.in(cur.k, el.imports)),
                     (el) => el.depth
                   )
                 ),
@@ -221,10 +220,7 @@ const createCalculationStage = (
                 return $.cond(
                   $.or(
                     $.isNumber(baseDepth),
-                    $.eq(
-                      $.substrBytes($.toString(cur.id), 0, 12),
-                      $doc.idString
-                    )
+                    $.eq($.substrBytes($.toString(cur.k), 0, 12), $doc.idString)
                   ),
                   () =>
                     $.concatArrays(
@@ -243,8 +239,8 @@ const createCalculationStage = (
                               // we do not want to include the nested imports that are already in the values object as statics
                               $.cond(
                                 $.in(
-                                  nestedImport.id,
-                                  queryArrayProp($doc.statics).id
+                                  nestedImport.k,
+                                  queryArrayProp($doc.statics).k
                                 ),
                                 () => acc,
                                 () =>
@@ -294,7 +290,7 @@ const createCalculationStage = (
           $doc.compute,
           (acc, cur) =>
             $.cond(
-              $.eq($.type($.find(acc, (el) => $.eq(cur.id, el.id))), "object"),
+              $.eq($.type($.find(acc, (el) => $.eq(cur.k, el.k))), "object"),
               () => acc, // do nothing since the existing one has the highest depth
               () => $.concatArrays(acc, [cur])
             ),

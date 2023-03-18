@@ -3,7 +3,7 @@ import {
   DocumentId,
   FieldId,
   DBValueRecord,
-  TreeRecord,
+  SyntaxTreeRecord,
   DBSyntaxStreamBlock,
   DBSyntaxStream,
 } from "@storyflow/backend/types";
@@ -24,8 +24,8 @@ export const deduplicate = <T>(arr: T[]): T[] => Array.from(new Set(arr));
 export const getImports = (
   importIds: FieldId[],
   importedArticles: DBDocument[]
-): TreeRecord => {
-  const importRecord: TreeRecord = {};
+): SyntaxTreeRecord => {
+  const importRecord: SyntaxTreeRecord = {};
 
   importIds.forEach((id) => {
     const article = importedArticles.find((el) => el._id === getDocumentId(id));
@@ -70,25 +70,25 @@ export function addNestedObjectIds(
 */
 
 export function getSortedValues(
-  record: TreeRecord,
+  record: SyntaxTreeRecord,
   graph: ComputationGraph
 ): { compute: DBSyntaxStreamBlock[] };
 export function getSortedValues(
-  record: TreeRecord,
+  record: SyntaxTreeRecord,
   graph: ComputationGraph,
   options: {
     keepDepths: true;
   }
 ): { compute: (DBSyntaxStreamBlock & { depth: number })[] };
 export function getSortedValues(
-  record: TreeRecord,
+  record: SyntaxTreeRecord,
   graph: ComputationGraph,
   options: {
     returnValuesForDocument: DocumentId;
   }
 ): { values: DBValueRecord; compute: DBSyntaxStreamBlock[] };
 export function getSortedValues(
-  record: TreeRecord,
+  record: SyntaxTreeRecord,
   graph: ComputationGraph,
   options: {
     returnValuesForDocument?: DocumentId;

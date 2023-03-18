@@ -7,15 +7,14 @@ import {
 import { context, getContextKey } from "../../state/context";
 import { fetchArticle } from "../../documents";
 import {
-  Value,
   FieldId,
-  ContextToken,
   NestedDocumentId,
   RawFieldId,
   DocumentId,
-  TreeRecord,
+  SyntaxTreeRecord,
   SyntaxTree,
   ValueArray,
+  TokenStream,
 } from "@storyflow/backend/types";
 import {
   computeFieldId,
@@ -26,8 +25,9 @@ import {
 import { Client } from "../../client";
 import { unwrap } from "@storyflow/result";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
+import { createTokenStream, parseTokenStream } from "shared/parse-token-stream";
 
-type FetcherResult = { _id: DocumentId; record: TreeRecord }[];
+type FetcherResult = { _id: DocumentId; record: SyntaxTreeRecord }[];
 
 function createPromise<T>() {
   let props: {
@@ -145,7 +145,7 @@ export const calculateFn = (
     client,
   }: {
     client: Client;
-    record?: TreeRecord;
+    record?: SyntaxTreeRecord;
   }
 ): ValueArray => {
   const getter: StateGetter = (importId, { tree, external }): any => {
@@ -237,17 +237,18 @@ export const calculateFn = (
       return value ? [value] : [];
     }
 
-    const stateId = tree ? `${importId}#stream` : importId;
-    const defaultValue = tree ? { type: null, children: [] } : [];
+    const stateId = tree ? `${importId}#tree` : importId;
 
     const value = record[importId];
+    // const defaultValue = tree ? { type: null, children: [] } : [];
 
-    if (value) {
-      return store.use<ValueArray>(stateId, () =>
-        calculateFn(importId, value, { record, client })
-      ).value;
-    } else if (!external) {
-      return store.use<ValueArray>(stateId).value ?? defaultValue;
+    if (value || !external) {
+      const fn = value
+        ? () =>
+            tree ? value : calculateFn(importId, value, { record, client })
+        : undefined;
+
+      return store.use(stateId, fn).value;
     }
 
     const asyncFn = fetchArticle(
@@ -273,7 +274,7 @@ export const calculateFn = (
       return fn;
     });
 
-    return store.useAsync(stateId, asyncFn).value ?? defaultValue;
+    return store.useAsync(stateId, asyncFn).value;
   };
 
   const result = calculate(value, getter);

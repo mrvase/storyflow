@@ -2,7 +2,7 @@ import React from "react";
 import { DropShadow, Sortable, useSortableItem } from "@storyflow/dnd";
 import { createTemplateFieldId, getRawFieldId } from "@storyflow/backend/ids";
 import {
-  TreeRecord,
+  SyntaxTreeRecord,
   DBDocument,
   DocumentConfigItem,
   DocumentId,
@@ -28,7 +28,7 @@ export function RenderTemplate({
 }: {
   id: DocumentId;
   owner: DocumentId;
-  values: TreeRecord;
+  values: SyntaxTreeRecord;
   config: DBDocument["config"];
   versions?: DBDocument["versions"];
   histories: Record<string, ServerPackage<AnyOp>[]>;

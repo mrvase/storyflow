@@ -16,7 +16,7 @@ import {
   DocumentId,
   TokenStream,
   FieldId,
-  TreeRecord,
+  SyntaxTreeRecord,
   SyntaxTree,
   ValueArray,
 } from "@storyflow/backend/types";
@@ -442,7 +442,7 @@ const getRecordSnapshot = (
     client,
     libraries,
   }: {
-    record?: TreeRecord;
+    record?: SyntaxTreeRecord;
     client: Client;
     libraries: LibraryConfig[];
   }

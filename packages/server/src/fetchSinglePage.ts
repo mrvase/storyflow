@@ -1,25 +1,20 @@
 import clientPromise from "./mongo/mongoClient";
-import { computeFieldId } from "@storyflow/backend/ids";
+import { computeFieldId, unwrapObjectId } from "@storyflow/backend/ids";
 import { FIELDS } from "@storyflow/backend/fields";
-import {
-  calculateFlatComputationAsync,
-  findFetchers,
-} from "@storyflow/backend/traverse-async";
 import type {
-  Computation,
-  ComputationBlock,
-  DBDocument,
+  DBDocumentRaw,
+  DBSyntaxStreamBlock,
   NestedDocument,
   Value,
 } from "@storyflow/backend/types";
-import type { FetchPageResult, LibraryConfig } from "@storyflow/frontend/types";
-import { WithId } from "mongodb";
+import type { FetchPageResult } from "@storyflow/frontend/types";
 
 let CACHE: Record<string, Promise<NestedDocument[]>> = {};
 
 const BUCKET_NAME = "awss3stack-mybucket15d133bf-1wx5fzxzweii4";
 const BUCKET_REGION = "eu-west-1";
 
+/*
 function fetchFetcher(fetcher: Fetcher, db: string): Promise<NestedDocument[]> {
   const fetch = async () => {
     const client = await clientPromise;
@@ -94,6 +89,7 @@ function fetchFetcher(fetcher: Fetcher, db: string): Promise<NestedDocument[]> {
     CACHE[JSON.stringify(fetcher)] ?? (CACHE[JSON.stringify(fetcher)] = fetch())
   );
 }
+*/
 
 export async function fetchSinglePage(
   url: string,
@@ -110,7 +106,7 @@ export async function fetchSinglePage(
   const doc = await client
     .db(db)
     .collection("documents")
-    .findOne<DBDocument>({
+    .findOne<DBDocumentRaw>({
       ...(namespaces.length > 0 && {
         folder: { $in: namespaces },
       }),
@@ -126,18 +122,15 @@ export async function fetchSinglePage(
     return null;
   }
 
-  const blocks: ComputationBlock[] = [
-    ...doc.compute,
-    ...(Object.entries(doc.values).map(([key, value]) => ({
-      id: computeFieldId(doc.id, key as TemplateFieldId),
-      value,
-    })) as ComputationBlock[]),
-  ];
+  const documentId = unwrapObjectId(doc._id);
+
+  const blocks: DBSyntaxStreamBlock[] = [];
 
   const slug = db.split("-").slice(0, -1).join("-");
 
+  /*
   const getByPower = async (id: TemplateFieldId): Promise<Value[]> => {
-    const fieldId = computeFieldId(doc.id, id);
+    const fieldId = computeFieldId(documentId, id);
     const computation = blocks.find((el) => el.id === fieldId)?.value;
 
     if (!computation) return [];
@@ -159,7 +152,6 @@ export async function fetchSinglePage(
     return content;
   };
 
-  const imageUrl = `https://${BUCKET_NAME}.s3.${BUCKET_REGION}.amazonaws.com/${slug}`;
 
   const [layout, redirect, page, title] = await Promise.all([
     getByPower(FIELDS.layout.id),
@@ -174,6 +166,15 @@ export async function fetchSinglePage(
     head: {
       ...(isType(title, "string") && { title: title[0] }),
     },
+    imageUrl,
+  };
+  */
+  const imageUrl = `https://${BUCKET_NAME}.s3.${BUCKET_REGION}.amazonaws.com/${slug}`;
+
+  return {
+    layout: null,
+    page: null,
+    head: {},
     imageUrl,
   };
 }

@@ -6,7 +6,7 @@ import {
   DocumentId,
   FieldId,
   DBDocumentRaw,
-  TreeRecord,
+  SyntaxTreeRecord,
 } from "@storyflow/backend/types";
 import { ObjectId } from "mongodb";
 import clientPromise from "../mongo/mongoClient";
@@ -60,7 +60,10 @@ export const documents = createRoute({
                 label: z.string().optional(),
                 record: z.record(
                   z.string(),
-                  z.object({ type: z.string(), children: z.array(z.any()) })
+                  z.object({
+                    type: z.string().nullable(),
+                    children: z.array(z.any()),
+                  })
                 ),
               }),
               z.object({
@@ -77,7 +80,7 @@ export const documents = createRoute({
 
       const getValues = async (
         documentId: DocumentId,
-        record: TreeRecord,
+        record: SyntaxTreeRecord,
         getArticles: (ids: DocumentId[]) => Promise<DBDocument[]>
       ) => {
         let computationRecord = extractRootRecord(documentId, record);
@@ -163,7 +166,7 @@ export const documents = createRoute({
 
                 const promise = getValues(
                   action.id as DocumentId,
-                  action.record as TreeRecord,
+                  action.record as SyntaxTreeRecord,
                   batchQuery.getter
                 ).then((result) => {
                   return { ...doc, ...result };
@@ -248,7 +251,7 @@ export const documents = createRoute({
             ]
           : []),
         client
-          .del(...removes)
+          .del(...removes.map((id) => `${slug}:${id}`))
           .then((number) => ({ acknowledged: number === removes.length })),
       ]);
 

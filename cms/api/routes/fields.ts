@@ -10,7 +10,7 @@ import {
   RawDocumentId,
   RawFieldId,
   DBId,
-  TreeRecord,
+  SyntaxTreeRecord,
   TokenStream,
   Transform,
   SyntaxTree,
@@ -548,9 +548,9 @@ export const fields = createRoute({
 
 const transformField = (
   fieldId: FieldId,
-  initialRecord: TreeRecord,
+  initialRecord: SyntaxTreeRecord,
   pkgs: ServerPackage<AnyOp>[]
-): TreeRecord => {
+): SyntaxTreeRecord => {
   const transformer = createComputationTransformer(fieldId, initialRecord);
 
   const updates: Record<
@@ -585,7 +585,7 @@ const transformField = (
     });
   });
 
-  const record: TreeRecord = Object.fromEntries(
+  const record: SyntaxTreeRecord = Object.fromEntries(
     Object.entries(updates).map(([id, { stream, transform }]) => [
       id,
       parseTokenStream(stream, transform),
@@ -623,7 +623,10 @@ const transformDocumentConfig = (
   return newConfig;
 };
 
-const getFieldBlocksWithDepths = (fieldId: FieldId, record: TreeRecord) => {
+const getFieldBlocksWithDepths = (
+  fieldId: FieldId,
+  record: SyntaxTreeRecord
+) => {
   const graph = getGraph(record);
   const fieldRecord = getFieldRecord(record, fieldId, graph);
   const { compute } = getSortedValues(fieldRecord, graph, { keepDepths: true });

@@ -184,7 +184,7 @@ export type SyntaxTree<
 
 export type Transform = Pick<SyntaxNode, "type" | "payload">;
 
-export type TreeRecord = { [key: FieldId]: SyntaxTree<WithSyntaxError> };
+export type SyntaxTreeRecord = { [key: FieldId]: SyntaxTree<WithSyntaxError> };
 
 /**
  * SYNTAX STREAM
@@ -306,7 +306,7 @@ export interface DBDocument {
   _id: DocumentId;
   folder: FolderId;
   config: DocumentConfig;
-  record: TreeRecord;
+  record: SyntaxTreeRecord;
   // values: ValueRecord;
   label?: string;
   versions?: Record<"" | RawFieldId, number>;

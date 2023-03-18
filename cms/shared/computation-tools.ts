@@ -8,7 +8,7 @@ import {
   SyntaxNode,
   SyntaxTree,
   TokenStream,
-  TreeRecord,
+  SyntaxTreeRecord,
 } from "@storyflow/backend/types";
 import { ComputationOp, targetTools } from "./operations";
 import { tools } from "./editor-tools";
@@ -50,7 +50,7 @@ export const traverseSyntaxTree = (
   traverseNode(tree);
 };
 
-export const getPickedDocumentIds = (fref: FieldId, pool: TreeRecord) => {
+export const getPickedDocumentIds = (fref: FieldId, pool: SyntaxTreeRecord) => {
   /*
   This function is very greedy.
   It does not care about the logic of the computation.
@@ -129,7 +129,7 @@ export const getPickedDocumentIds = (fref: FieldId, pool: TreeRecord) => {
   return drefs;
 };
 
-export const getImportIds = (value: SyntaxTree, pool: TreeRecord) => {
+export const getImportIds = (value: SyntaxTree, pool: SyntaxTreeRecord) => {
   const imports: FieldId[] = [];
 
   const traverseNode = (node: SyntaxTree) => {
@@ -218,7 +218,7 @@ const getArrayMethods = (operation: ComputationOp) => {
 
 export const createComputationTransformer = (
   fieldId: FieldId,
-  initialRecord: TreeRecord
+  initialRecord: SyntaxTreeRecord
 ) => {
   const getInitialValue = (operation: ComputationOp) => {
     const { location, field } = targetTools.parse(operation.target);
@@ -243,7 +243,7 @@ export const createComputationTransformer = (
 export const getComputationRecord = (
   documentId: DocumentId,
   doc: Pick<DBDocumentRaw, "compute" | "values">
-): TreeRecord => {
+): SyntaxTreeRecord => {
   const fields = Object.fromEntries(
     doc.compute.map(({ k, v }) => [unwrapObjectId(k), parseSyntaxStream(v)])
   );
@@ -256,7 +256,7 @@ export const getComputationRecord = (
   return fields;
 };
 
-export const getComputationEntries = (record: TreeRecord) => {
+export const getComputationEntries = (record: SyntaxTreeRecord) => {
   return Object.entries(record) as [FieldId, SyntaxTree][];
 };
 
@@ -284,7 +284,7 @@ export const getChildrenDocuments = (value: SyntaxTree) => {
 };
 
 export const getGraph = (
-  computationRecord: TreeRecord,
+  computationRecord: SyntaxTreeRecord,
   initialGraph: Partial<ComputationGraph> = {}
 ): ComputationGraph => {
   let imports = initialGraph.imports ?? new Map<FieldId, FieldId[]>();
@@ -313,13 +313,13 @@ export const getGraph = (
 };
 
 export const getFieldRecord = (
-  record: TreeRecord,
+  record: SyntaxTreeRecord,
   fieldId: FieldId,
   graph: ComputationGraph
 ) => {
   const { imports, children } = graph;
 
-  const fieldRecord: TreeRecord = {};
+  const fieldRecord: SyntaxTreeRecord = {};
 
   const addWithDerivatives = (fieldId: FieldId) => {
     if (fieldId in fieldRecord) return;
@@ -335,7 +335,7 @@ export const getFieldRecord = (
 
 export const extractRootRecord = (
   documentId: DocumentId,
-  record: TreeRecord,
+  record: SyntaxTreeRecord,
   options: {
     excludeImports?: boolean;
   } = {}
@@ -350,7 +350,7 @@ export const extractRootRecord = (
     isFieldOfDocument(el, documentId)
   );
 
-  const rootRecord: TreeRecord = {};
+  const rootRecord: SyntaxTreeRecord = {};
 
   rootFieldIds.forEach((fieldId) => {
     Object.assign(rootRecord, getFieldRecord(record, fieldId, graph));

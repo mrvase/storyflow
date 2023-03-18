@@ -27,11 +27,11 @@ import { useBuilderPath } from "../BuilderPath";
 
 const useState = (
   id: FieldId,
-  pick?: RawFieldId
+  select?: RawFieldId
 ): [label: string, value: ValueArray | undefined] => {
-  if (pick) {
+  if (select) {
     const label1 = useLabel(id);
-    const label2 = useLabel(pick);
+    const label2 = useLabel(select);
     return ["", [`[${label1} · ${label2}]`]];
   }
 

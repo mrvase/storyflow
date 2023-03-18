@@ -3,7 +3,7 @@ import { createQueue } from "@storyflow/state";
 import React from "react";
 import { Client, SWRClient, useCache } from "../client";
 import {
-  TreeRecord,
+  SyntaxTreeRecord,
   DBDocument,
   DocumentId,
   FolderId,
@@ -22,7 +22,7 @@ type ArticleListMutation =
       type: "insert";
       id: DocumentId;
       label?: string;
-      record: TreeRecord;
+      record: SyntaxTreeRecord;
       // values: ValueRecord;
     }
   | {
