@@ -24,15 +24,7 @@ import { createTokenStream } from "./parse-token-stream";
 import { parseSyntaxStream } from "./parse-syntax-stream";
 import { tokens } from "@storyflow/backend/tokens";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
-
-export const isSyntaxTree = (tree: any): tree is SyntaxTree => {
-  return (
-    tree !== null &&
-    typeof tree === "object" &&
-    "type" in tree &&
-    "children" in tree
-  );
-};
+import { isSyntaxTree } from "@storyflow/backend/syntax-tree";
 
 export const traverseSyntaxTree = (
   tree: SyntaxTree,

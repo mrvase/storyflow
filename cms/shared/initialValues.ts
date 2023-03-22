@@ -17,6 +17,15 @@ const fieldConfig: Record<FieldType, { initialValue: SyntaxTree }> = {
       children: [],
     },
   },
+  fetch: {
+    initialValue: {
+      type: "sortlimit",
+      children: [],
+      payload: {
+        limit: 10,
+      },
+    },
+  },
 };
 
 export const getConfig = <T extends keyof typeof fieldConfig>(

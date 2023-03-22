@@ -1,6 +1,9 @@
 import React from "react";
 import Dialog from "../elements/Dialog";
-import { useArticleList, useArticleListMutation } from "../documents";
+import {
+  useOptimisticDocumentList,
+  useArticleListMutation,
+} from "../documents";
 import { useFolderCollab } from "./collab/FolderCollabContext";
 import { targetTools } from "shared/operations";
 import { useTabUrl } from "../layout/utils";
@@ -77,7 +80,7 @@ export function AddTemplateDialog({
     ]
   );
 
-  const { articles: templates } = useArticleList(templateFolder);
+  const { articles: templates } = useOptimisticDocumentList(templateFolder);
 
   const templateOptions = (templates ?? []).map((el) => ({
     value: el._id,

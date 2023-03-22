@@ -37,7 +37,7 @@ import { useAppPageContext } from "../folders/AppPage";
 import { Link } from "@storyflow/router";
 import { useSegment } from "../layout/components/SegmentContext";
 import { useTabUrl } from "../layout/utils";
-import { useArticle } from "../documents";
+import { useArticle, useDocumentList } from "../documents";
 import { getDocumentLabel } from "../documents/useDocumentLabel";
 import { getConfig } from "shared/initialValues";
 import { getNextState } from "shared/computation-tools";
@@ -69,7 +69,7 @@ const getUrlStringFromValue = (value: ValueArray | SyntaxTree) => {
 
 const useRelatedPages = (articleId: DocumentId, initialUrl: string) => {
   const { article } = useArticle(articleId);
-  const { data: list } = SWRClient.documents.getList.useQuery(article!.folder);
+  const { data: list } = useDocumentList(article?.folder);
 
   const getUrl = (article: DBDocument) => {
     return (
@@ -278,21 +278,7 @@ export default function UrlField({
         );
       });
     });
-  }, [client]); /*
-  const { folders } = useFolders();
-  
-    const options =
-      folders?.map((el) => ({
-        label: el.label,
-        value: el.id,
-      })) ?? [];
-
-    const { data } = SWRClient.articles.getList.useQuery(folder, {
-      inactive: !folder,
-    });
-
-    const first = data?.articles?.[0]?.fields?.[1];
-    */
+  }, [client]);
 
   const { current } = useSegment();
   const [, navigateTab] = useTabUrl();

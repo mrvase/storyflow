@@ -9,14 +9,29 @@ import { createSessionStorage } from "@storyflow/session";
 import { cookieOptions } from "../cookie-options";
 import { error, success } from "@storyflow/result";
 import { globals } from "../middleware/globals";
-import { fetchSinglePage } from "@storyflow/server";
+import {
+  calculate,
+  calculateFromRecord,
+  FolderFetch,
+  StateGetter,
+} from "@storyflow/backend/calculate";
 import type {} from "@storyflow/frontend/types";
-import { DBDocument, DBDocumentRaw } from "@storyflow/backend/types";
+import {
+  DBDocument,
+  DBDocumentRaw,
+  DocumentId,
+  FieldId,
+  NestedDocument,
+  NestedFolder,
+  SyntaxTreeRecord,
+  ValueArray,
+} from "@storyflow/backend/types";
 import { FIELDS } from "@storyflow/backend/fields";
 import { ObjectId } from "mongodb";
 import { parseDocument } from "../routes/documents";
 import { getFieldRecord, getGraph } from "shared/computation-tools";
-import { computeFieldId } from "@storyflow/backend/ids";
+import { computeFieldId, getDocumentId } from "@storyflow/backend/ids";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
 
 const sessionStorage = createSessionStorage({
   cookie: cookieOptions,
@@ -92,8 +107,117 @@ export const public_ = createRoute({
     },
     async query({ namespaces, url }, { dbName }) {
       console.log("REQUESTING PAGE", dbName, url);
-      const page = await fetchSinglePage(url, namespaces ?? [], dbName);
-      return success(page);
+
+      const client = await clientPromise;
+
+      const regex = `^${url
+        .split("/")
+        .map((el, index) => (index === 0 ? el : `(${el}|\\*)`))
+        .join("/")}$`;
+
+      const docRaw = await client
+        .db(dbName)
+        .collection("documents")
+        .findOne<DBDocumentRaw>({
+          ...((namespaces ?? []).length > 0 && {
+            folder: { $in: namespaces },
+          }),
+          [`values.${FIELDS.url.id}`]:
+            url.indexOf("/") < 0
+              ? url
+              : {
+                  $regex: regex,
+                },
+        });
+
+      if (!docRaw) {
+        return success(null);
+      }
+
+      const doc = parseDocument(docRaw);
+
+      const graph = getGraph(doc.record);
+
+      const record: SyntaxTreeRecord = {};
+
+      const pageId = computeFieldId(doc._id, FIELDS.page.id);
+      const entry = doc.record[pageId] ?? DEFAULT_SYNTAX_TREE;
+
+      record[pageId] = entry;
+
+      const nestedPageFields = getFieldRecord(
+        doc.record,
+        computeFieldId(doc._id, FIELDS.page.id),
+        {
+          children: graph.children,
+          imports: new Map(), // do not include imports in record
+        }
+      );
+
+      let pageRecord: Record<FieldId, ValueArray> = {};
+
+      let fetched = new Set<NestedFolder>();
+      let fetchResults = new Map<NestedFolder, NestedDocument[]>();
+      let documents = new Map<DocumentId, DBDocument>();
+
+      const resolveFetches = async (fetches: FolderFetch[]) => {
+        return await Promise.all(
+          fetches.map(async (el) => {
+            if (fetched.has(el.folder)) return;
+            fetched.add(el.folder);
+            const result = {} as DBDocument[];
+            let list: NestedDocument[] = [];
+
+            result.forEach((el) => {
+              list.push({ id: el._id });
+              documents.set(el._id, el);
+            });
+
+            fetchResults.set(el.folder, list);
+          })
+        );
+      };
+
+      const calculateAsync = async () => {
+        const newFetches: FolderFetch[] = [];
+
+        const getState: StateGetter = (importer, { tree, external }): any => {
+          if (typeof importer === "object" && "folder" in importer) {
+            const { folder, limit, sort } = importer;
+            if (!fetchResults.has(folder)) {
+              newFetches.push({ folder, limit, sort });
+              return [];
+            }
+            return fetchResults.get(folder);
+          } else if (typeof importer === "object" && "ctx" in importer) {
+            return [];
+          } else {
+            if (importer in doc.record) {
+              return calculate(doc.record[importer], getState);
+            }
+            const documentId = getDocumentId(importer);
+            const fetchedDoc = documents.get(documentId as DocumentId);
+            const value = fetchedDoc?.record[importer];
+            if (value) {
+              return calculate(value, getState);
+            }
+            return [];
+          }
+        };
+
+        pageRecord = Object.fromEntries(
+          Object.entries(nestedPageFields).map(([key, tree]) => {
+            return [key as FieldId, calculate(tree, getState)];
+          })
+        );
+
+        if (newFetches.length > 0) {
+          await resolveFetches(newFetches);
+          calculateAsync();
+        }
+      };
+
+      return success(pageRecord);
     },
   }),
   search: createProcedure({

@@ -199,6 +199,11 @@ export const operators: Operators<any> = {
       $concatArrays: arrays,
     } as unknown as (typeof arrays)[number];
   },
+  reverseArray(array) {
+    return {
+      $reverseArray: array,
+    } as unknown as typeof array;
+  },
   mergeObjects(a, b, c) {
     return {
       $mergeObjects: [a, ...(b ? [b] : []), ...(c ? [c] : [])],
@@ -279,6 +284,11 @@ export const operators: Operators<any> = {
   setUnion(...arrays) {
     return {
       $setUnion: arrays,
+    } as unknown as (typeof arrays)[number];
+  },
+  setIntersection(...arrays) {
+    return {
+      $setIntersection: arrays,
     } as unknown as (typeof arrays)[number];
   },
   size(arr) {

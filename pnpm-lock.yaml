@@ -9,7 +9,7 @@ importers:
       turbo: latest
     devDependencies:
       eslint-config-custom: link:setup/eslint-config-custom
-      prettier: 2.8.4
+      prettier: 2.8.5
       turbo: 1.8.3
 
   apps/web:
@@ -357,6 +357,7 @@ importers:
       '@sfrpc/types': workspace:*
       '@storyflow/result': workspace:*
       '@types/qs': ^6.9.7
+      '@types/react': ^18.0.22
       qs: ^6.11.0
       react: 18.2.0
       swr: ^2.0.1
@@ -366,6 +367,7 @@ importers:
       '@sfrpc/types': link:../types
       '@storyflow/result': link:../../utils/result
       '@types/qs': 6.9.7
+      '@types/react': 18.0.27
       qs: 6.11.0
       react: 18.2.0
       swr: 2.0.1_react@18.2.0
@@ -5301,8 +5303,8 @@ packages:
     resolution: {integrity: sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==}
     engines: {node: '>= 0.8.0'}
 
-  /prettier/2.8.4:
-    resolution: {integrity: sha512-vIS4Rlc2FNh0BySk3Wkd6xmwxB0FpOndW5fisM5H8hsZSxU2VWVB5CWIkIjWvrHjIhxk2g3bfMKM87zNTrZddw==}
+  /prettier/2.8.5:
+    resolution: {integrity: sha512-3gzuxrHbKUePRBB4ZeU08VNkUcqEHaUaouNt0m7LGP4Hti/NuB07C7PPTM/LkWqXoJYJn2McEo5+kxPNrtQkLQ==}
     engines: {node: '>=10.13.0'}
     hasBin: true
     dev: true

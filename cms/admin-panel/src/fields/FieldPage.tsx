@@ -48,6 +48,7 @@ import {
 } from "@storyflow/frontend/types";
 import { useDocumentIdGenerator } from "../id-generator";
 import { tokens } from "@storyflow/backend/tokens";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
 
 const useBuilderRendered = ({
   listeners,
@@ -450,7 +451,7 @@ const getRecordSnapshot = (
   const finalRecord: ComponentRecord = {};
 
   const recursivelyGetRecordFromComputation = (fieldId: FieldId) => {
-    const initialValue = record[fieldId];
+    const initialValue = record[fieldId] ?? DEFAULT_SYNTAX_TREE;
     const state = store.use<ValueArray>(fieldId);
     if (!state.initialized()) {
       state.set(() => calculateFn(fieldId, initialValue, { record, client }));

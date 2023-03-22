@@ -7,16 +7,16 @@ export class Store {
   use<T>(id: string): State<T | undefined>;
   use<T>(
     id: string,
-    fn: (value: T | undefined) => Promise<T> | T,
+    fn: (value: T | undefined) => PromiseLike<T> | T,
     options?: { cluster?: string }
   ): State<T>;
   use<T>(
     id: string,
-    fn: ((value: T | undefined) => Promise<T> | T) | undefined
+    fn: ((value: T | undefined) => PromiseLike<T> | T) | undefined
   ): State<T | undefined>;
   use<T>(
     id: string,
-    fn?: ((value: T | undefined) => Promise<T> | T) | undefined,
+    fn?: ((value: T | undefined) => PromiseLike<T> | T) | undefined,
     options: { cluster?: string } = {}
   ): State<T | undefined> {
     let state = this.map.get(id) as State<T | undefined>;
@@ -67,8 +67,12 @@ export class Store {
 
   useAsync<T>(
     id: string,
-    fn: Promise<((value: T | undefined) => Promise<T> | T) | undefined>
+    fn: PromiseLike<((value: T | undefined) => PromiseLike<T> | T) | undefined>
   ): State<T | undefined> {
+    if (!("then" in fn)) {
+      // allow conditional sync use
+      return this.use(id, fn);
+    }
     let state = this.map.get(id) as State<T | undefined>;
     if (!state) {
       state = new State<T | undefined>(undefined, { map: this.map, key: id });

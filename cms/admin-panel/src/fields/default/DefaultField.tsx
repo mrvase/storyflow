@@ -9,10 +9,8 @@ import { useGlobalState } from "../../state/state";
 import { useSingular } from "../../state/useSingular";
 import cl from "clsx";
 import { getConfig } from "shared/initialValues";
-import {
-  createComputationTransformer,
-  isSyntaxTree,
-} from "shared/computation-tools";
+import { createComputationTransformer } from "shared/computation-tools";
+import { isSyntaxTree } from "@storyflow/backend/syntax-tree";
 import {
   NestedDocument,
   FieldId,
@@ -23,6 +21,7 @@ import {
   TokenStream,
   SyntaxTree,
   ValueArray,
+  FieldType,
 } from "@storyflow/backend/types";
 import { useDocumentPageContext } from "../../documents/DocumentPageContext";
 import { useBuilderPath } from "../BuilderPath";
@@ -108,7 +107,7 @@ export default function DefaultField({
   version,
   history,
   value,
-}: FieldProps<"default" | "slug">) {
+}: FieldProps) {
   if (id === "") {
     return (
       <div className="text-gray-400 font-light leading-6 pb-5">
@@ -160,7 +159,7 @@ export function WritableDefaultField({
 }: {
   id: FieldId;
   initialValue: SyntaxTree;
-  fieldConfig: { type: "default" | "slug" };
+  fieldConfig: { type: FieldType };
   hidden?: boolean;
 }) {
   const rootId = useFieldId();
@@ -266,6 +265,8 @@ export function WritableDefaultField({
   );
 
   const singular = useSingular(`${rootId}${target}`);
+
+  console.log("OUTPUT", output);
 
   const setValue = React.useCallback(
     (func: () => TokenStream) => {

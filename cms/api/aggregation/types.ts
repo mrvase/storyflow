@@ -52,6 +52,7 @@ export type Operators<DocumentType extends Record<string, any>> = {
     ifFalse: () => Failure
   ) => Success | Failure;
   concatArrays: <T>(...arrays: T[][]) => T[];
+  reverseArray: <T>(array: T[]) => T[];
   mergeObjects: <
     A extends object,
     B extends object = {},
@@ -101,6 +102,7 @@ export type Operators<DocumentType extends Record<string, any>> = {
   string: (val: any, fallback?: string) => string;
   array: (val: any) => any[];
   setUnion: <T>(...arrays: T[][]) => T[];
+  setIntersection: <T>(...arrays: T[][]) => T[];
   size: (val: any[]) => number;
   slice: <T>(val: T[], start: number, end?: number) => T[];
   ifNull: <V, A>(

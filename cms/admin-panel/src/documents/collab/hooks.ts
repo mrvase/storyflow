@@ -110,7 +110,6 @@ export const useDocumentConfig = (
           });
         }
       });
-      console.log("$$ ENDS WITH", newTemplate);
 
       return newTemplate;
     },

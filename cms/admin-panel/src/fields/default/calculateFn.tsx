@@ -1,11 +1,11 @@
 import { store } from "../../state/state";
 import {
   calculate,
-  FetchObject,
+  FolderFetch,
   StateGetter,
 } from "@storyflow/backend/calculate";
 import { context, getContextKey } from "../../state/context";
-import { fetchArticle } from "../../documents";
+import { fetchDocumentList, fetchArticleSync } from "../../documents";
 import {
   FieldId,
   NestedDocumentId,
@@ -14,7 +14,7 @@ import {
   SyntaxTreeRecord,
   SyntaxTree,
   ValueArray,
-  TokenStream,
+  FolderId,
 } from "@storyflow/backend/types";
 import {
   computeFieldId,
@@ -25,7 +25,6 @@ import {
 import { Client } from "../../client";
 import { unwrap } from "@storyflow/result";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
-import { createTokenStream, parseTokenStream } from "shared/parse-token-stream";
 
 type FetcherResult = { _id: DocumentId; record: SyntaxTreeRecord }[];
 
@@ -100,33 +99,12 @@ function createFetcherStore() {
       let result = results.get(id);
       if (!result) {
         result = createThrottledFetch<FetcherResult>(async (url) => {
-          const params = JSON.parse(url) as Omit<FetchObject, "id"> & {
+          const params = JSON.parse(url) as Omit<FolderFetch, "folder"> & {
+            folder: FolderId;
             filters: Record<RawFieldId, ValueArray>;
           };
-          const result = unwrap(
-            await client.documents.getListFromFilters.query(params),
-            []
-          );
-          console.log("RESULT", result);
-          return result;
-          /*
-          return [
-            {
-              id: "abc0" as FieldId,
-              record: { ["abc0" as FieldId]: ["hej"] } as ComputationRecord,
-            },
-            {
-              id: "abc1" as FieldId,
-              record: { ["abc1" as FieldId]: ["med"] } as ComputationRecord,
-            },
-            {
-              id: "abc2" as FieldId,
-              record: { ["abc2" as FieldId]: ["dig"] } as ComputationRecord,
-            },
-          ];
-          const response = await fetch(url);
-          return response.json();
-          */
+          const result = (await fetchDocumentList(params, client)) ?? [];
+          return result.articles;
         });
         results.set(id, result);
       }
@@ -149,10 +127,10 @@ export const calculateFn = (
   }
 ): ValueArray => {
   const getter: StateGetter = (importId, { tree, external }): any => {
-    if (typeof importId === "object" && "select" in importId) {
+    if (typeof importId === "object" && "folder" in importId) {
       // we want it to react to updates in the template so that new fields are found
       const template = store.use<FieldId[]>(
-        `${importId.id}#template`,
+        `${importId.folder.id}#template`,
         () => []
       ).value;
 
@@ -160,7 +138,7 @@ export const calculateFn = (
 
       const filters = Object.fromEntries(
         template.map((id) => {
-          const fieldId = createTemplateFieldId(importId.id, id);
+          const fieldId = createTemplateFieldId(importId.folder.id, id);
           const state = store.use<ValueArray>(fieldId, () =>
             calculateFn(
               id as FieldId,
@@ -178,56 +156,21 @@ export const calculateFn = (
         })
       );
 
-      /*
-      const filtersState = store.useMany(
-        new RegExp(`^${getRawDocumentId(importId.id)}[^\\#]+$`),
-        (id) =>
-          calculateFn(id as FieldId, record[id as FieldId] ?? [], {
-            record,
-            client,
-            returnFunction: false,
-          })
-      );
-      const filters = filtersState.reduce((acc, [id, state]) => {
-        return { ...acc, [id]: state.value };
-      }, {} as Record<RawFieldId, Value[]>);
-      */
-
       const string = JSON.stringify({
-        folder: importId.folder,
+        folder: importId.folder.folder,
         limit: importId.limit,
-        sortBy: importId.sortBy ?? {},
+        sort: importId.sort ?? {},
         filters,
       });
 
       const state = store.use<FetcherResult>(string);
 
       if (!state.initialized()) {
-        const promise = fetcherStore.get(importId.id, string, client);
+        const promise = fetcherStore.get(importId.folder.id, string, client);
         promise.then((result_) => state.set(() => result_));
       }
 
-      const values = (state.value ?? []).reduce(
-        (acc: ValueArray, { _id, record }) => {
-          const fieldId = computeFieldId(_id, importId.select);
-          const value = record[fieldId] ?? DEFAULT_SYNTAX_TREE;
-          const state = store.use<ValueArray>(fieldId, () =>
-            calculateFn(fieldId, value, {
-              record,
-              client,
-            })
-          ).value;
-          if (state.length > 1) {
-            return [...acc, state];
-          } else if (state.length === 1) {
-            return [...acc, state[0]];
-          }
-          return acc;
-        },
-        []
-      );
-
-      return values ?? [];
+      return state.value?.map(({ _id }) => ({ id: _id })) ?? [];
     }
 
     if (typeof importId === "object" && "ctx" in importId) {
@@ -251,7 +194,7 @@ export const calculateFn = (
       return store.use(stateId, fn).value;
     }
 
-    const asyncFn = fetchArticle(
+    const asyncFn = fetchArticleSync(
       getDocumentId(importId as FieldId),
       client
     ).then((article) => {
@@ -276,6 +219,8 @@ export const calculateFn = (
 
     return store.useAsync(stateId, asyncFn).value;
   };
+
+  if (!value) return [];
 
   const result = calculate(value, getter);
   return result;

@@ -272,35 +272,54 @@ export const documents = createRoute({
       return ctx.use(globals);
     },
     schema() {
-      return z.string();
+      return z.object({
+        folder: z.string(),
+        sort: z
+          .record(z.string(), z.union([z.literal(-1), z.literal(1)]))
+          .optional(),
+        limit: z.number(),
+        filters: z.record(z.string(), z.any()).optional(),
+      });
     },
-    async query(folder, { dbName }) {
+    async query({ folder, filters: filtersProp, limit }, { slug, dbName }) {
       const db = (await clientPromise).db(dbName);
 
-      console.log("FOLDER", folder);
+      const filters = Object.fromEntries(
+        Object.entries(filtersProp ?? {}).map(([key, value]) => {
+          return [`values.${key}`, value];
+        })
+      );
 
-      const articles = (
-        (await db
-          .collection<DBDocumentRaw>("documents")
-          .find({ folder: new ObjectId(folder) })
-          .toArray()) ?? []
-      ).map((el) => parseDocument(el));
+      const result = await db
+        .collection<DBDocumentRaw>("documents")
+        .find({ folder: new ObjectId(folder), ...filters })
+        .sort({ _id: -1 })
+        .limit(limit)
+        .toArray();
 
-      /*
-      const frontIndex = articles.findIndex((el) => el.label === "__front__");
+      console.log(filters, result);
 
-      if (frontIndex < 0) {
-        return success({
-          front: null,
-          articles,
-        });
-      }
+      const articles = result.map(parseDocument);
 
-      const [front] = articles.splice(frontIndex, 1);
-      */
+      const historiesRecord: Record<
+        DocumentId,
+        Record<string, ServerPackage<any>[]>
+      > = Object.fromEntries(
+        await Promise.all(
+          articles.map(async ({ _id }) => {
+            const pkgs = (await client.lrange(
+              `${slug}:${_id}`,
+              0,
+              -1
+            )) as ServerPackage<any>[];
+            return [_id, sortHistories(pkgs)];
+          })
+        )
+      );
 
       return success({
         articles,
+        historiesRecord,
       });
     },
   }),
@@ -373,47 +392,6 @@ export const documents = createRoute({
         doc,
         histories,
       });
-    },
-  }),
-
-  getListFromFilters: createProcedure({
-    middleware(ctx) {
-      return ctx.use(globals);
-    },
-    schema() {
-      return z.object({
-        folder: z.string(),
-        sortBy: z
-          .record(z.string(), z.union([z.literal(-1), z.literal(1)]))
-          .optional(),
-        limit: z.number(),
-        filters: z.record(z.string(), z.any()).optional(),
-      });
-    },
-    async query({ folder, filters: filtersProp, limit }, { dbName }) {
-      const db = (await clientPromise).db(dbName);
-
-      const filters = Object.fromEntries(
-        Object.entries(filtersProp ?? {}).map(([key, value]) => {
-          return [`values.${key}`, value];
-        })
-      );
-
-      const result = await db
-        .collection<DBDocumentRaw>("documents")
-        .find({ folder: new ObjectId(folder), ...filters })
-        .sort({ _id: -1 })
-        .limit(limit)
-        .toArray();
-
-      console.log(filters, result);
-
-      return success(
-        result.map(parseDocument).map(({ _id, record }) => ({
-          _id,
-          record,
-        }))
-      );
     },
   }),
 

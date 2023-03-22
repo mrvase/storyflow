@@ -13,22 +13,55 @@ export type SharedOptions = {
     | ((prev: Record<string, any>) => Record<string, any>);
 };
 
-export type QueryOptions<Output> = SharedOptions & {
-  useCache?: {
-    read: (key: string) => Output | undefined;
-    write: (key: string, data: Output) => void;
+type CachePreload<
+  UserAPI,
+  DefaultRoute extends keyof UserAPI,
+  APIObject extends { query: any }
+> = (
+  result: UnwrapResult<Awaited<ReturnType<APIObject["query"]>>>,
+  preload: <
+    Route extends keyof UserAPI = DefaultRoute,
+    EP extends keyof UserAPI[Route] = keyof UserAPI[Route]
+  >(
+    query: [
+      key: EP extends string
+        ? (Route extends string ? `${Route}/${EP}` : never) | EP
+        : never,
+      input: UserAPI[Route][EP] extends { query: any }
+        ? Parameters<UserAPI[Route][EP]["query"]>[0]
+        : undefined
+    ],
+    callback: EP extends keyof UserAPI[Route]
+      ? UserAPI[Route][EP] extends { query: any }
+        ? () => UnwrapResult<Awaited<ReturnType<UserAPI[Route][EP]["query"]>>>
+        : never
+      : never
+  ) => void
+) => void;
+
+export type QueryOptions<
+  UserAPI,
+  DefaultRoute extends keyof UserAPI,
+  APIObject extends { query: any }
+> = SharedOptions & {
+  cache?: {
+    read: (key: string) => unknown | undefined;
+    write: (key: string, data: unknown) => void;
   };
+  cachePreload: CachePreload<UserAPI, DefaultRoute, APIObject>;
 };
 
-type ProcedureCall<APIObject> = APIObject extends QueryObject<
-  infer Input,
-  infer Output
->
+type ProcedureCall<
+  UserAPI,
+  DefaultRoute extends keyof UserAPI,
+  APIObject
+> = APIObject extends QueryObject<infer Input, infer Output>
   ? {
+      key: OptionalParamFunc<Input, string, [options?: SharedOptions]>;
       query: OptionalParamFunc<
         Input,
         Output,
-        [options?: QueryOptions<UnwrapResult<Awaited<Output>>>]
+        [options?: QueryOptions<UserAPI, DefaultRoute, APIObject>]
       >;
     }
   : APIObject extends MutationObject<infer Input, infer Output>
@@ -40,13 +73,41 @@ type ProcedureCall<APIObject> = APIObject extends QueryObject<
 export type APIToClient<UserAPI extends API> = {
   [Route in keyof UserAPI]: {
     [Procedure in keyof UserAPI[Route]]: ProcedureCall<
+      UserAPI,
+      Route,
       UserAPI[Route][Procedure]
     >;
   };
 };
 
-export type UseQueryOptions = SharedOptions & {
+export type UseQueryOptions<
+  UserAPI,
+  DefaultRoute extends keyof UserAPI,
+  APIObject extends { query: any }
+> = SharedOptions & {
   inactive?: boolean;
+  immutable?: boolean;
+  cachePreload?: (
+    result: UnwrapResult<Awaited<ReturnType<APIObject["query"]>>>,
+    preload: <
+      Route extends keyof UserAPI = DefaultRoute,
+      EP extends keyof UserAPI[Route] = keyof UserAPI[Route]
+    >(
+      query: [
+        key: EP extends string
+          ? (Route extends string ? `${Route}/${EP}` : never) | EP
+          : never,
+        input: UserAPI[Route][EP] extends { query: any }
+          ? Parameters<UserAPI[Route][EP]["query"]>[0]
+          : undefined
+      ],
+      callback: EP extends keyof UserAPI[Route]
+        ? UserAPI[Route][EP] extends { query: any }
+          ? () => UnwrapResult<Awaited<ReturnType<UserAPI[Route][EP]["query"]>>>
+          : never
+        : never
+    ) => void
+  ) => void;
 } & SWRConfiguration;
 
 export type UseMutationOptions<
@@ -110,7 +171,7 @@ type Hook<UserAPI, Route extends keyof UserAPI, APIObject> = APIObject extends {
           UnwrapResult<Awaited<ReturnType<APIObject["query"]>>>,
           { message: string; error?: any }
         >,
-        [options?: UseQueryOptions]
+        [options?: UseQueryOptions<UserAPI, Route, APIObject>]
       >;
     }
   : APIObject extends { mutation: any }

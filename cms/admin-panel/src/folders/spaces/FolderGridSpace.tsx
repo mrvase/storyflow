@@ -131,7 +131,7 @@ function FolderGrid({
     >
       <div className={cl("flex flex-wrap gap-2 pl-9 min-h-[1rem]")}>
         {space.items.length === 0 && (
-          <div className="absolute text-gray-500 font-light text-sm">
+          <div className="absolute text-gray-500 font-light text-sm ml-5">
             Ingen mapper
           </div>
         )}

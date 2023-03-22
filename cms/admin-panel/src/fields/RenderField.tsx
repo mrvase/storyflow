@@ -1,6 +1,6 @@
 import { NoList } from "@storyflow/dnd";
 import React from "react";
-import { FieldOperation } from "shared/operations";
+import { ComputationOp } from "shared/operations";
 import {
   DocumentId,
   FieldConfig,
@@ -19,6 +19,7 @@ const Components: { [K in FieldType]: React.FC<FieldProps<K>> } = {
   default: DefaultField,
   url: UrlField,
   slug: DefaultField,
+  fetch: DefaultField,
 };
 
 const getComponent = <T extends FieldType>(
@@ -27,12 +28,12 @@ const getComponent = <T extends FieldType>(
   return Components[type];
 };
 
-export type FieldProps<T extends FieldType> = {
+export type FieldProps<T extends FieldType = FieldType> = {
   id: FieldId;
   value: SyntaxTree | undefined;
   fieldConfig: FieldConfig<T>;
   version: number;
-  history: ServerPackage<FieldOperation[T]>[];
+  history: ServerPackage<ComputationOp>[];
 };
 
 export function RenderField<T extends FieldType>({
@@ -50,7 +51,7 @@ export function RenderField<T extends FieldType>({
   fieldConfig: FieldConfig<T>;
   index: number;
   version: number;
-  history: ServerPackage<FieldOperation[T]>[];
+  history: ServerPackage<ComputationOp>[];
   template: DocumentId;
   dragHandleProps?: any;
 }) {

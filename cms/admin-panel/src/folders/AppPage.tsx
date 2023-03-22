@@ -5,7 +5,7 @@ import {
   ArrowPathIcon,
   ComputerDesktopIcon,
 } from "@heroicons/react/24/outline";
-import { useArticleList } from "../documents";
+import { useOptimisticDocumentList } from "../documents";
 import { useSegment } from "../layout/components/SegmentContext";
 import { useOnLoadHandler } from "../layout/onLoadHandler";
 import { computeFieldId } from "@storyflow/backend/ids";
@@ -31,7 +31,7 @@ import { targetTools } from "shared/operations";
 import { AppSpace } from "./spaces/AppSpace";
 import { getFieldRecord, getGraph } from "shared/computation-tools";
 import { FIELDS } from "@storyflow/backend/fields";
-import { calculate, calculateFromRecord } from "@storyflow/backend/calculate";
+import { calculateFromRecord } from "@storyflow/backend/calculate";
 
 const AppPageContext = React.createContext<{
   addArticleWithUrl: (parent: Pick<DBDocument, "_id" | "record">) => void;
@@ -70,7 +70,7 @@ export default function AppPage({
   const folderLookupId = urlId as FolderId;
   const folder = useFolder(folderLookupId);
 
-  const { articles } = useArticleList(folder?._id);
+  const { articles } = useOptimisticDocumentList(folder?._id);
 
   const orderedArticles = React.useMemo(() => {
     if (!articles) return [];

@@ -4,7 +4,6 @@ import { z } from "zod";
 import {
   DBDocument,
   DocumentId,
-  Value,
   FieldId,
   DBDocumentRaw,
   RawDocumentId,
@@ -34,8 +33,8 @@ import {
   getComputationRecord,
   getFieldRecord,
   getGraph,
-  isSyntaxTree,
 } from "shared/computation-tools";
+import { isSyntaxTree } from "@storyflow/backend/syntax-tree";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
 import { getNextState, getPickedDocumentIds } from "shared/computation-tools";
 import { createStages, Update } from "../aggregation/stages";
@@ -56,7 +55,6 @@ import {
 import {
   computeFieldId,
   getDocumentId,
-  getRawDocumentId,
   getRawFieldId,
   isFieldOfDocument,
   isNestedDocumentId,

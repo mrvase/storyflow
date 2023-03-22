@@ -95,6 +95,10 @@ export type NestedDocument = {
 
 export type NestedEntity = NestedElement | NestedFolder | NestedDocument;
 
+export type InputToken = {
+  input: string;
+};
+
 export type ContextToken = {
   ctx: string;
 };
@@ -162,7 +166,7 @@ export type WithSyntaxError = {
 };
 
 export type SyntaxNode<
-  WithExtraChildren extends WithSyntaxError | never = never
+  WithExtraChildren extends WithSyntaxError | never = WithSyntaxError | never
 > = {
   type: Operator | FunctionName | "merge" | "select" | "array" | null;
   children: (
@@ -245,11 +249,12 @@ export const functions = [
   "filter",
   "slug",
   "url",
+  "sortlimit",
 ] as const;
 
 export type FunctionName = (typeof functions)[number];
 
-export type FieldType = "default" | "url" | "slug";
+export type FieldType = "default" | "url" | "slug" | "fetch";
 
 export type RestrictTo =
   | "string"
@@ -299,6 +304,11 @@ export interface DBDocumentRaw {
   cached: ValueArray[];
   compute: DBSyntaxStreamBlock[];
   values: DBValueRecord;
+  revalidate?: {
+    page: number;
+    layout: number;
+    fetches: string[];
+  };
   /* */
 }
 
@@ -355,4 +365,4 @@ export interface Settings {
 
 export type SearchableProps = Record<string, Record<string, boolean>>;
 
-export type SortSpec = Record<string, 1 | -1>;
+export type SortSpec = Record<RawFieldId, 1 | -1>;

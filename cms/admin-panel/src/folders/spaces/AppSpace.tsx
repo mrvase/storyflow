@@ -1,6 +1,6 @@
 import { PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { getDocumentId } from "@storyflow/backend/ids";
-import { useArticleList } from "../../documents";
+import { useOptimisticDocumentList } from "../../documents";
 import { getDocumentLabel } from "../../documents/useDocumentLabel";
 import Table from "../../documents/components/Table";
 import Space from "./Space";
@@ -22,7 +22,9 @@ export function AppSpace({
 }) {
   const { form, handleDelete } = useDeleteForm({ folderId });
 
-  const { articles } = useArticleList(folderId);
+  const { articles } = useOptimisticDocumentList(folderId);
+
+  console.log("FOLDER", folderId, articles);
 
   const { urls, addArticleWithUrl } = useAppPageContext();
 

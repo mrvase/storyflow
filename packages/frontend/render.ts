@@ -2,7 +2,7 @@ import type { RenderArray, RenderElement, ValueArray } from "./types";
 
 export const isRenderable = (
   el: any
-): el is string | number | { id: string; type: string } => {
+): el is string | number | { id: string; element: string } => {
   // if (el === "") return false;
   return (
     ["string", "number"].includes(typeof el) ||

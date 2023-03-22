@@ -44,13 +44,8 @@ const fields = {
   default: "1",
   url: "3",
   slug: "4",
+  fetch: "5",
 } satisfies Record<FieldType, `${number}`>;
-
-export type FieldOperation = {
-  default: ComputationOp;
-  url: ComputationOp;
-  slug: ComputationOp;
-};
 
 /**
  *

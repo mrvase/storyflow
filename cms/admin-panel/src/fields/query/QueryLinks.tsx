@@ -23,6 +23,7 @@ import { calculateFromRecord } from "@storyflow/backend/calculate";
 import { useFieldId } from "../FieldIdContext";
 import { useDocumentIdGenerator } from "../../id-generator";
 import { tokens } from "@storyflow/backend/tokens";
+import { useOptimisticDocumentList } from "../../documents";
 
 export function QueryLinks({
   query,
@@ -71,9 +72,7 @@ export function QueryLinks({
     apps?.length === 1 ? apps[0]._id : undefined
   );
 
-  const { data: list } = SWRClient.documents.getList.useQuery(app as string, {
-    inactive: !app,
-  });
+  const { data: list } = useOptimisticDocumentList(app);
 
   const onAppEnter = React.useCallback((id: FolderId) => {
     setApp(id);

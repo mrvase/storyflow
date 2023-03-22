@@ -1,4 +1,4 @@
-import { createFieldId } from "./ids";
+import { computeFieldId, createFieldId } from "./ids";
 import { tokens } from "./tokens";
 import {
   LineBreak,
@@ -18,7 +18,9 @@ import {
   RawFieldId,
   SortSpec,
   SyntaxTreeRecord,
+  NestedDocument,
 } from "./types";
+import { isSyntaxTree } from "./syntax-tree";
 
 /*
 The accummulator value would in principle look like this:
@@ -69,15 +71,13 @@ filter([0, imp, 4, 5], [1, 2, 3]=1);
 parameters are: [[0, 1, 2, 3, 4, 5], [true, false, false]] (since square brackets spreads the implicit array from the import)
 */
 
-export type FetchObject = {
-  id: NestedDocumentId;
-  folder: FolderId;
+export type FolderFetch = {
+  folder: NestedFolder;
   limit: number;
-  select: RawFieldId;
-  sortBy?: SortSpec;
+  sort?: SortSpec;
 };
 
-type Importers = FieldId | FetchObject | ContextToken;
+type Importers = FieldId | FolderFetch | ContextToken;
 
 const slugCharacters = [
   [" ", "-"],
@@ -344,139 +344,299 @@ export type StateGetter = {
     | undefined;
 };
 
+type Context = {
+  args?: (ValueArray | undefined)[];
+  select?: boolean;
+};
+
+const resolveChildren = <T extends ValueArray | SyntaxTree<any>>(
+  children: SyntaxTree<any>["children"],
+  getState: StateGetter,
+  calculateNode: (node: SyntaxTree<any>, context?: Context) => T[],
+  context: Context = {}
+) => {
+  let acc: T[] = [];
+
+  children.forEach((child) => {
+    if (isSyntaxTree(child)) {
+      // håndterer noget i paranteser
+      acc.push(...calculateNode(child));
+    } else if (tokens.isNestedField(child)) {
+      const args =
+        "id" in child
+          ? [0, 1, 2].map((index) => {
+              const fieldId = createFieldId(
+                index,
+                child.id as unknown as DocumentId
+              );
+              return getState(fieldId, { external: false });
+            })
+          : []; // not the case when resulting from select
+
+      const hasArgs = args.some((el) => el !== undefined && el.length > 0);
+
+      const state = getState(child.field, {
+        tree: hasArgs,
+        external: true,
+      });
+
+      if (state) {
+        if (hasArgs) {
+          acc.push(
+            ...calculateNode(state as SyntaxTree, {
+              args,
+            })
+          );
+        } else if ((state as ValueArray).length > 0) {
+          acc.push(state as T);
+        }
+      }
+    } else if (tokens.isContextToken(child)) {
+      const state = getState(child, { tree: true, external: false });
+      if (state) {
+        acc.push(...calculateNode(state));
+      }
+    } else if (tokens.isParameter(child)) {
+      const arg = context.args && context.args[child.x];
+      if (arg) {
+        acc.push([arg] as T);
+      } else if (typeof child.value !== "undefined") {
+        acc.push([child.value] as T);
+      }
+    } else if (tokens.isLineBreak(child)) {
+      // do nothing
+    } else if (
+      typeof child === "object" &&
+      ("missing" in child || "error" in child)
+    ) {
+      // do nothing
+    } else {
+      acc.push([child] as T);
+    }
+  });
+
+  return acc;
+};
+
 export function calculate(node: SyntaxTree, getState: StateGetter): ValueArray {
   const calculateNode = (
     node: SyntaxTree,
-    args?: (ValueArray | undefined)[]
+    context: {
+      args?: (ValueArray | undefined)[];
+    } = {}
   ): ValueArray[] => {
-    let result: ValueArray[] = node.children.reduce(
-      (acc: ValueArray[], child) => {
-        if (typeof child === "object" && "type" in child) {
-          // håndterer noget i paranteser
-          acc.push(...calculateNode(child));
-        } else if (tokens.isNestedField(child)) {
-          const args =
-            "id" in child
-              ? [0, 1, 2].map((index) => {
-                  const fieldId = createFieldId(
-                    index,
-                    child.id as unknown as DocumentId
-                  );
-                  return getState(fieldId, { external: false });
-                })
-              : []; // not the case when resulting from select
-
-          const hasArgs = args.some((el) => el !== undefined && el.length > 0);
-
-          const state = getState(child.field, {
-            tree: hasArgs,
-          });
-
-          if (state) {
-            if (hasArgs) {
-              acc.push(calculateNode(state as SyntaxTree, args));
-            } else if ((state as ValueArray).length > 0) {
-              acc.push(state as ValueArray);
-            }
-          }
-        } else if (tokens.isContextToken(child)) {
-          const state = getState(child, { tree: true, external: false });
-          if (state) {
-            acc.push(calculateNode(state));
-          }
-        } else if (tokens.isParameter(child)) {
-          const arg = args && args[child.x];
-          if (arg) {
-            acc.push([arg]);
-          } else if (typeof child.value !== "undefined") {
-            acc.push([child.value]);
-          }
-        } else if (tokens.isLineBreak(child)) {
-          // do nothing
-        } else if (typeof child === "object" && "select" in child) {
-          const child_: NestedFolder & { select: RawFieldId } = child as any;
-
-          const state = getState(
-            {
-              id: child_.id,
-              folder: child_.folder,
-              limit: 10,
-              select: child_.select,
-            },
-            {
-              external: true,
-            }
-          );
-
-          if (state) {
-            acc.push([state]);
-          }
-        } else if (
-          typeof child === "object" &&
-          ("missing" in child || "error" in child)
-        ) {
-          // do nothing
-        } else {
-          acc.push([
-            child as Exclude<
-              typeof child,
-              Parameter | LineBreak | unknown[] | WithSyntaxError
-            >,
-          ]);
-        }
-        return acc;
-      },
-      []
+    let values = resolveChildren(
+      node.children,
+      getState,
+      calculateNode,
+      context
     );
 
     // run function
 
-    if (node.type === "select") {
-      const select = node.payload!.select as RawFieldId;
-      let next: SyntaxTree = {
-        type: null,
-        children: result.reduce((acc: SyntaxTree["children"], el) => {
+    if (node.type === "sortlimit") {
+      const limit = (node.payload!.limit as number) ?? 10;
+      const sort = (node.payload!.sort as SortSpec) ?? {};
+
+      let docs = spreadImplicitArrays(values).reduce(
+        (acc: NestedDocument[], el) => {
           if (tokens.isNestedFolder(el)) {
-            acc.push({
-              type: null,
-              children: [{ ...el, select: select } as NestedFolder],
-            });
+            const state = getState(
+              {
+                folder: el,
+                limit,
+              },
+              {
+                external: true,
+              }
+            );
+            if (state) {
+              acc.push(...(state as NestedDocument[]));
+            }
           } else if (tokens.isNestedDocument(el)) {
-            acc.push({
-              type: null,
-              children: [
-                {
-                  field: `${el.id.slice(12, 24)}${select}`,
-                } as NestedField,
-              ],
-            });
+            acc.push(el);
           }
-          acc.push(el);
           return acc;
-        }, []),
-      };
-      result = [calculate(next, getState)];
+        },
+        []
+      );
+
+      console.log("DOCS", docs);
+
+      Object.entries(sort).forEach(([rawFieldId, direction]) => {
+        docs = docs.sort((a, b) => {
+          // get state for each field
+          return 0;
+        });
+      });
+
+      values = [docs.slice(0, limit)];
     }
 
-    if (node.type === ("array" as any)) {
-      result = [[spreadImplicitArrays(result)]];
-    } else if (node.type === null) {
+    if (node.type === "select") {
+      const select = node.payload!.select as RawFieldId;
+
+      values = spreadImplicitArrays(values).reduce((acc: ValueArray[], el) => {
+        if (tokens.isNestedDocument(el)) {
+          const state = getState(computeFieldId(el.id, select), {
+            external: true,
+          });
+
+          if (state) {
+            acc.push(state);
+          }
+        }
+        return acc;
+      }, []);
+    }
+
+    if (node.type === null) {
       // brackets
-      result = [spreadImplicitArrays(result)];
+      values = [spreadImplicitArrays(values)];
+    } else if (node.type === ("array" as any)) {
+      values = [[spreadImplicitArrays(values)]];
     } else {
-      result = compute(
+      values = compute(
         node.type as Exclude<typeof node.type, "select" | "array" | null>,
-        result
+        values
       );
     }
 
-    return result;
+    return values;
   };
 
   const value = calculateNode(node);
 
   return value.reduce((acc, cur) => [...acc, ...cur], []);
 }
+
+/*
+export function calculateWithFetchRefs(
+  node: SyntaxTree,
+  getState: StateGetter,
+  delayFetch: (obj: FetchObject) => FetchRef
+): ValueArray | SyntaxTree<WithSyntaxError | FetchRef> | FetchRef {
+  const calculateNode = (
+    node: SyntaxTree<WithSyntaxError | FetchRef>,
+    context: {
+      args?: (ValueArray | undefined)[];
+      select?: boolean;
+    } = {}
+  ): (ValueArray | SyntaxTree<WithSyntaxError | FetchRef> | FetchRef)[] => {
+    let values = resolveChildren(
+      node.children,
+      getState,
+      calculateNode,
+      context
+    );
+
+    if (node.type === "sortlimit") {
+      const fetches: FetchObject[] = [];
+      const folders: NestedFolder[] = [];
+
+      let isClientTree = false;
+
+      let children = values
+        .flat(1)
+        .reduce(
+          (acc: SyntaxTree<WithSyntaxError | FetchRef>["children"], el) => {
+            if (isSyntaxTree(el)) {
+              acc.push(el);
+              if ("fetches" in el) {
+                fetches.push(...el.fetches!);
+                delete el.fetches;
+              } else {
+                isClientTree = true;
+              }
+            } else if (isFetchRef(el)) {
+              acc.push(el);
+              isClientTree = true;
+            } else if (tokens.isNestedFolder(el)) {
+              folders.push(el);
+              acc.push(el);
+            } else if (tokens.isNestedDocument(el)) {
+              acc.push(el);
+            }
+            return acc;
+          },
+          []
+        );
+
+      return [
+        {
+          type: "sortlimit",
+          children,
+          payload: node.payload,
+          fetches: [
+            ...(node.fetches ?? []),
+            {
+              sort: node.payload!.sort as SortSpec,
+              limit: node.payload!.limit as number,
+              folders,
+            },
+          ],
+        },
+      ];
+    }
+
+    if (node.type === "select") {
+      const fetches: FetchObject[] = [];
+
+      values = values.flat(1).reduce((acc: ValueArray[], el) => {
+        if (isSyntaxTree(el) && "fetches" in el) {
+          el.fetches?.map((el) => {
+            if (!("select" in el)) {
+              el.select = node.payload!.select;
+            }
+            fetches.push(el);
+          });
+          delete el.fetches;
+        } else if (tokens.isNestedDocument(el)) {
+          const state = getState(`${el.id.slice(12, 24)}${select}` as FieldId, {
+            external: true,
+          });
+
+          if (state) {
+            acc.push(state);
+          }
+        }
+        return acc;
+      }, []);
+    }
+
+    const isResolved = (v: typeof values): v is ValueArray[] => {
+      return v.every((el) => Array.isArray(el));
+    };
+
+    if (!isResolved(values)) {
+      return [
+        {
+          type: node.type,
+          children: values,
+        },
+      ];
+    }
+
+    if (node.type === null) {
+      // brackets
+      values = [spreadImplicitArrays(values)];
+    } else if (node.type === ("array" as any)) {
+      values = [[spreadImplicitArrays(values)]];
+    } else {
+      values = compute(
+        node.type as Exclude<typeof node.type, "select" | "array" | null>,
+        values
+      );
+    }
+
+    return values;
+  };
+
+  const value = calculateNode(node);
+
+  return value.reduce((acc, cur) => [...acc, ...cur], []);
+}
+*/
 
 export function calculateFromRecord(id: FieldId, record: SyntaxTreeRecord) {
   const getter: StateGetter = (id, { external, tree }): any => {

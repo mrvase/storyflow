@@ -35,7 +35,7 @@ import cl from "clsx";
 import React from "react";
 import { flushSync } from "react-dom";
 import { DocumentConfigOp, PropertyOp, targetTools } from "shared/operations";
-import { useArticle, useArticleList, useSaveArticle } from ".";
+import { useArticle, useOptimisticDocumentList, useSaveArticle } from ".";
 import { useDocumentLabel } from "./useDocumentLabel";
 import { getComponentType, useClientConfig } from "../client-config";
 import { useTemplateFolder } from "../folders/folders-context";
@@ -218,6 +218,13 @@ function Toolbar({ id, config }: { id: DocumentId; config: DocumentConfig }) {
         id: computeFieldId(id, FIELDS.user.id),
       },
     },
+    {
+      label: "Fetch",
+      item: {
+        ...FIELDS.fetch,
+        id: computeFieldId(id, FIELDS.fetch.id),
+      },
+    },
   ];
 
   return (
@@ -244,7 +251,7 @@ function Toolbar({ id, config }: { id: DocumentId; config: DocumentConfig }) {
 
 export function TemplateMenu({ id }: { id?: DocumentId }) {
   const templateFolder = useTemplateFolder()?._id;
-  const { articles: templates } = useArticleList(templateFolder);
+  const { articles: templates } = useOptimisticDocumentList(templateFolder);
 
   return (
     <Content.ToolbarMenu label={"Indsæt skabelon"} icon={BoltIcon}>
@@ -278,7 +285,7 @@ export function FieldToolbar({
   const { push } = useDocumentMutate<DocumentConfigOp>(documentId, documentId);
 
   const templateFolder = useTemplateFolder()?._id;
-  const { articles: templates } = useArticleList(templateFolder);
+  const { articles: templates } = useOptimisticDocumentList(templateFolder);
 
   const templateOptions = (templates ?? []).map((el) => ({
     id: el._id,

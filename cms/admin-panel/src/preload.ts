@@ -1,10 +1,8 @@
-import { queryKey } from "@sfrpc/client";
-import { unwrap } from "@storyflow/result";
-import React from "react";
-import { provider, useClient, useQueryContext } from "./client";
+import { useClient, useQueryContext } from "./client";
 import { hexColorToRgb } from "./utils/colors";
 import useSWR from "swr";
 import { TEMPLATE_FOLDER } from "@storyflow/backend/constants";
+import { useOptimisticDocumentList } from "./documents";
 
 let preloaded = false;
 
@@ -36,6 +34,10 @@ export function Preload() {
     }
   );
 
+  // preload articles
+  useOptimisticDocumentList(TEMPLATE_FOLDER);
+
+  /*
   React.useLayoutEffect(() => {
     const cache = provider();
     if (!preloaded) {
@@ -63,6 +65,7 @@ export function Preload() {
       })();
     }
   }, []);
+  */
 
   return null;
 }

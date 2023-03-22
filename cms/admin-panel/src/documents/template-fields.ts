@@ -17,7 +17,8 @@ import {
   replaceDocumentId,
 } from "@storyflow/backend/ids";
 import { fetchArticle } from "./index";
-import { getComputationEntries, isSyntaxTree } from "shared/computation-tools";
+import { getComputationEntries } from "shared/computation-tools";
+import { isSyntaxTree } from "@storyflow/backend/syntax-tree";
 import { tokens } from "@storyflow/backend/tokens";
 
 export const getDefaultValuesFromTemplateAsync = async (

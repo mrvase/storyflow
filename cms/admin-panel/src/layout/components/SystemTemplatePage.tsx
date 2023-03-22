@@ -9,14 +9,14 @@ import { FolderContext } from "../../folders/FolderPageContext";
 import Space from "../../folders/spaces/Space";
 import { useDeleteForm } from "../../folders/spaces/useDeleteForm";
 import Table from "../../documents/components/Table";
-import { useArticleList } from "../../documents";
+import { useOptimisticDocumentList } from "../../documents";
 import Loader from "../../elements/Loader";
 
 export function SystemTemplatePage() {
   const folder = useTemplateFolder();
   const { form, handleDelete } = useDeleteForm({ folderId: folder._id });
 
-  const { articles } = useArticleList(folder._id);
+  const { articles } = useOptimisticDocumentList(folder._id);
 
   if (!articles) {
     return (

@@ -10,6 +10,7 @@ import {
 } from "@storyflow/backend/types";
 import { calculate } from "./calculate";
 import { operators } from "./mongo-operators";
+import { FIELDS } from "@storyflow/backend/fields";
 
 export type Update = DBSyntaxStreamBlock & {
   result: DBValueArray;
@@ -295,6 +296,51 @@ const createCalculationStage = (
               () => $.concatArrays(acc, [cur])
             ),
           [] as DBSyntaxStreamBlock[]
+        ),
+      },
+    },
+    {
+      $set: {
+        revalidate: $.cond(
+          $.ne($doc.values[FIELDS.url.id], "missing"),
+          () => ({
+            page: Date.now(),
+            layout: $.cond(
+              $.gt(
+                $.size(
+                  $.setIntersection(
+                    $.concatArrays(
+                      queryArrayProp($doc.updates).k,
+                      queryArrayProp($doc.derivatives).k
+                    ),
+                    $.reduce(
+                      $.reverseArray($doc.compute) as typeof $doc.compute,
+                      (acc, cur) =>
+                        $.cond(
+                          $.or(
+                            $.eq(
+                              cur.k,
+                              $.toObjectId(
+                                $.concat([$doc.idString, FIELDS.layout.id])
+                              )
+                            ),
+                            $.in(cur.k, acc)
+                          ),
+                          () => $.setUnion(acc, (cur as any).imports),
+                          () => acc
+                        ),
+                      [] as DBId<FieldId>[]
+                    )
+                  )
+                ),
+                0
+              ),
+              () => Date.now(),
+              () => 0
+            ),
+            fetchers: [],
+          }),
+          () => "$$REMOVE"
         ),
       },
     },

@@ -1,12 +1,15 @@
 import { unwrap } from "@storyflow/result";
 import { createQueue } from "@storyflow/state";
 import React from "react";
-import { Client, SWRClient, useCache } from "../client";
+import { Client, SWRClient, cache } from "../client";
 import {
   SyntaxTreeRecord,
   DBDocument,
   DocumentId,
   FolderId,
+  SortSpec,
+  RawFieldId,
+  ValueArray,
 } from "@storyflow/backend/types";
 import { pushAndRetry } from "../utils/retryOnError";
 import { FIELDS } from "@storyflow/backend/fields";
@@ -73,10 +76,60 @@ const optimisticUpdate = (
   return [...articles, ...inserts].filter((el) => !removes.includes(el._id));
 };
 
-export function useArticleList(folderId: FolderId | undefined) {
-  const { data, error } = SWRClient.documents.getList.useQuery(folderId!, {
-    inactive: !folderId,
-  });
+export async function fetchDocumentList(
+  params: {
+    folder: FolderId;
+    limit: number;
+    sort?: SortSpec;
+    filters?: Record<RawFieldId, ValueArray>;
+  },
+  client: Client
+) {
+  console.log("FETCHING LIST", params);
+
+  const result = unwrap(
+    await client.documents.getList.query(params, {
+      cachePreload: (result, preload) => {
+        result.articles.forEach((doc) => {
+          preload(["get", doc._id], () => {
+            return {
+              doc,
+              histories: result.historiesRecord[doc._id],
+            };
+          });
+        });
+      },
+    })
+  );
+  console.log("FETCHING LIST RESULT", result);
+
+  return result;
+}
+
+export function useDocumentList(folderId: FolderId | undefined) {
+  const { data, error } = SWRClient.documents.getList.useQuery(
+    { folder: folderId!, limit: 10 },
+    {
+      inactive: !folderId,
+      immutable: true,
+      cachePreload: (result, preload) => {
+        result.articles.forEach((doc) => {
+          preload(["get", doc._id], () => {
+            return {
+              doc,
+              histories: result.historiesRecord[doc._id],
+            };
+          });
+        });
+      },
+    }
+  );
+
+  return { data, error };
+}
+
+export function useOptimisticDocumentList(folderId: FolderId | undefined) {
+  const { data, error } = useDocumentList(folderId);
 
   const [operations, setOperations] = React.useState<ArticleListOperation[]>(
     []
@@ -126,10 +179,25 @@ export async function fetchArticle(
   id: string,
   client: Client
 ): Promise<DBDocument | undefined> {
-  const result = await client.documents.get.query(id, {
-    useCache,
-  });
+  const result = await client.documents.get.query(id);
   return unwrap(result)?.doc;
+}
+
+export function fetchArticleSync(
+  id: string,
+  client: Client
+): PromiseLike<DBDocument | undefined> {
+  const key = client.documents.get.key(id);
+  const exists = cache.read(key);
+  if (typeof exists !== "undefined") {
+    return {
+      then(callback) {
+        return callback?.(exists.doc) ?? exists.doc;
+      },
+    };
+  }
+  const result = client.documents.get.query(id).then((res) => unwrap(res)?.doc);
+  return result;
 }
 
 const TEMPLATES = Object.values(FIELDS).map((el) => {
@@ -181,7 +249,7 @@ export function useArticle(
   const { data, error, mutate } = SWRClient.documents.get.useQuery(
     articleId as string,
     {
-      inactive: options.inactive || !articleId,
+      inactive: options.inactive || !articleId, // maybe: || Boolean(initialArticle),
     }
   );
 
@@ -220,7 +288,7 @@ export const useArticleListMutation = () => {
       }, {} as Record<FolderId, ArticleListMutation[]>);
 
       Object.entries(groups).map(([folder, actions]) => {
-        mutate(["getList", folder], (ps, result) => {
+        mutate(["getList", { folder, limit: 10 }], (ps, result) => {
           if (result === undefined) {
             // we handle optimistic updates separately
             // so that we do not update the cache
@@ -235,6 +303,7 @@ export const useArticleListMutation = () => {
           );
 
           return {
+            ...ps,
             articles,
           };
         });
@@ -250,7 +319,7 @@ export const useArticleListMutation = () => {
 export const useSaveArticle = (folder: FolderId) => {
   return SWRClient.fields.save.useMutation({
     cacheUpdate: ({ id }, mutate) => {
-      mutate(["documents/getList", folder], (ps, result) => {
+      mutate(["documents/getList", { folder, limit: 10 }], (ps, result) => {
         if (!result) {
           return ps;
         }
@@ -258,6 +327,7 @@ export const useSaveArticle = (folder: FolderId) => {
         const newArticles = [...ps.articles];
         newArticles[index] = { ...newArticles[index], ...result };
         return {
+          ...ps,
           articles: newArticles,
         };
       });

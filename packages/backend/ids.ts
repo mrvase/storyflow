@@ -49,7 +49,7 @@ function toHex(number: number, length: `${number}b`) {
   if (no < 1 || no > 6) {
     throw new Error("Invalid length");
   } else if (number > 256 ** no) {
-    throw new Error("Number too large");
+    throw new Error(`Number too large: ${number}`);
   }
   return number.toString(16).padStart(no * 2, "0");
 }
@@ -274,5 +274,8 @@ export const getIdFromString = (string: string): RawFieldId => {
     }
   });
 
-  return `${toHex(result[1], "3b")}${toHex(result[0], "3b")}` as RawFieldId;
+  return `${toHex(result[1] & 0xffffff, "3b")}${toHex(
+    result[0] & 0xffffff,
+    "3b"
+  )}` as RawFieldId;
 };

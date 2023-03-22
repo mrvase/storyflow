@@ -65,6 +65,11 @@ export const operators: Operators<any> = {
   concatArrays(...arrays) {
     return arrays.reduce((a, c) => a.concat(c));
   },
+  reverseArray(array) {
+    return {
+      $reverseArray: array.slice().reverse(),
+    } as unknown as typeof array;
+  },
   mergeObjects(a, b, c) {
     return Object.assign({}, a, b, c);
   },
@@ -145,6 +150,9 @@ export const operators: Operators<any> = {
   },
   setUnion(...arrays) {
     return [...new Set(arrays.reduce((a, c) => a.concat(c)))];
+  },
+  setIntersection(...arrays) {
+    return [...arrays.reduce((a, c) => a.filter((el) => c.includes(el)))];
   },
   size(arr) {
     return arr.length;

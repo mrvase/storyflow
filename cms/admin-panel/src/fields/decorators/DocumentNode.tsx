@@ -31,7 +31,7 @@ import { useFieldId } from "../FieldIdContext";
 import { useFieldConfig } from "../../documents/collab/hooks";
 import { Menu } from "@headlessui/react";
 import { MenuTransition } from "../../elements/transitions/MenuTransition";
-import { useArticle, useArticleList } from "../../documents";
+import { useArticle, useOptimisticDocumentList } from "../../documents";
 import { useFieldTemplate } from "../default/useFieldTemplate";
 import { calculateFn } from "../default/calculateFn";
 import { useGlobalState } from "../../state/state";
@@ -199,7 +199,7 @@ function TemplateSelect({
   setTemplateId: (value: DocumentId) => void;
 }) {
   const id = TEMPLATE_FOLDER;
-  const { articles } = useArticleList(id);
+  const { articles } = useOptimisticDocumentList(id);
 
   return (
     <Menu as="div" className="relative">

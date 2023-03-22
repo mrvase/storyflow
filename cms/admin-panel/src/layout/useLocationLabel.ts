@@ -1,4 +1,4 @@
-import { useArticle } from "../documents";
+import { useArticle, useOptimisticDocumentList } from "../documents";
 import { useDocumentLabel } from "../documents/useDocumentLabel";
 import { SWRClient } from "../client";
 import { getPathFromSegment } from "./utils";
@@ -10,10 +10,9 @@ export default function useLocationLabel(segment: string) {
   const [type, urlId] = path.split("/").slice(-1)[0].split("-");
   const id = urlId ?? "";
 
-  const { data: listData, error: listError } =
-    SWRClient.documents.getList.useQuery(id, {
-      inactive: type !== "f" && type !== "a",
-    });
+  const { articles: listData, error: listError } = useOptimisticDocumentList(
+    type === "f" || type === "a" ? (id as FolderId) : undefined
+  );
 
   let { article, error: articleError } = useArticle(id as DocumentId, {
     inactive: type !== "d" && type !== "t",

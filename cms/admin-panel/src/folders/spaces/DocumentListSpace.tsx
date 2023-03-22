@@ -10,7 +10,7 @@ import { DocumentId, FolderId, SpaceId } from "@storyflow/backend/types";
 import React from "react";
 import {
   fetchArticle,
-  useArticleList,
+  useOptimisticDocumentList,
   useArticleListMutation,
 } from "../../documents";
 import { getDocumentLabel } from "../../documents/useDocumentLabel";
@@ -45,7 +45,7 @@ export function DocumentListSpace({
 }) {
   const { form, handleDelete } = useDeleteForm({ folderId });
 
-  const { articles } = useArticleList(folderId);
+  const { articles } = useOptimisticDocumentList(folderId);
 
   if (!articles) {
     return (
@@ -136,7 +136,7 @@ function ImportButton() {
 function ExportButton() {
   const folder = useCurrentFolder();
 
-  const { articles } = useArticleList(folder?._id);
+  const { articles } = useOptimisticDocumentList(folder?._id);
 
   const client = useClient();
 

@@ -54,7 +54,7 @@ function captureContext(element: State<any>, callback: () => void) {
 }
 
 export class State<T> {
-  private fn?: (value: T | undefined) => T | Promise<T>;
+  private fn?: (value: T | undefined) => T | PromiseLike<T>;
   private _value: T;
   private observers: State<any>[] | null = null; // nodes that have us as sources (down links)
   private sources: State<any>[] | null = null; // sources in reference order, not deduplicated (up links)
@@ -73,7 +73,7 @@ export class State<T> {
   }
 
   constructor(
-    fn?: (value: T | undefined) => Promise<T> | T,
+    fn?: (value: T | undefined) => PromiseLike<T> | T,
     store?: { map: Map<string, State<any>>; key: string }
   ) {
     this.fn = fn;
@@ -111,7 +111,7 @@ export class State<T> {
     return this.peek();
   }
 
-  set(fn: (value: T | undefined) => T | Promise<T>, delay?: boolean): void {
+  set(fn: (value: T | undefined) => T | PromiseLike<T>, delay?: boolean): void {
     this.fn = fn;
     NotificationQueue.push(() => this.notify());
     this.state = CacheDirty;
