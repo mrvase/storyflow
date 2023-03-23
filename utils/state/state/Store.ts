@@ -2,13 +2,11 @@ import { State } from "./State";
 
 export class Store {
   map = new Map<string, State<any>>();
-  // clusters = new Map<string, NotificationCluster>();
 
   use<T>(id: string): State<T | undefined>;
   use<T>(
     id: string,
-    fn: (value: T | undefined) => PromiseLike<T> | T,
-    options?: { cluster?: string }
+    fn: (value: T | undefined) => PromiseLike<T> | T
   ): State<T>;
   use<T>(
     id: string,
@@ -16,8 +14,7 @@ export class Store {
   ): State<T | undefined>;
   use<T>(
     id: string,
-    fn?: ((value: T | undefined) => PromiseLike<T> | T) | undefined,
-    options: { cluster?: string } = {}
+    fn?: ((value: T | undefined) => PromiseLike<T> | T) | undefined
   ): State<T | undefined> {
     let state = this.map.get(id) as State<T | undefined>;
     if (state) {
@@ -28,15 +25,6 @@ export class Store {
     }
     state = new State<T | undefined>(fn, { map: this.map, key: id });
     this.map.set(id, state);
-    /*
-    if (options.cluster) {
-      let cluster = this.clusters.get(options.cluster);
-      if (!cluster) {
-        cluster = new NotificationCluster();
-      }
-      cluster.addState(id, state);
-    }
-    */
     return state;
   }
 

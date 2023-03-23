@@ -1,3 +1,5 @@
+import { FetchPageResult } from "@storyflow/frontend/types";
+
 declare global {
   var process: any;
 }
@@ -44,7 +46,7 @@ export const request = async (url: string, options: Options) => {
     ) {
       const result = json.result as FetchPageResult | null;
       if (!result) return null;
-      return resolveFetchPageResult(result, [config]);
+      return result;
     }
   } catch (err) {
     console.error(err);

@@ -1,9 +1,14 @@
-import { RenderPage } from "@storyflow/react";
-import { request } from "./request";
+import { RenderPage, request } from "@storyflow/react/rsc";
+import { options } from "./options";
+import { config, library } from "../components";
+import { registerLibraries, registerLibraryConfigs } from "@storyflow/react";
+
+registerLibraries([library]);
+registerLibraryConfigs([config]);
 
 export default async function Page({ params }: { params: any }) {
   const url = Object.values(params).join("/");
-  const data = await request(url);
+  const data = await request(url, options);
 
   return <RenderPage data={data?.page} />;
 }

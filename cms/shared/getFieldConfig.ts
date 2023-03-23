@@ -5,7 +5,7 @@ const compareTemplateFieldId = (id1: FieldId, id2: FieldId) => {
   return getRawFieldId(id1) === getRawFieldId(id2);
 };
 
-export const getTemplateFields = (template: DocumentConfig) => {
+export const getFieldConfigArray = (template: DocumentConfig) => {
   return template
     .filter((el): el is FieldConfig => Array.isArray(el) || "id" in el)
     .flat(1);

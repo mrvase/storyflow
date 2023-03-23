@@ -1,5 +1,4 @@
-import { FetchPageResult, resolveFetchPageResult } from "@storyflow/react";
-import { config } from "../components";
+import { FetchPageResult } from "@storyflow/react";
 
 const IS_DEV = process.env.NODE_ENV === "development";
 
@@ -29,7 +28,8 @@ export const request = async (url: string) => {
     ) {
       const result = json.result as FetchPageResult | null;
       if (!result) return null;
-      return resolveFetchPageResult(result, [config]);
+      console.log("FETCH RESULT", result);
+      return result;
     }
   } catch (err) {
     console.error(err);

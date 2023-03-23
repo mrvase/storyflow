@@ -134,8 +134,6 @@ export default function UrlField({
     () => calculateFn(id, initialValue, { record, client }) as [string]
   );
 
-  console.log("URL", output);
-
   const url = getUrlStringFromValue(output);
 
   const actions = useDocumentMutate<ComputationOp>(
@@ -263,12 +261,6 @@ export default function UrlField({
         const result = cache(forEach, (prev, { operation }) => {
           return getNextState(prev, operation);
         });
-
-        console.log(
-          "RESULT",
-          result,
-          parseTokenStream(result, getConfig("url").transform)
-        );
 
         setOutput(
           () =>

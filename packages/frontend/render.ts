@@ -6,7 +6,7 @@ export const isRenderable = (
   // if (el === "") return false;
   return (
     ["string", "number"].includes(typeof el) ||
-    (typeof el === "object" && "type" in el)
+    (typeof el === "object" && "element" in el)
   );
 };
 
@@ -23,9 +23,9 @@ export const isInlineElement = (
   if (["string", "number"].includes(typeof el)) {
     return true;
   }
-  if (typeof el === "object" && "type" in el) {
-    if (el.type === "Link") return true;
-    return getDisplayType(el.type);
+  if (typeof el === "object" && "element" in el) {
+    if (el.element === "Link") return true;
+    return getDisplayType(el.element);
   }
   return false;
 };

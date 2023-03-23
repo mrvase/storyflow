@@ -15,7 +15,9 @@ import { FIELDS } from "@storyflow/backend/fields";
 export type Update = DBSyntaxStreamBlock & {
   result: DBValueArray;
   imports: DBId<FieldId>[];
+  nested: string[];
   depth: number;
+  updated: boolean;
   _imports: (DBSyntaxStreamBlock & { depth: number })[];
 };
 
@@ -52,7 +54,7 @@ const createCalculationStage = (
   return $.useDocument(($doc) => [
     {
       $set: {
-        idString: $.substrBytes($.toString($doc._id), 12, 24),
+        idString: $.substrBytes($.toString($doc._id), 12, 12),
       },
     },
     {
@@ -120,11 +122,12 @@ const createCalculationStage = (
         ),
       },
     },
+    // reversing
+    // moves fields that imports other fields up front.
+    // a non-imported field will always lead.
     {
       $set: {
-        compute: {
-          $reverseArray: $doc.compute,
-        },
+        compute: $.reverseArray($doc.compute),
       },
     },
     /*
@@ -154,14 +157,14 @@ const createCalculationStage = (
               $.cond(
                 $.and(
                   $.eq($.substrBytes($.toString(el.k), 0, 12), $doc.idString),
-                  $.ne($.substrBytes($.toString(el.k), 14, 18), "0000")
+                  $.ne($.substrBytes($.toString(el.k), 14, 4), "0000")
                 ),
                 () =>
                   $.mergeObjects(
                     acc,
                     $.arrayToObject([
                       [
-                        $.substrBytes($.toString(el.k), 12, 24),
+                        $.substrBytes($.toString(el.k), 12, 12),
                         (el as any).result,
                       ],
                     ])
@@ -202,6 +205,7 @@ const createCalculationStage = (
           $.concatArrays(
             $doc.compute as (DBSyntaxStreamBlock & {
               imports: DBId<FieldId>[];
+              nested: string[];
               depth: number;
             })[],
             $doc.updates,
@@ -210,19 +214,21 @@ const createCalculationStage = (
           (acc, cur) => {
             return $.define()
               .let({
+                parent: $.substrBytes($.toString(cur.k), 0, 12),
+              })
+              .let(({ parent }) => ({
                 baseDepth: $.max(
                   $.map(
-                    $.filter(acc, (el) => $.in(cur.k, el.imports)),
+                    $.filter(acc, (el) =>
+                      $.or($.in(parent, el.nested), $.in(cur.k, el.imports))
+                    ),
                     (el) => el.depth
                   )
                 ),
-              })
-              .return(({ baseDepth }) => {
+              }))
+              .return(({ parent, baseDepth }) => {
                 return $.cond(
-                  $.or(
-                    $.isNumber(baseDepth),
-                    $.eq($.substrBytes($.toString(cur.k), 0, 12), $doc.idString)
-                  ),
+                  $.or($.isNumber(baseDepth), $.eq(parent, $doc.idString)),
                   () =>
                     $.concatArrays(
                       acc,
@@ -271,11 +277,13 @@ const createCalculationStage = (
           },
           [] as (DBSyntaxStreamBlock & {
             imports: DBId<FieldId>[];
+            nested: string[];
             depth: number;
           })[]
         ),
       },
     },
+    // sorting
     {
       $set: {
         compute: $.sortArray(
@@ -302,7 +310,7 @@ const createCalculationStage = (
     {
       $set: {
         revalidate: $.cond(
-          $.ne($doc.values[FIELDS.url.id], "missing"),
+          $.isArray($doc.values[FIELDS.url.id]),
           () => ({
             page: Date.now(),
             layout: $.cond(
@@ -314,7 +322,7 @@ const createCalculationStage = (
                       queryArrayProp($doc.derivatives).k
                     ),
                     $.reduce(
-                      $.reverseArray($doc.compute) as typeof $doc.compute,
+                      $.reverseArray($doc.compute),
                       (acc, cur) =>
                         $.cond(
                           $.or(
@@ -355,6 +363,8 @@ const createCalculationStage = (
         "compute.function",
         "compute._imports",
         "compute.depth",
+        "compute.nested",
+        "compute.updated",
       ],
     },
   ]);

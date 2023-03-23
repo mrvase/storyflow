@@ -80,6 +80,8 @@ const defaultClientConfig: ClientConfig = {
   libraries: [defaultLibrary],
 };
 
+const defaultLibraries = [defaultLibrary]; // stable reference
+
 export function useClientConfig(key?: string): ClientConfig {
   const configs = React.useContext(ClientConfigContext);
   const domains = useFolderDomains();
@@ -106,7 +108,7 @@ export function useClientConfig(key?: string): ClientConfig {
   return {
     builderUrl: main?.builderUrl ?? "",
     revalidateUrl: main?.revalidateUrl ?? "",
-    libraries: main?.libraries ?? [defaultLibrary],
+    libraries: main?.libraries ?? defaultLibraries,
   };
 }
 

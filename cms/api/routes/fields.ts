@@ -25,7 +25,11 @@ import {
   ServerPackage,
   unwrapServerPackage,
 } from "@storyflow/state";
-import { getFieldConfig, setFieldConfig } from "shared/getFieldConfig";
+import {
+  getFieldConfig,
+  getFieldConfigArray,
+  setFieldConfig,
+} from "shared/getFieldConfig";
 import { AnyOp, targetTools } from "shared/operations";
 import { getConfig } from "shared/initialValues";
 import {
@@ -194,13 +198,29 @@ export const fields = createRoute({
 
       const versions = article.versions ?? { "": 0 };
 
+      const updatedTransforms: Set<FieldId> = new Set();
+
       if (documentId in histories) {
         const history = histories[documentId] ?? [];
         const templateVersion = article.versions?.[""] ?? 0;
         const pkgs = filterServerPackages(templateVersion, history);
 
         if (pkgs.length) {
+          const configsBefore = getFieldConfigArray(documentConfig).map(
+            (el) => ({ ...el })
+          );
           documentConfig = transformDocumentConfig(documentConfig, pkgs);
+          getFieldConfigArray(documentConfig)
+            .map((el) => ({ ...el }))
+            .forEach((el) => {
+              const index = configsBefore.findIndex(({ id }) => id === el.id);
+              if (
+                index < 0 ||
+                configsBefore[index].transform !== el.transform
+              ) {
+                updatedTransforms.add(el.id);
+              }
+            });
           versions[""] = templateVersion + pkgs.length;
         }
       }
@@ -240,6 +260,16 @@ export const fields = createRoute({
       // Skal tjekke ovenfor, om configs har fået ændret transforms.
       // Så laver jeg de felter til tokenStream og tilføjer dem til allUpdates uden initialTransform.
       // Herunder får de så tilføjet den nye transform, hvis den er der.
+
+      updatedTransforms.forEach((id) => {
+        if (id in allUpdates) return;
+        allUpdates[id] = {
+          initialTransform: undefined,
+          stream: createTokenStream(
+            computationRecord[id] ?? DEFAULT_SYNTAX_TREE
+          ),
+        };
+      });
 
       const newRecord: SyntaxTreeRecord = Object.fromEntries(
         Object.entries(allUpdates).map(([id, { stream, initialTransform }]) => {
@@ -470,6 +500,8 @@ export const fields = createRoute({
               // it does exist in values because template field values are always saved to values
               _imports,
               imports: [], // should just be empty
+              nested: [],
+              updated: true,
             });
           });
       });
@@ -540,6 +572,8 @@ export const fields = createRoute({
             result: doc.values[getRawFieldId(id)] ?? cachedRecord[id] ?? [],
             _imports,
             imports: [], // should just be empty
+            nested: [],
+            updated: true,
           };
         });
 

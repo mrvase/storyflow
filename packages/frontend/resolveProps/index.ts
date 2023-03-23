@@ -63,7 +63,7 @@ export const resolveFetchPageResult = (
 
   return {
     ...result,
-    page: result.page ? resolveProps(result.page, options) : result.page,
+    page: result.page ? resolveProps(, options) : result.page,
     layout: result.layout
       ? resolveProps(result.layout, options)
       : result.layout,
@@ -71,16 +71,19 @@ export const resolveFetchPageResult = (
 };
 
 export const resolveProps = (
+  docId: string,
   value: ValueArray,
   options: { imageUrl: string; libraries: LibraryConfig[] },
   ctx: { index: number } = { index: 0 }
 ) => {
   const createPropsFromConfig = (
-    propRecord: ComputationRecord,
+    record: Record<string, ValueArray>,
     propConfigs: PropConfigArray,
     index: number,
     group?: string
   ) => {
+    const keyId = 
+
     const hasKey = Boolean(propRecord.key?.length);
 
     return Object.fromEntries(

@@ -481,7 +481,7 @@ export function calculate(node: SyntaxTree, getState: StateGetter): ValueArray {
           });
 
           if (state) {
-            acc.push(state);
+            acc.push(state); // [[[state]]]
           }
         }
         return acc;

@@ -129,6 +129,7 @@ export const getImportIds = (value: SyntaxTree, pool: SyntaxTreeRecord) => {
       if (isSyntaxTree(token)) {
         if (token.type === "select") {
           const child = token.children[0] as NestedField;
+          imports.push(child.field);
           const drefs = getPickedDocumentIds(child.field, pool);
           drefs.forEach((dref) =>
             imports.push(computeFieldId(dref, token.data!.select))

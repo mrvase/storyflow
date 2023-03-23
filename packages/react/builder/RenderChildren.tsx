@@ -1,7 +1,7 @@
 import * as React from "react";
 import { AddPathSegment, ExtendPath, usePath } from "./contexts";
 import RenderElement, { IndexContext } from "./RenderElement";
-import { useValue } from "../builder/RenderBuilder";
+import { log, useValue } from "./RenderBuilder";
 import { Component, ValueArray } from "@storyflow/frontend/types";
 import { createRenderArray } from "@storyflow/frontend/render";
 // import { createRenderArray } from "../config/createRenderArray";
@@ -21,55 +21,41 @@ const getDefaultComponent = (type: string) => {
   return component!;
 };
 
-export default function RenderComponent({
+export default function RenderChildren({
+  value,
   parentProp = null,
 }: {
+  value: ValueArray;
   parentProp?: string | null;
 }) {
-  const path = usePath();
-
-  const value = useValue(path) as ValueArray | undefined;
-
   const index = React.useContext(IndexContext);
 
+  log("RENDER CHILDREN VALUE", value);
+
   const renderArray = React.useMemo(() => {
-    /*
     const valueAtIndex = value[index];
     const value_ =
       Array.isArray(valueAtIndex) && valueAtIndex.length === 1
         ? valueAtIndex
         : value;
-    */
     const configs = getLibraryConfigs();
     if (!value) return [];
-    return createRenderArray(value, (type: string) =>
+    return createRenderArray(value_, (type: string) =>
       Boolean(getConfigByType(type, configs)?.inline)
     );
   }, [value, index]);
 
-  const createElement = ({
-    id,
-    type,
-    parent,
-  }: {
-    id: string;
-    type: string;
-    parent?: string;
-  }) => {
+  const createElement = ({ id, element }: { id: string; element: string }) => {
     return (
-      <ExtendPath
-        key={id}
-        extend={parent ? `${parent}.${id}` : id}
-        reset={Boolean(parent)}
-      >
+      <ExtendPath key={id} extend={id}>
         <AddPathSegment
           {...{
             id,
-            type,
+            element,
             parentProp,
           }}
         >
-          <RenderElement type={type} />
+          <RenderElement type={element} />
         </AddPathSegment>
       </ExtendPath>
     );
@@ -78,7 +64,6 @@ export default function RenderComponent({
   return (
     <>
       {renderArray.reduce((acc, block, index) => {
-        const isChildArray = "$children" in block;
         const renderChildren = "$children" in block ? block.$children : [block];
 
         acc.push(

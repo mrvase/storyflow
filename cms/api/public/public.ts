@@ -23,7 +23,6 @@ import {
   FieldId,
   NestedDocument,
   NestedFolder,
-  SyntaxTreeRecord,
   ValueArray,
 } from "@storyflow/backend/types";
 import { FIELDS } from "@storyflow/backend/fields";
@@ -31,7 +30,7 @@ import { ObjectId } from "mongodb";
 import { parseDocument } from "../routes/documents";
 import { getFieldRecord, getGraph } from "shared/computation-tools";
 import { computeFieldId, getDocumentId } from "@storyflow/backend/ids";
-import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
+import util from "util";
 
 const sessionStorage = createSessionStorage({
   cookie: cookieOptions,
@@ -119,9 +118,10 @@ export const public_ = createRoute({
         .db(dbName)
         .collection("documents")
         .findOne<DBDocumentRaw>({
-          ...((namespaces ?? []).length > 0 && {
-            folder: { $in: namespaces },
-          }),
+          ...(namespaces &&
+            namespaces.length > 0 && {
+              folder: { $in: namespaces.map((el) => new ObjectId(el)) },
+            }),
           [`values.${FIELDS.url.id}`]:
             url.indexOf("/") < 0
               ? url
@@ -138,86 +138,132 @@ export const public_ = createRoute({
 
       const graph = getGraph(doc.record);
 
-      const record: SyntaxTreeRecord = {};
-
-      const pageId = computeFieldId(doc._id, FIELDS.page.id);
-      const entry = doc.record[pageId] ?? DEFAULT_SYNTAX_TREE;
-
-      record[pageId] = entry;
-
-      const nestedPageFields = getFieldRecord(
-        doc.record,
-        computeFieldId(doc._id, FIELDS.page.id),
-        {
+      const getElementRecord = async (fieldId: FieldId) => {
+        const nestedFields = getFieldRecord(doc.record, fieldId, {
           children: graph.children,
           imports: new Map(), // do not include imports in record
-        }
-      );
+        });
 
-      let pageRecord: Record<FieldId, ValueArray> = {};
+        let record: Record<FieldId, ValueArray> = {};
 
-      let fetched = new Set<NestedFolder>();
-      let fetchResults = new Map<NestedFolder, NestedDocument[]>();
-      let documents = new Map<DocumentId, DBDocument>();
+        let fetched = new Set<NestedFolder>();
+        let fetchResults = new Map<NestedFolder, NestedDocument[]>();
+        let documents = new Map<DocumentId, DBDocument>();
 
-      const resolveFetches = async (fetches: FolderFetch[]) => {
-        return await Promise.all(
-          fetches.map(async (el) => {
-            if (fetched.has(el.folder)) return;
-            fetched.add(el.folder);
-            const result = {} as DBDocument[];
-            let list: NestedDocument[] = [];
+        const resolveFetches = async (fetches: FolderFetch[]) => {
+          return await Promise.all(
+            fetches.map(async (el) => {
+              if (fetched.has(el.folder)) return;
+              fetched.add(el.folder);
+              /*
+              const filters = Object.fromEntries(
+                Object.entries(filtersProp ?? {}).map(([key, value]) => {
+                  return [`values.${key}`, value];
+                })
+              );
+              */
 
-            result.forEach((el) => {
-              list.push({ id: el._id });
-              documents.set(el._id, el);
-            });
+              const result = await client
+                .db(dbName)
+                .collection<DBDocumentRaw>("documents")
+                .find({ folder: new ObjectId(el.folder.folder) }) // , ...filters
+                .sort({ _id: -1 })
+                .limit(el.limit)
+                .toArray();
 
-            fetchResults.set(el.folder, list);
-          })
-        );
-      };
+              const articles = result.map(parseDocument);
 
-      const calculateAsync = async () => {
-        const newFetches: FolderFetch[] = [];
+              let list: NestedDocument[] = [];
 
-        const getState: StateGetter = (importer, { tree, external }): any => {
-          if (typeof importer === "object" && "folder" in importer) {
-            const { folder, limit, sort } = importer;
-            if (!fetchResults.has(folder)) {
-              newFetches.push({ folder, limit, sort });
+              articles.forEach((el) => {
+                list.push({ id: el._id });
+                documents.set(el._id, el);
+              });
+
+              fetchResults.set(el.folder, list);
+            })
+          );
+        };
+
+        const calculateAsync = async () => {
+          const newFetches: FolderFetch[] = [];
+
+          const getState: StateGetter = (importer, { tree, external }): any => {
+            if (typeof importer === "object" && "folder" in importer) {
+              console.log("FOLDER", importer);
+              const { folder, limit, sort } = importer;
+              if (!fetchResults.has(folder)) {
+                newFetches.push({ folder, limit, ...(sort && { sort }) });
+                return [];
+              }
+              return fetchResults.get(folder);
+            } else if (typeof importer === "object" && "ctx" in importer) {
+              return [];
+            } else {
+              if (importer in doc.record) {
+                console.log("IMPORT", doc.record[importer]);
+                return calculate(doc.record[importer], getState);
+              }
+              const documentId = getDocumentId(importer);
+              const fetchedDoc = documents.get(documentId as DocumentId);
+              const value = fetchedDoc?.record[importer];
+              if (value) {
+                return calculate(value, getState);
+              }
               return [];
             }
-            return fetchResults.get(folder);
-          } else if (typeof importer === "object" && "ctx" in importer) {
-            return [];
-          } else {
-            if (importer in doc.record) {
-              return calculate(doc.record[importer], getState);
-            }
-            const documentId = getDocumentId(importer);
-            const fetchedDoc = documents.get(documentId as DocumentId);
-            const value = fetchedDoc?.record[importer];
-            if (value) {
-              return calculate(value, getState);
-            }
-            return [];
+          };
+
+          record = Object.fromEntries(
+            Object.entries(nestedFields).map(([key, tree]) => {
+              return [key as FieldId, calculate(tree, getState)];
+            })
+          );
+
+          if (newFetches.length > 0) {
+            console.log(
+              "NEW FETCHES NEW FETCHES NEW FETCHES NEW FETCHES",
+              util.inspect(newFetches, { colors: true })
+            );
+            await resolveFetches(newFetches);
+            calculateAsync();
           }
         };
 
-        pageRecord = Object.fromEntries(
-          Object.entries(nestedPageFields).map(([key, tree]) => {
-            return [key as FieldId, calculate(tree, getState)];
-          })
-        );
+        await calculateAsync();
 
-        if (newFetches.length > 0) {
-          await resolveFetches(newFetches);
-          calculateAsync();
+        const entry = record[fieldId];
+        delete record[fieldId];
+
+        if (entry.length === 0) {
+          return null;
         }
+
+        return {
+          entry,
+          record,
+        };
       };
 
-      return success(pageRecord);
+      const [pageRecord, layoutRecord] = await Promise.all([
+        getElementRecord(computeFieldId(doc._id, FIELDS.page.id)),
+        getElementRecord(computeFieldId(doc._id, FIELDS.layout.id)),
+      ]);
+
+      const titleArray = calculateFromRecord(
+        computeFieldId(doc._id, FIELDS.label.id),
+        doc.record
+      );
+
+      const result = {
+        page: pageRecord,
+        layout: layoutRecord,
+        head: {
+          ...(typeof titleArray[0] === "string" && { title: titleArray[0] }),
+        },
+      };
+
+      return success(result);
     },
   }),
   search: createProcedure({
@@ -341,8 +387,6 @@ export const public_ = createRoute({
         )
       ).flat(1);
       */
-
-      console.log("GOT PATHS", ordinaryUrls);
 
       return success(ordinaryUrls.map((el) => el.url));
     },

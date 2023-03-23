@@ -1,5 +1,5 @@
 import * as React from "react";
-import { extendPath } from "./extendPath";
+import { extendPath } from "../utils/extendPath";
 import { dispatchers } from "./events";
 import { Path, PathSegment } from "@storyflow/frontend/types";
 import { stringifyPath } from "./RenderBuilder";
@@ -78,12 +78,12 @@ export function BuilderSelectionProvider({
 export function AddPathSegment({
   children,
   id,
-  type,
+  element,
   parentProp,
 }: {
   children: React.ReactNode;
   id: string;
-  type: string;
+  element: string;
   parentProp: string | null;
 }) {
   const [subscribe, select, deselect] = useBuilderSelection();
@@ -92,11 +92,11 @@ export function AddPathSegment({
     return [
       subscribe,
       (selection) => {
-        select([{ id, type, parentProp }, ...selection]);
+        select([{ id, element, parentProp }, ...selection]);
       },
       deselect,
     ];
-  }, [id, type, parentProp]);
+  }, [id, element, parentProp]);
 
   return (
     <BuilderSelectionContext.Provider value={ctx}>

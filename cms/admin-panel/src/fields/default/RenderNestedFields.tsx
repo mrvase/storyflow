@@ -32,6 +32,7 @@ import {
   computeFieldId,
   createRawTemplateFieldId,
   createTemplateFieldId,
+  getDocumentId,
   getIdFromString,
   replaceDocumentId,
 } from "@storyflow/backend/ids";
@@ -92,8 +93,6 @@ export function RenderNestedElement({
   element: string;
 }) {
   const [, setPath] = useBuilderPath();
-  const id = useFieldId();
-
   const { libraries } = useClientConfig();
 
   const config = getConfigFromType(element, libraries);
@@ -129,8 +128,10 @@ export function RenderNestedElement({
     ) as SyntaxTreeRecord;
   }, [initialProps, record]);
 
-  const keyId = getIdFromString("key");
-  const [key] = useGlobalState<ValueArray>(extendPath(id, keyId));
+  const keyId = computeFieldId(nestedDocumentId, getIdFromString("key"));
+  const [key] = useGlobalState<ValueArray>(keyId);
+
+  console.log("KEY KEY KEY", key);
 
   const [listIsOpen_, toggleListIsOpen] = React.useReducer((ps) => !ps, false);
 
@@ -183,12 +184,9 @@ export function RenderNestedElement({
       <div className={!listIsOpen || !isActive ? "hidden" : ""}>
         <ParentProp name="key">
           <RenderNestedField
-            nestedFieldId={computeFieldId(nestedDocumentId, keyId)}
+            nestedFieldId={keyId}
             hidden={!isActive || !listIsOpen}
-            initialValue={
-              values[computeFieldId(nestedDocumentId, keyId)] ??
-              DEFAULT_SYNTAX_TREE
-            }
+            initialValue={record[keyId] ?? DEFAULT_SYNTAX_TREE}
             label={"Lav til liste"}
             labelColor="blue"
             icon={Bars3Icon}

@@ -189,7 +189,7 @@ export type ClientConfig = {
 export type PathSegment =
   | {
       id: string;
-      type: string;
+      element: string;
       parentProp: string | null;
     }
   | { id: string; label: string };
@@ -310,10 +310,15 @@ export type Metadata = {
 };
 
 export type FetchPageResult = {
-  page: ValueArray | null;
-  layout: ValueArray | null;
+  page: {
+    entry: ValueArray;
+    record: Record<string, ValueArray>;
+  } | null;
+  layout: {
+    entry: ValueArray;
+    record: Record<string, ValueArray>;
+  } | null;
   head: Metadata;
-  imageUrl: string;
 };
 export type ResolvedFetchPageResult = {
   page: RenderArray | null;

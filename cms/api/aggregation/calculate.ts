@@ -14,13 +14,16 @@ import {
   HasDBId,
   DBSyntaxStreamBlock,
   DBSyntaxStream,
+  NestedDocumentId,
 } from "@storyflow/backend/types";
 
 type Accummulator = {
   value: DBValueArray[];
   stack: DBValueArray[][];
   imports: DBId<FieldId>[];
+  nested: string[];
   function: DBSyntaxStream;
+  updated: boolean;
 };
 
 const calculateCombinations = (
@@ -380,8 +383,32 @@ export const calculate = (
         block.v,
         (acc, cur) => {
           return $.define()
-            .let({ select: isObjectWithProp($, cur, "f", "string") })
-            .let(({ select }) => ({
+            .let({
+              select: isObjectWithProp($, cur, "f", "string"),
+              nested: $.cond(
+                $.or(
+                  $.eq($.type((cur as any).element), "string"),
+                  $.eq($.type((cur as any).folder), "objectId"),
+                  $.eq($.type((cur as any).field), "objectId")
+                ),
+                () => [
+                  $.substrBytes(
+                    $.toString(
+                      (
+                        cur as Narrow<
+                          typeof cur,
+                          { id: DBId<NestedDocumentId> }
+                        >
+                      ).id
+                    ),
+                    12,
+                    24
+                  ),
+                ],
+                () => []
+              ),
+            })
+            .let(({ select, nested }) => ({
               next: $.switch()
                 .case(isObjectWithProp($, cur, "element", "string"), () =>
                   $.concatArrays(
@@ -464,8 +491,12 @@ export const calculate = (
                   $.mergeObjects(acc, {
                     value: $.last(acc.stack),
                     stack: $.pop(acc.stack),
+                    nested: $.setUnion(acc.nested, nested),
                   }),
-                () => acc
+                () =>
+                  $.mergeObjects(acc, {
+                    nested: $.setUnion(acc.nested, nested),
+                  })
               ),
             }))
             .return(({ next, acc }) =>
@@ -519,6 +550,7 @@ export const calculate = (
                           ) as DBSyntaxStreamBlock & {
                             result: DBSyntaxStream;
                             function: DBSyntaxStream;
+                            updated?: boolean;
                           },
                         () => null
                       ),
@@ -564,8 +596,7 @@ export const calculate = (
                           cur as Exclude<typeof cur, IgnorableImport>,
                         ]),
                     }))
-                    .return(({ imp, args, next }) => {
-                      // console.log("IMP", imp, args);
+                    .return(({ imp, importedField, args, next }) => {
                       return $.mergeObjects(
                         $.reduce(
                           next,
@@ -760,6 +791,10 @@ export const calculate = (
                               [] as DBId<FieldId>[]
                             )
                           ),
+                          updated: $.or(
+                            acc.updated,
+                            $.toBool(importedField?.updated)
+                          ),
                           function: $.concatArrays(acc.function, next),
                         }
                       );
@@ -772,7 +807,9 @@ export const calculate = (
           value: [],
           stack: [],
           imports: [],
+          nested: [],
           function: [],
+          updated: false,
         } as Accummulator
       ),
     })
@@ -784,5 +821,7 @@ export const calculate = (
       ),
       imports: result.imports,
       function: result.function,
+      nested: result.nested,
+      updated: result.updated,
     }));
 };

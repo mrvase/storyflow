@@ -297,8 +297,6 @@ export const documents = createRoute({
         .limit(limit)
         .toArray();
 
-      console.log(filters, result);
-
       const articles = result.map(parseDocument);
 
       const historiesRecord: Record<

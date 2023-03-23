@@ -451,12 +451,18 @@ const getRecordSnapshot = (
   const finalRecord: ComponentRecord = {};
 
   const recursivelyGetRecordFromComputation = (fieldId: FieldId) => {
-    const initialValue = record[fieldId] ?? DEFAULT_SYNTAX_TREE;
     const state = store.use<ValueArray>(fieldId);
+
     if (!state.initialized()) {
+      const initialValue = record[fieldId] ?? DEFAULT_SYNTAX_TREE;
       state.set(() => calculateFn(fieldId, initialValue, { record, client }));
     }
+
     const value = state.value!;
+
+    if (fieldId === entry) {
+      console.log("$$ ENTRY STATE", value);
+    }
 
     const getChildren = (value: ValueArray): {} => {
       return value.reduce((acc, element) => {
@@ -537,13 +543,27 @@ function PropagateStatePlugin({
   const { libraries } = useClientConfig();
 
   // state initialized in ComponentField
-  const [tree] = useGlobalState<ComponentRecord>(`${id}/record`, () => {
-    return getRecordSnapshot(id, {
-      record,
-      client,
-      libraries,
+  const [tree, setTree] = useGlobalState<ComponentRecord>(
+    `${id}/record`,
+    () => {
+      return getRecordSnapshot(id, {
+        record,
+        client,
+        libraries,
+      });
+    }
+  );
+
+  React.useEffect(() => {
+    console.log("$$ SETTING TREE", record, client, libraries);
+    setTree(() => {
+      return getRecordSnapshot(id, {
+        record,
+        client,
+        libraries,
+      });
     });
-  });
+  }, [client, libraries, setTree]);
 
   let oldValue = React.useRef({ ...tree });
 
@@ -561,6 +581,7 @@ function PropagateStatePlugin({
 
   React.useEffect(() => {
     if (rendered && tree) {
+      console.log("$$ UPDATED TREE", tree);
       const updateEntries = Object.entries(tree).filter(([key, value]) => {
         return !(key in oldValue.current) || oldValue.current[key] !== value;
       });

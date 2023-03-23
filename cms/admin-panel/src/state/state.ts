@@ -8,13 +8,11 @@ export function useGlobalState<T>(
 ): [T | undefined, (fn: (value: T | undefined) => Promise<T> | T) => void];
 export function useGlobalState<T>(
   id: string | undefined,
-  fn: (value: T | undefined) => Promise<T> | T,
-  options?: { cluster?: string }
+  fn: (value: T | undefined) => Promise<T> | T
 ): [T, (fn: (value: T | undefined) => Promise<T> | T) => void];
 export function useGlobalState<T>(
   id: string | undefined,
-  fn?: ((value: T | undefined) => Promise<T> | T) | undefined,
-  options: { cluster?: string } = {}
+  fn?: ((value: T | undefined) => Promise<T> | T) | undefined
 ): [T | undefined, (fn: (value: T | undefined) => Promise<T> | T) => void] {
   const s = React.useMemo(() => {
     if (!id) {
@@ -23,7 +21,7 @@ export function useGlobalState<T>(
         set: () => {},
       };
     }
-    const state = store.use<T>(id, fn!, options);
+    const state = store.use<T>(id, fn!);
     return state;
   }, [id]);
 
