@@ -31,6 +31,7 @@ import { useDeleteForm } from "./useDeleteForm";
 import { FIELDS } from "@storyflow/backend/fields";
 import { useDocumentIdGenerator } from "../../id-generator";
 import { calculateFromRecord } from "@storyflow/backend/calculate";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
 
 export function DocumentListSpace({
   spaceId,
@@ -190,7 +191,7 @@ function AddArticleButton({ folder }: { folder: FolderId }) {
         : {};
 
       record[computeFieldId(id, FIELDS.creation_date.id)] = {
-        type: null,
+        ...DEFAULT_SYNTAX_TREE,
         children: [new Date()],
       };
 

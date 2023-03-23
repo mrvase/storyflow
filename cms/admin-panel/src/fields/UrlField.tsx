@@ -11,6 +11,7 @@ import {
   RawFieldId,
   SyntaxTree,
   ValueArray,
+  NestedField,
 } from "@storyflow/backend/types";
 import {
   computeFieldId,
@@ -122,7 +123,7 @@ export default function UrlField({
   const { record } = useDocumentPageContext();
 
   const initialValue = React.useMemo(
-    () => value ?? getConfig("url").initialValue,
+    () => value ?? getConfig("url").defaultValue,
     []
   );
 
@@ -132,6 +133,8 @@ export default function UrlField({
     id,
     () => calculateFn(id, initialValue, { record, client }) as [string]
   );
+
+  console.log("URL", output);
 
   const url = getUrlStringFromValue(output);
 
@@ -214,36 +217,31 @@ export default function UrlField({
 
   React.useEffect(() => {
     if (isFocused) {
-      return addImport.subscribe(
-        async ({ id: externalId, templateId, imports }) => {
-          if (id && imports.includes(id)) {
-            console.error("Tried to add itself");
-            return;
-          }
-          let insert: TokenStream = [
-            {
-              id: generateDocumentId(documentId),
-              field: externalId as FieldId,
-              ...(templateId && { select: templateId as RawFieldId }),
-              props: {},
-            },
-          ];
-          actions.push({
-            target: targetTools.stringify({
-              field: "url",
-              operation: "computation",
-              location: "",
-            }),
-            ops: [
-              {
-                index: 0,
-                insert: [...insert, { ",": true }],
-                remove: 2,
-              },
-            ],
-          });
+      return addImport.subscribe(async ({ id: externalId, imports }) => {
+        if (id && imports.includes(id)) {
+          console.error("Tried to add itself");
+          return;
         }
-      );
+        let parentField: NestedField = {
+          id: generateDocumentId(documentId),
+          field: externalId as FieldId,
+          inline: true,
+        };
+        actions.push({
+          target: targetTools.stringify({
+            field: "url",
+            operation: "computation",
+            location: "",
+          }),
+          ops: [
+            {
+              index: 0,
+              insert: [parentField, { ",": true }],
+              remove: 2,
+            },
+          ],
+        });
+      });
     }
   }, [isFocused, value]);
 
@@ -266,13 +264,17 @@ export default function UrlField({
           return getNextState(prev, operation);
         });
 
+        console.log(
+          "RESULT",
+          result,
+          parseTokenStream(result, getConfig("url").transform)
+        );
+
         setOutput(
           () =>
             calculateFn(
               id,
-              parseTokenStream(result, {
-                type: getConfig("url").initialValue.type,
-              }),
+              parseTokenStream(result, getConfig("url").transform),
               { record, client }
             ) as [string]
         );

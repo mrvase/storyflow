@@ -13,6 +13,7 @@ import {
 } from "@storyflow/backend/types";
 import { tokens } from "@storyflow/backend/tokens";
 import { isSymbol } from "@storyflow/backend/symbols";
+import { insertRootInTransform, retrieveRoot } from "./initialValues";
 
 function isObject(value: any): value is Record<string, any> {
   return value !== null && typeof value === "object";
@@ -37,7 +38,7 @@ const returnToNullParent = (
   current: SyntaxNode<WithSyntaxError>,
   parents: WeakMap<SyntaxNode<WithSyntaxError>, SyntaxNode<WithSyntaxError>>
 ) => {
-  while (current.type !== null) {
+  while (current.type !== null && current.type !== "root") {
     current = parents.get(current)!;
   }
   return current;
@@ -53,7 +54,10 @@ export function parseTokenStream(
   stream: TokenStream,
   transform?: Transform
 ): SyntaxTree<WithSyntaxError> {
-  let root: SyntaxNode<WithSyntaxError> = { children: [], type: null };
+  let root: SyntaxNode<WithSyntaxError> & { type: "root" } = {
+    children: [],
+    type: "root",
+  };
 
   let parents = new WeakMap<
     SyntaxNode<WithSyntaxError>,
@@ -72,7 +76,7 @@ export function parseTokenStream(
       if (isMerge(former)) {
         former.children.push(token);
         return;
-      } else if (isInline(former) && !current.type) {
+      } else if (isInline(former) && [null, "root"].includes(current.type)) {
         // if current.type is already set, it is an operator, and they have "implicit commas"
         current.children.pop();
         current.children.push({
@@ -216,7 +220,7 @@ export function parseTokenStream(
         const node: SyntaxNode<WithSyntaxError> = {
           children: [rest],
           type: "select",
-          payload: {
+          data: {
             select,
           },
         };
@@ -262,10 +266,7 @@ export function parseTokenStream(
   }
 
   if (transform) {
-    root.type = transform.type;
-    if (transform.payload) {
-      root.payload = transform.payload;
-    }
+    return insertRootInTransform(root, transform);
   }
 
   return root;
@@ -274,6 +275,8 @@ export function parseTokenStream(
 export function createTokenStream(
   tree: SyntaxTree<WithSyntaxError>
 ): TokenStream {
+  tree = retrieveRoot(tree);
+
   const flatten = (
     value: SyntaxNode<WithSyntaxError>,
     parent: SyntaxNode<WithSyntaxError> | null
@@ -342,15 +345,17 @@ export function createTokenStream(
       flattened.push(symbol);
     }
 
-    const isRoot = parent === null;
+    const isRootAtTop = parent === null && value.type === "root";
 
     if (operators.includes(value.type as any)) {
       // do nothing - handled above
+    } else if (isRootAtTop) {
+      // do nothing
     } else if (value.type === "merge") {
       // do nothing
     } else if (value.type === "select") {
-      (flattened[0] as HasSelect<NestedField>).select = value.payload!.select;
-    } else if (!isRoot) {
+      (flattened[0] as HasSelect<NestedField>).select = value.data!.select;
+    } else {
       let openingBracket: TokenStreamSymbol = { "(": true };
       let closingBracket: TokenStreamSymbol = { ")": true };
 
@@ -359,6 +364,10 @@ export function createTokenStream(
         closingBracket = { "]": true };
       } else if (value.type !== null) {
         closingBracket = { ")": value.type as (typeof functions)[number] };
+        if (value.type === "sortlimit") {
+          (closingBracket as any).l = value.data!.l;
+          (closingBracket as any).s = value.data!.s;
+        }
       }
 
       flattened.unshift(openingBracket);

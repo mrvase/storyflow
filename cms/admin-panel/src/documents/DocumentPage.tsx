@@ -1,4 +1,5 @@
 import {
+  ArrowDownTrayIcon,
   ArrowUpTrayIcon,
   BoltIcon,
   CheckIcon,
@@ -8,6 +9,7 @@ import {
   ListBulletIcon,
   PencilSquareIcon,
   PlusIcon,
+  ScissorsIcon,
   TrashIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
@@ -54,6 +56,7 @@ import { DocumentPageContext } from "./DocumentPageContext";
 import { GetDocument } from "./GetDocument";
 import { RenderTemplate } from "./RenderTemplate";
 import { useFieldIdGenerator } from "../id-generator";
+import { Checkbox } from "../elements/Checkbox";
 
 export const getVersionKey = (versions?: Record<RawFieldId, number>) => {
   if (!versions) return -1;
@@ -325,6 +328,57 @@ export function FieldToolbar({
         }
         options={restrictToOptions}
       />
+      {config?.template && (
+        <Content.ToolbarMenu
+          icon={ArrowDownTrayIcon}
+          label="Hent mapper"
+          onSelect={(el) => setConfig("restrictTo", el.id)}
+          onClear={() => setConfig("restrictTo", undefined)}
+          selected={
+            config?.restrictTo
+              ? restrictToOptions.find((el) => el.id === config.restrictTo)
+              : undefined
+          }
+        >
+          <div className="p-2 flex flex-col gap-2">
+            <div className="text-xs">
+              <Checkbox
+                value={config?.transform?.type === "sortlimit"}
+                setValue={(value) =>
+                  setConfig(
+                    "transform",
+                    value
+                      ? { type: "sortlimit", data: { limit: 10 } }
+                      : undefined
+                  )
+                }
+                label="Hent dokumenter fra mapper"
+                small
+              />
+            </div>
+            {config?.transform?.type === "sortlimit" && (
+              <>
+                <div className="flex items-center gap-1.5 text-xs">
+                  <ScissorsIcon className="w-3 h-3" /> Begræns antal
+                </div>
+                <div className="py-1 pl-[1.175rem]">
+                  <Range
+                    value={config.transform.data!.limit}
+                    setValue={(limit) =>
+                      setConfig(
+                        "transform",
+                        limit
+                          ? { type: "sortlimit", data: { limit } }
+                          : undefined
+                      )
+                    }
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        </Content.ToolbarMenu>
+      )}
       {typeof index === "number" && (
         <Content.ToolbarButton
           data-focus-remain="true"
@@ -347,6 +401,37 @@ export function FieldToolbar({
         </Content.ToolbarButton>
       )}
     </Content.Toolbar>
+  );
+}
+
+function Range({
+  value: valueFromProps,
+  setValue: setValueFromProps,
+}: {
+  value: number;
+  setValue: (value: number) => void;
+}) {
+  const [value, setValue] = React.useState(valueFromProps);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setValue(Number(e.target.value));
+  };
+
+  return (
+    <div className="flex">
+      <input
+        type="range"
+        className="w-full"
+        min={1}
+        max={25}
+        value={value}
+        onChange={handleChange}
+        onMouseUp={() => valueFromProps !== value && setValueFromProps(value)}
+      />
+      <span className="text-xs font-bold opacity-75 w-8 text-right">
+        {value}
+      </span>
+    </div>
   );
 }
 

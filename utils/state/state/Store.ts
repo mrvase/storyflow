@@ -69,12 +69,12 @@ export class Store {
     id: string,
     fn: PromiseLike<((value: T | undefined) => PromiseLike<T> | T) | undefined>
   ): State<T | undefined> {
-    if (!("then" in fn)) {
-      // allow conditional sync use
-      return this.use(id, fn);
-    }
     let state = this.map.get(id) as State<T | undefined>;
     if (!state) {
+      if (!("then" in fn)) {
+        // allow conditional sync use
+        return this.use(id, fn);
+      }
       state = new State<T | undefined>(undefined, { map: this.map, key: id });
       this.map.set(id, state);
       fn.then((fn) => fn && state.set(fn, true));

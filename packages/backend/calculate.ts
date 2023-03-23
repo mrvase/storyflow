@@ -435,8 +435,8 @@ export function calculate(node: SyntaxTree, getState: StateGetter): ValueArray {
     // run function
 
     if (node.type === "sortlimit") {
-      const limit = (node.payload!.limit as number) ?? 10;
-      const sort = (node.payload!.sort as SortSpec) ?? {};
+      const limit = (node.data!.limit as number) ?? 10;
+      const sort = (node.data!.sort as SortSpec) ?? {};
 
       let docs = spreadImplicitArrays(values).reduce(
         (acc: NestedDocument[], el) => {
@@ -461,8 +461,6 @@ export function calculate(node: SyntaxTree, getState: StateGetter): ValueArray {
         []
       );
 
-      console.log("DOCS", docs);
-
       Object.entries(sort).forEach(([rawFieldId, direction]) => {
         docs = docs.sort((a, b) => {
           // get state for each field
@@ -474,7 +472,7 @@ export function calculate(node: SyntaxTree, getState: StateGetter): ValueArray {
     }
 
     if (node.type === "select") {
-      const select = node.payload!.select as RawFieldId;
+      const select = node.data!.select as RawFieldId;
 
       values = spreadImplicitArrays(values).reduce((acc: ValueArray[], el) => {
         if (tokens.isNestedDocument(el)) {
@@ -490,14 +488,19 @@ export function calculate(node: SyntaxTree, getState: StateGetter): ValueArray {
       }, []);
     }
 
-    if (node.type === null) {
+    if (node.type === "root") {
+      // do nothing
+    } else if (node.type === null) {
       // brackets
       values = [spreadImplicitArrays(values)];
     } else if (node.type === ("array" as any)) {
       values = [[spreadImplicitArrays(values)]];
     } else {
       values = compute(
-        node.type as Exclude<typeof node.type, "select" | "array" | null>,
+        node.type as Exclude<
+          typeof node.type,
+          "select" | "sortlimit" | "array" | null
+        >,
         values
       );
     }

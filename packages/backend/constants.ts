@@ -13,7 +13,7 @@ export const TEMPLATE_FOLDER = createDocumentId(
   TEMPLATE_FOLDER_NUMBER
 ) as unknown as FolderId;
 
-export const DEFAULT_SYNTAX_TREE: SyntaxTree = {
-  type: null,
+export const DEFAULT_SYNTAX_TREE: SyntaxTree & { type: "root" } = {
+  type: "root",
   children: [],
 };

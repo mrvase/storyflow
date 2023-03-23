@@ -80,7 +80,7 @@ export const getPickedDocumentIds = (fref: FieldId, pool: SyntaxTreeRecord) => {
           const child = token.children[0] as NestedField;
           const secondaryDrefs = getPickedDocumentIds(child.field, pool);
           secondaryDrefs.forEach((dref) => {
-            const id = computeFieldId(dref, token.payload!.select);
+            const id = computeFieldId(dref, token.data!.select);
             drefs.push(...getPickedDocumentIds(id, pool));
           });
         } else {
@@ -131,7 +131,7 @@ export const getImportIds = (value: SyntaxTree, pool: SyntaxTreeRecord) => {
           const child = token.children[0] as NestedField;
           const drefs = getPickedDocumentIds(child.field, pool);
           drefs.forEach((dref) =>
-            imports.push(computeFieldId(dref, token.payload!.select))
+            imports.push(computeFieldId(dref, token.data!.select))
           );
         } else {
           traverseNode(token);
@@ -218,7 +218,7 @@ export const createComputationTransformer = (
     if (location === "") {
       let value = initialRecord[fieldId];
       if (!value) {
-        value = getConfig(field ?? "default").initialValue;
+        value = getConfig(field ?? "default").defaultValue;
       }
       return createTokenStream(value);
     }

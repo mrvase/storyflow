@@ -183,7 +183,6 @@ export const calculateFn = (
     const stateId = tree ? `${importId}#tree` : importId;
 
     const value = record[importId];
-    // const defaultValue = tree ? { type: null, children: [] } : [];
 
     if (value || !external) {
       const fn = value

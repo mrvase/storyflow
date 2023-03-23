@@ -201,7 +201,7 @@ function ToolbarMenu<T extends { label: string; disabled?: boolean }>({
       onSelect: (value: T) => void;
       multi?: boolean;
     }
-  | { children: React.ReactElement[] }
+  | { children: React.ReactNode }
 )) {
   const selectedArray = selected
     ? Array.isArray(selected)
@@ -281,8 +281,12 @@ const ToolbarMenuOption = React.forwardRef<
           )}
         >
           {typeof selected === "boolean" && (
-            <div className="w-3 h-3 flex-center rounded bg-black/10 dark:bg-white/10">
-              {selected ? <CheckIcon className="w-3 h-3" /> : null}
+            <div
+              className={cl(
+                "w-3 h-3 flex-center rounded bg-black/10 dark:bg-white/10"
+              )}
+            >
+              {selected ? <CheckIcon className="w-2.5 h-2.5" /> : null}
             </div>
           )}
           {typeof selected !== "boolean" && Icon && (

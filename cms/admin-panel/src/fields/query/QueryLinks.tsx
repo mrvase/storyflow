@@ -10,7 +10,6 @@ import { computeFieldId, getDocumentId } from "@storyflow/backend/ids";
 import { ComputerDesktopIcon, LinkIcon } from "@heroicons/react/24/outline";
 import { $getRoot, $getSelection, $isRangeSelection } from "lexical";
 import React from "react";
-import { SWRClient } from "../../client";
 import { useEditorContext } from "../../editor/react/EditorProvider";
 import { useAppFolders } from "../../folders/collab/hooks";
 import { tools } from "shared/editor-tools";
@@ -72,7 +71,7 @@ export function QueryLinks({
     apps?.length === 1 ? apps[0]._id : undefined
   );
 
-  const { data: list } = useOptimisticDocumentList(app);
+  const { articles: list } = useOptimisticDocumentList(app);
 
   const onAppEnter = React.useCallback((id: FolderId) => {
     setApp(id);
@@ -100,7 +99,7 @@ export function QueryLinks({
         onEnterLabel: "Vis links",
       })) ?? [];
   } else if (list) {
-    options = list.articles.reduce((acc, el) => {
+    options = list.reduce((acc, el) => {
       const url =
         (calculateFromRecord(
           computeFieldId(el._id, FIELDS.url.id),

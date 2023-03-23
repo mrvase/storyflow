@@ -153,7 +153,8 @@ export type TokenStreamSymbol =
   | { "]": true }
   | { ",": true }
   | { _: Operator }
-  | { ")": FunctionName };
+  | { ")": FunctionName }
+  | { ")": "sortlimit"; l: number; s?: SortSpec };
 
 export type TokenStream = HasSelect<StreamEntity<TokenStreamSymbol>>[];
 
@@ -168,7 +169,7 @@ export type WithSyntaxError = {
 export type SyntaxNode<
   WithExtraChildren extends WithSyntaxError | never = WithSyntaxError | never
 > = {
-  type: Operator | FunctionName | "merge" | "select" | "array" | null;
+  type: Operator | FunctionName | "merge" | "array" | "root" | null;
   children: (
     | SyntaxNode<WithExtraChildren>
     | Parameter
@@ -178,7 +179,7 @@ export type SyntaxNode<
     | any[] // like streams, they are never nested, but this allows us to have ValueArray as a child as well.
     | WithExtraChildren
   )[];
-  payload?: Record<string, any>;
+  data?: Record<string, any>;
   open?: true;
 };
 
@@ -186,7 +187,12 @@ export type SyntaxTree<
   WithExtraChildren extends WithSyntaxError | never = WithSyntaxError | never
 > = SyntaxNode<WithExtraChildren>;
 
-export type Transform = Pick<SyntaxNode, "type" | "payload">;
+export type Transform = Pick<SyntaxNode, "type" | "data"> & {
+  children?: (
+    | Exclude<SyntaxNode["children"][number], SyntaxNode>
+    | Transform
+  )[];
+};
 
 export type SyntaxTreeRecord = { [key: FieldId]: SyntaxTree<WithSyntaxError> };
 
@@ -201,8 +207,10 @@ export type SyntaxStreamSymbol =
   | { "]": true }
   | { "{": true }
   | { "}": true }
-  | { ")": Operator | FunctionName }
-  | { p: RawFieldId }
+  | { ")": "root" }
+  | { ")": "select"; f: RawFieldId }
+  | { ")": "sortlimit"; l: number; s?: SortSpec }
+  | { ")": Exclude<Operator | FunctionName, "select" | "sortlimit"> }
   | null;
 
 export type SyntaxStream = StreamEntity<SyntaxStreamSymbol>[];
@@ -249,6 +257,7 @@ export const functions = [
   "filter",
   "slug",
   "url",
+  "select",
   "sortlimit",
 ] as const;
 
@@ -272,6 +281,7 @@ export type FieldConfig<T extends FieldType = FieldType> = {
   type: T;
   template?: DocumentId;
   restrictTo?: RestrictTo;
+  transform?: Transform;
 };
 
 export type TemplateRef = {

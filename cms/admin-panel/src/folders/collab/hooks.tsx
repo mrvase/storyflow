@@ -98,8 +98,6 @@ export function useFolder(id: FolderId): DBFolder {
         }
       });
 
-      console.log("NEW FOLDER", newFolder);
-
       return newFolder;
     },
     [initialFolder]

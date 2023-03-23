@@ -15,6 +15,7 @@ import {
   SyntaxTree,
   NestedField,
   ValueArray,
+  DocumentConfig,
 } from "@storyflow/backend/types";
 import { ObjectId } from "mongodb";
 import clientPromise from "../mongo/mongoClient";
@@ -24,7 +25,7 @@ import {
   ServerPackage,
   unwrapServerPackage,
 } from "@storyflow/state";
-import { setFieldConfig } from "shared/getFieldConfig";
+import { getFieldConfig, setFieldConfig } from "shared/getFieldConfig";
 import { AnyOp, targetTools } from "shared/operations";
 import { getConfig } from "shared/initialValues";
 import {
@@ -193,34 +194,64 @@ export const fields = createRoute({
 
       const versions = article.versions ?? { "": 0 };
 
+      if (documentId in histories) {
+        const history = histories[documentId] ?? [];
+        const templateVersion = article.versions?.[""] ?? 0;
+        const pkgs = filterServerPackages(templateVersion, history);
+
+        if (pkgs.length) {
+          documentConfig = transformDocumentConfig(documentConfig, pkgs);
+          versions[""] = templateVersion + pkgs.length;
+        }
+      }
+
+      const allUpdates: Record<
+        FieldId,
+        {
+          initialTransform: Transform | undefined;
+          stream: TokenStream;
+        }
+      > = {};
+
       (
         Object.entries(histories) as [
           DocumentId | RawFieldId,
           ServerPackage<any>[]
         ][]
-      ).map(([id, history]) => {
-        if (id === documentId) {
-          const templateVersion = article.versions?.[""] ?? 0;
-          const pkgs = filterServerPackages(templateVersion, history);
+      ).forEach(([id, history]) => {
+        if (id === documentId) return;
 
-          if (!pkgs.length) return;
+        const fieldId = computeFieldId(documentId, id as RawFieldId);
 
-          documentConfig = transformDocumentConfig(documentConfig, pkgs);
-          versions[""] = templateVersion + pkgs.length;
-        } else {
-          const fieldId = computeFieldId(documentId, id as RawFieldId);
+        const fieldVersion = article.versions?.[id as RawFieldId] ?? 0;
+        const pkgs = filterServerPackages(fieldVersion, history);
 
-          const fieldVersion = article.versions?.[id as RawFieldId] ?? 0;
-          const pkgs = filterServerPackages(fieldVersion, history);
+        if (!pkgs.length) return;
 
-          if (!pkgs.length) return;
+        const newUpdates = transformField(fieldId, computationRecord, pkgs);
 
-          const newRecord = transformField(fieldId, computationRecord, pkgs);
-          Object.assign(computationRecord, newRecord);
-          updatedFieldsIds.add(fieldId);
-          versions[id as RawFieldId] = fieldVersion + pkgs.length;
-        }
+        Object.assign(allUpdates, newUpdates);
+
+        updatedFieldsIds.add(fieldId);
+        versions[id as RawFieldId] = fieldVersion + pkgs.length;
       });
+
+      // TODO
+      // Skal tjekke ovenfor, om configs har fået ændret transforms.
+      // Så laver jeg de felter til tokenStream og tilføjer dem til allUpdates uden initialTransform.
+      // Herunder får de så tilføjet den nye transform, hvis den er der.
+
+      const newRecord: SyntaxTreeRecord = Object.fromEntries(
+        Object.entries(allUpdates).map(([id, { stream, initialTransform }]) => {
+          const transform = getFieldConfig(
+            documentConfig,
+            id as FieldId
+          )?.transform;
+          return [id, parseTokenStream(stream, transform ?? initialTransform)];
+        })
+      );
+
+      Object.assign(computationRecord, newRecord);
 
       // trim to not include removed nested fields
       computationRecord = extractRootRecord(documentId, computationRecord, {
@@ -350,7 +381,7 @@ export const fields = createRoute({
               const nestedField = node.children[0] as NestedField;
               const drefs = getPickedDocumentIds(nestedField.field, fullRecord);
               drefs.forEach((dref) => {
-                const newFieldId = computeFieldId(dref, node.payload!.select);
+                const newFieldId = computeFieldId(dref, node.data!.select);
                 if (!externalFieldIds.includes(newFieldId)) {
                   newExternalFieldIds.push(newFieldId);
                 }
@@ -548,12 +579,12 @@ const transformField = (
   fieldId: FieldId,
   initialRecord: SyntaxTreeRecord,
   pkgs: ServerPackage<AnyOp>[]
-): SyntaxTreeRecord => {
+) => {
   const transformer = createComputationTransformer(fieldId, initialRecord);
 
   const updates: Record<
     FieldId,
-    { transform: Transform | undefined; stream: TokenStream }
+    { initialTransform: Transform | undefined; stream: TokenStream }
   > = {};
 
   transformer(pkgs).forEach((pkg) => {
@@ -563,34 +594,27 @@ const transformField = (
       if (!(id in updates)) {
         const initialValue =
           field && location === ""
-            ? getConfig(field).initialValue
+            ? getConfig(field).defaultValue
             : DEFAULT_SYNTAX_TREE;
 
-        const transform =
-          initialValue.type !== null
+        const initialTransform =
+          initialValue.type !== "root"
             ? {
                 type: initialValue.type,
-                ...(initialValue.payload && { payload: initialValue.payload }),
+                ...(initialValue.data && { payload: initialValue.data }),
               }
             : undefined;
 
         updates[id] = {
           stream: createTokenStream(initialRecord[id] ?? initialValue),
-          transform,
+          initialTransform,
         };
       }
       updates[id].stream = getNextState(updates[id].stream, operation);
     });
   });
 
-  const record: SyntaxTreeRecord = Object.fromEntries(
-    Object.entries(updates).map(([id, { stream, transform }]) => [
-      id,
-      parseTokenStream(stream, transform),
-    ])
-  );
-
-  return record;
+  return updates;
 };
 
 const transformDocumentConfig = (

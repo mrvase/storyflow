@@ -117,7 +117,7 @@ export default function DefaultField({
   }
 
   const initialValue = React.useMemo(
-    () => value ?? getConfig(fieldConfig.type).initialValue,
+    () => value ?? getConfig(fieldConfig.type).defaultValue,
     []
   );
 
@@ -170,13 +170,17 @@ export function WritableDefaultField({
     calculateFn(rootId, initialValue, { record, client })
   );
 
-  const initialTransform = React.useMemo(
-    () => ({
+  const [config] = useFieldConfig(rootId);
+
+  const initialTransform = React.useMemo(() => {
+    if (id === rootId && config?.transform) {
+      return config.transform;
+    }
+    return {
       type: initialValue.type,
-      ...(initialValue.payload && { payload: initialValue.payload }),
-    }),
-    [initialValue]
-  );
+      ...(initialValue.data && { data: initialValue.data }),
+    };
+  }, [initialValue]);
 
   const [tree, setTree] = useGlobalState<SyntaxTree>(
     `${id}#tree`,
@@ -266,22 +270,35 @@ export function WritableDefaultField({
 
   const singular = useSingular(`${rootId}${target}`);
 
-  console.log("OUTPUT", output);
+  const transform = React.useMemo(
+    () => config?.transform ?? initialTransform,
+    [config?.transform, initialTransform]
+  );
 
   const setValue = React.useCallback(
     (func: () => TokenStream) => {
       singular(() => {
         setTokenStream(func);
         const stream = func();
-        const tree = parseTokenStream(stream, initialTransform);
-        console.log("COMPUTATION:", stream, tree);
+        const tree = parseTokenStream(stream, transform);
         setTree(() => tree);
         setOutput(() => calculateFn(rootId, tree, { client, record }));
         setFieldImports(() => findImportsFn(tree));
       });
     },
-    [initialTransform]
+    [transform]
   );
+
+  const streamRef = React.useRef(tokenStream);
+  React.useEffect(() => {
+    streamRef.current = tokenStream;
+  }, [tokenStream]);
+  React.useEffect(() => {
+    const tree = parseTokenStream(streamRef.current, transform);
+    setTree(() => tree);
+    setOutput(() => calculateFn(rootId, tree, { client, record }));
+    setFieldImports(() => findImportsFn(tree));
+  }, [transform]);
 
   return (
     <>

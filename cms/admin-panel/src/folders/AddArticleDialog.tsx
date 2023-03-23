@@ -15,6 +15,8 @@ import { useClient } from "../client";
 import { toSlug } from "../fields/UrlField";
 import { useDocumentIdGenerator } from "../id-generator";
 import { FIELDS } from "@storyflow/backend/fields";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
+import { getConfig, insertRootInTransform } from "shared/initialValues";
 
 export function AddArticleDialog({
   isOpen,
@@ -63,23 +65,30 @@ export function AddArticleDialog({
               : {};
 
             record[computeFieldId(id, FIELDS.creation_date.id)] = {
-              type: null,
+              ...DEFAULT_SYNTAX_TREE,
               children: [new Date()],
             };
 
             if (parentUrl) {
               Object.assign(record, parentUrl.record);
 
-              record[computeFieldId(id, FIELDS.url.id)] = {
-                type: "url",
-                children: [
-                  { id: generateDocumentId(id), field: parentUrl.id },
-                  slug,
-                ],
-              };
+              record[computeFieldId(id, FIELDS.url.id)] = insertRootInTransform(
+                {
+                  ...DEFAULT_SYNTAX_TREE,
+                  children: [
+                    {
+                      id: generateDocumentId(id),
+                      field: parentUrl.id,
+                      inline: true,
+                    },
+                    slug,
+                  ],
+                },
+                getConfig("url").transform
+              );
 
               record[computeFieldId(id, FIELDS.label.id)] = {
-                type: null,
+                ...DEFAULT_SYNTAX_TREE,
                 children: [label],
               };
             }

@@ -47,10 +47,11 @@ const calculateCombinations = (
 
 const compute = (
   $: Operators<DBDocumentRaw>,
-  operator: Operator | FunctionName | "}" | "]" | ")",
+  operator: Operator | FunctionName | "root" | "}" | "]" | ")",
   acc: Accummulator
 ) =>
   $.switch()
+    .case($.eq(operator, "root"), () => acc.value)
     .case($.in(operator, [")", "]"]), () =>
       $.define()
         .let({
@@ -379,7 +380,7 @@ export const calculate = (
         block.v,
         (acc, cur) => {
           return $.define()
-            .let({ select: isObjectWithProp($, cur, "p", "string") })
+            .let({ select: isObjectWithProp($, cur, "f", "string") })
             .let(({ select }) => ({
               next: $.switch()
                 .case(isObjectWithProp($, cur, "element", "string"), () =>
@@ -437,9 +438,9 @@ export const calculate = (
                                         (
                                           cur as Narrow<
                                             typeof cur,
-                                            { p: RawFieldId }
+                                            { f: RawFieldId }
                                           >
-                                        ).p,
+                                        ).f,
                                       ])
                                     ),
                                   } as HasDBId<NestedField>,

@@ -15,6 +15,8 @@ import {
   ValueArray,
   DBValueArray,
   DBId,
+  SortSpec,
+  Transform,
 } from "@storyflow/backend/types";
 
 function isObject(value: any): value is Record<string, any> {
@@ -25,7 +27,7 @@ const returnToNullParent = (
   current: SyntaxNode<WithSyntaxError>,
   parents: WeakMap<SyntaxNode<WithSyntaxError>, SyntaxNode<WithSyntaxError>>
 ) => {
-  while (current.type !== null) {
+  while (current.type !== null && current.type !== "root") {
     current = parents.get(current)!;
   }
   return current;
@@ -36,8 +38,14 @@ type SymbolKey = KeysOfUnion<SyntaxStreamSymbol>;
 
 function isSymbol<T extends SymbolKey>(
   value: any,
-  key: "p"
-): value is { p: RawFieldId };
+  key: ")",
+  func: "select"
+): value is { ")": "select"; f: RawFieldId };
+function isSymbol<T extends SymbolKey>(
+  value: any,
+  key: ")",
+  func: "sortlimit"
+): value is { ")": "sortlimit"; l: number; s?: SortSpec };
 function isSymbol<T extends ")", F extends Operator | FunctionName>(
   value: any,
   key: T
@@ -46,7 +54,7 @@ function isSymbol<T extends SymbolKey>(
   value: any,
   key: T
 ): value is { [key in T]: true };
-function isSymbol<T extends ")", F extends Operator | FunctionName>(
+function isSymbol<T extends ")", F extends Operator | FunctionName | "root">(
   value: any,
   key: T,
   func: F
@@ -87,7 +95,7 @@ export function createSyntaxStream(
       }
     });
 
-    const isRoot = parent === null;
+    const isRootAtTop = parent === null && value.type === "root";
 
     const childIsAddition =
       value.children.length === 1 &&
@@ -100,7 +108,7 @@ export function createSyntaxStream(
       value.type === null &&
       ["*", "/"].includes(parent?.type as string);
 
-    if (!isRoot && !isAutoBracket) {
+    if (!isRootAtTop && !isAutoBracket) {
       let openingBracket: SyntaxStreamSymbol = { "(": true };
       let closingBracket: SyntaxStreamSymbol = { ")": true };
 
@@ -111,7 +119,16 @@ export function createSyntaxStream(
         openingBracket = { "[": true };
         closingBracket = { "]": true };
       } else if (value.type === "select") {
-        closingBracket = { p: value.payload!.select };
+        closingBracket = { ")": "select", f: value.data!.select };
+      } else if (value.type === "sortlimit") {
+        closingBracket = {
+          ")": "sortlimit",
+          l: value.data!.limit,
+          ...(value.data!.sort && { s: value.data!.sort }),
+        };
+      } else if (value.type === "root") {
+        // inserted when not at top level
+        closingBracket = { ")": "root" };
       } else if (value.type !== null) {
         closingBracket = { ")": value.type as "+" };
       }
@@ -133,6 +150,8 @@ export function parseSyntaxStream(
 ): SyntaxTree<WithSyntaxError> {
   let root: SyntaxNode<WithSyntaxError> = { children: [], type: null };
 
+  let hasNestedRoot = false;
+
   let parents = new WeakMap<
     SyntaxNode<WithSyntaxError>,
     SyntaxNode<WithSyntaxError>
@@ -152,6 +171,14 @@ export function parseSyntaxStream(
       current = node;
     } else if (isSymbol(token, ")") && token[")"] === false) {
       current.children.push({ error: ")" });
+    } else if (isSymbol(token, ")", "select")) {
+      current.type = "select";
+      current.data = { select: token.f };
+      current = returnToNullParent(current, parents);
+    } else if (isSymbol(token, ")", "sortlimit")) {
+      current.type = "sortlimit";
+      current.data = { limit: token.l, sort: token.s };
+      current = returnToNullParent(current, parents);
     } else if (
       isSymbol(token, ")") ||
       isSymbol(token, "}") ||
@@ -185,7 +212,13 @@ export function parseSyntaxStream(
         });
       }
 
-      if ((token as any)[")"] && typeof (token as any)[")"] !== "boolean") {
+      if ((token as any)[")"] && (token as any)[")"] === "root") {
+        current.type = "root";
+        hasNestedRoot = true;
+      } else if (
+        (token as any)[")"] &&
+        typeof (token as any)[")"] !== "boolean"
+      ) {
         current.type = (token as any)[")"];
       } else if (isSymbol(token, "]")) {
         current.type = "array";
@@ -195,10 +228,6 @@ export function parseSyntaxStream(
 
       const parent = parents.get(current)!;
       current = parent;
-    } else if (isSymbol(token, "p")) {
-      current.type = "select";
-      current.payload = { select: token.p };
-      current = returnToNullParent(current, parents);
     } else if (token === null) {
       // Replaced with { error: "missing" } if we turn out to be in operator.
       // We cannot have erroneous comma in operator.
@@ -224,6 +253,12 @@ export function parseSyntaxStream(
       }
       i++;
     }
+  }
+
+  if (hasNestedRoot) {
+    root = root.children[0] as SyntaxTree;
+  } else {
+    root.type = "root";
   }
 
   return root;

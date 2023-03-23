@@ -9,6 +9,8 @@ import { ComputerDesktopIcon, FolderIcon } from "@heroicons/react/24/outline";
 import { DialogOption } from "../elements/DialogOption";
 import { useDocumentIdGenerator, useFolderIdGenerator } from "../id-generator";
 import { FIELDS } from "@storyflow/backend/fields";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
+import { getConfig } from "shared/initialValues";
 
 export function AddFolderDialog({
   isOpen,
@@ -69,13 +71,11 @@ export function AddFolderDialog({
               id: frontId,
               record: {
                 [computeFieldId(frontId, FIELDS.label.id)]: {
-                  type: null,
+                  ...DEFAULT_SYNTAX_TREE,
                   children: ["Forside"],
                 },
-                [computeFieldId(frontId, FIELDS.url.id)]: {
-                  type: "url",
-                  children: ["", ""],
-                },
+                [computeFieldId(frontId, FIELDS.url.id)]:
+                  getConfig("url").defaultValue,
               },
             },
           ],

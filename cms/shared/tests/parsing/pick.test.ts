@@ -15,13 +15,17 @@ describe("select", () => {
           {
             type: "select",
             children: [NestedField],
-            payload: {
+            data: {
               select: "abc",
             },
           },
         ],
       },
-      stream: [{ "(": true }, NestedField, { p: "abc" as RawFieldId }],
+      stream: [
+        { "(": true },
+        NestedField,
+        { ")": "select", f: "abc" as RawFieldId },
+      ],
     },
   ]);
 });
