@@ -662,7 +662,7 @@ const Page = ({
   const config = useDocumentConfig(id, {
     config: article.config,
     history: histories[id] ?? [],
-    version: article.versions?.[""] ?? 0,
+    version: article.versions?.config ?? 0,
   });
 
   const folder = useFolder(article.folder);

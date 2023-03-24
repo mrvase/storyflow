@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import { createEnvironment } from "./computation-test";
+import { createEnvironment, root } from "./computation-test";
 
 describe("concat", () => {
   const { createTests } = createEnvironment();
@@ -7,7 +7,7 @@ describe("concat", () => {
     {
       tokens: [{ "(": true }, "a", { ",": true }, "b", { ")": "concat" }],
       syntax: {
-        type: null,
+        ...root,
         children: [
           {
             type: "concat",

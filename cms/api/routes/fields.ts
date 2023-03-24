@@ -196,13 +196,13 @@ export const fields = createRoute({
 
       const updatedFieldsIds: Set<FieldId> = new Set();
 
-      const versions = article.versions ?? { "": 0 };
+      const versions = article.versions ?? { config: 0 };
 
       const updatedTransforms: Set<FieldId> = new Set();
 
       if (documentId in histories) {
         const history = histories[documentId] ?? [];
-        const templateVersion = article.versions?.[""] ?? 0;
+        const templateVersion = article.versions?.config ?? 0;
         const pkgs = filterServerPackages(templateVersion, history);
 
         if (pkgs.length) {
@@ -221,7 +221,7 @@ export const fields = createRoute({
                 updatedTransforms.add(el.id);
               }
             });
-          versions[""] = templateVersion + pkgs.length;
+          versions.config = templateVersion + pkgs.length;
         }
       }
 
@@ -466,14 +466,14 @@ export const fields = createRoute({
         (doc) => drefs.includes(doc._id) || newDrefs.includes(doc._id)
       );
 
-      const { compute, values } = getSortedValues(fullRecord, graph, {
+      const { fields, values } = getSortedValues(fullRecord, graph, {
         returnValuesForDocument: documentId,
       });
 
       console.log(
         "RESULT",
         util.inspect(
-          { fullRecord, graph, compute, values },
+          { fullRecord, graph, fields, values },
           { depth: null, colors: true }
         )
       );
@@ -528,7 +528,7 @@ export const fields = createRoute({
         {
           $set: {
             values: { $literal: values }, // uses $literal to do hard replace (otherwise: merges old with new values)
-            compute: { $literal: compute },
+            fields: { $literal: fields },
             config: { $literal: documentConfig },
             versions: { $literal: versions },
             cached: cached as any,
@@ -593,7 +593,7 @@ export const fields = createRoute({
 
         await db.collection<DBDocumentRaw>("documents").updateMany(
           {
-            "compute.k": { $in: updates.map((el) => el.k) },
+            "fields.k": { $in: updates.map((el) => el.k) },
             _id: { $ne: new ObjectId(documentId) },
           },
           stages
@@ -685,6 +685,6 @@ const getFieldBlocksWithDepths = (
 ) => {
   const graph = getGraph(record);
   const fieldRecord = getFieldRecord(record, fieldId, graph);
-  const { compute } = getSortedValues(fieldRecord, graph, { keepDepths: true });
-  return compute;
+  const { fields } = getSortedValues(fieldRecord, graph, { keepDepths: true });
+  return fields;
 };

@@ -3,6 +3,7 @@ import {
   createEnvironment,
   NestedDocument,
   NestedDocumentInline,
+  root,
 } from "./computation-test";
 
 describe("auto-merging inline elements and not block elements", () => {
@@ -14,21 +15,16 @@ describe("auto-merging inline elements and not block elements", () => {
     {
       tokens: ["Hej", NestedField],
       syntax: {
-        type: null,
-        children: [
-          {
-            type: "merge",
-            children: ["Hej", NestedField],
-          },
-        ],
+        ...root,
+        children: ["Hej", NestedField],
       },
-      stream: [{ "{": true }, "Hej", NestedField, { "}": true }],
+      stream: ["Hej", NestedField],
     },
 
     {
       tokens: ["Hej", NestedDocumentInline],
       syntax: {
-        type: null,
+        ...root,
         children: [
           {
             type: "merge",
@@ -41,26 +37,20 @@ describe("auto-merging inline elements and not block elements", () => {
 
     {
       tokens: ["Hej", NestedDocument],
-      syntax: {
-        type: null,
-        children: ["Hej", NestedDocument],
-      },
+      syntax: { ...root, children: ["Hej", NestedDocument] },
       stream: ["Hej", NestedDocument],
     },
 
     {
       tokens: ["Hej", { ",": true }, NestedDocumentInline],
-      syntax: {
-        type: null,
-        children: ["Hej", NestedDocumentInline],
-      },
+      syntax: { ...root, children: ["Hej", NestedDocumentInline] },
       stream: ["Hej", NestedDocumentInline],
     },
 
     {
       tokens: ["Hej", { ",": true }, NestedDocumentInline, "."],
       syntax: {
-        type: null,
+        ...root,
         children: [
           "Hej",
           {
@@ -75,7 +65,7 @@ describe("auto-merging inline elements and not block elements", () => {
     {
       tokens: ["Hej", { n: true }, NestedDocumentInline, "."],
       syntax: {
-        type: null,
+        ...root,
         children: [
           "Hej",
           { n: true },
@@ -107,7 +97,7 @@ describe("auto-merging inline elements and not block elements", () => {
         NestedDocument,
       ],
       syntax: {
-        type: null,
+        ...root,
         children: [
           NestedDocument,
           NestedDocument,
@@ -141,7 +131,7 @@ describe("auto-merging inline elements and not block elements", () => {
         "Hmmm",
       ],
       syntax: {
-        type: null,
+        ...root,
         children: [
           {
             type: "merge",
@@ -182,7 +172,7 @@ describe("auto-merging inline elements and not block elements", () => {
         "Hmmm",
       ],
       syntax: {
-        type: null,
+        ...root,
         children: [
           {
             type: "merge",

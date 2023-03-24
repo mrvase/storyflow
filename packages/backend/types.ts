@@ -308,11 +308,11 @@ export interface DBDocumentRaw {
   folder: DBId<FolderId>;
   config: DocumentConfig;
   label?: string;
-  versions?: Record<"" | RawFieldId, number>;
+  versions?: Record<"config" | RawFieldId, number>;
   /* compute */
   ids: DBId<NestedDocumentId>[];
   cached: ValueArray[];
-  compute: DBSyntaxStreamBlock[];
+  fields: DBSyntaxStreamBlock[];
   values: DBValueRecord;
   revalidate?: {
     page: number;
@@ -329,7 +329,7 @@ export interface DBDocument {
   record: SyntaxTreeRecord;
   // values: ValueRecord;
   label?: string;
-  versions?: Record<"" | RawFieldId, number>;
+  versions?: Record<"config" | RawFieldId, number>;
 }
 
 export type FolderSpace = {
@@ -353,7 +353,7 @@ export interface DBFolderRaw {
   spaces: Space[];
   template?: DBId<DocumentId>;
   domains?: string[];
-  versions?: Record<"" | SpaceId, number>;
+  versions?: Record<"config" | SpaceId, number>;
 }
 
 export interface DBFolder {
@@ -363,7 +363,7 @@ export interface DBFolder {
   spaces: Space[];
   template?: DocumentId;
   domains?: string[];
-  versions?: Record<"" | SpaceId, number>;
+  versions?: Record<"config" | SpaceId, number>;
 }
 
 export interface Settings {

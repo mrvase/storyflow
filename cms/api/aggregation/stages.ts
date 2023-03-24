@@ -60,7 +60,7 @@ const createCalculationStage = (
     {
       $set: {
         updates: $.filter(updates, (update) =>
-          $.in(update.k, queryArrayProp($doc.compute).k)
+          $.in(update.k, queryArrayProp($doc.fields).k)
         ),
         derivatives,
         statics: $.filter(
@@ -68,17 +68,17 @@ const createCalculationStage = (
             k: $.toObjectId($.concat([$doc.idString, el.k])),
             result: el.v as DBSyntaxStream,
           })),
-          (el) => $.not($.in(el.k, queryArrayProp($doc.compute).k))
+          (el) => $.not($.in(el.k, queryArrayProp($doc.fields).k))
         ),
       },
     },
     {
       $set: {
-        compute: $.define()
-          .let({ size: $.size($doc.compute) })
+        fields: $.define()
+          .let({ size: $.size($doc.fields) })
           .return(({ size }) =>
             $.map($.range(0, size), (index) =>
-              $.mergeObjects($.at($doc.compute, index), {
+              $.mergeObjects($.at($doc.fields, index), {
                 depth: $.subtract([size, index]),
               })
             )
@@ -87,10 +87,10 @@ const createCalculationStage = (
     },
     {
       $set: {
-        compute: $.filter($doc.compute, (compute) =>
+        fields: $.filter($doc.fields, (field) =>
           $.not(
             $.in(
-              compute.k,
+              field.k,
               updates.map((el) => el.k)
             )
           )
@@ -99,8 +99,8 @@ const createCalculationStage = (
     },
     {
       $set: {
-        compute: $.reduce(
-          $doc.compute,
+        fields: $.reduce(
+          $doc.fields,
           (handled, block) => {
             return $.concatArrays(handled, [
               $.mergeObjects(
@@ -127,15 +127,15 @@ const createCalculationStage = (
     // a non-imported field will always lead.
     {
       $set: {
-        compute: $.reverseArray($doc.compute),
+        fields: $.reverseArray($doc.fields),
       },
     },
     /*
     {
       $set: {
-        compute: {
+        fields: {
           $sortArray: {
-            input: $doc.compute,
+            input: $doc.fields,
             sortBy: {
               depth: 1,
             },
@@ -152,7 +152,7 @@ const createCalculationStage = (
       $set: {
         values: $.mergeObjects(
           $.reduce(
-            $doc.compute,
+            $doc.fields,
             (acc, el) =>
               $.cond(
                 $.and(
@@ -184,7 +184,7 @@ const createCalculationStage = (
                 $.getField(
                   $.ifNull(
                     $.find(
-                      $doc.compute as (DBSyntaxStreamBlock & {
+                      $doc.fields as (DBSyntaxStreamBlock & {
                         result: Value[];
                       })[],
                       (el) => $.eq(el.k, id)
@@ -201,9 +201,9 @@ const createCalculationStage = (
     // purging and spreading imports of updates
     {
       $set: {
-        compute: $.reduce(
+        fields: $.reduce(
           $.concatArrays(
-            $doc.compute as (DBSyntaxStreamBlock & {
+            $doc.fields as (DBSyntaxStreamBlock & {
               imports: DBId<FieldId>[];
               nested: string[];
               depth: number;
@@ -286,8 +286,8 @@ const createCalculationStage = (
     // sorting
     {
       $set: {
-        compute: $.sortArray(
-          $doc.compute as (DBSyntaxStreamBlock & { depth: number })[],
+        fields: $.sortArray(
+          $doc.fields as (DBSyntaxStreamBlock & { depth: number })[],
           { depth: -1 }
         ),
       },
@@ -295,8 +295,8 @@ const createCalculationStage = (
     // deduplicate imports of updates
     {
       $set: {
-        compute: $.reduce(
-          $doc.compute,
+        fields: $.reduce(
+          $doc.fields,
           (acc, cur) =>
             $.cond(
               $.eq($.type($.find(acc, (el) => $.eq(cur.k, el.k))), "object"),
@@ -322,7 +322,7 @@ const createCalculationStage = (
                       queryArrayProp($doc.derivatives).k
                     ),
                     $.reduce(
-                      $.reverseArray($doc.compute),
+                      $.reverseArray($doc.fields),
                       (acc, cur) =>
                         $.cond(
                           $.or(
@@ -358,13 +358,13 @@ const createCalculationStage = (
         "updates",
         "derivatives",
         "statics",
-        "compute.result",
-        "compute.imports",
-        "compute.function",
-        "compute._imports",
-        "compute.depth",
-        "compute.nested",
-        "compute.updated",
+        "fields.result",
+        "fields.imports",
+        "fields.function",
+        "fields._imports",
+        "fields.depth",
+        "fields.nested",
+        "fields.updated",
       ],
     },
   ]);
@@ -384,7 +384,7 @@ export const createCachedStage = () => {
   const $: Operators<
     DBDocument & {
       cached: string[];
-      compute: (DBDocument["compute"][number] & { result: Value[] })[];
+      fields: (DBDocument["fields"][number] & { result: Value[] })[];
     }
   > = operators;
   return $.useDocument(($doc) => ({
@@ -392,7 +392,7 @@ export const createCachedStage = () => {
       cached: $.map($doc.cached, (id) =>
         $.getField(
           $.ifNull(
-            $.find($doc.compute, (el) => $.eq(el.id, id)),
+            $.find($doc.fields, (el) => $.eq(el.id, id)),
             { result: [] as Value[] }
           ),
           "result"
@@ -401,17 +401,4 @@ export const createCachedStage = () => {
     },
   }));
 };
-
-export const createUnsetStage = () => ({
-  $unset: [
-    "updates",
-    "derivatives",
-    "statics",
-    "compute.result",
-    "compute.imports",
-    "compute.function",
-    "compute._imports",
-    "compute.depth",
-  ],
-});
 */

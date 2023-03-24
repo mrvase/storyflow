@@ -34,11 +34,9 @@ export default function RenderChildren({
 
   const renderArray = React.useMemo(() => {
     const valueAtIndex = value[index];
-    const value_ =
-      Array.isArray(valueAtIndex) && valueAtIndex.length === 1
-        ? valueAtIndex
-        : value;
+    const value_ = Array.isArray(valueAtIndex) ? valueAtIndex : value;
     const configs = getLibraryConfigs();
+    console.log("$$ VALUE", value, valueAtIndex, value_);
     if (!value) return [];
     return createRenderArray(value_, (type: string) =>
       Boolean(getConfigByType(type, configs)?.inline)

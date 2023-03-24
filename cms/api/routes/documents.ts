@@ -33,7 +33,7 @@ import { FIELDS } from "@storyflow/backend/fields";
 import { deduplicate, getImports, getSortedValues } from "./helpers";
 
 export const parseDocument = (raw: DBDocumentRaw): DBDocument => {
-  const { _id, folder, ids, cached, compute, ...rest } = raw;
+  const { _id, folder, ids, cached, fields, ...rest } = raw;
   const id = unwrapObjectId(raw._id);
   return {
     _id: id,
@@ -155,10 +155,10 @@ export const documents = createRoute({
                 const doc: DBDocumentRaw = {
                   _id: new ObjectId(action.id),
                   folder: new ObjectId(folder),
-                  versions: { "": 0 },
+                  versions: { config: 0 },
                   config: [],
                   ...(action.label && { label: action.label }),
-                  compute: [],
+                  fields: [],
                   values: {},
                   ids: [],
                   cached: [],
@@ -231,7 +231,7 @@ export const documents = createRoute({
                       ...(insert.label && { label: insert.label }),
                       config: { $literal: insert.config },
                       values: { $literal: insert.values },
-                      compute: { $literal: insert.compute },
+                      fields: { $literal: insert.fields },
                       versions: { $literal: {} },
                     },
                   },

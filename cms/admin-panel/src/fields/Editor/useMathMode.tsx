@@ -27,9 +27,9 @@ export function useMathMode(defaultValue: boolean = false) {
         }
         let [anchor] = $getIndexesFromSelection(selection);
  
-        const compute = $getComputation($getRoot());
+        const strean = $getComputation($getRoot());
  
-        return tools.slice(compute, 0, anchor);
+        return tools.slice(stream, 0, anchor);
       });
  
       const numberOpeners: number[] = [];
@@ -61,9 +61,9 @@ export function useMathMode(defaultValue: boolean = false) {
           Math.max(0, ...numberOpeners) > Math.max(0, ...textOpeners);
       }
       */
-      const insert = (compute: TokenStream) => {
+      const insert = (stream: TokenStream) => {
         event.preventDefault();
-        insertComputation(editor, compute, libraries);
+        insertComputation(editor, stream, libraries);
       };
 
       if (mathMode) {

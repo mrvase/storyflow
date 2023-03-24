@@ -72,21 +72,21 @@ export function addNestedObjectIds(
 export function getSortedValues(
   record: SyntaxTreeRecord,
   graph: ComputationGraph
-): { compute: DBSyntaxStreamBlock[] };
+): { fields: DBSyntaxStreamBlock[] };
 export function getSortedValues(
   record: SyntaxTreeRecord,
   graph: ComputationGraph,
   options: {
     keepDepths: true;
   }
-): { compute: (DBSyntaxStreamBlock & { depth: number })[] };
+): { fields: (DBSyntaxStreamBlock & { depth: number })[] };
 export function getSortedValues(
   record: SyntaxTreeRecord,
   graph: ComputationGraph,
   options: {
     returnValuesForDocument: DocumentId;
   }
-): { values: DBValueRecord; compute: DBSyntaxStreamBlock[] };
+): { values: DBValueRecord; fields: DBSyntaxStreamBlock[] };
 export function getSortedValues(
   record: SyntaxTreeRecord,
   graph: ComputationGraph,
@@ -96,7 +96,7 @@ export function getSortedValues(
   } = {}
 ): {
   values?: DBValueRecord;
-  compute: (DBSyntaxStreamBlock & { depth?: number })[];
+  fields: (DBSyntaxStreamBlock & { depth?: number })[];
 } {
   let computeWithDepth: (DBSyntaxStreamBlock & { depth: number })[] = [];
   let values: DBValueRecord = {};
@@ -155,16 +155,16 @@ export function getSortedValues(
 
   if (options.keepDepths) {
     if (options.returnValuesForDocument) {
-      return { values, compute: computeWithDepth };
+      return { values, fields: computeWithDepth };
     }
-    return { compute: computeWithDepth };
+    return { fields: computeWithDepth };
   }
 
-  const compute = computeWithDepth.map(({ depth, ...el }) => el);
+  const fields = computeWithDepth.map(({ depth, ...el }) => el);
 
   if (options.returnValuesForDocument) {
-    return { values, compute };
+    return { values, fields };
   }
 
-  return { compute };
+  return { fields };
 }

@@ -29,6 +29,7 @@ import { useGlobalState } from "../state/state";
 import { useSingular } from "../state/useSingular";
 import { calculateFn } from "./default/calculateFn";
 import {
+  GlobeAltIcon,
   HomeIcon,
   LinkIcon,
   PlusIcon,
@@ -290,62 +291,73 @@ export default function UrlField({
   return (
     <div className="px-5">
       <div className="pr-8">
-        <div className="outline-none rounded font-light flex items-start">
-          {parents[0] && parents[0]._id !== getDocumentId(id) ? (
+        <div className="outline-none rounded font-light flex items-center px-3 mb-2 bg-gray-800 ml-9">
+          {/*parents[0] ? (
             <Link
               to={replacePage(parents[0]?._id ?? "")}
               className={cl(
-                "cursor-default rounded-full truncate text-sm shrink-0 opacity-50 hover:opacity-100 transition-opacity",
-                "p-1 -ml-1 mr-4"
+                "cursor-default rounded-full truncate text-sm shrink-0 transition-opacity",
+                "p-1 -ml-1 mr-4",
+                parents[0]._id !== getDocumentId(id)
+                  ? "opacity-50 hover:opacity-100"
+                  : "opacity-25"
               )}
             >
               <HomeIcon className="w-4 h-4" />
             </Link>
           ) : (
             <div className="w-9 h-4" />
-          )}
-          <div className="flex items-center pb-2 h-8">
-            {parentSlugs.slice(1).map((el, index) => (
-              <React.Fragment key={parents[index + 1]?._id}>
-                <Link
-                  to={replacePage(parents[index + 1]?._id ?? "")}
-                  className={cl(
-                    "cursor-default rounded-full bg-gray-100 dark:bg-gray-750 truncate text-sm shrink-0",
-                    "px-3"
-                  )}
-                >
-                  {el || <HomeIcon className="w-3 h-3" />}
-                </Link>
-                <div
-                  className={cl(
-                    "px-2 text-gray-300 dark:text-gray-600 text-sm transition-opacity",
-                    index + 1 === parentSlugs.length - 1 &&
-                      slug === "" &&
-                      "opacity-0"
-                  )}
-                >
-                  /
-                </div>
-              </React.Fragment>
-            ))}
-            {slug === "*" && (
-              <button
-                className="px-1.5 h-5 bg-fuchsia-200 dark:bg-fuchsia-900 rounded-full shrink-0 flex-center mr-1.5 cursor-alias"
-                onMouseDown={(ev) => {
-                  ev.preventDefault();
-                  ev.stopPropagation();
-                  addContext.dispatch("param1");
-                }}
+          )*/}
+          <Link
+            to={replacePage(parents[0]?._id ?? "")}
+            className="mr-3 opacity-50 hover:opacity-75 transition-opacity"
+          >
+            <HomeIcon className="w-4 h-4" />
+          </Link>
+          <Link
+            to={replacePage(parents[0]?._id ?? "")}
+            className="opacity-50 hover:opacity-75 transition-opacity"
+          >
+            www.kfs.dk
+          </Link>
+          <div className="px-2 text-gray-300 dark:text-gray-600 text-sm">/</div>
+          {parentSlugs.slice(1).map((el, index) => (
+            <React.Fragment key={parents[index + 1]?._id}>
+              <Link
+                to={replacePage(parents[index + 1]?._id ?? "")}
+                className={cl("truncate opacity-50 hover:opacity-75 shrink-0")}
               >
-                <StarIcon className="w-3 h-3 mr-1" />{" "}
-                <LinkIcon className="w-3 h-3 opacity-50" />
-              </button>
-            )}
-          </div>
+                {el || <HomeIcon className="w-3 h-3" />}
+              </Link>
+              <div
+                className={cl(
+                  "cursor-default px-2 text-gray-300 dark:text-gray-600 text-sm transition-opacity",
+                  index + 1 === parentSlugs.length - 1 &&
+                    slug === "" &&
+                    "opacity-0"
+                )}
+              >
+                /
+              </div>
+            </React.Fragment>
+          ))}
+          {slug === "*" && (
+            <button
+              className="px-1.5 h-5 bg-fuchsia-200 dark:bg-fuchsia-900 rounded-full shrink-0 flex-center mr-1.5 cursor-alias"
+              onMouseDown={(ev) => {
+                ev.preventDefault();
+                ev.stopPropagation();
+                addContext.dispatch("param1");
+              }}
+            >
+              <StarIcon className="w-3 h-3 mr-1" />{" "}
+              <LinkIcon className="w-3 h-3 opacity-50" />
+            </button>
+          )}
           <input
             type="text"
             className={cl(
-              "w-full bg-transparent outline-none pb-2 placeholder:text-white/25"
+              "w-full py-1.5 bg-transparent outline-none placeholder:text-white/25"
             )}
             value={slug === "*" ? "" : slug}
             onChange={(ev) => handleChange(ev.target.value)}
@@ -356,7 +368,7 @@ export default function UrlField({
                 handleChange("");
               }
             }}
-            placeholder={slug !== "*" ? "Ikke udfyldt" : ""}
+            placeholder={slug !== "*" ? "[forside]" : ""}
           />
           {slug === "*" && (
             <input
@@ -371,9 +383,9 @@ export default function UrlField({
           )}
         </div>
         {getTemplateDocumentId(id) === getTemplateDocumentId(FIELDS.url.id) && (
-          <div className="flex items-center pb-5">
+          <div className="flex items-center pb-5 ml-5">
             <button
-              className="p-1 -ml-1 mr-4 opacity-50 hover:opacity-100 transition-opacity"
+              className="p-1 w-6 h-6 -ml-1 mr-4 opacity-50 hover:opacity-100 transition-opacity"
               onClick={() =>
                 ctx.addArticleWithUrl({
                   _id: documentId,
@@ -381,33 +393,35 @@ export default function UrlField({
                 })
               }
             >
-              <PlusIcon className="w-4 h-4" />
+              {/*<PlusIcon className="w-4 h-4" />*/}
             </button>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-4">
               {children.map((el, index) => (
                 <Link
                   key={el._id}
                   to={replacePage(el._id)}
                   className="group text-sm font-light flex-center gap-2"
                 >
-                  <svg
-                    viewBox="0 0 24 16"
-                    className="w-6 h-4 opacity-25"
-                    strokeWidth={1}
-                    stroke="currentColor"
-                    fill="none"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d={index === 0 ? "M 1 3 L 1 9 L 23 9" : "M 1 9 L 23 9"}
-                    />
-                  </svg>
-                  <span className="opacity-50 group-hover:opacity-100">
+                  <SubPageLine first={index === 0} />
+                  <span className="opacity-50 group-hover:opacity-100 transition-opacity">
                     {getDocumentLabel(el)}
                   </span>
                 </Link>
               ))}
+              <button
+                className="group text-sm font-light flex-center gap-2"
+                onClick={() =>
+                  ctx.addArticleWithUrl({
+                    _id: documentId,
+                    record,
+                  })
+                }
+              >
+                <SubPageLine first={children.length === 0} />
+                <span className="opacity-25 group-hover:opacity-75 transition-opacity italic">
+                  Tilføj underside
+                </span>
+              </button>
             </div>
           </div>
         )}
@@ -415,3 +429,19 @@ export default function UrlField({
     </div>
   );
 }
+
+const SubPageLine = ({ first }: { first?: boolean }) => (
+  <svg
+    viewBox="0 0 24 16"
+    className="w-6 h-4 opacity-25 group-hover:opacity-50 transition-opacity"
+    strokeWidth={1}
+    stroke="currentColor"
+    fill="none"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d={first ? "M 1 3 L 1 9 L 23 9" : "M 1 9 L 23 9"}
+    />
+  </svg>
+);

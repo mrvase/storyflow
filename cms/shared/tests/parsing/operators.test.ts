@@ -1,5 +1,5 @@
 import { describe } from "vitest";
-import { createEnvironment } from "./computation-test";
+import { createEnvironment, root } from "./computation-test";
 
 describe("arithmetics", () => {
   const { createTests } = createEnvironment();
@@ -7,25 +7,25 @@ describe("arithmetics", () => {
   createTests([
     {
       tokens: [5, { _: "*" }, 2],
-      syntax: { type: null, children: [{ type: "*", children: [5, 2] }] },
+      syntax: { ...root, children: [{ type: "*", children: [5, 2] }] },
       stream: [{ "(": true }, 5, 2, { ")": "*" }],
       value: [5 * 2],
     },
     {
       tokens: [5, { _: "+" }, 2],
-      syntax: { type: null, children: [{ type: "+", children: [5, 2] }] },
+      syntax: { ...root, children: [{ type: "+", children: [5, 2] }] },
       stream: [{ "(": true }, 5, 2, { ")": "+" }],
       value: [5 + 2],
     },
     {
       tokens: [5, { _: "/" }, 2],
-      syntax: { type: null, children: [{ type: "/", children: [5, 2] }] },
+      syntax: { ...root, children: [{ type: "/", children: [5, 2] }] },
       stream: [{ "(": true }, 5, 2, { ")": "/" }],
       value: [5 / 2],
     },
     {
       tokens: [5, { _: "-" }, 2],
-      syntax: { type: null, children: [{ type: "-", children: [5, 2] }] },
+      syntax: { ...root, children: [{ type: "-", children: [5, 2] }] },
       stream: [{ "(": true }, 5, 2, { ")": "-" }],
       value: [5 - 2],
     },
@@ -37,55 +37,37 @@ describe("logic", () => {
   createTests([
     {
       tokens: [true, { _: "&" }, true],
-      syntax: {
-        type: null,
-        children: [{ type: "&", children: [true, true] }],
-      },
+      syntax: { ...root, children: [{ type: "&", children: [true, true] }] },
       stream: [{ "(": true }, true, true, { ")": "&" }],
       value: [true],
     },
     {
       tokens: [true, { _: "&" }, false],
-      syntax: {
-        type: null,
-        children: [{ type: "&", children: [true, false] }],
-      },
+      syntax: { ...root, children: [{ type: "&", children: [true, false] }] },
       stream: [{ "(": true }, true, false, { ")": "&" }],
       value: [false],
     },
     {
       tokens: [true, { _: "|" }, false],
-      syntax: {
-        type: null,
-        children: [{ type: "|", children: [true, false] }],
-      },
+      syntax: { ...root, children: [{ type: "|", children: [true, false] }] },
       stream: [{ "(": true }, true, false, { ")": "|" }],
       value: [true],
     },
     {
       tokens: [false, { _: "|" }, false],
-      syntax: {
-        type: null,
-        children: [{ type: "|", children: [false, false] }],
-      },
+      syntax: { ...root, children: [{ type: "|", children: [false, false] }] },
       stream: [{ "(": true }, false, false, { ")": "|" }],
       value: [false],
     },
     {
       tokens: [1, { _: "=" }, 1],
-      syntax: {
-        type: null,
-        children: [{ type: "=", children: [1, 1] }],
-      },
+      syntax: { ...root, children: [{ type: "=", children: [1, 1] }] },
       stream: [{ "(": true }, 1, 1, { ")": "=" }],
       value: [true],
     },
     {
       tokens: [1, { _: "=" }, 2],
-      syntax: {
-        type: null,
-        children: [{ type: "=", children: [1, 2] }],
-      },
+      syntax: { ...root, children: [{ type: "=", children: [1, 2] }] },
       stream: [{ "(": true }, 1, 2, { ")": "=" }],
       value: [false],
     },
@@ -98,7 +80,7 @@ describe("brackets", () => {
     {
       tokens: [true, { _: "|" }, true, { _: "&" }, false],
       syntax: {
-        type: null,
+        ...root,
         children: [
           {
             type: "|",
@@ -128,7 +110,7 @@ describe("brackets", () => {
         false,
       ],
       syntax: {
-        type: null,
+        ...root,
         children: [
           {
             type: "&",

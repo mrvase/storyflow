@@ -10,6 +10,7 @@ import { getConfigByType } from "./getConfigByType";
 
 type ComputationRecord = Record<string, ValueArray>;
 
+/*
 export const extendPath = (old: string, add: string, spacer: string = ".") => {
   return [old, add].filter(Boolean).join(spacer);
 };
@@ -190,3 +191,4 @@ export const resolveProps = (
     createDisplayTypeGetter(options.libraries)
   );
 };
+*/

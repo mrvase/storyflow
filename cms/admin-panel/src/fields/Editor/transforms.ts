@@ -223,21 +223,21 @@ export const $getComputation = (node: LexicalNode) => {
       content = [node.__value];
     } else if ($isOperatorNode(node)) {
       const operator = node.getTextContent();
-      let compute: TokenStream = [];
+      let stream: TokenStream = [];
       if (operator === ",") {
-        compute = [{ ",": true }];
+        stream = [{ ",": true }];
       } else if (operator === "(") {
-        compute = [{ "(": true }];
+        stream = [{ "(": true }];
       } else if (operator === ")") {
-        compute = [{ ")": true }];
+        stream = [{ ")": true }];
       } else if (operator === "[") {
-        compute = [{ "[": true }];
+        stream = [{ "[": true }];
       } else if (operator === "]") {
-        compute = [{ "]": true }];
+        stream = [{ "]": true }];
       } else {
-        compute = [{ _: operator as "+" }];
+        stream = [{ _: operator as "+" }];
       }
-      content = compute;
+      content = stream;
     } else if ($isFunctionNode(node)) {
       content = [{ "(": node.__func }];
     } else if ($isParameterNode(node)) {
@@ -387,13 +387,13 @@ export const $getPointFromIndex = (
 };
 
 export const getNodesFromComputation = (
-  compute: TokenStream,
+  stream: TokenStream,
   libraries: LibraryConfig[]
 ) => {
   let bold = false;
   let italic = false;
   let skip = 0;
-  return compute.reduce((acc: LexicalNode[], el, index) => {
+  return stream.reduce((acc: LexicalNode[], el, index) => {
     if (skip > 0) {
       skip--;
       return acc;

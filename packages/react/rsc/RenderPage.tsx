@@ -1,5 +1,4 @@
 import { createRenderArray } from "@storyflow/frontend/render";
-import { extendPath } from "@storyflow/frontend/resolveProps";
 import {
   FileToken,
   PropConfig,
@@ -13,6 +12,7 @@ import {
   getConfigByType,
 } from "../config/getConfigByType";
 import { ParseRichText } from "../src/ParseRichText";
+import { extendPath } from "../utils/extendPath";
 import { getDefaultComponent } from "../utils/getDefaultComponent";
 import { getIdFromString } from "../utils/getIdsFromString";
 
@@ -88,21 +88,17 @@ const RenderChildren = ({
   const libraries = getLibraries();
   const configs = getLibraryConfigs();
 
-  const renderArray = (() => {
-    const valueAtIndex = value[index];
-    const value_ =
-      Array.isArray(valueAtIndex) && valueAtIndex.length === 1
-        ? valueAtIndex
-        : value;
-    if (!value) return [];
-    return createRenderArray(value_, (type: string) =>
-      Boolean(getConfigByType(type, configs)?.inline)
-    );
-  })();
+  const vI = value[index];
+  const value_ = Array.isArray(vI) && vI.length === 1 ? vI : value;
+  const getDisplayType = (type: string) => {
+    return Boolean(getConfigByType(type, configs)?.inline);
+  };
+
+  const renderArray = createRenderArray(value_ ?? [], getDisplayType);
 
   return (
     <>
-      {renderArray.reduce((acc, block, index) => {
+      {renderArray.reduce((acc, block, arrayIndex) => {
         const renderChildren = "$children" in block ? block.$children : [block];
 
         acc.push(
@@ -115,7 +111,7 @@ const RenderChildren = ({
               const Component = getDefaultComponent(type, libraries)!;
               const string = String(block.$heading[1]);
               return (
-                <Component key={`${index}-${childIndex}`}>
+                <Component key={`${arrayIndex}-${childIndex}`}>
                   <ParseRichText>{string}</ParseRichText>
                 </Component>
               );
@@ -124,7 +120,7 @@ const RenderChildren = ({
               const type = "Text";
               const Component = getDefaultComponent(type, libraries)!;
               return (
-                <Component key={`${index}-${childIndex}`}>
+                <Component key={`${arrayIndex}-${childIndex}`}>
                   {block.$text.map((el, textElementIndex) => {
                     if (typeof el === "object") {
                       return (
@@ -139,7 +135,7 @@ const RenderChildren = ({
                     }
                     return (
                       <ParseRichText
-                        key={`${index}-${childIndex}-${textElementIndex}`}
+                        key={`${arrayIndex}-${childIndex}-${textElementIndex}`}
                       >
                         {String(el)}
                       </ParseRichText>
@@ -179,17 +175,11 @@ const RenderElement = ({
   index: number;
   children: React.ReactNode;
 }) => {
-  let config_ = getConfigByType(type, getLibraryConfigs(), getLibraries());
-
-  if (!config_) {
-    return null;
-  }
-
-  const config = config_;
+  let config = getConfigByType(type, getLibraryConfigs(), getLibraries());
+  if (!config) return null;
 
   const keyId = `${id.slice(12, 24)}${getIdFromString("key")}`;
-
-  const key = record?.[keyId]?.length ? record?.[keyId] : [""];
+  const key = record?.[keyId]?.length ? record[keyId] : [];
 
   const renderChildren = (value: ValueArray | undefined) => {
     return (
@@ -202,32 +192,34 @@ const RenderElement = ({
     );
   };
 
-  if (key.length === 1) {
-    return (
-      <RenderElementWithProps
-        elementId={id}
-        config={config}
-        record={record}
-        index={index}
-        renderChildren={renderChildren}
-      />
-    );
+  let props = {
+    config,
+    record,
+    elementId: id,
+    renderChildren,
+  };
+
+  if (key.length <= 1) {
+    return <RenderElementWithProps index={index} {...props} />;
   }
 
   return (
     <>
       {key.map((_, newIndex) => (
-        <RenderElementWithProps
-          key={index}
-          elementId={id}
-          config={config}
-          record={record}
-          index={newIndex}
-          renderChildren={renderChildren}
-        />
+        <RenderElementWithProps key={index} index={newIndex} {...props} />
       ))}
     </>
   );
+};
+
+const fileTransform = (value: FileToken | undefined) => {
+  if (!value)
+    return {
+      src: "",
+      width: 0,
+      height: 0,
+    };
+  return getImageObject(value.src, process.env.IMAGE_URL ?? "");
 };
 
 function RenderElementWithProps({
@@ -253,20 +245,14 @@ function RenderElementWithProps({
           return [config.name, resolveProps(config.props, config.name)];
         }
 
+        const transforms = {
+          children: renderChildren,
+          file: fileTransform,
+        };
+
         return [
           config.name,
-          normalizeProp(config, record[id] ?? [], index, {
-            children: renderChildren,
-            file: (value) => {
-              if (!value)
-                return {
-                  src: "",
-                  width: 0,
-                  height: 0,
-                };
-              return getImageObject(value.src, process.env.IMAGE_URL ?? "");
-            },
-          }) ?? [],
+          normalizeProp(config, record[id] ?? [], index, transforms),
         ];
       })
     );

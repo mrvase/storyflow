@@ -3,6 +3,7 @@ import {
   createEnvironment,
   NestedDocument,
   NestedDocumentInline,
+  root,
 } from "./computation-test";
 
 describe("operator syntax errors", () => {
@@ -12,7 +13,7 @@ describe("operator syntax errors", () => {
     {
       tokens: [{ _: "*" }, 2],
       syntax: {
-        type: null,
+        ...root,
         children: [
           {
             type: "*",
@@ -27,7 +28,7 @@ describe("operator syntax errors", () => {
     {
       tokens: [{ _: "*" }, { _: "*" }, 2],
       syntax: {
-        type: null,
+        ...root,
         children: [
           {
             type: "*",
@@ -42,7 +43,7 @@ describe("operator syntax errors", () => {
     {
       tokens: [2, { _: "*" }],
       syntax: {
-        type: null,
+        ...root,
         children: [
           {
             type: "*",
@@ -57,7 +58,7 @@ describe("operator syntax errors", () => {
     {
       tokens: [2, { _: "*" }, { _: "*" }],
       syntax: {
-        type: null,
+        ...root,
         children: [
           {
             type: "*",
@@ -72,7 +73,7 @@ describe("operator syntax errors", () => {
     {
       tokens: [2, { _: "*" }, { _: "*" }, 2],
       syntax: {
-        type: null,
+        ...root,
         children: [
           {
             type: "*",
@@ -87,7 +88,7 @@ describe("operator syntax errors", () => {
     {
       tokens: [2, { _: "*" }, { _: "*" }, { _: "*" }, 2],
       syntax: {
-        type: null,
+        ...root,
         children: [
           {
             type: "*",
@@ -102,7 +103,7 @@ describe("operator syntax errors", () => {
     {
       tokens: [2, { _: "*" }, { _: "*" }, 2, { _: "*" }, 2],
       syntax: {
-        type: null,
+        ...root,
         children: [
           {
             type: "*",
@@ -117,7 +118,7 @@ describe("operator syntax errors", () => {
     {
       tokens: [2, { _: "*" }, 2, { _: "+" }],
       syntax: {
-        type: null,
+        ...root,
         children: [
           {
             type: "+",
@@ -132,7 +133,7 @@ describe("operator syntax errors", () => {
     {
       tokens: [2, { _: "*" }, { _: "+" }],
       syntax: {
-        type: null,
+        ...root,
         children: [
           {
             type: "+",
@@ -147,7 +148,7 @@ describe("operator syntax errors", () => {
     {
       tokens: [2, { _: "*" }, { _: "+" }, 2],
       syntax: {
-        type: null,
+        ...root,
         children: [
           {
             type: "+",
@@ -162,7 +163,7 @@ describe("operator syntax errors", () => {
     {
       tokens: [2, { _: "+" }, 2, { _: "*" }],
       syntax: {
-        type: null,
+        ...root,
         children: [
           {
             type: "+",
@@ -177,7 +178,7 @@ describe("operator syntax errors", () => {
     {
       tokens: [2, { _: "+" }, { _: "*" }],
       syntax: {
-        type: null,
+        ...root,
         children: [
           {
             type: "+",
@@ -192,7 +193,7 @@ describe("operator syntax errors", () => {
     {
       tokens: [2, { _: "+" }, { _: "*" }, { _: "+" }],
       syntax: {
-        type: null,
+        ...root,
         children: [
           {
             type: "+",
@@ -223,7 +224,7 @@ describe("bracket syntax errors", () => {
     {
       tokens: [{ "(": true }, 2],
       syntax: {
-        type: null,
+        ...root,
         children: [
           {
             type: null,
@@ -238,10 +239,7 @@ describe("bracket syntax errors", () => {
 
     {
       tokens: [2, { ")": true }],
-      syntax: {
-        type: null,
-        children: [2, { error: ")" }],
-      },
+      syntax: { ...root, children: [2, { error: ")" }] },
       stream: [2, { ")": false }],
       value: [2],
     },
@@ -249,7 +247,7 @@ describe("bracket syntax errors", () => {
     {
       tokens: [2, { _: "*" }, 3, { ")": true }],
       syntax: {
-        type: null,
+        ...root,
         children: [{ type: "*", children: [2, 3] }, { error: ")" }],
       },
       stream: [{ "(": true }, 2, 3, { ")": "*" }, { ")": false }],
@@ -263,40 +261,28 @@ describe("comma syntax errors", () => {
   createTests([
     {
       tokens: [{ ",": true }, 2],
-      syntax: {
-        type: null,
-        children: [{ error: "," }, 2],
-      },
+      syntax: { ...root, children: [{ error: "," }, 2] },
       stream: [null as any, 2],
       value: [2],
     },
 
     {
       tokens: [{ ",": true }, { ",": true }, 2],
-      syntax: {
-        type: null,
-        children: [{ error: "," }, { error: "," }, 2],
-      },
+      syntax: { ...root, children: [{ error: "," }, { error: "," }, 2] },
       stream: [null as any, null as any, 2],
       value: [2],
     },
 
     {
       tokens: [2, { ",": true }],
-      syntax: {
-        type: null,
-        children: [2, { error: "," }],
-      },
+      syntax: { ...root, children: [2, { error: "," }] },
       stream: [2, null as any],
       value: [2],
     },
 
     {
       tokens: [2, { ",": true }, { ",": true }],
-      syntax: {
-        type: null,
-        children: [2, { error: "," }, { error: "," }],
-      },
+      syntax: { ...root, children: [2, { error: "," }, { error: "," }] },
       stream: [2, null as any, null as any],
       value: [2],
     },
@@ -304,7 +290,7 @@ describe("comma syntax errors", () => {
     {
       tokens: [{ "(": true }, 2, { ",": true }, { ",": true }],
       syntax: {
-        type: null,
+        ...root,
         children: [
           {
             type: null,
@@ -320,7 +306,7 @@ describe("comma syntax errors", () => {
     {
       tokens: [{ "(": true }, 2, { ",": true }, { ")": true }],
       syntax: {
-        type: null,
+        ...root,
         children: [{ type: null, children: [2, { error: "," }] }],
       },
       stream: [{ "(": true }, 2, null as any, { ")": true }],
@@ -329,10 +315,7 @@ describe("comma syntax errors", () => {
 
     {
       tokens: ["Hej", { ",": true }, { n: true }],
-      syntax: {
-        type: null,
-        children: ["Hej", { error: "," }, { n: true }],
-      },
+      syntax: { ...root, children: ["Hej", { error: "," }, { n: true }] },
       stream: ["Hej", null as any, { n: true }],
       value: ["Hej"],
     },
@@ -340,7 +323,7 @@ describe("comma syntax errors", () => {
     {
       tokens: [NestedDocument, { ",": true }, NestedDocument],
       syntax: {
-        type: null,
+        ...root,
         children: [NestedDocument, { error: "," }, NestedDocument],
       },
       stream: [NestedDocument, null as any, NestedDocument],
@@ -360,7 +343,7 @@ describe("comma / merge syntax errors", () => {
         NestedDocument,
       ],
       syntax: {
-        type: null,
+        ...root,
         children: [
           {
             type: "merge",

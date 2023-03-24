@@ -25,6 +25,7 @@ const isInline = (token: SyntaxNode<WithSyntaxError>["children"][number]) => {
     return Boolean(token.inline);
   }
   if ("type" in token) {
+    // syntax node
     return true;
   }
   return (
@@ -192,7 +193,11 @@ export function parseTokenStream(
           let last;
           if (current.children.length === 0) {
             last = { error: "missing" as "missing" };
-          } else if (current.children.length === 1 && current.type !== null) {
+          } else if (
+            current.children.length === 1 &&
+            current.type !== null &&
+            current.type !== "root"
+          ) {
             // maybe this should not be a special case and do the same as the else below
           } else {
             last = current.children[current.children.length - 1];

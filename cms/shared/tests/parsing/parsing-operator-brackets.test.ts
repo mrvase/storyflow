@@ -1,25 +1,19 @@
 import { describe } from "vitest";
-import { createEnvironment } from "./computation-test";
+import { createEnvironment, root } from "./computation-test";
 
 describe("operators and brackets", () => {
   const { createTests } = createEnvironment();
   createTests([
     {
       tokens: [2, { _: "*" }, 2, { _: "*" }, 2, { _: "*" }, 2],
-      syntax: {
-        type: null,
-        children: [{ type: "*", children: [2, 2, 2, 2] }],
-      },
+      syntax: { ...root, children: [{ type: "*", children: [2, 2, 2, 2] }] },
       stream: [{ "(": true }, 2, 2, 2, 2, { ")": "*" }],
       value: [2 * 2 * 2 * 2],
     },
 
     {
       tokens: [2, { _: "+" }, 2, { _: "+" }, 2, { _: "+" }, 2],
-      syntax: {
-        type: null,
-        children: [{ type: "+", children: [2, 2, 2, 2] }],
-      },
+      syntax: { ...root, children: [{ type: "+", children: [2, 2, 2, 2] }] },
       stream: [{ "(": true }, 2, 2, 2, 2, { ")": "+" }],
       value: [2 + 2 + 2 + 2],
     },
@@ -27,7 +21,7 @@ describe("operators and brackets", () => {
     {
       tokens: [2, { _: "*" }, { "(": true }, 2, { _: "+" }, 2, { ")": true }],
       syntax: {
-        type: null,
+        ...root,
         children: [
           {
             type: "*",
@@ -77,7 +71,7 @@ describe("operators and brackets", () => {
         { ")": true },
       ],
       syntax: {
-        type: null,
+        ...root,
         children: [
           {
             type: "*",
@@ -143,7 +137,7 @@ describe("brackets", () => {
       description: "Save unecessary brackets",
       tokens: [{ "(": true }, 3, { _: "+" }, 2, { ")": true }],
       syntax: {
-        type: null,
+        ...root,
         children: [{ type: null, children: [{ type: "+", children: [3, 2] }] }],
       },
       stream: [{ "(": true }, { "(": true }, 3, 2, { ")": "+" }, { ")": true }],
@@ -154,7 +148,7 @@ describe("brackets", () => {
       description: "Operation in function",
       tokens: [{ "(": true }, 5, { _: "*" }, 2, { ")": "slug" }],
       syntax: {
-        type: null,
+        ...root,
         children: [
           {
             type: "slug",
@@ -182,7 +176,7 @@ describe("brackets", () => {
       description: "handles parentheses in operations 1",
       tokens: [5, { _: "*" }, { "(": true }, 3, { _: "+" }, 2, { ")": true }],
       syntax: {
-        type: null,
+        ...root,
         children: [
           {
             type: "*",
@@ -227,7 +221,7 @@ describe("brackets", () => {
         2,
       ],
       syntax: {
-        type: null,
+        ...root,
         children: [
           {
             type: "/",

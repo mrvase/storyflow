@@ -3,35 +3,165 @@
     "$set": {
       "values": {
         "$literal": {
-          "000004000000": [
-            "Første seminar"
-          ],
           "000003000000": [
-            "2023-03-23T23:13:15.858Z"
+            "2023-03-23T23:12:44.490Z"
+          ],
+          "000004000000": [
+            "Seminarer"
           ]
         }
       },
-      "compute": {
+      "fields": {
         "$literal": [
           {
-            "k": "0000000100a300010b000005",
+            "k": "0000000100a0000000000005",
             "v": [
-              "og også her",
               {
-                "n": true
+                "(": true
               },
-              "med flere afsnit"
+              {
+                "(": true
+              },
+              {
+                "id": "0000000100a00000000100a5",
+                "folder": "0000000000000000000100a2"
+              },
+              {
+                ")": "root"
+              },
+              {
+                ")": "sortlimit",
+                "l": 25
+              }
+            ]
+          },
+          {
+            "k": "00000001009f000005000000",
+            "v": [
+              {
+                "(": true
+              },
+              {
+                "(": true
+              },
+              "",
+              "",
+              {
+                ")": "root"
+              },
+              {
+                ")": "url"
+              }
+            ]
+          },
+          {
+            "k": "0000000100a6bc477b93abaa",
+            "v": [
+              {
+                "color": "#5d4949"
+              },
+              {
+                "color": "#9c5656"
+              }
+            ]
+          },
+          {
+            "k": "0000000100a600018e1cff1f",
+            "v": [
+              {
+                "(": true
+              },
+              {
+                "id": "0000000100a00000000100b2",
+                "field": "0000000100a0000000000005",
+                "inline": true
+              },
+              {
+                ")": "select",
+                "f": "00010b000005"
+              }
+            ]
+          },
+          {
+            "k": "0000000100a6000000001ff3",
+            "v": [
+              {
+                "(": true
+              },
+              {
+                "id": "0000000100a00000000100a9",
+                "field": "0000000100a0000000000005",
+                "inline": true
+              },
+              {
+                ")": "select",
+                "f": "000004000000"
+              }
+            ]
+          },
+          {
+            "k": "0000000100a0000007000000",
+            "v": [
+              {
+                "id": "0000000100a00000000100a6",
+                "element": "sf:Content",
+                "props": {}
+              }
+            ]
+          },
+          {
+            "k": "0000000100a0000005000000",
+            "v": [
+              {
+                "(": true
+              },
+              {
+                "(": true
+              },
+              {
+                "id": "0000000100a00000000100a1",
+                "field": "00000001009f000005000000",
+                "inline": true
+              },
+              "priser",
+              {
+                ")": "root"
+              },
+              {
+                ")": "url"
+              }
             ]
           }
         ]
       },
       "config": {
-        "$literal": []
+        "$literal": [
+          {
+            "type": "default",
+            "label": "Side",
+            "id": "0000000100a0000007000000"
+          },
+          {
+            "id": "0000000100a0000000000005",
+            "label": "Seminarer",
+            "type": "default",
+            "template": "00000000000000000000010b",
+            "transform": {
+              "type": "sortlimit",
+              "data": {
+                "limit": 25
+              }
+            }
+          }
+        ]
       },
       "versions": {
         "$literal": {
-          "000004000000": 1,
-          "00010b000005": 2
+          "": 5,
+          "000000000005": 1,
+          "000007000000": 66,
+          "000005000000": 4,
+          "config": 3
         }
       },
       "cached": []
@@ -55,11 +185,11 @@
       "updates": {
         "$filter": {
           "input": [],
-          "as": "r312",
+          "as": "r0",
           "cond": {
             "$in": [
-              "$$r312.k",
-              "$$CURRENT.compute.k"
+              "$$r0.k",
+              "$$CURRENT.fields.k"
             ]
           }
         }
@@ -72,26 +202,26 @@
               "input": {
                 "$objectToArray": "$$CURRENT.values"
               },
-              "as": "r313",
+              "as": "r1",
               "in": {
                 "k": {
                   "$toObjectId": {
                     "$concat": [
                       "$$CURRENT.idString",
-                      "$$r313.k"
+                      "$$r1.k"
                     ]
                   }
                 },
-                "result": "$$r313.v"
+                "result": "$$r1.v"
               }
             }
           },
-          "as": "r314",
+          "as": "r2",
           "cond": {
             "$not": {
               "$in": [
-                "$$r314.k",
-                "$$CURRENT.compute.k"
+                "$$r2.k",
+                "$$CURRENT.fields.k"
               ]
             }
           }
@@ -101,11 +231,11 @@
   },
   {
     "$set": {
-      "compute": {
+      "fields": {
         "$let": {
           "vars": {
             "size": {
-              "$size": "$$CURRENT.compute"
+              "$size": "$$CURRENT.fields"
             }
           },
           "in": {
@@ -116,20 +246,20 @@
                   "$$size"
                 ]
               },
-              "as": "r315",
+              "as": "r3",
               "in": {
                 "$mergeObjects": [
                   {
                     "$arrayElemAt": [
-                      "$$CURRENT.compute",
-                      "$$r315"
+                      "$$CURRENT.fields",
+                      "$$r3"
                     ]
                   },
                   {
                     "depth": {
                       "$subtract": [
                         "$$size",
-                        "$$r315"
+                        "$$r3"
                       ]
                     }
                   }
@@ -143,14 +273,14 @@
   },
   {
     "$set": {
-      "compute": {
+      "fields": {
         "$filter": {
-          "input": "$$CURRENT.compute",
-          "as": "r316",
+          "input": "$$CURRENT.fields",
+          "as": "r4",
           "cond": {
             "$not": {
               "$in": [
-                "$$r316.k",
+                "$$r4.k",
                 []
               ]
             }
@@ -161,29 +291,29 @@
   },
   {
     "$set": {
-      "compute": {
+      "fields": {
         "$reduce": {
-          "input": "$$CURRENT.compute",
+          "input": "$$CURRENT.fields",
           "initialValue": [],
           "in": {
             "$let": {
               "vars": {
-                "r317": "$$value",
-                "r318": "$$this"
+                "r5": "$$value",
+                "r6": "$$this"
               },
               "in": {
                 "$concatArrays": [
-                  "$$r317",
+                  "$$r5",
                   [
                     {
                       "$mergeObjects": [
-                        "$$r318",
+                        "$$r6",
                         {
                           "$let": {
                             "vars": {
                               "result": {
                                 "$reduce": {
-                                  "input": "$$r318.v",
+                                  "input": "$$r6.v",
                                   "initialValue": {
                                     "value": [],
                                     "stack": [],
@@ -195,8 +325,8 @@
                                   "in": {
                                     "$let": {
                                       "vars": {
-                                        "r319": "$$value",
-                                        "r320": "$$this"
+                                        "r7": "$$value",
+                                        "r8": "$$this"
                                       },
                                       "in": {
                                         "$let": {
@@ -206,7 +336,7 @@
                                                 "if": {
                                                   "$eq": [
                                                     {
-                                                      "$type": "$$r320"
+                                                      "$type": "$$r8"
                                                     },
                                                     "object"
                                                   ]
@@ -214,7 +344,7 @@
                                                 "then": {
                                                   "$eq": [
                                                     {
-                                                      "$type": "$$r320.f"
+                                                      "$type": "$$r8.f"
                                                     },
                                                     "string"
                                                   ]
@@ -229,7 +359,7 @@
                                                     {
                                                       "$eq": [
                                                         {
-                                                          "$type": "$$r320.element"
+                                                          "$type": "$$r8.element"
                                                         },
                                                         "string"
                                                       ]
@@ -237,7 +367,7 @@
                                                     {
                                                       "$eq": [
                                                         {
-                                                          "$type": "$$r320.folder"
+                                                          "$type": "$$r8.folder"
                                                         },
                                                         "objectId"
                                                       ]
@@ -245,7 +375,7 @@
                                                     {
                                                       "$eq": [
                                                         {
-                                                          "$type": "$$r320.field"
+                                                          "$type": "$$r8.field"
                                                         },
                                                         "objectId"
                                                       ]
@@ -256,7 +386,7 @@
                                                   {
                                                     "$substrBytes": [
                                                       {
-                                                        "$toString": "$$r320.id"
+                                                        "$toString": "$$r8.id"
                                                       },
                                                       12,
                                                       24
@@ -279,7 +409,7 @@
                                                             "if": {
                                                               "$eq": [
                                                                 {
-                                                                  "$type": "$$r320"
+                                                                  "$type": "$$r8"
                                                                 },
                                                                 "object"
                                                               ]
@@ -287,7 +417,7 @@
                                                             "then": {
                                                               "$eq": [
                                                                 {
-                                                                  "$type": "$$r320.element"
+                                                                  "$type": "$$r8.element"
                                                                 },
                                                                 "string"
                                                               ]
@@ -306,18 +436,18 @@
                                                             {
                                                               "$reduce": {
                                                                 "input": {
-                                                                  "$objectToArray": "$$r320.props"
+                                                                  "$objectToArray": "$$r8.props"
                                                                 },
                                                                 "initialValue": [],
                                                                 "in": {
                                                                   "$let": {
                                                                     "vars": {
-                                                                      "r321": "$$value",
-                                                                      "r322": "$$this"
+                                                                      "r9": "$$value",
+                                                                      "r10": "$$this"
                                                                     },
                                                                     "in": {
                                                                       "$concatArrays": [
-                                                                        "$$r321",
+                                                                        "$$r9",
                                                                         [
                                                                           {
                                                                             "field": {
@@ -326,18 +456,18 @@
                                                                                   {
                                                                                     "$substrBytes": [
                                                                                       {
-                                                                                        "$toString": "$$r320.id"
+                                                                                        "$toString": "$$r8.id"
                                                                                       },
                                                                                       12,
                                                                                       24
                                                                                     ]
                                                                                   },
-                                                                                  "$$r322.k"
+                                                                                  "$$r10.k"
                                                                                 ]
                                                                               }
                                                                             },
                                                                             "ignore": {
-                                                                              "$not": "$$r322.v"
+                                                                              "$not": "$$r10.v"
                                                                             }
                                                                           }
                                                                         ]
@@ -367,23 +497,23 @@
                                                             ],
                                                             {
                                                               "$reduce": {
-                                                                "input": "$$r319.value",
+                                                                "input": "$$r7.value",
                                                                 "initialValue": [],
                                                                 "in": {
                                                                   "$let": {
                                                                     "vars": {
-                                                                      "r323": "$$value",
-                                                                      "r324": "$$this"
+                                                                      "r11": "$$value",
+                                                                      "r12": "$$this"
                                                                     },
                                                                     "in": {
                                                                       "$reduce": {
-                                                                        "input": "$$r324",
-                                                                        "initialValue": "$$r323",
+                                                                        "input": "$$r12",
+                                                                        "initialValue": "$$r11",
                                                                         "in": {
                                                                           "$let": {
                                                                             "vars": {
-                                                                              "r325": "$$value",
-                                                                              "r326": "$$this"
+                                                                              "r13": "$$value",
+                                                                              "r14": "$$this"
                                                                             },
                                                                             "in": {
                                                                               "$cond": {
@@ -392,7 +522,7 @@
                                                                                     "if": {
                                                                                       "$eq": [
                                                                                         {
-                                                                                          "$type": "$$r326"
+                                                                                          "$type": "$$r14"
                                                                                         },
                                                                                         "object"
                                                                                       ]
@@ -400,7 +530,7 @@
                                                                                     "then": {
                                                                                       "$eq": [
                                                                                         {
-                                                                                          "$type": "$$r326.id"
+                                                                                          "$type": "$$r14.id"
                                                                                         },
                                                                                         "objectId"
                                                                                       ]
@@ -410,7 +540,7 @@
                                                                                 },
                                                                                 "then": {
                                                                                   "$concatArrays": [
-                                                                                    "$$r325",
+                                                                                    "$$r13",
                                                                                     [
                                                                                       {
                                                                                         "[": true
@@ -422,13 +552,13 @@
                                                                                               {
                                                                                                 "$substrBytes": [
                                                                                                   {
-                                                                                                    "$toString": "$$r326.id"
+                                                                                                    "$toString": "$$r14.id"
                                                                                                   },
                                                                                                   12,
                                                                                                   24
                                                                                                 ]
                                                                                               },
-                                                                                              "$$r320.f"
+                                                                                              "$$r8.f"
                                                                                             ]
                                                                                           }
                                                                                         }
@@ -439,7 +569,7 @@
                                                                                     ]
                                                                                   ]
                                                                                 },
-                                                                                "else": "$$r325"
+                                                                                "else": "$$r13"
                                                                               }
                                                                             }
                                                                           }
@@ -460,7 +590,7 @@
                                                       }
                                                     ],
                                                     "default": [
-                                                      "$$r320"
+                                                      "$$r8"
                                                     ]
                                                   }
                                                 },
@@ -469,17 +599,17 @@
                                                     "if": "$$select",
                                                     "then": {
                                                       "$mergeObjects": [
-                                                        "$$r319",
+                                                        "$$r7",
                                                         {
                                                           "value": {
-                                                            "$last": "$$r319.stack"
+                                                            "$last": "$$r7.stack"
                                                           },
                                                           "stack": {
                                                             "$cond": {
                                                               "if": {
                                                                 "$lte": [
                                                                   {
-                                                                    "$size": "$$r319.stack"
+                                                                    "$size": "$$r7.stack"
                                                                   },
                                                                   1
                                                                 ]
@@ -487,12 +617,12 @@
                                                               "then": [],
                                                               "else": {
                                                                 "$slice": [
-                                                                  "$$r319.stack",
+                                                                  "$$r7.stack",
                                                                   0,
                                                                   {
                                                                     "$subtract": [
                                                                       {
-                                                                        "$size": "$$r319.stack"
+                                                                        "$size": "$$r7.stack"
                                                                       },
                                                                       1
                                                                     ]
@@ -503,7 +633,7 @@
                                                           },
                                                           "nested": {
                                                             "$setUnion": [
-                                                              "$$r319.nested",
+                                                              "$$r7.nested",
                                                               "$$nested"
                                                             ]
                                                           }
@@ -512,11 +642,11 @@
                                                     },
                                                     "else": {
                                                       "$mergeObjects": [
-                                                        "$$r319",
+                                                        "$$r7",
                                                         {
                                                           "nested": {
                                                             "$setUnion": [
-                                                              "$$r319.nested",
+                                                              "$$r7.nested",
                                                               "$$nested"
                                                             ]
                                                           }
@@ -533,8 +663,8 @@
                                                   "in": {
                                                     "$let": {
                                                       "vars": {
-                                                        "r327": "$$value",
-                                                        "r328": "$$this"
+                                                        "r15": "$$value",
+                                                        "r16": "$$this"
                                                       },
                                                       "in": {
                                                         "$let": {
@@ -546,7 +676,7 @@
                                                                     "if": {
                                                                       "$eq": [
                                                                         {
-                                                                          "$type": "$$r328"
+                                                                          "$type": "$$r16"
                                                                         },
                                                                         "object"
                                                                       ]
@@ -554,7 +684,7 @@
                                                                     "then": {
                                                                       "$eq": [
                                                                         {
-                                                                          "$type": "$$r328.field"
+                                                                          "$type": "$$r16.field"
                                                                         },
                                                                         "objectId"
                                                                       ]
@@ -562,7 +692,7 @@
                                                                     "else": false
                                                                   }
                                                                 },
-                                                                "then": "$$r328",
+                                                                "then": "$$r16",
                                                                 "else": null
                                                               }
                                                             }
@@ -583,22 +713,22 @@
                                                                             2
                                                                           ]
                                                                         },
-                                                                        "as": "r329",
+                                                                        "as": "r17",
                                                                         "in": {
                                                                           "$first": {
                                                                             "$filter": {
                                                                               "input": {
                                                                                 "$concatArrays": [
                                                                                   "$$CURRENT.updates",
-                                                                                  "$$r317",
+                                                                                  "$$r5",
                                                                                   "$$CURRENT.statics",
                                                                                   "$$CURRENT.derivatives"
                                                                                 ]
                                                                               },
-                                                                              "as": "r330",
+                                                                              "as": "r18",
                                                                               "cond": {
                                                                                 "$eq": [
-                                                                                  "$$r330.k",
+                                                                                  "$$r18.k",
                                                                                   {
                                                                                     "$toObjectId": {
                                                                                       "$concat": [
@@ -613,7 +743,7 @@
                                                                                         },
                                                                                         "00000000000",
                                                                                         {
-                                                                                          "$toString": "$$r329"
+                                                                                          "$toString": "$$r17"
                                                                                         }
                                                                                       ]
                                                                                     }
@@ -641,15 +771,15 @@
                                                                           "input": {
                                                                             "$concatArrays": [
                                                                               "$$CURRENT.updates",
-                                                                              "$$r317",
+                                                                              "$$r5",
                                                                               "$$CURRENT.statics",
                                                                               "$$CURRENT.derivatives"
                                                                             ]
                                                                           },
-                                                                          "as": "r331",
+                                                                          "as": "r19",
                                                                           "cond": {
                                                                             "$eq": [
-                                                                              "$$r331.k",
+                                                                              "$$r19.k",
                                                                               "$$imp.field"
                                                                             ]
                                                                           }
@@ -728,7 +858,7 @@
                                                                           }
                                                                         ],
                                                                         "default": [
-                                                                          "$$r328"
+                                                                          "$$r16"
                                                                         ]
                                                                       }
                                                                     }
@@ -738,19 +868,19 @@
                                                                       {
                                                                         "$reduce": {
                                                                           "input": "$$next",
-                                                                          "initialValue": "$$r327",
+                                                                          "initialValue": "$$r15",
                                                                           "in": {
                                                                             "$let": {
                                                                               "vars": {
-                                                                                "r332": "$$value",
-                                                                                "r333": "$$this"
+                                                                                "r20": "$$value",
+                                                                                "r21": "$$this"
                                                                               },
                                                                               "in": {
                                                                                 "$cond": {
                                                                                   "if": {
                                                                                     "$eq": [
                                                                                       {
-                                                                                        "$type": "$$r333"
+                                                                                        "$type": "$$r21"
                                                                                       },
                                                                                       "object"
                                                                                     ]
@@ -760,7 +890,7 @@
                                                                                       "branches": [
                                                                                         {
                                                                                           "case": {
-                                                                                            "$isNumber": "$$r333.x"
+                                                                                            "$isNumber": "$$r21.x"
                                                                                           },
                                                                                           "then": {
                                                                                             "$let": {
@@ -768,17 +898,17 @@
                                                                                                 "arg": {
                                                                                                   "$arrayElemAt": [
                                                                                                     "$$args",
-                                                                                                    "$$r333.x"
+                                                                                                    "$$r21.x"
                                                                                                   ]
                                                                                                 }
                                                                                               },
                                                                                               "in": {
                                                                                                 "$mergeObjects": [
-                                                                                                  "$$r332",
+                                                                                                  "$$r20",
                                                                                                   {
                                                                                                     "value": {
                                                                                                       "$concatArrays": [
-                                                                                                        "$$r332.value",
+                                                                                                        "$$r20.value",
                                                                                                         {
                                                                                                           "$switch": {
                                                                                                             "branches": [
@@ -794,14 +924,14 @@
                                                                                                                 "case": {
                                                                                                                   "$ne": [
                                                                                                                     {
-                                                                                                                      "$type": "$$r333.value"
+                                                                                                                      "$type": "$$r21.value"
                                                                                                                     },
                                                                                                                     "missing"
                                                                                                                   ]
                                                                                                                 },
                                                                                                                 "then": [
                                                                                                                   [
-                                                                                                                    "$$r333.value"
+                                                                                                                    "$$r21.value"
                                                                                                                   ]
                                                                                                                 ]
                                                                                                               }
@@ -821,23 +951,23 @@
                                                                                           "case": {
                                                                                             "$eq": [
                                                                                               {
-                                                                                                "$type": "$$r333.n"
+                                                                                                "$type": "$$r21.n"
                                                                                               },
                                                                                               "bool"
                                                                                             ]
                                                                                           },
-                                                                                          "then": "$$r332"
+                                                                                          "then": "$$r20"
                                                                                         },
                                                                                         {
                                                                                           "case": {
                                                                                             "$eq": [
                                                                                               {
-                                                                                                "$type": "$$r333.filters"
+                                                                                                "$type": "$$r21.filters"
                                                                                               },
                                                                                               "array"
                                                                                             ]
                                                                                           },
-                                                                                          "then": "$$r332"
+                                                                                          "then": "$$r20"
                                                                                         },
                                                                                         {
                                                                                           "case": {
@@ -845,26 +975,26 @@
                                                                                               "bool",
                                                                                               [
                                                                                                 {
-                                                                                                  "$type": "$$r333.("
+                                                                                                  "$type": "$$r21.("
                                                                                                 },
                                                                                                 {
-                                                                                                  "$type": "$$r333.{"
+                                                                                                  "$type": "$$r21.{"
                                                                                                 },
                                                                                                 {
-                                                                                                  "$type": "$$r333.["
+                                                                                                  "$type": "$$r21.["
                                                                                                 }
                                                                                               ]
                                                                                             ]
                                                                                           },
                                                                                           "then": {
                                                                                             "$mergeObjects": [
-                                                                                              "$$r332",
+                                                                                              "$$r20",
                                                                                               {
                                                                                                 "stack": {
                                                                                                   "$concatArrays": [
-                                                                                                    "$$r332.stack",
+                                                                                                    "$$r20.stack",
                                                                                                     [
-                                                                                                      "$$r332.value"
+                                                                                                      "$$r20.value"
                                                                                                     ]
                                                                                                   ]
                                                                                                 },
@@ -884,18 +1014,18 @@
                                                                                                     "case": {
                                                                                                       "$eq": [
                                                                                                         {
-                                                                                                          "$type": "$$r333.)"
+                                                                                                          "$type": "$$r21.)"
                                                                                                         },
                                                                                                         "string"
                                                                                                       ]
                                                                                                     },
-                                                                                                    "then": "$$r333.)"
+                                                                                                    "then": "$$r21.)"
                                                                                                   },
                                                                                                   {
                                                                                                     "case": {
                                                                                                       "$eq": [
                                                                                                         {
-                                                                                                          "$type": "$$r333.}"
+                                                                                                          "$type": "$$r21.}"
                                                                                                         },
                                                                                                         "bool"
                                                                                                       ]
@@ -906,7 +1036,7 @@
                                                                                                     "case": {
                                                                                                       "$eq": [
                                                                                                         {
-                                                                                                          "$type": "$$r333.)"
+                                                                                                          "$type": "$$r21.)"
                                                                                                         },
                                                                                                         "bool"
                                                                                                       ]
@@ -917,7 +1047,7 @@
                                                                                                     "case": {
                                                                                                       "$eq": [
                                                                                                         {
-                                                                                                          "$type": "$$r333.]"
+                                                                                                          "$type": "$$r21.]"
                                                                                                         },
                                                                                                         "bool"
                                                                                                       ]
@@ -939,14 +1069,14 @@
                                                                                               },
                                                                                               "then": {
                                                                                                 "$mergeObjects": [
-                                                                                                  "$$r332",
+                                                                                                  "$$r20",
                                                                                                   {
                                                                                                     "value": {
                                                                                                       "$concatArrays": [
-                                                                                                        "$$r332.value",
+                                                                                                        "$$r20.value",
                                                                                                         [
                                                                                                           [
-                                                                                                            "$$r333"
+                                                                                                            "$$r21"
                                                                                                           ]
                                                                                                         ]
                                                                                                       ]
@@ -956,12 +1086,12 @@
                                                                                               },
                                                                                               "else": {
                                                                                                 "$mergeObjects": [
-                                                                                                  "$$r332",
+                                                                                                  "$$r20",
                                                                                                   {
                                                                                                     "value": {
                                                                                                       "$concatArrays": [
                                                                                                         {
-                                                                                                          "$last": "$$r332.stack"
+                                                                                                          "$last": "$$r20.stack"
                                                                                                         },
                                                                                                         {
                                                                                                           "$switch": {
@@ -973,7 +1103,7 @@
                                                                                                                     "root"
                                                                                                                   ]
                                                                                                                 },
-                                                                                                                "then": "$$r332.value"
+                                                                                                                "then": "$$r20.value"
                                                                                                               },
                                                                                                               {
                                                                                                                 "case": {
@@ -990,50 +1120,50 @@
                                                                                                                     "vars": {
                                                                                                                       "spread": {
                                                                                                                         "$reduce": {
-                                                                                                                          "input": "$$r332.value",
+                                                                                                                          "input": "$$r20.value",
                                                                                                                           "initialValue": [],
                                                                                                                           "in": {
                                                                                                                             "$let": {
                                                                                                                               "vars": {
-                                                                                                                                "r334": "$$value",
-                                                                                                                                "r335": "$$this"
+                                                                                                                                "r22": "$$value",
+                                                                                                                                "r23": "$$this"
                                                                                                                               },
                                                                                                                               "in": {
                                                                                                                                 "$reduce": {
-                                                                                                                                  "input": "$$r335",
-                                                                                                                                  "initialValue": "$$r334",
+                                                                                                                                  "input": "$$r23",
+                                                                                                                                  "initialValue": "$$r22",
                                                                                                                                   "in": {
                                                                                                                                     "$let": {
                                                                                                                                       "vars": {
-                                                                                                                                        "r336": "$$value",
-                                                                                                                                        "r337": "$$this"
+                                                                                                                                        "r24": "$$value",
+                                                                                                                                        "r25": "$$this"
                                                                                                                                       },
                                                                                                                                       "in": {
                                                                                                                                         "$concatArrays": [
-                                                                                                                                          "$$r336",
+                                                                                                                                          "$$r24",
                                                                                                                                           [
                                                                                                                                             {
                                                                                                                                               "$cond": {
                                                                                                                                                 "if": {
-                                                                                                                                                  "$isArray": "$$r337"
+                                                                                                                                                  "$isArray": "$$r25"
                                                                                                                                                 },
                                                                                                                                                 "then": {
                                                                                                                                                   "$cond": {
                                                                                                                                                     "if": {
                                                                                                                                                       "$eq": [
                                                                                                                                                         {
-                                                                                                                                                          "$size": "$$r337"
+                                                                                                                                                          "$size": "$$r25"
                                                                                                                                                         },
                                                                                                                                                         1
                                                                                                                                                       ]
                                                                                                                                                     },
                                                                                                                                                     "then": {
-                                                                                                                                                      "$first": "$$r337"
+                                                                                                                                                      "$first": "$$r25"
                                                                                                                                                     },
-                                                                                                                                                    "else": "$$r337"
+                                                                                                                                                    "else": "$$r25"
                                                                                                                                                   }
                                                                                                                                                 },
-                                                                                                                                                "else": "$$r337"
+                                                                                                                                                "else": "$$r25"
                                                                                                                                               }
                                                                                                                                             }
                                                                                                                                           ]
@@ -1081,30 +1211,30 @@
                                                                                                                     "$filter": {
                                                                                                                       "input": {
                                                                                                                         "$reduce": {
-                                                                                                                          "input": "$$r332.value",
+                                                                                                                          "input": "$$r20.value",
                                                                                                                           "initialValue": [
                                                                                                                             ""
                                                                                                                           ],
                                                                                                                           "in": {
                                                                                                                             "$let": {
                                                                                                                               "vars": {
-                                                                                                                                "r338": "$$value",
-                                                                                                                                "r339": "$$this"
+                                                                                                                                "r26": "$$value",
+                                                                                                                                "r27": "$$this"
                                                                                                                               },
                                                                                                                               "in": {
                                                                                                                                 "$getField": {
                                                                                                                                   "input": {
                                                                                                                                     "$reduce": {
-                                                                                                                                      "input": "$$r339",
+                                                                                                                                      "input": "$$r27",
                                                                                                                                       "initialValue": {
-                                                                                                                                        "v": "$$r338",
+                                                                                                                                        "v": "$$r26",
                                                                                                                                         "i": 0
                                                                                                                                       },
                                                                                                                                       "in": {
                                                                                                                                         "$let": {
                                                                                                                                           "vars": {
-                                                                                                                                            "r340": "$$value",
-                                                                                                                                            "r341": "$$this"
+                                                                                                                                            "r28": "$$value",
+                                                                                                                                            "r29": "$$this"
                                                                                                                                           },
                                                                                                                                           "in": {
                                                                                                                                             "v": {
@@ -1112,7 +1242,7 @@
                                                                                                                                                 "if": {
                                                                                                                                                   "$in": [
                                                                                                                                                     {
-                                                                                                                                                      "$type": "$$r341"
+                                                                                                                                                      "$type": "$$r29"
                                                                                                                                                     },
                                                                                                                                                     [
                                                                                                                                                       "object",
@@ -1125,15 +1255,15 @@
                                                                                                                                                     "if": {
                                                                                                                                                       "$eq": [
                                                                                                                                                         {
-                                                                                                                                                          "$last": "$$r340.v"
+                                                                                                                                                          "$last": "$$r28.v"
                                                                                                                                                         },
                                                                                                                                                         ""
                                                                                                                                                       ]
                                                                                                                                                     },
-                                                                                                                                                    "then": "$$r340.v",
+                                                                                                                                                    "then": "$$r28.v",
                                                                                                                                                     "else": {
                                                                                                                                                       "$concatArrays": [
-                                                                                                                                                        "$$r340.v",
+                                                                                                                                                        "$$r28.v",
                                                                                                                                                         [
                                                                                                                                                           ""
                                                                                                                                                         ]
@@ -1145,16 +1275,16 @@
                                                                                                                                                   "$cond": {
                                                                                                                                                     "if": {
                                                                                                                                                       "$gt": [
-                                                                                                                                                        "$$r340.i",
+                                                                                                                                                        "$$r28.i",
                                                                                                                                                         0
                                                                                                                                                       ]
                                                                                                                                                     },
                                                                                                                                                     "then": {
                                                                                                                                                       "$concatArrays": [
-                                                                                                                                                        "$$r340.v",
+                                                                                                                                                        "$$r28.v",
                                                                                                                                                         [
                                                                                                                                                           {
-                                                                                                                                                            "$toString": "$$r341"
+                                                                                                                                                            "$toString": "$$r29"
                                                                                                                                                           }
                                                                                                                                                         ]
                                                                                                                                                       ]
@@ -1166,7 +1296,7 @@
                                                                                                                                                             "if": {
                                                                                                                                                               "$lte": [
                                                                                                                                                                 {
-                                                                                                                                                                  "$size": "$$r340.v"
+                                                                                                                                                                  "$size": "$$r28.v"
                                                                                                                                                                 },
                                                                                                                                                                 1
                                                                                                                                                               ]
@@ -1174,12 +1304,12 @@
                                                                                                                                                             "then": [],
                                                                                                                                                             "else": {
                                                                                                                                                               "$slice": [
-                                                                                                                                                                "$$r340.v",
+                                                                                                                                                                "$$r28.v",
                                                                                                                                                                 0,
                                                                                                                                                                 {
                                                                                                                                                                   "$subtract": [
                                                                                                                                                                     {
-                                                                                                                                                                      "$size": "$$r340.v"
+                                                                                                                                                                      "$size": "$$r28.v"
                                                                                                                                                                     },
                                                                                                                                                                     1
                                                                                                                                                                   ]
@@ -1192,10 +1322,10 @@
                                                                                                                                                           {
                                                                                                                                                             "$concat": [
                                                                                                                                                               {
-                                                                                                                                                                "$last": "$$r340.v"
+                                                                                                                                                                "$last": "$$r28.v"
                                                                                                                                                               },
                                                                                                                                                               {
-                                                                                                                                                                "$toString": "$$r341"
+                                                                                                                                                                "$toString": "$$r29"
                                                                                                                                                               }
                                                                                                                                                             ]
                                                                                                                                                           }
@@ -1209,7 +1339,7 @@
                                                                                                                                             "i": {
                                                                                                                                               "$add": [
                                                                                                                                                 0,
-                                                                                                                                                "$$r340.i",
+                                                                                                                                                "$$r28.i",
                                                                                                                                                 1
                                                                                                                                               ]
                                                                                                                                             }
@@ -1225,10 +1355,10 @@
                                                                                                                           }
                                                                                                                         }
                                                                                                                       },
-                                                                                                                      "as": "r342",
+                                                                                                                      "as": "r30",
                                                                                                                       "cond": {
                                                                                                                         "$ne": [
-                                                                                                                          "$$r342",
+                                                                                                                          "$$r30",
                                                                                                                           ""
                                                                                                                         ]
                                                                                                                       }
@@ -1262,29 +1392,29 @@
                                                                                                                     "$reduce": {
                                                                                                                       "input": {
                                                                                                                         "$reduce": {
-                                                                                                                          "input": "$$r332.value",
+                                                                                                                          "input": "$$r20.value",
                                                                                                                           "initialValue": [],
                                                                                                                           "in": {
                                                                                                                             "$let": {
                                                                                                                               "vars": {
-                                                                                                                                "r343": "$$value",
-                                                                                                                                "r344": "$$this"
+                                                                                                                                "r31": "$$value",
+                                                                                                                                "r32": "$$this"
                                                                                                                               },
                                                                                                                               "in": {
                                                                                                                                 "$concatArrays": [
-                                                                                                                                  "$$r343",
+                                                                                                                                  "$$r31",
                                                                                                                                   [
                                                                                                                                     {
                                                                                                                                       "$cond": {
                                                                                                                                         "if": {
                                                                                                                                           "$isArray": {
-                                                                                                                                            "$first": "$$r344"
+                                                                                                                                            "$first": "$$r32"
                                                                                                                                           }
                                                                                                                                         },
                                                                                                                                         "then": {
-                                                                                                                                          "$first": "$$r344"
+                                                                                                                                          "$first": "$$r32"
                                                                                                                                         },
-                                                                                                                                        "else": "$$r344"
+                                                                                                                                        "else": "$$r32"
                                                                                                                                       }
                                                                                                                                     }
                                                                                                                                   ]
@@ -1300,32 +1430,32 @@
                                                                                                                       "in": {
                                                                                                                         "$let": {
                                                                                                                           "vars": {
-                                                                                                                            "r345": "$$value",
-                                                                                                                            "r346": "$$this"
+                                                                                                                            "r33": "$$value",
+                                                                                                                            "r34": "$$this"
                                                                                                                           },
                                                                                                                           "in": {
                                                                                                                             "$reduce": {
-                                                                                                                              "input": "$$r346",
+                                                                                                                              "input": "$$r34",
                                                                                                                               "initialValue": [],
                                                                                                                               "in": {
                                                                                                                                 "$let": {
                                                                                                                                   "vars": {
-                                                                                                                                    "r347": "$$value",
-                                                                                                                                    "r348": "$$this"
+                                                                                                                                    "r35": "$$value",
+                                                                                                                                    "r36": "$$this"
                                                                                                                                   },
                                                                                                                                   "in": {
                                                                                                                                     "$concatArrays": [
-                                                                                                                                      "$$r347",
+                                                                                                                                      "$$r35",
                                                                                                                                       {
                                                                                                                                         "$map": {
-                                                                                                                                          "input": "$$r345",
-                                                                                                                                          "as": "r349",
+                                                                                                                                          "input": "$$r33",
+                                                                                                                                          "as": "r37",
                                                                                                                                           "in": {
                                                                                                                                             "$concatArrays": [
                                                                                                                                               [],
-                                                                                                                                              "$$r349",
+                                                                                                                                              "$$r37",
                                                                                                                                               [
-                                                                                                                                                "$$r348"
+                                                                                                                                                "$$r36"
                                                                                                                                               ]
                                                                                                                                             ]
                                                                                                                                           }
@@ -1361,23 +1491,23 @@
                                                                                                                                 "in": {
                                                                                                                                   "$let": {
                                                                                                                                     "vars": {
-                                                                                                                                      "r350": "$$value",
-                                                                                                                                      "r351": "$$this"
+                                                                                                                                      "r38": "$$value",
+                                                                                                                                      "r39": "$$this"
                                                                                                                                     },
                                                                                                                                     "in": {
                                                                                                                                       "$or": [
-                                                                                                                                        "$$r350",
+                                                                                                                                        "$$r38",
                                                                                                                                         {
                                                                                                                                           "$eq": [
                                                                                                                                             {
                                                                                                                                               "$arrayElemAt": [
-                                                                                                                                                "$$r351",
+                                                                                                                                                "$$r39",
                                                                                                                                                 0
                                                                                                                                               ]
                                                                                                                                             },
                                                                                                                                             {
                                                                                                                                               "$arrayElemAt": [
-                                                                                                                                                "$$r351",
+                                                                                                                                                "$$r39",
                                                                                                                                                 1
                                                                                                                                               ]
                                                                                                                                             }
@@ -1407,21 +1537,21 @@
                                                                                                                               "in": {
                                                                                                                                 "$let": {
                                                                                                                                   "vars": {
-                                                                                                                                    "r352": "$$value",
-                                                                                                                                    "r353": "$$this"
+                                                                                                                                    "r40": "$$value",
+                                                                                                                                    "r41": "$$this"
                                                                                                                                   },
                                                                                                                                   "in": {
                                                                                                                                     "$concatArrays": [
-                                                                                                                                      "$$r352",
+                                                                                                                                      "$$r40",
                                                                                                                                       {
                                                                                                                                         "$reduce": {
-                                                                                                                                          "input": "$$r353",
+                                                                                                                                          "input": "$$r41",
                                                                                                                                           "initialValue": [],
                                                                                                                                           "in": {
                                                                                                                                             "$let": {
                                                                                                                                               "vars": {
-                                                                                                                                                "r354": "$$value",
-                                                                                                                                                "r355": "$$this"
+                                                                                                                                                "r42": "$$value",
+                                                                                                                                                "r43": "$$this"
                                                                                                                                               },
                                                                                                                                               "in": {
                                                                                                                                                 "$cond": {
@@ -1430,12 +1560,12 @@
                                                                                                                                                       {
                                                                                                                                                         "$or": [
                                                                                                                                                           {
-                                                                                                                                                            "$isNumber": "$$r355"
+                                                                                                                                                            "$isNumber": "$$r43"
                                                                                                                                                           },
                                                                                                                                                           {
                                                                                                                                                             "$eq": [
                                                                                                                                                               {
-                                                                                                                                                                "$type": "$$r355"
+                                                                                                                                                                "$type": "$$r43"
                                                                                                                                                               },
                                                                                                                                                               "string"
                                                                                                                                                             ]
@@ -1446,14 +1576,14 @@
                                                                                                                                                         "$or": [
                                                                                                                                                           {
                                                                                                                                                             "$isNumber": {
-                                                                                                                                                              "$last": "$$r354"
+                                                                                                                                                              "$last": "$$r42"
                                                                                                                                                             }
                                                                                                                                                           },
                                                                                                                                                           {
                                                                                                                                                             "$eq": [
                                                                                                                                                               {
                                                                                                                                                                 "$type": {
-                                                                                                                                                                  "$last": "$$r354"
+                                                                                                                                                                  "$last": "$$r42"
                                                                                                                                                                 }
                                                                                                                                                               },
                                                                                                                                                               "string"
@@ -1470,7 +1600,7 @@
                                                                                                                                                           "if": {
                                                                                                                                                             "$lte": [
                                                                                                                                                               {
-                                                                                                                                                                "$size": "$$r354"
+                                                                                                                                                                "$size": "$$r42"
                                                                                                                                                               },
                                                                                                                                                               1
                                                                                                                                                             ]
@@ -1478,12 +1608,12 @@
                                                                                                                                                           "then": [],
                                                                                                                                                           "else": {
                                                                                                                                                             "$slice": [
-                                                                                                                                                              "$$r354",
+                                                                                                                                                              "$$r42",
                                                                                                                                                               0,
                                                                                                                                                               {
                                                                                                                                                                 "$subtract": [
                                                                                                                                                                   {
-                                                                                                                                                                    "$size": "$$r354"
+                                                                                                                                                                    "$size": "$$r42"
                                                                                                                                                                   },
                                                                                                                                                                   1
                                                                                                                                                                 ]
@@ -1497,11 +1627,11 @@
                                                                                                                                                           "$concat": [
                                                                                                                                                             {
                                                                                                                                                               "$toString": {
-                                                                                                                                                                "$last": "$$r354"
+                                                                                                                                                                "$last": "$$r42"
                                                                                                                                                               }
                                                                                                                                                             },
                                                                                                                                                             {
-                                                                                                                                                              "$toString": "$$r355"
+                                                                                                                                                              "$toString": "$$r43"
                                                                                                                                                             }
                                                                                                                                                           ]
                                                                                                                                                         }
@@ -1510,9 +1640,9 @@
                                                                                                                                                   },
                                                                                                                                                   "else": {
                                                                                                                                                     "$concatArrays": [
-                                                                                                                                                      "$$r354",
+                                                                                                                                                      "$$r42",
                                                                                                                                                       [
-                                                                                                                                                        "$$r355"
+                                                                                                                                                        "$$r43"
                                                                                                                                                       ]
                                                                                                                                                     ]
                                                                                                                                                   }
@@ -1544,37 +1674,37 @@
                                                                                                                           {
                                                                                                                             "$map": {
                                                                                                                               "input": "$$combinations",
-                                                                                                                              "as": "r356",
+                                                                                                                              "as": "r44",
                                                                                                                               "in": {
                                                                                                                                 "$toLower": {
                                                                                                                                   "$reduce": {
-                                                                                                                                    "input": "$$r356",
+                                                                                                                                    "input": "$$r44",
                                                                                                                                     "initialValue": "",
                                                                                                                                     "in": {
                                                                                                                                       "$let": {
                                                                                                                                         "vars": {
-                                                                                                                                          "r357": "$$value",
-                                                                                                                                          "r358": "$$this"
+                                                                                                                                          "r45": "$$value",
+                                                                                                                                          "r46": "$$this"
                                                                                                                                         },
                                                                                                                                         "in": {
                                                                                                                                           "$concat": [
-                                                                                                                                            "$$r357",
+                                                                                                                                            "$$r45",
                                                                                                                                             {
                                                                                                                                               "$switch": {
                                                                                                                                                 "branches": [
                                                                                                                                                   {
                                                                                                                                                     "case": {
-                                                                                                                                                      "$isNumber": "$$r358"
+                                                                                                                                                      "$isNumber": "$$r46"
                                                                                                                                                     },
                                                                                                                                                     "then": {
-                                                                                                                                                      "$toString": "$$r358"
+                                                                                                                                                      "$toString": "$$r46"
                                                                                                                                                     }
                                                                                                                                                   },
                                                                                                                                                   {
                                                                                                                                                     "case": {
                                                                                                                                                       "$eq": [
                                                                                                                                                         {
-                                                                                                                                                          "$type": "$$r358"
+                                                                                                                                                          "$type": "$$r46"
                                                                                                                                                         },
                                                                                                                                                         "string"
                                                                                                                                                       ]
@@ -1593,13 +1723,13 @@
                                                                                                                                                                 },
                                                                                                                                                                 {
                                                                                                                                                                   "$ne": [
-                                                                                                                                                                    "$$r358",
+                                                                                                                                                                    "$$r46",
                                                                                                                                                                     ""
                                                                                                                                                                   ]
                                                                                                                                                                 },
                                                                                                                                                                 {
                                                                                                                                                                   "$ne": [
-                                                                                                                                                                    "$$r357",
+                                                                                                                                                                    "$$r45",
                                                                                                                                                                     ""
                                                                                                                                                                   ]
                                                                                                                                                                 }
@@ -1613,7 +1743,7 @@
                                                                                                                                                           "$reduce": {
                                                                                                                                                             "input": {
                                                                                                                                                               "$regexFindAll": {
-                                                                                                                                                                "input": "$$r358",
+                                                                                                                                                                "input": "$$r46",
                                                                                                                                                                 "regex": {
                                                                                                                                                                   "$cond": {
                                                                                                                                                                     "if": {
@@ -1629,17 +1759,17 @@
                                                                                                                                                                 "options": "i"
                                                                                                                                                               }
                                                                                                                                                             },
-                                                                                                                                                            "initialValue": "$$r358",
+                                                                                                                                                            "initialValue": "$$r46",
                                                                                                                                                             "in": {
                                                                                                                                                               "$let": {
                                                                                                                                                                 "vars": {
-                                                                                                                                                                  "r359": "$$value",
-                                                                                                                                                                  "r360": "$$this"
+                                                                                                                                                                  "r47": "$$value",
+                                                                                                                                                                  "r48": "$$this"
                                                                                                                                                                 },
                                                                                                                                                                 "in": {
                                                                                                                                                                   "$replaceOne": {
-                                                                                                                                                                    "input": "$$r359",
-                                                                                                                                                                    "find": "$$r360.match",
+                                                                                                                                                                    "input": "$$r47",
+                                                                                                                                                                    "find": "$$r48.match",
                                                                                                                                                                     "replacement": {
                                                                                                                                                                       "$let": {
                                                                                                                                                                         "vars": {
@@ -1675,12 +1805,12 @@
                                                                                                                                                                                   "aa"
                                                                                                                                                                                 ]
                                                                                                                                                                               ],
-                                                                                                                                                                              "as": "r361",
+                                                                                                                                                                              "as": "r49",
                                                                                                                                                                               "cond": {
                                                                                                                                                                                 "$eq": [
-                                                                                                                                                                                  "$$r360.match",
+                                                                                                                                                                                  "$$r48.match",
                                                                                                                                                                                   {
-                                                                                                                                                                                    "$first": "$$r361"
+                                                                                                                                                                                    "$first": "$$r49"
                                                                                                                                                                                   }
                                                                                                                                                                                 ]
                                                                                                                                                                               }
@@ -1742,18 +1872,18 @@
                                                                                                                           {
                                                                                                                             "$map": {
                                                                                                                               "input": "$$combinations",
-                                                                                                                              "as": "r362",
+                                                                                                                              "as": "r50",
                                                                                                                               "in": {
                                                                                                                                 "$eq": [
                                                                                                                                   {
                                                                                                                                     "$arrayElemAt": [
-                                                                                                                                      "$$r362",
+                                                                                                                                      "$$r50",
                                                                                                                                       0
                                                                                                                                     ]
                                                                                                                                   },
                                                                                                                                   {
                                                                                                                                     "$arrayElemAt": [
-                                                                                                                                      "$$r362",
+                                                                                                                                      "$$r50",
                                                                                                                                       1
                                                                                                                                     ]
                                                                                                                                   }
@@ -1777,17 +1907,17 @@
                                                                                                                           {
                                                                                                                             "$map": {
                                                                                                                               "input": "$$combinations",
-                                                                                                                              "as": "r363",
+                                                                                                                              "as": "r51",
                                                                                                                               "in": {
                                                                                                                                 "$reduce": {
                                                                                                                                   "input": {
                                                                                                                                     "$slice": [
-                                                                                                                                      "$$r363",
+                                                                                                                                      "$$r51",
                                                                                                                                       1,
                                                                                                                                       {
                                                                                                                                         "$subtract": [
                                                                                                                                           {
-                                                                                                                                            "$size": "$$r363"
+                                                                                                                                            "$size": "$$r51"
                                                                                                                                           },
                                                                                                                                           1
                                                                                                                                         ]
@@ -1798,11 +1928,11 @@
                                                                                                                                     "$cond": {
                                                                                                                                       "if": {
                                                                                                                                         "$isNumber": {
-                                                                                                                                          "$first": "$$r363"
+                                                                                                                                          "$first": "$$r51"
                                                                                                                                         }
                                                                                                                                       },
                                                                                                                                       "then": {
-                                                                                                                                        "$first": "$$r363"
+                                                                                                                                        "$first": "$$r51"
                                                                                                                                       },
                                                                                                                                       "else": 0
                                                                                                                                     }
@@ -1810,8 +1940,8 @@
                                                                                                                                   "in": {
                                                                                                                                     "$let": {
                                                                                                                                       "vars": {
-                                                                                                                                        "r364": "$$value",
-                                                                                                                                        "r365": "$$this"
+                                                                                                                                        "r52": "$$value",
+                                                                                                                                        "r53": "$$this"
                                                                                                                                       },
                                                                                                                                       "in": {
                                                                                                                                         "$switch": {
@@ -1825,13 +1955,13 @@
                                                                                                                                               },
                                                                                                                                               "then": {
                                                                                                                                                 "$add": [
-                                                                                                                                                  "$$r364",
+                                                                                                                                                  "$$r52",
                                                                                                                                                   {
                                                                                                                                                     "$cond": {
                                                                                                                                                       "if": {
-                                                                                                                                                        "$isNumber": "$$r365"
+                                                                                                                                                        "$isNumber": "$$r53"
                                                                                                                                                       },
-                                                                                                                                                      "then": "$$r365",
+                                                                                                                                                      "then": "$$r53",
                                                                                                                                                       "else": 0
                                                                                                                                                     }
                                                                                                                                                   }
@@ -1847,13 +1977,13 @@
                                                                                                                                               },
                                                                                                                                               "then": {
                                                                                                                                                 "$subtract": [
-                                                                                                                                                  "$$r364",
+                                                                                                                                                  "$$r52",
                                                                                                                                                   {
                                                                                                                                                     "$cond": {
                                                                                                                                                       "if": {
-                                                                                                                                                        "$isNumber": "$$r365"
+                                                                                                                                                        "$isNumber": "$$r53"
                                                                                                                                                       },
-                                                                                                                                                      "then": "$$r365",
+                                                                                                                                                      "then": "$$r53",
                                                                                                                                                       "else": 0
                                                                                                                                                     }
                                                                                                                                                   }
@@ -1861,7 +1991,7 @@
                                                                                                                                               }
                                                                                                                                             }
                                                                                                                                           ],
-                                                                                                                                          "default": "$$r364"
+                                                                                                                                          "default": "$$r52"
                                                                                                                                         }
                                                                                                                                       }
                                                                                                                                     }
@@ -1886,17 +2016,17 @@
                                                                                                                           {
                                                                                                                             "$map": {
                                                                                                                               "input": "$$combinations",
-                                                                                                                              "as": "r366",
+                                                                                                                              "as": "r54",
                                                                                                                               "in": {
                                                                                                                                 "$reduce": {
                                                                                                                                   "input": {
                                                                                                                                     "$slice": [
-                                                                                                                                      "$$r366",
+                                                                                                                                      "$$r54",
                                                                                                                                       1,
                                                                                                                                       {
                                                                                                                                         "$subtract": [
                                                                                                                                           {
-                                                                                                                                            "$size": "$$r366"
+                                                                                                                                            "$size": "$$r54"
                                                                                                                                           },
                                                                                                                                           1
                                                                                                                                         ]
@@ -1907,11 +2037,11 @@
                                                                                                                                     "$cond": {
                                                                                                                                       "if": {
                                                                                                                                         "$isNumber": {
-                                                                                                                                          "$first": "$$r366"
+                                                                                                                                          "$first": "$$r54"
                                                                                                                                         }
                                                                                                                                       },
                                                                                                                                       "then": {
-                                                                                                                                        "$first": "$$r366"
+                                                                                                                                        "$first": "$$r54"
                                                                                                                                       },
                                                                                                                                       "else": 1
                                                                                                                                     }
@@ -1919,8 +2049,8 @@
                                                                                                                                   "in": {
                                                                                                                                     "$let": {
                                                                                                                                       "vars": {
-                                                                                                                                        "r367": "$$value",
-                                                                                                                                        "r368": "$$this"
+                                                                                                                                        "r55": "$$value",
+                                                                                                                                        "r56": "$$this"
                                                                                                                                       },
                                                                                                                                       "in": {
                                                                                                                                         "$switch": {
@@ -1934,13 +2064,13 @@
                                                                                                                                               },
                                                                                                                                               "then": {
                                                                                                                                                 "$multiply": [
-                                                                                                                                                  "$$r367",
+                                                                                                                                                  "$$r55",
                                                                                                                                                   {
                                                                                                                                                     "$cond": {
                                                                                                                                                       "if": {
-                                                                                                                                                        "$isNumber": "$$r368"
+                                                                                                                                                        "$isNumber": "$$r56"
                                                                                                                                                       },
-                                                                                                                                                      "then": "$$r368",
+                                                                                                                                                      "then": "$$r56",
                                                                                                                                                       "else": 1
                                                                                                                                                     }
                                                                                                                                                   }
@@ -1956,13 +2086,13 @@
                                                                                                                                               },
                                                                                                                                               "then": {
                                                                                                                                                 "$divide": [
-                                                                                                                                                  "$$r367",
+                                                                                                                                                  "$$r55",
                                                                                                                                                   {
                                                                                                                                                     "$cond": {
                                                                                                                                                       "if": {
-                                                                                                                                                        "$isNumber": "$$r368"
+                                                                                                                                                        "$isNumber": "$$r56"
                                                                                                                                                       },
-                                                                                                                                                      "then": "$$r368",
+                                                                                                                                                      "then": "$$r56",
                                                                                                                                                       "else": 1
                                                                                                                                                     }
                                                                                                                                                   }
@@ -1970,7 +2100,7 @@
                                                                                                                                               }
                                                                                                                                             }
                                                                                                                                           ],
-                                                                                                                                          "default": "$$r367"
+                                                                                                                                          "default": "$$r55"
                                                                                                                                         }
                                                                                                                                       }
                                                                                                                                     }
@@ -1996,7 +2126,7 @@
                                                                                                         "if": {
                                                                                                           "$lte": [
                                                                                                             {
-                                                                                                              "$size": "$$r332.stack"
+                                                                                                              "$size": "$$r20.stack"
                                                                                                             },
                                                                                                             1
                                                                                                           ]
@@ -2004,12 +2134,12 @@
                                                                                                         "then": [],
                                                                                                         "else": {
                                                                                                           "$slice": [
-                                                                                                            "$$r332.stack",
+                                                                                                            "$$r20.stack",
                                                                                                             0,
                                                                                                             {
                                                                                                               "$subtract": [
                                                                                                                 {
-                                                                                                                  "$size": "$$r332.stack"
+                                                                                                                  "$size": "$$r20.stack"
                                                                                                                 },
                                                                                                                 1
                                                                                                               ]
@@ -2029,14 +2159,14 @@
                                                                                   },
                                                                                   "else": {
                                                                                     "$mergeObjects": [
-                                                                                      "$$r332",
+                                                                                      "$$r20",
                                                                                       {
                                                                                         "value": {
                                                                                           "$concatArrays": [
-                                                                                            "$$r332.value",
+                                                                                            "$$r20.value",
                                                                                             [
                                                                                               [
-                                                                                                "$$r333"
+                                                                                                "$$r21"
                                                                                               ]
                                                                                             ]
                                                                                           ]
@@ -2053,7 +2183,7 @@
                                                                       {
                                                                         "imports": {
                                                                           "$setUnion": [
-                                                                            "$$r327.imports",
+                                                                            "$$r15.imports",
                                                                             [
                                                                               {
                                                                                 "$ifNull": [
@@ -2076,8 +2206,8 @@
                                                                                 "in": {
                                                                                   "$let": {
                                                                                     "vars": {
-                                                                                      "r369": "$$value",
-                                                                                      "r370": "$$this"
+                                                                                      "r57": "$$value",
+                                                                                      "r58": "$$this"
                                                                                     },
                                                                                     "in": {
                                                                                       "$cond": {
@@ -2085,13 +2215,13 @@
                                                                                           "$toBool": {
                                                                                             "$arrayElemAt": [
                                                                                               "$$args",
-                                                                                              "$$r370"
+                                                                                              "$$r58"
                                                                                             ]
                                                                                           }
                                                                                         },
                                                                                         "then": {
                                                                                           "$concatArrays": [
-                                                                                            "$$r369",
+                                                                                            "$$r57",
                                                                                             [
                                                                                               {
                                                                                                 "$toObjectId": {
@@ -2101,7 +2231,7 @@
                                                                                                     },
                                                                                                     "00000000000",
                                                                                                     {
-                                                                                                      "$toString": "$$r370"
+                                                                                                      "$toString": "$$r58"
                                                                                                     }
                                                                                                   ]
                                                                                                 }
@@ -2109,7 +2239,7 @@
                                                                                             ]
                                                                                           ]
                                                                                         },
-                                                                                        "else": "$$r369"
+                                                                                        "else": "$$r57"
                                                                                       }
                                                                                     }
                                                                                   }
@@ -2120,7 +2250,7 @@
                                                                         },
                                                                         "updated": {
                                                                           "$or": [
-                                                                            "$$r327.updated",
+                                                                            "$$r15.updated",
                                                                             {
                                                                               "$toBool": "$$importedField.updated"
                                                                             }
@@ -2128,7 +2258,7 @@
                                                                         },
                                                                         "function": {
                                                                           "$concatArrays": [
-                                                                            "$$r327.function",
+                                                                            "$$r15.function",
                                                                             "$$next"
                                                                           ]
                                                                         }
@@ -2162,13 +2292,13 @@
                                   "in": {
                                     "$let": {
                                       "vars": {
-                                        "r371": "$$value",
-                                        "r372": "$$this"
+                                        "r59": "$$value",
+                                        "r60": "$$this"
                                       },
                                       "in": {
                                         "$concatArrays": [
-                                          "$$r371",
-                                          "$$r372"
+                                          "$$r59",
+                                          "$$r60"
                                         ]
                                       }
                                     }
@@ -2195,8 +2325,8 @@
   },
   {
     "$set": {
-      "compute": {
-        "$reverseArray": "$$CURRENT.compute"
+      "fields": {
+        "$reverseArray": "$$CURRENT.fields"
       }
     }
   },
@@ -2206,13 +2336,13 @@
         "$mergeObjects": [
           {
             "$reduce": {
-              "input": "$$CURRENT.compute",
+              "input": "$$CURRENT.fields",
               "initialValue": "$$CURRENT.values",
               "in": {
                 "$let": {
                   "vars": {
-                    "r373": "$$value",
-                    "r374": "$$this"
+                    "r61": "$$value",
+                    "r62": "$$this"
                   },
                   "in": {
                     "$cond": {
@@ -2223,7 +2353,7 @@
                               {
                                 "$substrBytes": [
                                   {
-                                    "$toString": "$$r374.k"
+                                    "$toString": "$$r62.k"
                                   },
                                   0,
                                   12
@@ -2237,7 +2367,7 @@
                               {
                                 "$substrBytes": [
                                   {
-                                    "$toString": "$$r374.k"
+                                    "$toString": "$$r62.k"
                                   },
                                   14,
                                   4
@@ -2250,7 +2380,7 @@
                       },
                       "then": {
                         "$mergeObjects": [
-                          "$$r373",
+                          "$$r61",
                           {
                             "$arrayToObject": [
                               [
@@ -2258,20 +2388,20 @@
                                   {
                                     "$substrBytes": [
                                       {
-                                        "$toString": "$$r374.k"
+                                        "$toString": "$$r62.k"
                                       },
                                       12,
                                       12
                                     ]
                                   },
-                                  "$$r374.result"
+                                  "$$r62.result"
                                 ]
                               ]
                             ]
                           }
                         ]
                       },
-                      "else": "$$r373"
+                      "else": "$$r61"
                     }
                   }
                 }
@@ -2284,11 +2414,11 @@
   },
   {
     "$set": {
-      "compute": {
+      "fields": {
         "$reduce": {
           "input": {
             "$concatArrays": [
-              "$$CURRENT.compute",
+              "$$CURRENT.fields",
               "$$CURRENT.updates",
               "$$CURRENT.derivatives"
             ]
@@ -2297,8 +2427,8 @@
           "in": {
             "$let": {
               "vars": {
-                "r375": "$$value",
-                "r376": "$$this"
+                "r63": "$$value",
+                "r64": "$$this"
               },
               "in": {
                 "$let": {
@@ -2306,7 +2436,7 @@
                     "parent": {
                       "$substrBytes": [
                         {
-                          "$toString": "$$r376.k"
+                          "$toString": "$$r64.k"
                         },
                         0,
                         12
@@ -2321,28 +2451,28 @@
                             "$map": {
                               "input": {
                                 "$filter": {
-                                  "input": "$$r375",
-                                  "as": "r377",
+                                  "input": "$$r63",
+                                  "as": "r65",
                                   "cond": {
                                     "$or": [
                                       {
                                         "$in": [
                                           "$$parent",
-                                          "$$r377.nested"
+                                          "$$r65.nested"
                                         ]
                                       },
                                       {
                                         "$in": [
-                                          "$$r376.k",
-                                          "$$r377.imports"
+                                          "$$r64.k",
+                                          "$$r65.imports"
                                         ]
                                       }
                                     ]
                                   }
                                 }
                               },
-                              "as": "r378",
-                              "in": "$$r378.depth"
+                              "as": "r66",
+                              "in": "$$r66.depth"
                             }
                           }
                         }
@@ -2364,11 +2494,11 @@
                           },
                           "then": {
                             "$concatArrays": [
-                              "$$r375",
+                              "$$r63",
                               [
                                 {
                                   "$mergeObjects": [
-                                    "$$r376",
+                                    "$$r64",
                                     {
                                       "depth": {
                                         "$add": [
@@ -2388,41 +2518,41 @@
                               {
                                 "$cond": {
                                   "if": {
-                                    "$isArray": "$$r376._imports"
+                                    "$isArray": "$$r64._imports"
                                   },
                                   "then": {
                                     "$reduce": {
-                                      "input": "$$r376._imports",
+                                      "input": "$$r64._imports",
                                       "initialValue": [],
                                       "in": {
                                         "$let": {
                                           "vars": {
-                                            "r379": "$$value",
-                                            "r380": "$$this"
+                                            "r67": "$$value",
+                                            "r68": "$$this"
                                           },
                                           "in": {
                                             "$cond": {
                                               "if": {
                                                 "$in": [
-                                                  "$$r380.k",
+                                                  "$$r68.k",
                                                   "$$CURRENT.statics.k"
                                                 ]
                                               },
-                                              "then": "$$r379",
+                                              "then": "$$r67",
                                               "else": {
                                                 "$concatArrays": [
-                                                  "$$r379",
+                                                  "$$r67",
                                                   [
                                                     {
                                                       "$mergeObjects": [
-                                                        "$$r380",
+                                                        "$$r68",
                                                         {
                                                           "imports": [],
                                                           "depth": {
                                                             "$add": [
                                                               "$$baseDepth",
                                                               1,
-                                                              "$$r380.depth"
+                                                              "$$r68.depth"
                                                             ]
                                                           }
                                                         }
@@ -2442,7 +2572,7 @@
                               }
                             ]
                           },
-                          "else": "$$r375"
+                          "else": "$$r63"
                         }
                       }
                     }
@@ -2457,22 +2587,22 @@
   },
   {
     "$set": {
-      "compute": {
+      "fields": {
         "$reduce": {
-          "input": "$$CURRENT.compute",
+          "input": "$$CURRENT.fields",
           "initialValue": [],
           "in": {
             "$let": {
               "vars": {
-                "r381": "$$value",
-                "r382": "$$this"
+                "r69": "$$value",
+                "r70": "$$this"
               },
               "in": {
                 "$let": {
                   "vars": {
                     "search": {
                       "$reduce": {
-                        "input": "$$r381",
+                        "input": "$$r69",
                         "initialValue": {
                           "found": false,
                           "result": []
@@ -2480,8 +2610,8 @@
                         "in": {
                           "$let": {
                             "vars": {
-                              "r383": "$$value",
-                              "r384": "$$this"
+                              "r71": "$$value",
+                              "r72": "$$this"
                             },
                             "in": {
                               "$cond": {
@@ -2489,12 +2619,12 @@
                                   "$and": [
                                     {
                                       "$gt": [
-                                        "$$r382.depth",
-                                        "$$r384.depth"
+                                        "$$r70.depth",
+                                        "$$r72.depth"
                                       ]
                                     },
                                     {
-                                      "$not": "$$r383.found"
+                                      "$not": "$$r71.found"
                                     }
                                   ]
                                 },
@@ -2502,21 +2632,21 @@
                                   "found": true,
                                   "result": {
                                     "$concatArrays": [
-                                      "$$r383.result",
+                                      "$$r71.result",
                                       [
-                                        "$$r382",
-                                        "$$r384"
+                                        "$$r70",
+                                        "$$r72"
                                       ]
                                     ]
                                   }
                                 },
                                 "else": {
-                                  "found": "$$r383.found",
+                                  "found": "$$r71.found",
                                   "result": {
                                     "$concatArrays": [
-                                      "$$r383.result",
+                                      "$$r71.result",
                                       [
-                                        "$$r384"
+                                        "$$r72"
                                       ]
                                     ]
                                   }
@@ -2536,7 +2666,7 @@
                         "$concatArrays": [
                           "$$search.result",
                           [
-                            "$$r382"
+                            "$$r70"
                           ]
                         ]
                       }
@@ -2552,15 +2682,15 @@
   },
   {
     "$set": {
-      "compute": {
+      "fields": {
         "$reduce": {
-          "input": "$$CURRENT.compute",
+          "input": "$$CURRENT.fields",
           "initialValue": [],
           "in": {
             "$let": {
               "vars": {
-                "r385": "$$value",
-                "r386": "$$this"
+                "r73": "$$value",
+                "r74": "$$this"
               },
               "in": {
                 "$cond": {
@@ -2570,12 +2700,12 @@
                         "$type": {
                           "$first": {
                             "$filter": {
-                              "input": "$$r385",
-                              "as": "r387",
+                              "input": "$$r73",
+                              "as": "r75",
                               "cond": {
                                 "$eq": [
-                                  "$$r386.k",
-                                  "$$r387.k"
+                                  "$$r74.k",
+                                  "$$r75.k"
                                 ]
                               }
                             }
@@ -2585,12 +2715,12 @@
                       "object"
                     ]
                   },
-                  "then": "$$r385",
+                  "then": "$$r73",
                   "else": {
                     "$concatArrays": [
-                      "$$r385",
+                      "$$r73",
                       [
-                        "$$r386"
+                        "$$r74"
                       ]
                     ]
                   }
@@ -2610,7 +2740,7 @@
             "$isArray": "$$CURRENT.values.000005000000"
           },
           "then": {
-            "page": 1679614462388,
+            "page": 1679649274812,
             "layout": {
               "$cond": {
                 "if": {
@@ -2627,14 +2757,14 @@
                           {
                             "$reduce": {
                               "input": {
-                                "$reverseArray": "$$CURRENT.compute"
+                                "$reverseArray": "$$CURRENT.fields"
                               },
                               "initialValue": [],
                               "in": {
                                 "$let": {
                                   "vars": {
-                                    "r388": "$$value",
-                                    "r389": "$$this"
+                                    "r76": "$$value",
+                                    "r77": "$$this"
                                   },
                                   "in": {
                                     "$cond": {
@@ -2642,7 +2772,7 @@
                                         "$or": [
                                           {
                                             "$eq": [
-                                              "$$r389.k",
+                                              "$$r77.k",
                                               {
                                                 "$toObjectId": {
                                                   "$concat": [
@@ -2655,19 +2785,19 @@
                                           },
                                           {
                                             "$in": [
-                                              "$$r389.k",
-                                              "$$r388"
+                                              "$$r77.k",
+                                              "$$r76"
                                             ]
                                           }
                                         ]
                                       },
                                       "then": {
                                         "$setUnion": [
-                                          "$$r388",
-                                          "$$r389.imports"
+                                          "$$r76",
+                                          "$$r77.imports"
                                         ]
                                       },
-                                      "else": "$$r388"
+                                      "else": "$$r76"
                                     }
                                   }
                                 }
@@ -2680,7 +2810,7 @@
                     0
                   ]
                 },
-                "then": 1679614462388,
+                "then": 1679649274812,
                 "else": 0
               }
             },
@@ -2697,13 +2827,13 @@
       "updates",
       "derivatives",
       "statics",
-      "compute.result",
-      "compute.imports",
-      "compute.function",
-      "compute._imports",
-      "compute.depth",
-      "compute.nested",
-      "compute.updated"
+      "fields.result",
+      "fields.imports",
+      "fields.function",
+      "fields._imports",
+      "fields.depth",
+      "fields.nested",
+      "fields.updated"
     ]
   }
 ]

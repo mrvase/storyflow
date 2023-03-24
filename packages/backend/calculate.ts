@@ -474,21 +474,25 @@ export function calculate(node: SyntaxTree, getState: StateGetter): ValueArray {
     if (node.type === "select") {
       const select = node.data!.select as RawFieldId;
 
-      values = spreadImplicitArrays(values).reduce((acc: ValueArray[], el) => {
-        if (tokens.isNestedDocument(el)) {
-          const state = getState(computeFieldId(el.id, select), {
-            external: true,
-          });
+      values = [
+        spreadImplicitArrays(
+          spreadImplicitArrays(values).reduce((acc: ValueArray[], el) => {
+            if (tokens.isNestedDocument(el)) {
+              const state = getState(computeFieldId(el.id, select), {
+                external: true,
+              });
 
-          if (state) {
-            acc.push(state); // [[[state]]]
-          }
-        }
-        return acc;
-      }, []);
-    }
+              if (state) {
+                acc.push([state]); // [[[state]]]
+              }
+            }
+            return acc;
+          }, [])
+        ),
+      ];
 
-    if (node.type === "root") {
+      console.log("VALUES", values);
+    } else if (node.type === "root") {
       // do nothing
     } else if (node.type === null) {
       // brackets

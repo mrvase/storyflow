@@ -50,7 +50,7 @@ const getArticleFromInsert = (
   return {
     _id: action.id as DocumentId,
     folder,
-    versions: { "": 0 },
+    versions: { config: 0 },
     record: action.record,
     config: [],
     ...(action.label && { label: action.label }),

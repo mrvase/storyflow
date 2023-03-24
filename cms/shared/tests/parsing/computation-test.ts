@@ -28,6 +28,10 @@ export type Test = {
   value?: ValueArray;
 };
 
+export const root = {
+  type: "root" as "root",
+};
+
 export const calculate = (
   syntax: SyntaxTree,
   imports: { id: FieldId; value: SyntaxTree }[] = []
@@ -98,11 +102,14 @@ export const createEnvironment = () => {
     return `${generate4b()}${generate4b()}${generate4b()}`;
   };
 
-  const createImport = (test?: Test & { inline?: boolean }): NestedField => {
-    const id = generateId() as FieldId;
+  const createImport = (
+    test?: Test & { id?: FieldId; inline?: boolean }
+  ): NestedField => {
+    const id = test?.id ?? (generateId() as FieldId);
 
     if (test) {
-      importTests.push(test);
+      const { inline: _, id: __, ...rest } = test;
+      importTests.push(rest);
       const newImport = {
         id,
         value: test.syntax,

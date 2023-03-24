@@ -6,9 +6,10 @@ import type {
 } from "@storyflow/frontend/types";
 import { createRenderArray } from "@storyflow/frontend/render";
 import { getConfigByType } from "./getConfigByType";
-import { ComputationRecord, Value } from "@storyflow/backend/types";
+import { Value } from "@storyflow/backend/types";
 import { extendPath } from "@storyflow/backend/extendPath";
 
+/*
 const getImageObject = (name: string, url: string) => {
   const src = `${url}/${name}`;
 
@@ -143,3 +144,4 @@ export const resolveProps = (
     createDisplayTypeGetter(options.libraries)
   );
 };
+*/

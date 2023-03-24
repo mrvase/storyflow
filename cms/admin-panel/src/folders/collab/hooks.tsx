@@ -77,7 +77,7 @@ export function useFolder(id: FolderId): DBFolder {
     throw new Error("Folder not found");
   }
 
-  const version = initialFolder.versions?.[""] ?? 0;
+  const version = initialFolder.versions?.config ?? 0;
   const history = histories[id] ?? [];
 
   const operator = React.useCallback(

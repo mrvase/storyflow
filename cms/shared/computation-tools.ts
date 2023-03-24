@@ -162,15 +162,12 @@ export const getImportIds = (value: SyntaxTree, pool: SyntaxTreeRecord) => {
   return imports;
 };
 
-export const getNextState = (
-  compute: TokenStream,
-  operation: ComputationOp
-) => {
+export const getNextState = (stream: TokenStream, operation: ComputationOp) => {
   /**
    * if it is root, it should remove arguments before altering
    */
 
-  let newValue = compute;
+  let newValue = stream;
   let removed: TokenStream = [];
   operation.ops.forEach((action) => {
     const { index, insert = [], remove = 0 } = action;
@@ -235,10 +232,10 @@ export const createComputationTransformer = (
 
 export const getComputationRecord = (
   documentId: DocumentId,
-  doc: Pick<DBDocumentRaw, "compute" | "values">
+  doc: Pick<DBDocumentRaw, "fields" | "values">
 ): SyntaxTreeRecord => {
   const fields = Object.fromEntries(
-    doc.compute.map(({ k, v }) => [unwrapObjectId(k), parseSyntaxStream(v)])
+    doc.fields.map(({ k, v }) => [unwrapObjectId(k), parseSyntaxStream(v)])
   );
   Object.entries(doc.values).forEach(([id, value]) => {
     const fieldId = computeFieldId(documentId, id as RawFieldId);

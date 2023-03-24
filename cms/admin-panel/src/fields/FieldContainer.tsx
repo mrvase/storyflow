@@ -224,7 +224,7 @@ export function PathMap({
           >
             {el && "label" in el
               ? el.label
-              : getConfigFromType(el.type, libraries)?.label}
+              : getConfigFromType(el.element, libraries)?.label}
           </button>
         </React.Fragment>
       ))}

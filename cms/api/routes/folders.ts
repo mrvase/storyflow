@@ -295,7 +295,7 @@ export const folders = createRoute({
             folder: new ObjectId(el._id),
             versions: {},
             config: [],
-            compute: [
+            fields: [
               {
                 id: computeFieldId(el.frontId, FIELDS.url.id),
                 value: [{ "(": true }, "", "", { ")": "url" }],

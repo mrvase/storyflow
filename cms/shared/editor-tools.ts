@@ -3,13 +3,13 @@ import { tokens } from "@storyflow/backend/tokens";
 import { matchNonEscapedCharacter } from "./matchNonEscapedCharacter";
 
 function forEach(
-  compute: TokenStream,
+  stream: TokenStream,
   callback: (value: any, index: number) => boolean | void,
   splitText: boolean = true
 ) {
   let index = 0;
-  for (let cIndex = 0; cIndex < compute.length; cIndex++) {
-    let el = compute[cIndex];
+  for (let cIndex = 0; cIndex < stream.length; cIndex++) {
+    let el = stream[cIndex];
     if (!tokens.isPrimitiveValue(el)) {
       if (callback(el, index++)) return;
     } else {
@@ -34,7 +34,7 @@ function forEach(
     }
   }
   /*
-  compute.forEach((el) => {
+  stream.forEach((el) => {
     if (!isValue(el)) {
       callback(el, index++);
     } else {
@@ -58,8 +58,8 @@ function forEach(
   });
   */
 }
-function getLength(compute: TokenStream): number {
-  return (compute as any).reduce(
+function getLength(stream: TokenStream): number {
+  return (stream as any).reduce(
     (sum: number, el: TokenStream[number]): number => {
       if (!tokens.isPrimitiveValue(el)) {
         return sum + 1;
@@ -74,13 +74,13 @@ function getLength(compute: TokenStream): number {
   );
 }
 
-function slice(compute: TokenStream, _start: number, _end?: number) {
-  let start = _start < 0 ? getLength(compute) - _start : _start;
+function slice(stream: TokenStream, _start: number, _end?: number) {
+  let start = _start < 0 ? getLength(stream) - _start : _start;
   let end =
     _end === undefined
-      ? getLength(compute)
+      ? getLength(stream)
       : _end < 0
-      ? getLength(compute) + _end
+      ? getLength(stream) + _end
       : _end;
   let array: TokenStream = [];
   if (start === end) {
@@ -96,7 +96,7 @@ function slice(compute: TokenStream, _start: number, _end?: number) {
     checkLatest();
     array.push(el);
   };
-  forEach(compute, (el, index) => {
+  forEach(stream, (el, index) => {
     if (index < start) {
       return;
     }
@@ -118,7 +118,7 @@ function slice(compute: TokenStream, _start: number, _end?: number) {
   return array;
 }
 
-function concat(compute: TokenStream, ...args: TokenStream[]) {
+function concat(stream: TokenStream, ...args: TokenStream[]) {
   const concatTwo = (arg1: TokenStream, arg2: TokenStream) => {
     if (
       typeof arg1[arg1.length - 1] === "number" &&
@@ -142,7 +142,7 @@ function concat(compute: TokenStream, ...args: TokenStream[]) {
   };
   const value: TokenStream = args.reduce((a: TokenStream, c) => {
     return concatTwo(a, c);
-  }, compute);
+  }, stream);
   return value;
 }
 
@@ -219,10 +219,10 @@ function equals(compute1: TokenStream, compute2: TokenStream) {
   return result;
 }
 
-function at(compute: TokenStream, index: number) {
+function at(stream: TokenStream, index: number) {
   // BEMÆRK: Returnerer altid string og aldrig number
   let result: TokenStream[number] | undefined;
-  forEach(compute, (el, i) => {
+  forEach(stream, (el, i) => {
     if (i < index) {
       return;
     }
@@ -233,7 +233,7 @@ function at(compute: TokenStream, index: number) {
   });
   return result;
   /*
-  const value = slice(compute, index, index + 1);
+  const value = slice(stream, index, index + 1);
   if (value.length === 0) {
     return;
   }
