@@ -10,7 +10,7 @@ import {
 import { ObjectId } from "mongodb";
 import {
   ComputationGraph,
-  getComputationEntries,
+  getSyntaxTreeEntries,
   getFieldRecord,
   getGraph,
 } from "shared/computation-tools";
@@ -134,7 +134,7 @@ export function getSortedValues(
     return result;
   };
 
-  getComputationEntries(record).map(([fieldId, value]) => {
+  getSyntaxTreeEntries(record).map(([fieldId, value]) => {
     const stream = createSyntaxStream(value, (id) => new ObjectId(id));
     if (
       isPrimitive(stream) &&

@@ -230,7 +230,7 @@ export const createComputationTransformer = (
   );
 };
 
-export const getComputationRecord = (
+export const getSyntaxTreeRecord = (
   documentId: DocumentId,
   doc: Pick<DBDocumentRaw, "fields" | "values">
 ): SyntaxTreeRecord => {
@@ -246,7 +246,7 @@ export const getComputationRecord = (
   return fields;
 };
 
-export const getComputationEntries = (record: SyntaxTreeRecord) => {
+export const getSyntaxTreeEntries = (record: SyntaxTreeRecord) => {
   return Object.entries(record) as [FieldId, SyntaxTree][];
 };
 
@@ -280,7 +280,7 @@ export const getGraph = (
   let imports = initialGraph.imports ?? new Map<FieldId, FieldId[]>();
   let children = initialGraph.children ?? new Map<FieldId, FieldId[]>();
 
-  const entries = getComputationEntries(computationRecord);
+  const entries = getSyntaxTreeEntries(computationRecord);
 
   entries.map(([fieldId, computation]) => {
     const importIds = getImportIds(computation, computationRecord);

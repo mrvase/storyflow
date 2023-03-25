@@ -20,7 +20,6 @@ import {
   HasSelect,
   NestedField,
   RawFieldId,
-  Value,
   ValueArray,
 } from "@storyflow/backend/types";
 import { useBuilderPath } from "../BuilderPath";

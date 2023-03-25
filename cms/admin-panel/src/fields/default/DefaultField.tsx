@@ -176,10 +176,6 @@ export function WritableDefaultField({
     if (id === rootId && config?.transform) {
       return config.transform;
     }
-    return {
-      type: initialValue.type,
-      ...(initialValue.data && { data: initialValue.data }),
-    };
   }, [initialValue]);
 
   const [tree, setTree] = useGlobalState<SyntaxTree>(

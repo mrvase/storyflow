@@ -14,7 +14,7 @@ import { globals } from "../middleware/globals";
 import { ServerPackage } from "@storyflow/state";
 import {
   extractRootRecord,
-  getComputationRecord,
+  getSyntaxTreeRecord,
   getGraph,
 } from "shared/computation-tools";
 import { createStages } from "../aggregation/stages";
@@ -38,7 +38,7 @@ export const parseDocument = (raw: DBDocumentRaw): DBDocument => {
   return {
     _id: id,
     folder: unwrapObjectId(raw.folder),
-    record: getComputationRecord(id, raw),
+    record: getSyntaxTreeRecord(id, raw),
     ...rest,
   };
 };

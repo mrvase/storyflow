@@ -10,7 +10,6 @@ import { useDocumentCollab, useDocumentMutate } from "./DocumentCollabContext";
 import { PropertyOp, targetTools, DocumentConfigOp } from "shared/operations";
 import { getFieldConfig, setFieldConfig } from "shared/getFieldConfig";
 import { createPurger, createStaticStore } from "../../state/StaticStore";
-import { useSingular } from "../../state/useSingular";
 import { useArticle } from "..";
 import {
   getDocumentId,

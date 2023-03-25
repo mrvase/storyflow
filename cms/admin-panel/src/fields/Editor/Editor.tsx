@@ -14,7 +14,7 @@ import {
 import { Target, ComputationOp } from "shared/operations";
 import React from "react";
 import { $getComputation, $initializeEditor } from "./transforms";
-import { FunctionName, TokenStream, Transform } from "@storyflow/backend/types";
+import { TokenStream } from "@storyflow/backend/types";
 import { Reconciler } from "./Reconciler";
 import { useIsFocused } from "../../editor/react/useIsFocused";
 import { useClientConfig } from "../../client-config";
@@ -27,6 +27,7 @@ import { type QueueListener } from "@storyflow/state";
 import { ContextNode } from "../decorators/ContextNode";
 import { useFieldId } from "../FieldIdContext";
 import { FolderNode } from "../decorators/FolderNode";
+import { CopyPastePlugin } from "./CopyPastePlugin";
 
 const editorConfig = {
   namespace: "EDITOR",
@@ -100,6 +101,7 @@ export default function Editor({
       }}
     >
       <ContentPlugin />
+      {/*<CopyPastePlugin />*/}
       <DecoratorPlugin />
       <FocusPlugin />
       {push && register && target ? (

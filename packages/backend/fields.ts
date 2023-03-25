@@ -71,10 +71,6 @@ export const FIELDS = assignIds({
     type: "default",
     label: "Dynamiske parametre",
   },
-  fetch: {
-    type: "fetch",
-    label: "Hent mappe (10 dokumenter)",
-  },
 } as const);
 
 export function getDefaultField(id: FieldId) {

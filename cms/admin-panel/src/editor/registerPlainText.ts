@@ -48,10 +48,6 @@ import {
 
 import { CAN_USE_BEFORE_INPUT, IS_IOS, IS_SAFARI } from "./utils/environment";
 import { mergeRegister } from "./utils/mergeRegister";
-import {
-  $getBlocksFromComputation,
-  $getLastBlock,
-} from "../fields/Editor/transforms";
 import { LibraryConfig } from "@storyflow/frontend/types";
 
 /**
@@ -396,127 +392,6 @@ export function registerPlainText(
         }
 
         return editor.dispatchCommand(INSERT_PARAGRAPH_COMMAND, undefined);
-      },
-      COMMAND_PRIORITY_EDITOR
-    ),
-
-    /*
-    editor.registerCommand(
-      COPY_COMMAND,
-      (event) => {
-        const selection = $getSelection();
-
-        if (
-          !$isRangeSelection(selection) ||
-          !(event instanceof ClipboardEvent)
-        ) {
-          return false;
-        }
-
-        const clipboardData = event.clipboardData;
-
-        if (!clipboardData) {
-          return false;
-        }
-
-        const computation = $getComputation($getRoot());
-
-        event.preventDefault();
-
-        clipboardData.setData(
-          "application/x-storyflow-computation",
-          JSON.stringify(computation)
-        );
-
-        let plainString = "";
-        if (selection !== null) {
-          plainString = selection.getTextContent();
-        }
-
-        clipboardData.setData("text/plain", plainString);
-
-        return true;
-      },
-      COMMAND_PRIORITY_EDITOR
-    ),
-    */
-
-    editor.registerCommand(
-      PASTE_COMMAND,
-      (event) => {
-        const selection = $getSelection();
-
-        if (!$isRangeSelection(selection)) {
-          return false;
-        }
-
-        event.preventDefault();
-
-        const clipboardData =
-          event instanceof InputEvent || event instanceof KeyboardEvent
-            ? null
-            : event.clipboardData;
-
-        if (clipboardData !== null && $isRangeSelection(selection)) {
-          const computation = clipboardData.getData(
-            "application/x-storyflow-computation"
-          );
-
-          if (computation) {
-            try {
-              const payload = JSON.parse(computation);
-              const blocks = $getBlocksFromComputation(payload, libraries);
-              const lastNode = $getLastBlock(selection, libraries);
-              if ($isRootNode(lastNode)) {
-                lastNode.append(...blocks);
-              } else if (lastNode) {
-                const isEmpty = lastNode.getTextContent() === "";
-                if (isEmpty) {
-                  blocks.forEach((node) => {
-                    lastNode.insertBefore(node);
-                  });
-                } else {
-                  blocks
-                    .slice()
-                    .reverse()
-                    .forEach((node) => {
-                      lastNode.insertAfter(node);
-                    });
-                }
-              }
-              return true;
-            } catch (e) {
-              return false;
-            }
-          }
-        }
-
-        editor.update(
-          () => {
-            if (clipboardData !== null && $isRangeSelection(selection)) {
-              const text = clipboardData.getData("text/plain");
-
-              if (text != null) {
-                if ($isRangeSelection(selection)) {
-                  const lines = text.split(/\r?\n/).filter((el) => el !== "");
-                  const linesLength = lines.length;
-
-                  for (let i = 0; i < linesLength; i++) {
-                    selection.insertText(lines[i]);
-                    if (i < linesLength - 1) {
-                      selection.insertParagraph();
-                    }
-                  }
-                }
-              }
-            }
-          },
-          {
-            tag: "paste",
-          }
-        );
-
-        return true;
       },
       COMMAND_PRIORITY_EDITOR
     )

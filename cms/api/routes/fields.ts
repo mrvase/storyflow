@@ -35,7 +35,7 @@ import { getConfig } from "shared/initialValues";
 import {
   createComputationTransformer,
   extractRootRecord,
-  getComputationRecord,
+  getSyntaxTreeRecord,
   getFieldRecord,
   getGraph,
 } from "shared/computation-tools";
@@ -183,7 +183,7 @@ export const fields = createRoute({
 
       let computationRecord = extractRootRecord(
         documentId,
-        getComputationRecord(documentId, article),
+        getSyntaxTreeRecord(documentId, article),
         {
           excludeImports: true,
         }

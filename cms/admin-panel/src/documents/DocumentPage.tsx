@@ -221,13 +221,6 @@ function Toolbar({ id, config }: { id: DocumentId; config: DocumentConfig }) {
         id: computeFieldId(id, FIELDS.user.id),
       },
     },
-    {
-      label: "Fetch",
-      item: {
-        ...FIELDS.fetch,
-        id: computeFieldId(id, FIELDS.fetch.id),
-      },
-    },
   ];
 
   return (

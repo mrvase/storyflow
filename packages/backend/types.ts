@@ -263,7 +263,7 @@ export const functions = [
 
 export type FunctionName = (typeof functions)[number];
 
-export type FieldType = "default" | "url" | "slug" | "fetch";
+export type FieldType = "default" | "url" | "slug";
 
 export type RestrictTo =
   | "string"
@@ -286,6 +286,9 @@ export type FieldConfig<T extends FieldType = FieldType> = {
 
 export type TemplateRef = {
   template: DocumentId;
+  config?: Partial<Omit<FieldConfig, "id" | "type">> & Pick<FieldConfig, "id">;
+  // Burde være nemt nok at finde label. Jeg finder label ved at finde docs template
+  // og hvis den har en config, bruger jeg label derfra, ellers går jeg videre til dens templates.
 };
 
 export type HeadingConfig = {

@@ -19,7 +19,6 @@ const Components: { [K in FieldType]: React.FC<FieldProps<K>> } = {
   default: DefaultField,
   url: UrlField,
   slug: DefaultField,
-  fetch: DefaultField,
 };
 
 const getComponent = <T extends FieldType>(

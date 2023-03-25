@@ -21,15 +21,6 @@ const fieldConfig = {
     },
     defaultChildren: [] as [],
   },
-  fetch: {
-    transform: {
-      type: "sortlimit",
-      data: {
-        limit: 10,
-      },
-    },
-    defaultChildren: [] as [],
-  },
 } satisfies Record<
   FieldType,
   { transform?: Transform; defaultChildren: SyntaxTree["children"] }

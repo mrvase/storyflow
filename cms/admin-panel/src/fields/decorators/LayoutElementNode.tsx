@@ -60,7 +60,7 @@ function LayoutElementDecorator({
               ...ps,
               {
                 id: value.id,
-                type: value.element,
+                element: value.element,
                 parentProp: parentProp,
               },
             ]);

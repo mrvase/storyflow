@@ -291,7 +291,7 @@ export default function UrlField({
   return (
     <div className="px-5">
       <div className="pr-8">
-        <div className="outline-none rounded font-light flex items-center px-3 mb-2 bg-gray-800 ml-9">
+        <div className="outline-none rounded font-light flex items-center px-3 mb-2 bg-gray-800 ml-9 ring-button">
           {/*parents[0] ? (
             <Link
               to={replacePage(parents[0]?._id ?? "")}
@@ -403,7 +403,7 @@ export default function UrlField({
                   className="group text-sm font-light flex-center gap-2"
                 >
                   <SubPageLine first={index === 0} />
-                  <span className="opacity-50 group-hover:opacity-100 transition-opacity">
+                  <span className="opacity-75 group-hover:opacity-100 transition-opacity relative overflow-hidden bg-gray-800 px-1 py-0.5 rounded after:absolute after:bottom-0 after:left-0 after:right-0 after:border-b-2 after:border-green-300/50">
                     {getDocumentLabel(el)}
                   </span>
                 </Link>
@@ -418,7 +418,7 @@ export default function UrlField({
                 }
               >
                 <SubPageLine first={children.length === 0} />
-                <span className="opacity-25 group-hover:opacity-75 transition-opacity italic">
+                <span className="opacity-40 group-hover:opacity-100 transition-opacity italic">
                   Tilføj underside
                 </span>
               </button>
@@ -433,7 +433,7 @@ export default function UrlField({
 const SubPageLine = ({ first }: { first?: boolean }) => (
   <svg
     viewBox="0 0 24 16"
-    className="w-6 h-4 opacity-25 group-hover:opacity-50 transition-opacity"
+    className="w-6 h-4 opacity-20 group-hover:opacity-50 transition-opacity"
     strokeWidth={1}
     stroke="currentColor"
     fill="none"
