@@ -22,6 +22,7 @@ import { Checkbox } from "../elements/Checkbox";
 import { useContextWithError } from "../utils/contextError";
 import { useFieldId } from "../fields/FieldIdContext";
 import { getDocumentId } from "@storyflow/backend/ids";
+import { Range } from "../elements/Range";
 
 const FieldToolbarPortalContext = React.createContext<
   [HTMLDivElement | null, React.Dispatch<HTMLDivElement | null>] | null
@@ -111,7 +112,7 @@ export function FieldToolbar({ index }: { index?: number }) {
         }
         options={restrictToOptions}
       />
-      {config?.template && (
+      {/* config?.template && (
         <Content.ToolbarMenu
           icon={ArrowDownTrayIcon}
           label="Hent mapper"
@@ -123,45 +124,9 @@ export function FieldToolbar({ index }: { index?: number }) {
               : undefined
           }
         >
-          <div className="p-2 flex flex-col gap-2">
-            <div className="text-xs">
-              <Checkbox
-                value={config?.transform?.type === "sortlimit"}
-                setValue={(value) =>
-                  setConfig(
-                    "transform",
-                    value
-                      ? { type: "sortlimit", data: { limit: 10 } }
-                      : undefined
-                  )
-                }
-                label="Hent dokumenter fra mapper"
-                small
-              />
-            </div>
-            {config?.transform?.type === "sortlimit" && (
-              <>
-                <div className="flex items-center gap-1.5 text-xs">
-                  <ScissorsIcon className="w-3 h-3" /> Begræns antal
-                </div>
-                <div className="py-1 pl-[1.175rem]">
-                  <Range
-                    value={config.transform.data!.limit}
-                    setValue={(limit) =>
-                      setConfig(
-                        "transform",
-                        limit
-                          ? { type: "sortlimit", data: { limit } }
-                          : undefined
-                      )
-                    }
-                  />
-                </div>
-              </>
-            )}
-          </div>
+          // children
         </Content.ToolbarMenu>
-      )}
+      )*/}
       {typeof index === "number" && (
         <Content.ToolbarButton
           data-focus-remain="true"
@@ -184,37 +149,6 @@ export function FieldToolbar({ index }: { index?: number }) {
         </Content.ToolbarButton>
       )}
     </Content.Toolbar>
-  );
-}
-
-function Range({
-  value: valueFromProps,
-  setValue: setValueFromProps,
-}: {
-  value: number;
-  setValue: (value: number) => void;
-}) {
-  const [value, setValue] = React.useState(valueFromProps);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setValue(Number(e.target.value));
-  };
-
-  return (
-    <div className="flex">
-      <input
-        type="range"
-        className="w-full"
-        min={1}
-        max={25}
-        value={value}
-        onChange={handleChange}
-        onMouseUp={() => valueFromProps !== value && setValueFromProps(value)}
-      />
-      <span className="text-xs font-bold opacity-75 w-8 text-right">
-        {value}
-      </span>
-    </div>
   );
 }
 

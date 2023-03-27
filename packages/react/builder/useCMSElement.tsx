@@ -4,7 +4,8 @@ import { dispatchers } from "./events";
 import { stringifyPath } from "./RenderBuilder";
 
 const splitPath = (path: string): [parent: string, element: string] => {
-  return [path.split(".").slice(0, -1).join("."), path.split(".").slice(-1)[0]];
+  const ids = path.split(".");
+  return [ids[ids.length - 2] ?? "root", ids[ids.length - 1]];
 };
 
 const PlusIcon = () => (
@@ -38,7 +39,7 @@ const btnStyle = {
 } as {};
 
 export const EventHandler = ({ path }: { path: string }) => {
-  const [parent, element] = splitPath(path);
+  const [parent = "root", element] = splitPath(path);
 
   const [isSelected, setIsSelected] = React.useState(false);
 
@@ -54,7 +55,8 @@ export const EventHandler = ({ path }: { path: string }) => {
   const [subscribe, select] = useBuilderSelection();
   React.useEffect(() => {
     return subscribe((currentPath) => {
-      if (stringifyPath(currentPath) === path.split(".").slice(1).join(".")) {
+      console.log("$$ PATH", currentPath, path);
+      if (stringifyPath(currentPath) === path) {
         setIsSelected(true);
       } else if (isSelected) {
         setIsSelected(false);
@@ -219,7 +221,7 @@ const useDragEvents = (path: string) => {
       ) as HTMLElement;
       el.style.opacity = "0";
       dispatchers.moveComponent.dispatch({
-        parent,
+        parent: parent === "root" ? "" : parent,
         from: currentIndex,
         to: next.current,
       });

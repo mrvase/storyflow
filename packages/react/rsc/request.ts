@@ -2,7 +2,7 @@ import { FetchPageResult } from "@storyflow/frontend/types";
 
 const IS_DEV = process.env.NODE_ENV === "development";
 
-const domain = IS_DEV ? "http://localhost:3000" : "http://localhost:3000";
+const domain = IS_DEV ? "http://localhost:3000" : "https://www.storyflow.dk";
 
 const getNamespacesQuery = (namespaces: string[]) => {
   return namespaces.map((n) => `query[namespaces][]=${n}`).join("&") ?? "";

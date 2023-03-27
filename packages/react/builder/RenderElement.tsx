@@ -95,7 +95,6 @@ export default function RenderElement({
 }) {
   const path = usePath();
   const elementId = path.split(".").slice(-1)[0];
-  log("ELEMENT ID", elementId);
 
   let config_ = getConfigByType(type, getLibraryConfigs(), getLibraries());
 

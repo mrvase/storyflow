@@ -20,6 +20,7 @@ import {
   SyntaxTreeRecord,
   SyntaxTree,
   ValueArray,
+  NestedDocumentId,
 } from "@storyflow/backend/types";
 import { extendPath } from "@storyflow/backend/extendPath";
 import Content from "../layout/components/Content";
@@ -84,23 +85,38 @@ const useElementActions = ({
   push: any;
   setBuilderPath: (payload: Path | ((ps: Path) => Path)) => void;
 }) => {
-  const [path, setPath] = React.useState<string | null>(null);
+  const [{ elementId, parentId }, setPath] = React.useState<{
+    elementId: NestedDocumentId | undefined;
+    parentId: FieldId | undefined;
+  }>({
+    elementId: undefined,
+    parentId: undefined,
+  });
 
-  const parentPath =
-    path !== null ? path.split(".").slice(0, -1).join(".") : null;
-  const elementId = path !== null ? path.split(".").slice(-1)[0] : null;
-  const fullParentPath =
-    parentPath !== null ? extendPath(id, parentPath) : null;
-
-  const [computation] = useGlobalState<TokenStream>(
-    fullParentPath !== null ? `${fullParentPath}#computation` : undefined
+  const [tokenStream] = useGlobalState<TokenStream>(
+    parentId ? `${parentId}#stream` : undefined
   );
 
   React.useEffect(() => {
     return listeners.selection.subscribe((path) => {
-      setPath(stringifyPath(path));
+      console.log("PATH", path);
+      const element = path[path.length - 1];
+      const parentElementId = path[path.length - 2]?.id as NestedDocumentId;
+      const parentId = parentElementId
+        ? computeFieldId(
+            parentElementId,
+            getIdFromString((element as { parentProp: string }).parentProp)
+          )
+        : element.id
+        ? id
+        : undefined;
+      console.log("PARENT", element.id, parentId);
+      setPath({
+        elementId: element.id as NestedDocumentId,
+        parentId,
+      });
     });
-  }, []);
+  }, [id]);
 
   const documentId = getDocumentId(id) as DocumentId;
   const generateDocumentId = useDocumentIdGenerator();
@@ -112,7 +128,7 @@ const useElementActions = ({
         target: targetTools.stringify({
           field: "default",
           operation: "computation",
-          location: path.split(".").slice(1).join("."),
+          location: path.split(".").slice(-1)[0],
         }),
         ops: [
           {
@@ -131,11 +147,11 @@ const useElementActions = ({
 
   React.useEffect(() => {
     return listeners.changeComponent.subscribe(({ library, name }) => {
-      if (!computation || parentPath == null || elementId === null) return;
+      if (!tokenStream || !parentId || !elementId) return;
 
       let index = -1;
       tools.forEach(
-        computation,
+        tokenStream,
         (value, i) => {
           if (tokens.isNestedElement(value) && value.id === elementId) {
             index = i;
@@ -145,7 +161,7 @@ const useElementActions = ({
         true
       );
 
-      console.log("CHANGE", computation, index, parentPath, library, name);
+      console.log("CHANGE", tokenStream, index, parentId, library, name);
 
       if (index < 0) return;
 
@@ -153,7 +169,7 @@ const useElementActions = ({
         target: targetTools.stringify({
           field: "default",
           operation: "computation",
-          location: parentPath,
+          location: parentId === id ? "" : parentId,
         }),
         ops: [
           {
@@ -169,15 +185,15 @@ const useElementActions = ({
         ],
       });
     });
-  }, [libraries, computation, parentPath, elementId, generateDocumentId]);
+  }, [id, libraries, tokenStream, parentId, elementId, generateDocumentId]);
 
   React.useEffect(() => {
     return listeners.deleteComponent.subscribe(() => {
-      if (!computation || parentPath == null || elementId === null) return;
+      if (!tokenStream || !parentId || !elementId) return;
 
       let index = -1;
       tools.forEach(
-        computation,
+        tokenStream,
         (value, i) => {
           if (tokens.isNestedElement(value) && value.id === elementId) {
             index = i;
@@ -193,7 +209,7 @@ const useElementActions = ({
         target: targetTools.stringify({
           field: "default",
           operation: "computation",
-          location: parentPath,
+          location: parentId === id ? "" : parentId,
         }),
         ops: [
           {
@@ -205,14 +221,14 @@ const useElementActions = ({
 
       setBuilderPath((ps) => ps.slice(0, -1));
     });
-  }, [libraries, computation, parentPath, elementId]);
+  }, [id, libraries, tokenStream, parentId, elementId]);
 
   const editorComputationToBlocks = () => {
-    if (!computation) return [];
+    if (!tokenStream) return [];
     const blocks: { index: number; length: number }[] = [];
     let length = 0;
     tools.forEach(
-      computation,
+      tokenStream,
       (value, index) => {
         length++;
         if (tokens.isNestedElement(value)) {
@@ -230,21 +246,21 @@ const useElementActions = ({
 
   React.useEffect(() => {
     return listeners.moveComponent.subscribe(({ parent, from, to }) => {
-      if (!computation) return;
-      if (parent !== fullParentPath) return;
+      console.log("MOVE", parent, from, to, tokenStream);
+      if (!tokenStream || !parentId) return;
       let fromIndex: number | null = null;
       let toIndex: number | null = null;
       let i = -1;
       tools.forEach(
-        computation,
+        tokenStream,
         (value, index) => {
           if (tokens.isNestedElement(value)) {
             i++;
           }
-          if (i === from) {
+          if (fromIndex === null && i === from) {
             fromIndex = index;
           }
-          if (i === to) {
+          if (toIndex === null && i === to) {
             toIndex = index;
           }
           if (fromIndex !== null && toIndex !== null) {
@@ -258,12 +274,11 @@ const useElementActions = ({
         return;
       }
 
-      const location = parent.split(".").slice(1).join(".");
       push({
         target: targetTools.stringify({
           field: "default",
           operation: "computation",
-          location,
+          location: parentId === id ? "" : parentId,
         }),
         ops: [
           {
@@ -276,7 +291,7 @@ const useElementActions = ({
         ],
       });
     });
-  }, [computation, fullParentPath]);
+  }, [id, tokenStream, parentId]);
 };
 
 function Toolbar({
@@ -461,10 +476,6 @@ const getRecordSnapshot = (
 
     const value = state.value!;
 
-    if (fieldId === entry) {
-      console.log("$$ ENTRY STATE", value);
-    }
-
     const getChildren = (value: ValueArray): {} => {
       return value.reduce((acc, element) => {
         if (Array.isArray(element)) {
@@ -555,17 +566,6 @@ function PropagateStatePlugin({
     }
   );
 
-  React.useEffect(() => {
-    console.log("$$ SETTING TREE", record, client, libraries);
-    setTree(() => {
-      return getRecordSnapshot(id, {
-        record,
-        client,
-        libraries,
-      });
-    });
-  }, [client, libraries, setTree]);
-
   let oldValue = React.useRef({ ...tree });
 
   React.useEffect(() => {
@@ -582,7 +582,6 @@ function PropagateStatePlugin({
 
   React.useEffect(() => {
     if (rendered && tree) {
-      console.log("$$ UPDATED TREE", tree);
       const updateEntries = Object.entries(tree).filter(([key, value]) => {
         return !(key in oldValue.current) || oldValue.current[key] !== value;
       });

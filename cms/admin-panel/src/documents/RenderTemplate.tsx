@@ -148,8 +148,6 @@ export function RenderTemplate({
       ? fieldConfig.id
       : createTemplateFieldId(owner, fieldConfig.id);
 
-    console.log("CREATING FIELD ID", isMain, fieldConfig, owner, fieldId);
-
     const value: SyntaxTree | undefined = values[fieldId];
 
     return (

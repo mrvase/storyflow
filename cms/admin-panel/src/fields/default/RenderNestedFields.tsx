@@ -15,6 +15,7 @@ import {
   NestedField,
   NestedFolder,
   TokenStream,
+  Transform,
 } from "@storyflow/backend/types";
 import {
   Bars3Icon,
@@ -62,6 +63,7 @@ import { Plus } from "./Plus";
 import { useEditorContext } from "../../editor/react/EditorProvider";
 import { isSyntaxTree } from "@storyflow/backend/syntax-tree";
 import { useIsFocused } from "../../editor/react/useIsFocused";
+import { TemplateHeader } from "./TemplateHeader";
 
 const findImportsFn = (value: SyntaxTree) => {
   const imports: NestedField[] = [];
@@ -125,6 +127,7 @@ export function WritableDefaultField({
   const [output, setOutput] = useGlobalState<ValueArray>(id, () =>
     calculateFn(rootId, initialValue, { record, client })
   );
+
   const [tree, setTree] = useGlobalState<SyntaxTree>(
     `${id}#tree`,
     () => initialValue
@@ -133,6 +136,8 @@ export function WritableDefaultField({
     `${id}#stream`,
     () => initialEditorValue
   );
+
+  console.log("STREAM", id, tokenStream);
 
   const [fieldImports, setFieldImports] = useGlobalState<NestedField[]>(
     `${id}#imports`,
@@ -211,37 +216,41 @@ export function WritableDefaultField({
   const singular = useSingular(`${rootId}${target}`);
 
   const transform = React.useMemo(
-    () => config?.transform ?? initialTransform,
+    () => (id === rootId ? config?.transform ?? initialTransform : undefined),
     [config?.transform, initialTransform]
   );
 
   const setValue = React.useCallback(
-    (func: () => TokenStream) => {
+    (func: () => TokenStream, updatedTransform?: Transform) => {
       singular(() => {
         setTokenStream(func);
         const stream = func();
-        const tree = parseTokenStream(stream, transform);
+        const tree = parseTokenStream(stream, updatedTransform ?? transform);
         setTree(() => tree);
         setOutput(() => calculateFn(rootId, tree, { client, record }));
         setFieldImports(() => findImportsFn(tree));
       });
     },
-    [transform]
+    []
   );
 
   const streamRef = React.useRef(tokenStream);
   React.useEffect(() => {
     streamRef.current = tokenStream;
   }, [tokenStream]);
-  React.useEffect(() => {
-    const tree = parseTokenStream(streamRef.current, transform);
-    setTree(() => tree);
-    setOutput(() => calculateFn(rootId, tree, { client, record }));
-    setFieldImports(() => findImportsFn(tree));
-  }, [transform]);
+
+  const setTransform = React.useCallback(
+    (transform: Transform | undefined) => {
+      setValue(() => streamRef.current, transform);
+    },
+    [setValue]
+  );
 
   return (
     <>
+      {id === rootId && config?.template && (
+        <TemplateHeader id={id} setTransform={setTransform} />
+      )}
       <Editor
         target={target}
         push={push}
@@ -376,8 +385,6 @@ export function RenderNestedElement({
 
   const keyId = computeFieldId(nestedDocumentId, getIdFromString("key"));
   const [key] = useGlobalState<ValueArray>(keyId);
-
-  console.log("KEY KEY KEY", key);
 
   const [listIsOpen_, toggleListIsOpen] = React.useReducer((ps) => !ps, false);
 

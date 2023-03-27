@@ -13,7 +13,12 @@ import { useEditorContext } from "../../editor/react/EditorProvider";
 import { getComputationDiff } from "../../editor/utils/getComputationDiff";
 import { tools } from "shared/editor-tools";
 import { getNextState } from "shared/computation-tools";
-import { InferAction, Target, ComputationOp } from "shared/operations";
+import {
+  InferAction,
+  Target,
+  ComputationOp,
+  targetTools,
+} from "shared/operations";
 import { createQueueCache } from "../../state/collaboration";
 import { TokenStream, FunctionName } from "@storyflow/backend/types";
 import { LibraryConfig } from "@storyflow/frontend/types";

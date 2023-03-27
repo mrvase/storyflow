@@ -257,10 +257,8 @@ function RefreshButton({
 }) {
   const [isLoading, setIsLoading] = React.useState(false);
 
-  const { data } = SWRClient.documents.getUpdatedUrls.useQuery({
+  const { data, mutate } = SWRClient.documents.getUpdatedUrls.useQuery({
     namespace,
-    domain: "",
-    revalidateUrl,
   });
 
   const client = useClient();
@@ -269,12 +267,14 @@ function RefreshButton({
 
   return (
     <>
-      <span
-        title={(data ?? []).map((el) => `/${el}`).join(", ")}
-        className="text-xs opacity-50 font-light ml-5 cursor-default hover:underline"
-      >
-        {number} {number === 1 ? "side" : "sider"} ændret
-      </span>
+      {number > 0 && (
+        <span
+          title={(data ?? []).map((el) => `/${el}`).join(", ")}
+          className="text-xs opacity-50 font-light ml-5 cursor-default hover:underline"
+        >
+          {number} {number === 1 ? "side" : "sider"} ændret
+        </span>
+      )}
       <div className="relative ml-5">
         {/*isLoading && (
         <div className="absolute inset-0 flex-center">
@@ -291,9 +291,10 @@ function RefreshButton({
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
               }).then((res) => res.json());
+              await client.documents.revalidated.mutation();
               if (result.revalidated === true) {
-                await client.documents.revalidated.mutation();
               }
+              mutate();
               setIsLoading(false);
             }
           }}

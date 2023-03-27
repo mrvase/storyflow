@@ -46,11 +46,9 @@ export default function DefaultField({
   }, []);
 
   const [path] = useBuilderPath();
-  const [config] = useFieldConfig(id);
 
   return (
     <>
-      {path.length === 0 && config?.template && <TemplateHeader id={id} />}
       <WritableDefaultField
         id={id}
         hidden={path.length > 0}

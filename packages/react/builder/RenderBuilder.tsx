@@ -20,13 +20,7 @@ export const log: typeof console.log = LOG
   : (...args) => {};
 
 export const stringifyPath = (path: Path) => {
-  let string = "";
-  path.forEach((el) => {
-    string += `${
-      "parentProp" in el && el.parentProp ? `/${el.parentProp}` : ""
-    }.${el.id}`;
-  });
-  return string.slice(1);
+  return path.map((el) => el.id).join(".");
 };
 
 const generateKey = () => Math.random().toString(36).slice(2);

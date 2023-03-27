@@ -55,6 +55,7 @@ import {
   FieldToolbarPortalProvider,
   useFieldToolbarPortal,
 } from "./FieldToolbar";
+import { SWRClient } from "../client";
 
 export const getVersionKey = (versions?: Record<RawFieldId, number>) => {
   if (!versions) return -1;
@@ -451,6 +452,16 @@ function SaveButton({ id, folder }: { id: DocumentId; folder: FolderId }) {
   const [isLoading, setIsLoading] = React.useState(false);
   const saveArticle = useSaveArticle(folder);
 
+  const { mutate: mutateUpdatedUrls } =
+    SWRClient.documents.getUpdatedUrls.useQuery(
+      {
+        namespace: folder,
+      },
+      {
+        immutable: true,
+      }
+    );
+
   const { libraries } = useClientConfig();
 
   const searchable: SearchableProps = React.useMemo(() => {
@@ -492,6 +503,7 @@ function SaveButton({ id, folder }: { id: DocumentId; folder: FolderId }) {
           setIsLoading(true);
           await collab.sync(true);
           const result = await saveArticle({ id, searchable });
+          mutateUpdatedUrls();
           setIsLoading(false);
         }}
       >

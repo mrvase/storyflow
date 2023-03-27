@@ -26,6 +26,8 @@ import {
 import {
   createRawTemplateFieldId,
   getDocumentId,
+  getRawDocumentId,
+  getRawFieldId,
   isFieldOfDocument,
   isNestedDocumentId,
   unwrapObjectId,
@@ -117,7 +119,19 @@ export const documents = createRoute({
 
         console.log("RESULT", fullRecord, result);
 
-        return result;
+        const timestamp = Date.now();
+
+        const keys = Object.keys(fullRecord).filter((el): el is FieldId =>
+          el.startsWith(getRawDocumentId(documentId))
+        );
+
+        console.log("KEYS", Object.keys(fullRecord), documentId, keys);
+
+        return Object.assign(result, {
+          updated: Object.fromEntries(
+            keys.map((el) => [getRawFieldId(el), timestamp])
+          ),
+        });
       };
 
       const batchQuery = (() => {
@@ -233,6 +247,7 @@ export const documents = createRoute({
                       ...(insert.label && { label: insert.label }),
                       config: { $literal: insert.config },
                       values: { $literal: insert.values },
+                      updated: { $literal: insert.updated },
                       fields: { $literal: insert.fields },
                       versions: { $literal: {} },
                     },
@@ -405,11 +420,9 @@ export const documents = createRoute({
     schema() {
       return z.object({
         namespace: z.string(),
-        domain: z.string(),
-        revalidateUrl: z.string(),
       });
     },
-    async query({ namespace, domain, revalidateUrl }, { dbName }) {
+    async query({ namespace }, { dbName }) {
       const db = (await clientPromise).db(dbName);
 
       const lastBuildCounter =

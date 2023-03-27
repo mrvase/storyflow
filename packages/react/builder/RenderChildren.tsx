@@ -1,7 +1,7 @@
 import * as React from "react";
-import { AddPathSegment, ExtendPath, usePath } from "./contexts";
+import { AddPathSegment, ExtendPath } from "./contexts";
 import RenderElement, { IndexContext } from "./RenderElement";
-import { log, useValue } from "./RenderBuilder";
+import { log } from "./RenderBuilder";
 import { Component, ValueArray } from "@storyflow/frontend/types";
 import { createRenderArray } from "@storyflow/frontend/render";
 // import { createRenderArray } from "../config/createRenderArray";

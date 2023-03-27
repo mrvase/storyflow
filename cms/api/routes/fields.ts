@@ -547,6 +547,7 @@ export const fields = createRoute({
         .collection<DBDocumentRaw>("documents")
         .findOneAndUpdate({ _id: new ObjectId(documentId) }, stages, {
           returnDocument: "after",
+          writeConcern: { w: "majority" },
         });
 
       if (result1.ok) {
@@ -600,7 +601,10 @@ export const fields = createRoute({
             "fields.k": { $in: updates.map((el) => el.k) },
             _id: { $ne: new ObjectId(documentId) },
           },
-          stages
+          stages,
+          {
+            writeConcern: { w: "majority" },
+          }
         );
 
         await resetHistory(slug, documentId);
