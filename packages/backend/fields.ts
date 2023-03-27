@@ -1,12 +1,15 @@
 import {
+  computeFieldId,
   createDocumentId,
   createFieldId,
   createTemplateFieldId,
   getRawFieldId,
+  getTemplateDocumentId,
   SYSTEM_TEMPLATE_OFFSET,
 } from "./ids";
 import { FieldId, RawFieldId } from "./types";
 
+/*
 const assignIds = <T extends Record<string, any>>(
   fields: T
 ): { [Key in keyof T]: T[Key] & { id: RawFieldId } } => {
@@ -25,58 +28,128 @@ const assignIds = <T extends Record<string, any>>(
     ])
   ) as any;
 };
+*/
 
-export const FIELDS = assignIds({
+let index = 0;
+
+const generateTemplateId = () => {
+  return createDocumentId(SYSTEM_TEMPLATE_OFFSET + index++);
+};
+
+const generateTemplateFieldId = () => {
+  return createFieldId(0, generateTemplateId());
+};
+
+export const DEFAULT_FIELDS = {
   creation_date: {
+    id: generateTemplateFieldId(),
     type: "default",
     label: "Oprettelsesdato",
   },
   label: {
+    id: generateTemplateFieldId(),
     type: "default",
     label: "Label",
   },
   url: {
+    id: generateTemplateFieldId(),
     type: "url",
     label: "URL",
   },
   slug: {
+    id: generateTemplateFieldId(),
     type: "slug",
-    label: "Slug",
+    label: "URL-segment",
   },
   page: {
+    id: generateTemplateFieldId(),
     type: "default",
     label: "Side",
   },
   layout: {
+    id: generateTemplateFieldId(),
     type: "default",
     label: "Layout",
   },
   redirect: {
-    type: "url",
-    label: "Omdiriger",
+    id: generateTemplateFieldId(),
+    type: "default",
+    label: "Omdirigering",
   },
   published: {
+    id: generateTemplateFieldId(),
     type: "default",
     label: "Offentlig",
   },
   released: {
+    id: generateTemplateFieldId(),
     type: "default",
     label: "Udgivelsesdato",
   },
   user: {
+    id: generateTemplateFieldId(),
     type: "default",
     label: "Brugeremail",
   },
   params: {
+    id: generateTemplateFieldId(),
     type: "default",
     label: "Dynamiske parametre",
   },
-} as const);
+} as const;
+
+export const DEFAULT_TEMPLATES = {
+  staticPage: {
+    id: generateTemplateId(),
+    label: "Statisk side",
+    config: [
+      {
+        template: getTemplateDocumentId(DEFAULT_FIELDS.url.id),
+      },
+      {
+        template: getTemplateDocumentId(DEFAULT_FIELDS.layout.id),
+      },
+      {
+        template: getTemplateDocumentId(DEFAULT_FIELDS.page.id),
+      },
+    ],
+  },
+  dynamicPage: {
+    id: generateTemplateId(),
+    label: "Dynamisk side",
+    config: [
+      {
+        template: getTemplateDocumentId(DEFAULT_FIELDS.url.id),
+      },
+      {
+        template: getTemplateDocumentId(DEFAULT_FIELDS.params.id),
+      },
+      {
+        template: getTemplateDocumentId(DEFAULT_FIELDS.layout.id),
+      },
+      {
+        template: getTemplateDocumentId(DEFAULT_FIELDS.page.id),
+      },
+    ],
+  },
+  redirectPage: {
+    id: generateTemplateId(),
+    label: "Viderestilling",
+    config: [
+      {
+        template: getTemplateDocumentId(DEFAULT_FIELDS.url.id),
+      },
+      {
+        template: getTemplateDocumentId(DEFAULT_FIELDS.redirect.id),
+      },
+    ],
+  },
+};
 
 export function getDefaultField(id: FieldId) {
   return (
-    Object.entries(FIELDS).find(([, value]) => {
-      return value.id === getRawFieldId(id);
+    Object.entries(DEFAULT_FIELDS).find(([, value]) => {
+      return getTemplateDocumentId(value.id) === getTemplateDocumentId(id);
     }) ?? [undefined, undefined]
   );
 }

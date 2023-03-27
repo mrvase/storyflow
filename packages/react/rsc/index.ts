@@ -1,2 +1,2 @@
 export { RenderPage, RenderLayout } from "./RenderPage";
-export { request } from "./request";
+export { request, requestPaths } from "./request";

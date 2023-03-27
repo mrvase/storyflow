@@ -5,7 +5,7 @@ import {
   PlusIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
-import { computeFieldId } from "@storyflow/backend/ids";
+import { computeFieldId, createTemplateFieldId } from "@storyflow/backend/ids";
 import { DocumentId, FolderId, SpaceId } from "@storyflow/backend/types";
 import React from "react";
 import {
@@ -28,7 +28,7 @@ import { useCurrentFolder } from "../FolderPageContext";
 import Space from "./Space";
 import Loader from "../../elements/Loader";
 import { useDeleteForm } from "./useDeleteForm";
-import { FIELDS } from "@storyflow/backend/fields";
+import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
 import { useDocumentIdGenerator } from "../../id-generator";
 import { calculateFromRecord } from "@storyflow/backend/calculate";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
@@ -190,7 +190,7 @@ function AddArticleButton({ folder }: { folder: FolderId }) {
           })
         : {};
 
-      record[computeFieldId(id, FIELDS.creation_date.id)] = {
+      record[createTemplateFieldId(id, DEFAULT_FIELDS.creation_date.id)] = {
         ...DEFAULT_SYNTAX_TREE,
         children: [new Date()],
       };

@@ -11,9 +11,12 @@ import { SWRClient } from "../../client";
 import { Option as OptionComponent } from "./Option";
 import { markMatchingString } from "./helpers";
 import { parseDateFromString } from "../../utils/dates";
-import { FIELDS } from "@storyflow/backend/fields";
-import { computeFieldId } from "@storyflow/backend/ids";
+import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
+import { createTemplateFieldId, getDocumentId } from "@storyflow/backend/ids";
 import { calculateFromRecord } from "@storyflow/backend/calculate";
+import { useDocumentIdGenerator } from "../../id-generator";
+import { createComponent } from "../Editor/createComponent";
+import { useFieldId } from "../FieldIdContext";
 
 export function QueryCommands({
   query,
@@ -35,7 +38,19 @@ export function QueryCommands({
   let options: any[] = [];
 
   const onSearchEnter = React.useCallback(() => setIsSearching(true), []);
-  const onAIEnter = React.useCallback(() => console.log("BIP BOP"), []);
+
+  const id = useFieldId();
+  const documentId = getDocumentId(id) as DocumentId;
+  const generateDocumentId = useDocumentIdGenerator();
+
+  const onAIEnter = React.useCallback(() => {
+    insertBlock([
+      {
+        id: generateDocumentId(documentId),
+        text: "",
+      },
+    ]);
+  }, [insertBlock, generateDocumentId]);
 
   const onEnter = React.useCallback(
     (id: DocumentId) => {
@@ -115,7 +130,7 @@ export function QueryCommands({
       id: el._id,
       label:
         calculateFromRecord(
-          computeFieldId(el._id, FIELDS.label.id),
+          createTemplateFieldId(el._id, DEFAULT_FIELDS.label.id),
           el.record
         )?.[0] ?? "",
       secondary: el._id,

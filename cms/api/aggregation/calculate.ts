@@ -16,6 +16,7 @@ import {
   DBSyntaxStream,
   NestedDocumentId,
 } from "@storyflow/backend/types";
+import { queryArrayProp } from "./queryArrayProp";
 
 type Accummulator = {
   value: DBValueArray[];
@@ -384,14 +385,14 @@ export const calculate = (
         (acc, cur) => {
           return $.define()
             .let({
-              select: isObjectWithProp($, cur, "f", "string"),
-              nested: $.cond(
+              isSelect: isObjectWithProp($, cur, "f", "string"),
+              nestedDocumentId: $.cond(
                 $.or(
                   $.eq($.type((cur as any).element), "string"),
                   $.eq($.type((cur as any).folder), "objectId"),
                   $.eq($.type((cur as any).field), "objectId")
                 ),
-                () => [
+                () =>
                   $.substrBytes(
                     $.toString(
                       (
@@ -402,48 +403,37 @@ export const calculate = (
                       ).id
                     ),
                     12,
-                    24
+                    12
                   ),
-                ],
-                () => []
+                () => null
               ),
             })
-            .let(({ select, nested }) => ({
-              next: $.switch()
-                .case(isObjectWithProp($, cur, "element", "string"), () =>
+            .let(({ isSelect, nestedDocumentId }) => ({
+              children: $.cond(
+                $.toBool(nestedDocumentId),
+                () =>
+                  $.filter(
+                    imports as (DBSyntaxStreamBlock & {
+                      result: DBSyntaxStream;
+                      function: DBSyntaxStream;
+                      updated?: boolean;
+                    })[],
+                    (el) =>
+                      $.eq(
+                        $.substrBytes($.toString(el.k), 0, 12),
+                        nestedDocumentId!
+                      )
+                  ),
+                () => []
+              ),
+              next: $.cond(
+                isSelect,
+                () =>
                   $.concatArrays(
-                    [{ "(": true }, ""] as StreamWithIgnorableImport,
-                    $.reduce(
-                      $.objectToArray((cur as HasDBId<NestedElement>).props!),
-                      (acc, el) =>
-                        $.concatArrays(acc, [
-                          {
-                            field: $.toObjectId(
-                              $.concat([
-                                $.substrBytes(
-                                  $.toString(
-                                    (cur as HasDBId<NestedElement>).id
-                                  ),
-                                  12,
-                                  24
-                                ),
-                                el.k,
-                              ])
-                            ),
-                            ignore: $.not(el.v),
-                          },
-                        ]),
-                      [] as StreamWithIgnorableImport
-                    ),
-                    ["", { ")": true }] as StreamWithIgnorableImport
-                  )
-                )
-                .case(select, () =>
-                  $.concatArrays(
-                    [{ "(": true }] as StreamWithIgnorableImport,
+                    [{ "(": true }],
                     $.reduce(
                       acc.value,
-                      (acc, comp) =>
+                      (acc: DBSyntaxStream, comp) =>
                         $.reduce(
                           comp,
                           (acc, el) =>
@@ -460,7 +450,7 @@ export const calculate = (
                                             (el as HasDBId<NestedDocument>).id
                                           ),
                                           12,
-                                          24
+                                          12
                                         ),
                                         (
                                           cur as Narrow<
@@ -479,74 +469,45 @@ export const calculate = (
                             ),
                           acc
                         ),
-                      [] as StreamWithIgnorableImport
+                      []
                     ),
-                    [{ ")": true }] as StreamWithIgnorableImport
-                  )
-                )
-                .default(() => [cur]),
-              acc: $.cond(
-                select,
-                () =>
-                  $.mergeObjects(acc, {
+                    [{ ")": true }]
+                  ),
+                () => [cur]
+              ),
+              acc: $.mergeObjects(
+                acc,
+                $.cond(
+                  isSelect,
+                  () => ({
                     value: $.last(acc.stack),
                     stack: $.pop(acc.stack),
-                    nested: $.setUnion(acc.nested, nested),
                   }),
-                () =>
-                  $.mergeObjects(acc, {
-                    nested: $.setUnion(acc.nested, nested),
-                  })
+                  () => ({})
+                ),
+                $.cond(
+                  $.toBool(nestedDocumentId),
+                  () => ({
+                    nested: $.setUnion(acc.nested, [nestedDocumentId]),
+                  }),
+                  () => ({})
+                )
               ),
             }))
-            .return(({ next, acc }) =>
+            .return(({ next, acc, children }) =>
               $.reduce(
                 next,
                 (acc, cur) =>
                   $.define()
                     .let({
-                      imp: $.cond(
-                        isObjectWithProp($, cur, "field", "objectId"),
-                        () => cur as HasDBId<NestedField> | IgnorableImport,
-                        () => null
-                      ),
+                      isImport: isObjectWithProp($, cur, "field", "objectId"),
                     })
-                    .let(({ imp }) => ({
-                      args: $.cond(
-                        $.toBool((imp as HasDBId<NestedField>).id), // do not look for args if it is ignorable import
-                        () =>
-                          $.map(
-                            $.range(0, 2),
-                            (index) =>
-                              $.find(imports, (el) =>
-                                $.eq(
-                                  el.k,
-                                  $.toObjectId(
-                                    $.concat([
-                                      $.substrBytes(
-                                        $.toString(
-                                          (imp as HasDBId<NestedField>).id
-                                        ),
-                                        12,
-                                        24
-                                      ),
-                                      "00000000000",
-                                      $.toString(index),
-                                    ])
-                                  )
-                                )
-                              ) as DBSyntaxStreamBlock & {
-                                result: DBSyntaxStream;
-                                function: DBSyntaxStream;
-                              }
-                          ),
-                        () => [null]
-                      ),
+                    .let(({ isImport }) => ({
                       importedField: $.cond(
-                        $.toBool(imp),
+                        isImport,
                         () =>
                           $.find(imports, (el) =>
-                            $.eq(el.k, (imp as HasDBId<NestedField>).field)
+                            $.eq(el.k, (cur as HasDBId<NestedField>).field)
                           ) as DBSyntaxStreamBlock & {
                             result: DBSyntaxStream;
                             function: DBSyntaxStream;
@@ -555,23 +516,17 @@ export const calculate = (
                         () => null
                       ),
                     }))
-                    .let(({ imp, importedField, args }) => ({
+                    .let(({ isImport, importedField }) => ({
                       next: $.switch()
                         .case(
-                          $.and(
-                            $.toBool(imp),
-                            $.or(
-                              $.not($.toBool(importedField)),
-                              $.toBool((imp as IgnorableImport).ignore)
-                            )
-                          ),
+                          $.and(isImport, $.not($.toBool(importedField))),
                           () => []
                         )
                         .case($.toBool(importedField), () =>
                           $.concatArrays(
                             [{ "(": true }] as DBSyntaxStream,
                             $.cond(
-                              $.anyElementTrue(args),
+                              $.gt($.size(children), 0),
                               () =>
                                 $.getField(
                                   importedField as Exclude<
@@ -596,7 +551,7 @@ export const calculate = (
                           cur as Exclude<typeof cur, IgnorableImport>,
                         ]),
                     }))
-                    .return(({ imp, importedField, args, next }) => {
+                    .return(({ importedField, next }) => {
                       return $.mergeObjects(
                         $.reduce(
                           next,
@@ -614,9 +569,17 @@ export const calculate = (
                                     .case($.isNumber((curObj as any).x), () =>
                                       $.define()
                                         .let({
-                                          arg: $.at(
-                                            args,
-                                            (curObj as Parameter).x
+                                          arg: $.find(children, (child) =>
+                                            $.eq(
+                                              $.substrBytes(
+                                                $.toString(child.k),
+                                                23,
+                                                1
+                                              ),
+                                              $.toString(
+                                                (curObj as Parameter).x
+                                              )
+                                            )
                                           ),
                                         })
                                         .return(({ arg }) =>
@@ -653,11 +616,11 @@ export const calculate = (
                                       $.eq($.type((cur as any).n), "bool"),
                                       () => acc
                                     )
-                                    // if fetcher: IGNORE
+                                    // if nested element: IGNORE
                                     .case(
                                       $.eq(
-                                        $.type((cur as any).filters),
-                                        "array"
+                                        $.type((cur as any).element),
+                                        "string"
                                       ),
                                       () => acc
                                     )
@@ -761,38 +724,14 @@ export const calculate = (
                           acc
                         ),
                         {
-                          imports: $.setUnion(
-                            acc.imports,
-                            [
-                              $.ifNull(
-                                imp?.field,
-                                $.toObjectId("000000000000000000000000")
-                              ),
-                            ],
-                            $.reduce(
-                              $.range(0, 2),
-                              (acc, index) =>
-                                $.cond(
-                                  $.toBool($.at(args, index)),
-                                  () =>
-                                    $.concatArrays(acc, [
-                                      $.toObjectId(
-                                        $.concat([
-                                          $.toString(
-                                            (imp as HasDBId<NestedField>).id
-                                          ),
-                                          "00000000000",
-                                          $.toString(index),
-                                        ])
-                                      ),
-                                    ]),
-                                  () => acc
-                                ),
-                              [] as DBId<FieldId>[]
-                            )
+                          imports: $.cond(
+                            $.toBool(importedField),
+                            () => $.setUnion(acc.imports, [importedField?.k]),
+                            () => acc.imports
                           ),
                           updated: $.or(
                             acc.updated,
+                            $.anyElementTrue(queryArrayProp(children).updated!),
                             $.toBool(importedField?.updated)
                           ),
                           function: $.concatArrays(acc.function, next),

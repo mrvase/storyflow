@@ -1,12 +1,5 @@
-import { ImportNode } from "../decorators/ImportNode";
-import { OperatorNode } from "../decorators/OperatorNode";
-import { ParameterNode } from "../decorators/ParameterNode";
-import { FunctionNode } from "../decorators/FunctionNode";
 import { ContentPlugin } from "./ContentPlugin";
 import { DecoratorPlugin } from "./DecoratorPlugin";
-import { TokenNode } from "../decorators/TokenNode";
-import { LayoutElementNode } from "../decorators/LayoutElementNode";
-import { InlineLayoutElementNode } from "../decorators/InlineLayoutElementNode";
 import {
   EditorProvider,
   useEditorContext,
@@ -19,15 +12,23 @@ import { Reconciler } from "./Reconciler";
 import { useIsFocused } from "../../editor/react/useIsFocused";
 import { useClientConfig } from "../../client-config";
 import { useFieldFocus } from "../../field-focus";
-import { HeadingNode } from "../../editor/react/HeadingNode";
-import { DocumentNode } from "../decorators/DocumentNode";
 import { $getRoot } from "lexical";
 import { Query } from "../query/Query";
 import { type QueueListener } from "@storyflow/state";
-import { ContextNode } from "../decorators/ContextNode";
 import { useFieldId } from "../FieldIdContext";
+
+import { HeadingNode } from "../../editor/react/HeadingNode";
+import { DocumentNode } from "../decorators/DocumentNode";
+import { ContextNode } from "../decorators/ContextNode";
 import { FolderNode } from "../decorators/FolderNode";
-import { CopyPastePlugin } from "./CopyPastePlugin";
+import { ImportNode } from "../decorators/ImportNode";
+import { OperatorNode } from "../decorators/OperatorNode";
+import { ParameterNode } from "../decorators/ParameterNode";
+import { FunctionNode } from "../decorators/FunctionNode";
+import { TokenNode } from "../decorators/TokenNode";
+import { LayoutElementNode } from "../decorators/LayoutElementNode";
+import { InlineLayoutElementNode } from "../decorators/InlineLayoutElementNode";
+import { CreatorNode } from "../decorators/CreatorNode";
 
 const editorConfig = {
   namespace: "EDITOR",
@@ -45,29 +46,9 @@ const editorConfig = {
     TokenNode,
     ContextNode,
     FolderNode,
+    CreatorNode,
   ],
 };
-
-function FocusPlugin() {
-  const id = useFieldId();
-  const editor = useEditorContext();
-  const isFocused = useIsFocused(editor);
-  const [, setFocused] = useFieldFocus();
-
-  const prevIsFocused = React.useRef(false);
-
-  React.useEffect(() => {
-    if (isFocused) {
-      setFocused(id);
-      prevIsFocused.current = true;
-    } else if (prevIsFocused.current) {
-      setFocused(null);
-      prevIsFocused.current = false;
-    }
-  }, [isFocused, id]);
-
-  return null;
-}
 
 export default function Editor({
   push,
@@ -122,6 +103,27 @@ export default function Editor({
       {children}
     </EditorProvider>
   );
+}
+
+function FocusPlugin() {
+  const id = useFieldId();
+  const editor = useEditorContext();
+  const isFocused = useIsFocused(editor);
+  const [, setFocused] = useFieldFocus();
+
+  const prevIsFocused = React.useRef(false);
+
+  React.useEffect(() => {
+    if (isFocused) {
+      setFocused(id);
+      prevIsFocused.current = true;
+    } else if (prevIsFocused.current) {
+      setFocused(null);
+      prevIsFocused.current = false;
+    }
+  }, [isFocused, id]);
+
+  return null;
 }
 
 function Setter({

@@ -13,7 +13,7 @@ import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
 import { caretClasses } from "./caret";
 import { NestedElement } from "@storyflow/backend/types";
-import { ParentPropContext } from "../default/DefaultField";
+import { ParentPropContext } from "../default/ParentPropContext";
 import { useBuilderPath } from "../BuilderPath";
 import { getConfigFromType, useClientConfig } from "../../client-config";
 
@@ -43,7 +43,7 @@ function LayoutElementDecorator({
       <div
         className={cl(
           "relative text-gray-800 dark:text-gray-200 cursor-default",
-          "flex items-center rounded px-2 py-0.5 text-sm bg-gray-100 dark:bg-gray-800 selection:bg-transparent",
+          "flex items-center rounded px-2 py-0.5 text-sm dark:bg-gray-850 selection:bg-transparent",
           isSelected && "ring-1 ring-amber-300",
           !isSelected && "ring-1 ring-gray-200 dark:ring-gray-700",
           isPseudoSelected && caretClasses

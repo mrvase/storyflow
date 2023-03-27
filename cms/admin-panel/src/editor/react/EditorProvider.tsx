@@ -7,7 +7,6 @@
  */
 import {
   createEditor,
-  EditorState,
   EditorThemeClasses,
   Klass,
   LexicalEditor,

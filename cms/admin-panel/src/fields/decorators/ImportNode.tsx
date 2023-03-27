@@ -23,6 +23,7 @@ import {
   ValueArray,
 } from "@storyflow/backend/types";
 import { useBuilderPath } from "../BuilderPath";
+import { revertTemplateFieldId } from "@storyflow/backend/ids";
 
 const useState = (
   id: FieldId,
@@ -30,7 +31,7 @@ const useState = (
 ): [label: string, value: ValueArray | undefined] => {
   if (select) {
     const label1 = useLabel(id);
-    const label2 = useLabel(select);
+    const label2 = useLabel(revertTemplateFieldId(select));
     return ["", [`[${label1} · ${label2}]`]];
   }
 

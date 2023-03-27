@@ -5,6 +5,7 @@ import {
   FieldConfig,
   FieldId,
   RawFieldId,
+  TemplateRef,
 } from "@storyflow/backend/types";
 import { useDocumentCollab, useDocumentMutate } from "./DocumentCollabContext";
 import { PropertyOp, targetTools, DocumentConfigOp } from "shared/operations";
@@ -12,14 +13,17 @@ import { getFieldConfig, setFieldConfig } from "shared/getFieldConfig";
 import { createPurger, createStaticStore } from "../../state/StaticStore";
 import { useArticle } from "..";
 import {
+  computeFieldId,
   getDocumentId,
   getTemplateDocumentId,
   isTemplateField,
+  replaceDocumentId,
   revertTemplateFieldId,
 } from "@storyflow/backend/ids";
 import { ServerPackage } from "@storyflow/state";
 import { createCollaborativeState } from "../../state/createCollaborativeState";
 import { QueueListenerParam } from "@storyflow/state/collab/Queue";
+import { useTemplatePath } from "../TemplatePathContext";
 
 /*
 export const labels = createStaticStore<
@@ -99,9 +103,44 @@ export const useDocumentConfig = (
             newTemplate.splice(index, remove ?? 0, ...(insert ?? []));
           });
         } else if (targetTools.isOperation(operation, "property")) {
-          // changing label
+          // changing properties
           const fieldId = targetTools.getLocation(operation.target) as FieldId;
           operation.ops.forEach((action) => {
+            // TODO: it is now possible to set an overwriting config for template fields.
+            // if the overwriting config has not been set before, there is no property
+            // for it. So we need to create the property with an array, and add
+            // the config to the array with id, if it is not yet present. Then
+            // we can set it.
+
+            if (isTemplateField(fieldId)) {
+              console.log("UPDATE TEMPLATE FIELD", fieldId);
+              const templateId = getTemplateDocumentId(fieldId);
+              const templateConfig = newTemplate.find(
+                (config): config is TemplateRef =>
+                  "template" in config && config.template === templateId
+              );
+              if (templateConfig) {
+                if (!("config" in templateConfig)) {
+                  templateConfig.config = [];
+                }
+                let fieldConfigIndex = templateConfig.config!.findIndex(
+                  (config) => config.id === fieldId
+                );
+                if (fieldConfigIndex < 0) {
+                  templateConfig.config!.push({ id: fieldId });
+                  fieldConfigIndex = templateConfig.config!.length - 1;
+                }
+                if (action.name === "label" && action.value === "") {
+                  delete templateConfig.config![fieldConfigIndex][action.name];
+                } else {
+                  templateConfig.config![fieldConfigIndex] = {
+                    ...templateConfig.config![fieldConfigIndex],
+                    [action.name]: action.value,
+                  };
+                }
+              }
+            }
+
             newTemplate = setFieldConfig(newTemplate, fieldId, (ps) => ({
               ...ps,
               [action.name]: action.value,
@@ -115,7 +154,7 @@ export const useDocumentConfig = (
     [data.config]
   );
 
-  return createCollaborativeState(
+  const state = createCollaborativeState(
     collab,
     (callback) => configs.useKey(templateId, callback),
     operator,
@@ -129,6 +168,10 @@ export const useDocumentConfig = (
       onInvalidVersion: refreshOnVersionChange,
     }
   );
+
+  console.log("CONFIG", state);
+
+  return state;
 };
 
 export function useFieldConfig(
@@ -143,25 +186,66 @@ export function useFieldConfig(
   ) => void
 ] {
   const documentId = getDocumentId(fieldId);
-  const templateDocumentId = getTemplateDocumentId(fieldId);
+  const path = useTemplatePath();
+  // removing the first element which is just the current document
+  const reversedParentPath = path.slice(1).reverse();
 
-  const isNative = !isTemplateField(fieldId);
+  const useReactiveConfig = (fieldId: FieldId) => {
+    let [config] = configs.useKey(documentId, undefined, (value) => {
+      if (!value) return;
+      return getFieldConfig(value, fieldId);
+    });
+    return config;
+  };
 
+  const useNonReactiveConfig = (fieldId: FieldId) => {
+    const { article: template } = useArticle(
+      getDocumentId(fieldId) as DocumentId
+    );
+    return getFieldConfig(template?.config ?? [], fieldId);
+  };
+
+  let config: FieldConfig;
+  if (path.length === 1) {
+    config = useReactiveConfig(fieldId) as FieldConfig;
+  } else {
+    // the template
+    const templateFieldId = revertTemplateFieldId(fieldId); // documentId === reversedParentPath[0];
+    config = useNonReactiveConfig(templateFieldId) as FieldConfig;
+
+    // removing the first element (the original) which is handled above
+    reversedParentPath.slice(1).forEach((templateId) => {
+      const id = replaceDocumentId(fieldId, templateId);
+      let overwritingConfig = useNonReactiveConfig(id);
+      config = React.useMemo(
+        () => ({ ...(config ?? {}), ...(overwritingConfig ?? {}) }),
+        [config, overwritingConfig]
+      );
+    });
+
+    let reactiveConfig = useReactiveConfig(fieldId);
+    config = React.useMemo(
+      () => ({ ...(config ?? {}), ...(reactiveConfig ?? {}) }),
+      [config, reactiveConfig]
+    );
+  }
+
+  /*
   let config: FieldConfig | undefined;
-
   if (isNative) {
     [config] = configs.useKey(documentId, undefined, (value) => {
       if (!value) return;
       return getFieldConfig(value, fieldId);
     });
   } else {
-    /* should not update reactively */
+    // should not update reactively
     const id = revertTemplateFieldId(fieldId);
     const { article: template } = useArticle(templateDocumentId);
     config = template?.config?.find(
       (el): el is FieldConfig => "id" in el && el.id === id
     );
   }
+  */
 
   const { push } = useDocumentMutate<PropertyOp>(documentId, documentId);
 
@@ -173,7 +257,7 @@ export function useFieldConfig(
         | ((ps: FieldConfig[Name] | undefined) => FieldConfig[Name])
         | undefined
     ) => {
-      if (!isNative) return;
+      // if (!isNative) return;
       const value =
         typeof payload === "function" ? payload(config?.[name]) : payload;
       push({
@@ -195,11 +279,17 @@ export function useFieldConfig(
   return [config, setter];
 }
 
+export function useLabel(fieldId: FieldId) {
+  const [config] = useFieldConfig(fieldId);
+
+  return config?.label ?? "";
+}
+
+/*
 export function useLabel(
   fieldId: FieldId | RawFieldId,
   overwritingTemplate?: DocumentId
 ) {
-  /* the updated label */
   const originalFieldId = revertTemplateFieldId(fieldId, overwritingTemplate);
   const documentId = getDocumentId(originalFieldId);
 
@@ -224,3 +314,4 @@ export function useLabel(
 
   return label ?? initialLabel ?? "";
 }
+*/

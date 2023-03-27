@@ -4,10 +4,11 @@ import {
 } from "@storyflow/frontend/events";
 import cl from "clsx";
 import React from "react";
-import BuilderIframe, {
+import BuilderIframe from "./builder/BuilderIframe";
+import {
   useIframeDispatchers,
   useIframeListeners,
-} from "./builder/BuilderIframe";
+} from "./builder/IframeContext";
 import { calculateFn } from "./default/calculateFn";
 import { tools } from "shared/editor-tools";
 import { ComputationOp, targetTools } from "shared/operations";

@@ -1,6 +1,6 @@
 import React from "react";
 import cl from "clsx";
-import { useBranchIsFocused } from "./Branch";
+import { useBranchIsFocused } from "./BranchFocusContext";
 import {
   CheckIcon,
   ChevronDownIcon,
@@ -134,7 +134,7 @@ function ToolbarWrapper({
           >
             <MinusIcon className="w-4 h-4" />
           </div>
-          {toolbar}
+          <div>{toolbar}</div>
         </div>
       )}
     </>

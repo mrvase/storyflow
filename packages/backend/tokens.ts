@@ -9,6 +9,7 @@ import {
   NestedFolder,
   ContextToken,
   Token,
+  NestedCreator,
 } from "./types";
 
 function isObject(value: any): value is Record<string, any> {
@@ -34,13 +35,18 @@ function isNestedFolder(value: any): value is NestedFolder {
   return isObject(value) && "id" in value && "folder" in value;
 }
 
+function isNestedCreator(value: any): value is NestedCreator {
+  return isObject(value) && "id" in value && "text" in value;
+}
+
 function isNestedDocument(value: any): value is NestedDocument {
   return (
     isObject(value) &&
     "id" in value &&
     !isNestedElement(value) &&
     !isNestedField(value) &&
-    !isNestedFolder(value)
+    !isNestedFolder(value) &&
+    !isNestedCreator(value)
   );
 }
 
@@ -86,6 +92,7 @@ export const tokens = {
   isNestedFolder,
   isNestedElement,
   isNestedDocument,
+  isNestedCreator,
   isNestedEntity,
   isLineBreak,
   isParameter,

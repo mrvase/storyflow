@@ -15,15 +15,7 @@ import AppPage from "../../folders/AppPage";
 import { useLocation, useAction } from "@storyflow/router";
 import { SystemFolderPage } from "./SystemFolderPage";
 import { SystemTemplatePage } from "./SystemTemplatePage";
-
-const BranchFocusContext = React.createContext<{
-  isFocused: boolean;
-  id: string;
-}>({ isFocused: false, id: "" });
-
-export function useBranchIsFocused(): { isFocused: boolean; id: string } {
-  return React.useContext(BranchFocusContext);
-}
+import { BranchFocusContext } from "./BranchFocusContext";
 
 const useFocusChange = (
   isFocused: boolean,

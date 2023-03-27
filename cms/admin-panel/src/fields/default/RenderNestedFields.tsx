@@ -10,6 +10,11 @@ import {
   SyntaxTreeRecord,
   SyntaxTree,
   ValueArray,
+  NestedDocument,
+  NestedElement,
+  NestedField,
+  NestedFolder,
+  TokenStream,
 } from "@storyflow/backend/types";
 import {
   Bars3Icon,
@@ -19,7 +24,7 @@ import {
 import { extendPath } from "@storyflow/backend/extendPath";
 import { stringifyPath, useBuilderPath } from "../BuilderPath";
 import { getConfigFromType, useClientConfig } from "../../client-config";
-import { ParentProp, WritableDefaultField } from "./DefaultField";
+import { ParentProp } from "./ParentPropContext";
 import { useFieldTemplate } from "./useFieldTemplate";
 import {
   PropConfig,
@@ -34,11 +39,252 @@ import {
   createTemplateFieldId,
   getDocumentId,
   getIdFromString,
+  getRawFieldId,
+  isNestedDocumentId,
   replaceDocumentId,
 } from "@storyflow/backend/ids";
 import { useFieldId } from "../FieldIdContext";
 import { useDocumentPageContext } from "../../documents/DocumentPageContext";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
+import { tokens } from "@storyflow/backend/tokens";
+import { targetTools, ComputationOp } from "shared/operations";
+import { createTokenStream, parseTokenStream } from "shared/parse-token-stream";
+import { useClient } from "../../client";
+import { useDocumentCollab } from "../../documents/collab/DocumentCollabContext";
+import { useFieldConfig } from "../../documents/collab/hooks";
+import { ContentEditable } from "../../editor/react/ContentEditable";
+import { useSingular } from "../../state/useSingular";
+import Editor from "../Editor/Editor";
+import { calculateFn } from "./calculateFn";
+import { getPreview } from "./getPreview";
+import { Placeholder } from "./Placeholder";
+import { Plus } from "./Plus";
+import { useEditorContext } from "../../editor/react/EditorProvider";
+import { isSyntaxTree } from "@storyflow/backend/syntax-tree";
+import { useIsFocused } from "../../editor/react/useIsFocused";
+
+const findImportsFn = (value: SyntaxTree) => {
+  const imports: NestedField[] = [];
+
+  const traverseNode = (node: SyntaxTree) => {
+    node.children.forEach((token) => {
+      if (isSyntaxTree(token)) {
+        traverseNode(token);
+      } else if (tokens.isNestedField(token)) {
+        imports.push(token);
+      }
+    });
+  };
+
+  traverseNode(value);
+
+  return imports;
+};
+
+function FocusBg() {
+  const editor = useEditorContext();
+  const isFocused = useIsFocused(editor);
+  const [fullPath] = useBuilderPath();
+  return (
+    <div
+      className={cl(
+        "[.focused_&]:ring-1 [.focused_&]:ring-gray-200 dark:[.focused_&]:ring-yellow-200/50",
+        isFocused || fullPath.length > 0
+          ? "bg-gray-50 dark:ring-yellow-400/10 dark:bg-gray-800 ring-1"
+          : "bg-transparent ring-gray-100 dark:ring-gray-800 group-hover/container:ring-1",
+        "transition-[background-color,box-shadow]",
+        "-z-10 absolute inset-2.5 rounded-md pointer-events-none"
+      )}
+    />
+  );
+}
+
+export function WritableDefaultField({
+  id,
+  initialValue,
+  fieldConfig,
+  hidden,
+}: {
+  id: FieldId;
+  initialValue: SyntaxTree;
+  fieldConfig: { type: FieldType };
+  hidden?: boolean;
+}) {
+  const rootId = useFieldId();
+  const client = useClient();
+  const { record } = useDocumentPageContext();
+  const [config] = useFieldConfig(rootId);
+
+  const initialTransform = React.useMemo(() => {
+    if (id === rootId && config?.transform) {
+      return config.transform;
+    }
+  }, [initialValue]);
+  const initialEditorValue = createTokenStream(initialValue);
+
+  const [output, setOutput] = useGlobalState<ValueArray>(id, () =>
+    calculateFn(rootId, initialValue, { record, client })
+  );
+  const [tree, setTree] = useGlobalState<SyntaxTree>(
+    `${id}#tree`,
+    () => initialValue
+  );
+  const [tokenStream, setTokenStream] = useGlobalState<TokenStream>(
+    `${id}#stream`,
+    () => initialEditorValue
+  );
+
+  const [fieldImports, setFieldImports] = useGlobalState<NestedField[]>(
+    `${id}#imports`,
+    () => findImportsFn(initialValue)
+  );
+
+  const preview = getPreview(output);
+
+  const target = targetTools.stringify({
+    field: fieldConfig.type,
+    operation: "computation",
+    location: id === rootId ? "" : id,
+  });
+
+  const elements = React.useMemo(
+    () =>
+      output.filter((el): el is NestedElement => tokens.isNestedElement(el)),
+    [output]
+  );
+
+  const documents = React.useMemo(
+    () =>
+      output.filter(
+        (el): el is NestedDocument & { id: NestedDocumentId } =>
+          tokens.isNestedDocument(el) && isNestedDocumentId(el.id)
+      ),
+    [output]
+  );
+
+  const folders = React.useMemo(
+    () => output.filter((el): el is NestedFolder => tokens.isNestedFolder(el)),
+    [output]
+  );
+
+  const collab = useDocumentCollab();
+
+  const actions = React.useMemo(
+    () =>
+      collab.boundMutate<ComputationOp>(
+        getDocumentId(rootId),
+        getRawFieldId(rootId)
+      ),
+    [collab]
+  );
+
+  const push = React.useCallback(
+    (
+      payload:
+        | ComputationOp["ops"]
+        | ((
+            prev: ComputationOp["ops"] | undefined,
+            noop: ComputationOp["ops"]
+          ) => ComputationOp["ops"][])
+    ) => {
+      return actions.mergeablePush((_prev, noop) => {
+        const result = [];
+        let prev = _prev;
+        if (_prev?.target !== target) {
+          if (prev === noop) {
+            prev = noop;
+          } else {
+            prev = undefined;
+            result.push(prev);
+          }
+        }
+        const newOps =
+          typeof payload === "function"
+            ? payload(prev?.ops, noop.ops)
+            : [payload];
+        return newOps.map((ops) => (ops === noop.ops ? noop : { target, ops }));
+      });
+    },
+    [actions, target]
+  );
+
+  const singular = useSingular(`${rootId}${target}`);
+
+  const transform = React.useMemo(
+    () => config?.transform ?? initialTransform,
+    [config?.transform, initialTransform]
+  );
+
+  const setValue = React.useCallback(
+    (func: () => TokenStream) => {
+      singular(() => {
+        setTokenStream(func);
+        const stream = func();
+        const tree = parseTokenStream(stream, transform);
+        setTree(() => tree);
+        setOutput(() => calculateFn(rootId, tree, { client, record }));
+        setFieldImports(() => findImportsFn(tree));
+      });
+    },
+    [transform]
+  );
+
+  const streamRef = React.useRef(tokenStream);
+  React.useEffect(() => {
+    streamRef.current = tokenStream;
+  }, [tokenStream]);
+  React.useEffect(() => {
+    const tree = parseTokenStream(streamRef.current, transform);
+    setTree(() => tree);
+    setOutput(() => calculateFn(rootId, tree, { client, record }));
+    setFieldImports(() => findImportsFn(tree));
+  }, [transform]);
+
+  return (
+    <>
+      <Editor
+        target={target}
+        push={push}
+        register={actions.register}
+        initialValue={initialEditorValue}
+        setValue={setValue}
+      >
+        <div className={cl("relative", hidden && "hidden")}>
+          <Placeholder />
+          <ContentEditable
+            className={cl(
+              "peer grow editor outline-none px-14 pb-5 font-light selection:bg-gray-700",
+              "preview text-base leading-6"
+              // mode === null || mode === "slug" ? "calculator" : ""
+            )}
+            data-value={preview !== `${tokenStream[0]}` ? preview : ""}
+          />
+          <Plus />
+        </div>
+        {id === rootId && <FocusBg />}
+      </Editor>
+      {elements.map((element) => (
+        <RenderNestedElement
+          key={element.id}
+          nestedDocumentId={element.id}
+          element={element.element}
+        />
+      ))}
+      {documents.map((doc) => (
+        <RenderNestedDocument key={doc.id} nestedDocumentId={doc.id} />
+      ))}
+      {folders.map((folder) => (
+        <RenderFolder key={folder.id} nestedDocumentId={folder.id} />
+      ))}
+      {fieldImports.map((fieldImport) => (
+        <RenderImportArgs
+          key={fieldImport.id}
+          nestedDocumentId={fieldImport.id}
+        />
+      ))}
+    </>
+  );
+}
 
 const noTemplate: FieldConfig<FieldType>[] = [];
 

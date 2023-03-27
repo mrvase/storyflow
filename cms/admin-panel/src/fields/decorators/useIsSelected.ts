@@ -14,6 +14,7 @@ import {
 } from "lexical";
 import React from "react";
 import { useEditorContext } from "../../editor/react/EditorProvider";
+import { useIsFocused } from "../../editor/react/useIsFocused";
 import { mergeRegister } from "../../editor/utils/mergeRegister";
 
 const $selectNode = (nodeKey: string) => {
@@ -24,7 +25,9 @@ const $selectNode = (nodeKey: string) => {
 
 export const useIsSelected = (nodeKey: string) => {
   const editor = useEditorContext();
-  const [isSelected, setIsSelected] = React.useState(false);
+  const isFocused = useIsFocused(editor);
+  const [isSelected_, setIsSelected] = React.useState(false);
+  const isSelected = isSelected_ && isFocused;
   const [isPseudoSelected, setIsPseudoSelected] = React.useState(false);
 
   const onDelete = React.useCallback(

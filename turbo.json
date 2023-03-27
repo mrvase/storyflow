@@ -10,7 +10,7 @@
       "env": [
         "NODE_ENV",
         "BASE_URL",
-        "NAMESPACE",
+        "NAMESPACES",
         "API_KEY",
         "MONGO_URL",
         "SECRET_KEY",

@@ -1,5 +1,6 @@
 import { FetchPageResult } from "@storyflow/react";
 
+/*
 const IS_DEV = process.env.NODE_ENV === "development";
 
 const apiKey = Buffer.from(process.env.API_KEY as string).toString("base64");
@@ -30,6 +31,8 @@ export const request = async (url: string) => {
       if (!result) return null;
       console.log("FETCH RESULT", result);
       return result;
+    } else {
+      return null;
     }
   } catch (err) {
     console.error(err);
@@ -62,3 +65,4 @@ export const requestPaths = async () => {
   }
   return [] as string[];
 };
+*/

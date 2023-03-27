@@ -1,10 +1,9 @@
 import React from "react";
 import { Path, PathSegment } from "@storyflow/frontend/types";
-import { useFieldId } from "./FieldIdContext";
 import {
   useIframeDispatchers,
   useIframeListeners,
-} from "./builder/BuilderIframe";
+} from "./builder/IframeContext";
 import { useContextWithError } from "../utils/contextError";
 
 type PathContextType = [Path, (value: Path | ((ps: Path) => Path)) => void];

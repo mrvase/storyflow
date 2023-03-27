@@ -182,17 +182,12 @@ export const createTemplateFieldId = (
     return replaceDocumentId(fieldId, documentId);
   }
 
-  return [
-    getRawDocumentId(documentId), // 6b
-    createRawTemplateFieldId(fieldId), // 3b
-  ].join("") as FieldId;
+  return computeFieldId(documentId, createRawTemplateFieldId(fieldId));
 };
 
-export function revertTemplateFieldId(
-  fieldId: FieldId | RawFieldId,
-  overwritingTemplate?: DocumentId
-) {
+export function revertTemplateFieldId(fieldId: FieldId | RawFieldId) {
   const documentId = getTemplateDocumentId(fieldId);
+  /*
   const number = parseInt(documentId.slice(1), 16);
   if (number < 256 && fieldId.length === 24) {
     if (overwritingTemplate) {
@@ -200,6 +195,7 @@ export function revertTemplateFieldId(
     }
     return fieldId as FieldId;
   }
+  */
   return createFieldId(getFieldNumber(fieldId), documentId);
 }
 

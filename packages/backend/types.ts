@@ -93,7 +93,17 @@ export type NestedDocument = {
   inline?: true;
 };
 
-export type NestedEntity = NestedElement | NestedFolder | NestedDocument;
+export type NestedCreator = {
+  id: NestedDocumentId;
+  text: string;
+  inline?: true;
+};
+
+export type NestedEntity =
+  | NestedElement
+  | NestedFolder
+  | NestedDocument
+  | NestedCreator;
 
 export type InputToken = {
   input: string;
@@ -286,7 +296,7 @@ export type FieldConfig<T extends FieldType = FieldType> = {
 
 export type TemplateRef = {
   template: DocumentId;
-  config?: Partial<Omit<FieldConfig, "id" | "type">> & Pick<FieldConfig, "id">;
+  config?: PartialDocumentConfig;
   // Burde være nemt nok at finde label. Jeg finder label ved at finde docs template
   // og hvis den har en config, bruger jeg label derfra, ellers går jeg videre til dens templates.
 };
@@ -304,6 +314,11 @@ export type DocumentConfigItem =
 
 export type DocumentConfig = DocumentConfigItem[];
 
+export type PartialFieldConfig = Partial<Omit<FieldConfig, "id" | "type">> &
+  Pick<FieldConfig, "id">;
+
+export type PartialDocumentConfig = PartialFieldConfig[];
+
 export type TemplateDocument = Omit<DBDocument, "version" | "folder">;
 
 export interface DBDocumentRaw {
@@ -317,11 +332,8 @@ export interface DBDocumentRaw {
   cached: ValueArray[];
   fields: DBSyntaxStreamBlock[];
   values: DBValueRecord;
-  revalidate?: {
-    page: number;
-    layout: number;
-    fetches: string[];
-  };
+  updated: Record<RawFieldId, number>;
+  fetches?: string[];
   /* */
 }
 

@@ -8,7 +8,7 @@ import {
 import { useOptimisticDocumentList } from "../documents";
 import { useSegment } from "../layout/components/SegmentContext";
 import { useOnLoadHandler } from "../layout/onLoadHandler";
-import { computeFieldId } from "@storyflow/backend/ids";
+import { createTemplateFieldId } from "@storyflow/backend/ids";
 import { EditableLabel } from "../elements/EditableLabel";
 import cl from "clsx";
 import { AddArticleDialog } from "./AddArticleDialog";
@@ -20,7 +20,7 @@ import {
   SpaceId,
   SyntaxTreeRecord,
 } from "@storyflow/backend/types";
-import { useClient } from "../client";
+import { SWRClient, useClient } from "../client";
 import { useClientConfig } from "../client-config";
 import { unwrap } from "@storyflow/result";
 import { DomainsButton } from "./FolderPage";
@@ -30,7 +30,7 @@ import { useFolderCollab } from "./collab/FolderCollabContext";
 import { targetTools } from "shared/operations";
 import { AppSpace } from "./spaces/AppSpace";
 import { getFieldRecord, getGraph } from "shared/computation-tools";
-import { FIELDS } from "@storyflow/backend/fields";
+import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
 import { calculateFromRecord } from "@storyflow/backend/calculate";
 
 const AppPageContext = React.createContext<{
@@ -81,7 +81,7 @@ export default function AppPage({
 
     const articlesWithLengths = articles
       .map((el) => {
-        const urlId = computeFieldId(el._id, FIELDS.url.id);
+        const urlId = createTemplateFieldId(el._id, DEFAULT_FIELDS.url.id);
         const url =
           (calculateFromRecord(urlId, el.record)?.[0] as string) ?? "";
         return {
@@ -125,7 +125,7 @@ export default function AppPage({
   }>(null);
 
   const addArticleWithUrl = (parent: Pick<DBDocument, "_id" | "record">) => {
-    const urlId = computeFieldId(parent._id, FIELDS.url.id);
+    const urlId = createTemplateFieldId(parent._id, DEFAULT_FIELDS.url.id);
     setDialogIsOpen("add-article");
     setParentUrl({
       id: urlId,
@@ -212,9 +212,6 @@ export default function AppPage({
                 true ? "opacity-100" : "opacity-0 pointer-events-none"
               )}
             >
-              <span className="text-xs opacity-50 font-light ml-5 cursor-default hover:underline">
-                x sider ændret
-              </span>
               {folder && config.revalidateUrl && (
                 <RefreshButton
                   namespace={folder._id}
@@ -260,43 +257,56 @@ function RefreshButton({
 }) {
   const [isLoading, setIsLoading] = React.useState(false);
 
+  const { data } = SWRClient.documents.getUpdatedUrls.useQuery({
+    namespace,
+    domain: "",
+    revalidateUrl,
+  });
+
   const client = useClient();
 
+  const number = data?.length ?? 0;
+
   return (
-    <div className="relative ml-5">
-      {/*isLoading && (
+    <>
+      <span
+        title={(data ?? []).map((el) => `/${el}`).join(", ")}
+        className="text-xs opacity-50 font-light ml-5 cursor-default hover:underline"
+      >
+        {number} {number === 1 ? "side" : "sider"} ændret
+      </span>
+      <div className="relative ml-5">
+        {/*isLoading && (
         <div className="absolute inset-0 flex-center">
           <div className="w-8 h-8 bg-white/5 rounded-full animate-ping-lg" />
         </div>
       )*/}
-      <button
-        className="relative z-0 bg-button-yellow ring-button-yellow text-button rounded px-3 py-1 font-light flex-center gap-2 text-sm overflow-hidden"
-        onClick={async () => {
-          if (revalidateUrl) {
-            setIsLoading(true);
-            const urls = await client.documents.revalidate.query({
-              namespace,
-              domain: "",
-              revalidateUrl,
-            });
-            console.log(namespace, urls);
-            await fetch(revalidateUrl, {
-              body: JSON.stringify(unwrap(urls, []).map((el) => `/${el}`)),
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-            });
-            setIsLoading(false);
-          }
-        }}
-      >
-        {isLoading && (
-          <div className="absolute inset-0 -z-10 flex-center">
-            <div className="w-8 h-8 bg-teal-300 rounded-full animate-ping-lg" />
-          </div>
-        )}
-        <ArrowPathIcon className="w-3 h-3" />
-        Opdater
-      </button>
-    </div>
+        <button
+          className="relative z-0 bg-button-yellow ring-button-yellow text-button rounded px-3 py-1 font-light flex-center gap-2 text-sm overflow-hidden"
+          onClick={async () => {
+            if (revalidateUrl && data?.length) {
+              setIsLoading(true);
+              const result = await fetch(revalidateUrl, {
+                body: JSON.stringify(data.map((el) => `/${el}`)),
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+              }).then((res) => res.json());
+              if (result.revalidated === true) {
+                await client.documents.revalidated.mutation();
+              }
+              setIsLoading(false);
+            }
+          }}
+        >
+          {isLoading && (
+            <div className="absolute inset-0 -z-10 flex-center">
+              <div className="w-8 h-8 bg-teal-300 rounded-full animate-ping-lg" />
+            </div>
+          )}
+          <ArrowPathIcon className="w-3 h-3" />
+          Opdater
+        </button>
+      </div>
+    </>
   );
 }

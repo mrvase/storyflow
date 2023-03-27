@@ -16,6 +16,7 @@ import {
   NestedField,
   ValueArray,
   DocumentConfig,
+  TemplateRef,
 } from "@storyflow/backend/types";
 import { ObjectId } from "mongodb";
 import clientPromise from "../mongo/mongoClient";
@@ -61,6 +62,7 @@ import {
   computeFieldId,
   getDocumentId,
   getRawFieldId,
+  getTemplateDocumentId,
   isFieldOfDocument,
   isNestedDocumentId,
   isTemplateField,
@@ -518,7 +520,10 @@ export const fields = createRoute({
       );
 
       const cached: DBId<FieldId>[] = [];
+      const timestamp = Date.now();
+      const updated: Record<string, number> = {};
       updatedFieldsIds.forEach((id) => {
+        updated[`updated.${getRawFieldId(id)}`] = timestamp;
         if (!(id in values) && !isTemplateField(id)) {
           cached.push(new ObjectId(id));
         }
@@ -532,12 +537,11 @@ export const fields = createRoute({
             config: { $literal: documentConfig },
             versions: { $literal: versions },
             cached: cached as any,
+            ...updated,
           },
         },
         ...createStages([], derivatives, { cache: Boolean(cached.length) }),
       ];
-
-      fs.writeFileSync("stages.json", JSON.stringify(stages, null, 2));
 
       const result1 = await db
         .collection<DBDocumentRaw>("documents")
@@ -667,6 +671,34 @@ const transformDocumentConfig = (
       } else if (targetTools.isOperation(operation, "property")) {
         const fieldId = targetTools.getLocation(operation.target) as FieldId;
         operation.ops.forEach((action) => {
+          if (isTemplateField(fieldId)) {
+            const templateId = getTemplateDocumentId(fieldId);
+            const templateConfig = newConfig.find(
+              (config): config is TemplateRef =>
+                "template" in config && config.template === templateId
+            );
+            if (templateConfig) {
+              if (!("config" in templateConfig)) {
+                templateConfig.config = [];
+              }
+              let fieldConfigIndex = templateConfig.config!.findIndex(
+                (config) => config.id === fieldId
+              );
+              if (fieldConfigIndex < 0) {
+                templateConfig.config!.push({ id: fieldId });
+                fieldConfigIndex = templateConfig.config!.length - 1;
+              }
+              if (action.name === "label" && action.value === "") {
+                delete templateConfig.config![fieldConfigIndex][action.name];
+              } else {
+                templateConfig.config![fieldConfigIndex] = {
+                  ...templateConfig.config![fieldConfigIndex],
+                  [action.name]: action.value,
+                };
+              }
+            }
+          }
+
           newConfig = setFieldConfig(newConfig, fieldId, (ps) => ({
             ...ps,
             [action.name]: action.value,

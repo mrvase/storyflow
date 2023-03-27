@@ -42,7 +42,6 @@ export function RenderField<T extends FieldType>({
   history,
   index,
   version,
-  template,
   dragHandleProps,
 }: {
   id: FieldId;
@@ -51,7 +50,6 @@ export function RenderField<T extends FieldType>({
   index: number;
   version: number;
   history: ServerPackage<ComputationOp>[];
-  template: DocumentId;
   dragHandleProps?: any;
 }) {
   const Component = getComponent(fieldConfig.type);
@@ -63,7 +61,6 @@ export function RenderField<T extends FieldType>({
           index={index}
           fieldConfig={fieldConfig}
           dragHandleProps={dragHandleProps}
-          template={template}
         >
           <NoList>
             <Component

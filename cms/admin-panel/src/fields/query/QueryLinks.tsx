@@ -3,10 +3,9 @@ import {
   TokenStream,
   FolderId,
   NestedField,
-  Value,
   ValueArray,
 } from "@storyflow/backend/types";
-import { computeFieldId, getDocumentId } from "@storyflow/backend/ids";
+import { createTemplateFieldId, getDocumentId } from "@storyflow/backend/ids";
 import { ComputerDesktopIcon, LinkIcon } from "@heroicons/react/24/outline";
 import { $getRoot, $getSelection, $isRangeSelection } from "lexical";
 import React from "react";
@@ -17,7 +16,7 @@ import { useGlobalState } from "../../state/state";
 import { $getComputation, $getIndexFromPoint } from "../Editor/transforms";
 import { Option as OptionComponent } from "./Option";
 import { markMatchingString } from "./helpers";
-import { FIELDS } from "@storyflow/backend/fields";
+import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
 import { calculateFromRecord } from "@storyflow/backend/calculate";
 import { useFieldId } from "../FieldIdContext";
 import { useDocumentIdGenerator } from "../../id-generator";
@@ -81,7 +80,7 @@ export function QueryLinks({
     (id: DocumentId) => {
       const fieldImport: NestedField = {
         id: generateDocumentId(documentId),
-        field: computeFieldId(id, FIELDS.url.id),
+        field: createTemplateFieldId(id, DEFAULT_FIELDS.url.id),
       };
       insertComputation([fieldImport], Boolean(parentUrl));
     },
@@ -102,7 +101,7 @@ export function QueryLinks({
     options = list.reduce((acc, el) => {
       const url =
         (calculateFromRecord(
-          computeFieldId(el._id, FIELDS.url.id),
+          createTemplateFieldId(el._id, DEFAULT_FIELDS.url.id),
           el.record
         )?.[0] as string) ?? "";
       if (url.startsWith(fullQuery.toLowerCase())) {

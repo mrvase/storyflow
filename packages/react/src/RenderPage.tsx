@@ -109,7 +109,8 @@ const Element = ({
   const CMSComponent = getComponentByType(data.element);
   const props = React.useMemo(() => {
     return Object.fromEntries(
-      Object.entries(data.props).map(([name, value]) => [
+      // REPLACED data.props
+      Object.entries({}).map(([name, value]) => [
         name,
         getPropValue(value, children),
       ])

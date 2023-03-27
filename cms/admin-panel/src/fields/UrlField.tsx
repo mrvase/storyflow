@@ -2,19 +2,17 @@ import React from "react";
 import { FieldProps } from "./RenderField";
 import { useGlobalContext } from "../state/context";
 import { addContext, addImport } from "../custom-events";
-import { SWRClient, useClient } from "../client";
+import { useClient } from "../client";
 import {
   DBDocument,
   DocumentId,
-  TokenStream,
   FieldId,
-  RawFieldId,
   SyntaxTree,
   ValueArray,
   NestedField,
 } from "@storyflow/backend/types";
 import {
-  computeFieldId,
+  createTemplateFieldId,
   getDocumentId,
   getRawFieldId,
   getTemplateDocumentId,
@@ -28,13 +26,7 @@ import { targetTools, ComputationOp } from "shared/operations";
 import { useGlobalState } from "../state/state";
 import { useSingular } from "../state/useSingular";
 import { calculateFn } from "./default/calculateFn";
-import {
-  GlobeAltIcon,
-  HomeIcon,
-  LinkIcon,
-  PlusIcon,
-  StarIcon,
-} from "@heroicons/react/24/outline";
+import { HomeIcon, LinkIcon, StarIcon } from "@heroicons/react/24/outline";
 import { useAppPageContext } from "../folders/AppPage";
 import { Link } from "@storyflow/router";
 import { useSegment } from "../layout/components/SegmentContext";
@@ -46,7 +38,7 @@ import { getNextState } from "shared/computation-tools";
 import cl from "clsx";
 import { useDocumentPageContext } from "../documents/DocumentPageContext";
 import { calculate, calculateFromRecord } from "@storyflow/backend/calculate";
-import { FIELDS } from "@storyflow/backend/fields";
+import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
 import { useDocumentIdGenerator } from "../id-generator";
 import { createTokenStream, parseTokenStream } from "shared/parse-token-stream";
 
@@ -76,7 +68,7 @@ const useRelatedPages = (articleId: DocumentId, initialUrl: string) => {
   const getUrl = (article: DBDocument) => {
     return (
       (calculateFromRecord(
-        computeFieldId(article._id, FIELDS.url.id),
+        createTemplateFieldId(article._id, DEFAULT_FIELDS.url.id),
         article.record
       )[0] as string) ?? ""
     );
@@ -311,12 +303,14 @@ export default function UrlField({
           <Link
             to={replacePage(parents[0]?._id ?? "")}
             className="mr-3 opacity-50 hover:opacity-75 transition-opacity"
+            data-focus-ignore="true"
           >
             <HomeIcon className="w-4 h-4" />
           </Link>
           <Link
             to={replacePage(parents[0]?._id ?? "")}
             className="opacity-50 hover:opacity-75 transition-opacity"
+            data-focus-ignore="true"
           >
             www.kfs.dk
           </Link>
@@ -326,6 +320,7 @@ export default function UrlField({
               <Link
                 to={replacePage(parents[index + 1]?._id ?? "")}
                 className={cl("truncate opacity-50 hover:opacity-75 shrink-0")}
+                data-focus-ignore="true"
               >
                 {el || <HomeIcon className="w-3 h-3" />}
               </Link>
@@ -382,7 +377,8 @@ export default function UrlField({
             />
           )}
         </div>
-        {getTemplateDocumentId(id) === getTemplateDocumentId(FIELDS.url.id) && (
+        {getTemplateDocumentId(id) ===
+          getTemplateDocumentId(DEFAULT_FIELDS.url.id) && (
           <div className="flex items-center pb-5 ml-5">
             <button
               className="p-1 w-6 h-6 -ml-1 mr-4 opacity-50 hover:opacity-100 transition-opacity"
@@ -395,12 +391,13 @@ export default function UrlField({
             >
               {/*<PlusIcon className="w-4 h-4" />*/}
             </button>
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap gap-2">
               {children.map((el, index) => (
                 <Link
                   key={el._id}
                   to={replacePage(el._id)}
                   className="group text-sm font-light flex-center gap-2"
+                  data-focus-ignore="true"
                 >
                   <SubPageLine first={index === 0} />
                   <span className="opacity-75 group-hover:opacity-100 transition-opacity relative overflow-hidden bg-gray-800 px-1 py-0.5 rounded after:absolute after:bottom-0 after:left-0 after:right-0 after:border-b-2 after:border-green-300/50">
@@ -416,6 +413,7 @@ export default function UrlField({
                     record,
                   })
                 }
+                data-focus-ignore="true"
               >
                 <SubPageLine first={children.length === 0} />
                 <span className="opacity-40 group-hover:opacity-100 transition-opacity italic">

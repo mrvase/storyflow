@@ -25,11 +25,16 @@ import {
   NestedFolder,
   ValueArray,
 } from "@storyflow/backend/types";
-import { FIELDS } from "@storyflow/backend/fields";
+import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
 import { ObjectId } from "mongodb";
 import { parseDocument } from "../routes/documents";
 import { getFieldRecord, getGraph } from "shared/computation-tools";
-import { computeFieldId, getDocumentId } from "@storyflow/backend/ids";
+import {
+  computeFieldId,
+  createRawTemplateFieldId,
+  createTemplateFieldId,
+  getDocumentId,
+} from "@storyflow/backend/ids";
 import util from "util";
 
 const sessionStorage = createSessionStorage({
@@ -100,7 +105,7 @@ export const public_ = createRoute({
     },
     schema() {
       return z.object({
-        namespaces: z.array(z.string()).optional(),
+        namespaces: z.array(z.union([z.string(), z.number()])).optional(),
         url: z.string(),
       });
     },
@@ -120,9 +125,13 @@ export const public_ = createRoute({
         .findOne<DBDocumentRaw>({
           ...(namespaces &&
             namespaces.length > 0 && {
-              folder: { $in: namespaces.map((el) => new ObjectId(el)) },
+              folder: {
+                $in: namespaces.map(
+                  (el) => new ObjectId(`${el}`.padStart(24, "0"))
+                ),
+              },
             }),
-          [`values.${FIELDS.url.id}`]:
+          [`values.${createRawTemplateFieldId(DEFAULT_FIELDS.url.id)}`]:
             url.indexOf("/") < 0
               ? url
               : {
@@ -235,7 +244,7 @@ export const public_ = createRoute({
         const entry = record[fieldId];
         delete record[fieldId];
 
-        if (entry.length === 0) {
+        if (!entry || entry.length === 0) {
           return null;
         }
 
@@ -246,12 +255,16 @@ export const public_ = createRoute({
       };
 
       const [pageRecord, layoutRecord] = await Promise.all([
-        getElementRecord(computeFieldId(doc._id, FIELDS.page.id)),
-        getElementRecord(computeFieldId(doc._id, FIELDS.layout.id)),
+        getElementRecord(
+          createTemplateFieldId(doc._id, DEFAULT_FIELDS.page.id)
+        ),
+        getElementRecord(
+          createTemplateFieldId(doc._id, DEFAULT_FIELDS.layout.id)
+        ),
       ]);
 
       const titleArray = calculateFromRecord(
-        computeFieldId(doc._id, FIELDS.label.id),
+        createTemplateFieldId(doc._id, DEFAULT_FIELDS.label.id),
         doc.record
       );
 
@@ -266,6 +279,7 @@ export const public_ = createRoute({
       return success(result);
     },
   }),
+  /*
   search: createProcedure({
     middleware(ctx) {
       return ctx.use(corsFactory("allow-all"), authorization);
@@ -284,17 +298,23 @@ export const public_ = createRoute({
               index: dbName,
               text: {
                 query,
-                path: `values.${FIELDS.page.id}`,
+                path: `values.${createRawTemplateFieldId(
+                  DEFAULT_FIELDS.page.id
+                )}`,
               },
               highlight: {
-                path: `values.${FIELDS.page.id}`,
+                path: `values.${createRawTemplateFieldId(
+                  DEFAULT_FIELDS.page.id
+                )}`,
               },
             },
           },
           {
             $project: {
               _id: 0,
-              value: `$values.${FIELDS.page.id}`,
+              value: `$values.${createRawTemplateFieldId(
+                DEFAULT_FIELDS.page.id
+              )}`,
               score: { $meta: "searchScore" },
               highlight: { $meta: "searchHighlights" },
             },
@@ -304,12 +324,15 @@ export const public_ = createRoute({
       return success(articles as DBDocument[]);
     },
   }),
+  */
   getPaths: createProcedure({
     middleware(ctx) {
       return ctx.use(corsFactory("allow-all"), authorization);
     },
     schema() {
-      return z.object({ namespaces: z.array(z.string()).optional() });
+      return z.object({
+        namespaces: z.array(z.union([z.string(), z.number()])).optional(),
+      });
     },
     async query({ namespaces }, { dbName, slug }) {
       console.log("REQUESTING PATHS");
@@ -321,9 +344,17 @@ export const public_ = createRoute({
         .find({
           ...(namespaces
             ? {
-                folder: { $in: namespaces.map((n) => new ObjectId(n)) },
+                folder: {
+                  $in: namespaces.map(
+                    (n) => new ObjectId(`${n}`.padStart(24, "0"))
+                  ),
+                },
               }
-            : { [`values.${FIELDS.url.id}`]: { $exists: true } }),
+            : {
+                [`values.${createRawTemplateFieldId(DEFAULT_FIELDS.url.id)}`]: {
+                  $exists: true,
+                },
+              }),
           /*
           [`values.${URL_ID}`]: namespace
             ? { $regex: `^${namespace}` }
@@ -338,10 +369,12 @@ export const public_ = createRoute({
           const graph = getGraph(doc.record);
           return {
             _id: doc._id,
-            url: el.values[FIELDS.url.id][0] as string,
+            url: el.values[
+              createRawTemplateFieldId(DEFAULT_FIELDS.url.id)
+            ][0] as string,
             params: getFieldRecord(
               doc.record,
-              computeFieldId(doc._id, FIELDS.params.id),
+              createTemplateFieldId(doc._id, DEFAULT_FIELDS.params.id),
               graph
             ),
           };
@@ -387,6 +420,8 @@ export const public_ = createRoute({
         )
       ).flat(1);
       */
+
+      console.log("ORDINARY URLS", ordinaryUrls);
 
       return success(ordinaryUrls.map((el) => el.url));
     },

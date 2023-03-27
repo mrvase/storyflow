@@ -1,12 +1,8 @@
 import { FetchPageResult } from "@storyflow/frontend/types";
 
-declare global {
-  var process: any;
-}
-
 const IS_DEV = process.env.NODE_ENV === "development";
 
-const domain = IS_DEV ? "http://localhost:3000" : "https://www.storyflow.dk";
+const domain = IS_DEV ? "http://localhost:3000" : "http://localhost:3000";
 
 const getNamespacesQuery = (namespaces: string[]) => {
   return namespaces.map((n) => `query[namespaces][]=${n}`).join("&") ?? "";
@@ -47,6 +43,8 @@ export const request = async (url: string, options: Options) => {
       const result = json.result as FetchPageResult | null;
       if (!result) return null;
       return result;
+    } else {
+      return null;
     }
   } catch (err) {
     console.error(err);
@@ -68,6 +66,7 @@ export const requestPaths = async (options: Options) => {
       }
     );
     const json = await res.json();
+    console.log("PATH JSON", json);
     if (
       json !== null &&
       typeof json === "object" &&
@@ -77,6 +76,7 @@ export const requestPaths = async (options: Options) => {
       return json.result as string[];
     }
   } catch (err) {
+    console.log("FETCHING PATHS FAILED");
     console.error(err);
   }
   return [] as string[];

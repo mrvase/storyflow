@@ -1,24 +1,19 @@
 import {
-  ArrowDownTrayIcon,
   ArrowUpTrayIcon,
   BoltIcon,
   CheckIcon,
   DocumentDuplicateIcon,
   DocumentIcon,
-  FunnelIcon,
-  ListBulletIcon,
   PencilSquareIcon,
   PlusIcon,
-  ScissorsIcon,
-  TrashIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { extendPath } from "@storyflow/backend/extendPath";
-import { FIELDS } from "@storyflow/backend/fields";
+import { DEFAULT_FIELDS, DEFAULT_TEMPLATES } from "@storyflow/backend/fields";
 import {
-  computeFieldId,
   getDocumentId,
   getTemplateDocumentId,
+  isTemplateField,
 } from "@storyflow/backend/ids";
 import {
   DBDocument,
@@ -27,7 +22,6 @@ import {
   FieldId,
   FolderId,
   RawFieldId,
-  RestrictTo,
   SearchableProps,
 } from "@storyflow/backend/types";
 import { NoList, useDragItem } from "@storyflow/dnd";
@@ -50,13 +44,17 @@ import {
   useDocumentMutate,
 } from "./collab/DocumentCollabContext";
 import { useFolder } from "../folders/collab/hooks";
-import { useDocumentConfig, useFieldConfig, useLabel } from "./collab/hooks";
+import { useDocumentConfig, useLabel } from "./collab/hooks";
 import { FocusOrchestrator, useFocusedIds } from "../utils/useIsFocused";
 import { DocumentPageContext } from "./DocumentPageContext";
 import { GetDocument } from "./GetDocument";
 import { RenderTemplate } from "./RenderTemplate";
 import { useFieldIdGenerator } from "../id-generator";
-import { Checkbox } from "../elements/Checkbox";
+import {
+  FieldToolbar,
+  FieldToolbarPortalProvider,
+  useFieldToolbarPortal,
+} from "./FieldToolbar";
 
 export const getVersionKey = (versions?: Record<RawFieldId, number>) => {
   if (!versions) return -1;
@@ -79,7 +77,6 @@ function useIsModified(id: string, initial: boolean, key: number) {
   }, []);
 
   React.useEffect(() => {
-    console.log("SETTING TO", initial);
     setIsModified(initial);
   }, [key, initial]);
 
@@ -144,104 +141,110 @@ export const DocumentContent = ({
 function Toolbar({ id, config }: { id: DocumentId; config: DocumentConfig }) {
   const ids = useFocusedIds();
 
-  const getFieldIndex = (id: string) => {
+  const getFieldIndex = (id: FieldId | undefined) => {
+    if (!id) return -1;
+    if (isTemplateField(id)) {
+      return config.findIndex(
+        (el) => "template" in el && el.template === getTemplateDocumentId(id)
+      );
+    }
     return config.findIndex((el) => "id" in el && el.id === id);
   };
 
   const generateFieldId = useFieldIdGenerator();
 
-  const index = getFieldIndex(ids[0]);
+  const index = getFieldIndex(ids[0] as FieldId);
 
-  if (index >= 0) {
+  if (ids.length > 1) {
     return (
-      <FieldToolbar
-        // needed because it relies on useFieldConfig which is assumed to be static
-        key={ids[0]}
-        documentId={id}
-        fieldId={ids[0] as FieldId}
-        index={index}
-      />
+      <Content.Toolbar>
+        <div className="h-6 px-2 flex-center gap-1.5 rounded dark:bg-yellow-400/10 dark:text-yellow-200/75 ring-1 ring-yellow-200/50 text-xs whitespace-nowrap">
+          {ids.length} valgt
+          <XMarkIcon className="w-3 h-3" />
+        </div>
+      </Content.Toolbar>
     );
   }
+
+  const setPortal = useFieldToolbarPortal();
 
   const fields = [
     {
       label: "Label",
       item: () => ({
-        ...FIELDS.label,
-        id: computeFieldId(id, FIELDS.label.id),
+        template: getTemplateDocumentId(DEFAULT_FIELDS.label.id),
       }),
     },
     {
       label: "Slug",
       item: () => ({
-        ...FIELDS.slug,
-        id: computeFieldId(id, FIELDS.slug.id),
+        template: getTemplateDocumentId(DEFAULT_FIELDS.slug.id),
       }),
     },
+    /*
     {
       label: "Side",
       item: {
-        ...FIELDS.page,
-        id: computeFieldId(id, FIELDS.page.id),
+        template: getTemplateDocumentId(DEFAULT_FIELDS.page.id),
       },
     },
     {
       label: "Layout",
       item: {
-        ...FIELDS.layout,
-        id: computeFieldId(id, FIELDS.layout.id),
+        template: getTemplateDocumentId(DEFAULT_FIELDS.layout.id),
       },
     },
     {
       label: "Omdirigering",
       item: {
-        ...FIELDS.redirect,
-        id: computeFieldId(id, FIELDS.redirect.id),
+        template: getTemplateDocumentId(DEFAULT_FIELDS.redirect.id),
       },
     },
+    */
     {
-      label: "Offentlig",
+      label: "Offentliggjort",
       item: {
-        ...FIELDS.published,
-        id: computeFieldId(id, FIELDS.published.id),
+        template: getTemplateDocumentId(DEFAULT_FIELDS.published.id),
       },
     },
     {
       label: "Udgivelsesdato",
       item: {
-        ...FIELDS.released,
-        id: computeFieldId(id, FIELDS.released.id),
+        template: getTemplateDocumentId(DEFAULT_FIELDS.released.id),
       },
     },
     {
       label: "Bruger",
       item: {
-        ...FIELDS.user,
-        id: computeFieldId(id, FIELDS.user.id),
+        template: getTemplateDocumentId(DEFAULT_FIELDS.user.id),
       },
     },
   ];
 
   return (
-    <Content.Toolbar>
-      <NoList>
-        <DragButton
-          label={"Indsæt felt"}
-          item={() => ({
-            id: generateFieldId(id),
-            label: "",
-            type: "default",
-          })}
-        />
-        <Content.ToolbarMenu label={"Indsæt specialfelt"} icon={BoltIcon}>
-          {fields.map((el) => (
-            <DragOption key={el.label} {...el} />
-          ))}
-        </Content.ToolbarMenu>
-        <TemplateMenu id={id} />
-      </NoList>
-    </Content.Toolbar>
+    <>
+      <div ref={setPortal} />
+      {ids.length === 0 && (
+        <Content.Toolbar>
+          <NoList>
+            <DragButton
+              label={"Indsæt felt"}
+              item={() => ({
+                id: generateFieldId(id),
+                label: "",
+                type: "default",
+              })}
+            />
+            <Content.ToolbarMenu label={"Indsæt specialfelt"} icon={BoltIcon}>
+              {fields.map((el) => (
+                <DragOption key={el.label} {...el} />
+              ))}
+            </Content.ToolbarMenu>
+            <TemplateMenu id={id} />
+          </NoList>
+        </Content.Toolbar>
+      )}
+    </>
   );
 }
 
@@ -264,328 +267,6 @@ export function TemplateMenu({ id }: { id?: DocumentId }) {
         </React.Fragment>
       ))}
     </Content.ToolbarMenu>
-  );
-}
-
-export function FieldToolbar({
-  documentId,
-  fieldId,
-  index,
-}: {
-  documentId: DocumentId;
-  fieldId: FieldId;
-  index?: number;
-}) {
-  const [config, setConfig] = useFieldConfig(fieldId);
-
-  const { push } = useDocumentMutate<DocumentConfigOp>(documentId, documentId);
-
-  const templateFolder = useTemplateFolder()?._id;
-  const { articles: templates } = useOptimisticDocumentList(templateFolder);
-
-  const templateOptions = (templates ?? []).map((el) => ({
-    id: el._id,
-    label: el.label ?? el._id,
-  }));
-
-  const restrictToOptions = [
-    { id: "number" as "number", label: "Tal" },
-    { id: "image" as "image", label: "Billede" },
-    { id: "color" as "color", label: "Farve" },
-  ];
-
-  return (
-    <Content.Toolbar>
-      <FieldLabel id={fieldId} template={documentId} />
-      <Content.ToolbarMenu<{ id: DocumentId; label: string }>
-        icon={ListBulletIcon}
-        label="Vælg skabelon"
-        onSelect={(el) => setConfig("template", el.id)}
-        onClear={() => setConfig("template", undefined)}
-        selected={
-          config?.template
-            ? templateOptions.find((el) => el.id === config.template)
-            : undefined
-        }
-        options={templateOptions}
-      />
-      <Content.ToolbarMenu<{ id: RestrictTo; label: string }>
-        icon={FunnelIcon}
-        label="Begræns til"
-        onSelect={(el) => setConfig("restrictTo", el.id)}
-        onClear={() => setConfig("restrictTo", undefined)}
-        selected={
-          config?.restrictTo
-            ? restrictToOptions.find((el) => el.id === config.restrictTo)
-            : undefined
-        }
-        options={restrictToOptions}
-      />
-      {config?.template && (
-        <Content.ToolbarMenu
-          icon={ArrowDownTrayIcon}
-          label="Hent mapper"
-          onSelect={(el) => setConfig("restrictTo", el.id)}
-          onClear={() => setConfig("restrictTo", undefined)}
-          selected={
-            config?.restrictTo
-              ? restrictToOptions.find((el) => el.id === config.restrictTo)
-              : undefined
-          }
-        >
-          <div className="p-2 flex flex-col gap-2">
-            <div className="text-xs">
-              <Checkbox
-                value={config?.transform?.type === "sortlimit"}
-                setValue={(value) =>
-                  setConfig(
-                    "transform",
-                    value
-                      ? { type: "sortlimit", data: { limit: 10 } }
-                      : undefined
-                  )
-                }
-                label="Hent dokumenter fra mapper"
-                small
-              />
-            </div>
-            {config?.transform?.type === "sortlimit" && (
-              <>
-                <div className="flex items-center gap-1.5 text-xs">
-                  <ScissorsIcon className="w-3 h-3" /> Begræns antal
-                </div>
-                <div className="py-1 pl-[1.175rem]">
-                  <Range
-                    value={config.transform.data!.limit}
-                    setValue={(limit) =>
-                      setConfig(
-                        "transform",
-                        limit
-                          ? { type: "sortlimit", data: { limit } }
-                          : undefined
-                      )
-                    }
-                  />
-                </div>
-              </>
-            )}
-          </div>
-        </Content.ToolbarMenu>
-      )}
-      {typeof index === "number" && (
-        <Content.ToolbarButton
-          data-focus-remain="true"
-          onClick={() => {
-            push({
-              target: targetTools.stringify({
-                operation: "document-config",
-                location: "",
-              }),
-              ops: [
-                {
-                  index,
-                  remove: 1,
-                },
-              ],
-            });
-          }}
-        >
-          <TrashIcon className="w-4 h-4" />
-        </Content.ToolbarButton>
-      )}
-    </Content.Toolbar>
-  );
-}
-
-function Range({
-  value: valueFromProps,
-  setValue: setValueFromProps,
-}: {
-  value: number;
-  setValue: (value: number) => void;
-}) {
-  const [value, setValue] = React.useState(valueFromProps);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setValue(Number(e.target.value));
-  };
-
-  return (
-    <div className="flex">
-      <input
-        type="range"
-        className="w-full"
-        min={1}
-        max={25}
-        value={value}
-        onChange={handleChange}
-        onMouseUp={() => valueFromProps !== value && setValueFromProps(value)}
-      />
-      <span className="text-xs font-bold opacity-75 w-8 text-right">
-        {value}
-      </span>
-    </div>
-  );
-}
-
-function FieldLabel({ id, template }: { id: FieldId; template?: DocumentId }) {
-  const label = useLabel(id, template);
-
-  const articleId = getDocumentId(id);
-
-  const { push } = useDocumentMutate<PropertyOp>(articleId, articleId);
-
-  const onChange = (value: string) => {
-    push({
-      target: targetTools.stringify({
-        operation: "property",
-        location: id,
-      }),
-      ops: [
-        {
-          name: "label",
-          value: value,
-        },
-      ],
-    });
-  };
-  return <EditableLabel label="Label" value={label} onChange={onChange} />;
-}
-
-export function EditableLabel({
-  value: initialValue,
-  onChange,
-  className,
-  label,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  className?: string;
-  label?: string;
-}) {
-  const ref = React.useRef<HTMLInputElement | null>(null);
-
-  const [isEditing, setIsEditing] = React.useState(false);
-
-  const [value, setValue] = React.useState(initialValue);
-
-  React.useLayoutEffect(() => {
-    setValue(initialValue);
-    setWidth();
-  }, [initialValue]);
-
-  React.useLayoutEffect(() => setWidth(), [isEditing]);
-
-  const setWidth = () => {
-    if (ref.current) {
-      ref.current.style.width = "0px";
-      let value = ref.current.value;
-      if (value === "") ref.current.value = "Ingen label";
-      const newWidth = ref.current.scrollWidth;
-      if (value === "") ref.current.value = "";
-      ref.current.style.width = `${newWidth}px`;
-    }
-  };
-
-  const handleChange = (ev: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = ev.target.value;
-    flushSync(() => {
-      setValue(newValue);
-    });
-    setWidth();
-  };
-
-  const rejected = React.useRef(false);
-
-  const accept = () => {
-    if (!rejected.current) {
-      if (value !== initialValue) {
-        onChange(value);
-      }
-    } else {
-      rejected.current = false;
-    }
-  };
-
-  const reject = () => {
-    setValue(initialValue);
-    rejected.current = true;
-  };
-
-  const id = React.useId();
-
-  return (
-    <div
-      className={cl(
-        " text-xs text-gray-300 font-light flex h-6 ring-1 rounded",
-        isEditing ? "ring-gray-600" : "ring-button"
-      )}
-      data-focus-remain="true"
-    >
-      <label className="flex">
-        {label && (
-          <div className="h-6 px-2 flex-center bg-gray-750 rounded">
-            {label}
-          </div>
-        )}
-        <input
-          id={id}
-          ref={ref}
-          value={isEditing ? value : initialValue}
-          onChange={handleChange}
-          type="text"
-          className={cl(
-            "outline-none padding-0 margin-0 bg-transparent h-6 items-center px-2",
-            className
-          )}
-          placeholder="Ingen label"
-          onFocus={() => {
-            setIsEditing(true);
-            rejected.current = false;
-          }}
-          onBlur={() => {
-            setIsEditing(false);
-            accept();
-          }}
-          onKeyDown={(ev) => {
-            if (ev.key.toLowerCase() === "enter") {
-              ref.current?.blur();
-            }
-            if (ev.key.toLowerCase() === "escape") {
-              reject();
-              ref.current?.blur();
-            }
-          }}
-        />
-        {!isEditing && (
-          <div className="mr-2 h-full flex-center cursor-text">
-            <PencilSquareIcon className="w-3 h-3" />
-          </div>
-        )}
-      </label>
-      {isEditing && (
-        <>
-          <div
-            className="h-6 w-6 flex-center bg-gray-750 hover:bg-green-700/60 transition-colors rounded-l"
-            onMouseDown={(ev) => {
-              accept();
-            }}
-            onClick={(ev) => {}}
-          >
-            <CheckIcon className="w-3 h-3" />
-          </div>
-          <div
-            className="h-6 w-6 flex-center bg-gray-750 hover:bg-red-700/50 transition-colors rounded-r"
-            onMouseDown={(ev) => {
-              reject();
-            }}
-            onClick={(ev) => {}}
-          >
-            <XMarkIcon className="w-3 h-3" />
-          </div>
-        </>
-      )}
-    </div>
   );
 }
 
@@ -659,11 +340,9 @@ const Page = ({
   });
 
   const folder = useFolder(article.folder);
+  const isApp = folder?.type === "app";
 
-  const templateId =
-    folder?.type === "app"
-      ? getTemplateDocumentId(FIELDS.url.id)
-      : folder?.template;
+  const templateId = folder?.template;
 
   const owner = article;
 
@@ -680,53 +359,92 @@ const Page = ({
   );
 
   return (
-    <FocusOrchestrator>
-      <DocumentPageContext.Provider value={ctx}>
-        <DocumentContent
-          version={getVersionKey(article.versions)}
-          id={id}
-          variant={type === "template" ? "template" : undefined}
-          folder={article?.folder}
-          label={label ?? "Ingen label"}
-          selected={isOpen}
-          isModified={isModified}
-          toolbar={<Toolbar id={id} config={config} />}
-        >
-          <div className="pb-96 flex flex-col -mt-6">
-            {templateId && (
-              <GetDocument id={templateId}>
-                {(article) => (
-                  <RenderTemplate
-                    key={getVersionKey(owner.versions)} // for rerendering
-                    id={article._id}
-                    owner={owner._id}
-                    values={{
-                      ...article.record,
-                      ...owner.record,
-                    }}
-                    config={article.config}
-                    histories={histories}
-                    versions={owner.versions}
-                  />
-                )}
-              </GetDocument>
-            )}
-            <RenderTemplate
-              key={getVersionKey(owner.versions)} // for rerendering
-              id={owner._id}
-              owner={owner._id}
-              values={owner.record}
-              config={config}
-              versions={owner.versions}
-              histories={histories}
-            />
-          </div>
-        </DocumentContent>
-        {children}
-      </DocumentPageContext.Provider>
-    </FocusOrchestrator>
+    <FieldToolbarPortalProvider>
+      <FocusOrchestrator>
+        <DocumentPageContext.Provider value={ctx}>
+          <DocumentContent
+            version={getVersionKey(article.versions)}
+            id={id}
+            variant={type === "template" ? "template" : undefined}
+            folder={article?.folder}
+            label={label ?? "Ingen label"}
+            selected={isOpen}
+            isModified={isModified}
+            toolbar={<Toolbar id={id} config={config} />}
+          >
+            <div className="pb-96 flex flex-col -mt-6">
+              {isApp && !templateId && config.length === 0 && (
+                <TemplateSelect documentId={article._id} />
+              )}
+              {templateId && (
+                <GetDocument id={templateId}>
+                  {(article) => (
+                    <RenderTemplate
+                      key={getVersionKey(owner.versions)} // for rerendering
+                      id={article._id}
+                      owner={owner._id}
+                      values={{
+                        ...article.record,
+                        ...owner.record,
+                      }}
+                      config={article.config}
+                      histories={histories}
+                      versions={owner.versions}
+                    />
+                  )}
+                </GetDocument>
+              )}
+              <RenderTemplate
+                key={getVersionKey(owner.versions)} // for rerendering
+                id={owner._id}
+                owner={owner._id}
+                values={owner.record}
+                config={config}
+                versions={owner.versions}
+                histories={histories}
+              />
+            </div>
+          </DocumentContent>
+          {children}
+        </DocumentPageContext.Provider>
+      </FocusOrchestrator>
+    </FieldToolbarPortalProvider>
   );
 };
+
+function TemplateSelect({ documentId }: { documentId: DocumentId }) {
+  const { push } = useDocumentMutate<DocumentConfigOp>(documentId, documentId);
+
+  return (
+    <div className="py-5 px-14 grid grid-cols-3 gap-5">
+      {[
+        DEFAULT_TEMPLATES.staticPage,
+        DEFAULT_TEMPLATES.dynamicPage,
+        DEFAULT_TEMPLATES.redirectPage,
+      ].map(({ label, id }) => (
+        <button
+          className="rounded bg-button ring-button p-5 text-center"
+          onClick={() => {
+            push({
+              target: targetTools.stringify({
+                operation: "document-config",
+                location: "",
+              }),
+              ops: [
+                {
+                  index: 0,
+                  insert: [{ template: id }],
+                },
+              ],
+            });
+          }}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 function SaveButton({ id, folder }: { id: DocumentId; folder: FolderId }) {
   const collab = useDocumentCollab();

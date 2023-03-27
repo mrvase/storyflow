@@ -12,13 +12,9 @@ import {
   ValueArray,
 } from "@storyflow/backend/types";
 import { pushAndRetry } from "../utils/retryOnError";
-import { FIELDS } from "@storyflow/backend/fields";
+import { DEFAULT_FIELDS, DEFAULT_TEMPLATES } from "@storyflow/backend/fields";
 import { TEMPLATE_FOLDER } from "@storyflow/backend/constants";
-import {
-  createFieldId,
-  getFieldNumber,
-  getTemplateDocumentId,
-} from "@storyflow/backend/ids";
+import { getTemplateDocumentId } from "@storyflow/backend/ids";
 
 type ArticleListMutation =
   | {
@@ -200,25 +196,34 @@ export function fetchArticleSync(
   return result;
 }
 
-const TEMPLATES = Object.values(FIELDS).map((el) => {
-  const id = getTemplateDocumentId(el.id);
+const TEMPLATES = [
+  ...Object.values(DEFAULT_FIELDS).map((el) => {
+    const id = getTemplateDocumentId(el.id);
 
-  const template: DBDocument = {
-    _id: id,
-    folder: TEMPLATE_FOLDER,
-    config: [
-      {
-        id: createFieldId(getFieldNumber(el.id), id),
-        type: el.type,
-        label: el.label,
-      },
-    ],
-    record: {},
-    label: el.label,
-  };
+    const template: DBDocument = {
+      _id: id,
+      folder: TEMPLATE_FOLDER,
+      config: [el],
+      record: {},
+      label: el.label,
+    };
 
-  return template;
-});
+    return template;
+  }),
+  ...Object.values(DEFAULT_TEMPLATES).map((el) => {
+    const id = el.id;
+
+    const template: DBDocument = {
+      _id: id,
+      folder: TEMPLATE_FOLDER,
+      config: el.config,
+      record: {},
+      label: el.label,
+    };
+
+    return template;
+  }),
+];
 
 export function useArticle(
   articleId: DocumentId | undefined,

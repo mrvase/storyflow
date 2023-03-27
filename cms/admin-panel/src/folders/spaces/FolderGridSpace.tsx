@@ -129,9 +129,9 @@ function FolderGrid({
       disabled={hidden}
       onChange={onChange}
     >
-      <div className={cl("flex flex-wrap gap-2 pl-9 min-h-[1rem]")}>
+      <div className={cl("flex flex-wrap gap-2 pl-14 min-h-[1rem]")}>
         {space.items.length === 0 && (
-          <div className="absolute text-gray-500 font-light text-sm ml-5">
+          <div className="absolute text-gray-500 font-light text-sm">
             Ingen mapper
           </div>
         )}

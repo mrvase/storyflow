@@ -16,6 +16,21 @@ import {
   $isRootNode,
 } from "lexical";
 import type { GridSelection, PointType } from "lexical/LexicalSelection";
+import { tools } from "shared/editor-tools";
+import {
+  matchNonEscapedCharacter,
+  splitByNonEscapedCharacter,
+} from "shared/matchNonEscapedCharacter";
+import { TokenStream, NestedElement } from "@storyflow/backend/types";
+import { LibraryConfig } from "@storyflow/frontend/types";
+import { getConfigFromType } from "../../client-config";
+import { tokens } from "@storyflow/backend/tokens";
+import { isSymbol } from "@storyflow/backend/symbols";
+
+import {
+  $createHeadingNode,
+  $isHeadingNode,
+} from "../../editor/react/HeadingNode";
 import {
   $createDocumentNode,
   $isDocumentNode,
@@ -42,22 +57,9 @@ import {
   $isParameterNode,
 } from "../decorators/ParameterNode";
 import { $createTokenNode, $isTokenNode } from "../decorators/TokenNode";
-import {
-  $createHeadingNode,
-  $isHeadingNode,
-} from "../../editor/react/HeadingNode";
-import { tools } from "shared/editor-tools";
-import {
-  matchNonEscapedCharacter,
-  splitByNonEscapedCharacter,
-} from "shared/matchNonEscapedCharacter";
-import { TokenStream, NestedElement } from "@storyflow/backend/types";
-import { LibraryConfig } from "@storyflow/frontend/types";
-import { getConfigFromType } from "../../client-config";
 import { $createContextNode, $isContextNode } from "../decorators/ContextNode";
 import { $createFolderNode, $isFolderNode } from "../decorators/FolderNode";
-import { tokens } from "@storyflow/backend/tokens";
-import { isSymbol } from "@storyflow/backend/symbols";
+import { $createCreatorNode, $isCreatorNode } from "../decorators/CreatorNode";
 
 export const isInlineElement = (
   libraries: LibraryConfig[],
@@ -79,6 +81,7 @@ export const $isSymbolNode = (node: LexicalNode) => {
     $isParameterNode(node) ||
     $isContextNode(node) ||
     $isLayoutElementNode(node) ||
+    $isCreatorNode(node) ||
     $isInlineLayoutElementNode(node) ||
     $isDocumentNode(node) ||
     $isFolderNode(node) ||
@@ -244,6 +247,8 @@ export const $getComputation = (node: LexicalNode) => {
       const parameter = node.getTextContent();
       content = [{ x: parseInt(parameter, 10) }];
     } else if ($isLayoutElementNode(node)) {
+      content = [node.__value];
+    } else if ($isCreatorNode(node)) {
       content = [node.__value];
     } else if ($isInlineLayoutElementNode(node)) {
       content = [node.__value];
@@ -448,6 +453,9 @@ export const getNodesFromComputation = (
     } else if (tokens.isNestedDocument(el)) {
       const node = $createDocumentNode(el);
       acc.push(node);
+    } else if (tokens.isNestedCreator(el)) {
+      const node = $createCreatorNode(el);
+      acc.push(node);
     } else if (tokens.isNestedFolder(el)) {
       const node = $createFolderNode(el);
       acc.push(node);
@@ -490,7 +498,7 @@ export function $getBlocksFromComputation(
       (tokens.isNestedElement(el) && !isInlineElement(libraries, el)) ||
       tokens.isNestedDocument(el) ||
       tokens.isNestedFolder(el) ||
-      tokens.isNestedFolder(el)
+      tokens.isNestedCreator(el)
     );
   };
 
@@ -523,6 +531,8 @@ export function $getBlocksFromComputation(
         blocks.push($createLayoutElementNode(computation[0]));
       } else if (tokens.isNestedFolder(computation[0])) {
         blocks.push($createFolderNode(computation[0] as any));
+      } else if (tokens.isNestedCreator(computation[0])) {
+        blocks.push($createCreatorNode(computation[0] as any));
       } else {
         blocks.push($createDocumentNode(computation[0] as any));
       }

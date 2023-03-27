@@ -16,6 +16,7 @@ import { useDocumentMutate } from "./collab/DocumentCollabContext";
 import { ServerPackage } from "@storyflow/state";
 import { getVersionKey } from "./DocumentPage";
 import { GetDocument } from "./GetDocument";
+import { ExtendTemplatePath } from "./TemplatePathContext";
 
 export function RenderTemplate({
   id,
@@ -54,7 +55,6 @@ export function RenderTemplate({
           ops.push({
             index,
             insert: [templateItem],
-            remove: 0,
           });
         }
 
@@ -62,7 +62,6 @@ export function RenderTemplate({
           if (!config[index]) return;
           ops.push({
             index,
-            insert: [],
             remove: 1,
           });
         }
@@ -149,6 +148,8 @@ export function RenderTemplate({
       ? fieldConfig.id
       : createTemplateFieldId(owner, fieldConfig.id);
 
+    console.log("CREATING FIELD ID", isMain, fieldConfig, owner, fieldId);
+
     const value: SyntaxTree | undefined = values[fieldId];
 
     return (
@@ -164,31 +165,32 @@ export function RenderTemplate({
         history={histories[getRawFieldId(fieldId)] ?? []}
         index={index}
         dragHandleProps={dragHandleProps}
-        template={id}
       />
     );
   };
 
   return (
-    <div {...containerProps}>
-      <Sortable
-        type="fields"
-        id={id}
-        onChange={onChange}
-        canReceive={{
-          link: () => "ignore",
-          move: ({ type, item }) => (type === "fields" ? "accept" : "ignore"),
-        }}
-        disabled={!isMain}
-      >
-        <div className="flex flex-col">
-          {(config ?? []).map(renderConfigElement)}
-          <DropShadow>
-            {(item) => renderConfigElement(item, (config ?? []).length)}
-          </DropShadow>
-        </div>
-      </Sortable>
-    </div>
+    <ExtendTemplatePath template={id}>
+      <div {...containerProps}>
+        <Sortable
+          type="fields"
+          id={id}
+          onChange={onChange}
+          canReceive={{
+            link: () => "ignore",
+            move: ({ type, item }) => (type === "fields" ? "accept" : "ignore"),
+          }}
+          disabled={!isMain}
+        >
+          <div className="flex flex-col">
+            {(config ?? []).map(renderConfigElement)}
+            <DropShadow>
+              {(item) => renderConfigElement(item, (config ?? []).length)}
+            </DropShadow>
+          </div>
+        </Sortable>
+      </div>
+    </ExtendTemplatePath>
   );
 }
 

@@ -9,8 +9,8 @@ import {
   Value,
 } from "@storyflow/backend/types";
 import { calculate } from "./calculate";
-import { operators } from "./mongo-operators";
-import { FIELDS } from "@storyflow/backend/fields";
+import { createOperators } from "./mongo-operators";
+import { queryArrayProp } from "./queryArrayProp";
 
 export type Update = DBSyntaxStreamBlock & {
   result: DBValueArray;
@@ -23,18 +23,6 @@ export type Update = DBSyntaxStreamBlock & {
 
 type Options = {
   cache?: boolean;
-};
-
-const queryArrayProp = <T extends Array<object>>(
-  doc: T
-): T extends Array<infer Element>
-  ? {
-      [Key in keyof Element]: Element[Key] extends any[]
-        ? Element[Key]
-        : Element[Key][];
-    }
-  : T => {
-  return doc as any;
 };
 
 const createCalculationStage = (
@@ -174,6 +162,29 @@ const createCalculationStage = (
             $doc.values
           )
         ),
+        updated: $.mergeObjects(
+          $.reduce(
+            $doc.fields as (DBSyntaxStreamBlock & {
+              updated: boolean;
+            })[],
+            (acc, el) =>
+              $.cond(
+                $.and(
+                  $.eq($.substrBytes($.toString(el.k), 0, 12), $doc.idString),
+                  $.eq(el.updated, true)
+                ),
+                () =>
+                  $.mergeObjects(
+                    acc,
+                    $.arrayToObject([
+                      [$.substrBytes($.toString(el.k), 12, 12), Date.now()],
+                    ])
+                  ),
+                () => acc
+              ),
+            $doc.updated
+          )
+        ),
       },
     },
     ...(options.cache
@@ -307,10 +318,13 @@ const createCalculationStage = (
         ),
       },
     },
+    /*
     {
       $set: {
         revalidate: $.cond(
-          $.isArray($doc.values[FIELDS.url.id]),
+          $.isArray(
+            $doc.values[createRawTemplateFieldId(DEFAULT_FIELDS.url.id)]
+          ),
           () => ({
             page: Date.now(),
             layout: $.cond(
@@ -329,7 +343,12 @@ const createCalculationStage = (
                             $.eq(
                               cur.k,
                               $.toObjectId(
-                                $.concat([$doc.idString, FIELDS.layout.id])
+                                $.concat([
+                                  $doc.idString,
+                                  createRawTemplateFieldId(
+                                    DEFAULT_FIELDS.layout.id
+                                  ),
+                                ])
                               )
                             ),
                             $.in(cur.k, acc)
@@ -352,6 +371,7 @@ const createCalculationStage = (
         ),
       },
     },
+    */
     {
       $unset: [
         "idString",
@@ -375,7 +395,12 @@ export const createStages = (
   derivatives: Update[] = [],
   options?: Options
 ) => {
-  return createCalculationStage(operators, updates, derivatives, options);
+  return createCalculationStage(
+    createOperators(),
+    updates,
+    derivatives,
+    options
+  );
 };
 
 /*

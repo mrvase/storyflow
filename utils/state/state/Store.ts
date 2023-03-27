@@ -38,7 +38,7 @@ export class Store {
     fn?: (id: string, value: T | undefined) => Promise<T> | T
   ): [id: string, state: State<T | undefined>][] {
     const matches = [];
-    for (let key of this.map.keys()) {
+    for (let key of Array.from(this.map.keys())) {
       if (key.match(id)) {
         matches.push(key);
       }

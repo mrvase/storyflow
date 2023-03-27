@@ -4,7 +4,7 @@ import { useArticleListMutation } from "../documents";
 import { getDefaultValuesFromTemplateAsync } from "../documents/template-fields";
 import { useTabUrl } from "../layout/utils";
 import { useSegment } from "../layout/components/SegmentContext";
-import { computeFieldId } from "@storyflow/backend/ids";
+import { computeFieldId, createTemplateFieldId } from "@storyflow/backend/ids";
 import {
   DocumentId,
   FieldId,
@@ -14,7 +14,7 @@ import {
 import { useClient } from "../client";
 import { toSlug } from "../fields/UrlField";
 import { useDocumentIdGenerator } from "../id-generator";
-import { FIELDS } from "@storyflow/backend/fields";
+import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
 import { getConfig, insertRootInTransform } from "shared/initialValues";
 
@@ -64,30 +64,32 @@ export function AddArticleDialog({
                 })
               : {};
 
-            record[computeFieldId(id, FIELDS.creation_date.id)] = {
-              ...DEFAULT_SYNTAX_TREE,
-              children: [new Date()],
-            };
+            record[createTemplateFieldId(id, DEFAULT_FIELDS.creation_date.id)] =
+              {
+                ...DEFAULT_SYNTAX_TREE,
+                children: [new Date()],
+              };
 
             if (parentUrl) {
               Object.assign(record, parentUrl.record);
 
-              record[computeFieldId(id, FIELDS.url.id)] = insertRootInTransform(
-                {
-                  ...DEFAULT_SYNTAX_TREE,
-                  children: [
-                    {
-                      id: generateDocumentId(id),
-                      field: parentUrl.id,
-                      inline: true,
-                    },
-                    slug,
-                  ],
-                },
-                getConfig("url").transform
-              );
+              record[createTemplateFieldId(id, DEFAULT_FIELDS.url.id)] =
+                insertRootInTransform(
+                  {
+                    ...DEFAULT_SYNTAX_TREE,
+                    children: [
+                      {
+                        id: generateDocumentId(id),
+                        field: parentUrl.id,
+                        inline: true,
+                      },
+                      slug,
+                    ],
+                  },
+                  getConfig("url").transform
+                );
 
-              record[computeFieldId(id, FIELDS.label.id)] = {
+              record[createTemplateFieldId(id, DEFAULT_FIELDS.label.id)] = {
                 ...DEFAULT_SYNTAX_TREE,
                 children: [label],
               };

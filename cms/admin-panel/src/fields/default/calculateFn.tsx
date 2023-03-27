@@ -17,13 +17,11 @@ import {
   FolderId,
 } from "@storyflow/backend/types";
 import {
-  computeFieldId,
   createTemplateFieldId,
   getDocumentId,
   getRawFieldId,
 } from "@storyflow/backend/ids";
 import { Client } from "../../client";
-import { unwrap } from "@storyflow/result";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
 
 type FetcherResult = { _id: DocumentId; record: SyntaxTreeRecord }[];

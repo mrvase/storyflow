@@ -26,7 +26,6 @@ export function BuilderProvider({
   children?: React.ReactNode;
 }) {
   const [ref, setRef] = React.useState<HTMLDivElement | null>(null);
-
   const setRefCallback = React.useCallback((node: HTMLDivElement) => {
     if (node) {
       setRef(node);

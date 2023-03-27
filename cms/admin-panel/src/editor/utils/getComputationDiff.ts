@@ -1,15 +1,15 @@
+import { TokenStream } from "@storyflow/backend/types";
 import { tools } from "shared/editor-tools";
 import { InferAction, ComputationOp } from "shared/operations";
-import { EditorComputation } from "@storyflow/backend/types";
 
 type Action = InferAction<ComputationOp>;
 
 export const getComputationDiff = (
-  _oldValue: EditorComputation,
-  _newValue: EditorComputation
+  _oldValue: TokenStream,
+  _newValue: TokenStream
 ): Action[] | null => {
-  const split = (value: EditorComputation) => {
-    const array: EditorComputation = [];
+  const split = (value: TokenStream) => {
+    const array: TokenStream = [];
     tools.forEach(value, (el) => {
       array.push(el);
     });
@@ -118,7 +118,7 @@ export const getComputationDiff = (
       tools.removeCharacters(remove, "\\*+")
     )
   ) {
-    const find = (value: EditorComputation) => tools.match(value, "\\*+")[0];
+    const find = (value: TokenStream) => tools.match(value, "\\*+")[0];
     let match: { index: number; value: string | { n: true } } | null;
 
     let insertText = insert;

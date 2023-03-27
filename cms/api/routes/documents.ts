@@ -24,12 +24,13 @@ import {
   resetHistory,
 } from "../collab-utils/redis-client";
 import {
+  createRawTemplateFieldId,
   getDocumentId,
   isFieldOfDocument,
   isNestedDocumentId,
   unwrapObjectId,
 } from "@storyflow/backend/ids";
-import { FIELDS } from "@storyflow/backend/fields";
+import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
 import { deduplicate, getImports, getSortedValues } from "./helpers";
 
 export const parseDocument = (raw: DBDocumentRaw): DBDocument => {
@@ -160,6 +161,7 @@ export const documents = createRoute({
                   ...(action.label && { label: action.label }),
                   fields: [],
                   values: {},
+                  updated: {},
                   ids: [],
                   cached: [],
                 };
@@ -336,7 +338,10 @@ export const documents = createRoute({
         (await db
           .collection<DBDocumentRaw>("documents")
           .find({
-            [`values.${FIELDS.label.id}`]: { $regex: string, $options: "i" },
+            [`values.${createRawTemplateFieldId(DEFAULT_FIELDS.label.id)}`]: {
+              $regex: string,
+              $options: "i",
+            },
           })
           .toArray()) ?? []
       ).map((el) => parseDocument(el));
@@ -393,13 +398,13 @@ export const documents = createRoute({
     },
   }),
 
-  revalidate: createProcedure({
+  getUpdatedUrls: createProcedure({
     middleware(ctx) {
       return ctx.use(globals);
     },
     schema() {
       return z.object({
-        namespace: z.string().optional(),
+        namespace: z.string(),
         domain: z.string(),
         revalidateUrl: z.string(),
       });
@@ -407,40 +412,67 @@ export const documents = createRoute({
     async query({ namespace, domain, revalidateUrl }, { dbName }) {
       const db = (await clientPromise).db(dbName);
 
-      const lastBuildCounter = await db
-        .collection<{ name: string; counter: number }>("counters")
-        .findOneAndUpdate(
-          {
-            name: "build",
-          },
-          {
-            $set: {
-              counter: Date.now(),
-            },
-          },
-          {
-            upsert: true,
-            returnDocument: "before",
-          }
-        );
+      const lastBuildCounter =
+        (
+          await db
+            .collection<{ name: string; counter: number }>("counters")
+            .findOne({
+              name: "build",
+            })
+        )?.counter ?? 0;
 
-      const lastBuild = lastBuildCounter?.value?.counter ?? 0;
+      const folder = new ObjectId(namespace);
+
+      /*
+      ...(namespace
+        ? { folder: new ObjectId(namespace) }
+        : {
+            [`values.${createRawTemplateFieldId(DEFAULT_FIELDS.url.id)}`]: {
+              $exists: true,
+            },
+          }),
+      /*
+      [`values.${URL_ID}`]: namespace
+        ? { $regex: `^${namespace}` }
+        : { $exists: true },
+      */
 
       const articles = await db
         .collection<DBDocumentRaw>("documents")
         .find({
-          ...(namespace
-            ? { folder: new ObjectId(namespace) }
-            : { [`values.${FIELDS.url.id}`]: { $exists: true } }),
-          /*
-          [`values.${URL_ID}`]: namespace
-            ? { $regex: `^${namespace}` }
-            : { $exists: true },
-          */
+          $or: [
+            {
+              folder,
+              [`updated.${createRawTemplateFieldId(DEFAULT_FIELDS.url.id)}`]: {
+                $gt: lastBuildCounter,
+              },
+            },
+            {
+              folder,
+              [`updated.${createRawTemplateFieldId(DEFAULT_FIELDS.label.id)}`]:
+                { $gt: lastBuildCounter },
+            },
+            {
+              folder,
+              [`updated.${createRawTemplateFieldId(DEFAULT_FIELDS.page.id)}`]: {
+                $gt: lastBuildCounter,
+              },
+            },
+            {
+              folder,
+              [`updated.${createRawTemplateFieldId(DEFAULT_FIELDS.layout.id)}`]:
+                { $gt: lastBuildCounter },
+            },
+          ],
         })
         .toArray();
 
-      const urls = articles.map((el) => el.values[FIELDS.url.id][0] as string);
+      const urls = articles.map(
+        (el) =>
+          el.values[
+            createRawTemplateFieldId(DEFAULT_FIELDS.url.id)
+          ][0] as string
+      );
 
       console.log("REVALIDATE", urls);
 
@@ -458,6 +490,33 @@ export const documents = createRoute({
       return success(urls);
 
       // check update timestamp
+    },
+  }),
+
+  revalidated: createProcedure({
+    middleware(ctx) {
+      return ctx.use(globals);
+    },
+    async mutation(_, { dbName }) {
+      const db = (await clientPromise).db(dbName);
+
+      await db
+        .collection<{ name: string; counter: number }>("counters")
+        .updateOne(
+          {
+            name: "build",
+          },
+          {
+            $set: {
+              counter: Date.now(),
+            },
+          },
+          {
+            upsert: true,
+          }
+        );
+
+      return success(null);
     },
   }),
 });

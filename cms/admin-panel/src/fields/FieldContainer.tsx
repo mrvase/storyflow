@@ -13,28 +13,23 @@ import { FieldPage } from "./FieldPage";
 import { useSegment } from "../layout/components/SegmentContext";
 import { useTabUrl } from "../layout/utils";
 import { useLabel } from "../documents/collab/hooks";
-import {
-  DocumentId,
-  FieldConfig,
-  FieldId,
-  SyntaxTree,
-} from "@storyflow/backend/types";
+import { FieldConfig, FieldId } from "@storyflow/backend/types";
 import { getTranslateDragEffect } from "../utils/dragEffects";
 import useIsFocused from "../utils/useIsFocused";
 import { Path } from "@storyflow/frontend/types";
 import { getDefaultField } from "@storyflow/backend/fields";
-import { IframeProvider } from "./builder/BuilderIframe";
+import { IframeProvider } from "./builder/IframeContext";
 import { useFieldId } from "./FieldIdContext";
 import { BuilderPathProvider, useBuilderPath } from "./BuilderPath";
-import { useDocumentPageContext } from "../documents/DocumentPageContext";
 import useTabs from "../layout/useTabs";
 import { getConfigFromType, useClientConfig } from "../client-config";
+import { isTemplateField } from "@storyflow/backend/ids";
+import { FieldToolbarPortal } from "../documents/FieldToolbar";
 
 type Props = {
   fieldConfig: FieldConfig;
   index: number;
   children: React.ReactNode;
-  template: DocumentId;
   dragHandleProps?: any;
 };
 
@@ -42,13 +37,10 @@ export function FieldContainer({
   children,
   index,
   fieldConfig,
-  template,
   dragHandleProps: dragHandlePropsFromProps,
 }: Props) {
   let props: any = {};
   let dragHandleProps: any;
-
-  let isFocused = false;
 
   if (!dragHandlePropsFromProps) {
     const {
@@ -63,79 +55,79 @@ export function FieldContainer({
 
     const style = getTranslateDragEffect(state);
 
-    const { isFocused: isFocused_, handlers } = useIsFocused({
-      multiple: true,
-      id: fieldConfig.id,
-    });
-
-    isFocused = isFocused_;
-
     const dragProps = {
       ref,
       style,
     };
 
-    Object.assign(props, dragProps, handlers);
+    Object.assign(props, dragProps);
 
     dragHandleProps = dragHandlePropsFromHook;
   } else {
     dragHandleProps = dragHandlePropsFromProps;
   }
 
+  const { isFocused, handlers } = useIsFocused({
+    multiple: true,
+    id: fieldConfig.id,
+  });
+
   return (
-    <IframeProvider>
-      <BuilderPathProvider>
-        <div
-          {...props}
-          className={cl(
-            "relative grow shrink basis-0 group/container",
-            isFocused && "focused"
-          )}
-        >
-          <LabelBar
-            fieldConfig={fieldConfig}
-            template={template}
-            dragHandleProps={dragHandleProps}
-            isFocused={isFocused}
-          />
-          {children}
-        </div>
-        <BuilderPortal id={fieldConfig.id}>
-          {(isOpen) => (
-            <FieldPage selected={isOpen} id={fieldConfig.id}>
-              <div className={cl("pt-5 -mt-2.5 relative grow shrink basis-0")}>
-                {/*<div
+    <>
+      <FieldToolbarPortal show={isFocused} />
+      <IframeProvider>
+        <BuilderPathProvider>
+          <div
+            {...props}
+            {...handlers}
+            className={cl(
+              "relative grow shrink basis-0 group/container",
+              isFocused && "focused"
+            )}
+          >
+            <LabelBar
+              fieldConfig={fieldConfig}
+              dragHandleProps={dragHandleProps}
+              isFocused={isFocused}
+            />
+            {children}
+          </div>
+          <BuilderPortal id={fieldConfig.id}>
+            {(isOpen) => (
+              <FieldPage selected={isOpen} id={fieldConfig.id}>
+                <div
+                  className={cl("pt-5 -mt-2.5 relative grow shrink basis-0")}
+                >
+                  {/*<div
                 className={cl(
                   "-z-10 absolute inset-2.5 top-0 rounded-lg pointer-events-none",
                   "bg-gray-850"
                   // "ring-1 ring-inset ring-gray-750"
                 )}
                 />*/}
-                {children}
-              </div>
-            </FieldPage>
-          )}
-        </BuilderPortal>
-      </BuilderPathProvider>
-    </IframeProvider>
+                  {children}
+                </div>
+              </FieldPage>
+            )}
+          </BuilderPortal>
+        </BuilderPathProvider>
+      </IframeProvider>
+    </>
   );
 }
 
 function LabelBar({
   fieldConfig,
   dragHandleProps,
-  template,
   isFocused,
 }: {
   fieldConfig: FieldConfig;
   dragHandleProps: any;
-  template: DocumentId;
   isFocused: boolean;
 }) {
   const [path, setPath] = useBuilderPath();
 
-  const articleId = useDocumentPageContext().id;
-  const isNative = template === articleId;
+  const isNative = !isTemplateField(fieldConfig.id);
 
   const [isEditing] = [true]; //useLocalStorage<boolean>("editing-articles", false);
 
@@ -166,7 +158,6 @@ function LabelBar({
           <Label
             id={fieldConfig.id}
             isNative={isNative}
-            template={template}
             // isEditable={isNative && isEditing}
           />
         ) : (
@@ -174,7 +165,7 @@ function LabelBar({
         )}
       </div>
       {specialFieldConfig && (
-        <div className="ml-3 backdrop:mr-8 text-xs my-0.5 font-light bg-yellow-300 text-yellow-800/90 dark:bg-yellow-400/10 dark:text-yellow-200/75 px-1.5 rounded">
+        <div className="ml-3 backdrop:mr-8 text-xs my-0.5 font-light bg-yellow-300 text-yellow-800/90 dark:bg-yellow-400/10 dark:text-yellow-200/75 px-1.5 rounded whitespace-nowrap">
           {specialFieldConfig.label}
         </div>
       )}
@@ -279,13 +270,6 @@ function Dot({
             "group w-6 h-6 p-1 -m-1 translate-y-0.5",
             isDraggable && "cursor-grab"
           )}
-          /*
-          onClick={() => {
-            navigateTab(
-              isOpen ? `${current}` : `${current}/c-${restoreId(id)}`
-            );
-          }}
-          */
         >
           <div
             className={cl(
@@ -293,15 +277,6 @@ function Dot({
               !isEditable
                 ? "bg-gray-200 dark:bg-teal-600/50 dark:group-hover:bg-teal-800/50"
                 : "bg-gray-200 dark:bg-gray-600/50"
-              /*
-              isOpen
-                ? "bg-gray-200 dark:bg-gray-600/50 dark:group-hover:bg-red-800/50"
-                : !isEditable
-                ? "bg-gray-200 dark:bg-teal-600/50 dark:group-hover:bg-teal-800/50"
-                : isDraggable
-                ? "bg-gray-200 dark:bg-gray-600/50"
-                : "bg-gray-200 dark:bg-gray-600/50 dark:group-hover:bg-sky-800/50"
-              */
             )}
           >
             <div
@@ -309,13 +284,6 @@ function Dot({
                 "flex-center w-2 h-2 m-1 rounded-full group-hover:scale-[2] transition-[transform,background-color]",
                 !isEditable && "dark:group-hover:bg-teal-800",
                 "dark:bg-white/20"
-                /*
-                isOpen
-                  ? "dark:bg-white/20 dark:group-hover:bg-red-800"
-                  : isDraggable && isEditable
-                  ? "dark:bg-white/20"
-                  : "dark:bg-white/20 dark:group-hover:bg-sky-800"
-                */
               )}
             >
               <Icon className="w-[0.3rem] h-1.5 opacity-0 group-hover:opacity-75 transition-opacity" />
@@ -323,26 +291,6 @@ function Dot({
           </div>
         </div>
       </Draggable>
-      {/*
-      <button
-        tabIndex={-1}
-        className={cl(
-          isLink
-            ? "opacity-25 hover:opacity-100"
-            : "opacity-0 pointer-events-none",
-          "absolute z-10 top-11 w-6 h-6 p-1 -mx-1 transition-opacity duration-75"
-        )}
-        onMouseDown={(ev) => {
-          if (isLink) {
-            ev.preventDefault();
-            ev.stopPropagation();
-            addImport.dispatch({ id, imports: [] });
-          }
-        }}
-      >
-        <LinkIcon className="w-4 h-4" />
-      </button>
-      */}
     </>
   );
 }
@@ -355,19 +303,11 @@ function LabelText() {
   );
 }
 
-function Label({
-  id,
-  isNative,
-  template,
-}: {
-  id: FieldId;
-  isNative?: boolean;
-  template: DocumentId;
-}) {
+function Label({ id, isNative }: { id: FieldId; isNative?: boolean }) {
   const [focused] = useFieldFocus();
   const isLink = focused && focused !== id;
 
-  const label = useLabel(id, template);
+  const label = useLabel(id);
 
   /*
   const articleId = getDocumentId(id);
@@ -401,7 +341,7 @@ function Label({
   return (
     <span
       className={cl(
-        "text-sm font-normal select-none",
+        "text-sm font-normal select-none whitespace-nowrap",
         isNative ? "text-gray-400" : "text-teal-600/90 dark:text-teal-400/90",
         isLink ? "cursor-alias" : "cursor-default"
       )}

@@ -1,6 +1,9 @@
 import clientPromise from "./mongo/mongoClient";
-import { computeFieldId, unwrapObjectId } from "@storyflow/backend/ids";
-import { FIELDS } from "@storyflow/backend/fields";
+import {
+  createRawTemplateFieldId,
+  unwrapObjectId,
+} from "@storyflow/backend/ids";
+import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
 import type {
   DBDocumentRaw,
   DBSyntaxStreamBlock,
@@ -110,7 +113,7 @@ export async function fetchSinglePage(
       ...(namespaces.length > 0 && {
         folder: { $in: namespaces },
       }),
-      [`values.${FIELDS.url.id}`]:
+      [`values.${createRawTemplateFieldId(DEFAULT_FIELDS.url.id)}`]:
         url.indexOf("/") < 0
           ? url
           : {
@@ -169,13 +172,11 @@ export async function fetchSinglePage(
     imageUrl,
   };
   */
-  const imageUrl = `https://${BUCKET_NAME}.s3.${BUCKET_REGION}.amazonaws.com/${slug}`;
 
   return {
     layout: null,
     page: null,
     head: {},
-    imageUrl,
   };
 }
 

@@ -1,5 +1,10 @@
-import { getRawFieldId, revertTemplateFieldId } from "@storyflow/backend/ids";
-import { FieldConfig, DocumentConfig, FieldId } from "@storyflow/backend/types";
+import { getRawFieldId } from "@storyflow/backend/ids";
+import {
+  FieldConfig,
+  DocumentConfig,
+  FieldId,
+  PartialFieldConfig,
+} from "@storyflow/backend/types";
 
 const compareTemplateFieldId = (id1: FieldId, id2: FieldId) => {
   return getRawFieldId(id1) === getRawFieldId(id2);
@@ -11,36 +16,50 @@ export const getFieldConfigArray = (template: DocumentConfig) => {
     .flat(1);
 };
 
-export const getFieldConfig = (template: DocumentConfig, id_: FieldId) => {
+export function getFieldConfig(
+  template: DocumentConfig,
+  id_: FieldId,
+  options: { noPartialConfig: true }
+): FieldConfig | undefined;
+export function getFieldConfig(
+  template: DocumentConfig,
+  id_: FieldId,
+  options?: { noPartialConfig?: boolean }
+): FieldConfig | PartialFieldConfig | undefined;
+export function getFieldConfig(
+  template: DocumentConfig,
+  id_: FieldId,
+  options: { noPartialConfig?: boolean } = {}
+): FieldConfig | PartialFieldConfig | undefined {
   const id = id_;
-  let topIndex: number | null = null;
-  let groupIndex: number | null = null;
-  let i = -1;
+  let i = 0;
   for (let templateItem of template) {
-    i++;
     if (Array.isArray(templateItem)) {
-      let candidate = templateItem.findIndex((el) =>
+      const candidate = templateItem.find((el) =>
         compareTemplateFieldId(el.id, id)
       );
-      if (candidate >= 0) {
-        topIndex = i;
-        groupIndex = candidate;
-        break;
+      if (candidate) {
+        return candidate;
+      }
+    } else if ("id" in templateItem) {
+      if (compareTemplateFieldId(templateItem.id, id)) {
+        return templateItem;
+      }
+    } else if (
+      !options.noPartialConfig &&
+      "template" in templateItem &&
+      templateItem.config
+    ) {
+      const candidate = templateItem.config.find((el) =>
+        compareTemplateFieldId(el.id, id)
+      );
+      if (candidate) {
+        return candidate;
       }
     }
-    if ("id" in templateItem && compareTemplateFieldId(templateItem.id, id)) {
-      topIndex = i;
-      break;
-    }
+    i++;
   }
-  if (topIndex !== null) {
-    if (groupIndex !== null) {
-      return (template[topIndex] as FieldConfig[])[groupIndex];
-    } else {
-      return template[topIndex] as FieldConfig;
-    }
-  }
-};
+}
 
 export const setFieldConfig = (
   template: DocumentConfig,

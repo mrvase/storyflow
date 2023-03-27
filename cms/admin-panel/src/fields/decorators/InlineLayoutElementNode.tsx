@@ -13,7 +13,7 @@ import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
 import { caretClasses } from "./caret";
 import { NestedElement, ValueArray } from "@storyflow/backend/types";
-import { ParentPropContext } from "../default/DefaultField";
+import { ParentPropContext } from "../default/ParentPropContext";
 import { stringifyPath, useBuilderPath } from "../BuilderPath";
 import { getConfigFromType, useClientConfig } from "../../client-config";
 import { useGlobalState } from "../../state/state";

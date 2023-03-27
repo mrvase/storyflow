@@ -4,11 +4,11 @@ import { DBFolder, DocumentId } from "@storyflow/backend/types";
 import { useFolderCollab } from "./collab/FolderCollabContext";
 import { targetTools } from "shared/operations";
 import { useArticleListMutation } from "../documents";
-import { computeFieldId } from "@storyflow/backend/ids";
+import { computeFieldId, createTemplateFieldId } from "@storyflow/backend/ids";
 import { ComputerDesktopIcon, FolderIcon } from "@heroicons/react/24/outline";
 import { DialogOption } from "../elements/DialogOption";
 import { useDocumentIdGenerator, useFolderIdGenerator } from "../id-generator";
-import { FIELDS } from "@storyflow/backend/fields";
+import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
 import { getConfig } from "shared/initialValues";
 
@@ -70,11 +70,11 @@ export function AddFolderDialog({
               type: "insert",
               id: frontId,
               record: {
-                [computeFieldId(frontId, FIELDS.label.id)]: {
+                [createTemplateFieldId(frontId, DEFAULT_FIELDS.label.id)]: {
                   ...DEFAULT_SYNTAX_TREE,
                   children: ["Forside"],
                 },
-                [computeFieldId(frontId, FIELDS.url.id)]:
+                [createTemplateFieldId(frontId, DEFAULT_FIELDS.url.id)]:
                   getConfig("url").defaultValue,
               },
             },
