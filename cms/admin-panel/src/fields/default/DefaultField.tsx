@@ -5,11 +5,9 @@ import { getConfig } from "shared/initialValues";
 import { createComputationTransformer } from "shared/computation-tools";
 import { useDocumentPageContext } from "../../documents/DocumentPageContext";
 import { useBuilderPath } from "../BuilderPath";
-import { useFieldConfig } from "../../documents/collab/hooks";
 import { getDocumentId, getRawFieldId } from "@storyflow/backend/ids";
 import { useDocumentCollab } from "../../documents/collab/DocumentCollabContext";
 import { WritableDefaultField } from "./RenderNestedFields";
-import { TemplateHeader } from "./TemplateHeader";
 
 export default function DefaultField({
   id,
@@ -48,13 +46,11 @@ export default function DefaultField({
   const [path] = useBuilderPath();
 
   return (
-    <>
-      <WritableDefaultField
-        id={id}
-        hidden={path.length > 0}
-        initialValue={initialValue}
-        fieldConfig={fieldConfig}
-      />
-    </>
+    <WritableDefaultField
+      id={id}
+      hidden={path.length > 0}
+      initialValue={initialValue}
+      fieldConfig={fieldConfig}
+    />
   );
 }

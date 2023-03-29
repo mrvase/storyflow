@@ -5,9 +5,15 @@ import {
   useIframeListeners,
 } from "./builder/IframeContext";
 import { useContextWithError } from "../utils/contextError";
+import ReactDOM from "react-dom";
+import { FieldId, NestedDocumentId } from "@storyflow/backend/types";
 
 type PathContextType = [Path, (value: Path | ((ps: Path) => Path)) => void];
 export const BuilderPathContext = React.createContext<PathContextType | null>(
+  null
+);
+
+export const NestedPortalContext = React.createContext<HTMLDivElement | null>(
   null
 );
 
@@ -55,9 +61,39 @@ export function BuilderPathProvider({
     [path, setPath]
   );
 
+  const [portal, setPortalState] = React.useState<HTMLDivElement | null>(null);
+  const setPortal = React.useCallback((node: HTMLDivElement) => {
+    if (node) {
+      setPortalState(node);
+    }
+  }, []);
+
   return (
     <BuilderPathContext.Provider value={ctx}>
-      {children}
+      <NestedPortalContext.Provider value={portal}>
+        <div ref={setPortal} className="child:hidden last:child:block">
+          {children}
+        </div>
+      </NestedPortalContext.Provider>
     </BuilderPathContext.Provider>
   );
+}
+
+export function NestedPortal({
+  children,
+  id,
+}: {
+  children: React.ReactElement;
+  id: NestedDocumentId;
+}) {
+  const [path] = useBuilderPath();
+  const currentId = path[path.length - 1]?.id;
+
+  const portal = React.useContext(NestedPortalContext);
+
+  if (!portal) {
+    return null;
+  }
+
+  return currentId === id ? ReactDOM.createPortal(children, portal) : children;
 }

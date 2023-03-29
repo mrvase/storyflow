@@ -4,10 +4,14 @@ import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
 import { FieldId, NestedElement, ValueArray } from "@storyflow/backend/types";
 import { useParentProp } from "../default/ParentPropContext";
-import { useBuilderPath } from "../BuilderPath";
+import { NestedPortal, useBuilderPath } from "../BuilderPath";
 import { getConfigFromType, useClientConfig } from "../../client-config";
 import { WritableDefaultField } from "../default/RenderNestedFields";
-import { CubeIcon } from "@heroicons/react/24/outline";
+import {
+  ChevronUpDownIcon,
+  CubeIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
 import { computeFieldId, getIdFromString } from "@storyflow/backend/ids";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
 import { useDocumentPageContext } from "../../documents/DocumentPageContext";
@@ -19,8 +23,10 @@ import { calculateFn } from "../default/calculateFn";
 import { useFieldId } from "../FieldIdContext";
 import { useClient } from "../../client";
 import { extendPath } from "@storyflow/backend/extendPath";
-import { useIsFocused } from "../../editor/react/useIsFocused";
-import { useEditorContext } from "../../editor/react/EditorProvider";
+import {
+  EditorFocusProvider,
+  useIsFocused,
+} from "../../editor/react/useIsFocused";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 
 const TopLevelContext = React.createContext(true);
@@ -34,10 +40,12 @@ function Decorator({
 }) {
   const isTopLevel = React.useContext(TopLevelContext);
 
-  const editor = useEditorContext();
-  const isFocused = useIsFocused(editor);
+  const isFocused = useIsFocused();
 
-  const [, setPath] = useBuilderPath();
+  const [path, setPath] = useBuilderPath();
+
+  const isOpen = path[path.length - 1]?.id === value.id;
+
   const parentProp = useParentProp();
 
   const { isSelected, select } = useIsSelected(nodeKey);
@@ -82,76 +90,112 @@ function Decorator({
   >(isTopLevel ? flatProps[0] : undefined);
 
   return (
-    <div
-      className={cl(
-        "relative bg-gray-850 text-gray-800 dark:text-gray-200 cursor-default",
-        "rounded selection:bg-transparent",
-        isSelected && "ring-1 dark:ring-gray-200",
-        !isSelected && "ring-1 ring-gray-200 dark:ring-gray-700"
-      )}
-    >
-      <div
-        className="flex items-center font-normal text-yellow-400/90 text-sm p-2.5"
-        onMouseDown={(ev) => {
-          // preventDefault added because it prevents a conflict with lexical
-          // which sets the selection as well, overwriting the selection set here.
-          // This happens only when the editor is first selected without a cursor,
-          // and you then click the element.
-          if (!isSelected) {
-            if (isFocused) {
-              ev.preventDefault();
-            }
-            select();
-          }
-        }}
-        onDoubleClick={() => {
-          setPath((ps) => [
-            ...ps,
-            {
-              id: value.id,
-              element: value.element,
-              parentProp: parentProp,
-            },
-          ]);
-        }}
-      >
-        <CubeIcon className="w-4 h-4 mr-5" />
-        {config?.label ?? value.element}
-        {(flatProps ?? []).map((el) => (
-          <PropPreview
-            key={el.id}
-            prop={el}
-            selected={currentProp === el}
-            select={(toggle) => setCurrentProp(toggle ? el : undefined)}
-          />
-        ))}
-        {/*primaryProp && (
-            <div className="text-gray-600 flex flex-center ml-3">
-              {showProp ? (
-                <>
-                  {primaryProp.label}{" "}
-                  {(config?.props ?? []).length > 1 && (
-                    <ChevronDownIcon className="w-3 h-3 ml-1" />
-                  )}
-                </>
-              ) : (
-                <>
-                  <EllipsisHorizontalIcon className="w-4 h-4" />
-                </>
-              )}
+    <EditorFocusProvider>
+      <NestedPortal id={value.id}>
+        <FocusContainer isOpen={isOpen} isSelected={isSelected}>
+          <div
+            className="flex items-center font-normal text-yellow-400/90 text-sm p-2.5"
+            onMouseDown={(ev) => {
+              // preventDefault added because it prevents a conflict with lexical
+              // which sets the selection as well, overwriting the selection set here.
+              // This happens only when the editor is first selected without a cursor,
+              // and you then click the element.
+              if (!isSelected) {
+                if (isFocused) {
+                  ev.preventDefault();
+                }
+                select();
+              }
+            }}
+          >
+            <CubeIcon className="w-4 h-4 mr-5" />
+            {isOpen && (
+              <span className="text-gray-400">
+                Side<span className="opacity-50 mx-2">&gt;</span>
+              </span>
+            )}
+            {config?.label ?? value.element}
+            {(flatProps ?? []).map((el) => (
+              <PropPreview
+                key={el.id}
+                prop={el}
+                selected={currentProp === el}
+                select={(toggle) => setCurrentProp(toggle ? el : undefined)}
+              />
+            ))}
+            <div className="ml-auto">
+              <button
+                className="w-5 h-5 flex-center rounded-full bg-gray-800 hover:bg-gray-700 transition-colors"
+                onClick={() => {
+                  if (isOpen) {
+                    setPath([]);
+                  } else {
+                    setPath((ps) => [
+                      ...ps,
+                      {
+                        id: value.id,
+                        element: value.element,
+                        parentProp: parentProp,
+                      },
+                    ]);
+                  }
+                }}
+              >
+                {isOpen ? (
+                  <XMarkIcon className="w-3.5 h-3.5" />
+                ) : (
+                  <ChevronUpDownIcon className="w-4 h-4 rotate-45" />
+                )}
+              </button>
             </div>
-              )*/}
-        {/*<span className="text-xs text-gray-400 ml-auto">{libraryLabel}</span>*/}
-      </div>
-      {/*<button className="group h-full px-2 hover:bg-white/5 flex-center gap-1 rounded cursor-default transition-colors">
+          </div>
+          {/*<button className="group h-full px-2 hover:bg-white/5 flex-center gap-1 rounded cursor-default transition-colors">
           {component.label ?? value.type}{" "}
           <ChevronDownIcon className="w-3 h-3 opacity-0 group-hover:opacity-75 transition-opacity" />
       </button>*/}
-      {currentProp && (
-        <div className="-mx-5 px-2.5 cursor-auto">
-          <PrimaryProp key={currentProp.id} prop={currentProp} />
-        </div>
+          {currentProp && (
+            <div className="cursor-auto pt-0.5 pb-2.5">
+              <PrimaryProp key={currentProp.id} prop={currentProp} />
+            </div>
+          )}
+        </FocusContainer>
+      </NestedPortal>
+    </EditorFocusProvider>
+  );
+}
+
+function FocusContainer({
+  children,
+  isOpen,
+  isSelected,
+}: {
+  children: React.ReactNode;
+  isOpen: boolean;
+  isSelected: boolean;
+}) {
+  const isFocused = useIsFocused();
+
+  let ring = "";
+
+  if (isOpen) {
+    ring = "ring-1 dark:ring-yellow-200/50";
+  } else if (isSelected) {
+    ring = "ring-1 dark:ring-gray-200";
+  } else {
+    ring = "ring-1 ring-gray-200 dark:ring-gray-700";
+  }
+
+  return (
+    <div
+      className={cl(
+        "relative cursor-default",
+        "rounded selection:bg-transparent",
+        ring,
+        isFocused ? "bg-gray-800" : "bg-gray-850",
+        "transition-[background-color,box-shadow]"
       )}
+    >
+      {children}
     </div>
   );
 }
@@ -186,8 +230,9 @@ function PropPreview({
           ? "border-gray-600 text-gray-500"
           : "border-gray-750 text-gray-700 hover:border-gray-600 hover:text-gray-500"
       )}
-      onMouseDown={() => {
+      onMouseDown={(ev) => {
         select(!selected);
+        ev.stopPropagation();
       }}
     >
       <span className="font-normal">

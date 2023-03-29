@@ -25,7 +25,7 @@ const $selectNode = (nodeKey: string) => {
 
 export const useIsSelected = (nodeKey: string) => {
   const editor = useEditorContext();
-  const isFocused = useIsFocused(editor);
+  const isFocused = useIsFocused();
   const [isSelected_, setIsSelected] = React.useState(false);
   const isSelected = isSelected_ && isFocused;
   const [isPseudoSelected, setIsPseudoSelected] = React.useState(false);

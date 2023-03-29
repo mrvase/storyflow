@@ -239,7 +239,7 @@ export function Query({
     return token_;
   })();
 
-  const isFocused = useIsFocused(editor);
+  const isFocused = useIsFocused();
   const isEmpty = useIsEmpty(editor);
 
   const defaultQueryType =

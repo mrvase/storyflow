@@ -31,7 +31,7 @@ export function TemplateHeader({
   if (!template) return null;
 
   return (
-    <div className="px-14">
+    <div className="pl-[2.875rem] pr-2.5">
       <div
         className={cl(
           "w-full flex divide-x divide-gray-200 dark:divide-gray-700 rounded mt-1 mb-2 py-0.5",

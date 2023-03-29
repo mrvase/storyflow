@@ -67,7 +67,7 @@ function Content({
                       "opacity-25 hover:opacity-100 transition-opacity"
                     }
                   >
-                    <Icon className="w-4 h-4" />
+                    <Icon className="w-5 h-5" />
                   </div>
                 )}
               </div>

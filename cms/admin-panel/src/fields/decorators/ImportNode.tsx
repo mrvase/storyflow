@@ -66,7 +66,7 @@ function Decorator({
   return (
     <span
       className={cl(
-        "rounded-sm selection:bg-transparent relative",
+        "rounded selection:bg-transparent relative",
         isColumn
           ? "bg-sky-100 dark:bg-sky-400/20 text-sky-700/90 dark:text-sky-100/90"
           : "bg-teal-100 dark:bg-teal-400/20 text-teal-700/90 dark:text-teal-100/90",

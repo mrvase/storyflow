@@ -20,6 +20,13 @@ import {
 import { Menu } from "./Menu";
 import { useFieldConfig } from "../../documents/collab/hooks";
 import { useFieldId } from "../FieldIdContext";
+import {
+  $getComputation,
+  $getIndexesFromSelection,
+} from "../Editor/transforms";
+import { tools } from "shared/editor-tools";
+import { $createPromptNode } from "../decorators/PromptNode";
+import { $replaceWithBlocks } from "../Editor/insertComputation";
 
 export function Plus() {
   const editor = useEditorContext();
@@ -116,30 +123,45 @@ export function Plus() {
     });
   };
 
-  const Icon = mathMode ? CalculatorIcon : PaintBrushIcon;
+  const Icon = PaintBrushIcon; // mathMode ? CalculatorIcon : PaintBrushIcon;
 
   return isFocused && y !== null ? (
     <>
       <div
-        className="absolute top-0 left-0 w-4 h-4 m-1 mx-5 opacity-50 hover:opacity-100"
+        className="absolute top-0 left-0 w-4 h-4 m-1 mx-2.5 opacity-50 hover:opacity-100"
         style={{ transform: `translateY(${y}px)` }}
         onMouseDown={(ev) => {
           ev.preventDefault();
+          /*
           if (config?.restrictTo !== "number") {
             formatHeading();
           }
+          */
+          editor.update(() => {
+            const selection = $getSelection();
+            if (!$isRangeSelection(selection) && !$isNodeSelection(selection)) {
+              return;
+            }
+            const [start, end] = $getIndexesFromSelection(selection);
+            const streamFull = $getComputation($getRoot());
+            const stream = tools.slice(streamFull, start, end);
+
+            const paragraph = $createParagraphNode();
+            const prompt = $createPromptNode("\uFEFF\uFEFF", stream);
+            paragraph.append(prompt);
+
+            if ($isNodeSelection(selection)) {
+              const node = selection.getNodes()[0];
+              node.replace(paragraph);
+            } else {
+              $replaceWithBlocks(editor, [paragraph]);
+            }
+            prompt.select(2, 2);
+          });
         }}
       >
         <Icon className="w-4 h-4" />
       </div>
-      <Menu
-        isEmpty={isEmpty}
-        hasDocument={hasDocument}
-        blockIsFocused={blockIsFocused}
-        y={y}
-        mathMode={mathMode}
-        setMathMode={setMathMode}
-      />
     </>
   ) : null;
 }

@@ -3,6 +3,7 @@ import { useSortableItem } from "@storyflow/dnd";
 import {
   ChevronRightIcon,
   ChevronUpDownIcon,
+  ComputerDesktopIcon,
   LockClosedIcon,
 } from "@heroicons/react/24/outline";
 import React from "react";
@@ -16,6 +17,7 @@ import { useLabel } from "../documents/collab/hooks";
 import { FieldConfig, FieldId } from "@storyflow/backend/types";
 import { getTranslateDragEffect } from "../utils/dragEffects";
 import useIsFocused from "../utils/useIsFocused";
+import { useIsFocused as useIsEditorFocused } from "../editor/react/useIsFocused";
 import { Path } from "@storyflow/frontend/types";
 import { getDefaultField } from "@storyflow/backend/fields";
 import { IframeProvider } from "./builder/IframeContext";
@@ -25,6 +27,7 @@ import useTabs from "../layout/useTabs";
 import { getConfigFromType, useClientConfig } from "../client-config";
 import { isTemplateField } from "@storyflow/backend/ids";
 import { FieldToolbarPortal } from "../documents/FieldToolbar";
+import { EditorFocusProvider } from "../editor/react/useIsFocused";
 
 type Props = {
   fieldConfig: FieldConfig;
@@ -73,46 +76,76 @@ export function FieldContainer({
   });
 
   return (
-    <>
+    <EditorFocusProvider>
       <FieldToolbarPortal show={isFocused} />
       <IframeProvider>
-        <BuilderPathProvider>
-          <div
-            {...props}
-            {...handlers}
-            className={cl(
-              "relative grow shrink basis-0 group/container pb-2.5",
-              isFocused && "focused"
-            )}
-          >
-            <LabelBar
-              fieldConfig={fieldConfig}
-              dragHandleProps={dragHandleProps}
-              isFocused={isFocused}
-            />
-            {children}
-          </div>
-          <BuilderPortal id={fieldConfig.id}>
-            {(isOpen) => (
-              <FieldPage selected={isOpen} id={fieldConfig.id}>
-                <div
-                  className={cl("pt-5 -mt-2.5 relative grow shrink basis-0")}
-                >
-                  {/*<div
-                className={cl(
-                  "-z-10 absolute inset-2.5 top-0 rounded-lg pointer-events-none",
-                  "bg-gray-850"
-                  // "ring-1 ring-inset ring-gray-750"
+        <div
+          {...props}
+          {...handlers}
+          className={cl(
+            "relative grow shrink basis-0 group/container px-2.5 mt-5",
+            isFocused && "focused"
+          )}
+        >
+          <BuilderPathProvider>
+            <FocusContainer isFocused={isFocused}>
+              <LabelBar
+                fieldConfig={fieldConfig}
+                dragHandleProps={dragHandleProps}
+                isFocused={isFocused}
+              />
+              {children}
+              <BuilderPortal id={fieldConfig.id}>
+                {(isOpen) => (
+                  <FieldPage selected={isOpen} id={fieldConfig.id}>
+                    <div
+                      className={cl(
+                        "pt-5 -mt-2.5 relative grow shrink basis-0"
+                      )}
+                    >
+                      {children}
+                    </div>
+                  </FieldPage>
                 )}
-                />*/}
-                  {children}
-                </div>
-              </FieldPage>
-            )}
-          </BuilderPortal>
-        </BuilderPathProvider>
+              </BuilderPortal>
+            </FocusContainer>
+          </BuilderPathProvider>
+        </div>
       </IframeProvider>
-    </>
+    </EditorFocusProvider>
+  );
+}
+
+function FocusContainer({
+  children,
+  isFocused: isFieldFocused,
+}: {
+  children: React.ReactNode;
+  isFocused: boolean;
+}) {
+  const isEditorFocused = useIsEditorFocused();
+  const [fullPath] = useBuilderPath();
+
+  let ring = "";
+
+  if (isEditorFocused) {
+    ring = "ring-1 bg-gray-50 dark:ring-yellow-200/50 dark:bg-gray-800";
+  } else if (isFieldFocused) {
+    ring = "ring-1 ring-yellow-200/25";
+  } else {
+    ring = "ring-1 ring-transparent group-hover/container:ring-gray-800";
+  }
+
+  return (
+    <div
+      className={cl(
+        ring,
+        "py-2.5 rounded-md ring-1",
+        "transition-[background-color,box-shadow]"
+      )}
+    >
+      {children}
+    </div>
   );
 }
 
@@ -125,8 +158,6 @@ function LabelBar({
   dragHandleProps: any;
   isFocused: boolean;
 }) {
-  const [path, setPath] = useBuilderPath();
-
   const isNative = !isTemplateField(fieldConfig.id);
 
   const [isEditing] = [true]; //useLocalStorage<boolean>("editing-articles", false);
@@ -141,28 +172,18 @@ function LabelBar({
   };
 
   return (
-    <div
-      className={cl(
-        "flex px-5 pt-5",
-        path.length === 0 ? "h-12 pb-2" : "h-[3.75rem] pb-5"
-      )}
-      onDoubleClick={fullscreen}
-    >
+    <div className={cl("flex px-2.5", "h-8 pb-3")} onDoubleClick={fullscreen}>
       <Dot
         id={fieldConfig.id}
         isNative={isNative}
         dragHandleProps={isEditing ? dragHandleProps : {}}
       />
       <div className={cl("ml-5 flex")}>
-        {path.length === 0 ? (
-          <Label
-            id={fieldConfig.id}
-            isNative={isNative}
-            // isEditable={isNative && isEditing}
-          />
-        ) : (
-          <PathMap path={path} setPath={setPath} />
-        )}
+        <Label
+          id={fieldConfig.id}
+          isNative={isNative}
+          // isEditable={isNative && isEditing}
+        />
       </div>
       {specialFieldConfig && (
         <div className="ml-3 backdrop:mr-8 text-xs my-0.5 font-light bg-yellow-300 text-yellow-800/90 dark:bg-yellow-400/10 dark:text-yellow-200/75 px-1.5 rounded whitespace-nowrap">
@@ -171,16 +192,16 @@ function LabelBar({
       )}
       <button
         className={cl(
-          "ml-auto shrink-0 text-sm font-light flex-center -m-0.5 p-0.5 w-5 h-5 bg-gray-750 rounded-full",
+          "ml-auto shrink-0 text-sm font-light flex-center gap-2 px-2 h-7 -my-1 bg-gray-750 rounded",
           isFocused
-            ? "opacity-75"
-            : "opacity-0 group-hover/container:opacity-50",
+            ? "opacity-50"
+            : "opacity-0 group-hover/container:opacity-20",
           // "opacity-0 group-hover/container:opacity-50",
           "group-hover/container:hover:opacity-100 transition-opacity"
         )}
         onClick={fullscreen}
       >
-        <ChevronUpDownIcon className="w-4 h-4 rotate-45" />
+        <ComputerDesktopIcon className="w-4 h-4" /> Preview
       </button>
     </div>
   );

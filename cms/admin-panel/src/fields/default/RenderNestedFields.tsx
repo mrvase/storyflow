@@ -60,12 +60,9 @@ import { calculateFn } from "./calculateFn";
 import { getPreview } from "./getPreview";
 import { Placeholder } from "./Placeholder";
 import { Plus } from "./Plus";
-import { useEditorContext } from "../../editor/react/EditorProvider";
 import { isSyntaxTree } from "@storyflow/backend/syntax-tree";
 import { useIsFocused } from "../../editor/react/useIsFocused";
 import { TemplateHeader } from "./TemplateHeader";
-import { useIsSelected } from "../decorators/useIsSelected";
-import { caretClasses } from "../decorators/caret";
 
 const findImportsFn = (value: SyntaxTree) => {
   const imports: NestedField[] = [];
@@ -84,24 +81,6 @@ const findImportsFn = (value: SyntaxTree) => {
 
   return imports;
 };
-
-function FocusBg() {
-  const editor = useEditorContext();
-  const isFocused = useIsFocused(editor);
-  const [fullPath] = useBuilderPath();
-  return (
-    <div
-      className={cl(
-        "[.focused_&]:ring-1 [.focused_&]:ring-gray-200 dark:[.focused_&]:ring-yellow-200/50",
-        isFocused || fullPath.length > 0
-          ? "bg-gray-50 dark:ring-yellow-400/10 dark:bg-gray-800 ring-1"
-          : "bg-transparent ring-gray-100 dark:ring-gray-800 group-hover/container:ring-1",
-        "transition-[background-color,box-shadow]",
-        "-z-10 absolute inset-2.5 rounded-md pointer-events-none"
-      )}
-    />
-  );
-}
 
 export function WritableDefaultField({
   id,
@@ -259,11 +238,13 @@ export function WritableDefaultField({
         initialValue={initialEditorValue}
         setValue={setValue}
       >
-        <div className={cl("relative px-14", hidden && "hidden")}>
+        <div
+          className={cl("relative pl-[2.875rem] pr-2.5", hidden && "hidden")}
+        >
           <Placeholder />
           <ContentEditable
             className={cl(
-              "peer grow editor outline-none pb-3.5 font-light selection:bg-gray-700",
+              "peer grow editor outline-none font-light selection:bg-gray-700",
               "preview text-base leading-6"
               // mode === null || mode === "slug" ? "calculator" : ""
             )}
@@ -271,7 +252,6 @@ export function WritableDefaultField({
           />
           <Plus />
         </div>
-        {id === rootId && <FocusBg />}
       </Editor>
       {elements.map((element) => (
         <RenderNestedElement

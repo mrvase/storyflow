@@ -114,8 +114,9 @@ a {
   content: "";
   position: absolute;
   top: 4px;
-  width: 100%;
-  border-bottom: 2px #fff8 solid;
+  width: 40px;
+  left: 0px;
+  border-bottom: 1px #fff solid;
   animation: blink 1000ms steps(1) infinite;
 }
 
@@ -300,13 +301,13 @@ input[type="range"]:focus::-moz-range-thumb {
 }
 
 .editor:has(.prompt-container) {
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(255, 255, 255, 0.65);
   transition: color 0.15s ease;
 }
 
 .prompt-container {
   padding: 0.125rem 0.375rem;
-  margin: -0.125rem 0.125rem;
+  margin: -0.125rem 0.25rem;
   background: linear-gradient(
     60deg,
     #f79533,
@@ -325,9 +326,10 @@ input[type="range"]:focus::-moz-range-thumb {
 }
 
 .prompt-container:before {
-  content: "#";
+  content: "/";
   opacity: 0.5;
-  transform: scale(0.6);
+  transform: scale(0.9);
   margin-right: 0.375rem;
   position: relative;
+  display: inline-block;
 }

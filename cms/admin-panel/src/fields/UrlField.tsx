@@ -281,10 +281,9 @@ export default function UrlField({
   }
 
   return (
-    <div className="px-5">
-      <div className="pr-8">
-        <div className="outline-none rounded font-light flex items-center px-3 mb-2 bg-gray-800 ml-9 ring-button">
-          {/*parents[0] ? (
+    <div className="px-2.5">
+      <div className="outline-none rounded font-light flex items-center px-3 mb-2 bg-gray-800 ml-9 ring-button">
+        {/*parents[0] ? (
             <Link
               to={replacePage(parents[0]?._id ?? "")}
               className={cl(
@@ -300,130 +299,129 @@ export default function UrlField({
           ) : (
             <div className="w-9 h-4" />
           )*/}
-          <Link
-            to={replacePage(parents[0]?._id ?? "")}
-            className="mr-3 opacity-50 hover:opacity-75 transition-opacity"
-            data-focus-ignore="true"
-          >
-            <HomeIcon className="w-4 h-4" />
-          </Link>
-          <Link
-            to={replacePage(parents[0]?._id ?? "")}
-            className="opacity-50 hover:opacity-75 transition-opacity"
-            data-focus-ignore="true"
-          >
-            www.kfs.dk
-          </Link>
-          <div className="px-2 text-gray-300 dark:text-gray-600 text-sm">/</div>
-          {parentSlugs.slice(1).map((el, index) => (
-            <React.Fragment key={parents[index + 1]?._id}>
-              <Link
-                to={replacePage(parents[index + 1]?._id ?? "")}
-                className={cl("truncate opacity-50 hover:opacity-75 shrink-0")}
-                data-focus-ignore="true"
-              >
-                {el || <HomeIcon className="w-3 h-3" />}
-              </Link>
-              <div
-                className={cl(
-                  "cursor-default px-2 text-gray-300 dark:text-gray-600 text-sm transition-opacity",
-                  index + 1 === parentSlugs.length - 1 &&
-                    slug === "" &&
-                    "opacity-0"
-                )}
-              >
-                /
-              </div>
-            </React.Fragment>
-          ))}
-          {slug === "*" && (
-            <button
-              className="px-1.5 h-5 bg-fuchsia-200 dark:bg-fuchsia-900 rounded-full shrink-0 flex-center mr-1.5 cursor-alias"
-              onMouseDown={(ev) => {
-                ev.preventDefault();
-                ev.stopPropagation();
-                addContext.dispatch("param1");
-              }}
+        <Link
+          to={replacePage(parents[0]?._id ?? "")}
+          className="mr-3 opacity-50 hover:opacity-75 transition-opacity"
+          data-focus-ignore="true"
+        >
+          <HomeIcon className="w-4 h-4" />
+        </Link>
+        <Link
+          to={replacePage(parents[0]?._id ?? "")}
+          className="opacity-50 hover:opacity-75 transition-opacity"
+          data-focus-ignore="true"
+        >
+          www.kfs.dk
+        </Link>
+        <div className="px-2 text-gray-300 dark:text-gray-600 text-sm">/</div>
+        {parentSlugs.slice(1).map((el, index) => (
+          <React.Fragment key={parents[index + 1]?._id}>
+            <Link
+              to={replacePage(parents[index + 1]?._id ?? "")}
+              className={cl("truncate opacity-50 hover:opacity-75 shrink-0")}
+              data-focus-ignore="true"
             >
-              <StarIcon className="w-3 h-3 mr-1" />{" "}
-              <LinkIcon className="w-3 h-3 opacity-50" />
-            </button>
+              {el || <HomeIcon className="w-3 h-3" />}
+            </Link>
+            <div
+              className={cl(
+                "cursor-default px-2 text-gray-300 dark:text-gray-600 text-sm transition-opacity",
+                index + 1 === parentSlugs.length - 1 &&
+                  slug === "" &&
+                  "opacity-0"
+              )}
+            >
+              /
+            </div>
+          </React.Fragment>
+        ))}
+        {slug === "*" && (
+          <button
+            className="px-1.5 h-5 bg-fuchsia-200 dark:bg-fuchsia-900 rounded-full shrink-0 flex-center mr-1.5 cursor-alias"
+            onMouseDown={(ev) => {
+              ev.preventDefault();
+              ev.stopPropagation();
+              addContext.dispatch("param1");
+            }}
+          >
+            <StarIcon className="w-3 h-3 mr-1" />{" "}
+            <LinkIcon className="w-3 h-3 opacity-50" />
+          </button>
+        )}
+        <input
+          type="text"
+          className={cl(
+            "w-full py-1.5 bg-transparent outline-none placeholder:text-white/25"
           )}
+          value={slug === "*" ? "" : slug}
+          onChange={(ev) => handleChange(ev.target.value)}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          onKeyDown={(ev) => {
+            if (slug === "*" && ev.key === "Backspace") {
+              handleChange("");
+            }
+          }}
+          placeholder={slug !== "*" ? "[forside]" : ""}
+        />
+        {slug === "*" && (
           <input
             type="text"
-            className={cl(
-              "w-full py-1.5 bg-transparent outline-none placeholder:text-white/25"
-            )}
-            value={slug === "*" ? "" : slug}
-            onChange={(ev) => handleChange(ev.target.value)}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
-            onKeyDown={(ev) => {
-              if (slug === "*" && ev.key === "Backspace") {
-                handleChange("");
-              }
+            placeholder="indtast slug-eksempel"
+            className="w-full bg-transparent outline-none font-light border border-gray-200 dark:border-gray-600 rounded px-2 text-sm py-0.5"
+            value={values.param1}
+            onChange={(ev) => {
+              setValues({ param1: ev.target.value });
             }}
-            placeholder={slug !== "*" ? "[forside]" : ""}
           />
-          {slug === "*" && (
-            <input
-              type="text"
-              placeholder="indtast slug-eksempel"
-              className="w-full bg-transparent outline-none font-light border border-gray-200 dark:border-gray-600 rounded px-2 text-sm py-0.5"
-              value={values.param1}
-              onChange={(ev) => {
-                setValues({ param1: ev.target.value });
-              }}
-            />
-          )}
-        </div>
-        {getTemplateDocumentId(id) ===
-          getTemplateDocumentId(DEFAULT_FIELDS.url.id) && (
-          <div className="flex items-center pb-5 ml-5">
+        )}
+      </div>
+      {getTemplateDocumentId(id) ===
+        getTemplateDocumentId(DEFAULT_FIELDS.url.id) && (
+        <div className="flex items-center ml-5">
+          <button
+            className="p-1 w-6 h-6 -ml-1 mr-4 opacity-50 hover:opacity-100 transition-opacity"
+            onClick={() =>
+              ctx.addArticleWithUrl({
+                _id: documentId,
+                record,
+              })
+            }
+          >
+            {/*<PlusIcon className="w-4 h-4" />*/}
+          </button>
+          <div className="flex flex-wrap gap-2">
+            {children.map((el, index) => (
+              <Link
+                key={el._id}
+                to={replacePage(el._id)}
+                className="group text-sm font-light flex-center gap-2"
+                data-focus-ignore="true"
+              >
+                <SubPageLine first={index === 0} />
+                <span className="opacity-75 group-hover:opacity-100 transition-opacity relative overflow-hidden bg-gray-800 px-1 py-0.5 rounded after:absolute after:bottom-0 after:left-0 after:right-0 after:border-b-2 after:border-green-300/50">
+                  {getDocumentLabel(el)}
+                </span>
+              </Link>
+            ))}
             <button
-              className="p-1 w-6 h-6 -ml-1 mr-4 opacity-50 hover:opacity-100 transition-opacity"
+              className="group text-sm font-light flex-center gap-2"
               onClick={() =>
                 ctx.addArticleWithUrl({
                   _id: documentId,
                   record,
                 })
               }
+              data-focus-ignore="true"
             >
-              {/*<PlusIcon className="w-4 h-4" />*/}
+              <SubPageLine first={children.length === 0} />
+              <span className="opacity-40 group-hover:opacity-100 transition-opacity italic">
+                Tilføj underside
+              </span>
             </button>
-            <div className="flex flex-wrap gap-2">
-              {children.map((el, index) => (
-                <Link
-                  key={el._id}
-                  to={replacePage(el._id)}
-                  className="group text-sm font-light flex-center gap-2"
-                  data-focus-ignore="true"
-                >
-                  <SubPageLine first={index === 0} />
-                  <span className="opacity-75 group-hover:opacity-100 transition-opacity relative overflow-hidden bg-gray-800 px-1 py-0.5 rounded after:absolute after:bottom-0 after:left-0 after:right-0 after:border-b-2 after:border-green-300/50">
-                    {getDocumentLabel(el)}
-                  </span>
-                </Link>
-              ))}
-              <button
-                className="group text-sm font-light flex-center gap-2"
-                onClick={() =>
-                  ctx.addArticleWithUrl({
-                    _id: documentId,
-                    record,
-                  })
-                }
-                data-focus-ignore="true"
-              >
-                <SubPageLine first={children.length === 0} />
-                <span className="opacity-40 group-hover:opacity-100 transition-opacity italic">
-                  Tilføj underside
-                </span>
-              </button>
-            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

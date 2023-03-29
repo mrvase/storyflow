@@ -36,7 +36,7 @@ function Decorator({
       <div
         className={cl(
           "flex flex-col gap-2 gradient-border",
-          "relative z-0 p-2.5 pb-0",
+          "relative z-0 py-2.5",
           "rounded selection:bg-transparent",
           isSelected && "selected"
         )}
@@ -46,18 +46,16 @@ function Decorator({
           }
         }}
       >
-        <div className="-mx-5 -mb-1">
-          <WritableDefaultField
-            id={id}
-            initialValue={{
-              type: "root",
-              children: [],
-            }}
-            fieldConfig={{
-              type: "default",
-            }}
-          />
-        </div>
+        <WritableDefaultField
+          id={id}
+          initialValue={{
+            type: "root",
+            children: [],
+          }}
+          fieldConfig={{
+            type: "default",
+          }}
+        />
         {/*<input
           type="text"
           className="px-1 w-full bg-transparent outline-none"

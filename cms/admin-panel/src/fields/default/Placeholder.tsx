@@ -5,11 +5,11 @@ import { useIsFocused } from "../../editor/react/useIsFocused";
 
 export function Placeholder() {
   const editor = useEditorContext();
-  const isFocused = useIsFocused(editor);
+  const isFocused = useIsFocused();
   const isEmpty = useIsEmpty(editor);
   return isEmpty ? (
     <div className="absolute pointer-events-none font-light opacity-25 select-none">
-      {isFocused ? 'Tast "@" for genveje' : "Ikke udfyldt"}
+      {isFocused ? 'Skriv "/" for genveje' : "Ikke udfyldt"}
     </div>
   ) : null;
 }

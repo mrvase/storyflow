@@ -9,7 +9,10 @@ import React from "react";
 import { $getComputation, $initializeEditor } from "./transforms";
 import { TokenStream } from "@storyflow/backend/types";
 import { Reconciler } from "./Reconciler";
-import { useIsFocused } from "../../editor/react/useIsFocused";
+import {
+  EditorFocusPlugin,
+  useIsFocused,
+} from "../../editor/react/useIsFocused";
 import { useClientConfig } from "../../client-config";
 import { useFieldFocus } from "../../field-focus";
 import { $getRoot } from "lexical";
@@ -62,7 +65,8 @@ export default function Editor({
     >
       <ContentPlugin />
       <CopyPastePlugin />
-      <FocusPlugin />
+      <EditorFocusPlugin />
+      <FieldFocusPlugin />
       {push && register && target ? (
         <Query push={push}>
           {(pushWithQuery) => (
@@ -89,10 +93,9 @@ export default function Editor({
   );
 }
 
-function FocusPlugin() {
+function FieldFocusPlugin() {
   const id = useFieldId();
-  const editor = useEditorContext();
-  const isFocused = useIsFocused(editor);
+  const isFocused = useIsFocused();
   const [, setFocused] = useFieldFocus();
 
   const prevIsFocused = React.useRef(false);

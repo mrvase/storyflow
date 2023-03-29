@@ -107,9 +107,6 @@ export const DEFAULT_TEMPLATES = {
         template: getTemplateDocumentId(DEFAULT_FIELDS.url.id),
       },
       {
-        template: getTemplateDocumentId(DEFAULT_FIELDS.layout.id),
-      },
-      {
         template: getTemplateDocumentId(DEFAULT_FIELDS.page.id),
       },
     ],
