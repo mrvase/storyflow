@@ -18,36 +18,15 @@ import { type QueueListener } from "@storyflow/state";
 import { useFieldId } from "../FieldIdContext";
 
 import { HeadingNode } from "../../editor/react/HeadingNode";
-import { DocumentNode } from "../decorators/DocumentNode";
-import { ContextNode } from "../decorators/ContextNode";
-import { FolderNode } from "../decorators/FolderNode";
-import { ImportNode } from "../decorators/ImportNode";
-import { OperatorNode } from "../decorators/OperatorNode";
-import { ParameterNode } from "../decorators/ParameterNode";
-import { FunctionNode } from "../decorators/FunctionNode";
-import { TokenNode } from "../decorators/TokenNode";
-import { LayoutElementNode } from "../decorators/LayoutElementNode";
-import { InlineLayoutElementNode } from "../decorators/InlineLayoutElementNode";
-import { CreatorNode } from "../decorators/CreatorNode";
+import nodes from "../decorators/nodes";
+import { CopyPastePlugin } from "./CopyPastePlugin";
+import { Prompt } from "./Prompt";
 
 const editorConfig = {
   namespace: "EDITOR",
   theme: {},
   onError: () => {},
-  nodes: [
-    ImportNode,
-    OperatorNode,
-    ParameterNode,
-    FunctionNode,
-    LayoutElementNode,
-    InlineLayoutElementNode,
-    DocumentNode,
-    HeadingNode,
-    TokenNode,
-    ContextNode,
-    FolderNode,
-    CreatorNode,
-  ],
+  nodes: [HeadingNode, ...nodes],
 };
 
 export default function Editor({
@@ -82,8 +61,7 @@ export default function Editor({
       }}
     >
       <ContentPlugin />
-      {/*<CopyPastePlugin />*/}
-      <DecoratorPlugin />
+      <CopyPastePlugin />
       <FocusPlugin />
       {push && register && target ? (
         <Query push={push}>
@@ -100,7 +78,13 @@ export default function Editor({
       ) : (
         <Setter setValue={setValue} />
       )}
+      <Prompt />
       {children}
+      <DecoratorPlugin />
+      {/*
+      putting DecoratorPlugin after ContentEditable fixes flushSync error.
+      Caused by flushSync being triggered on editorState initialization in React.useMemo
+      */}
     </EditorProvider>
   );
 }

@@ -12,11 +12,11 @@ import {
 import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
 import { caretClasses } from "./caret";
-import { Parameter } from "@storyflow/backend/types";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
+import { Operator } from "@storyflow/backend/types";
 
-function Decorator({ value, nodeKey }: { value: Parameter; nodeKey: string }) {
-  const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
+function Decorator({ nodeKey }: { value: { ",": true }; nodeKey: string }) {
+  const { isSelected, select, isPseudoSelected } = useIsSelected(nodeKey);
 
   return (
     <div
@@ -24,21 +24,20 @@ function Decorator({ value, nodeKey }: { value: Parameter; nodeKey: string }) {
     >
       <span
         className={cl(
-          "relative bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-800 dark:text-fuchsia-200 font-serif",
-          "w-4 h-4 my-1 flex-center rounded-full  text-sm pb-[2px] selection:bg-transparent",
-          //isSelected && "ring-2 ring-amber-300",
-          "ring-1 ring-fuchsia-200 dark:ring-fuchsia-700",
+          "relative w-2 flex-center opacity-50", // selection:bg-transparent
+          // isSelected && "ring-2 ring-amber-300",
           isPseudoSelected && caretClasses
         )}
         onMouseDown={() => select()}
       >
-        {value.x ?? "x"}
+        ,
       </span>
     </div>
   );
 }
-const type = "parameter";
-type TokenType = Parameter;
+
+const type = "comma";
+type TokenType = { ",": true };
 
 export default class ChildNode extends TokenStreamNode<typeof type, TokenType> {
   static getType(): string {
@@ -72,10 +71,10 @@ export default class ChildNode extends TokenStreamNode<typeof type, TokenType> {
   }
 }
 
-export function $createParameterNode(value: TokenType): ChildNode {
+export function $createCommaNode(value: TokenType): ChildNode {
   return new ChildNode(value);
 }
 
-export function $isParameterNode(node: LexicalNode): boolean {
+export function $isCommaNode(node: LexicalNode): boolean {
   return node instanceof ChildNode;
 }

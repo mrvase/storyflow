@@ -1,6 +1,6 @@
 import React from "react";
 
-export const ParentPropContext = React.createContext<string | null>(null);
+const ParentPropContext = React.createContext<string | null>(null);
 
 export const ParentProp = ({
   children,
@@ -13,3 +13,5 @@ export const ParentProp = ({
     {children}
   </ParentPropContext.Provider>
 );
+
+export const useParentProp = () => React.useContext(ParentPropContext);

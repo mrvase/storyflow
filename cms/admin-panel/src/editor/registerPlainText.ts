@@ -14,6 +14,7 @@ import {
   $isNodeSelection,
   $isRootNode,
   $isTextNode,
+  $setSelection,
   COPY_COMMAND,
   FORMAT_TEXT_COMMAND,
   KEY_ARROW_DOWN_COMMAND,
@@ -49,6 +50,7 @@ import {
 import { CAN_USE_BEFORE_INPUT, IS_IOS, IS_SAFARI } from "./utils/environment";
 import { mergeRegister } from "./utils/mergeRegister";
 import { LibraryConfig } from "@storyflow/frontend/types";
+import $createRangeSelection from "./createRangeSelection";
 
 /**
  * Tre scenarier for tekst
@@ -354,25 +356,25 @@ export function registerPlainText(
       (event) => {
         const selection = $getSelection();
 
-        if (!$isRangeSelection(selection)) {
-          if ($isNodeSelection(selection)) {
-            const nodes = selection.getNodes();
-            if (nodes.length) {
-              const last = nodes[nodes.length - 1];
-              const node = $createParagraphNode();
-              // node.select();
-              /*
-              const textNode = $createTextNode("");
-              node.append(textNode);
-              */
-              if (event?.shiftKey) {
-                last.insertBefore(node, false);
-              } else {
-                last.insertAfter(node, false);
-              }
-              return true;
+        let resolved: boolean = false;
+
+        if ($isNodeSelection(selection)) {
+          const nodes = selection.getNodes();
+          if (nodes.length) {
+            const last = nodes[nodes.length - 1];
+            const node = $createParagraphNode();
+            const textNode = $createTextNode();
+            node.append(textNode);
+            if (event?.shiftKey) {
+              last.insertBefore(node, false);
+              node.select();
+            } else {
+              last.insertAfter(node, false);
+              node.select();
             }
+            resolved = true;
           }
+        } else if (!$isRangeSelection(selection)) {
           return false;
         }
 
@@ -389,6 +391,10 @@ export function registerPlainText(
           }
 
           event.preventDefault();
+        }
+
+        if (resolved) {
+          return true;
         }
 
         return editor.dispatchCommand(INSERT_PARAGRAPH_COMMAND, undefined);

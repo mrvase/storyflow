@@ -13,30 +13,25 @@ import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
 import { caretClasses } from "./caret";
 import { NestedElement, ValueArray } from "@storyflow/backend/types";
-import { ParentPropContext } from "../default/ParentPropContext";
+import { useParentProp } from "../default/ParentPropContext";
 import { stringifyPath, useBuilderPath } from "../BuilderPath";
 import { getConfigFromType, useClientConfig } from "../../client-config";
 import { useGlobalState } from "../../state/state";
 import { useFieldId } from "../FieldIdContext";
+import { computeFieldId, getIdFromString } from "@storyflow/backend/ids";
+import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 
-function InlineLayoutElementDecorator({
+function Decorator({
   value,
   nodeKey,
 }: {
   value: NestedElement;
   nodeKey: string;
 }) {
-  const [path, setPath] = useBuilderPath();
-  const parentProp = React.useContext(ParentPropContext);
+  const [, setPath] = useBuilderPath();
+  const parentProp = useParentProp();
 
-  const pathString = stringifyPath(path);
-
-  const id = useFieldId();
-
-  const parentPath = pathString ? `${pathString}/${parentProp}` : "";
-  const pathToLabel = `${id}${parentPath ? "." : ""}${parentPath}.${
-    value.id
-  }/label`;
+  const pathToLabel = computeFieldId(value.id, getIdFromString("label"));
 
   const [output] = useGlobalState<ValueArray>(pathToLabel);
 
@@ -74,7 +69,7 @@ function InlineLayoutElementDecorator({
             {
               id: value.id,
               label: config?.label ?? value.element,
-              parentProp: parentProp,
+              parentProp,
             },
           ]);
         }
@@ -86,101 +81,45 @@ function InlineLayoutElementDecorator({
   );
 }
 
-function convertImportElement(
-  domNode: HTMLElement
-): DOMConversionOutput | null {
-  return null;
-}
+const type = "inline-layout-element";
+type TokenType = NestedElement & { inline: true };
 
-export type SerializedInlineLayoutElementNode = Spread<
-  {
-    type: "inline-layout-element";
-    value: NestedElement;
-  },
-  SerializedLexicalNode
->;
-
-export class InlineLayoutElementNode extends DecoratorNode<React.ReactNode> {
-  __value: NestedElement;
-
+export default class ChildNode extends TokenStreamNode<typeof type, TokenType> {
   static getType(): string {
-    return "inline-layout-element";
+    return type;
   }
 
-  static clone(node: InlineLayoutElementNode): InlineLayoutElementNode {
-    return new InlineLayoutElementNode(node.__value, node.__key);
+  static clone(node: ChildNode): ChildNode {
+    return new ChildNode(node.__token, node.__key);
   }
 
-  constructor(value: NestedElement, key?: NodeKey) {
-    super(key);
-    this.__value = value;
+  constructor(token: TokenType, key?: NodeKey) {
+    super(type, token, key);
   }
 
-  createDOM(): HTMLElement {
-    const element = document.createElement("span");
-    element.setAttribute("data-lexical-inline-layout-element", "true");
-    element.setAttribute("data-lexical-inline", "true");
-    return element;
+  isInline(): true {
+    return true;
   }
 
-  updateDOM(): false {
-    return false;
-  }
-
-  getTextContent(): string {
-    return `%`;
+  exportJSON(): SerializedTokenStreamNode<typeof type, TokenType> {
+    return super.exportJSON();
   }
 
   static importJSON(
-    serializedLayoutElementNode: SerializedInlineLayoutElementNode
-  ): InlineLayoutElementNode {
-    return $createInlineLayoutElementNode(serializedLayoutElementNode.value);
-  }
-
-  exportJSON(): SerializedInlineLayoutElementNode {
-    const self = this.getLatest();
-    return {
-      type: "inline-layout-element",
-      value: self.__value,
-      version: 1,
-    };
-  }
-
-  exportDOM(): DOMExportOutput {
-    const element = document.createElement("span");
-    element.setAttribute("data-lexical-inline-layout-element", "true");
-    element.setAttribute("data-lexical-inline", "true");
-    element.textContent = `%`;
-    return { element };
-  }
-
-  static importDOM(): DOMConversionMap | null {
-    return {
-      span: (domNode: HTMLElement) => {
-        if (!domNode.hasAttribute("data-lexical-inline-layout-element")) {
-          return null as any;
-        }
-        return {
-          conversion: convertImportElement,
-          priority: 1,
-        };
-      },
-    };
+    serializedNode: SerializedTokenStreamNode<typeof type, TokenType>
+  ) {
+    return new ChildNode(serializedNode.token);
   }
 
   decorate(): React.ReactNode {
-    return (
-      <InlineLayoutElementDecorator value={this.__value} nodeKey={this.__key} />
-    );
+    return <Decorator nodeKey={this.__key} value={this.__token} />;
   }
 }
 
-export function $createInlineLayoutElementNode(
-  element: NestedElement
-): InlineLayoutElementNode {
-  return new InlineLayoutElementNode(element);
+export function $createInlineLayoutElementNode(value: TokenType): ChildNode {
+  return new ChildNode(value);
 }
 
 export function $isInlineLayoutElementNode(node: LexicalNode): boolean {
-  return node instanceof InlineLayoutElementNode;
+  return node instanceof ChildNode;
 }

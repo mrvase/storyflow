@@ -20,6 +20,7 @@ import {
   NestedDocument,
   Value,
   ValueArray,
+  TokenStream,
 } from "@storyflow/backend/types";
 import { useBuilderPath } from "../BuilderPath";
 import {
@@ -43,8 +44,9 @@ import {
 import { useClient } from "../../client";
 import { getPreview } from "../default/getPreview";
 import { TEMPLATE_FOLDER } from "@storyflow/backend/constants";
+import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 
-function DocumentDecorator({
+function Decorator({
   value,
   nodeKey,
 }: {
@@ -242,99 +244,41 @@ function TemplateSelect({
   );
 }
 
-function convertImportElement(
-  domNode: HTMLElement
-): DOMConversionOutput | null {
-  return null;
-}
+const type = "nested-document";
+type TokenType = NestedDocument;
 
-export type SerializedDocumentNode = Spread<
-  {
-    type: "nested-document";
-    value: NestedDocument;
-  },
-  SerializedLexicalNode
->;
-
-export class DocumentNode extends DecoratorNode<React.ReactNode> {
-  __value: NestedDocument;
-
+export default class ChildNode extends TokenStreamNode<typeof type, TokenType> {
   static getType(): string {
-    return "nested-document";
+    return type;
   }
 
-  static clone(node: DocumentNode): DocumentNode {
-    return new DocumentNode(node.__value, node.__key);
+  static clone(node: ChildNode): ChildNode {
+    return new ChildNode(node.__token, node.__key);
   }
 
-  constructor(value: NestedDocument, key?: NodeKey) {
-    super(key);
-    this.__value = value;
+  constructor(token: TokenType, key?: NodeKey) {
+    super(type, token, key);
   }
 
-  createDOM(): HTMLElement {
-    const element = document.createElement("div");
-    element.setAttribute("data-lexical-nested-document", "true");
-    return element;
-  }
-
-  updateDOM(): false {
-    return false;
-  }
-
-  isInline(): false {
-    return false;
-  }
-
-  getTextContent(): string {
-    return `&`;
+  exportJSON(): SerializedTokenStreamNode<typeof type, TokenType> {
+    return super.exportJSON();
   }
 
   static importJSON(
-    serializedDocumentNode: SerializedDocumentNode
-  ): DocumentNode {
-    return $createDocumentNode(serializedDocumentNode.value);
-  }
-
-  exportJSON(): SerializedDocumentNode {
-    const self = this.getLatest();
-    return {
-      type: "nested-document",
-      value: self.__value,
-      version: 1,
-    };
-  }
-
-  exportDOM(): DOMExportOutput {
-    const element = document.createElement("div");
-    element.setAttribute("data-lexical-nested-document", "true");
-    element.textContent = `%`;
-    return { element };
-  }
-
-  static importDOM(): DOMConversionMap | null {
-    return {
-      span: (domNode: HTMLElement) => {
-        if (!domNode.hasAttribute("data-lexical-nested-document")) {
-          return null as any;
-        }
-        return {
-          conversion: convertImportElement,
-          priority: 1,
-        };
-      },
-    };
+    serializedNode: SerializedTokenStreamNode<typeof type, TokenType>
+  ) {
+    return new ChildNode(serializedNode.token);
   }
 
   decorate(): React.ReactNode {
-    return <DocumentDecorator value={this.__value} nodeKey={this.__key} />;
+    return <Decorator nodeKey={this.__key} value={this.__token} />;
   }
 }
 
-export function $createDocumentNode(element: NestedDocument): DocumentNode {
-  return new DocumentNode(element);
+export function $createDocumentNode(value: TokenType): ChildNode {
+  return new ChildNode(value);
 }
 
 export function $isDocumentNode(node: LexicalNode): boolean {
-  return node instanceof DocumentNode;
+  return node instanceof ChildNode;
 }

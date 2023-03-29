@@ -81,7 +81,7 @@ export function FieldContainer({
             {...props}
             {...handlers}
             className={cl(
-              "relative grow shrink basis-0 group/container",
+              "relative grow shrink basis-0 group/container pb-2.5",
               isFocused && "focused"
             )}
           >

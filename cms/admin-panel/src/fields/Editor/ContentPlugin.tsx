@@ -25,7 +25,7 @@ import { useClientConfig } from "../../client-config";
 import { useFieldConfig } from "../../documents/collab/hooks";
 import { useFieldId } from "../FieldIdContext";
 import { createComponent } from "./createComponent";
-import { insertComputation } from "./insertComputation";
+import { insertComputation, replaceWithComputation } from "./insertComputation";
 import { useDocumentIdGenerator } from "../../id-generator";
 import { getDocumentId } from "@storyflow/backend/ids";
 
@@ -59,6 +59,7 @@ function useEditorEvents() {
 
   React.useEffect(() => {
     if (isFocused) {
+      /*
       const addBlockElement = (computation: TokenStream) => {
         const node = getNodesFromComputation(computation, libraries)[0];
         const selection = $getSelection();
@@ -77,6 +78,7 @@ function useEditorEvents() {
         }
         // $insertNodeToNearestRoot(node);
       };
+      */
 
       return mergeRegister(
         addImport.subscribe(async ({ id: externalId, templateId, imports }) => {
@@ -84,7 +86,7 @@ function useEditorEvents() {
             console.error("Tried to add itself");
             return;
           }
-          let insert: TokenStream = [
+          const insert: TokenStream = [
             {
               id: generateDocumentId(documentId),
               field: externalId,
@@ -93,41 +95,47 @@ function useEditorEvents() {
             },
           ];
 
-          insertComputation(editor, insert, libraries);
+          replaceWithComputation(editor, insert, libraries);
         }),
 
         addContext.subscribe(async (ctx) => {
-          let insert: TokenStream = [
+          const insert: TokenStream = [
             {
               ctx,
             },
           ];
 
-          insertComputation(editor, insert, libraries);
+          replaceWithComputation(editor, insert, libraries);
         }),
 
         addNestedFolder.subscribe(async ({ folderId, templateId }) => {
-          editor.update(() => {
-            addBlockElement([
-              {
-                id: generateDocumentId(documentId),
-                folder: folderId,
-              },
-            ]);
-          });
+          const insert = [
+            {
+              id: generateDocumentId(documentId),
+              folder: folderId,
+            },
+          ];
+
+          replaceWithComputation(editor, insert, libraries);
+
           if (templateId && !fieldConfig?.template) {
             setFieldConfig("template", templateId);
           }
         }),
 
         addDocumentImport.subscribe(async ({ documentId, templateId }) => {
+          const insert = [
+            {
+              id: documentId,
+            },
+          ];
+
+          replaceWithComputation(editor, insert, libraries);
+          /*
           editor.update(() => {
-            addBlockElement([
-              {
-                id: documentId,
-              },
-            ]);
+            addBlockElement(insert);
           });
+          */
           if (templateId && !fieldConfig?.template) {
             setFieldConfig("template", templateId);
           }
@@ -140,8 +148,11 @@ function useEditorEvents() {
             { library, libraries }
           );
 
-          const computation: TokenStream = [component];
+          const insert: TokenStream = [component];
 
+          replaceWithComputation(editor, insert, libraries);
+
+          /*
           if (isInlineElement(libraries, component)) {
             insertComputation(editor, computation, libraries);
           } else {
@@ -149,12 +160,17 @@ function useEditorEvents() {
               addBlockElement(computation);
             });
           }
+          */
         }),
 
         addNestedDocument.subscribe(() => {
+          const insert: TokenStream = [{ id: generateDocumentId(documentId) }];
+          replaceWithComputation(editor, insert, libraries);
+          /*
           editor.update(() => {
             addBlockElement([{ id: generateDocumentId(documentId) }]);
           });
+          */
         })
       );
     }

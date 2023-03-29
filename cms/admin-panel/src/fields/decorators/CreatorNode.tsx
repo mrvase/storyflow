@@ -12,10 +12,11 @@ import {
 import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
 import { caretClasses } from "./caret";
-import { FieldId, NestedCreator } from "@storyflow/backend/types";
+import { FieldId, NestedCreator, TokenStream } from "@storyflow/backend/types";
 import { WritableDefaultField } from "../default/RenderNestedFields";
+import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 
-function CreatorDecorator({
+function Decorator({
   value,
   nodeKey,
 }: {
@@ -35,10 +36,9 @@ function CreatorDecorator({
       <div
         className={cl(
           "flex flex-col gap-2 gradient-border",
-          "relative z-0 text-white cursor-default p-2",
-          "rounded text-sm selection:bg-transparent",
-          isSelected && "ring-1 ring-amber-300",
-          isPseudoSelected && caretClasses
+          "relative z-0 p-2.5 pb-0",
+          "rounded selection:bg-transparent",
+          isSelected && "selected"
         )}
         onMouseDown={() => {
           if (!isSelected) {
@@ -46,16 +46,18 @@ function CreatorDecorator({
           }
         }}
       >
-        <WritableDefaultField
-          id={id}
-          initialValue={{
-            type: "root",
-            children: [],
-          }}
-          fieldConfig={{
-            type: "default",
-          }}
-        />
+        <div className="-mx-5 -mb-1">
+          <WritableDefaultField
+            id={id}
+            initialValue={{
+              type: "root",
+              children: [],
+            }}
+            fieldConfig={{
+              type: "default",
+            }}
+          />
+        </div>
         {/*<input
           type="text"
           className="px-1 w-full bg-transparent outline-none"
@@ -79,97 +81,41 @@ function CreatorDecorator({
   );
 }
 
-function convertImportElement(
-  domNode: HTMLElement
-): DOMConversionOutput | null {
-  return null;
-}
+const type = "creator";
+type TokenType = NestedCreator;
 
-export type SerializedCreatorNode = Spread<
-  {
-    type: "creator-element";
-    value: NestedCreator;
-  },
-  SerializedLexicalNode
->;
+type NewType = SerializedTokenStreamNode<typeof type, TokenType>;
 
-export class CreatorNode extends DecoratorNode<React.ReactNode> {
-  __value: NestedCreator;
-
+export default class ChildNode extends TokenStreamNode<typeof type, TokenType> {
   static getType(): string {
-    return "creator-element";
+    return type;
   }
 
-  static clone(node: CreatorNode): CreatorNode {
-    return new CreatorNode(node.__value, node.__key);
+  static clone(node: ChildNode): ChildNode {
+    return new ChildNode(node.__token, node.__key);
   }
 
-  constructor(value: NestedCreator, key?: NodeKey) {
-    super(key);
-    this.__value = value;
+  constructor(token: TokenType, key?: NodeKey) {
+    super(type, token, key);
   }
 
-  createDOM(): HTMLElement {
-    const element = document.createElement("div");
-    element.setAttribute("data-lexical-creator-element", "true");
-    return element;
+  exportJSON(): SerializedTokenStreamNode<typeof type, TokenType> {
+    return super.exportJSON();
   }
 
-  updateDOM(): false {
-    return false;
-  }
-
-  isInline(): false {
-    return false;
-  }
-
-  getTextContent(): string {
-    return `%`;
-  }
-
-  static importJSON(serializedCreatorNode: SerializedCreatorNode): CreatorNode {
-    return $createCreatorNode(serializedCreatorNode.value);
-  }
-
-  exportJSON(): SerializedCreatorNode {
-    const self = this.getLatest();
-    return {
-      type: "creator-element",
-      value: self.__value,
-      version: 1,
-    };
-  }
-
-  exportDOM(): DOMExportOutput {
-    const element = document.createElement("div");
-    element.setAttribute("data-lexical-creator-element", "true");
-    element.textContent = `%`;
-    return { element };
-  }
-
-  static importDOM(): DOMConversionMap | null {
-    return {
-      span: (domNode: HTMLElement) => {
-        if (!domNode.hasAttribute("data-lexical-creator-element")) {
-          return null as any;
-        }
-        return {
-          conversion: convertImportElement,
-          priority: 1,
-        };
-      },
-    };
+  static importJSON(serializedNode: NewType) {
+    return new ChildNode(serializedNode.token);
   }
 
   decorate(): React.ReactNode {
-    return <CreatorDecorator value={this.__value} nodeKey={this.__key} />;
+    return <Decorator nodeKey={this.__key} value={this.__token} />;
   }
 }
 
-export function $createCreatorNode(element: NestedCreator): CreatorNode {
-  return new CreatorNode(element);
+export function $createCreatorNode(value: TokenType): ChildNode {
+  return new ChildNode(value);
 }
 
-export function $isCreatorNode(node: LexicalNode): node is CreatorNode {
-  return node instanceof CreatorNode;
+export function $isCreatorNode(node: LexicalNode): boolean {
+  return node instanceof ChildNode;
 }

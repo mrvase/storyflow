@@ -25,7 +25,7 @@ import {
 import { extendPath } from "@storyflow/backend/extendPath";
 import { stringifyPath, useBuilderPath } from "../BuilderPath";
 import { getConfigFromType, useClientConfig } from "../../client-config";
-import { ParentProp } from "./ParentPropContext";
+import { ParentProp, useParentProp } from "./ParentPropContext";
 import { useFieldTemplate } from "./useFieldTemplate";
 import {
   PropConfig,
@@ -64,6 +64,8 @@ import { useEditorContext } from "../../editor/react/EditorProvider";
 import { isSyntaxTree } from "@storyflow/backend/syntax-tree";
 import { useIsFocused } from "../../editor/react/useIsFocused";
 import { TemplateHeader } from "./TemplateHeader";
+import { useIsSelected } from "../decorators/useIsSelected";
+import { caretClasses } from "../decorators/caret";
 
 const findImportsFn = (value: SyntaxTree) => {
   const imports: NestedField[] = [];
@@ -132,12 +134,11 @@ export function WritableDefaultField({
     `${id}#tree`,
     () => initialValue
   );
+
   const [tokenStream, setTokenStream] = useGlobalState<TokenStream>(
     `${id}#stream`,
     () => initialEditorValue
   );
-
-  console.log("STREAM", id, tokenStream);
 
   const [fieldImports, setFieldImports] = useGlobalState<NestedField[]>(
     `${id}#imports`,
@@ -258,11 +259,11 @@ export function WritableDefaultField({
         initialValue={initialEditorValue}
         setValue={setValue}
       >
-        <div className={cl("relative", hidden && "hidden")}>
+        <div className={cl("relative px-14", hidden && "hidden")}>
           <Placeholder />
           <ContentEditable
             className={cl(
-              "peer grow editor outline-none px-14 pb-5 font-light selection:bg-gray-700",
+              "peer grow editor outline-none pb-3.5 font-light selection:bg-gray-700",
               "preview text-base leading-6"
               // mode === null || mode === "slug" ? "calculator" : ""
             )}
@@ -343,9 +344,11 @@ export function RenderFolder({
 export function RenderNestedElement({
   nestedDocumentId,
   element,
+  show,
 }: {
   nestedDocumentId: NestedDocumentId;
   element: string;
+  show?: boolean;
 }) {
   const [, setPath] = useBuilderPath();
   const { libraries } = useClientConfig();
@@ -468,7 +471,7 @@ export function RenderNestedElement({
       )}
       <RenderNestedFields
         nestedDocumentId={nestedDocumentId}
-        hidden={!isActive || tab !== 0}
+        hidden={!show && (!isActive || tab !== 0)}
         values={values}
         template={leftoverProps}
       />

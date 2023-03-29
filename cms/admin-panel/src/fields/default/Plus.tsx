@@ -58,7 +58,7 @@ export function Plus() {
     read(() => isBlockFocused())
   );
 
-  const normalize = (value: number) => value - (value % 24);
+  const normalize = (value: number) => value;
 
   React.useEffect(() => {
     return editor.registerUpdateListener(({ editorState }) => {

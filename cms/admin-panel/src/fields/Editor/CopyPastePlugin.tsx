@@ -2,15 +2,19 @@ import React from "react";
 import {
   $getBlocksFromComputation,
   $getComputation,
+  $getIndexesFromSelection,
   $getLastBlock,
 } from "./transforms";
 import {
   $getRoot,
   $getSelection,
+  $isNodeSelection,
   $isRangeSelection,
   $isRootNode,
+  COMMAND_PRIORITY_CRITICAL,
   COMMAND_PRIORITY_EDITOR,
   COPY_COMMAND,
+  LexicalEditor,
   PASTE_COMMAND,
 } from "lexical";
 import { mergeRegister } from "@lexical/utils";
@@ -37,6 +41,74 @@ import { useClient } from "../../client";
 import { tokens } from "@storyflow/backend/tokens";
 import { useDocumentCollab } from "../../documents/collab/DocumentCollabContext";
 import { ComputationOp, targetTools } from "shared/operations";
+import { tools } from "shared/editor-tools";
+import {
+  $isTokenStreamNode,
+  TokenStreamNode,
+} from "../decorators/TokenStreamNode";
+
+const EVENT_LATENCY = 50;
+let clipboardEventTimeout: null | number = null;
+
+const emulateCopyEvent = (
+  event: ClipboardEvent | KeyboardEvent,
+  editor: LexicalEditor,
+  callback: (event: ClipboardEvent) => boolean
+): boolean => {
+  if (clipboardEventTimeout !== null) {
+    return false;
+  }
+  if (event instanceof ClipboardEvent) {
+    return callback(event);
+  } else {
+    const rootElement = editor.getRootElement();
+    const domSelection = document.getSelection();
+    if (rootElement === null || domSelection === null) {
+      return false;
+    }
+    const element = document.createElement("span");
+    element.style.cssText = "position: fixed; top: -1000px;";
+    element.append(document.createTextNode("#"));
+    rootElement.append(element);
+    const range = new Range();
+    range.setStart(element, 0);
+    range.setEnd(element, 1);
+    domSelection.removeAllRanges();
+    domSelection.addRange(range);
+
+    const promise = new Promise((resolve, reject) => {
+      const removeListener = editor.registerCommand(
+        COPY_COMMAND,
+        (secondEvent) => {
+          if (secondEvent instanceof ClipboardEvent) {
+            removeListener();
+            if (clipboardEventTimeout !== null) {
+              window.clearTimeout(clipboardEventTimeout);
+              clipboardEventTimeout = null;
+            }
+            const result = callback(secondEvent);
+            resolve(result);
+            return result;
+          }
+          // Block the entire copy flow while we wait for the next ClipboardEvent
+          return false;
+        },
+        COMMAND_PRIORITY_CRITICAL
+      );
+      // If the above hack execCommand hack works, this timeout code should never fire. Otherwise,
+      // the listener will be quickly freed so that the user can reuse it again
+      clipboardEventTimeout = window.setTimeout(() => {
+        removeListener();
+        clipboardEventTimeout = null;
+        resolve(false);
+      }, EVENT_LATENCY);
+      document.execCommand("copy");
+      element.remove();
+    });
+
+    return true;
+  }
+};
 
 export function CopyPastePlugin() {
   const editor = useEditorContext();
@@ -53,73 +125,95 @@ export function CopyPastePlugin() {
       editor.registerCommand(
         COPY_COMMAND,
         (event) => {
-          const selection = $getSelection();
+          return emulateCopyEvent(event, editor, (event) => {
+            const selection = $getSelection();
+            console.log("selection", selection);
+            if ($isRangeSelection(selection)) {
+              console.log(
+                selection.anchor.getNode(),
+                selection.focus.getNode()
+              );
+            }
 
-          if (
-            !$isRangeSelection(selection) ||
-            !(event instanceof ClipboardEvent)
-          ) {
-            return false;
-          }
+            const clipboardData = event.clipboardData;
 
-          const clipboardData = event.clipboardData;
+            if (!clipboardData) {
+              return false;
+            }
 
-          if (!clipboardData) {
-            return false;
-          }
+            let computation: TokenStream;
 
-          const computation = $getComputation($getRoot());
+            if ($isRangeSelection(selection)) {
+              const [start, end] = $getIndexesFromSelection(selection);
 
-          const record: SyntaxTreeRecord = {};
+              if (start === end) {
+                return false;
+              }
 
-          // find alle nested states
-          const getNestedStates = (value: TokenStream) => {
-            value.forEach((el) => {
-              // only include nested states not imports
-              // if there are imports that disappear from the store
-              // they will be fetched again when using calculateFn
-              if (tokens.isNestedEntity(el)) {
-                const states = store.useMany<SyntaxTree>(
-                  new RegExp(`^${getRawDocumentId(el.id)}.*#tree`)
+              const computationFull = $getComputation($getRoot());
+              computation = tools.slice(computationFull, start, end);
+            } else if ($isNodeSelection(selection)) {
+              const nodes = selection
+                .getNodes()
+                .filter((el): el is TokenStreamNode<any, any> =>
+                  $isTokenStreamNode(el)
                 );
-                if (states) {
-                  for (const entry of states) {
-                    const value = entry[1].value;
-                    if (!value) continue;
-                    record[entry[0].replace("#tree", "") as FieldId] = value;
-                    getNestedStates(createTokenStream(value));
+              computation = nodes.map((el) => el.getTokenStream()).flat(1);
+            } else {
+              return false;
+            }
+
+            const record: SyntaxTreeRecord = {};
+
+            // find alle nested states
+            const getNestedStates = (value: TokenStream) => {
+              value.forEach((el) => {
+                // only include nested states not imports
+                // if there are imports that disappear from the store
+                // they will be fetched again when using calculateFn
+                if (tokens.isNestedEntity(el)) {
+                  const states = store.useMany<SyntaxTree>(
+                    new RegExp(`^${getRawDocumentId(el.id)}.*#tree`)
+                  );
+                  if (states) {
+                    for (const entry of states) {
+                      const value = entry[1].value;
+                      if (!value) continue;
+                      record[entry[0].replace("#tree", "") as FieldId] = value;
+                      getNestedStates(createTokenStream(value));
+                    }
                   }
                 }
-              }
-            });
-          };
+              });
+            };
 
-          getNestedStates(computation);
+            getNestedStates(computation);
 
-          // gem i { entry: computation, record: {} }
-          const payload = {
-            entry: parseTokenStream(computation),
-            record,
-            documentId,
-          };
+            // gem i { entry: computation, record: {} }
+            const payload = {
+              entry: parseTokenStream(computation),
+              record,
+              documentId,
+            };
 
-          console.log("PAYLOAD", payload);
+            console.log("PAYLOAD", payload);
 
-          event.preventDefault();
+            event.preventDefault();
 
-          clipboardData.setData(
-            "application/x-storyflow-syntax",
-            JSON.stringify(payload)
-          );
+            clipboardData.setData(
+              "application/x-storyflow-syntax",
+              JSON.stringify(payload)
+            );
 
-          let plainString = "";
-          if (selection !== null) {
-            plainString = selection.getTextContent();
-          }
+            let plainString = "";
+            if (selection !== null) {
+              plainString = selection.getTextContent();
+            }
 
-          clipboardData.setData("text/plain", plainString);
+            clipboardData.setData("text/plain", plainString);
 
-          return true;
+            return true;
+          });
         },
         COMMAND_PRIORITY_EDITOR
       ),

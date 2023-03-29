@@ -35,36 +35,30 @@ import {
   $createDocumentNode,
   $isDocumentNode,
 } from "../decorators/DocumentNode";
-import {
-  $createFunctionNode,
-  $isFunctionNode,
-} from "../decorators/FunctionNode";
-import { $createImportNode, $isImportNode } from "../decorators/ImportNode";
-import {
-  $createInlineLayoutElementNode,
-  $isInlineLayoutElementNode,
-} from "../decorators/InlineLayoutElementNode";
+import { $createFunctionNode } from "../decorators/FunctionNode";
+import { $createImportNode } from "../decorators/ImportNode";
+import { $createInlineLayoutElementNode } from "../decorators/InlineLayoutElementNode";
 import {
   $createLayoutElementNode,
   $isLayoutElementNode,
 } from "../decorators/LayoutElementNode";
-import {
-  $createOperatorNode,
-  $isOperatorNode,
-} from "../decorators/OperatorNode";
-import {
-  $createParameterNode,
-  $isParameterNode,
-} from "../decorators/ParameterNode";
-import { $createTokenNode, $isTokenNode } from "../decorators/TokenNode";
-import { $createContextNode, $isContextNode } from "../decorators/ContextNode";
-import { $createFolderNode, $isFolderNode } from "../decorators/FolderNode";
-import { $createCreatorNode, $isCreatorNode } from "../decorators/CreatorNode";
+import { $createOperatorNode } from "../decorators/OperatorNode";
+import { $createParameterNode } from "../decorators/ParameterNode";
+import { $createCustomTokenNode } from "../decorators/CustomTokenNode";
+import { $createContextNode } from "../decorators/ContextNode";
+import { $createFolderNode } from "../decorators/FolderNode";
+import { $createCreatorNode } from "../decorators/CreatorNode";
+import { $isPromptNode } from "../decorators/PromptNode";
+import { $isTokenStreamNode } from "../decorators/TokenStreamNode";
+import { $createFileNode } from "../decorators/FileNode";
+import { $createColorNode } from "../decorators/ColorNode";
+import { $createCommaNode } from "../decorators/CommaNode";
+import { $createBracketNode } from "../decorators/BracketNode";
 
 export const isInlineElement = (
   libraries: LibraryConfig[],
   element: NestedElement
-): boolean => {
+): element is typeof element & { inline: true } => {
   const config = getConfigFromType(element.element, libraries);
   const result = Boolean(config?.inline);
   return result;
@@ -73,23 +67,7 @@ export const isInlineElement = (
 export const $isBlockNode = (node: LexicalNode | null | undefined) =>
   $isHeadingNode(node) || $isParagraphNode(node);
 
-export const $isSymbolNode = (node: LexicalNode) => {
-  return (
-    $isImportNode(node) ||
-    $isOperatorNode(node) ||
-    $isFunctionNode(node) ||
-    $isParameterNode(node) ||
-    $isContextNode(node) ||
-    $isLayoutElementNode(node) ||
-    $isCreatorNode(node) ||
-    $isInlineLayoutElementNode(node) ||
-    $isDocumentNode(node) ||
-    $isFolderNode(node) ||
-    $isTokenNode(node)
-  );
-};
-
-export const $getTextContent = (node: LexicalNode, endAt?: string) => {
+const $getTextContent = (node: LexicalNode, endAt?: string) => {
   const recursivelyGetTextContent = (
     node: LexicalNode,
     textContent = ""
@@ -125,6 +103,8 @@ export const $getTextContent = (node: LexicalNode, endAt?: string) => {
           textContent = content;
         }
       }
+    } else if ($isPromptNode(node)) {
+      // do nothing
     } else if ($isTextNode(node)) {
       let content = node.getTextContent();
       const stars = matchNonEscapedCharacter(textContent, "\\*+$")?.[0]?.value
@@ -150,7 +130,7 @@ export const $getTextContent = (node: LexicalNode, endAt?: string) => {
       textContent += content;
     } else if ($isLineBreakNode(node)) {
       textContent += "\n";
-    } else if ($isSymbolNode(node)) {
+    } else if ($isTokenStreamNode(node)) {
       textContent += node.getTextContent();
     }
     return {
@@ -164,17 +144,23 @@ export const $getTextContent = (node: LexicalNode, endAt?: string) => {
   return content;
 };
 
-export const $getComputation = (node: LexicalNode) => {
+export const $getComputation = (node: LexicalNode, endAt?: string) => {
   const recursivelyGetContent = (
     node: LexicalNode,
     prevContent: TokenStream = []
-  ) => {
+  ): { content: TokenStream; ended: boolean } => {
+    if (node.__key === endAt) {
+      return { content: [], ended: true };
+    }
     let content: TokenStream = [];
     if ($isElementNode(node)) {
       const children = node.getChildren?.();
       if (children) {
         for (let i = 0; i < children.length; i++) {
           const child = children[i];
+          if (child.__key === endAt) {
+            return { content, ended: true };
+          }
           if (i > 0 && $isBlockNode(child) && $isBlockNode(children[i - 1])) {
             content = tools.concat(content, [{ n: true }]);
           }
@@ -182,10 +168,21 @@ export const $getComputation = (node: LexicalNode) => {
             const level = parseInt(child.__tag.slice(1), 10);
             content = tools.concat(content, [`${"#".repeat(level)} `]);
           }
-          const newContent = recursivelyGetContent(child, content);
+          const { content: newContent, ended } = recursivelyGetContent(
+            child,
+            content
+          );
+          if (ended) {
+            return {
+              ended: true,
+              content,
+            };
+          }
           content = tools.concat(content, newContent);
         }
       }
+    } else if ($isPromptNode(node)) {
+      content = node.getTokenStream();
     } else if ($isTextNode(node)) {
       let text = node.getTextContent();
       let last = prevContent[prevContent.length - 1];
@@ -222,51 +219,19 @@ export const $getComputation = (node: LexicalNode) => {
       content = [text];
     } else if ($isLineBreakNode(node)) {
       content = ["\n"];
-    } else if ($isImportNode(node)) {
-      content = [node.__value];
-    } else if ($isOperatorNode(node)) {
-      const operator = node.getTextContent();
-      let stream: TokenStream = [];
-      if (operator === ",") {
-        stream = [{ ",": true }];
-      } else if (operator === "(") {
-        stream = [{ "(": true }];
-      } else if (operator === ")") {
-        stream = [{ ")": true }];
-      } else if (operator === "[") {
-        stream = [{ "[": true }];
-      } else if (operator === "]") {
-        stream = [{ "]": true }];
-      } else {
-        stream = [{ _: operator as "+" }];
-      }
-      content = stream;
-    } else if ($isFunctionNode(node)) {
-      content = [{ "(": node.__func }];
-    } else if ($isParameterNode(node)) {
-      const parameter = node.getTextContent();
-      content = [{ x: parseInt(parameter, 10) }];
-    } else if ($isLayoutElementNode(node)) {
-      content = [node.__value];
-    } else if ($isCreatorNode(node)) {
-      content = [node.__value];
-    } else if ($isInlineLayoutElementNode(node)) {
-      content = [node.__value];
-    } else if ($isDocumentNode(node)) {
-      content = [node.__value];
-    } else if ($isFolderNode(node)) {
-      content = [node.__value];
-    } else if ($isContextNode(node)) {
-      content = [node.__value];
-    } else if ($isTokenNode(node)) {
-      content = [node.__value];
+    } else if ($isTokenStreamNode(node)) {
+      content = node.getTokenStream();
     }
-    return content;
+    return { content, ended: false };
   };
 
-  let content = recursivelyGetContent(node);
+  let { content } = recursivelyGetContent(node);
 
   return content;
+};
+
+export const $getContentLength = (node: LexicalNode, endAt?: string) => {
+  return $getTextContent(node, endAt).length;
 };
 
 /*
@@ -277,14 +242,14 @@ const getTextContent = (editor: LexicalEditor) => {
 
 export const $getIndexFromPoint = (anchor: PointType): number => {
   if (anchor.type === "text") {
-    const textBefore = $getTextContent($getRoot(), anchor.key).length;
+    const textBefore = $getContentLength($getRoot(), anchor.key);
     return textBefore + anchor.offset;
   } else {
     let parentNode = anchor.getNode();
     let node = parentNode?.getChildAtIndex?.(anchor.offset) ?? parentNode; // if the paragraph is selected with anchor on decorator node
-    const textBefore = $getTextContent($getRoot(), node.__key).length;
+    const textBefore = $getContentLength($getRoot(), node.__key);
     // node === parentNode => node === paragraphNode, and we are positioned at the end of the paragraph after a decorator node
-    const textInside = node === parentNode ? $getTextContent(node).length : 0;
+    const textInside = node === parentNode ? $getContentLength(node) : 0;
     return textBefore + textInside;
   }
 };
@@ -294,10 +259,25 @@ const $getIndexFromNodeSelection = (
   includeNodes = true
 ): number => {
   const nodes = selection.getNodes();
-  const textBefore = $getTextContent($getRoot(), nodes[0].__key).length;
+  const textBefore = $getContentLength($getRoot(), nodes[0].__key);
   if (!includeNodes) return textBefore;
-  const textInside = nodes.map((el) => $getTextContent(el)).join("").length;
+  const textInside = nodes
+    .map((el) => $getContentLength(el))
+    .reduce((a, b) => a + b, 0);
   return textBefore + textInside;
+};
+
+export const $getStartAndEnd = (
+  selection: RangeSelection
+): [PointType, PointType] => {
+  const anchor = selection.anchor;
+  const focus = selection.focus;
+
+  const isBefore = selection.isCollapsed() || anchor.isBefore(focus);
+  const startPoint = isBefore ? anchor : focus;
+  const endPoint = isBefore ? focus : anchor;
+
+  return [startPoint, endPoint];
 };
 
 export const $isSelection = (
@@ -307,11 +287,11 @@ export const $isSelection = (
 
 export const $getIndexesFromSelection = (
   selection: RangeSelection | NodeSelection
-) => {
+): [number, number] => {
   if ($isRangeSelection(selection)) {
-    return [
-      $getIndexFromPoint(selection.anchor),
-      $getIndexFromPoint(selection.focus),
+    return $getStartAndEnd(selection).map((s) => $getIndexFromPoint(s)) as [
+      number,
+      number
     ];
   } else if ($isNodeSelection(selection)) {
     return [
@@ -354,7 +334,7 @@ export const $getNodeFromIndex = (
         symbolNode = nodeCandidate;
       }
     } else if ($isTextNode(child)) {
-      const length = $getTextContent(child).length;
+      const length = $getContentLength(child);
       if (i + length === index) {
         cursorNode = child;
       }
@@ -364,7 +344,7 @@ export const $getNodeFromIndex = (
       i += length;
     } else if ($isLineBreakNode(child)) {
       i += 1;
-    } else if ($isSymbolNode(child)) {
+    } else if ($isTokenStreamNode(child)) {
       if (i === index) {
         symbolNode = child;
       }
@@ -433,14 +413,11 @@ export const getNodesFromComputation = (
     } else if (typeof el === "boolean") {
       const node = $createTextNode(el ? "SAND" : "FALSK");
       acc.push(node);
-    } else if (isSymbol(el, "(") && typeof el["("] === "string") {
-      const node = $createFunctionNode((el as any)[1]);
-      acc.push(node);
     } else if (tokens.isNestedField(el)) {
       const node = $createImportNode(el);
       acc.push(node);
     } else if (tokens.isParameter(el)) {
-      const node = $createParameterNode(`${el["x"]}`);
+      const node = $createParameterNode(el);
       acc.push(node);
     } else if (tokens.isNestedElement(el)) {
       if (isInlineElement(libraries, el)) {
@@ -459,28 +436,34 @@ export const getNodesFromComputation = (
     } else if (tokens.isNestedFolder(el)) {
       const node = $createFolderNode(el);
       acc.push(node);
-    } else if (
-      tokens.isFileToken(el) ||
-      tokens.isColorToken(el) ||
-      tokens.isCustomToken(el)
-    ) {
-      const node = $createTokenNode(el);
+    } else if (tokens.isFileToken(el)) {
+      const node = $createFileNode(el);
+      acc.push(node);
+    } else if (tokens.isColorToken(el)) {
+      const node = $createColorNode(el);
+      acc.push(node);
+    } else if (tokens.isCustomToken(el)) {
+      const node = $createCustomTokenNode(el);
       acc.push(node);
     } else if (tokens.isContextToken(el)) {
       const node = $createContextNode(el);
       acc.push(node);
     } else if (isSymbol(el, "_")) {
-      const node = $createOperatorNode(el["_"]);
+      const node = $createOperatorNode(el);
+      acc.push(node);
+    } else if (isSymbol(el, ",")) {
+      const node = $createCommaNode(el);
+      acc.push(node);
+    } else if (isSymbol(el, ")") && typeof el[")"] === "string") {
+      const node = $createFunctionNode((el as any)[1]);
       acc.push(node);
     } else if (
-      isSymbol(el, ",") ||
       isSymbol(el, "(") ||
       isSymbol(el, ")") ||
       isSymbol(el, "[") ||
       isSymbol(el, "]")
     ) {
-      const key = Object.keys(el)[0];
-      const node = $createOperatorNode(key);
+      const node = $createBracketNode(el);
       acc.push(node);
     }
     return acc;
@@ -591,7 +574,7 @@ export function $getLastBlock(
     !$isHeadingNode(lastNode) &&
     !(
       $isLayoutElementNode(lastNode) &&
-      !isInlineElement(libraries, lastNode.__value)
+      !isInlineElement(libraries, lastNode.getToken())
     ) &&
     !$isDocumentNode(lastNode)
   ) {

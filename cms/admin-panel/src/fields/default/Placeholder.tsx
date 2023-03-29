@@ -8,7 +8,7 @@ export function Placeholder() {
   const isFocused = useIsFocused(editor);
   const isEmpty = useIsEmpty(editor);
   return isEmpty ? (
-    <div className="absolute pointer-events-none px-14 font-light opacity-25 select-none">
+    <div className="absolute pointer-events-none font-light opacity-25 select-none">
       {isFocused ? 'Tast "@" for genveje' : "Ikke udfyldt"}
     </div>
   ) : null;

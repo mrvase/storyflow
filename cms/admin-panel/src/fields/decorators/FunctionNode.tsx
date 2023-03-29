@@ -12,14 +12,18 @@ import {
 import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
 import { caretClasses } from "./caret";
+import { FunctionName, TokenStream } from "@storyflow/backend/types";
+import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 
-function FunctionDecorator({
-  type,
+function Decorator({
+  value,
   nodeKey,
 }: {
-  type: string;
+  value: { ")": FunctionName };
   nodeKey: string;
 }) {
+  const func = value[")"];
+
   const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
 
   const open = (
@@ -31,11 +35,7 @@ function FunctionDecorator({
     </svg>
   );
 
-  const label =
-    {
-      c: "join",
-      u: "url",
-    }[type] ?? "";
+  const label = "";
 
   return (
     <span
@@ -54,105 +54,45 @@ function FunctionDecorator({
   );
 }
 
-function convertImportElement(
-  domNode: HTMLElement
-): DOMConversionOutput | null {
-  const textContent = domNode.textContent;
+const type = "function";
+type TokenType = { ")": FunctionName };
 
-  if (textContent !== null) {
-    const node = $createFunctionNode(textContent);
-    return {
-      node,
-    };
-  }
-
-  return null;
-}
-
-export type SerializedFunctionNode = Spread<
-  {
-    type: "function";
-    text: string;
-  },
-  SerializedLexicalNode
->;
-
-export class FunctionNode extends DecoratorNode<React.ReactNode> {
-  __text: string;
-  __func: string;
-
+export default class ChildNode extends TokenStreamNode<typeof type, TokenType> {
   static getType(): string {
-    return "function";
+    return type;
   }
 
-  static clone(node: FunctionNode): FunctionNode {
-    return new FunctionNode(node.__text, node.__key);
+  static clone(node: ChildNode): ChildNode {
+    return new ChildNode(node.__token, node.__key);
   }
 
-  constructor(text: string, key?: NodeKey) {
-    super(key);
-    this.__text = "[";
-    this.__func = text;
+  constructor(token: TokenType, key?: NodeKey) {
+    super(type, token, key);
   }
 
-  createDOM(): HTMLElement {
-    const element = document.createElement("div");
-    return element;
+  isInline(): true {
+    return true;
   }
 
-  updateDOM(): false {
-    return false;
-  }
-
-  getTextContent(): string {
-    const self = this.getLatest();
-    return self.__text;
+  exportJSON(): SerializedTokenStreamNode<typeof type, TokenType> {
+    return super.exportJSON();
   }
 
   static importJSON(
-    serializedFunctionNode: SerializedFunctionNode
-  ): FunctionNode {
-    return $createFunctionNode(serializedFunctionNode.text);
-  }
-
-  exportJSON(): SerializedFunctionNode {
-    return {
-      type: "function",
-      text: this.getTextContent(),
-      version: 1,
-    };
-  }
-
-  exportDOM(): DOMExportOutput {
-    const element = document.createElement("span");
-    element.setAttribute("data-lexical-function", "true");
-    element.textContent = this.__text;
-    return { element };
-  }
-
-  static importDOM(): DOMConversionMap | null {
-    return {
-      span: (domNode: HTMLElement) => {
-        if (!domNode.hasAttribute("data-lexical-function")) {
-          return null as any;
-        }
-        return {
-          conversion: convertImportElement,
-          priority: 1,
-        };
-      },
-    };
+    serializedNode: SerializedTokenStreamNode<typeof type, TokenType>
+  ) {
+    return new ChildNode(serializedNode.token);
   }
 
   decorate(): React.ReactNode {
-    return <FunctionDecorator type={this.__func} nodeKey={this.__key} />;
+    return <Decorator nodeKey={this.__key} value={this.__token} />;
   }
 }
 
-export function $createFunctionNode(text: string): FunctionNode {
-  return new FunctionNode(text);
+export function $createFunctionNode(value: TokenType): ChildNode {
+  return new ChildNode(value);
 }
 
 export function $isFunctionNode(node: LexicalNode): boolean {
-  return node instanceof FunctionNode;
+  return node instanceof ChildNode;
 }

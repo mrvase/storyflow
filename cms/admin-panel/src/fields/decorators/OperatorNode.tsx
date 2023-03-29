@@ -1,83 +1,21 @@
 import React from "react";
-import {
-  DecoratorNode,
-  DOMConversionMap,
-  DOMConversionOutput,
-  DOMExportOutput,
-  LexicalNode,
-  NodeKey,
-  SerializedLexicalNode,
-  Spread,
-} from "lexical";
+import { LexicalNode, NodeKey } from "lexical";
 import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
 import { caretClasses } from "./caret";
+import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
+import { Operator } from "@storyflow/backend/types";
 
-function OperatorDecorator({
-  text,
+function Decorator({
+  value,
   nodeKey,
 }: {
-  text: string;
+  value: { _: Operator };
   nodeKey: string;
 }) {
   const { isSelected, select, isPseudoSelected } = useIsSelected(nodeKey);
 
-  const symbol = text;
-
-  if (symbol === ",") {
-    return (
-      <div
-        className={cl("selection-box cursor-text", isSelected && "bg-gray-700")}
-      >
-        <span
-          className={cl(
-            "relative w-2 flex-center opacity-50", // selection:bg-transparent
-            // isSelected && "ring-2 ring-amber-300",
-            isPseudoSelected && caretClasses
-          )}
-          onMouseDown={() => select()}
-        >
-          ,
-        </span>
-      </div>
-    );
-  }
-
-  if (["(", "[", ")", "]"].includes(symbol)) {
-    const open = (
-      <svg viewBox="0 0 4 16" width={6} height={24} className="absolute">
-        <path
-          d="M4,0 A 10 10 0 0 0 4 16 A 20 20 0 0 1 4 0"
-          className={cl(symbol === "[" ? "fill-amber-500" : "fill-gray-500")}
-        />
-      </svg>
-    );
-
-    const close = (
-      <svg viewBox="0 0 4 16" width={6} height={24} className="absolute">
-        <path
-          d="M0,0 A 10 10 0 0 1 0 16 A 20 20 0 0 0 0 0"
-          className={cl(symbol === "]" ? "fill-amber-500" : "fill-gray-500")}
-        />
-      </svg>
-    );
-
-    return (
-      <div
-        className={cl("selection-box cursor-text", isSelected && "bg-gray-700")}
-      >
-        <span
-          className={cl(
-            "relative w-[6px] h-6 flex-center selection:bg-transparent text-xs text-gray-800",
-            isPseudoSelected && caretClasses
-          )}
-          onMouseDown={() => select()}
-        >
-          {["(", "["].includes(symbol) ? open : close}
-        </span>
-      </div>
-    );
-  }
+  const symbol = value["_"];
 
   const transform: Record<string, string> = {
     "*": "×",
@@ -85,12 +23,6 @@ function OperatorDecorator({
   };
 
   const colors = () => {
-    if (symbol === "?" || symbol === ":") {
-      return cl(
-        "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100",
-        !isSelected && "ring-1 ring-green-200 dark:ring-green-700"
-      );
-    }
     return cl(
       "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-sky-100",
       "ring-1 ring-gray-200 dark:ring-gray-700"
@@ -116,103 +48,45 @@ function OperatorDecorator({
   );
 }
 
-function convertImportElement(
-  domNode: HTMLElement
-): DOMConversionOutput | null {
-  const textContent = domNode.textContent;
+const type = "operator";
+type TokenType = { _: Operator };
 
-  if (textContent !== null) {
-    const node = $createOperatorNode(textContent);
-    return {
-      node,
-    };
-  }
-
-  return null;
-}
-
-export type SerializedOperatorNode = Spread<
-  {
-    type: "operator";
-    text: string;
-  },
-  SerializedLexicalNode
->;
-
-export class OperatorNode extends DecoratorNode<React.ReactNode> {
-  __text: string;
-
+export default class ChildNode extends TokenStreamNode<typeof type, TokenType> {
   static getType(): string {
-    return "operator";
+    return type;
   }
 
-  static clone(node: OperatorNode): OperatorNode {
-    return new OperatorNode(node.__text, node.__key);
+  static clone(node: ChildNode): ChildNode {
+    return new ChildNode(node.__token, node.__key);
   }
 
-  constructor(text: string, key?: NodeKey) {
-    super(key);
-    this.__text = text;
+  constructor(token: TokenType, key?: NodeKey) {
+    super(type, token, key);
   }
 
-  createDOM(): HTMLElement {
-    const element = document.createElement("div");
-    return element;
+  isInline(): true {
+    return true;
   }
 
-  updateDOM(): false {
-    return false;
-  }
-
-  getTextContent(): string {
-    const self = this.getLatest();
-    return self.__text;
+  exportJSON(): SerializedTokenStreamNode<typeof type, TokenType> {
+    return super.exportJSON();
   }
 
   static importJSON(
-    serializedOperatorNode: SerializedOperatorNode
-  ): OperatorNode {
-    return $createOperatorNode(serializedOperatorNode.text);
-  }
-
-  exportJSON(): SerializedOperatorNode {
-    return {
-      type: "operator",
-      text: this.getTextContent(),
-      version: 1,
-    };
-  }
-
-  exportDOM(): DOMExportOutput {
-    const element = document.createElement("span");
-    element.setAttribute("data-lexical-operator", "true");
-    element.textContent = this.__text;
-    return { element };
-  }
-
-  static importDOM(): DOMConversionMap | null {
-    return {
-      span: (domNode: HTMLElement) => {
-        if (!domNode.hasAttribute("data-lexical-operator")) {
-          return null as any;
-        }
-        return {
-          conversion: convertImportElement,
-          priority: 1,
-        };
-      },
-    };
+    serializedNode: SerializedTokenStreamNode<typeof type, TokenType>
+  ) {
+    return new ChildNode(serializedNode.token);
   }
 
   decorate(): React.ReactNode {
-    return <OperatorDecorator text={this.__text} nodeKey={this.__key} />;
+    return <Decorator nodeKey={this.__key} value={this.__token} />;
   }
 }
 
-export function $createOperatorNode(text: string): OperatorNode {
-  return new OperatorNode(text);
+export function $createOperatorNode(value: TokenType): ChildNode {
+  return new ChildNode(value);
 }
 
 export function $isOperatorNode(node: LexicalNode): boolean {
-  return node instanceof OperatorNode;
+  return node instanceof ChildNode;
 }

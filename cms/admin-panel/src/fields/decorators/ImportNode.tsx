@@ -24,6 +24,7 @@ import {
 } from "@storyflow/backend/types";
 import { useBuilderPath } from "../BuilderPath";
 import { revertTemplateFieldId } from "@storyflow/backend/ids";
+import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 
 const useState = (
   id: FieldId,
@@ -41,13 +42,12 @@ const useState = (
   return [label, value];
 };
 
-function ImportDecorator({
+function Decorator({
   nodeKey,
-  fieldImport,
+  value: fieldImport,
 }: {
-  text: string;
   nodeKey: string;
-  fieldImport: HasSelect<NestedField>;
+  value: HasSelect<NestedField>;
 }) {
   const [, setPath] = useBuilderPath();
 
@@ -121,100 +121,45 @@ function ImportDecorator({
   );
 }
 
-function convertImportElement(
-  domNode: HTMLElement
-): DOMConversionOutput | null {
-  return null;
-}
+const type = "nested-field";
+type TokenType = HasSelect<NestedField>;
 
-export type SerializedImportNode = Spread<
-  {
-    type: "import";
-    value: NestedField;
-  },
-  SerializedLexicalNode
->;
-
-export class ImportNode extends DecoratorNode<React.ReactNode> {
-  __value: NestedField;
-
+export default class ChildNode extends TokenStreamNode<typeof type, TokenType> {
   static getType(): string {
-    return "import";
+    return type;
   }
 
-  static clone(node: ImportNode): ImportNode {
-    return new ImportNode(node.__value, node.__key);
+  static clone(node: ChildNode): ChildNode {
+    return new ChildNode(node.__token, node.__key);
   }
 
-  constructor(fieldImport: NestedField, key?: NodeKey) {
-    super(key);
-    this.__value = fieldImport;
+  constructor(token: TokenType, key?: NodeKey) {
+    super(type, token, key);
   }
 
-  createDOM(): HTMLElement {
-    const element = document.createElement("span");
-    element.setAttribute("data-lexical-import", "true");
-    element.setAttribute("data-lexical-inline", "true");
-    return element;
+  isInline(): true {
+    return true;
   }
 
-  updateDOM(): false {
-    return false;
+  exportJSON(): SerializedTokenStreamNode<typeof type, TokenType> {
+    return super.exportJSON();
   }
 
-  getTextContent(): string {
-    return "x";
-  }
-
-  static importJSON(serializedImportNode: SerializedImportNode): ImportNode {
-    return $createImportNode(serializedImportNode.value);
-  }
-
-  exportJSON(): SerializedImportNode {
-    return {
-      type: "import",
-      value: this.__value,
-      version: 1,
-    };
-  }
-
-  exportDOM(): DOMExportOutput {
-    const element = document.createElement("span");
-    element.setAttribute("data-lexical-import", "true");
-    element.setAttribute("data-lexical-inline", "true");
-    element.textContent = "x";
-    return { element };
-  }
-
-  static importDOM(): DOMConversionMap | null {
-    return {
-      span: (domNode: HTMLElement) => {
-        if (!domNode.hasAttribute("data-lexical-import")) {
-          return null as any;
-        }
-        return {
-          conversion: convertImportElement,
-          priority: 1,
-        };
-      },
-    };
+  static importJSON(
+    serializedNode: SerializedTokenStreamNode<typeof type, TokenType>
+  ) {
+    return new ChildNode(serializedNode.token);
   }
 
   decorate(): React.ReactNode {
-    return (
-      <ImportDecorator
-        text={this.__text}
-        nodeKey={this.__key}
-        fieldImport={this.__value}
-      />
-    );
+    return <Decorator nodeKey={this.__key} value={this.__token} />;
   }
 }
 
-export function $createImportNode(fieldImport: NestedField): ImportNode {
-  return new ImportNode(fieldImport);
+export function $createImportNode(value: TokenType): ChildNode {
+  return new ChildNode(value);
 }
 
 export function $isImportNode(node: LexicalNode): boolean {
-  return node instanceof ImportNode;
+  return node instanceof ChildNode;
 }

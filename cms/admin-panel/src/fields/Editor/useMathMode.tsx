@@ -3,7 +3,7 @@ import { useEditorContext } from "../../editor/react/EditorProvider";
 import { TokenStream } from "@storyflow/backend/types";
 import { useClientConfig } from "../../client-config";
 import { operators } from "@storyflow/backend/types";
-import { insertComputation } from "./insertComputation";
+import { replaceWithComputation } from "./insertComputation";
 
 export function useMathMode(defaultValue: boolean = false) {
   const editor = useEditorContext();
@@ -62,8 +62,9 @@ export function useMathMode(defaultValue: boolean = false) {
       }
       */
       const insert = (stream: TokenStream) => {
+        if (event.defaultPrevented) return;
         event.preventDefault();
-        insertComputation(editor, stream, libraries);
+        replaceWithComputation(editor, stream, libraries);
       };
 
       if (mathMode) {
@@ -83,7 +84,7 @@ export function useMathMode(defaultValue: boolean = false) {
           insert([{ "]": true }]);
         }
       } else {
-        if (!mathMode && event.key === "*") {
+        if (event.key === "*") {
           insert([`\\*`]);
         }
       }

@@ -16,14 +16,16 @@ import {
   SyntaxTreeRecord,
   NestedDocument,
   NestedFolder,
+  TokenStream,
 } from "@storyflow/backend/types";
 import { useBuilderPath } from "../BuilderPath";
 import { FolderIcon } from "@heroicons/react/24/outline";
 import { useFieldId } from "../FieldIdContext";
 import { useFieldTemplate } from "../default/useFieldTemplate";
 import { useFolder } from "../../folders/collab/hooks";
+import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 
-function FolderDecorator({
+function Decorator({
   value,
   nodeKey,
 }: {
@@ -121,97 +123,41 @@ function FolderDecorator({
   );
 }
 
-function convertImportElement(
-  domNode: HTMLElement
-): DOMConversionOutput | null {
-  return null;
-}
+const type = "nested-folder";
+type TokenType = NestedFolder;
 
-export type SerializedFolderNode = Spread<
-  {
-    type: "nested-folder";
-    value: NestedFolder;
-  },
-  SerializedLexicalNode
->;
-
-export class FolderNode extends DecoratorNode<React.ReactNode> {
-  __value: NestedFolder;
-
+export default class ChildNode extends TokenStreamNode<typeof type, TokenType> {
   static getType(): string {
-    return "nested-folder";
+    return type;
   }
 
-  static clone(node: FolderNode): FolderNode {
-    return new FolderNode(node.__value, node.__key);
+  static clone(node: ChildNode): ChildNode {
+    return new ChildNode(node.__token, node.__key);
   }
 
-  constructor(value: NestedFolder, key?: NodeKey) {
-    super(key);
-    this.__value = value;
+  constructor(token: TokenType, key?: NodeKey) {
+    super(type, token, key);
   }
 
-  createDOM(): HTMLElement {
-    const element = document.createElement("div");
-    element.setAttribute("data-lexical-nested-folder", "true");
-    return element;
+  exportJSON(): SerializedTokenStreamNode<typeof type, TokenType> {
+    return super.exportJSON();
   }
 
-  updateDOM(): false {
-    return false;
-  }
-
-  isInline(): false {
-    return false;
-  }
-
-  getTextContent(): string {
-    return `&`;
-  }
-
-  static importJSON(serializedFolderNode: SerializedFolderNode): FolderNode {
-    return $createFolderNode(serializedFolderNode.value);
-  }
-
-  exportJSON(): SerializedFolderNode {
-    const self = this.getLatest();
-    return {
-      type: "nested-folder",
-      value: self.__value,
-      version: 1,
-    };
-  }
-
-  exportDOM(): DOMExportOutput {
-    const element = document.createElement("div");
-    element.setAttribute("data-lexical-nested-folder", "true");
-    element.textContent = `%`;
-    return { element };
-  }
-
-  static importDOM(): DOMConversionMap | null {
-    return {
-      span: (domNode: HTMLElement) => {
-        if (!domNode.hasAttribute("data-lexical-nested-folder")) {
-          return null as any;
-        }
-        return {
-          conversion: convertImportElement,
-          priority: 1,
-        };
-      },
-    };
+  static importJSON(
+    serializedNode: SerializedTokenStreamNode<typeof type, TokenType>
+  ) {
+    return new ChildNode(serializedNode.token);
   }
 
   decorate(): React.ReactNode {
-    return <FolderDecorator value={this.__value} nodeKey={this.__key} />;
+    return <Decorator nodeKey={this.__key} value={this.__token} />;
   }
 }
 
-export function $createFolderNode(element: NestedFolder): FolderNode {
-  return new FolderNode(element);
+export function $createFolderNode(value: TokenType): ChildNode {
+  return new ChildNode(value);
 }
 
 export function $isFolderNode(node: LexicalNode): boolean {
-  return node instanceof FolderNode;
+  return node instanceof ChildNode;
 }
