@@ -61,8 +61,8 @@ import { getPreview } from "./getPreview";
 import { Placeholder } from "./Placeholder";
 import { Plus } from "./Plus";
 import { isSyntaxTree } from "@storyflow/backend/syntax-tree";
-import { useIsFocused } from "../../editor/react/useIsFocused";
 import { TemplateHeader } from "./TemplateHeader";
+import { tools } from "shared/editor-tools";
 
 const findImportsFn = (value: SyntaxTree) => {
   const imports: NestedField[] = [];
@@ -80,6 +80,31 @@ const findImportsFn = (value: SyntaxTree) => {
   traverseNode(value);
 
   return imports;
+};
+
+type TextOps = [{ index: number; insert: [string]; remove?: 0 }];
+
+export const isTextInsert = (ops: ComputationOp["ops"]): ops is TextOps => {
+  return (
+    ops.length === 1 &&
+    Array.isArray(ops[0].insert) &&
+    ops[0].insert.length === 1 &&
+    !ops[0].remove &&
+    typeof ops[0].insert[0] === "string"
+  );
+};
+
+export const isAdjacent = (
+  prev: ComputationOp["ops"],
+  next: ComputationOp["ops"]
+): boolean => {
+  if (prev.length !== 1 || next.length !== 1) return false;
+  const prevEndingIndex =
+    prev[0].index +
+    tools.getLength(prev[0].insert ?? []) -
+    (prev[0].remove ?? 0);
+  const nextStartingIndex = next[0].index + (next[0].remove ?? 0);
+  return prevEndingIndex === nextStartingIndex;
 };
 
 export function WritableDefaultField({
@@ -193,6 +218,65 @@ export function WritableDefaultField({
     [actions, target]
   );
 
+  const pushWithBatching = React.useCallback(
+    (next: ComputationOp["ops"]) => {
+      return push((prev, noop) => {
+        let result: ComputationOp["ops"][] = [];
+        if (!prev || prev === noop) {
+          result = [next];
+        } else {
+          result = [prev, next];
+          if (
+            isAdjacent(prev, next) &&
+            (isTextInsert(prev) || !isTextInsert(next)) &&
+            !(isTextInsert(next) && next[0].insert[0] === " ")
+          ) {
+            let insert: TokenStream = [];
+            let remove = 0;
+            let index = prev[0].index;
+
+            // if prev has insert and next has remove, remove from insert first
+            if ((prev[0].insert ?? []).length > 0 && next[0].remove) {
+              const prevInsertLength = tools.getLength(prev[0].insert!);
+              if (next[0].remove > prevInsertLength) {
+                const diff = next[0].remove - prevInsertLength;
+                insert = next[0].insert ?? [];
+                remove = (prev[0].remove ?? 0) + diff;
+                index = index - diff; // or just next[0].index ??
+              } else {
+                const prevInsert = tools.slice(
+                  prev[0].insert!,
+                  0,
+                  -1 * next[0].remove
+                );
+                insert = tools.concat(prevInsert, next[0].insert ?? []);
+                remove = 0;
+              }
+            } else {
+              insert = tools.concat(prev[0].insert ?? [], next[0].insert ?? []);
+              remove = (prev[0].remove ?? 0) + (next[0].remove ?? 0);
+            }
+
+            const merged: ComputationOp["ops"] = [
+              {
+                index,
+              },
+            ];
+            if (insert.length) merged[0].insert = insert;
+            if (remove) merged[0].remove = remove;
+            result = [merged];
+          }
+        }
+        const latest = result[result.length - 1];
+        if (!isTextInsert(latest)) {
+          result.push(noop);
+        }
+        return result;
+      });
+    },
+    [push]
+  );
+
   const singular = useSingular(`${rootId}${target}`);
 
   const transform = React.useMemo(
@@ -233,7 +317,7 @@ export function WritableDefaultField({
       )}
       <Editor
         target={target}
-        push={push}
+        push={pushWithBatching}
         register={actions.register}
         initialValue={initialEditorValue}
         setValue={setValue}

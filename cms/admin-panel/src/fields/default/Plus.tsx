@@ -8,6 +8,7 @@ import {
   $isNodeSelection,
   $isParagraphNode,
   $isRangeSelection,
+  $isTextNode,
   LexicalNode,
 } from "lexical";
 import { useIsFocused as useEditorIsFocused } from "../../editor/react/useIsFocused";
@@ -36,58 +37,35 @@ export function Plus() {
 
   const [mathMode, setMathMode] = useMathMode(config?.restrictTo === "number");
 
-  const read = (func: () => any) => editor.getEditorState().read(func);
-  const isEditorEmpty = () => {
-    return !editor.isComposing() && $getRoot().getTextContent() === "";
-  };
-  const hasEditorDocument = () => {
-    return $getRoot()
-      .getChildren()
-      .some((el) => $isDocumentNode(el));
-  };
-  const isBlockFocused = () => {
-    return !$isRangeSelection($getSelection());
-  };
+  const isFocused = useEditorIsFocused();
 
-  const isFocused = useEditorIsFocused(editor);
-
-  const offset = 0;
+  const offset = -2;
 
   const [y, setY] = React.useState<number | null>(null);
-
-  const [isEmpty, setIsEmpty] = React.useState(() =>
-    read(() => isEditorEmpty())
-  );
-  const [hasDocument, setHasDocument] = React.useState(() =>
-    read(() => hasEditorDocument())
-  );
-  const [blockIsFocused, setBlockIsFocused] = React.useState(() =>
-    read(() => isBlockFocused())
-  );
 
   const normalize = (value: number) => value;
 
   React.useEffect(() => {
     return editor.registerUpdateListener(({ editorState }) => {
       editorState.read(() => {
-        setIsEmpty(isEditorEmpty());
-        setHasDocument(hasEditorDocument());
-        setBlockIsFocused(isBlockFocused());
         const selection = $getSelection();
+        let node: LexicalNode;
         if ($isRangeSelection(selection)) {
-          const root = editor.getRootElement()?.getBoundingClientRect()?.y ?? 0;
-          const y =
-            editor
-              .getElementByKey(selection.anchor.key)
-              ?.getBoundingClientRect()?.y ?? 0;
-          setY(normalize(offset + y - root));
+          node = selection.anchor.getNode();
         } else if ($isNodeSelection(selection)) {
-          const root = editor.getRootElement()?.getBoundingClientRect()?.y ?? 0;
-          const key = selection.getNodes()[0].__key;
-          const y =
-            editor.getElementByKey(key)?.getBoundingClientRect()?.y ?? 0;
-          setY(normalize(offset + y - root));
+          node = selection.getNodes()[0];
+        } else {
+          return;
         }
+        while (node && ($isTextNode(node) || node.isInline())) {
+          node = node.getParent()!;
+        }
+        const getY = (el: HTMLElement | null) =>
+          el?.getBoundingClientRect()?.y ?? 0;
+        const root = getY(editor.getRootElement());
+        const element = editor.getElementByKey(node.__key);
+        const y = getY(element);
+        setY(normalize(offset + y - root));
       });
     });
   }, [editor]);
@@ -147,7 +125,7 @@ export function Plus() {
             const stream = tools.slice(streamFull, start, end);
 
             const paragraph = $createParagraphNode();
-            const prompt = $createPromptNode("\uFEFF\uFEFF", stream);
+            const prompt = $createPromptNode("/", "\uFEFF\uFEFF", stream);
             paragraph.append(prompt);
 
             if ($isNodeSelection(selection)) {

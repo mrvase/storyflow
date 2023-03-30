@@ -23,13 +23,12 @@ export const createComponent = (
     return {
       id,
       element,
-      props: {},
     };
   }
 
   return {
     id,
     element,
-    props: {},
+    ...(config.inline && { inline: true }),
   };
 };

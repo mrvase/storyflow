@@ -1,5 +1,5 @@
 import { LexicalNode, NodeKey, SerializedTextNode, TextNode } from "lexical";
-import { $applyNodeReplacement, Spread } from "lexical";
+import { Spread } from "lexical";
 import { TokenStream } from "@storyflow/backend/types";
 
 export type SerializedPromptNode = Spread<
@@ -12,19 +12,33 @@ export type SerializedPromptNode = Spread<
   SerializedTextNode
 >;
 
+type Initializer = "/" | "@" | "<";
+
 export default class PromptNode extends TextNode {
   __stream: TokenStream;
+  __initializer: Initializer;
 
   static getType(): string {
     return "prompt";
   }
 
   static clone(node: PromptNode): PromptNode {
-    return new PromptNode(node.__text, node.__stream, node.__key);
+    return new PromptNode(
+      node.__initializer,
+      node.__text,
+      node.__stream,
+      node.__key
+    );
   }
 
-  constructor(text: string, stream: TokenStream, key?: NodeKey) {
+  constructor(
+    initializer: Initializer,
+    text: string,
+    stream: TokenStream,
+    key?: NodeKey
+  ) {
     super(text, key);
+    this.__initializer = initializer;
     this.__stream = stream;
   }
 
@@ -32,9 +46,14 @@ export default class PromptNode extends TextNode {
     return this.getLatest().__stream;
   }
 
+  getInitializer(): Initializer {
+    return this.getLatest().__initializer;
+  }
+
   createDOM(): HTMLSpanElement {
     const dom = document.createElement("span");
     dom.classList.add("prompt-container");
+    dom.setAttribute("data-initializer", this.__initializer);
     const text = this.__text;
     dom.textContent = text;
     return dom;
@@ -46,6 +65,7 @@ export default class PromptNode extends TextNode {
 
   static importJSON(serializedNode: SerializedPromptNode): PromptNode {
     const node = $createPromptNode(
+      "/",
       serializedNode.prompt,
       serializedNode.stream
     );
@@ -64,10 +84,11 @@ export default class PromptNode extends TextNode {
 }
 
 export function $createPromptNode(
+  initializer: Initializer,
   text: string,
   stream: TokenStream
 ): PromptNode {
-  return new PromptNode(text, stream);
+  return new PromptNode(initializer, text, stream);
 }
 
 export function $isPromptNode(

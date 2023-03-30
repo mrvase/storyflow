@@ -111,7 +111,15 @@ function Decorator({
             <CubeIcon className="w-4 h-4 mr-5" />
             {isOpen && (
               <span className="text-gray-400">
-                Side<span className="opacity-50 mx-2">&gt;</span>
+                <button
+                  className="hover:underline"
+                  onClick={() => {
+                    setPath(() => []);
+                  }}
+                >
+                  Side
+                </button>
+                <span className="opacity-50 mx-2">&gt;</span>
               </span>
             )}
             {config?.label ?? value.element}

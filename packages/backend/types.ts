@@ -78,7 +78,7 @@ export type NestedField = {
 export type NestedElement = {
   id: NestedDocumentId;
   element: string;
-  props: Record<RawFieldId, true>; // searchable props
+  // props: Record<RawFieldId, true>; // searchable props
   inline?: true;
 };
 

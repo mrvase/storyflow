@@ -354,50 +354,55 @@ export function registerPlainText(
     editor.registerCommand<KeyboardEvent | null>(
       KEY_ENTER_COMMAND,
       (event) => {
-        const selection = $getSelection();
+        try {
+          const selection = $getSelection();
 
-        let resolved: boolean = false;
+          let resolved: boolean = false;
 
-        if ($isNodeSelection(selection)) {
-          const nodes = selection.getNodes();
-          if (nodes.length) {
-            const last = nodes[nodes.length - 1];
-            const node = $createParagraphNode();
-            const textNode = $createTextNode();
-            node.append(textNode);
-            if (event?.shiftKey) {
-              last.insertBefore(node, false);
-              node.select();
-            } else {
-              last.insertAfter(node, false);
-              node.select();
+          if ($isNodeSelection(selection)) {
+            const nodes = selection.getNodes();
+            if (nodes.length) {
+              const last = nodes[nodes.length - 1];
+              const node = $createParagraphNode();
+              const textNode = $createTextNode();
+              node.append(textNode);
+              if (event?.shiftKey) {
+                last.insertBefore(node, false);
+                node.select();
+              } else {
+                last.insertAfter(node, false);
+                node.select();
+              }
+              resolved = true;
             }
-            resolved = true;
-          }
-        } else if (!$isRangeSelection(selection)) {
-          return false;
-        }
-
-        if (event !== null) {
-          // If we have beforeinput, then we can avoid blocking
-          // the default behavior. This ensures that the iOS can
-          // intercept that we're actually inserting a paragraph,
-          // and autocomplete, autocapitalize etc work as intended.
-          // This can also cause a strange performance issue in
-          // Safari, where there is a noticeable pause due to
-          // preventing the key down of enter.
-          if ((IS_IOS || IS_SAFARI) && CAN_USE_BEFORE_INPUT) {
+          } else if (!$isRangeSelection(selection)) {
             return false;
           }
 
-          event.preventDefault();
-        }
+          if (event !== null) {
+            // If we have beforeinput, then we can avoid blocking
+            // the default behavior. This ensures that the iOS can
+            // intercept that we're actually inserting a paragraph,
+            // and autocomplete, autocapitalize etc work as intended.
+            // This can also cause a strange performance issue in
+            // Safari, where there is a noticeable pause due to
+            // preventing the key down of enter.
+            if ((IS_IOS || IS_SAFARI) && CAN_USE_BEFORE_INPUT) {
+              return false;
+            }
 
-        if (resolved) {
-          return true;
-        }
+            event.preventDefault();
+          }
 
-        return editor.dispatchCommand(INSERT_PARAGRAPH_COMMAND, undefined);
+          if (resolved) {
+            return true;
+          }
+
+          return editor.dispatchCommand(INSERT_PARAGRAPH_COMMAND, undefined);
+        } catch (err) {
+          console.error(err);
+          return false;
+        }
       },
       COMMAND_PRIORITY_EDITOR
     )

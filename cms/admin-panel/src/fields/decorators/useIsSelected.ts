@@ -16,12 +16,7 @@ import React from "react";
 import { useEditorContext } from "../../editor/react/EditorProvider";
 import { useIsFocused } from "../../editor/react/useIsFocused";
 import { mergeRegister } from "../../editor/utils/mergeRegister";
-
-const $selectNode = (nodeKey: string) => {
-  const nodeSelection = $createNodeSelection();
-  nodeSelection.add(nodeKey);
-  $setSelection(nodeSelection);
-};
+import { $selectNode } from "../Editor/transforms";
 
 export const useIsSelected = (nodeKey: string) => {
   const editor = useEditorContext();

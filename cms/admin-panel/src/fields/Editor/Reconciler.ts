@@ -41,7 +41,7 @@ export function Reconciler({
   initialValue: TokenStream;
   // history: CollabHistory<TextOp | FunctionOp>;
   target: Target;
-  push: (ops: ComputationOp["ops"], tags: Set<string>) => void;
+  push: (ops: ComputationOp["ops"]) => void;
   register: (listener: QueueListener<ComputationOp>) => () => void;
   setValue: (value: () => TokenStream) => void;
 }) {
@@ -106,10 +106,7 @@ export function Reconciler({
           return;
         }
 
-        push(
-          action.map((el) => ({ ...el })),
-          tags
-        );
+        push(action.map((el) => ({ ...el })));
       }
     );
   }, [editor, push]);

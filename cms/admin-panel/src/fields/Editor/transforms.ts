@@ -14,8 +14,10 @@ import {
   $createTextNode,
   $isParagraphNode,
   $isRootNode,
+  $setSelection,
+  $createNodeSelection,
 } from "lexical";
-import type { GridSelection, PointType } from "lexical/LexicalSelection";
+import { GridSelection, PointType } from "lexical/LexicalSelection";
 import { tools } from "shared/editor-tools";
 import {
   matchNonEscapedCharacter,
@@ -582,3 +584,9 @@ export function $getLastBlock(
   }
   return lastNode;
 }
+
+export const $selectNode = (nodeKey: string) => {
+  const nodeSelection = $createNodeSelection();
+  nodeSelection.add(nodeKey);
+  $setSelection(nodeSelection);
+};

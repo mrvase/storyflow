@@ -23,7 +23,7 @@ import { useFieldId } from "../FieldIdContext";
 import { HeadingNode } from "../../editor/react/HeadingNode";
 import nodes from "../decorators/nodes";
 import { CopyPastePlugin } from "./CopyPastePlugin";
-import { Prompt } from "./Prompt";
+import { Overlay } from "../prompt/Overlay";
 
 const editorConfig = {
   namespace: "EDITOR",
@@ -41,14 +41,7 @@ export default function Editor({
   setValue,
 }: {
   target?: Target;
-  push?: (
-    payload:
-      | ComputationOp["ops"]
-      | ((
-          prev: ComputationOp["ops"] | undefined,
-          noop: ComputationOp["ops"]
-        ) => ComputationOp["ops"][])
-  ) => void;
+  push?: (ops: ComputationOp["ops"]) => void;
   register?: (listener: QueueListener<ComputationOp>) => () => void;
   initialValue: TokenStream;
   setValue: (value: () => TokenStream) => void;
@@ -68,21 +61,17 @@ export default function Editor({
       <EditorFocusPlugin />
       <FieldFocusPlugin />
       {push && register && target ? (
-        <Query push={push}>
-          {(pushWithQuery) => (
-            <Reconciler
-              target={target}
-              push={pushWithQuery}
-              register={register}
-              initialValue={initialValue}
-              setValue={setValue}
-            />
-          )}
-        </Query>
+        <Reconciler
+          target={target}
+          push={push}
+          register={register}
+          initialValue={initialValue}
+          setValue={setValue}
+        />
       ) : (
         <Setter setValue={setValue} />
       )}
-      <Prompt />
+      <Overlay />
       {children}
       <DecoratorPlugin />
       {/*
