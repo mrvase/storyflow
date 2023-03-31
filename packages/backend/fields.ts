@@ -94,7 +94,7 @@ export const DEFAULT_FIELDS = {
   params: {
     id: generateTemplateFieldId(),
     type: "default",
-    label: "Dynamiske parametre",
+    label: "URL-segmenter",
   },
 } as const;
 
@@ -105,6 +105,9 @@ export const DEFAULT_TEMPLATES = {
     config: [
       {
         template: getTemplateDocumentId(DEFAULT_FIELDS.url.id),
+      },
+      {
+        template: getTemplateDocumentId(DEFAULT_FIELDS.layout.id),
       },
       {
         template: getTemplateDocumentId(DEFAULT_FIELDS.page.id),

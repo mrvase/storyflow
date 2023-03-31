@@ -14,8 +14,8 @@ import { queryArrayProp } from "./queryArrayProp";
 
 export type Update = DBSyntaxStreamBlock & {
   result: DBValueArray;
-  imports: DBId<FieldId>[];
-  nested: string[];
+  // imports: DBId<FieldId>[];
+  // nested: string[];
   depth: number;
   updated: boolean;
   _imports: (DBSyntaxStreamBlock & { depth: number })[];
@@ -215,8 +215,8 @@ const createCalculationStage = (
         fields: $.reduce(
           $.concatArrays(
             $doc.fields as (DBSyntaxStreamBlock & {
-              imports: DBId<FieldId>[];
-              nested: string[];
+              imports?: DBId<FieldId>[];
+              nested?: string[];
               depth: number;
             })[],
             $doc.updates,
@@ -231,7 +231,16 @@ const createCalculationStage = (
                 baseDepth: $.max(
                   $.map(
                     $.filter(acc, (el) =>
-                      $.or($.in(parent, el.nested), $.in(cur.k, el.imports))
+                      $.cond(
+                        $.and($.isArray(el.nested), $.isArray(el.imports)),
+                        // imports and imports of imports that do not have these arrays are not relevant
+                        () =>
+                          $.or(
+                            $.in(parent, el.nested),
+                            $.in(cur.k, el.imports)
+                          ),
+                        () => false
+                      )
                     ),
                     (el) => el.depth
                   )

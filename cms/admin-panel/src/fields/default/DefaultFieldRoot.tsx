@@ -35,7 +35,7 @@ export function DefaultFieldRoot({ id, version, history }: FieldProps) {
   }, []);
 
   const [currentProp] = useAttributesContext();
-  const currentId = currentProp?.id ?? id;
+  const currentId = currentProp ?? id;
 
   return (
     <>

@@ -99,8 +99,8 @@ const defaultLibraryConfig: LibraryConfig = {
       label: "Link",
       name: "Link",
       props: [
-        { name: "href", type: "string", label: "URL" },
         { name: "label", type: "string", label: "Label" },
+        { name: "href", type: "string", label: "URL" },
       ],
       inline: true,
     },

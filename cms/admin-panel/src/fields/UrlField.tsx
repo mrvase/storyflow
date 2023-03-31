@@ -189,9 +189,9 @@ export default function UrlField({ id, version, history }: FieldProps) {
   };
 
   const [values, setValues] = useGlobalContext(getDocumentId(id), {
+    param0: "",
     param1: "",
     param2: "",
-    param3: "",
   });
 
   const [parents, children] = useRelatedPages(
@@ -333,11 +333,11 @@ export default function UrlField({ id, version, history }: FieldProps) {
         ))}
         {slug === "*" && (
           <button
-            className="px-1.5 h-5 bg-fuchsia-200 dark:bg-fuchsia-900 rounded-full shrink-0 flex-center mr-1.5 cursor-alias"
+            className="px-1.5 h-5 bg-fuchsia-200 dark:bg-gray-700 rounded shrink-0 flex-center mr-1.5 cursor-alias"
             onMouseDown={(ev) => {
               ev.preventDefault();
               ev.stopPropagation();
-              addContext.dispatch("param1");
+              addContext.dispatch("param0");
             }}
           >
             <StarIcon className="w-3 h-3 mr-1" />{" "}
@@ -363,11 +363,11 @@ export default function UrlField({ id, version, history }: FieldProps) {
         {slug === "*" && (
           <input
             type="text"
-            placeholder="indtast slug-eksempel"
-            className="w-full bg-transparent outline-none font-light border border-gray-200 dark:border-gray-600 rounded px-2 text-sm py-0.5"
-            value={values.param1}
+            placeholder="indtast eksempel"
+            className="w-full max-w-[16rem] bg-transparent outline-none font-light border-0 rounded px-2 text-sm py-2"
+            value={values.param0}
             onChange={(ev) => {
-              setValues({ param1: ev.target.value });
+              setValues({ param0: ev.target.value });
             }}
           />
         )}
@@ -400,7 +400,7 @@ export default function UrlField({ id, version, history }: FieldProps) {
               data-focus-ignore="true"
             >
               <SubPageLine first={children.length === 0} />
-              <span className="opacity-40 group-hover:opacity-100 transition-opacity italic">
+              <span className="opacity-40 group-hover:opacity-100 transition-opacity italic py-0.5">
                 Tilføj underside
               </span>
             </button>

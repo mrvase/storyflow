@@ -17,14 +17,14 @@ export const Link = createComponent(
     props: [
       {
         type: "string",
-        name: "href",
-        label: "URL",
-      },
-      {
-        type: "string",
         name: "label",
         label: "Label",
         searchable: true,
+      },
+      {
+        type: "string",
+        name: "href",
+        label: "URL",
       },
     ],
     inline: true,

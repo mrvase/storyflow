@@ -18,9 +18,9 @@ export default async function Layout({
   const url = Object.values(params).join("/");
   const data = await request(url, options);
 
-  console.log("LAYOUT", data?.layout);
-
-  const content = <RenderLayout data={data?.layout}>{children}</RenderLayout>;
+  const content = (
+    <RenderLayout data={data?.layout ?? null}>{children}</RenderLayout>
+  );
 
   if (url === "") {
     return (

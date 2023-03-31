@@ -1,14 +1,5 @@
 import React from "react";
-import {
-  DecoratorNode,
-  DOMConversionMap,
-  DOMConversionOutput,
-  DOMExportOutput,
-  LexicalNode,
-  NodeKey,
-  SerializedLexicalNode,
-  Spread,
-} from "lexical";
+import { LexicalNode, NodeKey } from "lexical";
 import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
 import { caretClasses } from "./caret";

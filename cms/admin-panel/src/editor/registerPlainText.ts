@@ -50,7 +50,6 @@ import {
 import { CAN_USE_BEFORE_INPUT, IS_IOS, IS_SAFARI } from "./utils/environment";
 import { mergeRegister } from "./utils/mergeRegister";
 import { LibraryConfig } from "@storyflow/frontend/types";
-import $createRangeSelection from "./createRangeSelection";
 
 /**
  * Tre scenarier for tekst

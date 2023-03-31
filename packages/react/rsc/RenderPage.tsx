@@ -78,23 +78,33 @@ const RenderChildren = ({
   value,
   record,
   index,
+  spread,
   children,
 }: {
   value: ValueArray;
   record: Record<string, ValueArray>;
   index: number;
-  children: React.ReactNode;
+  spread: boolean;
+  children?: React.ReactNode;
 }) => {
   const libraries = getLibraries();
   const configs = getLibraryConfigs();
 
-  const vI = value[index];
-  const value_ = Array.isArray(vI) && vI.length === 1 ? vI : value;
+  let array: ValueArray = [];
+  if (spread) {
+    const valueAtIndex = value[index];
+    array = Array.isArray(valueAtIndex) ? valueAtIndex : [valueAtIndex];
+  } else if (value.length === 1 && Array.isArray(value[0])) {
+    array = value[0];
+  } else {
+    array = value;
+  }
+
   const getDisplayType = (type: string) => {
     return Boolean(getConfigByType(type, configs)?.inline);
   };
 
-  const renderArray = createRenderArray(value_ ?? [], getDisplayType);
+  const renderArray = createRenderArray(array, getDisplayType);
 
   return (
     <>
@@ -129,6 +139,7 @@ const RenderChildren = ({
                           type={el.element}
                           record={record}
                           index={0}
+                          spread={spread}
                           children={children}
                         />
                       );
@@ -150,6 +161,7 @@ const RenderChildren = ({
                 type={block.element}
                 record={record}
                 index={0}
+                spread={spread}
                 children={children}
               />
             );
@@ -168,45 +180,68 @@ const RenderElement = ({
   type,
   index,
   children,
+  spread,
 }: {
   id: string;
   record: Record<string, ValueArray>;
   type: string;
   index: number;
-  children: React.ReactNode;
+  children?: React.ReactNode;
+  spread: boolean;
 }) => {
   let config = getConfigByType(type, getLibraryConfigs(), getLibraries());
   if (!config) return null;
 
   const keyId = `${id.slice(12, 24)}${getIdFromString("key")}`;
-  const key = record?.[keyId]?.length ? record[keyId] : [];
 
-  const renderChildren = (value: ValueArray | undefined) => {
-    return (
-      <RenderChildren
-        value={value ?? []}
-        record={record}
-        index={index}
-        children={children}
-      />
-    );
-  };
+  const key = record?.[keyId]?.length ? record[keyId] : [];
+  console.log("KEY", key);
 
   let props = {
     config,
     record,
     elementId: id,
-    renderChildren,
   };
 
   if (key.length <= 1) {
-    return <RenderElementWithProps index={index} {...props} />;
+    return (
+      <RenderElementWithProps
+        index={index}
+        {...props}
+        renderChildren={(value: ValueArray | undefined) => {
+          return (
+            <RenderChildren
+              value={value ?? []}
+              record={record}
+              index={index}
+              children={children}
+              spread={spread}
+            />
+          );
+        }}
+      />
+    );
   }
 
   return (
     <>
       {key.map((_, newIndex) => (
-        <RenderElementWithProps key={index} index={newIndex} {...props} />
+        <RenderElementWithProps
+          key={index}
+          index={newIndex}
+          {...props}
+          renderChildren={(value: ValueArray | undefined) => {
+            return (
+              <RenderChildren
+                value={value ?? []}
+                record={record}
+                index={newIndex}
+                children={children}
+                spread={true}
+              />
+            );
+          }}
+        />
       ))}
     </>
   );
@@ -279,11 +314,10 @@ export const RenderPage = ({
       value={data.entry}
       record={data.record}
       index={0}
-      children={<></>}
+      children={undefined}
+      spread={false}
     />
-  ) : (
-    <>{(() => console.error("No data"))()}</>
-  );
+  ) : null;
 
 export const RenderLayout = ({
   data,
@@ -304,6 +338,7 @@ export const RenderLayout = ({
       record={data.record}
       index={0}
       children={children}
+      spread={false}
     />
   ) : (
     <>{children}</>

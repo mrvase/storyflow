@@ -23,6 +23,8 @@ import {
   FieldId,
   NestedDocument,
   NestedFolder,
+  RawFieldId,
+  SyntaxTreeRecord,
   ValueArray,
 } from "@storyflow/backend/types";
 import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
@@ -34,6 +36,8 @@ import {
   createRawTemplateFieldId,
   createTemplateFieldId,
   getDocumentId,
+  getRawDocumentId,
+  getRawFieldId,
 } from "@storyflow/backend/ids";
 import util from "util";
 
@@ -98,6 +102,156 @@ const authorization = async (ctx: MiddlewareContext) => {
   };
 };
 
+const createElementRecordGetter = (
+  docRecord: SyntaxTreeRecord,
+  dbName: string,
+  context: Record<string, ValueArray>
+) => {
+  const graph = getGraph(docRecord);
+
+  return async (fieldId: FieldId) => {
+    const nestedFields = getFieldRecord(docRecord, fieldId, {
+      children: graph.children,
+      imports: new Map(), // do not include imports in record
+    });
+
+    let record: Record<FieldId, ValueArray> = {};
+
+    let fetchRequests: FolderFetch[] = [];
+    let fetched = new Set<NestedFolder>();
+    let fetchFilters = new Map<
+      NestedFolder,
+      Record<RawFieldId, ValueArray>[]
+    >();
+    let fetchResults = new Map<NestedFolder, NestedDocument[]>();
+    let documents = new Map<DocumentId, DBDocument>();
+
+    const resolveFetches = async (fetches: FolderFetch[]) => {
+      await calculateFilters(fetches);
+
+      return await Promise.all(
+        fetches.map(async (el) => {
+          // we rely on the fact the the NestedFolder is only really present in one field (although it is referenced multiple times)
+          // so we can use its object reference
+          if (fetched.has(el.folder)) return;
+          fetched.add(el.folder);
+
+          const filters = fetchFilters.get(el.folder) ?? {};
+
+          console.log("FILTERS FILTERS FILTERS", filters);
+
+          const client = await clientPromise;
+          const result = await client
+            .db(dbName)
+            .collection<DBDocumentRaw>("documents")
+            .find({ folder: new ObjectId(el.folder.folder), ...filters })
+            .sort({ _id: -1 })
+            .limit(el.limit)
+            .toArray();
+
+          const articles = result.map(parseDocument);
+
+          let list: NestedDocument[] = [];
+
+          articles.forEach((el) => {
+            list.push({ id: el._id });
+            documents.set(el._id, el);
+          });
+
+          fetchResults.set(el.folder, list);
+        })
+      );
+    };
+
+    const calculateFilters = async (fetches: FolderFetch[]) => {
+      const oldFetches = [...fetchRequests];
+
+      fetches.forEach((el) => {
+        const filters = Object.fromEntries(
+          Object.entries(docRecord)
+            .filter(([key]) => key.startsWith(getRawDocumentId(el.folder.id)))
+            .map(([key, value]) => [
+              `values.${getRawFieldId(key as FieldId)}`,
+              calculate(value, getState),
+            ])
+            .filter(([, value]) => value.length > 0)
+        );
+        fetchFilters.set(el.folder, filters);
+      });
+
+      const newFetches = fetchRequests.filter((el) => !oldFetches.includes(el));
+
+      /*
+      repeat if there are new fetches.
+      */
+
+      if (newFetches.length > 0) {
+        await resolveFetches(newFetches);
+        await calculateFilters(fetches);
+      }
+    };
+
+    const getState: StateGetter = (importer, { tree, external }): any => {
+      if (typeof importer === "object" && "folder" in importer) {
+        const { folder, limit, sort } = importer;
+        if (!fetchResults.has(folder)) {
+          fetchRequests.push({ folder, limit, ...(sort && { sort }) });
+          return [];
+        }
+        return fetchResults.get(folder);
+      } else if (typeof importer === "object" && "ctx" in importer) {
+        return context[importer.ctx] ?? [];
+      } else {
+        if (importer in docRecord) {
+          return calculate(docRecord[importer], getState);
+        }
+        const documentId = getDocumentId(importer);
+        const fetchedDoc = documents.get(documentId as DocumentId);
+        const value = fetchedDoc?.record[importer];
+        if (value) {
+          return calculate(value, getState);
+        }
+        return [];
+      }
+    };
+
+    const calculateAsync = async () => {
+      const oldFetches = [...fetchRequests];
+
+      record = Object.fromEntries(
+        Object.entries(nestedFields).map(([key, tree]) => {
+          return [key as FieldId, calculate(tree, getState)];
+        })
+      );
+
+      const newFetches = fetchRequests.filter((el) => !oldFetches.includes(el));
+
+      if (newFetches.length > 0) {
+        console.log(
+          "NEW FETCHES NEW FETCHES NEW FETCHES NEW FETCHES",
+          util.inspect({ newFetches }, { colors: true, depth: null })
+        );
+        await resolveFetches(newFetches);
+        calculateAsync();
+      }
+    };
+
+    await calculateAsync();
+
+    const entry = record[fieldId];
+    delete record[fieldId];
+
+    if (!entry || entry.length === 0) {
+      return null;
+    }
+
+    return {
+      entry,
+      record,
+    };
+  };
+};
+
 export const public_ = createRoute({
   get: createProcedure({
     middleware(ctx) {
@@ -145,114 +299,16 @@ export const public_ = createRoute({
 
       const doc = parseDocument(docRaw);
 
-      const graph = getGraph(doc.record);
+      const params = Object.fromEntries(
+        url
+          .split("/")
+          .reverse()
+          .map((el, index) => [`param${index}`, [el]])
+      );
 
-      const getElementRecord = async (fieldId: FieldId) => {
-        const nestedFields = getFieldRecord(doc.record, fieldId, {
-          children: graph.children,
-          imports: new Map(), // do not include imports in record
-        });
-
-        let record: Record<FieldId, ValueArray> = {};
-
-        let fetched = new Set<NestedFolder>();
-        let fetchResults = new Map<NestedFolder, NestedDocument[]>();
-        let documents = new Map<DocumentId, DBDocument>();
-
-        const resolveFetches = async (fetches: FolderFetch[]) => {
-          return await Promise.all(
-            fetches.map(async (el) => {
-              if (fetched.has(el.folder)) return;
-              fetched.add(el.folder);
-              /*
-              const filters = Object.fromEntries(
-                Object.entries(filtersProp ?? {}).map(([key, value]) => {
-                  return [`values.${key}`, value];
-                })
-              );
-              */
-
-              const result = await client
-                .db(dbName)
-                .collection<DBDocumentRaw>("documents")
-                .find({ folder: new ObjectId(el.folder.folder) }) // , ...filters
-                .sort({ _id: -1 })
-                .limit(el.limit)
-                .toArray();
-
-              const articles = result.map(parseDocument);
-
-              let list: NestedDocument[] = [];
-
-              articles.forEach((el) => {
-                list.push({ id: el._id });
-                documents.set(el._id, el);
-              });
-
-              fetchResults.set(el.folder, list);
-            })
-          );
-        };
-
-        const calculateAsync = async () => {
-          const newFetches: FolderFetch[] = [];
-
-          const getState: StateGetter = (importer, { tree, external }): any => {
-            if (typeof importer === "object" && "folder" in importer) {
-              console.log("FOLDER", importer);
-              const { folder, limit, sort } = importer;
-              if (!fetchResults.has(folder)) {
-                newFetches.push({ folder, limit, ...(sort && { sort }) });
-                return [];
-              }
-              return fetchResults.get(folder);
-            } else if (typeof importer === "object" && "ctx" in importer) {
-              return [];
-            } else {
-              if (importer in doc.record) {
-                console.log("IMPORT", doc.record[importer]);
-                return calculate(doc.record[importer], getState);
-              }
-              const documentId = getDocumentId(importer);
-              const fetchedDoc = documents.get(documentId as DocumentId);
-              const value = fetchedDoc?.record[importer];
-              if (value) {
-                return calculate(value, getState);
-              }
-              return [];
-            }
-          };
-
-          record = Object.fromEntries(
-            Object.entries(nestedFields).map(([key, tree]) => {
-              return [key as FieldId, calculate(tree, getState)];
-            })
-          );
-
-          if (newFetches.length > 0) {
-            console.log(
-              "NEW FETCHES NEW FETCHES NEW FETCHES NEW FETCHES",
-              util.inspect(newFetches, { colors: true })
-            );
-            await resolveFetches(newFetches);
-            calculateAsync();
-          }
-        };
-
-        await calculateAsync();
-
-        const entry = record[fieldId];
-        delete record[fieldId];
-
-        if (!entry || entry.length === 0) {
-          return null;
-        }
-
-        return {
-          entry,
-          record,
-        };
-      };
+      const getElementRecord = createElementRecordGetter(doc.record, dbName, {
+        ...params,
+      });
 
       const [pageRecord, layoutRecord] = await Promise.all([
         getElementRecord(
@@ -366,17 +422,12 @@ export const public_ = createRoute({
       const urls = articles
         .map((el) => {
           const doc = parseDocument(el);
-          const graph = getGraph(doc.record);
           return {
             _id: doc._id,
             url: el.values[
               createRawTemplateFieldId(DEFAULT_FIELDS.url.id)
             ][0] as string,
-            params: getFieldRecord(
-              doc.record,
-              createTemplateFieldId(doc._id, DEFAULT_FIELDS.params.id),
-              graph
-            ),
+            record: doc.record,
           };
         })
         .sort((a, b) => {
@@ -392,38 +443,69 @@ export const public_ = createRoute({
       const dynamicUrls = urls.filter((el) => el.url.indexOf("*") > 0);
       const ordinaryUrls = urls.filter((el) => el.url.indexOf("*") < 0);
 
-      /*
       const staticUrls = (
         await Promise.all(
-          dynamicUrls.map(async ({ _id, url, params }) => {
-            const getter = async (value: FetchObject | ContextToken) => {
-              if ("select" in value) {
-                // do fetch return docs
+          dynamicUrls.map(async ({ _id, url, record }) => {
+            const fieldId = createTemplateFieldId(
+              _id,
+              DEFAULT_FIELDS.params.id
+            );
+            const tree = record[fieldId];
 
-                return [];
-              }
-              return [];
+            const toUrl = (slug: string) => {
+              return `${url.slice(0, -1)}${slug}`;
             };
 
-            const slugs = await calculateFromRecordAsync(
-              computeFieldId(_id, FIELDS.params.id),
-              params,
-              getter
+            if (
+              tree.children.every((el): el is string => typeof el === "string")
+            ) {
+              return tree.children.map(toUrl);
+            }
+
+            // wrap in select
+            record[fieldId] = {
+              type: "select",
+              children: [
+                {
+                  type: "sortlimit",
+                  children: [record[fieldId]],
+                  data: { limit: 100 },
+                },
+              ],
+              data: {
+                select: createRawTemplateFieldId(DEFAULT_FIELDS.slug.id),
+              },
+            };
+
+            const getElementRecord = createElementRecordGetter(
+              record,
+              dbName,
+              {}
             );
 
-            return slugs
-              .map((el) =>
-                typeof el === "string" ? `${url.slice(0, -1)}${el}` : undefined
-              )
-              .filter((el): el is Exclude<typeof el, undefined> => Boolean(el));
+            const slugs =
+              (
+                await getElementRecord(
+                  createTemplateFieldId(_id, DEFAULT_FIELDS.params.id)
+                )
+              )?.entry ?? [];
+
+            if (slugs.every((el): el is string => typeof el === "string")) {
+              return slugs.map(toUrl);
+            }
+
+            return [];
           })
         )
       ).flat(1);
+
+      /*
+      console.log("ORDINARY URLS", ordinaryUrls);
+      console.log("DYNAMIC URLS", dynamicUrls);
+      console.log("STATIC URLS", staticUrls);
       */
 
-      console.log("ORDINARY URLS", ordinaryUrls);
-
-      return success(ordinaryUrls.map((el) => el.url));
+      return success([...ordinaryUrls.map((el) => el.url), ...staticUrls]);
     },
   }),
   generateKey: createProcedure({

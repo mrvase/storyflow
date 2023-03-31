@@ -2,9 +2,12 @@ import React from "react";
 import { LexicalNode, NodeKey } from "lexical";
 import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
-import { NestedDocumentId, NestedElement } from "@storyflow/backend/types";
+import {
+  FieldId,
+  NestedDocumentId,
+  NestedElement,
+} from "@storyflow/backend/types";
 import { getConfigFromType, useClientConfig } from "../../client-config";
-import { DefaultField } from "../default/DefaultField";
 import { ChevronUpDownIcon, CubeIcon } from "@heroicons/react/24/outline";
 import {
   FieldRestrictionsContext,
@@ -21,6 +24,10 @@ import {
   useAttributesContext,
 } from "../Attributes";
 import { ExtendPath, usePath, useSelectedPath } from "../Path";
+import { PropConfig, RegularOptions } from "@storyflow/frontend/types";
+import { flattenProps } from "../../utils/flattenProps";
+import { DefaultField } from "../default/DefaultField";
+import { computeFieldId, getIdFromString } from "@storyflow/backend/ids";
 
 const TopLevelContext = React.createContext(true);
 
@@ -48,6 +55,17 @@ function Decorator({
     (el) => el.name === value.element.split(":")[0]
   )?.label;
 
+  let props = flattenProps(value.id, config?.props ?? []);
+
+  if (props.length) {
+    props.push({
+      name: "key",
+      id: computeFieldId(value.id, getIdFromString("key")),
+      label: "Generer liste",
+      type: "string",
+    });
+  }
+
   return (
     <AttributesProvider>
       <EditorFocusProvider>
@@ -70,11 +88,7 @@ function Decorator({
             <CubeIcon className="w-4 h-4 mr-5 shrink-0" />
             {config?.label ?? value.element}
             <div className="overflow-x-auto no-scrollbar mx-2">
-              <Attributes
-                id={value.id}
-                element={value.element}
-                hideAsDefault={!isTopLevel}
-              />
+              <Attributes entity={value} hideAsDefault={!isTopLevel} />
             </div>
             <div className="ml-auto">
               <button
@@ -87,7 +101,7 @@ function Decorator({
               </button>
             </div>
           </div>
-          <PrimaryProp documentId={value.id} />
+          <PrimaryProp documentId={value.id} props={props} />
         </FocusContainer>
       </EditorFocusProvider>
     </AttributesProvider>
@@ -130,23 +144,31 @@ function FocusContainer({
   );
 }
 
-function PrimaryProp({ documentId }: { documentId: NestedDocumentId }) {
-  const [prop] = useAttributesContext();
+function PrimaryProp({
+  documentId,
+  props,
+}: {
+  documentId: NestedDocumentId;
+  props: (PropConfig<RegularOptions> & { id: FieldId })[];
+}) {
+  const [propId] = useAttributesContext();
 
-  if (!prop) {
+  const config = props.find((el) => el.id === propId);
+
+  if (!config) {
     return null;
   }
 
   return (
     <ExtendPath id={documentId} type="document">
-      <ExtendPath id={prop.id} type="field">
-        <TopLevelContext.Provider key={prop.id} value={false}>
-          <FieldRestrictionsContext.Provider value={prop.type}>
+      <ExtendPath id={config.id} type="field">
+        <TopLevelContext.Provider key={config.id} value={false}>
+          <FieldRestrictionsContext.Provider value={config.type}>
             <FieldOptionsContext.Provider
-              value={"options" in prop ? prop.options ?? null : null}
+              value={"options" in config ? config.options ?? null : null}
             >
               <div className="cursor-auto pl-[2.875rem] pr-2.5 pb-2.5">
-                <DefaultField id={prop.id} />
+                <DefaultField id={config.id} button />
               </div>
             </FieldOptionsContext.Provider>
           </FieldRestrictionsContext.Provider>

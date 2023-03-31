@@ -77,6 +77,10 @@ export default class ChildNode extends TokenStreamNode<typeof type, TokenType> {
     super(type, token, key);
   }
 
+  isInline(): true {
+    return true;
+  }
+
   exportJSON(): SerializedTokenStreamNode<typeof type, TokenType> {
     return super.exportJSON();
   }

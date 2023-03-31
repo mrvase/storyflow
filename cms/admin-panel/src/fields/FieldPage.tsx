@@ -454,8 +454,7 @@ function FieldPanel({ id }: { id: FieldId }) {
 }
 
 function FieldOverlay({ id }: { id: FieldId }) {
-  const [currentProp] = useAttributesContext();
-  const currentId = currentProp?.id;
+  const [currentId] = useAttributesContext();
 
   return (
     <EditorFocusProvider>

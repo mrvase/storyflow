@@ -54,6 +54,7 @@ import {
   useFieldToolbarPortal,
 } from "./FieldToolbar";
 import { SWRClient } from "../client";
+import { ExtendTemplatePath } from "./TemplatePathContext";
 
 export const getVersionKey = (versions?: Record<RawFieldId, number>) => {
   if (!versions) return -1;
@@ -169,13 +170,13 @@ function Toolbar({ id, config }: { id: DocumentId; config: DocumentConfig }) {
 
   const fields = [
     {
-      label: "Label",
+      label: DEFAULT_FIELDS.label.label,
       item: () => ({
         template: getTemplateDocumentId(DEFAULT_FIELDS.label.id),
       }),
     },
     {
-      label: "Slug",
+      label: DEFAULT_FIELDS.slug.label,
       item: () => ({
         template: getTemplateDocumentId(DEFAULT_FIELDS.slug.id),
       }),
@@ -201,19 +202,19 @@ function Toolbar({ id, config }: { id: DocumentId; config: DocumentConfig }) {
     },
     */
     {
-      label: "Offentliggjort",
+      label: DEFAULT_FIELDS.published.label,
       item: {
         template: getTemplateDocumentId(DEFAULT_FIELDS.published.id),
       },
     },
     {
-      label: "Udgivelsesdato",
+      label: DEFAULT_FIELDS.released.label,
       item: {
         template: getTemplateDocumentId(DEFAULT_FIELDS.released.id),
       },
     },
     {
-      label: "Bruger",
+      label: DEFAULT_FIELDS.user.label,
       item: {
         template: getTemplateDocumentId(DEFAULT_FIELDS.user.id),
       },
@@ -376,20 +377,22 @@ const Page = ({
               {isApp && !templateId && config.length === 0 && (
                 <TemplateSelect documentId={article._id} />
               )}
-              {templateId && (
-                <GetDocument id={templateId}>
-                  {(article) => (
-                    <RenderTemplate
-                      key={getVersionKey(owner.versions)} // for rerendering
-                      id={article._id}
-                      config={article.config}
-                      owner={owner._id}
-                      versions={owner.versions}
-                      histories={histories}
-                    />
-                  )}
-                </GetDocument>
-              )}
+              <ExtendTemplatePath template={owner._id}>
+                {templateId && (
+                  <GetDocument id={templateId}>
+                    {(article) => (
+                      <RenderTemplate
+                        key={getVersionKey(owner.versions)} // for rerendering
+                        id={article._id}
+                        config={article.config}
+                        owner={owner._id}
+                        versions={owner.versions}
+                        histories={histories}
+                      />
+                    )}
+                  </GetDocument>
+                )}
+              </ExtendTemplatePath>
               <RenderTemplate
                 key={getVersionKey(owner.versions)} // for rerendering
                 id={owner._id}

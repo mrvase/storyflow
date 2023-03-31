@@ -5,7 +5,10 @@ import {
   isSyntaxTreeOrTransform,
 } from "@storyflow/backend/syntax-tree";
 
-const fieldConfig = {
+const fieldConfig: Record<
+  FieldType,
+  { transform?: Transform; defaultChildren: SyntaxTree["children"] }
+> = {
   default: {
     defaultChildren: [] as [],
   },
@@ -21,10 +24,7 @@ const fieldConfig = {
     },
     defaultChildren: [] as [],
   },
-} satisfies Record<
-  FieldType,
-  { transform?: Transform; defaultChildren: SyntaxTree["children"] }
->;
+};
 
 export const retrieveRoot = (
   tree: SyntaxTree
@@ -154,7 +154,7 @@ export const getConfig = <T extends keyof typeof fieldConfig>(
   return {
     ...config,
     defaultValue:
-      "transform" in config
+      "transform" in config && config.transform
         ? insertRootInTransform(root, config.transform)
         : root,
   };

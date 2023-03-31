@@ -1,6 +1,6 @@
 import React from "react";
 import { useEditorContext } from "../../editor/react/EditorProvider";
-import { CalculatorIcon, PaintBrushIcon } from "@heroicons/react/24/outline";
+import { PaintBrushIcon } from "@heroicons/react/24/outline";
 import {
   $createParagraphNode,
   $getRoot,
@@ -12,13 +12,10 @@ import {
   LexicalNode,
 } from "lexical";
 import { useIsFocused as useEditorIsFocused } from "../../editor/react/useIsFocused";
-import { $isDocumentNode } from "../decorators/DocumentNode";
-import { useMathMode } from "../Editor/useMathMode";
 import {
   $createHeadingNode,
   $isHeadingNode,
 } from "../../editor/react/HeadingNode";
-import { Menu } from "./Menu";
 import { useFieldConfig } from "../../documents/collab/hooks";
 import { useFieldId } from "../FieldIdContext";
 import {
@@ -34,8 +31,6 @@ export function Plus() {
 
   const id = useFieldId();
   const [config] = useFieldConfig(id);
-
-  const [mathMode, setMathMode] = useMathMode(config?.restrictTo === "number");
 
   const isFocused = useEditorIsFocused();
 
@@ -106,7 +101,7 @@ export function Plus() {
   return isFocused && y !== null ? (
     <>
       <div
-        className="absolute top-0 -left-[2.875rem] w-4 h-4 m-1 mx-2.5 opacity-50 hover:opacity-100"
+        className="absolute top-0 -left-[2.875rem] w-8 h-8 p-2 -m-1 mx-1 opacity-50 hover:opacity-100"
         style={{ transform: `translateY(${y}px)` }}
         onMouseDown={(ev) => {
           ev.preventDefault();

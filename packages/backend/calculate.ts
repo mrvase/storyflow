@@ -392,9 +392,9 @@ const resolveChildren = <T extends ValueArray | SyntaxTree<any>>(
         }
       }
     } else if (tokens.isContextToken(child)) {
-      const state = getState(child, { tree: true, external: false });
+      const state = getState(child, { external: false });
       if (state) {
-        acc.push(...calculateNode(state));
+        acc.push(state as T);
       }
     } else if (tokens.isParameter(child)) {
       const arg = context.args && context.args[child.x];
@@ -490,8 +490,6 @@ export function calculate(node: SyntaxTree, getState: StateGetter): ValueArray {
           }, [])
         ),
       ];
-
-      console.log("VALUES", values);
     } else if (node.type === "root") {
       // do nothing
     } else if (node.type === null) {

@@ -8,11 +8,7 @@ import {
   TokenStream,
   Transform,
 } from "@storyflow/backend/types";
-import {
-  getDocumentId,
-  getRawFieldId,
-  getTemplateDocumentId,
-} from "@storyflow/backend/ids";
+import { getDocumentId, getRawFieldId } from "@storyflow/backend/ids";
 import { useFieldId } from "../FieldIdContext";
 import { useDocumentPageContext } from "../../documents/DocumentPageContext";
 import { targetTools, ComputationOp } from "shared/operations";
@@ -47,7 +43,10 @@ export function useDefaultState(id: FieldId) {
       };
     }
     fieldType = config.type;
-    transform = React.useMemo(() => config!.transform, []);
+    transform = React.useMemo(
+      () => config!.transform ?? getConfig(fieldType).transform,
+      [config]
+    );
   }
 
   const initialValue = React.useMemo(
@@ -120,5 +119,7 @@ export function useDefaultState(id: FieldId) {
     });
   }, []);
 
-  return { target, initialValue, tree, value, setTransform };
+  const isPrimitive = value[0] === tree.children[0];
+
+  return { target, initialValue, tree, value, setTransform, isPrimitive };
 }

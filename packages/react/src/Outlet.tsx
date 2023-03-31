@@ -1,6 +1,7 @@
 import * as React from "react";
 import { cms } from "./CMSElement";
 
+/*
 const OutletContext = React.createContext<{
   outlet: React.ReactNode;
   register: () => void;
@@ -66,3 +67,4 @@ const Outlet = () => {
 };
 
 export default Outlet;
+*/

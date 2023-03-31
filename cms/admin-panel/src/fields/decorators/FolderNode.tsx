@@ -13,6 +13,7 @@ import { useFieldId } from "../FieldIdContext";
 import { useFieldTemplate } from "../default/useFieldTemplate";
 import { useFolder } from "../../folders/collab/hooks";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
+import { usePath, useSelectedPath } from "../Path";
 
 function Decorator({
   value,
@@ -21,7 +22,8 @@ function Decorator({
   value: NestedFolder;
   nodeKey: string;
 }) {
-  // const [, setPath] = useBuilderPath();
+  const [{ selectedPath }, setPath] = useSelectedPath();
+  const path = usePath();
 
   const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
 
@@ -32,10 +34,10 @@ function Decorator({
   const hasTemplate = Boolean(template);
 
   const color = cl(
-    "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-    !isSelected && "ring-1 ring-red-200 dark:ring-red-800",
+    "bg-gradient-to-b from-pink-800/90 to-pink-900/90 text-pink-200",
+    !isSelected && "ring-1 ring-pink-200 dark:ring-pink-800",
     hasTemplate &&
-      "child:divide-x child:divide-red-200 child:dark:divide-red-800"
+      "child:divide-x child:divide-pink-200 child:dark:divide-pink-800"
   );
 
   let docs: (NestedDocument & { record: SyntaxTreeRecord })[] = [];
@@ -43,12 +45,12 @@ function Decorator({
   const folder = useFolder(value.folder);
 
   return (
-    <div className="py-0.5">
+    <div className="">
       <div
         className={cl(
           "relative",
           "rounded text-sm selection:bg-transparent",
-          isSelected && "ring-1 ring-amber-300",
+          isSelected && "ring-1 ring-white",
           color,
           isPseudoSelected && caretClasses
         )}
@@ -65,23 +67,14 @@ function Decorator({
             !selectClick.current &&
             "id" in value
           ) {
-            /*
-            setPath((ps) => [
-              ...ps,
-              {
-                id: value.id,
-                label: `${folder.label} (filtre)`,
-                parentProp: null,
-              },
-            ]);
-            */
+            setPath(() => [...selectedPath, ...path, value.id]);
           }
           selectClick.current = false;
         }}
       >
-        <div className="flex w-full py-0.5">
-          <div className="w-6 flex-center">
-            <FolderIcon className="w-3 h-3" />
+        <div className="flex w-full py-1">
+          <div className="w-8 flex-center">
+            <FolderIcon className="w-4 h-4" />
           </div>
           <div className="px-2">{folder.label}</div>
         </div>

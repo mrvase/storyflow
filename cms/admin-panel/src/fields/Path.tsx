@@ -1,6 +1,8 @@
 import {
   FieldId,
   NestedDocumentId,
+  NestedEntity,
+  NestedField,
   SyntaxTree,
 } from "@storyflow/backend/types";
 import { createEventsFromIframeToCMS } from "@storyflow/frontend/events";
@@ -132,11 +134,13 @@ export function useNestedEntity({
 }: {
   fieldId: FieldId;
   documentId: NestedDocumentId;
-}) {
-  const [tree] = useGlobalState<SyntaxTree>(`${fieldId}#tree`);
+}): NestedEntity | NestedField | undefined {
+  const [tree] = useGlobalState<SyntaxTree>(
+    fieldId ? `${fieldId}#tree` : undefined
+  );
 
   if (!tree) {
-    throw new Error("No tree found");
+    return;
   }
 
   const children = getChildrenDocuments(tree);

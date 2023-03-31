@@ -1,4 +1,4 @@
-import { mergeRegister } from "@lexical/utils";
+import { mergeRegister } from "../../editor/utils/mergeRegister";
 import cl from "clsx";
 import {
   $createParagraphNode,
@@ -47,7 +47,7 @@ const matchers: ((
   },
 ];
 
-export function Overlay() {
+export function Overlay({ children }: { children?: React.ReactNode }) {
   const editor = useEditorContext();
 
   const [type, setType] = React.useState<string | null>(null);
@@ -202,7 +202,9 @@ export function Overlay() {
       }
     >
       {type === "prompt" && (
-        <Prompt node={node as PromptNode} prompt={prompt!} />
+        <Prompt node={node as PromptNode} prompt={prompt!}>
+          {children}
+        </Prompt>
       )}
       {type === "color" && <ColorOverlay />}
     </div>

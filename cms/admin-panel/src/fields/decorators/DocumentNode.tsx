@@ -69,7 +69,7 @@ function Decorator({
           "child:divide-x child:divide-sky-200 child:dark:divide-sky-800"
       )
     : cl(
-        "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200",
+        "bg-gradient-to-b from-teal-800/90 to-teal-900/90 text-teal-200",
         !isSelected && "ring-1 ring-teal-200 dark:ring-teal-800",
         hasTemplate &&
           "child:divide-x child:divide-teal-200 child:dark:divide-teal-800"
@@ -87,7 +87,7 @@ function Decorator({
         className={cl(
           "relative",
           "rounded text-sm selection:bg-transparent",
-          isSelected && "ring-1 ring-amber-300",
+          isSelected && "ring-1 ring-white",
           color,
           isPseudoSelected && caretClasses
         )}
@@ -119,20 +119,20 @@ function Decorator({
         }}
       >
         {docs.length === 0 && (
-          <div className="w-full px-2 py-0.5 select-none">
+          <div className="w-full px-2 py-1.5 select-none">
             [Ingen resultater · Klik for at indstille]
           </div>
         )}
         {docs.map(({ id: docId, record }) => (
-          <div key={docId} className="flex w-full py-0.5">
+          <div key={docId} className="flex w-full py-1.5">
             {!hasTemplate ? (
               <TemplateSelect
                 setTemplateId={(value) => setConfig("template", value)}
               />
             ) : (
               <>
-                <div className="w-6 flex-center">
-                  <Icon className="w-3 h-3" />
+                <div className="w-8 flex-center">
+                  <Icon className="w-4 h-4" />
                 </div>
                 {(template ?? []).map(({ id }) => {
                   const initialValue =

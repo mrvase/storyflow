@@ -9,7 +9,7 @@ import {
   SwatchIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
-import { mergeRegister } from "@lexical/utils";
+import { mergeRegister } from "../../editor/utils/mergeRegister";
 import { TokenStream } from "@storyflow/backend/types";
 import cl from "clsx";
 import {
@@ -113,7 +113,15 @@ function OptionEventsPlugin() {
   return null;
 }
 
-export function Prompt({ node, prompt }: { node: PromptNode; prompt: string }) {
+export function Prompt({
+  node,
+  prompt,
+  children,
+}: {
+  node: PromptNode;
+  prompt: string;
+  children?: React.ReactNode;
+}) {
   const editor = useEditorContext();
 
   const { initializer, stream } = React.useMemo(() => {
@@ -383,6 +391,7 @@ export function Prompt({ node, prompt }: { node: PromptNode; prompt: string }) {
                   Overskrift 3
                 </Option>
               </div>
+              {children}
             </>
           )}
           {currentPane === "elements" && (

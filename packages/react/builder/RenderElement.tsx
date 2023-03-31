@@ -22,6 +22,7 @@ import RenderChildren from "./RenderChildren";
 import { getIdFromString } from "../utils/getIdsFromString";
 
 export const IndexContext = React.createContext(0);
+export const SpreadContext = React.createContext(false);
 
 const BUCKET_NAME = "awss3stack-mybucket15d133bf-1wx5fzxzweii4";
 const BUCKET_REGION = "eu-west-1";
@@ -88,7 +89,7 @@ const calculateProp = (
   } else if (type === "children") {
     return (
       <ExtendPath id={id}>
-        <RenderChildren value={prop} parentProp={config.name} />
+        <RenderChildren value={prop} />
       </ExtendPath>
     );
   }
@@ -182,7 +183,7 @@ export default function RenderElement({
   }
 
   return (
-    <>
+    <SpreadContext.Provider value={true}>
       {key.map((_, index) => (
         <IndexContext.Provider key={index} value={index}>
           <RenderElementWithProps
@@ -192,7 +193,7 @@ export default function RenderElement({
           />
         </IndexContext.Provider>
       ))}
-    </>
+    </SpreadContext.Provider>
   );
 }
 

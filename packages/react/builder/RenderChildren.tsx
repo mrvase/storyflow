@@ -1,6 +1,6 @@
 import * as React from "react";
 import { ExtendPath } from "./contexts";
-import RenderElement, { IndexContext } from "./RenderElement";
+import RenderElement, { IndexContext, SpreadContext } from "./RenderElement";
 import { log } from "./RenderBuilder";
 import { Component, ValueArray } from "@storyflow/frontend/types";
 import { createRenderArray } from "@storyflow/frontend/render";
@@ -21,24 +21,25 @@ const getDefaultComponent = (type: string) => {
   return component!;
 };
 
-export default function RenderChildren({
-  value,
-  parentProp = null,
-}: {
-  value: ValueArray;
-  parentProp?: string | null;
-}) {
+export default function RenderChildren({ value }: { value: ValueArray }) {
   const index = React.useContext(IndexContext);
+  const spread = React.useContext(SpreadContext);
 
   log("RENDER CHILDREN VALUE", value);
 
   const renderArray = React.useMemo(() => {
-    const valueAtIndex = value[index];
-    const value_ = Array.isArray(valueAtIndex) ? valueAtIndex : value;
+    let array: ValueArray = [];
+    if (spread) {
+      const valueAtIndex = value[index];
+      array = Array.isArray(valueAtIndex) ? valueAtIndex : [valueAtIndex];
+    } else if (value.length === 1 && Array.isArray(value[0])) {
+      array = value[0];
+    } else {
+      array = value;
+    }
     const configs = getLibraryConfigs();
-    console.log("$$ VALUE", value, valueAtIndex, value_);
     if (!value) return [];
-    return createRenderArray(value_, (type: string) =>
+    return createRenderArray(array, (type: string) =>
       Boolean(getConfigByType(type, configs)?.inline)
     );
   }, [value, index]);
@@ -62,7 +63,6 @@ export default function RenderChildren({
               const type = `H${block.$heading[0]}`;
               const Component = getDefaultComponent(type)!;
               const string = String(block.$heading[1]);
-              /*
               /*
               <ExtendPath
                 key={`${index}-${childIndex}`}

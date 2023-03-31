@@ -20,10 +20,15 @@ import { Plus } from "./Plus";
 import { TemplateHeader } from "./TemplateHeader";
 import { tools } from "shared/editor-tools";
 import { useDefaultState } from "./useDefaultState";
+import { useEditorContext } from "../../editor/react/EditorProvider";
+import { BLUR_COMMAND, COMMAND_PRIORITY_EDITOR } from "lexical";
+import { mergeRegister } from "../../editor/utils/mergeRegister";
+import { Overlay } from "../prompt/Overlay";
+import { Option } from "../prompt/Option";
+import { useMathMode } from "../Editor/useMathMode";
+import { Bars2Icon, CalculatorIcon } from "@heroicons/react/24/outline";
 
 type TextOps = [{ index: number; insert: [string]; remove?: 0 }];
-
-export const noTemplate: FieldConfig<FieldType>[] = [];
 
 const isTextInsert = (ops: ComputationOp["ops"]): ops is TextOps => {
   return (
@@ -58,7 +63,8 @@ export function DefaultField({
   const rootId = useFieldId();
   const [config] = useFieldConfig(rootId);
 
-  const { target, initialValue, value, setTransform } = useDefaultState(id);
+  const { target, initialValue, value, setTransform, isPrimitive } =
+    useDefaultState(id);
 
   const initialEditorValue = createTokenStream(initialValue);
 
@@ -180,15 +186,81 @@ export function DefaultField({
           <ContentEditable
             className={cl(
               "grow editor outline-none font-light selection:bg-gray-700",
-              "preview text-base leading-6"
+              "text-base leading-6"
             )}
-            data-value={preview !== `${value[0]}` ? preview : ""}
+            // data-value={!isPrimitive ? preview : ""}
           />
+          {!isPrimitive && (
+            <div className="-ml-9 preview hidden text-gray-500 rounded text-sm font-light mt-2.5">
+              <Bars2Icon className="shrink-0 w-4 mt-0.5 h-4 mr-5 opacity-50" />
+              {preview || "[Tom]"}
+            </div>
+          )}
           {button && <Plus />}
+          <PushOnBlurPlugin push={push} />
+          <OverlayWrapper />
         </div>
       </Editor>
     </>
   );
+}
+
+function OverlayWrapper() {
+  const [mathMode, setMathMode] = useMathMode();
+
+  return (
+    <Overlay>
+      <div className="p-2.5">
+        <div className="font-normal opacity-50 mb-1 ml-1">Tilstand</div>
+        <Option
+          value={null}
+          onEnter={() => {
+            setMathMode((ps) => !ps);
+          }}
+        >
+          {mathMode ? "Deaktiver" : "Aktiver"} listetilstand
+        </Option>
+      </div>
+    </Overlay>
+  );
+}
+
+function PushOnBlurPlugin({
+  push,
+}: {
+  push: (
+    payload:
+      | ComputationOp["ops"]
+      | ((
+          prev: ComputationOp["ops"] | undefined,
+          noop: ComputationOp["ops"]
+        ) => ComputationOp["ops"][])
+  ) => void;
+}) {
+  const editor = useEditorContext();
+
+  React.useEffect(() => {
+    return mergeRegister(
+      editor.registerCommand(
+        BLUR_COMMAND,
+        () => {
+          push((prev, noop) => {
+            if (!prev) {
+              return [];
+            }
+            if (prev === noop) {
+              return [prev];
+            }
+            return [prev, noop];
+          });
+          return false;
+        },
+        COMMAND_PRIORITY_EDITOR
+      )
+    );
+  }, []);
+
+  return null;
 }
 
 /*

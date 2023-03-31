@@ -4,6 +4,7 @@ import {
   ChevronRightIcon,
   ChevronUpDownIcon,
   ComputerDesktopIcon,
+  LinkIcon,
   LockClosedIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
@@ -29,6 +30,7 @@ import { FieldToolbarPortal } from "../documents/FieldToolbar";
 import { EditorFocusProvider } from "../editor/react/useIsFocused";
 import { Attributes, AttributesProvider } from "./Attributes";
 import { SelectedPathProvider, useNestedEntity, useSelectedPath } from "./Path";
+import { useFolder } from "../folders/collab/hooks";
 
 type Props = {
   fieldConfig: FieldConfig;
@@ -129,7 +131,7 @@ function FocusContainer({
     <div
       className={cl(
         ring,
-        "p-2.5 rounded-md ring-1",
+        "relative p-2.5 rounded-md ring-1",
         "transition-[background-color,box-shadow]"
       )}
     >
@@ -165,33 +167,37 @@ function LabelBar({
       <Dot id={id} dragHandleProps={isEditing ? dragHandleProps : {}} />
       <div
         className={cl(
-          "ml-5 flex items-center gap-2 text-sm font-normal select-none whitespace-nowrap"
+          "ml-5 mr-auto flex items-center gap-2 text-sm font-normal select-none whitespace-nowrap"
         )}
       >
-        <Label
-          id={id}
-          // isEditable={isNative && isEditing}
-        />
+        <Label id={id} />
         <PathMap />
         <Attributes />
       </div>
       {specialFieldConfig && (
-        <div className="ml-3 backdrop:mr-8 text-xs my-0.5 font-light bg-yellow-300 text-yellow-800/90 dark:bg-yellow-400/10 dark:text-yellow-200/75 px-1.5 rounded whitespace-nowrap">
+        <div
+          className={cl(
+            "flex-center text-xs h-6 -my-0.5 font-light bg-yellow-300 text-yellow-800/90 dark:bg-yellow-400/10 dark:text-yellow-200/75 px-1.5 rounded whitespace-nowrap",
+            isFocused
+              ? "opacity-100"
+              : "opacity-0 group-hover/container:opacity-50",
+            "transition-opacity"
+          )}
+        >
           {specialFieldConfig.label}
         </div>
       )}
       <button
         className={cl(
-          "ml-auto shrink-0 text-sm font-light flex-center gap-2 px-2 h-7 -my-1 bg-gray-750 rounded",
+          "ml-2 shrink-0 text-xs font-light flex-center gap-2 px-2 h-6 -my-0.5 bg-white/10 rounded",
           isFocused
             ? "opacity-50"
             : "opacity-0 group-hover/container:opacity-20",
-          // "opacity-0 group-hover/container:opacity-50",
           "group-hover/container:hover:opacity-100 transition-opacity"
         )}
         onClick={fullscreen}
       >
-        <ComputerDesktopIcon className="w-4 h-4" /> Preview
+        <ComputerDesktopIcon className="w-3 h-3" /> Se preview
       </button>
       {selectedDocument && (
         <button
@@ -219,8 +225,6 @@ export function PathMap() {
     return a;
   }, [] as [FieldId, NestedDocumentId][]);
 
-  console.log("SELECTED PATH", selectedPath);
-
   return (
     <>
       {selectedElements.map(([fieldId, documentId]) => (
@@ -244,29 +248,55 @@ function ElementLabel(props: {
 
   const { libraries } = useClientConfig();
 
-  if (!entity || !("element" in entity)) {
+  if (!entity) {
     return null;
   }
 
-  const config = getConfigFromType(entity.element, libraries);
+  if ("folder" in entity) {
+    const folder = useFolder(entity.folder);
 
-  return (
-    <button
-      type="button"
-      onClick={() =>
-        setPath((ps) => {
-          const index = ps.findIndex((el) => el === props.documentId);
-          if (index < 0) {
-            return ps;
-          }
-          return ps.slice(0, index + 1);
-        })
-      }
-      className="hover:underline text-yellow-400 flexitems-center"
-    >
-      {config?.label ?? "no"}
-    </button>
-  );
+    return (
+      <button
+        type="button"
+        onClick={() =>
+          setPath((ps) => {
+            const index = ps.findIndex((el) => el === props.documentId);
+            if (index < 0) {
+              return ps;
+            }
+            return ps.slice(0, index + 1);
+          })
+        }
+        className="hover:underline text-yellow-400 flexitems-center"
+      >
+        {folder.label ?? "no"}
+      </button>
+    );
+  }
+
+  if ("element" in entity) {
+    const config = getConfigFromType(entity.element, libraries);
+
+    return (
+      <button
+        type="button"
+        onClick={() =>
+          setPath((ps) => {
+            const index = ps.findIndex((el) => el === props.documentId);
+            if (index < 0) {
+              return ps;
+            }
+            return ps.slice(0, index + 1);
+          })
+        }
+        className="hover:underline text-yellow-400 flexitems-center"
+      >
+        {config?.label ?? "no"}
+      </button>
+    );
+  }
+
+  return null;
 }
 
 function Dot({ id, dragHandleProps }: { id: FieldId; dragHandleProps: any }) {
@@ -324,17 +354,22 @@ function Dot({ id, dragHandleProps }: { id: FieldId; dragHandleProps: any }) {
 }
 
 function Label({ id }: { id: FieldId }) {
+  const [{ selectedPath }, setPath] = useSelectedPath();
   const isNative = !isTemplateField(id);
 
   const [focused] = useFieldFocus();
   const isLink = focused && focused !== id;
   const label = useLabel(id);
 
+  console.log("LABEL", label);
+
   return (
-    <span
+    <div
       className={cl(
+        "flex items-center gap-1",
         isNative ? "text-gray-400" : "text-teal-600/90 dark:text-teal-400/90",
-        isLink ? "cursor-alias" : "cursor-default"
+        isLink ? "cursor-alias" : "cursor-default",
+        selectedPath.length && "hover:underline"
       )}
       onMouseDown={(ev) => {
         if (isLink) {
@@ -343,9 +378,15 @@ function Label({ id }: { id: FieldId }) {
           addImport.dispatch({ id, imports: [] });
         }
       }}
+      onClick={() => {
+        if (!isLink && selectedPath.length) {
+          setPath([]);
+        }
+      }}
     >
       {label || "Ingen label"}
-    </span>
+      {isLink && <LinkIcon className="w-3 h-3 opacity-50" />}
+    </div>
   );
 }
 

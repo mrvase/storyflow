@@ -17,7 +17,7 @@ import {
   LexicalEditor,
   PASTE_COMMAND,
 } from "lexical";
-import { mergeRegister } from "@lexical/utils";
+import { mergeRegister } from "../../editor/utils/mergeRegister";
 import { useEditorContext } from "../../editor/react/EditorProvider";
 import { copyRecord } from "../../documents/template-fields";
 import { useClientConfig } from "../../client-config";

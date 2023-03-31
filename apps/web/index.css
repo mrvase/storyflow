@@ -93,9 +93,11 @@ a {
   font-size: 1rem;
 }
 
+/*
 .editor.preview > p:only-child {
   display: inline;
 }
+*/
 
 .editor.preview > p:only-child > br:last-child:not(:only-child) {
   height: 16px;
@@ -129,18 +131,23 @@ a {
   margin: 0px;
 }
 
+/*
 .editor.preview:has(> p:only-child):after {
   content: attr(data-value);
-  margin-left: 20px;
-  position: absolute;
+  margin-top: 5px;
   pointer-events: none;
   color: rgb(156 163 175);
   display: inline-flex;
   white-space: nowrap;
 }
 
-.editor.preview:has(> p:only-child br:only-child):after {
+.editor.preview:has(> p:only-child br:only-child) + .preview {
   display: none;
+}
+*/
+
+.editor:has(> p:only-child) + .preview {
+  display: flex;
 }
 
 .editor > * > [data-lexical-decorator="true"] {

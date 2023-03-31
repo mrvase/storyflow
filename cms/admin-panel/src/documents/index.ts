@@ -175,6 +175,11 @@ export async function fetchArticle(
   id: string,
   client: Client
 ): Promise<DBDocument | undefined> {
+  const defaultTemplate = TEMPLATES.find((el) => el._id === id);
+  if (defaultTemplate) {
+    return defaultTemplate;
+  }
+
   const result = await client.documents.get.query(id);
   return unwrap(result)?.doc;
 }
@@ -183,6 +188,16 @@ export function fetchArticleSync(
   id: string,
   client: Client
 ): PromiseLike<DBDocument | undefined> {
+  const defaultTemplate = TEMPLATES.find((el) => el._id === id);
+
+  if (defaultTemplate) {
+    return {
+      then(callback) {
+        return callback ? callback(defaultTemplate) : defaultTemplate;
+      },
+    };
+  }
+
   const key = client.documents.get.key(id);
   const exists = cache.read(key);
   if (typeof exists !== "undefined") {

@@ -1,12 +1,9 @@
 import { ContentPlugin } from "./ContentPlugin";
 import { DecoratorPlugin } from "./DecoratorPlugin";
-import {
-  EditorProvider,
-  useEditorContext,
-} from "../../editor/react/EditorProvider";
+import { EditorProvider } from "../../editor/react/EditorProvider";
 import { Target, ComputationOp } from "shared/operations";
 import React from "react";
-import { $getComputation, $initializeEditor } from "./transforms";
+import { $initializeEditor } from "./transforms";
 import { TokenStream } from "@storyflow/backend/types";
 import { Reconciler } from "./Reconciler";
 import {
@@ -15,15 +12,13 @@ import {
 } from "../../editor/react/useIsFocused";
 import { useClientConfig } from "../../client-config";
 import { useFieldFocus } from "../../field-focus";
-import { $getRoot } from "lexical";
-import { Query } from "../query/Query";
 import { type QueueListener } from "@storyflow/state";
 import { useFieldId } from "../FieldIdContext";
 
 import { HeadingNode } from "../../editor/react/HeadingNode";
 import nodes from "../decorators/nodes";
 import { CopyPastePlugin } from "./CopyPastePlugin";
-import { Overlay } from "../prompt/Overlay";
+import { useMathMode } from "./useMathMode";
 
 const editorConfig = {
   namespace: "EDITOR",
@@ -66,7 +61,6 @@ export default function Editor({
           initialValue={initialValue}
         />
       )}
-      <Overlay />
       {children}
       <DecoratorPlugin />
       {/*

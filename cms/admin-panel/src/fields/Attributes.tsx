@@ -1,29 +1,34 @@
 import cl from "clsx";
 import React from "react";
 import {
+  FieldConfig,
   FieldId,
+  FieldType,
   NestedDocumentId,
+  NestedEntity,
   ValueArray,
 } from "@storyflow/backend/types";
 import { PropConfig, RegularOptions } from "@storyflow/frontend/types";
 import { useFieldId } from "./FieldIdContext";
 import { getConfigFromType, useClientConfig } from "../client-config";
-import { computeFieldId, getIdFromString } from "@storyflow/backend/ids";
+import {
+  computeFieldId,
+  createTemplateFieldId,
+  getIdFromString,
+} from "@storyflow/backend/ids";
 import { useGlobalState } from "../state/state";
-import { extendPath } from "@storyflow/backend/extendPath";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
 import { useClient } from "../client";
 import { useDocumentPageContext } from "../documents/DocumentPageContext";
 import { calculateFn } from "./default/calculateFn";
 import { useContextWithError } from "../utils/contextError";
-import { useSelectedNestedEntity, useSelectedPath } from "./Path";
+import { useSelectedNestedEntity } from "./Path";
+import { flattenProps } from "../utils/flattenProps";
+import { useFieldTemplate } from "./default/useFieldTemplate";
+import { Bars3Icon } from "@heroicons/react/24/outline";
 
 const AttributesContext = React.createContext<
-  | [
-      (PropConfig<RegularOptions> & { id: FieldId }) | null,
-      React.Dispatch<(PropConfig<RegularOptions> & { id: FieldId }) | null>
-    ]
-  | null
+  [FieldId | null, React.Dispatch<FieldId | null>] | null
 >(null);
 
 export function useAttributesContext() {
@@ -35,9 +40,7 @@ export function AttributesProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const state = React.useState<
-    (PropConfig<RegularOptions> & { id: FieldId }) | null
-  >(null);
+  const state = React.useState<FieldId | null>(null);
 
   return (
     <AttributesContext.Provider value={state}>
@@ -46,78 +49,76 @@ export function AttributesProvider({
   );
 }
 
-export function Attributes(props: {
+const noTemplate: FieldConfig<FieldType>[] = [];
+
+export function Attributes({
+  entity,
+  hideChildrenProps,
+  hideAsDefault,
+}: {
   hideChildrenProps?: boolean;
   hideAsDefault?: boolean;
-  id?: NestedDocumentId;
-  element?: string;
+  entity?: NestedEntity;
 }) {
   const [currentProp, setCurrentProp] = useAttributesContext();
   const { libraries } = useClientConfig();
 
-  let id = props.id;
-  let element = props.element;
+  const fieldId = useFieldId();
+  const template = useFieldTemplate(fieldId) ?? noTemplate;
 
-  if (!id || !element) {
-    const [{ selectedDocument }] = useSelectedPath();
-    const entity = useSelectedNestedEntity();
-    id = selectedDocument;
-    element = entity && "element" in entity ? entity.element : undefined;
+  if (!entity) {
+    // const [{ selectedDocument }] = useSelectedPath();
+    entity = useSelectedNestedEntity();
   }
 
-  const config = element ? getConfigFromType(element, libraries) : undefined;
+  let props: { id: FieldId; label: React.ReactNode }[] = React.useMemo(() => {
+    if (entity && "element" in entity) {
+      const config = getConfigFromType(entity.element, libraries);
 
-  const flatProps = React.useMemo(() => {
-    if (!id || !element) {
-      return [];
+      let result: { id: FieldId; label: React.ReactNode; type?: string }[] =
+        flattenProps(entity!.id as NestedDocumentId, config?.props ?? []);
+      if (hideChildrenProps) {
+        result = result.filter((el) => el.type !== "children");
+      }
+
+      if (result.length) {
+        result.push({
+          id: computeFieldId(entity!.id, getIdFromString("key")),
+          label: <Bars3Icon className="w-3 h-3" />,
+        });
+      }
+
+      return result;
     }
-    let result = (config?.props ?? []).reduce(
-      (acc: (PropConfig<RegularOptions> & { id: FieldId })[], el) =>
-        el.type === "group"
-          ? [
-              ...acc,
-              ...el.props.map((nested) => ({
-                id: computeFieldId(
-                  id!,
-                  getIdFromString(extendPath(el.name, nested.label, "#"))
-                ),
-                ...nested,
-                label: `${el.name} (${nested.label})`,
-              })),
-            ]
-          : [
-              ...acc,
-              {
-                id: computeFieldId(id!, getIdFromString(el.name)),
-                ...(el as PropConfig<RegularOptions>),
-              },
-            ],
-      []
-    );
-    if (props.hideChildrenProps) {
-      result = result.filter((el) => el.type !== "children");
+    if (entity && "folder" in entity) {
+      return template.map((el) => {
+        return {
+          id: createTemplateFieldId(entity!.id, el.id),
+          label: el.label,
+        };
+      });
     }
-    return result;
-  }, [config?.props, id]);
+    return [];
+  }, [entity]);
 
   React.useLayoutEffect(() => {
-    if (!props.hideAsDefault) {
-      setCurrentProp(flatProps[0] ?? null);
+    if (!hideAsDefault) {
+      setCurrentProp(props[0]?.id ?? null);
     }
-  }, [flatProps, props.hideAsDefault]);
+  }, [props, hideAsDefault]);
 
-  if (!id || !element) {
+  if (!entity) {
     return null;
   }
 
   return (
     <div className="flex gap-2 cursor-default">
-      {(flatProps ?? []).map((el) => (
+      {(props ?? []).map((el) => (
         <PropPreview
           key={el.id}
           prop={el}
-          selected={currentProp === el}
-          select={(toggle) => setCurrentProp(toggle ? el : null)}
+          selected={currentProp === el.id}
+          select={(toggle) => setCurrentProp(toggle ? el.id : null)}
         />
       ))}
     </div>
@@ -129,7 +130,7 @@ function PropPreview({
   selected,
   select,
 }: {
-  prop: PropConfig<RegularOptions> & { id: FieldId };
+  prop: { id: FieldId; label: React.ReactNode };
   selected: boolean;
   select: (value: boolean) => void;
 }) {

@@ -501,8 +501,8 @@ export const fields = createRoute({
               result: doc.values[getRawFieldId(id)],
               // it does exist in values because template field values are always saved to values
               _imports,
-              imports: [], // should just be empty
-              nested: [],
+              // imports: [], // should just be empty
+              // nested: [],
               updated: true,
             });
           });
@@ -513,7 +513,6 @@ export const fields = createRoute({
         util.inspect(
           derivatives.map((el) => ({
             ...el,
-            v: [],
           })),
           { depth: null, colors: true }
         )
@@ -576,8 +575,8 @@ export const fields = createRoute({
             depth: 0,
             result: doc.values[getRawFieldId(id)] ?? cachedRecord[id] ?? [],
             _imports,
-            imports: [], // should just be empty
-            nested: [],
+            // imports: [], // should just be empty
+            // nested: [],
             updated: true,
           };
         });

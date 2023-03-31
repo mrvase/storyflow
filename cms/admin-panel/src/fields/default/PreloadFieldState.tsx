@@ -1,6 +1,7 @@
 import React from "react";
 import { useGlobalState } from "../../state/state";
 import {
+  FieldConfig,
   FieldId,
   FieldType,
   NestedDocument,
@@ -21,7 +22,8 @@ import { useDocumentPageContext } from "../../documents/DocumentPageContext";
 import { tokens } from "@storyflow/backend/tokens";
 import { getChildrenDocuments } from "shared/computation-tools";
 import { useDefaultState } from "./useDefaultState";
-import { noTemplate } from "./DefaultField";
+
+const noTemplate: FieldConfig<FieldType>[] = [];
 
 export function PreloadFieldState({ id }: { id: FieldId }) {
   const { tree } = useDefaultState(id);

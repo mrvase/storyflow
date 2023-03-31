@@ -4,6 +4,7 @@ import { FieldId, Transform } from "@storyflow/backend/types";
 import {
   ChevronDownIcon,
   ChevronUpIcon,
+  LinkIcon,
   ScissorsIcon,
 } from "@heroicons/react/24/outline";
 import { addImport } from "../../custom-events";
@@ -33,7 +34,7 @@ export function TemplateHeader({
   return (
     <div
       className={cl(
-        "w-full flex divide-x divide-gray-200 dark:divide-gray-700 rounded mt-1 mb-2 py-0.5",
+        "w-full flex divide-x divide-gray-200 dark:divide-gray-700 rounded mt-1 mb-2.5 py-1",
         "dark:text-gray-300",
         "text-sm",
         "ring-1 ring-gray-200 dark:ring-gray-700"
@@ -45,14 +46,14 @@ export function TemplateHeader({
             <Menu.Button
               as="button"
               className={cl(
-                "w-6 h-6 flex-center transition-opacity",
+                "w-8 h-full flex-center transition-opacity",
                 open ? "opacity-100" : "opacity-50 hover:opacity-100"
               )}
             >
               {open ? (
-                <ChevronUpIcon className="w-3 h-3" />
+                <ChevronUpIcon className="w-4 h-4" />
               ) : (
-                <ChevronDownIcon className="w-3 h-3" />
+                <ChevronDownIcon className="w-4 h-4" />
               )}
             </Menu.Button>
             <MenuTransition show={open} className="absolute z-10 mt-2">
@@ -71,21 +72,25 @@ export function TemplateHeader({
         <div
           key={columnId}
           className={cl(
-            "group grow shrink basis-0 flex items-center justify-between",
-            isLink && "cursor-alias"
+            "group grow shrink basis-0 flex items-center gap-1 px-2"
           )}
-          onMouseDown={(ev) => {
-            if (isLink) {
-              ev.preventDefault();
-              addImport.dispatch({
-                id,
-                templateId: createRawTemplateFieldId(columnId),
-                imports: [],
-              });
-            }
-          }}
         >
-          <span className="truncate px-2">{label}</span>
+          <span
+            className={cl("truncate", isLink && "cursor-alias")}
+            onMouseDown={(ev) => {
+              if (isLink) {
+                ev.preventDefault();
+                addImport.dispatch({
+                  id,
+                  templateId: createRawTemplateFieldId(columnId),
+                  imports: [],
+                });
+              }
+            }}
+          >
+            {label}
+          </span>
+          {isLink && <LinkIcon className="w-3 h-3 opacity-50" />}
           {/*(
               <div className="w-6 h-6 flex-center ml-auto">
                 <LinkIcon className="w-3 h-3 opacity-50 group-hover:opacity-100" />
