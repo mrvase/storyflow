@@ -2,9 +2,7 @@ import React from "react";
 import { LexicalNode, NodeKey } from "lexical";
 import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
-import { NestedElement } from "@storyflow/backend/types";
-import { useParentProp } from "../default/ParentPropContext";
-import { useBuilderPath } from "../BuilderPath";
+import { NestedDocumentId, NestedElement } from "@storyflow/backend/types";
 import { getConfigFromType, useClientConfig } from "../../client-config";
 import { DefaultField } from "../default/DefaultField";
 import { ChevronUpDownIcon, CubeIcon } from "@heroicons/react/24/outline";
@@ -22,6 +20,7 @@ import {
   AttributesProvider,
   useAttributesContext,
 } from "../Attributes";
+import { ExtendPath, usePath, useSelectedPath } from "../Path";
 
 const TopLevelContext = React.createContext(true);
 
@@ -36,11 +35,9 @@ function Decorator({
 
   const isFocused = useIsFocused();
 
-  const [path, setPath] = useBuilderPath();
-
-  const isOpen = path[path.length - 1]?.id === value.id;
-
-  const parentProp = useParentProp();
+  const path = usePath();
+  const [{ selectedPath, selectedDocument }, setPath] = useSelectedPath();
+  const isOpen = selectedDocument === value.id;
 
   const { isSelected, select } = useIsSelected(nodeKey);
 
@@ -83,21 +80,14 @@ function Decorator({
               <button
                 className="w-5 h-5 flex-center rounded-full bg-gray-800 hover:bg-gray-700 transition-colors"
                 onClick={() => {
-                  setPath((ps) => [
-                    ...ps,
-                    {
-                      id: value.id,
-                      element: value.element,
-                      parentProp,
-                    },
-                  ]);
+                  setPath(() => [...selectedPath, ...path, value.id]);
                 }}
               >
                 <ChevronUpDownIcon className="w-4 h-4 rotate-45" />
               </button>
             </div>
           </div>
-          <PrimaryProp />
+          <PrimaryProp documentId={value.id} />
         </FocusContainer>
       </EditorFocusProvider>
     </AttributesProvider>
@@ -140,7 +130,7 @@ function FocusContainer({
   );
 }
 
-function PrimaryProp() {
+function PrimaryProp({ documentId }: { documentId: NestedDocumentId }) {
   const [prop] = useAttributesContext();
 
   if (!prop) {
@@ -148,17 +138,21 @@ function PrimaryProp() {
   }
 
   return (
-    <TopLevelContext.Provider key={prop.id} value={false}>
-      <FieldRestrictionsContext.Provider value={prop.type}>
-        <FieldOptionsContext.Provider
-          value={"options" in prop ? prop.options ?? null : null}
-        >
-          <div className="cursor-auto pl-[2.875rem] pr-2.5 pb-2.5">
-            <DefaultField id={prop.id} />
-          </div>
-        </FieldOptionsContext.Provider>
-      </FieldRestrictionsContext.Provider>
-    </TopLevelContext.Provider>
+    <ExtendPath id={documentId} type="document">
+      <ExtendPath id={prop.id} type="field">
+        <TopLevelContext.Provider key={prop.id} value={false}>
+          <FieldRestrictionsContext.Provider value={prop.type}>
+            <FieldOptionsContext.Provider
+              value={"options" in prop ? prop.options ?? null : null}
+            >
+              <div className="cursor-auto pl-[2.875rem] pr-2.5 pb-2.5">
+                <DefaultField id={prop.id} />
+              </div>
+            </FieldOptionsContext.Provider>
+          </FieldRestrictionsContext.Provider>
+        </TopLevelContext.Provider>
+      </ExtendPath>
+    </ExtendPath>
   );
 }
 

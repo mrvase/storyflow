@@ -186,13 +186,7 @@ export type ClientConfig = {
   libraries: LibraryConfig[];
 };
 
-export type PathSegment =
-  | {
-      id: string;
-      element: string;
-      parentProp: string | null;
-    }
-  | { id: string; label: string };
+export type PathSegment = string;
 
 export type Path = PathSegment[];
 

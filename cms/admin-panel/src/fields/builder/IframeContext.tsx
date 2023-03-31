@@ -48,6 +48,7 @@ export const IframeProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
+/*
 export const useIframeListeners = () => {
   const ctx = React.useContext(IframeContext);
   if (!ctx)
@@ -61,3 +62,4 @@ export const useIframeDispatchers = () => {
     throw new Error(`useIframeListeners cannot find IframeContext.Provider`);
   return ctx.dispatchers;
 };
+*/

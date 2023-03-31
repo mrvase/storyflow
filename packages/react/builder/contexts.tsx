@@ -1,8 +1,6 @@
 import * as React from "react";
-import { extendPath } from "../utils/extendPath";
 import { dispatchers } from "./events";
-import { Path, PathSegment } from "@storyflow/frontend/types";
-import { stringifyPath } from "./RenderBuilder";
+import { Path } from "@storyflow/frontend/types";
 
 /**
  * BUILDER SELECTION CONTEXT
@@ -10,18 +8,13 @@ import { stringifyPath } from "./RenderBuilder";
 
 type BuilderSelectionContextType = [
   subscribe: (callback: (selection: Path) => void) => () => void,
-  select: (selection: Path) => void,
-  deselect: (path: Path) => void
+  select: (selection: Path) => void
 ];
 
 const BuilderSelectionContext =
-  React.createContext<BuilderSelectionContextType>([
-    () => () => {},
-    () => {},
-    () => {},
-  ]);
+  React.createContext<BuilderSelectionContextType>([() => () => {}, () => {}]);
 
-export function BuilderSelectionProvider({
+export function SelectedPathProvider({
   children,
 }: {
   children: React.ReactNode;
@@ -46,24 +39,8 @@ export function BuilderSelectionProvider({
         };
       },
       (newSelection: Path) => {
-        /*
-        if (t.current) {
-          clearTimeout(t.current);
-        }
-        */
         dispatchers.selection.dispatch(newSelection);
         setSelection(newSelection);
-      },
-      (path: Path) => {
-        // t.current = setTimeout(() => {
-        if (
-          path.length === 0 ||
-          stringifyPath(selection.current) === stringifyPath(path)
-        ) {
-          dispatchers.selection.dispatch([]);
-          setSelection([]);
-        }
-        // });
       },
     ];
   }, []);
@@ -75,37 +52,7 @@ export function BuilderSelectionProvider({
   );
 }
 
-export function AddPathSegment({
-  children,
-  id,
-  element,
-  parentProp,
-}: {
-  children: React.ReactNode;
-  id: string;
-  element: string;
-  parentProp: string | null;
-}) {
-  const [subscribe, select, deselect] = useBuilderSelection();
-
-  const ctx = React.useMemo((): BuilderSelectionContextType => {
-    return [
-      subscribe,
-      (selection) => {
-        select([{ id, element, parentProp }, ...selection]);
-      },
-      deselect,
-    ];
-  }, [id, element, parentProp]);
-
-  return (
-    <BuilderSelectionContext.Provider value={ctx}>
-      {children}
-    </BuilderSelectionContext.Provider>
-  );
-}
-
-export const useBuilderSelection = () => {
+export const useSelectedPath = () => {
   return React.useContext(BuilderSelectionContext);
 };
 
@@ -113,29 +60,24 @@ export const useBuilderSelection = () => {
  * PATH CONTEXT
  */
 
-const PathContext = React.createContext<string>("");
+const PathContext = React.createContext<string[]>([]);
 
 export const usePath = () => {
   return React.useContext(PathContext);
 };
 
-export const ExtendPath = ({
+export function ExtendPath({
   children,
-  extend = "",
-  spacer = ".",
-  reset = false,
+  ...props
 }: {
   children: React.ReactNode;
-  extend?: string;
-  spacer?: string;
-  reset?: boolean;
-}) => {
+  id: string;
+}) {
   const path = usePath();
+
+  const nextPath = React.useMemo(() => [...path, props.id], [path, props.id]);
+
   return (
-    <PathContext.Provider
-      value={reset ? extend : extendPath(path, extend, spacer)}
-    >
-      {children}
-    </PathContext.Provider>
+    <PathContext.Provider value={nextPath}>{children}</PathContext.Provider>
   );
-};
+}

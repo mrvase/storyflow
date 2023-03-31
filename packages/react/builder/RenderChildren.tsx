@@ -1,5 +1,5 @@
 import * as React from "react";
-import { AddPathSegment, ExtendPath } from "./contexts";
+import { ExtendPath } from "./contexts";
 import RenderElement, { IndexContext } from "./RenderElement";
 import { log } from "./RenderBuilder";
 import { Component, ValueArray } from "@storyflow/frontend/types";
@@ -45,16 +45,8 @@ export default function RenderChildren({
 
   const createElement = ({ id, element }: { id: string; element: string }) => {
     return (
-      <ExtendPath key={id} extend={id}>
-        <AddPathSegment
-          {...{
-            id,
-            element,
-            parentProp,
-          }}
-        >
-          <RenderElement type={element} />
-        </AddPathSegment>
+      <ExtendPath key={id} id={id}>
+        <RenderElement type={element} />
       </ExtendPath>
     );
   };

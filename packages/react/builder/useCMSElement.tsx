@@ -1,10 +1,9 @@
 import * as React from "react";
-import { useBuilderSelection, usePath } from "./contexts";
+import { usePath, useSelectedPath } from "./contexts";
 import { dispatchers } from "./events";
-import { stringifyPath } from "./RenderBuilder";
 
-const splitPath = (path: string): [parent: string, element: string] => {
-  const ids = path.split(".");
+const getPathIds = (path: string[]): [parent: string, element: string] => {
+  const ids = path;
   return [ids[ids.length - 2] ?? "root", ids[ids.length - 1]];
 };
 
@@ -38,8 +37,8 @@ const btnStyle = {
   backgroundColor: "rgb(253 224 71)",
 } as {};
 
-export const EventHandler = ({ path }: { path: string }) => {
-  const [parent = "root", element] = splitPath(path);
+export const EventHandler = ({ path }: { path: string[] }) => {
+  const [parent = "root", element] = getPathIds(path);
 
   const [isSelected, setIsSelected] = React.useState(false);
 
@@ -52,11 +51,11 @@ export const EventHandler = ({ path }: { path: string }) => {
     }
   }, []);
 
-  const [subscribe, select] = useBuilderSelection();
+  const [subscribe, select] = useSelectedPath();
   React.useEffect(() => {
     return subscribe((currentPath) => {
       console.log("$$ PATH", currentPath, path);
-      if (stringifyPath(currentPath) === path) {
+      if (currentPath.join("") === path.join("")) {
         setIsSelected(true);
       } else if (isSelected) {
         setIsSelected(false);
@@ -88,7 +87,7 @@ export const EventHandler = ({ path }: { path: string }) => {
       }}
       onFocus={(ev) => {
         ev.stopPropagation();
-        select([]);
+        select(path);
       }}
       tabIndex={0}
       onMouseDown={(ev) => ev.stopPropagation()}
@@ -143,8 +142,8 @@ export const EventHandler = ({ path }: { path: string }) => {
   );
 };
 
-const useDragEvents = (path: string) => {
-  const [parent, element] = splitPath(path);
+const useDragEvents = (path: string[]) => {
+  const [parent, element] = getPathIds(path);
 
   const [isDragging, setIsDragging] = React.useState(false);
 
@@ -264,13 +263,6 @@ export const useCMSElement = (
       outline: "none",
       ...props.style,
     },
-    /*
-    onBlur: (ev: React.FocusEvent<HTMLDivElement, Element>) => {
-      ev.stopPropagation();
-      // deselect(path);
-      props.onBlur?.(ev);
-    },
-    */
     children,
   };
 };

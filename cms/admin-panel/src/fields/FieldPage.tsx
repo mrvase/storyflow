@@ -4,18 +4,12 @@ import {
 } from "@storyflow/frontend/events";
 import cl from "clsx";
 import React from "react";
-import BuilderIframe from "./builder/BuilderIframe";
-import {
-  useIframeDispatchers,
-  useIframeListeners,
-} from "./builder/IframeContext";
 import { calculateFn } from "./default/calculateFn";
 import { tools } from "shared/editor-tools";
 import { ComputationOp, targetTools } from "shared/operations";
 import { store, useGlobalState } from "../state/state";
 import {
   DocumentId,
-  TokenStream,
   FieldId,
   SyntaxTreeRecord,
   SyntaxTree,
@@ -39,15 +33,25 @@ import {
 } from "@storyflow/backend/ids";
 import { ChevronLeftIcon } from "@heroicons/react/24/outline";
 import { useSegment } from "../layout/components/SegmentContext";
-import { useTabUrl } from "../layout/utils";
-import { useBuilderPath } from "./BuilderPath";
+import { getPathFromSegment, useTabUrl } from "../layout/utils";
 import { PathMap } from "./FieldContainer";
 import { ComponentConfig, LibraryConfig } from "@storyflow/frontend/types";
 import { useDocumentIdGenerator } from "../id-generator";
 import { tokens } from "@storyflow/backend/tokens";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
 import { createTokenStream } from "shared/parse-token-stream";
-import { useAttributesContext } from "./Attributes";
+import {
+  Attributes,
+  AttributesProvider,
+  useAttributesContext,
+} from "./Attributes";
+import { createKey } from "../utils/createKey";
+import { BuilderIframe } from "./builder/BuilderIframe";
+import { useOnLoadHandler } from "../layout/onLoadHandler";
+import { SelectedPathProvider, SyncBuilderPath, useSelectedPath } from "./Path";
+import { DefaultField } from "./default/DefaultField";
+import { FieldIdContext } from "./FieldIdContext";
+import { EditorFocusProvider } from "../editor/react/useIsFocused";
 
 const useBuilderRendered = ({
   listeners,
@@ -71,7 +75,7 @@ const useBuilderRendered = ({
   return rendered;
 };
 
-const useElementActions = ({
+const ElementActions = ({
   id,
   listeners,
   push,
@@ -80,18 +84,14 @@ const useElementActions = ({
   listeners: ReturnType<typeof createEventsFromIframeToCMS>;
   push: any;
 }) => {
-  const [, setBuilderPath] = useBuilderPath();
+  const [{ selectedDocument, selectedField }, setBuilderPath] =
+    useSelectedPath();
 
-  const [{ elementId, parentId }, setPath] = React.useState<{
-    elementId: NestedDocumentId | undefined;
-    parentId: FieldId | undefined;
-  }>({
-    elementId: undefined,
-    parentId: undefined,
-  });
+  const parentId = selectedField;
+  const elementId = selectedDocument;
 
   const [tree] = useGlobalState<SyntaxTree>(
-    parentId ? `${parentId}#tree` : undefined
+    selectedField ? `${selectedField}#tree` : undefined
   );
 
   const tokenStream = React.useMemo(() => {
@@ -99,6 +99,7 @@ const useElementActions = ({
     return createTokenStream(tree);
   }, [tree]);
 
+  /*
   React.useEffect(() => {
     return listeners.selection.subscribe((path) => {
       console.log("PATH", path);
@@ -119,6 +120,7 @@ const useElementActions = ({
       });
     });
   }, [id]);
+  */
 
   const documentId = getDocumentId(id) as DocumentId;
   const generateDocumentId = useDocumentIdGenerator();
@@ -294,6 +296,8 @@ const useElementActions = ({
       });
     });
   }, [id, tokenStream, parentId]);
+
+  return null;
 };
 
 function Toolbar() {
@@ -312,9 +316,7 @@ function Toolbar() {
           Tilbage
         </Content.ToolbarButton>
       </div>
-      <div className="mt-3.5 mr-auto flex items-center">
-        <PathMap />
-      </div>
+      <div className="mt-3.5 mr-auto flex items-center">{/*<PathMap />*/}</div>
       {/* isNative && <FieldToolbar documentId={documentId} fieldId={id} /> */}
       <div className="mt-3.5 ml-2">
         <Content.ToolbarButton>Publicer ændringer</Content.ToolbarButton>
@@ -323,60 +325,155 @@ function Toolbar() {
   );
 }
 
+const useIframe = () => {
+  const [uniqueId] = React.useState(() => createKey());
+
+  const listeners = React.useMemo(() => {
+    const events = createEventsFromIframeToCMS();
+    events.setTarget(uniqueId);
+    return events;
+  }, []);
+
+  const dispatchers = React.useMemo(() => {
+    const events = createEventsFromCMSToIframe();
+    events.setTarget(uniqueId);
+    return events;
+  }, []);
+
+  const ref = React.useCallback((node: HTMLIFrameElement) => {
+    if (node) {
+      dispatchers.setTarget(uniqueId, node.contentWindow);
+    }
+  }, []);
+
+  const ctx = React.useMemo(
+    () => ({
+      iframeProps: {
+        uniqueId,
+        ref,
+      },
+      listeners,
+      dispatchers,
+    }),
+    []
+  );
+
+  return ctx;
+};
+
 export function FieldPage({
-  id,
-  selected,
+  isOpen,
+  isSelected,
   children,
+  onLoad,
 }: {
-  id: FieldId;
-  selected: boolean;
+  isOpen: boolean;
+  isSelected: boolean;
   children?: React.ReactNode;
+  onLoad: () => void;
 }) {
-  const listeners = useIframeListeners();
-  const dispatchers = useIframeDispatchers();
-  const rendered = useBuilderRendered({ listeners });
+  const { current } = useSegment();
+  const path = getPathFromSegment(current);
+  const [, fieldId] = path.split("/").slice(-1)[0].split("-");
+  if (!fieldId) throw new Error("Invalid url");
+  const id = fieldId as FieldId;
+
+  useOnLoadHandler(true, onLoad);
 
   const documentId = getDocumentId(id);
   const templateFieldId = getRawFieldId(id);
+
+  const { iframeProps, listeners, dispatchers } = useIframe();
+
+  const rendered = useBuilderRendered({ listeners });
 
   const { push } = useDocumentMutate<ComputationOp>(
     documentId,
     templateFieldId
   );
 
-  useElementActions({ id, listeners, push });
+  return (
+    <FieldIdContext.Provider value={id}>
+      <AttributesProvider>
+        <SelectedPathProvider
+          id={id}
+          onChange={(path) => {
+            // dispatch
+          }}
+        >
+          <SyncBuilderPath listeners={listeners} id={id} />
+          <ElementActions id={id} listeners={listeners} push={push} />
+          <Content selected={isOpen} className="relative h-full">
+            <PropagateStatePlugin
+              id={id}
+              rendered={rendered}
+              dispatchers={dispatchers}
+            />
+            <PanelGroup direction="horizontal" autoSaveId="panels">
+              <Panel collapsible>
+                <div className="relative h-full bg-gray-200">
+                  <div
+                    className={cl(
+                      "h-full transition-opacity duration-300",
+                      rendered ? "opacity-100" : "opacity-0"
+                    )}
+                  >
+                    <BuilderIframe {...iframeProps} />
+                  </div>
+                  <FieldOverlay id={id} />
+                </div>
+              </Panel>
+              <PanelResizeHandle
+                className={cl(
+                  "group relative bg-white/10 opacity-50 hover:opacity-100 transition-opacity",
+                  "w-1"
+                )}
+              />
+              <Panel collapsible>
+                <div className="p-2.5">
+                  <FieldPanel id={id} />
+                </div>
+              </Panel>
+            </PanelGroup>
+          </Content>
+          {children}
+        </SelectedPathProvider>
+      </AttributesProvider>
+    </FieldIdContext.Provider>
+  );
+}
 
-  const [currentProp] = useAttributesContext();
-
-  const hide = !currentProp;
+function FieldPanel({ id }: { id: FieldId }) {
+  const [{ selectedField = id }] = useSelectedPath();
 
   return (
-    <Content
-      toolbar={<Toolbar />}
-      selected={selected}
-      className="relative h-[calc(100%-58px)]"
-    >
-      <PropagateStatePlugin
-        id={id}
-        rendered={rendered}
-        dispatchers={dispatchers}
-      />
-      <div className="h-full bg-gray-200">
-        <div
-          className={cl(
-            "h-full transition-opacity duration-300",
-            rendered ? "opacity-100" : "opacity-0"
-          )}
-        >
-          <BuilderIframe />
+    <EditorFocusProvider>
+      <DefaultField key={selectedField} id={selectedField} />
+    </EditorFocusProvider>
+  );
+}
+
+function FieldOverlay({ id }: { id: FieldId }) {
+  const [currentProp] = useAttributesContext();
+  const currentId = currentProp?.id;
+
+  return (
+    <EditorFocusProvider>
+      <div
+        className={cl(
+          "absolute max-h-[calc(100%-1.25rem)] bg-gray-850 w-96 rounded-md bottom-2.5 right-2.5 overflow-y-auto no-scrollbar",
+          !currentId && "opacity-0 pointer-events-none"
+        )}
+      >
+        <div className={cl("relative grow shrink basis-0 p-2.5")}>
+          <div className="flex items-center text-sm gap-2 mb-2.5">
+            <Attributes hideChildrenProps />
+          </div>
+          {/* we assume queue has been initialized by previous page, so no need for root */}
+          {currentId && <DefaultField key={currentId} id={currentId} />}
         </div>
       </div>
-      {!hide && (
-        <div className="absolute max-h-[calc(100%-1.25rem)] bg-gray-850 w-96 rounded-md bottom-2.5 right-2.5 overflow-y-auto no-scrollbar">
-          {children}
-        </div>
-      )}
-    </Content>
+    </EditorFocusProvider>
   );
 }
 

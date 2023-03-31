@@ -284,6 +284,7 @@ export function DocumentPage({
 
   const path = getPathFromSegment(current);
   const [type, articleId] = path.split("/").slice(-1)[0].split("-");
+  if (!articleId) throw new Error("Invalid url");
   const id = articleId as DocumentId;
 
   let { article, histories, error } = useArticle(id);

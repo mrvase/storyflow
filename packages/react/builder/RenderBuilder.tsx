@@ -1,9 +1,4 @@
 import * as React from "react";
-import {
-  BuilderSelectionProvider,
-  ExtendPath,
-  useBuilderSelection,
-} from "./contexts";
 import { dispatchers, listeners } from "./events";
 import { RenderContext } from "../src/RenderContext";
 import { useCMSElement } from "./useCMSElement";
@@ -13,15 +8,12 @@ import ReactDOM from "react-dom";
 import { getLibraryConfigs } from "../config";
 import { useCSS } from "./useCSS";
 import RenderChildren from "./RenderChildren";
+import { SelectedPathProvider, useSelectedPath } from "./contexts";
 
 const LOG = true;
 export const log: typeof console.log = LOG
   ? (...args) => console.log("$$", ...args)
   : (...args) => {};
-
-export const stringifyPath = (path: Path) => {
-  return path.map((el) => el.id).join(".");
-};
 
 const generateKey = () => Math.random().toString(36).slice(2);
 
@@ -208,11 +200,11 @@ export function RenderBuilder() {
 
   return (
     <>
-      <BuilderSelectionProvider key={key}>
+      <SelectedPathProvider key={key}>
         <RenderContext.Provider value={useCMSElement}>
           <Frame>{id && <RenderRoot id={id} />}</Frame>
         </RenderContext.Provider>
-      </BuilderSelectionProvider>
+      </SelectedPathProvider>
       <SelectPortal />
     </>
   );
@@ -225,7 +217,7 @@ const RenderRoot = ({ id }: { id: string }) => {
 };
 
 const Frame = ({ children }: { children: React.ReactNode }) => {
-  const [, , deselect] = useBuilderSelection();
+  const [, select] = useSelectedPath();
 
   React.useEffect(() => {
     const onClick = (ev: MouseEvent) => {
@@ -237,7 +229,7 @@ const Frame = ({ children }: { children: React.ReactNode }) => {
       if (hasCMSParent) {
         return;
       }
-      deselect([]);
+      select([]);
     };
     document.addEventListener("click", onClick);
     return () => {

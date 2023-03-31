@@ -8,6 +8,7 @@ import { useDocumentCollab } from "../../documents/collab/DocumentCollabContext"
 import { DefaultField } from "./DefaultField";
 import { PreloadFieldState } from "./PreloadFieldState";
 import { useAttributesContext } from "../Attributes";
+import { ExtendPath } from "../Path";
 
 export function DefaultFieldRoot({ id, version, history }: FieldProps) {
   /*
@@ -34,13 +35,14 @@ export function DefaultFieldRoot({ id, version, history }: FieldProps) {
   }, []);
 
   const [currentProp] = useAttributesContext();
-
   const currentId = currentProp?.id ?? id;
 
   return (
     <>
       <PreloadFieldState id={id} />
-      <DefaultField key={currentId} id={currentId} button />
+      <ExtendPath id={currentId} type="field">
+        <DefaultField key={currentId} id={currentId} button />
+      </ExtendPath>
     </>
   );
 }

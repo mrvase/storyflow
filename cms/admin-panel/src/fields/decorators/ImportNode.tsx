@@ -1,14 +1,5 @@
 import React from "react";
-import {
-  DecoratorNode,
-  DOMConversionMap,
-  DOMConversionOutput,
-  DOMExportOutput,
-  LexicalNode,
-  NodeKey,
-  SerializedLexicalNode,
-  Spread,
-} from "lexical";
+import { LexicalNode, NodeKey } from "lexical";
 import cl from "clsx";
 import { useIsSelected } from "./useIsSelected";
 import { caretClasses } from "./caret";
@@ -22,7 +13,6 @@ import {
   RawFieldId,
   ValueArray,
 } from "@storyflow/backend/types";
-import { useBuilderPath } from "../BuilderPath";
 import { revertTemplateFieldId } from "@storyflow/backend/ids";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 
@@ -49,7 +39,7 @@ function Decorator({
   nodeKey: string;
   value: HasSelect<NestedField>;
 }) {
-  const [, setPath] = useBuilderPath();
+  // const [, setPath] = useBuilderPath();
 
   const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
 
@@ -82,6 +72,7 @@ function Decorator({
       }}
       onClick={() => {
         if (isSelected && !selectClick.current) {
+          /*
           setPath((ps) => [
             ...ps,
             {
@@ -89,6 +80,7 @@ function Decorator({
               label: fieldImport.id,
             },
           ]);
+          */
         }
         selectClick.current = false;
       }}

@@ -58,16 +58,11 @@ export default function AppPage({
   children?: React.ReactNode;
 }) {
   const { current } = useSegment();
-
   const path = getPathFromSegment(current);
-
   const [type, urlId] = path.split("/").slice(-1)[0].split("-");
-
-  if (!urlId) {
-    throw new Error("Invalid url");
-  }
-
+  if (!urlId) throw new Error("Invalid url");
   const folderLookupId = urlId as FolderId;
+
   const folder = useFolder(folderLookupId);
 
   const { articles } = useOptimisticDocumentList(folder?._id);

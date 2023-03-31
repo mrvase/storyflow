@@ -13,12 +13,11 @@ import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
 import { caretClasses } from "./caret";
 import { NestedElement, ValueArray } from "@storyflow/backend/types";
-import { useParentProp } from "../default/ParentPropContext";
-import { useBuilderPath } from "../BuilderPath";
 import { getConfigFromType, useClientConfig } from "../../client-config";
 import { useGlobalState } from "../../state/state";
 import { computeFieldId, getIdFromString } from "@storyflow/backend/ids";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
+import { usePath, useSelectedPath } from "../Path";
 
 function Decorator({
   value,
@@ -27,8 +26,8 @@ function Decorator({
   value: NestedElement;
   nodeKey: string;
 }) {
-  const [, setPath] = useBuilderPath();
-  const parentProp = useParentProp();
+  const path = usePath();
+  const [{ selectedPath, selectedDocument }, setPath] = useSelectedPath();
 
   const pathToLabel = computeFieldId(value.id, getIdFromString("label"));
 
@@ -63,14 +62,7 @@ function Decorator({
       }}
       onClick={() => {
         if (isSelected && !selectClick.current) {
-          setPath((ps) => [
-            ...ps,
-            {
-              id: value.id,
-              label: config?.label ?? value.element,
-              parentProp,
-            },
-          ]);
+          setPath((ps) => [...selectedPath, ...path, value.id]);
         }
         selectClick.current = false;
       }}

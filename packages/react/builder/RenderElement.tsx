@@ -4,7 +4,7 @@ import {
   PropConfigArray,
   ValueArray,
 } from "@storyflow/frontend/types";
-import { usePath } from "./contexts";
+import { ExtendPath, usePath } from "./contexts";
 import {
   focusCMSElement,
   getSiblings,
@@ -46,7 +46,12 @@ const getImageObject = (name: string) => {
   };
 };
 
-const calculateProp = (config: PropConfig, prop: any, index: number) => {
+const calculateProp = (
+  id: string,
+  config: PropConfig,
+  prop: any,
+  index: number
+) => {
   const type = config.type;
   const value = prop[index % prop.length];
   if (value !== null && typeof value === "object" && "name" in value) {
@@ -81,7 +86,11 @@ const calculateProp = (config: PropConfig, prop: any, index: number) => {
   } else if (type === "string") {
     return String(value || "");
   } else if (type === "children") {
-    return <RenderChildren value={prop} parentProp={config.name} />;
+    return (
+      <ExtendPath id={id}>
+        <RenderChildren value={prop} parentProp={config.name} />
+      </ExtendPath>
+    );
   }
   return prop[index % prop.length];
 };
@@ -94,7 +103,7 @@ export default function RenderElement({
   props?: Record<string, ValueArray>;
 }) {
   const path = usePath();
-  const elementId = path.split(".").slice(-1)[0];
+  const elementId = path.slice(-1)[0];
 
   let config_ = getConfigByType(type, getLibraryConfigs(), getLibraries());
 
@@ -207,7 +216,8 @@ function RenderElementWithProps({
           config.name,
           config.type === "group"
             ? calculatePropsFromConfig(config.props, config.name)
-            : calculateProp(config, uncomputedProps?.[id] ?? [], index) ?? [],
+            : calculateProp(id, config, uncomputedProps?.[id] ?? [], index) ??
+              [],
         ];
       })
     );

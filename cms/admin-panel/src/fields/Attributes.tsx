@@ -7,7 +7,6 @@ import {
 } from "@storyflow/backend/types";
 import { PropConfig, RegularOptions } from "@storyflow/frontend/types";
 import { useFieldId } from "./FieldIdContext";
-import { useBuilderPath } from "./BuilderPath";
 import { getConfigFromType, useClientConfig } from "../client-config";
 import { computeFieldId, getIdFromString } from "@storyflow/backend/ids";
 import { useGlobalState } from "../state/state";
@@ -17,6 +16,7 @@ import { useClient } from "../client";
 import { useDocumentPageContext } from "../documents/DocumentPageContext";
 import { calculateFn } from "./default/calculateFn";
 import { useContextWithError } from "../utils/contextError";
+import { useSelectedNestedEntity, useSelectedPath } from "./Path";
 
 const AttributesContext = React.createContext<
   | [
@@ -53,20 +53,22 @@ export function Attributes(props: {
   element?: string;
 }) {
   const [currentProp, setCurrentProp] = useAttributesContext();
-  const [path] = useBuilderPath();
-
-  const id =
-    props.id ?? (path[path.length - 1]?.id as NestedDocumentId | undefined);
-  const element =
-    props.element ??
-    ((path[path.length - 1] as any)?.element as string | undefined);
-
   const { libraries } = useClientConfig();
+
+  let id = props.id;
+  let element = props.element;
+
+  if (!id || !element) {
+    const [{ selectedDocument }] = useSelectedPath();
+    const entity = useSelectedNestedEntity();
+    id = selectedDocument;
+    element = entity && "element" in entity ? entity.element : undefined;
+  }
 
   const config = element ? getConfigFromType(element, libraries) : undefined;
 
   const flatProps = React.useMemo(() => {
-    if (!id) {
+    if (!id || !element) {
       return [];
     }
     let result = (config?.props ?? []).reduce(
@@ -76,7 +78,7 @@ export function Attributes(props: {
               ...acc,
               ...el.props.map((nested) => ({
                 id: computeFieldId(
-                  id,
+                  id!,
                   getIdFromString(extendPath(el.name, nested.label, "#"))
                 ),
                 ...nested,
@@ -86,7 +88,7 @@ export function Attributes(props: {
           : [
               ...acc,
               {
-                id: computeFieldId(id, getIdFromString(el.name)),
+                id: computeFieldId(id!, getIdFromString(el.name)),
                 ...(el as PropConfig<RegularOptions>),
               },
             ],
@@ -99,8 +101,14 @@ export function Attributes(props: {
   }, [config?.props, id]);
 
   React.useLayoutEffect(() => {
-    !props.hideAsDefault && setCurrentProp(flatProps[0] ?? null);
+    if (!props.hideAsDefault) {
+      setCurrentProp(flatProps[0] ?? null);
+    }
   }, [flatProps, props.hideAsDefault]);
+
+  if (!id || !element) {
+    return null;
+  }
 
   return (
     <div className="flex gap-2 cursor-default">
@@ -115,6 +123,7 @@ export function Attributes(props: {
     </div>
   );
 }
+
 function PropPreview({
   prop,
   selected,

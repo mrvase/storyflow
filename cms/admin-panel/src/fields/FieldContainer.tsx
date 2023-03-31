@@ -9,25 +9,26 @@ import {
 } from "@heroicons/react/24/outline";
 import React from "react";
 import { useFieldFocus } from "../field-focus";
-import { BuilderPortal } from "./builder/BuilderPortal";
 import { addImport } from "../custom-events";
-import { FieldPage } from "./FieldPage";
 import { useSegment } from "../layout/components/SegmentContext";
 import { useTabUrl } from "../layout/utils";
 import { useLabel } from "../documents/collab/hooks";
-import { FieldConfig, FieldId } from "@storyflow/backend/types";
+import {
+  FieldConfig,
+  FieldId,
+  NestedDocumentId,
+} from "@storyflow/backend/types";
 import { getTranslateDragEffect } from "../utils/dragEffects";
 import useIsFocused from "../utils/useIsFocused";
 import { useIsFocused as useIsEditorFocused } from "../editor/react/useIsFocused";
 import { getDefaultField } from "@storyflow/backend/fields";
-import { IframeProvider } from "./builder/IframeContext";
-import { BuilderPathProvider, useBuilderPath } from "./BuilderPath";
 import useTabs from "../layout/useTabs";
 import { getConfigFromType, useClientConfig } from "../client-config";
 import { isTemplateField } from "@storyflow/backend/ids";
 import { FieldToolbarPortal } from "../documents/FieldToolbar";
 import { EditorFocusProvider } from "../editor/react/useIsFocused";
 import { Attributes, AttributesProvider } from "./Attributes";
+import { SelectedPathProvider, useNestedEntity, useSelectedPath } from "./Path";
 
 type Props = {
   fieldConfig: FieldConfig;
@@ -80,40 +81,26 @@ export function FieldContainer({
   return (
     <EditorFocusProvider>
       <AttributesProvider>
-        <FieldToolbarPortal show={isFocused} />
-        <IframeProvider>
-          <BuilderPathProvider>
-            <div
-              {...props}
-              {...handlers}
-              className={cl(
-                "relative grow shrink basis-0 group/container px-2.5 mt-5",
-                isFocused && "focused"
-              )}
-            >
-              <FocusContainer isFocused={isFocused}>
-                <LabelBar
-                  id={id}
-                  dragHandleProps={dragHandleProps}
-                  isFocused={isFocused}
-                />
-                <div className="pl-9">{children}</div>
-              </FocusContainer>
-              <BuilderPortal id={id}>
-                {(isOpen) => (
-                  <FieldPage selected={isOpen} id={id}>
-                    <div className={cl("relative grow shrink basis-0 p-2.5")}>
-                      <div className="flex items-center text-sm gap-2 mb-2.5">
-                        <Attributes hideChildrenProps />
-                      </div>
-                      {children}
-                    </div>
-                  </FieldPage>
-                )}
-              </BuilderPortal>
-            </div>
-          </BuilderPathProvider>
-        </IframeProvider>
+        <SelectedPathProvider id={id}>
+          <FieldToolbarPortal show={isFocused} />
+          <div
+            {...props}
+            {...handlers}
+            className={cl(
+              "relative grow shrink basis-0 group/container px-2.5 mt-5",
+              isFocused && "focused"
+            )}
+          >
+            <FocusContainer isFocused={isFocused}>
+              <LabelBar
+                id={id}
+                dragHandleProps={dragHandleProps}
+                isFocused={isFocused}
+              />
+              <div className="pl-9">{children}</div>
+            </FocusContainer>
+          </div>
+        </SelectedPathProvider>
       </AttributesProvider>
     </EditorFocusProvider>
   );
@@ -160,7 +147,7 @@ function LabelBar({
   dragHandleProps: any;
   isFocused: boolean;
 }) {
-  const [path, setPath] = useBuilderPath();
+  const [{ selectedDocument }, setPath] = useSelectedPath();
 
   const [isEditing] = [true]; //useLocalStorage<boolean>("editing-articles", false);
 
@@ -206,7 +193,7 @@ function LabelBar({
       >
         <ComputerDesktopIcon className="w-4 h-4" /> Preview
       </button>
-      {path.length > 0 && (
+      {selectedDocument && (
         <button
           className="-my-1 ml-1 -mr-1 w-7 h-7 flex-center"
           onClick={() => {
@@ -221,28 +208,64 @@ function LabelBar({
 }
 
 export function PathMap() {
-  const [path, setPath] = useBuilderPath();
+  const [{ selectedPath }] = useSelectedPath();
 
-  const { libraries } = useClientConfig();
+  const selectedElements = selectedPath.reduce((a, c, i) => {
+    if (i % 2 === 0) {
+      a.push([c, undefined] as unknown as [FieldId, NestedDocumentId]);
+    } else {
+      a[a.length - 1][1] = c as NestedDocumentId;
+    }
+    return a;
+  }, [] as [FieldId, NestedDocumentId][]);
+
+  console.log("SELECTED PATH", selectedPath);
+
   return (
     <>
-      {path.map((el, index) => (
-        <React.Fragment key={el.id}>
+      {selectedElements.map(([fieldId, documentId]) => (
+        <React.Fragment key={documentId}>
           <div className="opacity-75">
             <ChevronRightIcon className="w-3 h-3" />
           </div>
-          <button
-            type="button"
-            onClick={() => setPath(path.slice(0, index + 1))}
-            className="hover:underline text-yellow-400 flexitems-center"
-          >
-            {el && "label" in el
-              ? el.label
-              : getConfigFromType(el.element, libraries)?.label}
-          </button>
+          <ElementLabel fieldId={fieldId} documentId={documentId} />
         </React.Fragment>
       ))}
     </>
+  );
+}
+
+function ElementLabel(props: {
+  fieldId: FieldId;
+  documentId: NestedDocumentId;
+}) {
+  const [, setPath] = useSelectedPath();
+  const entity = useNestedEntity(props);
+
+  const { libraries } = useClientConfig();
+
+  if (!entity || !("element" in entity)) {
+    return null;
+  }
+
+  const config = getConfigFromType(entity.element, libraries);
+
+  return (
+    <button
+      type="button"
+      onClick={() =>
+        setPath((ps) => {
+          const index = ps.findIndex((el) => el === props.documentId);
+          if (index < 0) {
+            return ps;
+          }
+          return ps.slice(0, index + 1);
+        })
+      }
+      className="hover:underline text-yellow-400 flexitems-center"
+    >
+      {config?.label ?? "no"}
+    </button>
   );
 }
 

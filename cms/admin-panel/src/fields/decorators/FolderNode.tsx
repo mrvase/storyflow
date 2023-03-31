@@ -1,14 +1,5 @@
 import React from "react";
-import {
-  DecoratorNode,
-  DOMConversionMap,
-  DOMConversionOutput,
-  DOMExportOutput,
-  LexicalNode,
-  NodeKey,
-  SerializedLexicalNode,
-  Spread,
-} from "lexical";
+import { LexicalNode, NodeKey } from "lexical";
 import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
 import { caretClasses } from "./caret";
@@ -16,9 +7,7 @@ import {
   SyntaxTreeRecord,
   NestedDocument,
   NestedFolder,
-  TokenStream,
 } from "@storyflow/backend/types";
-import { useBuilderPath } from "../BuilderPath";
 import { FolderIcon } from "@heroicons/react/24/outline";
 import { useFieldId } from "../FieldIdContext";
 import { useFieldTemplate } from "../default/useFieldTemplate";
@@ -32,7 +21,7 @@ function Decorator({
   value: NestedFolder;
   nodeKey: string;
 }) {
-  const [, setPath] = useBuilderPath();
+  // const [, setPath] = useBuilderPath();
 
   const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
 
@@ -76,6 +65,7 @@ function Decorator({
             !selectClick.current &&
             "id" in value
           ) {
+            /*
             setPath((ps) => [
               ...ps,
               {
@@ -84,6 +74,7 @@ function Decorator({
                 parentProp: null,
               },
             ]);
+            */
           }
           selectClick.current = false;
         }}
