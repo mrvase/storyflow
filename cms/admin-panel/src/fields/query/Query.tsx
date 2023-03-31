@@ -54,9 +54,8 @@ import {
   getQueryType,
   getOptionLabel,
 } from "./helpers";
-import { useFieldOptions } from "../default/FieldOptionsContext";
 import { Option as OptionComponent } from "./Option";
-import { useFieldRestriction } from "../FieldTypeContext";
+import { useFieldRestriction, useFieldOptions } from "../FieldIdContext";
 import { useIsEmpty } from "../../editor/react/useIsEmpty";
 import { QueryFiles } from "./QueryFiles";
 import { QueryComponents } from "./QueryComponents";

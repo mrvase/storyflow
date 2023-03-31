@@ -39,7 +39,7 @@ export function Plus() {
 
   const isFocused = useEditorIsFocused();
 
-  const offset = -2;
+  const offset = 0;
 
   const [y, setY] = React.useState<number | null>(null);
 
@@ -106,7 +106,7 @@ export function Plus() {
   return isFocused && y !== null ? (
     <>
       <div
-        className="absolute top-0 left-0 w-4 h-4 m-1 mx-2.5 opacity-50 hover:opacity-100"
+        className="absolute top-0 -left-[2.875rem] w-4 h-4 m-1 mx-2.5 opacity-50 hover:opacity-100"
         style={{ transform: `translateY(${y}px)` }}
         onMouseDown={(ev) => {
           ev.preventDefault();

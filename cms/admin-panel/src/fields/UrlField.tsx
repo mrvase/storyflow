@@ -96,13 +96,7 @@ const useRelatedPages = (articleId: DocumentId, initialUrl: string) => {
   return [parents, children] as [DBDocument[], DBDocument[]];
 };
 
-export default function UrlField({
-  id,
-  value,
-  version,
-  fieldConfig,
-  history,
-}: FieldProps<"url">) {
+export default function UrlField({ id, version, history }: FieldProps) {
   if (id === "") {
     return (
       <div className="text-gray-400 font-light leading-6 pt-1 pb-5">
@@ -116,11 +110,16 @@ export default function UrlField({
   const { record } = useDocumentPageContext();
 
   const initialValue = React.useMemo(
-    () => value ?? getConfig("url").defaultValue,
+    () => record[id] ?? getConfig("url").defaultValue,
     []
   );
 
   const client = useClient();
+
+  const [tree, setTree] = useGlobalState<SyntaxTree>(
+    `${id}#tree`,
+    () => initialValue
+  );
 
   const [output, setOutput] = useGlobalState<[string]>(
     id,
@@ -234,7 +233,7 @@ export default function UrlField({
         });
       });
     }
-  }, [isFocused, value]);
+  }, [isFocused]);
 
   const singular = useSingular(id);
 
@@ -255,14 +254,11 @@ export default function UrlField({
           return getNextState(prev, operation);
         });
 
-        setOutput(
-          () =>
-            calculateFn(
-              id,
-              parseTokenStream(result, getConfig("url").transform),
-              { record, client }
-            ) as [string]
-        );
+        const tree = parseTokenStream(result, getConfig("url").transform);
+
+        setTree(() => tree);
+
+        setOutput(() => calculateFn(id, tree, { record, client }) as [string]);
       });
     });
   }, [client]);
@@ -281,8 +277,8 @@ export default function UrlField({
   }
 
   return (
-    <div className="px-2.5">
-      <div className="outline-none rounded font-light flex items-center px-3 mb-2 bg-gray-800 ml-9 ring-button">
+    <div className="">
+      <div className="outline-none rounded font-light flex items-center px-3 mb-2 bg-gray-800 ring-button">
         {/*parents[0] ? (
             <Link
               to={replacePage(parents[0]?._id ?? "")}
@@ -379,17 +375,6 @@ export default function UrlField({
       {getTemplateDocumentId(id) ===
         getTemplateDocumentId(DEFAULT_FIELDS.url.id) && (
         <div className="flex items-center ml-5">
-          <button
-            className="p-1 w-6 h-6 -ml-1 mr-4 opacity-50 hover:opacity-100 transition-opacity"
-            onClick={() =>
-              ctx.addArticleWithUrl({
-                _id: documentId,
-                record,
-              })
-            }
-          >
-            {/*<PlusIcon className="w-4 h-4" />*/}
-          </button>
           <div className="flex flex-wrap gap-2">
             {children.map((el, index) => (
               <Link

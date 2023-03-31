@@ -9,6 +9,9 @@ import {
   SyntaxTree,
   TokenStream,
   SyntaxTreeRecord,
+  NestedDocument,
+  NestedElement,
+  NestedFolder,
 } from "@storyflow/backend/types";
 import { ComputationOp, targetTools } from "./operations";
 import { tools } from "./editor-tools";
@@ -256,21 +259,23 @@ export type ComputationGraph = {
 };
 
 export const getChildrenDocuments = (value: SyntaxTree) => {
-  const children: NestedDocumentId[] = [];
+  const children = new Set<
+    NestedField | NestedElement | NestedFolder | NestedDocument
+  >();
 
   const traverseNode = (node: SyntaxTree) => {
     node.children.forEach((token) => {
       if (isSyntaxTree(token)) {
         traverseNode(token);
       } else if (tokens.isNestedEntity(token) && isNestedDocumentId(token.id)) {
-        children.push(token.id);
+        children.add(token);
       }
     });
   };
 
   traverseNode(value);
 
-  return children;
+  return Array.from(children);
 };
 
 export const getGraph = (
@@ -287,9 +292,9 @@ export const getGraph = (
 
     const childrenDocuments = getChildrenDocuments(computation);
     const childrenIds: FieldId[] = [];
-    childrenDocuments.forEach((documentId) => {
+    childrenDocuments.forEach((doc) => {
       entries.forEach(([fieldId]) => {
-        if (isFieldOfDocument(fieldId, documentId)) {
+        if (isFieldOfDocument(fieldId, doc.id)) {
           childrenIds.push(fieldId);
         }
       });

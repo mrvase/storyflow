@@ -36,14 +36,12 @@ export function Reconciler({
   initialValue,
   push,
   register,
-  setValue,
 }: {
   initialValue: TokenStream;
   // history: CollabHistory<TextOp | FunctionOp>;
   target: Target;
   push: (ops: ComputationOp["ops"]) => void;
   register: (listener: QueueListener<ComputationOp>) => () => void;
-  setValue: (value: () => TokenStream) => void;
 }) {
   const editor = useEditorContext();
 
@@ -54,7 +52,6 @@ export function Reconciler({
 
     return register(({ trackedForEach, forEach }) => {
       const newOps: InferAction<ComputationOp>[] = [];
-
       // This forEach only adds any unique operation a single time.
       // Since we are using the bound register, it does not provide
       // the operations pushed from this specific field.
@@ -63,23 +60,14 @@ export function Reconciler({
           newOps.push(...operation.ops);
         }
       });
-
-      let update = false;
-
       const result = cache(forEach, (prev, { operation }) => {
         if (operation.target === target) {
           prev = getNextState(prev, operation);
-          update = true;
         }
         return prev;
       });
-
       if (newOps.length > 0) {
         reconcile(editor, result, newOps, libraries);
-      }
-
-      if (update) {
-        setValue(() => result);
       }
     });
   }, [editor, libraries]);

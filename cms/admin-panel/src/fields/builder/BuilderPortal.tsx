@@ -65,7 +65,7 @@ export function BuilderPortal({
   children,
   id,
 }: {
-  children: (selected: boolean) => React.ReactNode;
+  children: (selected: boolean) => React.ReactElement;
   id: string;
 }) {
   const { ref, isOpen, id: urlId } = useBuilder();

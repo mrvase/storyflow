@@ -14,10 +14,9 @@ import cl from "clsx";
 import { caretClasses } from "./caret";
 import { NestedElement, ValueArray } from "@storyflow/backend/types";
 import { useParentProp } from "../default/ParentPropContext";
-import { stringifyPath, useBuilderPath } from "../BuilderPath";
+import { useBuilderPath } from "../BuilderPath";
 import { getConfigFromType, useClientConfig } from "../../client-config";
 import { useGlobalState } from "../../state/state";
-import { useFieldId } from "../FieldIdContext";
 import { computeFieldId, getIdFromString } from "@storyflow/backend/ids";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 

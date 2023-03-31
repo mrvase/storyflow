@@ -1,43 +1,32 @@
 import { NoList } from "@storyflow/dnd";
 import React from "react";
 import { ComputationOp } from "shared/operations";
-import {
-  DocumentId,
-  FieldConfig,
-  FieldId,
-  FieldType,
-  SyntaxTree,
-} from "@storyflow/backend/types";
-import DefaultField from "./default/DefaultField";
+import { FieldConfig, FieldId, FieldType } from "@storyflow/backend/types";
+import { DefaultFieldRoot } from "./default/DefaultFieldRoot";
 import { FieldContainer } from "./FieldContainer";
 import UrlField from "./UrlField";
 import { ServerPackage } from "@storyflow/state";
 import { FieldIdContext } from "./FieldIdContext";
-import { FieldRestrictionsContext } from "./FieldTypeContext";
+import { FieldRestrictionsContext } from "./FieldIdContext";
 
-const Components: { [K in FieldType]: React.FC<FieldProps<K>> } = {
-  default: DefaultField,
+const Components: { [K in FieldType]: React.FC<FieldProps> } = {
+  default: DefaultFieldRoot,
   url: UrlField,
-  slug: DefaultField,
+  slug: DefaultFieldRoot,
 };
 
-const getComponent = <T extends FieldType>(
-  type: T
-): React.FC<FieldProps<T>> => {
+const getComponent = <T extends FieldType>(type: T): React.FC<FieldProps> => {
   return Components[type];
 };
 
-export type FieldProps<T extends FieldType = FieldType> = {
+export type FieldProps = {
   id: FieldId;
-  value: SyntaxTree | undefined;
-  fieldConfig: FieldConfig<T>;
   version: number;
   history: ServerPackage<ComputationOp>[];
 };
 
 export function RenderField<T extends FieldType>({
   id,
-  value,
   fieldConfig,
   history,
   index,
@@ -45,7 +34,6 @@ export function RenderField<T extends FieldType>({
   dragHandleProps,
 }: {
   id: FieldId;
-  value: SyntaxTree | undefined;
   fieldConfig: FieldConfig<T>;
   index: number;
   version: number;
@@ -67,7 +55,6 @@ export function RenderField<T extends FieldType>({
               {...{
                 id,
                 version,
-                value,
                 fieldConfig,
                 history,
               }}

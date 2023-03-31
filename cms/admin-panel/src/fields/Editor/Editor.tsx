@@ -38,13 +38,11 @@ export default function Editor({
   initialValue,
   children = null,
   target,
-  setValue,
 }: {
   target?: Target;
   push?: (ops: ComputationOp["ops"]) => void;
   register?: (listener: QueueListener<ComputationOp>) => () => void;
   initialValue: TokenStream;
-  setValue: (value: () => TokenStream) => void;
   children?: React.ReactNode;
 }) {
   const { libraries } = useClientConfig();
@@ -60,16 +58,13 @@ export default function Editor({
       <CopyPastePlugin />
       <EditorFocusPlugin />
       <FieldFocusPlugin />
-      {push && register && target ? (
+      {push && register && target && (
         <Reconciler
           target={target}
           push={push}
           register={register}
           initialValue={initialValue}
-          setValue={setValue}
         />
-      ) : (
-        <Setter setValue={setValue} />
       )}
       <Overlay />
       {children}
@@ -102,6 +97,7 @@ function FieldFocusPlugin() {
   return null;
 }
 
+/*
 function Setter({
   setValue,
 }: {
@@ -122,3 +118,4 @@ function Setter({
 
   return null;
 }
+*/

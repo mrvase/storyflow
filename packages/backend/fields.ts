@@ -7,7 +7,7 @@ import {
   getTemplateDocumentId,
   SYSTEM_TEMPLATE_OFFSET,
 } from "./ids";
-import { FieldId, RawFieldId } from "./types";
+import { FieldConfig, FieldId, RawFieldId } from "./types";
 
 /*
 const assignIds = <T extends Record<string, any>>(
@@ -143,10 +143,10 @@ export const DEFAULT_TEMPLATES = {
   },
 };
 
-export function getDefaultField(id: FieldId) {
-  return (
-    Object.entries(DEFAULT_FIELDS).find(([, value]) => {
-      return getTemplateDocumentId(value.id) === getTemplateDocumentId(id);
-    }) ?? [undefined, undefined]
-  );
+export function getDefaultField(
+  id: FieldId
+): Omit<FieldConfig, "id"> | undefined {
+  return Object.values(DEFAULT_FIELDS).find((value) => {
+    return getTemplateDocumentId(value.id) === getTemplateDocumentId(id);
+  });
 }

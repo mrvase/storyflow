@@ -1,19 +1,9 @@
 import React from "react";
-import {
-  DecoratorNode,
-  DOMConversionMap,
-  DOMConversionOutput,
-  DOMExportOutput,
-  LexicalNode,
-  NodeKey,
-  SerializedLexicalNode,
-  Spread,
-} from "lexical";
+import { LexicalNode, NodeKey } from "lexical";
 import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
-import { caretClasses } from "./caret";
-import { FieldId, NestedCreator, TokenStream } from "@storyflow/backend/types";
-import { WritableDefaultField } from "../default/RenderNestedFields";
+import { FieldId, NestedCreator } from "@storyflow/backend/types";
+import { DefaultField } from "../default/DefaultField";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 
 function Decorator({
@@ -46,16 +36,7 @@ function Decorator({
           }
         }}
       >
-        <WritableDefaultField
-          id={id}
-          initialValue={{
-            type: "root",
-            children: [],
-          }}
-          fieldConfig={{
-            type: "default",
-          }}
-        />
+        <DefaultField id={id} />
         {/*<input
           type="text"
           className="px-1 w-full bg-transparent outline-none"

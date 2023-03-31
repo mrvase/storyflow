@@ -280,9 +280,7 @@ function Pages({
                     isOpen={selectedLength >= segment.split("/").length}
                     isSelected={selected === segment}
                     onLoad={() => select(segment)}
-                  >
-                    {children}
-                  </DocumentPage>
+                  />
                 </BuilderProvider>
               </SegmentProvider>
             );

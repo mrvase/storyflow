@@ -21,7 +21,6 @@ import { ExtendTemplatePath } from "./TemplatePathContext";
 export function RenderTemplate({
   id,
   owner,
-  values,
   config,
   versions,
   histories,
@@ -29,7 +28,6 @@ export function RenderTemplate({
 }: {
   id: DocumentId;
   owner: DocumentId;
-  values: SyntaxTreeRecord;
   config: DBDocument["config"];
   versions?: DBDocument["versions"];
   histories: Record<string, ServerPackage<AnyOp>[]>;
@@ -123,7 +121,6 @@ export function RenderTemplate({
               key={getVersionKey(versions)} // for rerendering
               id={article._id}
               owner={owner}
-              values={{ ...values, ...article.record }}
               config={article.config}
               histories={histories}
               versions={versions}
@@ -148,13 +145,10 @@ export function RenderTemplate({
       ? fieldConfig.id
       : createTemplateFieldId(owner, fieldConfig.id);
 
-    const value: SyntaxTree | undefined = values[fieldId];
-
     return (
       <RenderField
         key={fieldId}
         id={fieldId}
-        value={value}
         fieldConfig={{
           ...fieldConfig,
           id: fieldId,

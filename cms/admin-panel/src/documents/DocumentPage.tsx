@@ -29,7 +29,6 @@ import { PropConfigArray } from "@storyflow/frontend/types";
 import { ServerPackage } from "@storyflow/state";
 import cl from "clsx";
 import React from "react";
-import { flushSync } from "react-dom";
 import { DocumentConfigOp, PropertyOp, targetTools } from "shared/operations";
 import { useArticle, useOptimisticDocumentList, useSaveArticle } from ".";
 import { useDocumentLabel } from "./useDocumentLabel";
@@ -44,14 +43,13 @@ import {
   useDocumentMutate,
 } from "./collab/DocumentCollabContext";
 import { useFolder } from "../folders/collab/hooks";
-import { useDocumentConfig, useLabel } from "./collab/hooks";
+import { useDocumentConfig } from "./collab/hooks";
 import { FocusOrchestrator, useFocusedIds } from "../utils/useIsFocused";
 import { DocumentPageContext } from "./DocumentPageContext";
 import { GetDocument } from "./GetDocument";
 import { RenderTemplate } from "./RenderTemplate";
 import { useFieldIdGenerator } from "../id-generator";
 import {
-  FieldToolbar,
   FieldToolbarPortalProvider,
   useFieldToolbarPortal,
 } from "./FieldToolbar";
@@ -383,14 +381,10 @@ const Page = ({
                     <RenderTemplate
                       key={getVersionKey(owner.versions)} // for rerendering
                       id={article._id}
-                      owner={owner._id}
-                      values={{
-                        ...article.record,
-                        ...owner.record,
-                      }}
                       config={article.config}
-                      histories={histories}
+                      owner={owner._id}
                       versions={owner.versions}
+                      histories={histories}
                     />
                   )}
                 </GetDocument>
@@ -398,9 +392,8 @@ const Page = ({
               <RenderTemplate
                 key={getVersionKey(owner.versions)} // for rerendering
                 id={owner._id}
-                owner={owner._id}
-                values={owner.record}
                 config={config}
+                owner={owner._id}
                 versions={owner.versions}
                 histories={histories}
               />

@@ -36,21 +36,18 @@ import {
   getDocumentId,
   getIdFromString,
   getRawFieldId,
-  getTemplateDocumentId,
 } from "@storyflow/backend/ids";
 import { ChevronLeftIcon } from "@heroicons/react/24/outline";
 import { useSegment } from "../layout/components/SegmentContext";
 import { useTabUrl } from "../layout/utils";
-import { stringifyPath, useBuilderPath } from "./BuilderPath";
+import { useBuilderPath } from "./BuilderPath";
 import { PathMap } from "./FieldContainer";
-import {
-  ComponentConfig,
-  LibraryConfig,
-  Path,
-} from "@storyflow/frontend/types";
+import { ComponentConfig, LibraryConfig } from "@storyflow/frontend/types";
 import { useDocumentIdGenerator } from "../id-generator";
 import { tokens } from "@storyflow/backend/tokens";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
+import { createTokenStream } from "shared/parse-token-stream";
+import { useAttributesContext } from "./Attributes";
 
 const useBuilderRendered = ({
   listeners,
@@ -78,13 +75,13 @@ const useElementActions = ({
   id,
   listeners,
   push,
-  setBuilderPath,
 }: {
   id: FieldId;
   listeners: ReturnType<typeof createEventsFromIframeToCMS>;
   push: any;
-  setBuilderPath: (payload: Path | ((ps: Path) => Path)) => void;
 }) => {
+  const [, setBuilderPath] = useBuilderPath();
+
   const [{ elementId, parentId }, setPath] = React.useState<{
     elementId: NestedDocumentId | undefined;
     parentId: FieldId | undefined;
@@ -93,9 +90,14 @@ const useElementActions = ({
     parentId: undefined,
   });
 
-  const [tokenStream] = useGlobalState<TokenStream>(
-    parentId ? `${parentId}#stream` : undefined
+  const [tree] = useGlobalState<SyntaxTree>(
+    parentId ? `${parentId}#tree` : undefined
   );
+
+  const tokenStream = React.useMemo(() => {
+    if (!tree) return;
+    return createTokenStream(tree);
+  }, [tree]);
 
   React.useEffect(() => {
     return listeners.selection.subscribe((path) => {
@@ -294,21 +296,9 @@ const useElementActions = ({
   }, [id, tokenStream, parentId]);
 };
 
-function Toolbar({
-  id,
-  path,
-  setPath,
-}: {
-  id: FieldId;
-  path: Path;
-  setPath: (payload: Path | ((ps: Path) => Path)) => void;
-}) {
-  const documentId = getDocumentId(id);
-
-  const isNative = documentId === getTemplateDocumentId(id);
-
+function Toolbar() {
   const [, navigateTab] = useTabUrl();
-  const { current, full } = useSegment();
+  const { current } = useSegment();
 
   return (
     <div className="flex mb-5">
@@ -323,7 +313,7 @@ function Toolbar({
         </Content.ToolbarButton>
       </div>
       <div className="mt-3.5 mr-auto flex items-center">
-        <PathMap path={path} setPath={setPath} />
+        <PathMap />
       </div>
       {/* isNative && <FieldToolbar documentId={documentId} fieldId={id} /> */}
       <div className="mt-3.5 ml-2">
@@ -342,8 +332,6 @@ export function FieldPage({
   selected: boolean;
   children?: React.ReactNode;
 }) {
-  const [builderPath, setBuilderPath] = useBuilderPath();
-
   const listeners = useIframeListeners();
   const dispatchers = useIframeDispatchers();
   const rendered = useBuilderRendered({ listeners });
@@ -356,96 +344,38 @@ export function FieldPage({
     templateFieldId
   );
 
-  useElementActions({ id, listeners, push, setBuilderPath });
+  useElementActions({ id, listeners, push });
 
-  const [direction, setDirection] = useLocalStorage<
-    "horizontal" | "vertical" | "horizontal-reverse" | "vertical-reverse"
-  >("panels-direction", "vertical");
+  const [currentProp] = useAttributesContext();
 
-  const isHorizontal = direction.split("-")[0] === "horizontal";
-  const isReversed = direction.endsWith("reverse");
-
-  const panel1 = (
-    <div className="h-full overflow-y-auto no-scrollbar pt-[1px]">
-      {children}
-    </div>
-  );
-
-  const panel2 = (
-    <div className="h-full bg-gray-200">
-      <div
-        className={cl(
-          "h-full transition-opacity duration-300",
-          rendered ? "opacity-100" : "opacity-0"
-        )}
-      >
-        <BuilderIframe />
-      </div>
-    </div>
-  );
+  const hide = !currentProp;
 
   return (
     <Content
-      toolbar={<Toolbar id={id} path={builderPath} setPath={setBuilderPath} />}
+      toolbar={<Toolbar />}
       selected={selected}
-      className="h-[calc(100%-64px)]"
+      className="relative h-[calc(100%-58px)]"
     >
       <PropagateStatePlugin
         id={id}
         rendered={rendered}
         dispatchers={dispatchers}
       />
-      <PanelGroup
-        direction={direction.split("-")[0] as "horizontal" | "vertical"}
-        autoSaveId="panels"
-      >
-        <Panel collapsible>{isReversed ? panel2 : panel1}</Panel>
-        <PanelResizeHandle
+      <div className="h-full bg-gray-200">
+        <div
           className={cl(
-            "group relative bg-white/10 opacity-50 hover:opacity-100 transition-opacity",
-            isHorizontal ? "w-1" : "h-1"
+            "h-full transition-opacity duration-300",
+            rendered ? "opacity-100" : "opacity-0"
           )}
         >
-          <div className="absolute z-10 inset-0 flex-center opacity-0 group-hover:opacity-100">
-            <div
-              className={cl(
-                "w-20 h-20 p-2 shrink-0 flex flex-wrap gap-4 bg-gray-800 rounded-lg",
-                "scale-75 pointer-events-none group-hover:pointer-events-auto group-hover:scale-100 transition-transform"
-              )}
-            >
-              <div
-                className="w-6 h-6 flex bg-gray-700 rounded overflow-hidden cursor-default"
-                onClick={() => setDirection("horizontal-reverse")}
-              >
-                <div className="w-3 bg-white/20" />
-                <div className="w-3" />
-              </div>
-              <div
-                className="w-6 h-6 flex-col bg-gray-700 rounded overflow-hidden cursor-default"
-                onClick={() => setDirection("vertical-reverse")}
-              >
-                <div className="h-3 bg-white/20" />
-                <div className="h-3" />
-              </div>
-              <div
-                className="w-6 h-6 flex-col bg-gray-700 rounded overflow-hidden cursor-default"
-                onClick={() => setDirection("vertical")}
-              >
-                <div className="h-3" />
-                <div className="h-3 bg-white/20" />
-              </div>
-              <div
-                className="w-6 h-6 flex bg-gray-700 rounded overflow-hidden cursor-default"
-                onClick={() => setDirection("horizontal")}
-              >
-                <div className="w-3" />
-                <div className="w-3 bg-white/20" />
-              </div>
-            </div>
-          </div>
-        </PanelResizeHandle>
-        <Panel collapsible>{isReversed ? panel1 : panel2}</Panel>
-      </PanelGroup>
+          <BuilderIframe />
+        </div>
+      </div>
+      {!hide && (
+        <div className="absolute max-h-[calc(100%-1.25rem)] bg-gray-850 w-96 rounded-md bottom-2.5 right-2.5 overflow-y-auto no-scrollbar">
+          {children}
+        </div>
+      )}
     </Content>
   );
 }
