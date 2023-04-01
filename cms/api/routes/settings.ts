@@ -6,6 +6,7 @@ import { globals } from "../middleware/globals";
 import clientPromise from "../mongo/mongoClient";
 import { authenticator } from "../users/auth";
 import { modifyOrganization } from "../users/users";
+import bcrypt from "bcryptjs";
 
 export const settings = createRoute({
   get: createProcedure({
@@ -90,6 +91,39 @@ export const settings = createRoute({
       );
 
       return success(true);
+    },
+  }),
+  generateKey: createProcedure({
+    middleware(ctx) {
+      return ctx.use(globals);
+    },
+    schema() {
+      return z.string();
+    },
+    async mutation(domainId, { slug }) {
+      const client = await clientPromise;
+
+      const randomKey = `${Math.random()
+        .toString(16)
+        .substring(2, 14)}${Math.random().toString(16).substring(2, 14)}`;
+
+      const hash = await bcrypt.hash(randomKey, 10);
+
+      await client
+        .db("cms")
+        .collection("organizations")
+        .updateOne(
+          {
+            slug,
+          },
+          {
+            $set: {
+              [`keys.${domainId}`]: hash,
+            },
+          }
+        );
+
+      return success(`${domainId}@${slug}:${randomKey}`);
     },
   }),
 });

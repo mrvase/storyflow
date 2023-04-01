@@ -3,7 +3,6 @@ import { success } from "@storyflow/result";
 import { z } from "zod";
 import clientPromise from "../mongo/mongoClient";
 import { globals } from "../middleware/globals";
-import { removeObjectId } from "./articles";
 
 export const files = createRoute({
   getAll: createProcedure({
@@ -20,7 +19,10 @@ export const files = createRoute({
         .toArray();
 
       return success(
-        files.map(removeObjectId) as { name: string; label: string }[]
+        files.map(({ _id, ...rest }) => rest) as {
+          name: string;
+          label: string;
+        }[]
       );
     },
   }),

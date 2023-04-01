@@ -5,7 +5,11 @@ import { authenticator, authorizer } from "./auth";
 import { error, isError, success, unwrap } from "@storyflow/result";
 import clientPromise from "../mongo/mongoClient";
 import { Organization, User } from "../types";
-import { USER_ID } from "@storyflow/backend/templates";
+import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
+import { DBFolderRaw } from "@storyflow/backend/types";
+import { ROOT_FOLDER, TEMPLATE_FOLDER } from "@storyflow/backend/constants";
+import { ObjectId } from "mongodb";
+import { createRawTemplateFieldId } from "@storyflow/backend/ids";
 
 const user = async ({ req, client }: MiddlewareContext) => {
   const user = await authorizer.authorize(req);
@@ -69,24 +73,25 @@ export const users = createRoute({
           .db(db)
           .collection("counters")
           .insertMany([
-            { name: "folders", counter: 0 },
-            { name: "documents", counter: 0 },
+            { name: "id", counter: 0 },
+            { name: "template", counter: 0 },
+            { name: "field", counter: 0 },
           ]),
         client
           .db(db)
-          .collection("folders")
+          .collection<DBFolderRaw>("folders")
           .insertMany([
             {
-              id: "----",
+              _id: new ObjectId(ROOT_FOLDER),
               label: "Hjem",
-              type: "root",
-              children: [],
+              type: "data",
+              spaces: [],
             },
             {
-              id: "---0",
+              _id: new ObjectId(TEMPLATE_FOLDER),
               label: "Skabeloner",
-              type: "templates",
-              children: [],
+              type: "data",
+              spaces: [],
             },
           ]),
         client
@@ -168,7 +173,8 @@ export const users = createRoute({
           .db(db)
           .collection("documents")
           .findOne({
-            [`values.${USER_ID}`]: user.email,
+            [`values.${createRawTemplateFieldId(DEFAULT_FIELDS.user.id)}`]:
+              user.email,
           });
 
         if (!orgUser) {

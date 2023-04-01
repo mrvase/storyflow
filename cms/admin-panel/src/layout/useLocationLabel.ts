@@ -1,21 +1,20 @@
-import { useArticle } from "../documents";
+import { useArticle, useOptimisticDocumentList } from "../documents";
 import { useDocumentLabel } from "../documents/useDocumentLabel";
 import { SWRClient } from "../client";
-import { minimizeId } from "@storyflow/backend/ids";
 import { getPathFromSegment } from "./utils";
 import { useFolder } from "../folders/collab/hooks";
+import { DocumentId, FolderId } from "@storyflow/backend/types";
 
 export default function useLocationLabel(segment: string) {
   const path = getPathFromSegment(segment);
   const [type, urlId] = path.split("/").slice(-1)[0].split("-");
-  const id = urlId ? minimizeId(urlId) : "";
+  const id = urlId ?? "";
 
-  const { data: listData, error: listError } =
-    SWRClient.articles.getList.useQuery(id, {
-      inactive: type !== "f" && type !== "a",
-    });
+  const { articles: listData, error: listError } = useOptimisticDocumentList(
+    type === "f" || type === "a" ? (id as FolderId) : undefined
+  );
 
-  let { article, error: articleError } = useArticle(id, {
+  let { article, error: articleError } = useArticle(id as DocumentId, {
     inactive: type !== "d" && type !== "t",
   });
 
@@ -27,7 +26,7 @@ export default function useLocationLabel(segment: string) {
   const articleLabel = useDocumentLabel(article);
 
   if (type === "f" || type === "a") {
-    const folder = useFolder(id);
+    const folder = useFolder(id as FolderId);
 
     const loading = !listData && !listError;
 

@@ -186,13 +186,7 @@ export type ClientConfig = {
   libraries: LibraryConfig[];
 };
 
-export type PathSegment =
-  | {
-      id: string;
-      type: string;
-      parentProp: string | null;
-    }
-  | { id: string; label: string };
+export type PathSegment = string;
 
 export type Path = PathSegment[];
 
@@ -201,20 +195,14 @@ export type BuilderSelection = {
   type: string;
 };
 
-export type LayoutElement = {
+export type NestedElement = {
   id: string;
-  type: string;
-  props: Record<string, any>;
+  element: string;
   parent?: string;
 };
 
 export type NestedDocument = {
   id: string;
-  values: Record<string, any>;
-};
-
-export type DocumentImport = {
-  dref: string;
 };
 
 export type FileToken = {
@@ -234,18 +222,17 @@ export type ValueArray = (
   | number
   | boolean
   | Date
-  | LayoutElement
+  | NestedElement
   | NestedDocument
   | FileToken
   | ColorToken
   | CustomToken
-  | DocumentImport
   | ValueArray
 )[];
 
 export type RenderElement =
-  | LayoutElement
-  | { $text: (string | number | LayoutElement)[] }
+  | NestedElement
+  | { $text: (string | number | NestedElement)[] }
   | { $heading: [number, string] };
 
 export type RenderArray = (RenderElement | { $children: RenderElement[] })[];
@@ -317,10 +304,15 @@ export type Metadata = {
 };
 
 export type FetchPageResult = {
-  page: ValueArray | null;
-  layout: ValueArray | null;
+  page: {
+    entry: ValueArray;
+    record: Record<string, ValueArray>;
+  } | null;
+  layout: {
+    entry: ValueArray;
+    record: Record<string, ValueArray>;
+  } | null;
   head: Metadata;
-  imageUrl: string;
 };
 export type ResolvedFetchPageResult = {
   page: RenderArray | null;

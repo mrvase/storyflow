@@ -1,10 +1,12 @@
 import "../styles.css";
 import React from "react";
-import { request } from "./request";
-import { registerLibraries, RenderSingleLayout } from "@storyflow/react";
-import { library } from "../components";
+import { RenderLayout, request } from "@storyflow/react/rsc";
+import { options } from "./options";
+import { config, library } from "../components";
+import { registerLibraries, registerLibraryConfigs } from "@storyflow/react";
 
 registerLibraries([library]);
+registerLibraryConfigs([config]);
 
 export default async function Layout({
   children,
@@ -14,10 +16,10 @@ export default async function Layout({
   params: any;
 }) {
   const url = Object.values(params).join("/");
-  const data = await request(url);
+  const data = await request(url, options);
 
   const content = (
-    <RenderSingleLayout data={data?.layout}>{children}</RenderSingleLayout>
+    <RenderLayout data={data?.layout ?? null}>{children}</RenderLayout>
   );
 
   if (url === "") {

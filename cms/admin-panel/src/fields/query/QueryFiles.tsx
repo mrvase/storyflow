@@ -1,5 +1,5 @@
 import cl from "clsx";
-import { EditorComputation } from "@storyflow/backend/types";
+import { TokenStream } from "@storyflow/backend/types";
 import React from "react";
 import {
   getFileExtension,
@@ -114,7 +114,7 @@ export function QueryFiles({
     hold: () => void;
     release: () => void;
   };
-  insertComputation: (computation: EditorComputation) => void;
+  insertComputation: (computation: TokenStream) => void;
 }) {
   const { organization } = useUrlInfo();
 

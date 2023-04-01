@@ -1,73 +1,47 @@
 import React from "react";
-import {
-  DecoratorNode,
-  DOMConversionMap,
-  DOMConversionOutput,
-  DOMExportOutput,
-  LexicalNode,
-  NodeKey,
-  SerializedLexicalNode,
-  Spread,
-} from "lexical";
+import { LexicalNode, NodeKey } from "lexical";
 import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
 import { caretClasses } from "./caret";
 import {
-  Computation,
-  ComputationRecord,
+  SyntaxTree,
+  SyntaxTreeRecord,
   DocumentId,
-  DocumentImport,
-  Fetcher,
   FieldId,
   NestedDocument,
-  Value,
+  ValueArray,
 } from "@storyflow/backend/types";
-import { useBuilderPath } from "../BuilderPath";
 import {
   ChevronDownIcon,
   DocumentIcon,
-  FolderArrowDownIcon,
   LinkIcon,
 } from "@heroicons/react/24/outline";
 import { useFieldId } from "../FieldIdContext";
 import { useFieldConfig } from "../../documents/collab/hooks";
 import { Menu } from "@headlessui/react";
 import { MenuTransition } from "../../elements/transitions/MenuTransition";
-import { useTemplateFolder } from "../../folders/folders-context";
-import { useArticle, useArticleList } from "../../documents";
+import { useArticle, useOptimisticDocumentList } from "../../documents";
 import { useFieldTemplate } from "../default/useFieldTemplate";
 import { calculateFn } from "../default/calculateFn";
 import { useGlobalState } from "../../state/state";
 import { useDocumentPageContext } from "../../documents/DocumentPageContext";
-import { computeFieldId, getTemplateFieldId } from "@storyflow/backend/ids";
+import {
+  createTemplateFieldId,
+  isNestedDocumentId,
+} from "@storyflow/backend/ids";
 import { useClient } from "../../client";
-import { getComputationRecord } from "@storyflow/backend/flatten";
 import { getPreview } from "../default/getPreview";
+import { TEMPLATE_FOLDER } from "@storyflow/backend/constants";
+import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 
-function DocumentDecorator({
+function Decorator({
   value,
   nodeKey,
 }: {
-  value: NestedDocument | DocumentImport | Fetcher;
+  value: NestedDocument;
   nodeKey: string;
 }) {
-  const [, setPath] = useBuilderPath();
-
-  const type = (() => {
-    if ("dref" in value) {
-      return "import";
-    }
-    if ("values" in value) {
-      return "nested";
-    }
-    return "fetcher";
-  })();
-
-  const Icon = {
-    import: LinkIcon,
-    fetcher: FolderArrowDownIcon,
-    nested: DocumentIcon,
-  }[type];
+  // const [, setPath] = useBuilderPath();
 
   const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
 
@@ -78,48 +52,34 @@ function DocumentDecorator({
   const template = useFieldTemplate(id);
   const hasTemplate = Boolean(template);
 
-  let docs: NestedDocument[] = [];
-  if ("filters" in value) {
-    const [output] = useGlobalState<NestedDocument[]>(`${id}.${value.id}`);
-    docs = output ?? [];
-  } else if ("values" in value) {
-    docs = [value];
-  } else if ("dref" in value) {
-    const { article } = useArticle(value.dref);
-    let values = article ? getComputationRecord(article) : {};
-    values = Object.fromEntries(
-      Object.entries(values).map(([key, value]) => [
-        getTemplateFieldId(key as FieldId),
-        value,
-      ])
-    );
-    docs = [{ id: value.dref, values }];
+  let docs: (NestedDocument & { record: SyntaxTreeRecord })[] = [];
+  if (isNestedDocumentId(value.id)) {
+    // TODO make reactive
+    docs = [{ id: value.id, record: {} }];
+  } else {
+    const { article } = useArticle(value.id);
+    docs = [{ id: value.id, record: article?.record ?? {} }];
   }
 
-  const color = {
-    import: cl(
-      "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200",
-      !isSelected && "ring-1 ring-teal-200 dark:ring-teal-800",
-      hasTemplate &&
-        "child:divide-x child:divide-teal-200 child:dark:divide-teal-800"
-    ),
-    fetcher: cl(
-      "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-      !isSelected && "ring-1 ring-red-200 dark:ring-red-800",
-      hasTemplate &&
-        "divide-y divide-red-200 dark:divide-red-800 child:divide-x child:divide-red-200 child:dark:divide-red-800"
-    ),
-    nested: cl(
-      "bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-200",
-      !isSelected && "ring-1 ring-sky-200 dark:ring-sky-800",
-      hasTemplate &&
-        "child:divide-x child:divide-sky-200 child:dark:divide-sky-800"
-    ),
-  }[type];
+  const color = isNestedDocumentId(value.id)
+    ? cl(
+        "bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-200",
+        !isSelected && "ring-1 ring-sky-200 dark:ring-sky-800",
+        hasTemplate &&
+          "child:divide-x child:divide-sky-200 child:dark:divide-sky-800"
+      )
+    : cl(
+        "bg-gradient-to-b from-teal-800/90 to-teal-900/90 text-teal-200",
+        !isSelected && "ring-1 ring-teal-200 dark:ring-teal-800",
+        hasTemplate &&
+          "child:divide-x child:divide-teal-200 child:dark:divide-teal-800"
+      );
+
+  const Icon = isNestedDocumentId(value.id) ? DocumentIcon : LinkIcon;
 
   const parentFieldId = useFieldId();
 
-  const { imports } = useDocumentPageContext();
+  const { record: documentRecord } = useDocumentPageContext();
 
   return (
     <div className="py-0.5">
@@ -127,7 +87,7 @@ function DocumentDecorator({
         className={cl(
           "relative",
           "rounded text-sm selection:bg-transparent",
-          isSelected && "ring-1 ring-amber-300",
+          isSelected && "ring-1 ring-white",
           color,
           isPseudoSelected && caretClasses
         )}
@@ -144,49 +104,47 @@ function DocumentDecorator({
             !selectClick.current &&
             "id" in value
           ) {
+            /*
             setPath((ps) => [
               ...ps,
               {
                 id: value.id,
-                label: type === "fetcher" ? "Fetcher" : "Dokument",
+                label: "Dokument",
                 parentProp: null,
               },
             ]);
+            */
           }
           selectClick.current = false;
         }}
       >
         {docs.length === 0 && (
-          <div className="w-full px-2 py-0.5 select-none">
+          <div className="w-full px-2 py-1.5 select-none">
             [Ingen resultater · Klik for at indstille]
           </div>
         )}
-        {docs.map(({ id: docId, values }) => (
-          <div key={docId} className="flex w-full py-0.5">
+        {docs.map(({ id: docId, record }) => (
+          <div key={docId} className="flex w-full py-1.5">
             {!hasTemplate ? (
               <TemplateSelect
                 setTemplateId={(value) => setConfig("template", value)}
               />
             ) : (
               <>
-                <div className="w-6 flex-center">
-                  <Icon className="w-3 h-3" />
+                <div className="w-8 flex-center">
+                  <Icon className="w-4 h-4" />
                 </div>
                 {(template ?? []).map(({ id }) => {
                   const initialValue =
-                    values[getTemplateFieldId(id)] ?? undefined;
+                    record[createTemplateFieldId(docId, id)] ?? undefined;
                   return (
                     <ValueDisplay
                       key={`${docId}-${id}-${Boolean(initialValue)}`}
-                      id={
-                        type === "nested" && "id" in value
-                          ? (`${parentFieldId}.${value.id}/${id.slice(
-                              4
-                            )}` as FieldId)
-                          : computeFieldId(docId, getTemplateFieldId(id))
-                      }
+                      id={createTemplateFieldId(docId, id)}
                       initialValue={initialValue}
-                      imports={type == "nested" ? imports : values}
+                      record={
+                        isNestedDocumentId(value.id) ? documentRecord : record
+                      }
                     />
                   );
                 })}
@@ -199,25 +157,25 @@ function DocumentDecorator({
   );
 }
 
-function ValueDisplay({
+export function ValueDisplay({
   id,
   initialValue,
-  imports,
+  record,
 }: {
   id: FieldId;
-  initialValue: Computation;
-  imports: ComputationRecord;
+  initialValue: SyntaxTree;
+  record: SyntaxTreeRecord;
 }) {
   const client = useClient();
 
-  let output: undefined | Value[];
+  let output: undefined | ValueArray;
 
   if (initialValue) {
     [output] = useGlobalState(id, () =>
-      calculateFn(id, initialValue, { imports, client })
+      calculateFn(id, initialValue, { record, client })
     );
   } else {
-    [output] = useGlobalState<Value[]>(id);
+    [output] = useGlobalState<ValueArray>(id);
   }
 
   return (
@@ -232,8 +190,8 @@ function TemplateSelect({
 }: {
   setTemplateId: (value: DocumentId) => void;
 }) {
-  const id = useTemplateFolder()?.id;
-  const { articles } = useArticleList(id);
+  const id = TEMPLATE_FOLDER;
+  const { articles } = useOptimisticDocumentList(id);
 
   return (
     <Menu as="div" className="relative">
@@ -253,16 +211,16 @@ function TemplateSelect({
                   <>
                     {(articles ?? []).map((el) => (
                       <button
-                        key={el.id}
+                        key={el._id}
                         className={cl(
                           "py-1 px-2 hover:bg-white/5 outline-none text-left",
                           active && "bg-white/5"
                         )}
                         onClick={() => {
-                          setTemplateId(el.id);
+                          setTemplateId(el._id);
                         }}
                       >
-                        {el.id}
+                        {el._id}
                       </button>
                     ))}
                   </>
@@ -276,101 +234,41 @@ function TemplateSelect({
   );
 }
 
-function convertImportElement(
-  domNode: HTMLElement
-): DOMConversionOutput | null {
-  return null;
-}
+const type = "nested-document";
+type TokenType = NestedDocument;
 
-export type SerializedDocumentNode = Spread<
-  {
-    type: "nested-document";
-    value: NestedDocument | DocumentImport | Fetcher;
-  },
-  SerializedLexicalNode
->;
-
-export class DocumentNode extends DecoratorNode<React.ReactNode> {
-  __value: NestedDocument | DocumentImport | Fetcher;
-
+export default class ChildNode extends TokenStreamNode<typeof type, TokenType> {
   static getType(): string {
-    return "nested-document";
+    return type;
   }
 
-  static clone(node: DocumentNode): DocumentNode {
-    return new DocumentNode(node.__value, node.__key);
+  static clone(node: ChildNode): ChildNode {
+    return new ChildNode(node.__token, node.__key);
   }
 
-  constructor(value: NestedDocument | DocumentImport | Fetcher, key?: NodeKey) {
-    super(key);
-    this.__value = value;
+  constructor(token: TokenType, key?: NodeKey) {
+    super(type, token, key);
   }
 
-  createDOM(): HTMLElement {
-    const element = document.createElement("div");
-    element.setAttribute("data-lexical-nested-document", "true");
-    return element;
-  }
-
-  updateDOM(): false {
-    return false;
-  }
-
-  isInline(): false {
-    return false;
-  }
-
-  getTextContent(): string {
-    return `&`;
+  exportJSON(): SerializedTokenStreamNode<typeof type, TokenType> {
+    return super.exportJSON();
   }
 
   static importJSON(
-    serializedDocumentNode: SerializedDocumentNode
-  ): DocumentNode {
-    return $createDocumentNode(serializedDocumentNode.value);
-  }
-
-  exportJSON(): SerializedDocumentNode {
-    const self = this.getLatest();
-    return {
-      type: "nested-document",
-      value: self.__value,
-      version: 1,
-    };
-  }
-
-  exportDOM(): DOMExportOutput {
-    const element = document.createElement("div");
-    element.setAttribute("data-lexical-nested-document", "true");
-    element.textContent = `%`;
-    return { element };
-  }
-
-  static importDOM(): DOMConversionMap | null {
-    return {
-      span: (domNode: HTMLElement) => {
-        if (!domNode.hasAttribute("data-lexical-nested-document")) {
-          return null as any;
-        }
-        return {
-          conversion: convertImportElement,
-          priority: 1,
-        };
-      },
-    };
+    serializedNode: SerializedTokenStreamNode<typeof type, TokenType>
+  ) {
+    return new ChildNode(serializedNode.token);
   }
 
   decorate(): React.ReactNode {
-    return <DocumentDecorator value={this.__value} nodeKey={this.__key} />;
+    return <Decorator nodeKey={this.__key} value={this.__token} />;
   }
 }
 
-export function $createDocumentNode(
-  element: NestedDocument | DocumentImport | Fetcher
-): DocumentNode {
-  return new DocumentNode(element);
+export function $createDocumentNode(value: TokenType): ChildNode {
+  return new ChildNode(value);
 }
 
 export function $isDocumentNode(node: LexicalNode): boolean {
-  return node instanceof DocumentNode;
+  return node instanceof ChildNode;
 }

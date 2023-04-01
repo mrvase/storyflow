@@ -2,6 +2,7 @@ import React from "react";
 import { useContextWithError } from "../../utils/contextError";
 import { useClient } from "../../client";
 import { createDocumentCollaboration } from "../../state/collaboration";
+import { DocumentOp } from "shared/operations";
 
 export const DocumentCollabContext = React.createContext<ReturnType<
   typeof createDocumentCollaboration
@@ -18,7 +19,7 @@ export function DocumentCollabProvider({
   const client = useClient();
 
   const collab = React.useMemo(() => {
-    return createDocumentCollaboration(client.articles.sync.mutation);
+    return createDocumentCollaboration(client.fields.sync.mutation);
   }, [client]);
 
   React.useLayoutEffect(() => {
@@ -29,5 +30,16 @@ export function DocumentCollabProvider({
     <DocumentCollabContext.Provider value={collab}>
       {children}
     </DocumentCollabContext.Provider>
+  );
+}
+
+export function useDocumentMutate<T extends DocumentOp<any>>(
+  document: string,
+  key: string
+) {
+  const collab = useDocumentCollab();
+  return React.useMemo(
+    () => collab.mutate<T>(document, key),
+    [collab, document, key]
   );
 }

@@ -1,5 +1,4 @@
-import { DocumentId, EditorComputation } from "@storyflow/backend/types";
-import { LABEL_ID } from "@storyflow/backend/templates";
+import { DocumentId, TokenStream } from "@storyflow/backend/types";
 import {
   CalculatorIcon,
   CalendarIcon,
@@ -12,6 +11,12 @@ import { SWRClient } from "../../client";
 import { Option as OptionComponent } from "./Option";
 import { markMatchingString } from "./helpers";
 import { parseDateFromString } from "../../utils/dates";
+import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
+import { createTemplateFieldId, getDocumentId } from "@storyflow/backend/ids";
+import { calculateFromRecord } from "@storyflow/backend/calculate";
+import { useDocumentIdGenerator } from "../../id-generator";
+import { createComponent } from "../Editor/createComponent";
+import { useFieldId } from "../FieldIdContext";
 
 export function QueryCommands({
   query,
@@ -20,24 +25,36 @@ export function QueryCommands({
 }: {
   query: string;
   selected: number;
-  insertBlock: (comp: EditorComputation) => void;
+  insertBlock: (comp: TokenStream) => void;
 }) {
   const searchQuery = query.match(/\"([^\"]*)/)?.[1] ?? query;
 
   const [isSearching, setIsSearching] = React.useState(false);
 
-  const { data } = SWRClient.articles.getByLabel.useQuery(searchQuery, {
+  const { data } = SWRClient.documents.getByLabel.useQuery(searchQuery, {
     inactive: !isSearching,
   });
 
   let options: any[] = [];
 
   const onSearchEnter = React.useCallback(() => setIsSearching(true), []);
-  const onAIEnter = React.useCallback(() => console.log("BIP BOP"), []);
+
+  const id = useFieldId();
+  const documentId = getDocumentId(id) as DocumentId;
+  const generateDocumentId = useDocumentIdGenerator();
+
+  const onAIEnter = React.useCallback(() => {
+    insertBlock([
+      {
+        id: generateDocumentId(documentId),
+        text: "",
+      },
+    ]);
+  }, [insertBlock, generateDocumentId]);
 
   const onEnter = React.useCallback(
     (id: DocumentId) => {
-      insertBlock([{ dref: id }]);
+      insertBlock([{ id }]);
     },
     [insertBlock]
   );
@@ -110,9 +127,13 @@ export function QueryCommands({
     ];
   } else {
     options = (data ?? []).map((el) => ({
-      id: el.id,
-      label: el.values[LABEL_ID],
-      secondary: el.id,
+      id: el._id,
+      label:
+        calculateFromRecord(
+          createTemplateFieldId(el._id, DEFAULT_FIELDS.label.id),
+          el.record
+        )?.[0] ?? "",
+      secondary: el._id,
       Icon: DocumentIcon,
       onEnter,
       onEnterLabel: "Tilføj",

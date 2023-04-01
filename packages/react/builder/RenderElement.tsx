@@ -1,6 +1,5 @@
 import * as React from "react";
 import {
-  PathSegment,
   PropConfig,
   PropConfigArray,
   ValueArray,
@@ -12,17 +11,18 @@ import {
   isActiveEl,
   isActiveSibling,
 } from "./focus";
-import { useValue } from "../builder/RenderBuilder";
-import RenderComponent from "./RenderComponent";
-import { cms } from "../src/CMSElement";
+import { log, useValue } from "../builder/RenderBuilder";
 import {
   ExtendedComponentConfig,
   getConfigByType,
 } from "../config/getConfigByType";
 import { getLibraries, getLibraryConfigs } from "../config";
-import { extendPath } from "./extendPath";
+import { extendPath } from "../utils/extendPath";
+import RenderChildren from "./RenderChildren";
+import { getIdFromString } from "../utils/getIdsFromString";
 
 export const IndexContext = React.createContext(0);
+export const SpreadContext = React.createContext(false);
 
 const BUCKET_NAME = "awss3stack-mybucket15d133bf-1wx5fzxzweii4";
 const BUCKET_REGION = "eu-west-1";
@@ -47,7 +47,12 @@ const getImageObject = (name: string) => {
   };
 };
 
-const calculateProp = (config: PropConfig, prop: any, index: number) => {
+const calculateProp = (
+  id: string,
+  config: PropConfig,
+  prop: any,
+  index: number
+) => {
   const type = config.type;
   const value = prop[index % prop.length];
   if (value !== null && typeof value === "object" && "name" in value) {
@@ -83,8 +88,8 @@ const calculateProp = (config: PropConfig, prop: any, index: number) => {
     return String(value || "");
   } else if (type === "children") {
     return (
-      <ExtendPath extend={config.name} spacer="/">
-        <RenderComponent parentProp={config.name} />
+      <ExtendPath id={id}>
+        <RenderChildren value={prop} />
       </ExtendPath>
     );
   }
@@ -99,9 +104,7 @@ export default function RenderElement({
   props?: Record<string, ValueArray>;
 }) {
   const path = usePath();
-
-  const uncomputedProps =
-    propsFromProps ?? (useValue(path) as Record<string, ValueArray>);
+  const elementId = path.slice(-1)[0];
 
   let config_ = getConfigByType(type, getLibraryConfigs(), getLibraries());
 
@@ -111,7 +114,29 @@ export default function RenderElement({
 
   const config = config_;
 
-  const key = uncomputedProps?.key?.length ? uncomputedProps?.key : [""];
+  const uncomputedProps =
+    propsFromProps ??
+    Object.fromEntries(
+      config.props.reduce((acc, cur) => {
+        if (cur.type === "group") {
+          cur.props.forEach((el) => {
+            const id = `${elementId.slice(12, 24)}${getIdFromString(
+              extendPath(cur.name, el.name, "#")
+            )}`;
+            acc.push([id, useValue(id) ?? []]);
+          });
+        } else {
+          const id = `${elementId.slice(12, 24)}${getIdFromString(cur.name)}`;
+          acc.push([id, useValue(id) ?? []]);
+        }
+        return acc;
+      }, [] as [string, ValueArray][])
+    );
+
+  log("PROPS", uncomputedProps);
+
+  const keyId = `${elementId.slice(12, 24)}${getIdFromString("key")}`;
+  const key = useValue(keyId) ?? [];
 
   React.useEffect(() => {
     const activeEl = document.activeElement as HTMLElement;
@@ -147,25 +172,37 @@ export default function RenderElement({
     };
   }, []);
 
-  if (key.length === 1) {
-    return <RenderElementWithProps config={config} props={uncomputedProps} />;
+  if (key.length <= 1) {
+    return (
+      <RenderElementWithProps
+        elementId={elementId}
+        config={config}
+        props={uncomputedProps}
+      />
+    );
   }
 
   return (
-    <>
+    <SpreadContext.Provider value={true}>
       {key.map((_, index) => (
         <IndexContext.Provider key={index} value={index}>
-          <RenderElementWithProps config={config} props={uncomputedProps} />
+          <RenderElementWithProps
+            elementId={elementId}
+            config={config}
+            props={uncomputedProps}
+          />
         </IndexContext.Provider>
       ))}
-    </>
+    </SpreadContext.Provider>
   );
 }
 
 function RenderElementWithProps({
+  elementId,
   props: uncomputedProps,
   config,
 }: {
+  elementId: string;
   props: any;
   config: ExtendedComponentConfig;
 }) {
@@ -175,11 +212,13 @@ function RenderElementWithProps({
     return Object.fromEntries(
       props.map((config): [string, any] => {
         const key = extendPath(group ?? "", config.name, "#");
+        const id = `${elementId.slice(12, 24)}${getIdFromString(key)}`;
         return [
           config.name,
           config.type === "group"
             ? calculatePropsFromConfig(config.props, config.name)
-            : calculateProp(config, uncomputedProps?.[key] ?? [], index),
+            : calculateProp(id, config, uncomputedProps?.[id] ?? [], index) ??
+              [],
         ];
       })
     );
@@ -189,6 +228,8 @@ function RenderElementWithProps({
     const props = calculatePropsFromConfig(config.props);
     return props;
   }, [uncomputedProps, index]);
+
+  log("PROPS PROPS", props);
 
   return <config.component {...props} />;
 }

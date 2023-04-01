@@ -1,13 +1,13 @@
-import cl from "clsx";
 import { PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
-import { getDocumentId, restoreId } from "@storyflow/backend/ids";
-import { useArticleList } from "../../documents";
+import { getDocumentId } from "@storyflow/backend/ids";
+import { useOptimisticDocumentList } from "../../documents";
 import { getDocumentLabel } from "../../documents/useDocumentLabel";
 import Table from "../../documents/components/Table";
 import Space from "./Space";
 import { useAppPageContext } from "../AppPage";
 import Loader from "../../elements/Loader";
 import { useDeleteForm } from "./useDeleteForm";
+import { FolderId, SpaceId } from "@storyflow/backend/types";
 
 export function AppSpace({
   spaceId,
@@ -15,14 +15,16 @@ export function AppSpace({
   hidden,
   index,
 }: {
-  spaceId: string;
-  folderId: string;
+  spaceId: SpaceId;
+  folderId: FolderId;
   hidden: boolean;
   index: number;
 }) {
   const { form, handleDelete } = useDeleteForm({ folderId });
 
-  const { articles } = useArticleList(folderId);
+  const { articles } = useOptimisticDocumentList(folderId);
+
+  console.log("FOLDER", folderId, articles);
 
   const { urls, addArticleWithUrl } = useAppPageContext();
 
@@ -38,10 +40,10 @@ export function AppSpace({
 
   const rows = urls.map((el) => {
     const id = getDocumentId(el.id);
-    const doc = articles.find((a) => a.id === id)!;
+    const doc = articles.find((a) => a._id === id)!;
 
     return {
-      id: restoreId(id),
+      id,
       columns: [
         { value: getDocumentLabel(doc) },
         {

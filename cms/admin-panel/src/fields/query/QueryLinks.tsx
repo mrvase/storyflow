@@ -1,15 +1,14 @@
 import {
   DocumentId,
-  EditorComputation,
-  FieldImport,
-  Value,
+  TokenStream,
+  FolderId,
+  NestedField,
+  ValueArray,
 } from "@storyflow/backend/types";
-import { URL_ID } from "@storyflow/backend/templates";
-import { computeFieldId, createId } from "@storyflow/backend/ids";
+import { createTemplateFieldId, getDocumentId } from "@storyflow/backend/ids";
 import { ComputerDesktopIcon, LinkIcon } from "@heroicons/react/24/outline";
 import { $getRoot, $getSelection, $isRangeSelection } from "lexical";
 import React from "react";
-import { SWRClient } from "../../client";
 import { useEditorContext } from "../../editor/react/EditorProvider";
 import { useAppFolders } from "../../folders/collab/hooks";
 import { tools } from "shared/editor-tools";
@@ -17,6 +16,12 @@ import { useGlobalState } from "../../state/state";
 import { $getComputation, $getIndexFromPoint } from "../Editor/transforms";
 import { Option as OptionComponent } from "./Option";
 import { markMatchingString } from "./helpers";
+import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
+import { calculateFromRecord } from "@storyflow/backend/calculate";
+import { useFieldId } from "../FieldIdContext";
+import { useDocumentIdGenerator } from "../../id-generator";
+import { tokens } from "@storyflow/backend/tokens";
+import { useOptimisticDocumentList } from "../../documents";
 
 export function QueryLinks({
   query,
@@ -25,9 +30,13 @@ export function QueryLinks({
 }: {
   query: string;
   selected: number;
-  insertComputation: (insert: EditorComputation, removeExtra?: boolean) => void;
+  insertComputation: (insert: TokenStream, removeExtra?: boolean) => void;
 }) {
   const editor = useEditorContext();
+
+  const id = useFieldId();
+  const documentId = getDocumentId(id) as DocumentId;
+  const generateDocumentId = useDocumentIdGenerator();
 
   const getPrevSymbol = () => {
     return editor.getEditorState().read(() => {
@@ -40,13 +49,13 @@ export function QueryLinks({
     });
   };
 
-  const [linkParent, setLinkParent] = React.useState<FieldImport | null>(null);
+  const [linkParent, setLinkParent] = React.useState<NestedField | null>(null);
 
-  const [parentUrl] = useGlobalState<Value[]>(linkParent?.fref);
+  const [parentUrl] = useGlobalState<ValueArray>(linkParent?.field);
 
   React.useEffect(() => {
     const symbol = getPrevSymbol();
-    if (tools.isFieldImport(symbol)) {
+    if (tokens.isNestedField(symbol)) {
       setLinkParent(symbol);
     }
   }, []);
@@ -58,23 +67,20 @@ export function QueryLinks({
   const apps = useAppFolders();
 
   const [app, setApp] = React.useState(
-    apps?.length === 1 ? apps[0].id : undefined
+    apps?.length === 1 ? apps[0]._id : undefined
   );
 
-  const { data: list } = SWRClient.articles.getList.useQuery(app as string, {
-    inactive: !app,
-  });
+  const { articles: list } = useOptimisticDocumentList(app);
 
-  const onAppEnter = React.useCallback((id: string) => {
+  const onAppEnter = React.useCallback((id: FolderId) => {
     setApp(id);
   }, []);
 
   const onEnter = React.useCallback(
     (id: DocumentId) => {
-      const fieldImport: FieldImport = {
-        id: createId(1),
-        fref: computeFieldId(id, URL_ID),
-        args: {},
+      const fieldImport: NestedField = {
+        id: generateDocumentId(documentId),
+        field: createTemplateFieldId(id, DEFAULT_FIELDS.url.id),
       };
       insertComputation([fieldImport], Boolean(parentUrl));
     },
@@ -84,7 +90,7 @@ export function QueryLinks({
   if (!app) {
     options =
       apps?.map((el) => ({
-        id: el.id,
+        id: el._id,
         label: el.label,
         // secondaryText: "Vis links",
         Icon: ComputerDesktopIcon,
@@ -92,11 +98,15 @@ export function QueryLinks({
         onEnterLabel: "Vis links",
       })) ?? [];
   } else if (list) {
-    options = list.articles.reduce((acc, el) => {
-      const url = (el.values[URL_ID]?.[0] as string) || "";
+    options = list.reduce((acc, el) => {
+      const url =
+        (calculateFromRecord(
+          createTemplateFieldId(el._id, DEFAULT_FIELDS.url.id),
+          el.record
+        )?.[0] as string) ?? "";
       if (url.startsWith(fullQuery.toLowerCase())) {
         acc.push({
-          id: el.id,
+          id: el._id,
           label: markMatchingString(url, fullQuery) || "[forside]",
           onEnterLabel: "Indsæt",
           // secondaryText: "Vis links",

@@ -96,13 +96,13 @@ export const createStaticStore = <
     state: (InitialState & (State | undefined)) | SelectedState | undefined,
     setState: (value: State | ((ps: State | undefined) => State)) => void
   ] {
-    const setInitialState = () => {
+    const setInitialState = React.useCallback(() => {
       if (initialState !== undefined && get(key) === undefined) {
         const value =
           typeof initialState === "function" ? initialState() : initialState;
         set(key, value);
       }
-    };
+    }, [initialState]);
 
     const state = React.useSyncExternalStore(
       (callback) => {
@@ -115,10 +115,13 @@ export const createStaticStore = <
       }
     );
 
-    const setter = (value: State | ((ps: State | undefined) => State)) => {
-      const result = typeof value === "function" ? value(get(key)) : value;
-      set(key, result);
-    };
+    const setter = React.useCallback(
+      (value: State | ((ps: State | undefined) => State)) => {
+        const result = typeof value === "function" ? value(get(key)) : value;
+        set(key, result);
+      },
+      []
+    );
 
     return [state as any, setter];
   }

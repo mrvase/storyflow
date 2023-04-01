@@ -1,30 +1,26 @@
 import React from "react";
 import { DropShadow, Sortable, useSortableItem } from "@storyflow/dnd";
+import { createTemplateFieldId, getRawFieldId } from "@storyflow/backend/ids";
 import {
-  createFieldId,
-  getTemplateFieldId,
-  replaceDocumentId,
-} from "@storyflow/backend/ids";
-import {
-  ComputationRecord,
+  SyntaxTreeRecord,
   DBDocument,
   DocumentConfigItem,
   DocumentId,
   HeadingConfig,
+  SyntaxTree,
 } from "@storyflow/backend/types";
 import { getTranslateDragEffect } from "../utils/dragEffects";
 import { targetTools, DocumentConfigOp, AnyOp } from "shared/operations";
 import { RenderField } from "../fields/RenderField";
-import { getComputationRecord } from "@storyflow/backend/flatten";
-import { useDocumentCollab } from "./collab/DocumentCollabContext";
+import { useDocumentMutate } from "./collab/DocumentCollabContext";
 import { ServerPackage } from "@storyflow/state";
 import { getVersionKey } from "./DocumentPage";
 import { GetDocument } from "./GetDocument";
+import { ExtendTemplatePath } from "./TemplatePathContext";
 
 export function RenderTemplate({
   id,
   owner,
-  values,
   config,
   versions,
   histories,
@@ -32,7 +28,6 @@ export function RenderTemplate({
 }: {
   id: DocumentId;
   owner: DocumentId;
-  values: ComputationRecord;
   config: DBDocument["config"];
   versions?: DBDocument["versions"];
   histories: Record<string, ServerPackage<AnyOp>[]>;
@@ -41,7 +36,7 @@ export function RenderTemplate({
   const isMain = id === owner;
 
   const { push } = isMain
-    ? useDocumentCollab().mutate<DocumentConfigOp>(owner, owner)
+    ? useDocumentMutate<DocumentConfigOp>(owner, owner)
     : { push: () => {} };
 
   const onChange = React.useCallback(
@@ -52,11 +47,12 @@ export function RenderTemplate({
         const { type, index } = action;
 
         if (type === "add") {
-          const templateItem = action.item;
+          const templateItem = {
+            ...action.item,
+          };
           ops.push({
             index,
             insert: [templateItem],
-            remove: 0,
           });
         }
 
@@ -64,14 +60,12 @@ export function RenderTemplate({
           if (!config[index]) return;
           ops.push({
             index,
-            insert: [],
             remove: 1,
           });
         }
       }
       push({
         target: targetTools.stringify({
-          field: "any",
           operation: "document-config",
           location: "",
         }),
@@ -80,6 +74,14 @@ export function RenderTemplate({
     },
     [config, push]
   );
+
+  React.useEffect(() => {
+    console.log("changing onchange config");
+  }, [config]);
+
+  React.useEffect(() => {
+    console.log("changing onchange push");
+  }, [push]);
 
   let dragHandleProps: any = undefined;
   let containerProps = {};
@@ -117,9 +119,8 @@ export function RenderTemplate({
           {(article) => (
             <RenderTemplate
               key={getVersionKey(versions)} // for rerendering
-              id={article.id}
+              id={article._id}
               owner={owner}
-              values={{ ...values, ...getComputationRecord(article) }}
               config={article.config}
               histories={histories}
               versions={versions}
@@ -140,50 +141,48 @@ export function RenderTemplate({
       );
     }
 
-    const fieldId = fieldConfig.id
-      ? replaceDocumentId(fieldConfig.id, owner)
-      : createFieldId(owner, id);
-
-    const value = values[fieldId] ?? null;
+    const fieldId = isMain
+      ? fieldConfig.id
+      : createTemplateFieldId(owner, fieldConfig.id);
 
     return (
       <RenderField
         key={fieldId}
         id={fieldId}
-        value={value}
         fieldConfig={{
           ...fieldConfig,
           id: fieldId,
         }}
-        version={versions?.[getTemplateFieldId(fieldId)] ?? 0}
-        history={histories[getTemplateFieldId(fieldId)] ?? []}
+        version={versions?.[getRawFieldId(fieldId)] ?? 0}
+        history={histories[getRawFieldId(fieldId)] ?? []}
         index={index}
         dragHandleProps={dragHandleProps}
-        template={id}
       />
     );
   };
 
   return (
-    <div {...containerProps}>
-      <Sortable
-        type="fields"
-        id={id}
-        onChange={onChange}
-        canReceive={{
-          link: () => "ignore",
-          move: ({ type, item }) => (type === "fields" ? "accept" : "ignore"),
-        }}
-        disabled={!isMain}
-      >
-        <div className="flex flex-col">
-          {(config ?? []).map(renderConfigElement)}
-          <DropShadow>
-            {(item) => renderConfigElement(item, (config ?? []).length)}
-          </DropShadow>
-        </div>
-      </Sortable>
-    </div>
+    <ExtendTemplatePath template={id}>
+      <div {...containerProps}>
+        <Sortable
+          type="fields"
+          id={id}
+          onChange={onChange}
+          canReceive={{
+            link: () => "ignore",
+            move: ({ type, item }) => (type === "fields" ? "accept" : "ignore"),
+          }}
+          disabled={!isMain}
+        >
+          <div className="flex flex-col">
+            {(config ?? []).map(renderConfigElement)}
+            <DropShadow>
+              {(item) => renderConfigElement(item, (config ?? []).length)}
+            </DropShadow>
+          </div>
+        </Sortable>
+      </div>
+    </ExtendTemplatePath>
   );
 }
 

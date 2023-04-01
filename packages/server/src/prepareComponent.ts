@@ -4,7 +4,7 @@ const nestedCalculate = (value: any[], imports: any[]) => {
   const calc = (value: any[]): any => {
     return calculate(value, (id: string) => {
       const importedField = imports.find((el) => el.id === id);
-      return calc(importedField.compute);
+      return calc(importedField.fields);
     });
   };
   return calc(value);

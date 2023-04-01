@@ -12,14 +12,10 @@ import {
 import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
 import { caretClasses } from "./caret";
+import { Parameter } from "@storyflow/backend/types";
+import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 
-function ParameterDecorator({
-  label,
-  nodeKey,
-}: {
-  label: string;
-  nodeKey: string;
-}) {
+function Decorator({ value, nodeKey }: { value: Parameter; nodeKey: string }) {
   const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
 
   return (
@@ -36,110 +32,50 @@ function ParameterDecorator({
         )}
         onMouseDown={() => select()}
       >
-        {label ?? "x"}
+        {value.x ?? "x"}
       </span>
     </div>
   );
 }
+const type = "parameter";
+type TokenType = Parameter;
 
-function convertImportElement(
-  domNode: HTMLElement
-): DOMConversionOutput | null {
-  const textContent = domNode.textContent;
-
-  if (textContent !== null) {
-    const node = $createParameterNode(textContent);
-    return {
-      node,
-    };
-  }
-
-  return null;
-}
-
-export type SerializedParameterNode = Spread<
-  {
-    type: "parameter";
-    text: string;
-  },
-  SerializedLexicalNode
->;
-
-export class ParameterNode extends DecoratorNode<React.ReactNode> {
-  __text: string;
-
+export default class ChildNode extends TokenStreamNode<typeof type, TokenType> {
   static getType(): string {
-    return "parameter";
+    return type;
   }
 
-  static clone(node: ParameterNode): ParameterNode {
-    return new ParameterNode(node.__text, node.__key);
+  static clone(node: ChildNode): ChildNode {
+    return new ChildNode(node.__token, node.__key);
   }
 
-  constructor(label: string, key?: NodeKey) {
-    super(key);
-    this.__text = label;
+  constructor(token: TokenType, key?: NodeKey) {
+    super(type, token, key);
   }
 
-  createDOM(): HTMLElement {
-    const element = document.createElement("div");
-    return element;
+  isInline(): true {
+    return true;
   }
 
-  updateDOM(): false {
-    return false;
-  }
-
-  getTextContent(): string {
-    const self = this.getLatest();
-    return `${self.__text}`;
+  exportJSON(): SerializedTokenStreamNode<typeof type, TokenType> {
+    return super.exportJSON();
   }
 
   static importJSON(
-    serializedParameterNode: SerializedParameterNode
-  ): ParameterNode {
-    return $createParameterNode(serializedParameterNode.text);
-  }
-
-  exportJSON(): SerializedParameterNode {
-    const self = this.getLatest();
-    return {
-      type: "parameter",
-      text: self.__text,
-      version: 1,
-    };
-  }
-
-  exportDOM(): DOMExportOutput {
-    const element = document.createElement("span");
-    element.setAttribute("data-lexical-parameter", "true");
-    element.textContent = `${this.__text}`;
-    return { element };
-  }
-
-  static importDOM(): DOMConversionMap | null {
-    return {
-      span: (domNode: HTMLElement) => {
-        if (!domNode.hasAttribute("data-lexical-parameter")) {
-          return null as any;
-        }
-        return {
-          conversion: convertImportElement,
-          priority: 1,
-        };
-      },
-    };
+    serializedNode: SerializedTokenStreamNode<typeof type, TokenType>
+  ) {
+    return new ChildNode(serializedNode.token);
   }
 
   decorate(): React.ReactNode {
-    return <ParameterDecorator label={this.__text} nodeKey={this.__key} />;
+    return <Decorator nodeKey={this.__key} value={this.__token} />;
   }
 }
 
-export function $createParameterNode(label: string): ParameterNode {
-  return new ParameterNode(label);
+export function $createParameterNode(value: TokenType): ChildNode {
+  return new ChildNode(value);
 }
 
 export function $isParameterNode(node: LexicalNode): boolean {
-  return node instanceof ParameterNode;
+  return node instanceof ChildNode;
 }

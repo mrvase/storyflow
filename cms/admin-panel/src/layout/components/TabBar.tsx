@@ -1,9 +1,6 @@
 import React from "react";
 import {
-  MagnifyingGlassPlusIcon,
-  MagnifyingGlassMinusIcon,
   PlusIcon,
-  ArrowsPointingOutIcon,
   ArrowUpCircleIcon,
   CheckCircleIcon,
   MinusCircleIcon,
@@ -11,9 +8,7 @@ import {
   Bars3Icon,
   AdjustmentsHorizontalIcon,
   ChevronLeftIcon,
-  WrenchScrewdriverIcon,
 } from "@heroicons/react/24/outline";
-import TabButton from "./TabButton";
 import { Tab } from "../types";
 import cl from "clsx";
 import { useLocalStorage } from "../../state/useLocalStorage";
@@ -81,83 +76,7 @@ export default function TabBar({
           )}
         </button>
       </div>
-      {/*
-      <button
-        className={cl(
-          "text-sm h-10 w-10 shrink-0 flex-center rounded-md transition-[color,background-color,box-shadow]",
-          "ring-button text-button",
-          isEditing ? "bg-button-yellow" : "bg-button"
-        )}
-        onClick={() => setIsEditing((ps) => !ps)}
-      >
-        <WrenchScrewdriverIcon className="w-4 h-4" />
-      </button>
-      */}
       <CommandLine />
-      {/*
-      <div
-        className={cl(
-          "w-full flex gap-2 justify-start items-start",
-          "transition-transform ease-out"
-        )}
-      >
-        {tabs.map((el, i) => (
-          <TabButton key={el.key} isCurrent={i < 2} tab={el} />
-        ))}
-        <button
-          onClick={addTab}
-          className="flex items-center bg-white dark:bg-gray-800 dark:text-gray-100 px-2 rounded-md h-7 hover:opacity-100 transition-opacity"
-          style={{
-            order: 999,
-          }}
-        >
-          <PlusIcon className="w-4 h-4" />
-        </button>
-      </div>
-      <div className="flex text-sm bg-white dark:bg-gray-800 rounded-md">
-        <button
-          className="flex items-center px-2"
-          onClick={() =>
-            setNoOfTabs((ps) => {
-              let ps2 = typeof ps === "number" ? ps : tabs.length;
-              return ps2 === 4 ? 4 : ps2 + 1;
-            })
-          }
-        >
-          <MagnifyingGlassMinusIcon className="w-4 h-4" />
-        </button>
-        <button
-          className={cl(
-            "flex items-center px-2",
-            autoSizeTabs
-              ? "bg-teal-100 text-teal-600 dark:bg-teal-600 dark:text-teal-100"
-              : ""
-          )}
-          onClick={() =>
-            setNoOfTabs((ps) => (ps === null ? tabs.length : null))
-          }
-        >
-          <ArrowsPointingOutIcon className="w-4 h-4" />
-        </button>
-        <button
-          className="h-10 w-10 flex-center px-2"
-          onClick={() =>
-            setNoOfTabs((ps) => {
-              let ps2 = typeof ps === "number" ? ps : tabs.length;
-              return ps2 === 1 ? 1 : ps2 - 1;
-            })
-          }
-        >
-          <MagnifyingGlassPlusIcon className="w-4 h-4" />
-        </button>
-      </div>
-      */}
-      {/*<button
-        className="flex items-center text-sm bg-white dark:bg-gray-800 rounded-md px-2"
-        onClick={() => setDarkMode((ps) => !ps)}
-      >
-        <DarkIcon className="w-4 h-4" />
-        </button>*/}
       <button
         className="text-sm h-10 w-10 shrink-0 px-2 flex-center rounded-md bg-white dark:bg-gray-850 border border-gray-200 dark:border-gray-800 text-gray-300 hover:text-white hover:bg-opacity-100 transition-colors"
         onClick={() => addTab()}

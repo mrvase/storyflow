@@ -1,4 +1,4 @@
-import { Token } from "@storyflow/backend/types";
+import { Token, TokenStream } from "@storyflow/backend/types";
 import {
   $getNodeByKey,
   $getSelection,
@@ -9,14 +9,18 @@ import {
   FOCUS_COMMAND,
 } from "lexical";
 import React from "react";
-import { $isTokenNode, TokenNode } from "../decorators/TokenNode";
 import { useEditorContext } from "../../editor/react/EditorProvider";
 import { mergeRegister } from "../../editor/utils/mergeRegister";
+import {
+  $isTokenStreamNode,
+  ObjectToken,
+  TokenStreamNode,
+} from "../decorators/TokenStreamNode";
 
-export const useSelectedToken = (callback: (token: Token) => void) => {
+export const useSelectedToken = (callback: (token: ObjectToken) => void) => {
   const [tokenNode, setTokenNode] = React.useState<{
     key: string;
-    value: Token;
+    value: ObjectToken;
   }>();
 
   const editor = useEditorContext();
@@ -31,7 +35,7 @@ export const useSelectedToken = (callback: (token: Token) => void) => {
         if (nodes.length !== 1) return;
         const [node] = nodes;
 
-        if (!$isTokenNode(node)) return;
+        if (!$isTokenStreamNode(node)) return;
 
         return {
           value: node.getToken(),
@@ -66,10 +70,13 @@ export const useSelectedToken = (callback: (token: Token) => void) => {
   }, [editor]);
 
   const setToken = React.useCallback(
-    (value: Token) => {
+    (value: ObjectToken) => {
       if (!tokenNode) return;
       editor.update(() => {
-        const node = $getNodeByKey(tokenNode.key) as TokenNode | null;
+        const node = $getNodeByKey(tokenNode.key) as TokenStreamNode<
+          any,
+          any
+        > | null;
         node?.setToken(value);
       });
     },

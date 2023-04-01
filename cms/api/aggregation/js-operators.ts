@@ -1,3 +1,4 @@
+import { DBId, FieldId } from "@storyflow/backend/types";
 import { Operators, SwitchObject } from "./types";
 
 export const operators: Operators<any> = {
@@ -63,6 +64,11 @@ export const operators: Operators<any> = {
   },
   concatArrays(...arrays) {
     return arrays.reduce((a, c) => a.concat(c));
+  },
+  reverseArray(array) {
+    return {
+      $reverseArray: array.slice().reverse(),
+    } as unknown as typeof array;
   },
   mergeObjects(a, b, c) {
     return Object.assign({}, a, b, c);
@@ -145,6 +151,9 @@ export const operators: Operators<any> = {
   setUnion(...arrays) {
     return [...new Set(arrays.reduce((a, c) => a.concat(c)))];
   },
+  setIntersection(...arrays) {
+    return [...arrays.reduce((a, c) => a.filter((el) => c.includes(el)))];
+  },
   size(arr) {
     return arr.length;
   },
@@ -158,6 +167,9 @@ export const operators: Operators<any> = {
   },
   toString(input) {
     return String(input);
+  },
+  toObjectId(input) {
+    return input as DBId<FieldId>;
   },
   toBool(input) {
     return Boolean(input);
@@ -252,5 +264,8 @@ export const operators: Operators<any> = {
   },
   trim(input: string) {
     return input.trim();
+  },
+  literal(input) {
+    return input;
   },
 };

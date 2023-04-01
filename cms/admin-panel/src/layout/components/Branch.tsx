@@ -8,22 +8,15 @@ import { Tab } from "../types";
 import { SegmentProvider } from "./SegmentContext";
 import { DocumentPage } from "../../documents/DocumentPage";
 import useIsFocused from "../../utils/useIsFocused";
-import { BuilderProvider } from "../../fields/builder/BuilderPortal";
 import LocationBar from "./LocationBar";
 import { ErrorBoundary, FallbackProps } from "react-error-boundary";
 import AppPage from "../../folders/AppPage";
 import { useLocation, useAction } from "@storyflow/router";
 import { SystemFolderPage } from "./SystemFolderPage";
 import { SystemTemplatePage } from "./SystemTemplatePage";
-
-const BranchFocusContext = React.createContext<{
-  isFocused: boolean;
-  id: string;
-}>({ isFocused: false, id: "" });
-
-export function useBranchIsFocused(): { isFocused: boolean; id: string } {
-  return React.useContext(BranchFocusContext);
-}
+import { BranchFocusContext } from "./BranchFocusContext";
+import { FieldPage } from "../../fields/FieldPage";
+import { IframeProvider } from "../../fields/builder/IframeContext";
 
 const useFocusChange = (
   isFocused: boolean,
@@ -280,18 +273,31 @@ function Pages({
                 current={segment}
                 full={tab.segment}
               >
-                <BuilderProvider
-                  isOpen={selectedLength >= tab.segment.split("/").length}
-                  onLoad={() => select(tab.segment)}
+                <DocumentPage
+                  isOpen={selectedLength >= segment.split("/").length}
+                  isSelected={selected === segment}
+                  onLoad={() => select(segment)}
                 >
-                  <DocumentPage
+                  {children}
+                </DocumentPage>
+              </SegmentProvider>
+            );
+          } else if (type === "c") {
+            return (
+              <SegmentProvider
+                key={segment}
+                current={segment}
+                full={tab.segment}
+              >
+                <IframeProvider>
+                  <FieldPage
                     isOpen={selectedLength >= segment.split("/").length}
                     isSelected={selected === segment}
                     onLoad={() => select(segment)}
                   >
                     {children}
-                  </DocumentPage>
-                </BuilderProvider>
+                  </FieldPage>
+                </IframeProvider>
               </SegmentProvider>
             );
           }

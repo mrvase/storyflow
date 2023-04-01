@@ -1,151 +1,116 @@
-export type StringType<T extends string> = string & { __type: T }; // could be [key in T]: any
+/*
+User input -> TokenStream
+TokenStream -> SyntaxTree
+SyntaxTree -> SyntaxStream
+SyntaxStream -> SyntaxTree
+SyntaxTree -> ValueArray
+SyntaxStream -> ValueArray
+SyntaxTree -> TokenStream
+SyntaxTree -> RenderTree
 
-export type DocumentId = StringType<"short-id">;
-export type TemplateFieldId = StringType<"template-field-id">;
-export type FieldId = StringType<"field-id">; // `${DocumentId}${TemplateFieldId}`
 
-export type Parameter = { x: number; value?: PrimitiveValue };
+User input --> Token Stream
+                 <-[eq]->
+        SyntaxTree<WithSyntaxError>
+          <-[eq]->      --[ss]->
+    SyntaxStream --[ss]-> ValueArray --> RenderTree
 
-export type ContextImport = {
-  ctx: string;
+*/
+
+declare const brand: unique symbol;
+
+export type Brand<T, TBrand extends string> = T & { [brand]: TBrand };
+
+export type RawDocumentId = Brand<string, "raw-document-id">;
+export type RawFieldId = Brand<string, "raw-field-id">;
+export type DocumentId = Brand<string, "document-id">;
+export type NestedDocumentId = Brand<string, "nested-document-id">;
+export type FieldId = Brand<string, "field-id">;
+export type RawFolderId = Brand<string, "raw-folder-id">;
+export type FolderId = Brand<string, "folder-id">;
+export type SpaceId = Brand<string, "space-id">;
+
+export type DBId<BrandedId> = {
+  id: unknown;
+  toHexString(): string;
+} & {
+  [brand]?: BrandedId extends Brand<string, infer TBrand> ? TBrand : never;
 };
 
-// placeholders are meant to be replaced by a value when the computation is executed
-export type Placeholder = Parameter | FieldImport | Fetcher | ContextImport;
-export type FlatPlaceholder =
-  | Parameter
-  | FlatFieldImport
-  | Fetcher
-  | ContextImport;
+export type HasDBId<T> = T extends {
+  id: NestedDocumentId;
+  field: FieldId;
+}
+  ? Omit<T, "id" | "field"> & {
+      id: DBId<NestedDocumentId>;
+      field: DBId<FieldId>;
+    }
+  : T extends { id: NestedDocumentId; folder: FolderId }
+  ? Omit<T, "id" | "folder"> & {
+      id: DBId<NestedDocumentId>;
+      folder: DBId<FolderId>;
+    }
+  : T extends { id: DocumentId | NestedDocumentId }
+  ? Omit<T, "id"> & { id: DBId<DocumentId | NestedDocumentId> }
+  : T;
 
-// symbols are also meant to be eliminated when the computation is executed,
-// but unlike placeholders, they do not indicate a place for a value
-// but define the execution of a function
-// NOTICE! They are characterized by only one key-value pair
-// if this changes, we need to change the symb.equals implementation
-//
+export type HasSelect<T> = T extends {
+  id: NestedDocumentId | DocumentId;
+  field: FieldId;
+}
+  ? T & {
+      select?: RawFieldId;
+    }
+  : T;
 
-export type SharedSymbol =
-  | { "(": true }
-  | { ")": true }
-  | { "[": true }
-  | { "]": true }
-  | { n: true };
+/*
+ * SHARED TOKENS
+ */
 
-export type EditorSymbol =
-  | SharedSymbol
-  | { _: Operator }
-  | { ")": FunctionName }
-  | { ",": true };
+export type PrimitiveValue = string | number | boolean | Date;
 
-export type DBSymbol =
-  | SharedSymbol
-  | { "{": true }
-  | { "}": true }
-  | { "/": true }
-  | { ")": Operator | FunctionName }
-  | { p: TemplateFieldId };
-
-type SharedSymbolKey = "(" | ")" | "[" | "]" | "n";
-export type EditorSymbolKey = SharedSymbolKey | "_" | ",";
-export type DBSymbolKey = SharedSymbolKey | "{" | "}" | "/" | "p";
-
-export type EditorComputation = (Value | Placeholder | EditorSymbol)[];
-export type Computation = (Value | Placeholder | DBSymbol)[];
-
-// FlatComputations reside as the value in ComputationBlocks, and they are always
-// the root of the computation.  Nested arrays only occur as a product of calculations,
-// so they cannot be in the FlatComputation.
-export type FlatComputation = (
-  | Exclude<FlatValue, FlatValue[]>
-  | FlatPlaceholder
-  | DBSymbol
-)[];
-
-// These occur when we in the database compute the ComputationBlocks and add
-// the "result" and "function" properties to the block. But this does not
-// create a problem for us.
-export type PossiblyNestedFlatComputation = (
-  | FlatValue
-  | FlatPlaceholder
-  | DBSymbol
-)[];
-
-export type NonNestedComputation = (
-  | Exclude<Value, Value[]>
-  | Placeholder
-  | DBSymbol
-)[];
-
-export type DocumentImport = { dref: DocumentId };
-
-export type FlatFieldImport = {
-  id: string;
-  fref: FieldId;
-  pick?: TemplateFieldId /* pick column */;
+export type NestedField = {
+  id: NestedDocumentId;
+  field: FieldId;
+  inline?: true;
 };
 
-export type FieldImport = {
-  id: string;
-  fref: FieldId;
-  args: { [key: number]: Computation } /* only used on client */;
-  pick?: TemplateFieldId /* pick column */;
+export type NestedElement = {
+  id: NestedDocumentId;
+  element: string;
+  // props: Record<RawFieldId, true>; // searchable props
+  inline?: true;
 };
 
-export type FlatComputationRecord = { [key: string]: FlatComputation };
-export type ComputationRecord = { [key: string]: Computation };
-
-export type ValueRecord<Key extends string = string> = Record<Key, Value[]>;
-
-export type FlatLayoutElement = {
-  id: string;
-  type: string;
-  props: Record<string, boolean>;
-};
-
-export type LayoutElement = {
-  id: string;
-  type: string;
-  props: ComputationRecord;
-  parent?: string;
-};
-
-export type FlatNestedDocument = {
-  id: DocumentId;
-  values?: string[];
-  // not included in import because it is not used there,
-  // but if it belongs to the doc, it lists the ids of the fields it contains
+export type NestedFolder = {
+  id: NestedDocumentId;
+  folder: FolderId;
+  inline?: true;
 };
 
 export type NestedDocument = {
-  id: DocumentId;
-  values: ComputationRecord;
-  path?: string;
+  id: DocumentId | NestedDocumentId;
+  inline?: true;
 };
 
-export type FlatFilter = {
-  field: TemplateFieldId | "folder" | "";
-  operation: "=" | "!=" | "<" | ">" | ">=" | "<=" | "";
+export type NestedCreator = {
+  id: NestedDocumentId;
+  text: string;
+  inline?: true;
 };
 
-export type Filter = {
-  field: TemplateFieldId | "folder" | "";
-  operation: "=" | "!=" | "<" | ">" | ">=" | "<=" | "";
-  value: Computation;
+export type NestedEntity =
+  | NestedElement
+  | NestedFolder
+  | NestedDocument
+  | NestedCreator;
+
+export type InputToken = {
+  input: string;
 };
 
-export type FlatFetcher = {
-  id: string;
-  filters: FlatFilter[];
-};
-
-export type Fetcher = {
-  id: string;
-  filters: Filter[];
-};
-
-export type CustomToken = {
-  name: string;
+export type ContextToken = {
+  ctx: string;
 };
 
 export type FileToken = {
@@ -156,25 +121,128 @@ export type ColorToken = {
   color: string;
 };
 
-export type Token = CustomToken | FileToken | ColorToken;
+export type CustomToken = {
+  name: string;
+};
 
-export type PrimitiveValue = string | number | boolean | Date;
+export type Token = CustomToken | ContextToken | FileToken | ColorToken;
 
-export type FlatValue =
-  | PrimitiveValue
-  | FlatLayoutElement
-  | FlatNestedDocument
-  | DocumentImport
-  | Token
-  | FlatValue[];
+export type LineBreak = { n: true };
+export type Parameter = { x: number; value?: PrimitiveValue };
 
-export type Value =
-  | PrimitiveValue
-  | LayoutElement
-  | NestedDocument
-  | DocumentImport
-  | Token
-  | Value[];
+/**
+ * VALUE ARRAY
+ */
+
+export type Value = PrimitiveValue | Token | NestedEntity;
+
+export type Nested<T> = T | Nested<T>[];
+
+export type ValueArray = Nested<Value>[];
+
+/**
+ * STREAM
+ */
+
+type StreamEntity<StreamSymbol> =
+  | StreamSymbol
+  | NestedField
+  | LineBreak
+  | Value
+  | any[] // in principle never nested, but allows us to consider ValueArray as a subset of a stream.
+  | Parameter;
+
+/**
+ * TOKEN STREAM
+ */
+
+export type TokenStreamSymbol =
+  | { "(": true }
+  | { ")": true }
+  | { "[": true }
+  | { "]": true }
+  | { ",": true }
+  | { _: Operator }
+  | { ")": FunctionName }
+  | { ")": "sortlimit"; l: number; s?: SortSpec };
+
+export type TokenStream = HasSelect<StreamEntity<TokenStreamSymbol>>[];
+
+/**
+ * SYNTAX TREE
+ */
+
+export type WithSyntaxError = {
+  error: "," | ")" | "missing";
+};
+
+export type SyntaxNode<
+  WithExtraChildren extends WithSyntaxError | never = WithSyntaxError | never
+> = {
+  type: Operator | FunctionName | "merge" | "array" | "root" | null;
+  children: (
+    | SyntaxNode<WithExtraChildren>
+    | Parameter
+    | NestedField
+    | LineBreak
+    | Value
+    | any[] // like streams, they are never nested, but this allows us to have ValueArray as a child as well.
+    | WithExtraChildren
+  )[];
+  data?: Record<string, any>;
+  open?: true;
+};
+
+export type SyntaxTree<
+  WithExtraChildren extends WithSyntaxError | never = WithSyntaxError | never
+> = SyntaxNode<WithExtraChildren>;
+
+export type Transform = Pick<SyntaxNode, "type" | "data"> & {
+  children?: (
+    | Exclude<SyntaxNode["children"][number], SyntaxNode>
+    | Transform
+  )[];
+};
+
+export type SyntaxTreeRecord = { [key: FieldId]: SyntaxTree<WithSyntaxError> };
+
+/**
+ * SYNTAX STREAM
+ */
+
+export type SyntaxStreamSymbol =
+  | { "(": true }
+  | { ")": true | false } // false means it does not close anything (syntax error) - should be ignored
+  | { "[": true }
+  | { "]": true }
+  | { "{": true }
+  | { "}": true }
+  | { ")": "root" }
+  | { ")": "select"; f: RawFieldId }
+  | { ")": "sortlimit"; l: number; s?: SortSpec }
+  | { ")": Exclude<Operator | FunctionName, "select" | "sortlimit"> }
+  | null;
+
+export type SyntaxStream = StreamEntity<SyntaxStreamSymbol>[];
+
+export type DBValue = HasDBId<Value>;
+export type DBValueArray = Nested<DBValue>[];
+
+export type DBSyntaxStream = HasDBId<StreamEntity<SyntaxStreamSymbol>>[];
+
+export type DBSyntaxStreamBlock = {
+  k: DBId<FieldId>;
+  v: DBSyntaxStream;
+};
+
+export type DBValueRecord = Record<RawFieldId, DBValueArray>;
+
+/**
+ *
+ *
+ *
+ *
+ */
 
 export const operators = [
   "*",
@@ -199,15 +267,11 @@ export const functions = [
   "filter",
   "slug",
   "url",
-  "pick",
+  "select",
+  "sortlimit",
 ] as const;
 
 export type FunctionName = (typeof functions)[number];
-
-export type ComputationBlock = {
-  id: FieldId;
-  value: FlatComputation;
-};
 
 export type FieldType = "default" | "url" | "slug";
 
@@ -227,10 +291,14 @@ export type FieldConfig<T extends FieldType = FieldType> = {
   type: T;
   template?: DocumentId;
   restrictTo?: RestrictTo;
+  transform?: Transform;
 };
 
 export type TemplateRef = {
   template: DocumentId;
+  config?: PartialDocumentConfig;
+  // Burde være nemt nok at finde label. Jeg finder label ved at finde docs template
+  // og hvis den har en config, bruger jeg label derfra, ellers går jeg videre til dens templates.
 };
 
 export type HeadingConfig = {
@@ -246,41 +314,41 @@ export type DocumentConfigItem =
 
 export type DocumentConfig = DocumentConfigItem[];
 
+export type PartialFieldConfig = Partial<Omit<FieldConfig, "id" | "type">> &
+  Pick<FieldConfig, "id">;
+
+export type PartialDocumentConfig = PartialFieldConfig[];
+
 export type TemplateDocument = Omit<DBDocument, "version" | "folder">;
 
-export interface DBDocument {
-  id: DocumentId;
-  folder: string;
+export interface DBDocumentRaw {
+  _id: DBId<DocumentId>;
+  folder: DBId<FolderId>;
   config: DocumentConfig;
-  values: ValueRecord<TemplateFieldId>;
-  compute: ComputationBlock[];
   label?: string;
-  versions?: Record<TemplateFieldId | DocumentId, number>;
+  versions?: Record<"config" | RawFieldId, number>;
+  /* compute */
+  ids: DBId<NestedDocumentId>[];
+  cached: ValueArray[];
+  fields: DBSyntaxStreamBlock[];
+  values: DBValueRecord;
+  updated: Record<RawFieldId, number>;
+  fetches?: string[];
+  /* */
 }
 
-export type FolderChild =
-  | {
-      id: string;
-      index: string;
-      after: string | null;
-    }
-  | {
-      remove: string;
-    };
-
-export interface DBFolder {
-  id: string;
-  type: "data" | "app" | "root" | "templates";
-  label: string;
-  template?: DocumentId;
-  domains?: string[];
-  children: FolderChild[];
-  spaces?: Space[];
-  versions?: Record<string, number>;
+export interface DBDocument {
+  _id: DocumentId;
+  folder: FolderId;
+  config: DocumentConfig;
+  record: SyntaxTreeRecord;
+  // values: ValueRecord;
+  label?: string;
+  versions?: Record<"config" | RawFieldId, number>;
 }
 
 export type FolderSpace = {
-  id: string;
+  id: SpaceId;
   type: "folders";
   items: string[];
 };
@@ -288,10 +356,30 @@ export type FolderSpace = {
 export type Space =
   | FolderSpace
   | {
-      id: string;
+      id: SpaceId;
       type: "documents";
-      folder?: string;
+      folder?: FolderId;
     };
+
+export interface DBFolderRaw {
+  _id: DBId<FolderId>;
+  type: "data" | "app";
+  label: string;
+  spaces: Space[];
+  template?: DBId<DocumentId>;
+  domains?: string[];
+  versions?: Record<"config" | SpaceId, number>;
+}
+
+export interface DBFolder {
+  _id: FolderId;
+  type: "data" | "app";
+  label: string;
+  spaces: Space[];
+  template?: DocumentId;
+  domains?: string[];
+  versions?: Record<"config" | SpaceId, number>;
+}
 
 export interface Settings {
   domains: {
@@ -301,3 +389,5 @@ export interface Settings {
 }
 
 export type SearchableProps = Record<string, Record<string, boolean>>;
+
+export type SortSpec = Record<RawFieldId, 1 | -1>;

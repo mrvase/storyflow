@@ -6,8 +6,12 @@ import type { PublicAPI } from "api/public";
 import type {} from "@sfrpc/types";
 import type {} from "@storyflow/result";
 import useSWR, { useSWRConfig } from "swr";
+import useSWRImmutable from "swr/immutable";
 import { useUrlInfo } from "./users";
 import { useContextWithError } from "./utils/contextError";
+
+const SWRCache = new Map();
+export const provider = () => SWRCache;
 
 const QueryContext = React.createContext<Record<string, any>>({});
 export const useQueryContext = () => React.useContext(QueryContext);
@@ -25,6 +29,8 @@ export function QueryContextProvider({
 }: {
   children: React.ReactNode;
 }) {
+  const { mutate } = useSWRConfig();
+
   const { organization, version } = useUrlInfo();
 
   const queryCtx = React.useMemo(
@@ -32,8 +38,41 @@ export function QueryContextProvider({
     [organization]
   );
 
+  const cache = React.useMemo(
+    () => ({
+      read(key: string) {
+        let cached = SWRCache.get(key);
+        if (!cached || !cached.data || cached.isLoading === true) {
+          return;
+        }
+        return cached.data;
+      },
+      write(key: string, data: unknown) {
+        // TODO: hvorfor bruger jeg ikke bare mutate, som er reaktiv?
+        // fordi den ikke kan findes udenfor et hook.
+        let cached = SWRCache.get(key);
+        if (!cached) {
+          mutate(key, data);
+          /*
+        SWRCache.set(key, {
+          data,
+          isValidating: false,
+          isLoading: false,
+          error: undefined,
+        });
+        */
+        }
+      },
+    }),
+    []
+  );
+
   const clientCtx = React.useMemo(
-    () => createClient<API & BucketAPI & PublicAPI>(url, queryCtx),
+    () =>
+      createClient<API & BucketAPI & PublicAPI>(url, {
+        context: queryCtx,
+        cache,
+      }),
     [queryCtx]
   );
 
@@ -46,19 +85,17 @@ export function QueryContextProvider({
   );
 }
 
-const SWRCache = new Map();
-export const provider = () => SWRCache;
-
 // export const client = createClient<API>();
 
 export const SWRClient = createSWRClient<API>(
   url,
   useSWR,
+  useSWRImmutable,
   useSWRConfig,
   useQueryContext
 );
 
-export const useCache = {
+export const cache = {
   read(key: string) {
     let cached = SWRCache.get(key);
     if (!cached || !cached.data || cached.isLoading === true) {
@@ -67,6 +104,8 @@ export const useCache = {
     return cached.data;
   },
   write(key: string, data: unknown) {
+    // TODO: hvorfor bruger jeg ikke bare mutate, som er reaktiv?
+    // fordi den ikke kan findes udenfor et hook.
     let cached = SWRCache.get(key);
     if (!cached) {
       SWRCache.set(key, {

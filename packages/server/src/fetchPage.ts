@@ -138,7 +138,7 @@ export async function fetchPage(url: string, db: string) {
         if (!doc) return null;
 
         const blocks: ComputationBlock[] = [
-          ...doc.compute,
+          ...doc.fields,
           ...(Object.entries(doc.values).map(([key, value]) => ({
             id: `${doc.id}${key}`,
             value,

@@ -61,8 +61,8 @@ const defaultLibrary: LibraryConfig = {
       label: "Link",
       name: "Link",
       props: [
-        { name: "href", type: "string", label: "URL" },
         { name: "label", type: "string", label: "Label", searchable: true },
+        { name: "href", type: "string", label: "URL" },
       ],
       inline: true,
     },
@@ -79,6 +79,8 @@ const defaultClientConfig: ClientConfig = {
   revalidateUrl: "",
   libraries: [defaultLibrary],
 };
+
+const defaultLibraries = [defaultLibrary]; // stable reference
 
 export function useClientConfig(key?: string): ClientConfig {
   const configs = React.useContext(ClientConfigContext);
@@ -106,7 +108,7 @@ export function useClientConfig(key?: string): ClientConfig {
   return {
     builderUrl: main?.builderUrl ?? "",
     revalidateUrl: main?.revalidateUrl ?? "",
-    libraries: main?.libraries ?? [defaultLibrary],
+    libraries: main?.libraries ?? defaultLibraries,
   };
 }
 

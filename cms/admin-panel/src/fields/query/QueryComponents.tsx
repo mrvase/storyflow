@@ -1,4 +1,4 @@
-import { EditorComputation } from "@storyflow/backend/types";
+import { DocumentId, TokenStream } from "@storyflow/backend/types";
 import { CubeIcon } from "@heroicons/react/24/outline";
 import React from "react";
 import { useClientConfig } from "../../client-config";
@@ -6,6 +6,9 @@ import { createComponent } from "../Editor/createComponent";
 import { RegularOptions, Option } from "@storyflow/frontend/types";
 import { Option as OptionComponent } from "./Option";
 import { markMatchingString } from "./helpers";
+import { useFieldId } from "../FieldIdContext";
+import { getDocumentId } from "@storyflow/backend/ids";
+import { useDocumentIdGenerator } from "../../id-generator";
 
 export function QueryComponents({
   query,
@@ -16,10 +19,14 @@ export function QueryComponents({
 }: {
   query: string;
   selected: number;
-  insertBlock: (comp: EditorComputation) => void;
-  insertComputation: (comp: EditorComputation) => void;
+  insertBlock: (comp: TokenStream) => void;
+  insertComputation: (comp: TokenStream) => void;
   options: RegularOptions;
 }) {
+  const id = useFieldId();
+  const documentId = getDocumentId(id) as DocumentId;
+  const generateDocumentId = useDocumentIdGenerator();
+
   const defaultOptions = React.useMemo(() => {
     return (optionsFromProps as Option[]).filter(
       (el): el is string => typeof el === "string"
@@ -57,21 +64,21 @@ export function QueryComponents({
     (config: (typeof filtered)[number]) => {
       if (config.inline) {
         insertComputation([
-          createComponent(config.name, {
+          createComponent(generateDocumentId(documentId), config.name, {
             library: config.libraryName,
             libraries,
           }),
         ]);
       } else {
         insertBlock([
-          createComponent(config.name, {
+          createComponent(generateDocumentId(documentId), config.name, {
             library: config.libraryName,
             libraries,
           }),
         ]);
       }
     },
-    [insertComputation, insertBlock]
+    [insertComputation, insertBlock, generateDocumentId]
   );
 
   return (

@@ -5,28 +5,22 @@ import {
   ArrowPathIcon,
   ComputerDesktopIcon,
 } from "@heroicons/react/24/outline";
-import { useArticleList } from "../documents";
+import { useOptimisticDocumentList } from "../documents";
 import { useSegment } from "../layout/components/SegmentContext";
 import { useOnLoadHandler } from "../layout/onLoadHandler";
-import { computeFieldId, minimizeId, restoreId } from "@storyflow/backend/ids";
+import { createTemplateFieldId } from "@storyflow/backend/ids";
 import { EditableLabel } from "../elements/EditableLabel";
 import cl from "clsx";
 import { AddArticleDialog } from "./AddArticleDialog";
 import {
-  ComputationBlock,
-  Computation,
   DBDocument,
   FieldId,
-  FlatComputation,
   DBFolder,
+  FolderId,
+  SpaceId,
+  SyntaxTreeRecord,
 } from "@storyflow/backend/types";
-import {
-  getComputationRecord,
-  getFlatComputationRecord,
-} from "@storyflow/backend/flatten";
-import { getConfig } from "shared/initialValues";
-import { URL_ID } from "@storyflow/backend/templates";
-import { useClient } from "../client";
+import { SWRClient, useClient } from "../client";
 import { useClientConfig } from "../client-config";
 import { unwrap } from "@storyflow/result";
 import { DomainsButton } from "./FolderPage";
@@ -35,10 +29,12 @@ import { useFolder } from "./collab/hooks";
 import { useFolderCollab } from "./collab/FolderCollabContext";
 import { targetTools } from "shared/operations";
 import { AppSpace } from "./spaces/AppSpace";
-import { getImportIds } from "shared/computation-tools";
+import { getFieldRecord, getGraph } from "shared/computation-tools";
+import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
+import { calculateFromRecord } from "@storyflow/backend/calculate";
 
 const AppPageContext = React.createContext<{
-  addArticleWithUrl: (parent: DBDocument) => void;
+  addArticleWithUrl: (parent: Pick<DBDocument, "_id" | "record">) => void;
   urls: { id: FieldId; value: string; indent: number }[];
 } | null>(null);
 
@@ -46,43 +42,6 @@ export const useAppPageContext = () => {
   const ctx = React.useContext(AppPageContext);
   if (!ctx) throw new Error("FolderPageContext.Provider not found.");
   return ctx;
-};
-
-const getUrlImports = (article: DBDocument) => {
-  const record = getComputationRecord(article);
-  const imports = new Set<ComputationBlock>();
-
-  const recursive = (value: Computation) => {
-    getImportIds(value, {}).forEach((id) => {
-      const block = article.compute.find((el) => el.id === id) ?? {
-        id,
-        value: getConfig("url").initialValue as FlatComputation,
-      };
-      imports.add(block);
-      const computation = record[id] ?? getConfig("url").initialValue;
-      recursive(computation);
-    });
-  };
-
-  const id = computeFieldId(article.id, URL_ID);
-  const value = record[id];
-
-  if (value) recursive(value);
-
-  return Array.from(imports);
-};
-
-const getUrlField = (article: DBDocument) => {
-  const record = getFlatComputationRecord(article);
-  const id = computeFieldId(article.id, URL_ID);
-  const value = record[id] ?? getConfig("url").initialValue;
-  const url = (article.values[URL_ID]?.[0] as string) ?? "";
-
-  return {
-    id,
-    value,
-    url,
-  };
 };
 
 export default function AppPage({
@@ -99,19 +58,14 @@ export default function AppPage({
   children?: React.ReactNode;
 }) {
   const { current } = useSegment();
-
   const path = getPathFromSegment(current);
-
   const [type, urlId] = path.split("/").slice(-1)[0].split("-");
+  if (!urlId) throw new Error("Invalid url");
+  const folderLookupId = urlId as FolderId;
 
-  if (!urlId) {
-    throw new Error("Invalid url");
-  }
-
-  const folderLookupId = minimizeId(urlId);
   const folder = useFolder(folderLookupId);
 
-  const { articles } = useArticleList(folder?.id);
+  const { articles } = useOptimisticDocumentList(folder?._id);
 
   const orderedArticles = React.useMemo(() => {
     if (!articles) return [];
@@ -122,16 +76,18 @@ export default function AppPage({
 
     const articlesWithLengths = articles
       .map((el) => {
-        const { url } = getUrlField(el);
+        const urlId = createTemplateFieldId(el._id, DEFAULT_FIELDS.url.id);
+        const url =
+          (calculateFromRecord(urlId, el.record)?.[0] as string) ?? "";
         return {
           ...el,
           url,
           indent: getUrlLength(url),
-          urlId: computeFieldId(el.id, URL_ID),
+          urlId,
         };
       })
       .sort((a, b) => {
-        return a.indent - b.indent || (a.id > b.id ? -1 : 1);
+        return a.indent - b.indent || (a._id > b._id ? -1 : 1);
       });
 
     const ordered: (DBDocument & {
@@ -159,16 +115,17 @@ export default function AppPage({
   const [dialogIsOpen, setDialogIsOpen] = React.useState<null | string>(null);
   const [parentUrl, setParentUrl] = React.useState<null | {
     id: FieldId;
-    value: FlatComputation;
+    record: SyntaxTreeRecord;
     url: string;
-    imports: ComputationBlock[];
   }>(null);
 
-  const addArticleWithUrl = (parent: DBDocument) => {
+  const addArticleWithUrl = (parent: Pick<DBDocument, "_id" | "record">) => {
+    const urlId = createTemplateFieldId(parent._id, DEFAULT_FIELDS.url.id);
     setDialogIsOpen("add-article");
     setParentUrl({
-      ...getUrlField(parent),
-      imports: getUrlImports(parent),
+      id: urlId,
+      url: (calculateFromRecord(urlId, parent.record)?.[0] as string) ?? "",
+      record: getFieldRecord(parent.record, urlId, getGraph(parent.record)),
     });
   };
 
@@ -189,7 +146,7 @@ export default function AppPage({
     name: T,
     value: DBFolder[T]
   ) => {
-    return collab.mutate("folders", folder.id).push({
+    return collab.mutate("folders", folder._id).push({
       target: targetTools.stringify({
         location: "",
         operation: "property",
@@ -235,7 +192,7 @@ export default function AppPage({
                       mutate={(domains) => mutateProp("domains", domains)}
                     />
                     <div className="text-xs text-gray-600 font-light flex-center h-6 ring-1 ring-inset ring-gray-700 px-2 rounded cursor-default">
-                      ID: {restoreId(folder.id)} ({folder.id})
+                      ID: {folder._id.replace(/^0+/, "")}
                     </div>
                   </>
                 )}
@@ -250,12 +207,9 @@ export default function AppPage({
                 true ? "opacity-100" : "opacity-0 pointer-events-none"
               )}
             >
-              <span className="text-xs opacity-50 font-light ml-5 cursor-default hover:underline">
-                x sider ændret
-              </span>
               {folder && config.revalidateUrl && (
                 <RefreshButton
-                  namespace={restoreId(folder.id)}
+                  namespace={folder._id}
                   revalidateUrl={config.revalidateUrl}
                 />
               )}
@@ -269,7 +223,7 @@ export default function AppPage({
                 setDialogIsOpen(null);
                 setParentUrl(null);
               }}
-              folder={folder.id}
+              folder={folder._id}
               parentUrl={parentUrl ?? undefined}
               type={type}
             />
@@ -277,8 +231,8 @@ export default function AppPage({
           <div className="flex flex-col">
             <AppSpace
               index={0}
-              folderId={folder.id}
-              spaceId={""}
+              folderId={folder._id}
+              spaceId={"" as SpaceId}
               hidden={!isSelected}
             />
           </div>
@@ -298,43 +252,57 @@ function RefreshButton({
 }) {
   const [isLoading, setIsLoading] = React.useState(false);
 
+  const { data, mutate } = SWRClient.documents.getUpdatedUrls.useQuery({
+    namespace,
+  });
+
   const client = useClient();
 
+  const number = data?.length ?? 0;
+
   return (
-    <div className="relative ml-5">
-      {/*isLoading && (
+    <>
+      {number > 0 && (
+        <span
+          title={(data ?? []).map((el) => `/${el}`).join(", ")}
+          className="text-xs opacity-50 font-light ml-5 cursor-default hover:underline"
+        >
+          {number} {number === 1 ? "side" : "sider"} ændret
+        </span>
+      )}
+      <div className="relative ml-5">
+        {/*isLoading && (
         <div className="absolute inset-0 flex-center">
           <div className="w-8 h-8 bg-white/5 rounded-full animate-ping-lg" />
         </div>
       )*/}
-      <button
-        className="relative z-0 bg-button-yellow ring-button-yellow text-button rounded px-3 py-1 font-light flex-center gap-2 text-sm overflow-hidden"
-        onClick={async () => {
-          if (revalidateUrl) {
-            setIsLoading(true);
-            const urls = await client.articles.revalidate.query({
-              namespace,
-              domain: "",
-              revalidateUrl,
-            });
-            console.log(namespace, urls);
-            await fetch(revalidateUrl, {
-              body: JSON.stringify(unwrap(urls, []).map((el) => `/${el}`)),
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-            });
-            setIsLoading(false);
-          }
-        }}
-      >
-        {isLoading && (
-          <div className="absolute inset-0 -z-10 flex-center">
-            <div className="w-8 h-8 bg-teal-300 rounded-full animate-ping-lg" />
-          </div>
-        )}
-        <ArrowPathIcon className="w-3 h-3" />
-        Opdater
-      </button>
-    </div>
+        <button
+          className="relative z-0 bg-button-yellow ring-button-yellow text-button rounded px-3 py-1 font-light flex-center gap-2 text-sm overflow-hidden"
+          onClick={async () => {
+            if (revalidateUrl && data?.length) {
+              setIsLoading(true);
+              const result = await fetch(revalidateUrl, {
+                body: JSON.stringify(data.map((el) => `/${el}`)),
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+              }).then((res) => res.json());
+              await client.documents.revalidated.mutation();
+              if (result.revalidated === true) {
+              }
+              mutate();
+              setIsLoading(false);
+            }
+          }}
+        >
+          {isLoading && (
+            <div className="absolute inset-0 -z-10 flex-center">
+              <div className="w-8 h-8 bg-teal-300 rounded-full animate-ping-lg" />
+            </div>
+          )}
+          <ArrowPathIcon className="w-3 h-3" />
+          Opdater
+        </button>
+      </div>
+    </>
   );
 }

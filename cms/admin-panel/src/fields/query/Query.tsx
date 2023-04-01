@@ -1,10 +1,5 @@
 import cl from "clsx";
-import {
-  ColorToken,
-  EditorComputation,
-  FieldId,
-  functions,
-} from "@storyflow/backend/types";
+import { ColorToken, TokenStream, functions } from "@storyflow/backend/types";
 import {
   ArrowUturnRightIcon,
   AtSymbolIcon,
@@ -16,40 +11,22 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import {
-  $createParagraphNode,
-  $createTextNode,
-  $getRoot,
   $getSelection,
-  $isParagraphNode,
   $isRangeSelection,
-  $isRootNode,
-  $isTextNode,
   BLUR_COMMAND,
-  CLICK_COMMAND,
   COMMAND_PRIORITY_EDITOR,
   COMMAND_PRIORITY_HIGH,
   KEY_ARROW_DOWN_COMMAND,
   KEY_ARROW_UP_COMMAND,
-  KEY_ENTER_COMMAND,
   KEY_ESCAPE_COMMAND,
   LexicalEditor,
-  LexicalNode,
 } from "lexical";
 import React from "react";
 import { useClientConfig } from "../../client-config";
-import { $isImportNode } from "../decorators/ImportNode";
 import { useEditorContext } from "../../editor/react/EditorProvider";
 import { mergeRegister } from "../../editor/utils/mergeRegister";
 import { tools } from "shared/editor-tools";
 import { ComputationOp } from "shared/operations";
-import { getFileType } from "../../utils/file";
-import { spliceTextWithNodes } from "../Editor/spliceTextWithNodes";
-import {
-  $getIndexFromPoint,
-  $getNodeFromIndex,
-  $isBlockNode,
-  getNodesFromComputation,
-} from "../Editor/transforms";
 import type { LibraryConfig, RegularOptions } from "@storyflow/frontend/types";
 import { useIsFocused } from "../../editor/react/useIsFocused";
 import { useRestorableSelection } from "./useRestorableSelection";
@@ -62,9 +39,8 @@ import {
   getQueryType,
   getOptionLabel,
 } from "./helpers";
-import { useFieldOptions } from "../default/FieldOptionsContext";
 import { Option as OptionComponent } from "./Option";
-import { useFieldRestriction } from "../FieldTypeContext";
+import { useFieldRestriction, useFieldOptions } from "../FieldIdContext";
 import { useIsEmpty } from "../../editor/react/useIsEmpty";
 import { QueryFiles } from "./QueryFiles";
 import { QueryComponents } from "./QueryComponents";
@@ -74,135 +50,18 @@ import { QueryColors } from "./QueryColors";
 
 const insertComputation = async (
   editor: LexicalEditor,
-  insert: EditorComputation,
+  insert: TokenStream,
   remove: number,
   libraries: LibraryConfig[],
   removeExtra?: boolean
-) => {
-  return await new Promise<boolean>((resolve) => {
-    editor.update(
-      () => {
-        const selection = $getSelection();
-
-        if (!$isRangeSelection(selection) || !selection.isCollapsed()) {
-          console.error(
-            "Tried to insert computation. But selection is not collapsed or not a range selection.",
-            {
-              isRangeSelection: $isRangeSelection(selection),
-            }
-          );
-          resolve(false);
-          return;
-        }
-
-        const anchor = selection.anchor;
-        let node = anchor.getNode();
-        const index = $getIndexFromPoint(anchor);
-
-        if ($isRootNode(node) && node.getTextContent() === "") {
-          const root = node;
-          node = $createTextNode();
-          root.append($createParagraphNode().append(node));
-        }
-
-        if ($isParagraphNode(node) && node.getTextContent() === "") {
-          const p = node;
-          node = $createTextNode();
-          p.append(node);
-        }
-
-        if (!$isTextNode(node) || index === null) {
-          console.error(
-            "Tried to insert computation. But selection is not a text node or lacks index.",
-            { isTextNode: $isTextNode(node) }
-          );
-          resolve(false);
-          return;
-        }
-
-        const startIndex = anchor.offset - remove;
-        const universalIndex = $getIndexFromPoint(anchor) - remove;
-
-        if (insert.length === 1 && typeof insert[0] === "string") {
-          try {
-            node = node.spliceText(startIndex, remove, insert[0], true);
-            if (node.getTextContent() === "") {
-              node.remove();
-            }
-          } catch (err) {
-            console.error(err);
-            resolve(false);
-            return;
-          }
-        } else {
-          try {
-            const nodes = getNodesFromComputation(insert, libraries);
-            spliceTextWithNodes(node, startIndex, remove, nodes);
-          } catch (err) {
-            console.error(err);
-            resolve(false);
-            return;
-          }
-        }
-
-        if (removeExtra) {
-          const index = universalIndex - 1;
-          const [node] = $getNodeFromIndex("symbol", index, $getRoot());
-          if (node && $isImportNode(node)) {
-            node?.remove();
-          }
-        }
-
-        resolve(true);
-      },
-      { tag: "cms-command" }
-    );
-  });
-};
+) => {};
 
 const insertBlock = async (
   editor: LexicalEditor,
-  insert: EditorComputation,
+  insert: TokenStream,
   remove: number,
   libraries: LibraryConfig[]
-) => {
-  return await new Promise<boolean>((resolve) => {
-    editor.update(
-      () => {
-        const newNode = getNodesFromComputation(insert, libraries)[0];
-        const selection = $getSelection();
-
-        if (!$isRangeSelection(selection) || !selection.isCollapsed()) {
-          return resolve(false);
-        }
-
-        let node = selection.anchor.getNode();
-
-        if (!$isTextNode(node)) return resolve(false);
-
-        let parentNode: LexicalNode | null = node;
-
-        while (parentNode && !$isBlockNode(parentNode)) {
-          parentNode = parentNode!.getParent();
-        }
-
-        if (!parentNode) return resolve(false);
-
-        node.spliceText(selection.anchor.offset - remove, remove, "", true);
-
-        const isEmpty = node.getTextContent() === "";
-
-        if (isEmpty) {
-          parentNode.insertBefore(newNode);
-        } else {
-          parentNode.insertAfter(newNode);
-        }
-        resolve(true);
-      },
-      { tag: "cms-command" }
-    );
-  });
-};
+) => {};
 
 export function Query({
   push,
@@ -247,7 +106,7 @@ export function Query({
     return token_;
   })();
 
-  const isFocused = useIsFocused(editor);
+  const isFocused = useIsFocused();
   const isEmpty = useIsEmpty(editor);
 
   const defaultQueryType =
@@ -293,7 +152,7 @@ export function Query({
                 promptedQueryType === "." ||
                 (promptedQueryType === "/" && nextIsSymbolInsert === "/"))
             ) {
-              let insert: EditorComputation = [];
+              let insert: TokenStream = [];
               let remove = 0;
               let index = prev[0].index;
 
@@ -525,37 +384,12 @@ export function Query({
   }[queryType ?? ""];
 
   const insertComputationSimple = React.useCallback(
-    async (insert: EditorComputation, removeExtra?: boolean) => {
-      const success = await insertComputation(
-        editor,
-        insert,
-        query.length,
-        libraries,
-        removeExtra
-      );
-      if (success) {
-        setQuery("");
-        setPromptedQueryType(null);
-        setShowOptions(false);
-      }
-    },
+    async (insert: TokenStream, removeExtra?: boolean) => {},
     [editor, query, libraries]
   );
 
   const insertBlockSimple = React.useCallback(
-    async (insert: EditorComputation) => {
-      const success = await insertBlock(
-        editor,
-        insert,
-        query.length,
-        libraries
-      );
-      if (success) {
-        setQuery("");
-        setPromptedQueryType(null);
-        setShowOptions(false);
-      }
-    },
+    async (insert: TokenStream) => {},
     [editor, query, libraries]
   );
 

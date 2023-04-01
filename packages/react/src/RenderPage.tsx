@@ -1,7 +1,7 @@
 import * as React from "react";
 import {
   Component,
-  LayoutElement,
+  NestedElement,
   RenderArray,
 } from "@storyflow/frontend/types";
 import { getLibraries } from "../config";
@@ -103,13 +103,14 @@ const Element = ({
   data,
   children,
 }: {
-  data: LayoutElement;
+  data: NestedElement;
   children?: React.ReactNode;
 }) => {
-  const CMSComponent = getComponentByType(data.type);
+  const CMSComponent = getComponentByType(data.element);
   const props = React.useMemo(() => {
     return Object.fromEntries(
-      Object.entries(data.props).map(([name, value]) => [
+      // REPLACED data.props
+      Object.entries({}).map(([name, value]) => [
         name,
         getPropValue(value, children),
       ])

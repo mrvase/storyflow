@@ -1,56 +1,79 @@
-import { ImportNode } from "../decorators/ImportNode";
-import { OperatorNode } from "../decorators/OperatorNode";
-import { ParameterNode } from "../decorators/ParameterNode";
-import { FunctionNode } from "../decorators/FunctionNode";
 import { ContentPlugin } from "./ContentPlugin";
 import { DecoratorPlugin } from "./DecoratorPlugin";
-import { TokenNode } from "../decorators/TokenNode";
-import { LayoutElementNode } from "../decorators/LayoutElementNode";
-import { InlineLayoutElementNode } from "../decorators/InlineLayoutElementNode";
-import {
-  EditorProvider,
-  useEditorContext,
-} from "../../editor/react/EditorProvider";
+import { EditorProvider } from "../../editor/react/EditorProvider";
 import { Target, ComputationOp } from "shared/operations";
 import React from "react";
-import { $getComputation, $initializeEditor } from "./transforms";
-import {
-  EditorComputation,
-  FieldId,
-  FunctionName,
-} from "@storyflow/backend/types";
+import { $initializeEditor } from "./transforms";
+import { TokenStream } from "@storyflow/backend/types";
 import { Reconciler } from "./Reconciler";
-import { useIsFocused } from "../../editor/react/useIsFocused";
+import {
+  EditorFocusPlugin,
+  useIsFocused,
+} from "../../editor/react/useIsFocused";
 import { useClientConfig } from "../../client-config";
 import { useFieldFocus } from "../../field-focus";
-import { HeadingNode } from "../../editor/react/HeadingNode";
-import { DocumentNode } from "../decorators/DocumentNode";
-import { $getRoot } from "lexical";
-import { Query } from "../query/Query";
 import { type QueueListener } from "@storyflow/state";
-import { ContextNode } from "../decorators/ContextNode";
+import { useFieldId } from "../FieldIdContext";
+
+import { HeadingNode } from "../../editor/react/HeadingNode";
+import nodes from "../decorators/nodes";
+import { CopyPastePlugin } from "./CopyPastePlugin";
+import { useMathMode } from "./useMathMode";
 
 const editorConfig = {
   namespace: "EDITOR",
   theme: {},
   onError: () => {},
-  nodes: [
-    ImportNode,
-    OperatorNode,
-    ParameterNode,
-    FunctionNode,
-    LayoutElementNode,
-    InlineLayoutElementNode,
-    DocumentNode,
-    HeadingNode,
-    TokenNode,
-    ContextNode,
-  ],
+  nodes: [HeadingNode, ...nodes],
 };
 
-function FocusPlugin({ id }: { id: string }) {
-  const editor = useEditorContext();
-  const isFocused = useIsFocused(editor);
+export default function Editor({
+  push,
+  register,
+  initialValue,
+  children = null,
+  target,
+}: {
+  target?: Target;
+  push?: (ops: ComputationOp["ops"]) => void;
+  register?: (listener: QueueListener<ComputationOp>) => () => void;
+  initialValue: TokenStream;
+  children?: React.ReactNode;
+}) {
+  const { libraries } = useClientConfig();
+
+  return (
+    <EditorProvider
+      initialConfig={editorConfig}
+      initialize={() => {
+        $initializeEditor(initialValue ?? [], libraries);
+      }}
+    >
+      <ContentPlugin />
+      <CopyPastePlugin />
+      <EditorFocusPlugin />
+      <FieldFocusPlugin />
+      {push && register && target && (
+        <Reconciler
+          target={target}
+          push={push}
+          register={register}
+          initialValue={initialValue}
+        />
+      )}
+      {children}
+      <DecoratorPlugin />
+      {/*
+      putting DecoratorPlugin after ContentEditable fixes flushSync error.
+      Caused by flushSync being triggered on editorState initialization in React.useMemo
+      */}
+    </EditorProvider>
+  );
+}
+
+function FieldFocusPlugin() {
+  const id = useFieldId();
+  const isFocused = useIsFocused();
   const [, setFocused] = useFieldFocus();
 
   const prevIsFocused = React.useRef(false);
@@ -68,69 +91,11 @@ function FocusPlugin({ id }: { id: string }) {
   return null;
 }
 
-export default function Editor({
-  id,
-  push,
-  register,
-  initialValue,
-  children = null,
-  target,
-  setValue,
-  transform,
-}: {
-  id: FieldId;
-  target?: Target;
-  push?: (
-    payload:
-      | ComputationOp["ops"]
-      | ((
-          prev: ComputationOp["ops"] | undefined,
-          noop: ComputationOp["ops"]
-        ) => ComputationOp["ops"][])
-  ) => void;
-  register?: (listener: QueueListener<ComputationOp>) => () => void;
-  initialValue: EditorComputation;
-  setValue: (value: () => EditorComputation) => void;
-  transform?: FunctionName;
-  children?: React.ReactNode;
-}) {
-  const { libraries } = useClientConfig();
-
-  return (
-    <EditorProvider
-      initialConfig={editorConfig}
-      initialize={() => {
-        $initializeEditor(initialValue ?? [], libraries);
-      }}
-    >
-      <ContentPlugin id={id} />
-      <DecoratorPlugin />
-      <FocusPlugin id={id} />
-      {push && register && target ? (
-        <Query push={push}>
-          {(pushWithQuery) => (
-            <Reconciler
-              target={target}
-              push={pushWithQuery}
-              register={register}
-              initialValue={initialValue}
-              setValue={setValue}
-              transform={transform}
-            />
-          )}
-        </Query>
-      ) : (
-        <Setter setValue={setValue} />
-      )}
-      {children}
-    </EditorProvider>
-  );
-}
-
+/*
 function Setter({
   setValue,
 }: {
-  setValue: (callback: () => EditorComputation) => void;
+  setValue: (callback: () => TokenStream) => void;
 }) {
   const editor = useEditorContext();
 
@@ -147,3 +112,4 @@ function Setter({
 
   return null;
 }
+*/

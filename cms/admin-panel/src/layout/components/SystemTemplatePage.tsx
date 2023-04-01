@@ -9,15 +9,14 @@ import { FolderContext } from "../../folders/FolderPageContext";
 import Space from "../../folders/spaces/Space";
 import { useDeleteForm } from "../../folders/spaces/useDeleteForm";
 import Table from "../../documents/components/Table";
-import { useArticleList } from "../../documents";
+import { useOptimisticDocumentList } from "../../documents";
 import Loader from "../../elements/Loader";
-import { restoreId } from "@storyflow/backend/ids";
 
 export function SystemTemplatePage() {
   const folder = useTemplateFolder();
-  const { form, handleDelete } = useDeleteForm({ folderId: folder.id });
+  const { form, handleDelete } = useDeleteForm({ folderId: folder._id });
 
-  const { articles } = useArticleList(folder.id);
+  const { articles } = useOptimisticDocumentList(folder._id);
 
   if (!articles) {
     return (
@@ -30,7 +29,7 @@ export function SystemTemplatePage() {
   }
 
   const rows = articles.map((el) => ({
-    id: restoreId(el.id),
+    id: el._id,
     columns: [
       {
         value: el.label!,
@@ -55,20 +54,5 @@ export function SystemTemplatePage() {
         </Space>
       </Content>
     </FolderContext.Provider>
-  );
-}
-
-function DragButton({ folder }: { folder: DBFolder }) {
-  const { ref, dragHandleProps } = useDragItem({
-    id: `new-folder-${folder.id}`,
-    type: "folders",
-    item: folder,
-    mode: "move",
-  });
-
-  return (
-    <div ref={ref} {...dragHandleProps} className="cursor-grab">
-      <DragIcon className="w-4 h-4" />
-    </div>
   );
 }

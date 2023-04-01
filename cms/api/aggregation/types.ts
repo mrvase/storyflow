@@ -1,3 +1,5 @@
+import { DBId, FieldId } from "@storyflow/backend/types";
+
 export type DefineObject<U extends { [key: string]: any }> = {
   let: <P extends { [key: string]: any }>(
     callback: P | ((vars: U) => P)
@@ -50,6 +52,7 @@ export type Operators<DocumentType extends Record<string, any>> = {
     ifFalse: () => Failure
   ) => Success | Failure;
   concatArrays: <T>(...arrays: T[][]) => T[];
+  reverseArray: <T>(array: T[]) => T[];
   mergeObjects: <
     A extends object,
     B extends object = {},
@@ -83,10 +86,12 @@ export type Operators<DocumentType extends Record<string, any>> = {
     | "null"
     | "undefined"
     | "double"
-    | "date";
+    | "date"
+    | "objectId";
   isNumber: (value: any) => boolean;
   isArray: (value: any) => boolean;
   toString: (input: any) => string;
+  toObjectId: (input: any) => DBId<FieldId>;
   toBool: (input: any) => boolean;
   lt: (arg1: number, arg2: number) => boolean;
   lte: (arg1: number, arg2: number) => boolean;
@@ -97,6 +102,7 @@ export type Operators<DocumentType extends Record<string, any>> = {
   string: (val: any, fallback?: string) => string;
   array: (val: any) => any[];
   setUnion: <T>(...arrays: T[][]) => T[];
+  setIntersection: <T>(...arrays: T[][]) => T[];
   size: (val: any[]) => number;
   slice: <T>(val: T[], start: number, end?: number) => T[];
   ifNull: <V, A>(
@@ -132,8 +138,8 @@ export type Operators<DocumentType extends Record<string, any>> = {
     sortBy: Partial<Record<keyof T, 1 | -1>>
   ) => T[];
   trim: (input: string) => string;
-  /*
   literal: <T>(val: T) => T;
+  /*
   reverseArray: <T extends any[]>(arr: T) => T;
   */
 };

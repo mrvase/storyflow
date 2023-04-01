@@ -34,6 +34,24 @@ export default function Layout() {
 
   const { urlInfoSegment } = useUrlInfo();
 
+  const onChange = React.useCallback(
+    (actions: any) => {
+      const newTabs = [...tabs];
+      for (let action of actions) {
+        const { type, index } = action;
+        if (type === "add") {
+          newTabs.splice(index, 0, action.item);
+        }
+        if (type === "delete") {
+          newTabs.splice(index, 1);
+        }
+      }
+      const path = newTabs.map((el) => el.segment).join("");
+      navigate(`${urlInfoSegment}${path}`);
+    },
+    [tabs, urlInfoSegment, navigate]
+  );
+
   return (
     <div className="flex h-screen bg-gray-100 dark:bg-gray-950">
       {<Nav />}
@@ -57,20 +75,7 @@ export default function Layout() {
               link: () => "ignore",
               move: ({ type }) => (type === "tabs" ? "accept" : "ignore"),
             }}
-            onChange={(actions: any) => {
-              const newTabs = [...tabs];
-              for (let action of actions) {
-                const { type, index } = action;
-                if (type === "add") {
-                  newTabs.splice(index, 0, action.item);
-                }
-                if (type === "delete") {
-                  newTabs.splice(index, 1);
-                }
-              }
-              const path = newTabs.map((el) => el.segment).join("");
-              navigate(`${urlInfoSegment}${path}`);
-            }}
+            onChange={onChange}
           >
             <div
               className="h-full flex mx-auto"

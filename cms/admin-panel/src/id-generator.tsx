@@ -1,12 +1,86 @@
-import { unwrap } from "@storyflow/result";
 import React from "react";
 import { SWRClient, useClient } from "./client";
-import { DocumentId } from "@storyflow/backend/types";
+import {
+  DocumentId,
+  FolderId,
+  NestedDocumentId,
+} from "@storyflow/backend/types";
 import { useUrlInfo } from "./users";
+import { z } from "zod";
+import {
+  getRawDocumentId,
+  createFieldId,
+  createDocumentId,
+  USER_DOCUMENT_OFFSET,
+  USER_TEMPLATE_OFFSET,
+} from "@storyflow/backend/ids";
+
+/*
+[organisation]:ids {
+  workspace: string;
+  id_offset: number;
+  id_counter: number;
+  template_offset: number;
+  template_counter: number;
+  field_offset: number;
+  field_counter: number;
+  docs: string[];
+}
+[organisation]:[raw_document_id] number
+*/
+
+const batchSizes = {
+  id: 50,
+  template: 3,
+  field: 5,
+};
+
+const schema = z.object({
+  workspace: z.string(),
+  id: z.number(),
+  template: z.number(),
+  id_offsets: z.array(z.number()),
+  template_offsets: z.array(z.number()),
+  field_offsets: z.array(z.number()),
+  docs: z.array(z.string()),
+});
+
+const getNextValue = (
+  offsets: number[],
+  batchSize: number,
+  counter: number
+): [result: number | null, shouldFetch: boolean] => {
+  /* 
+  counter: 15
+  offsets: [500, 0]
+  should return: 16
+
+  counter: 99
+  offsets: [500, 0]
+  should return: 500
+  */
+  const next = counter + 1;
+
+  const base = Math.floor(next / batchSize) * batchSize;
+
+  const offsetIndex = offsets.findIndex((offset) => base >= offset);
+  const offset = offsets[offsetIndex];
+
+  if (base !== offset) {
+    if (offsetIndex <= 0) {
+      return [null, true];
+    }
+    const nextOffset = offsets[offsetIndex - 1];
+    return [nextOffset + (next % batchSize), nextOffset === 0];
+  }
+
+  return [next, offsetIndex === 0];
+};
 
 const IdContext = React.createContext<{
-  getArticleId: () => Promise<DocumentId>;
-  getFolderId: () => Promise<string>;
+  getDocumentNumber: () => number;
+  getTemplateNumber: () => number;
+  getFieldNumber: (documentId: DocumentId) => number;
 } | null>(null);
 
 export function IdGenerator({ children }: { children: React.ReactNode }) {
@@ -14,80 +88,175 @@ export function IdGenerator({ children }: { children: React.ReactNode }) {
 
   const { data: workspaceId } = SWRClient.ids.getWorkspaceId.useQuery();
 
-  const getName = (name: string) => `${organization}:${name}`;
+  const getName = (name: string = "ids") => `${organization}:${name}`;
 
-  const getValue = (name: string): string[] => {
+  const getItem = (name: string): string | null => {
     if (!workspaceId) {
       throw new Error("Tried to get value before initialization");
     }
-    if (typeof window === "undefined") return [];
-    const ls = localStorage.getItem(getName(name));
-    if (!ls) return [];
-    let value;
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem(name) ?? null;
+  };
+
+  const initialize = async () => {
+    if (getObject()) return;
+    const id_offset = await fetchOffset("id");
+    const template_offset = await fetchOffset("template");
+    const field_offset = await fetchOffset("field");
+    const object = {
+      workspace: workspaceId,
+      id: id_offset,
+      template: template_offset,
+      id_offsets: [id_offset],
+      template_offsets: [template_offset],
+      field_offsets: [field_offset],
+      docs: [],
+    };
+    localStorage.setItem(getName(), JSON.stringify(object));
+  };
+
+  const getObject = () => {
+    const string = getItem(getName());
+    if (!string) return null;
     try {
-      value = JSON.parse(ls);
+      const value = schema.parse(JSON.parse(string));
+      if (value.workspace !== workspaceId) {
+        throw new Error("Workspace mismatch");
+      }
+      return value;
     } catch (err) {
       console.error(err);
-      localStorage.removeItem(getName(name));
-      return [];
+      localStorage.removeItem(getName());
+      return null;
     }
-    if (
-      typeof value !== "object" ||
-      !("workspace" in value) ||
-      !("ids" in value) ||
-      !Array.isArray(value.ids) ||
-      value.workspace !== workspaceId
-    ) {
-      localStorage.removeItem(getName(name));
-      return [];
-    }
-    return value.ids;
   };
 
-  const setValue = (name: string, ids: string[]) => {
-    if (!workspaceId) return;
+  const getObjectOrError = () => {
+    const object = getObject();
+    if (!object) {
+      throw new Error("Object not found");
+    }
+    return object;
+  };
+
+  const getCounterValue = (name: "id" | "template") => {
+    const object = getObjectOrError();
+    const counter = object[name];
+    const offsets = object[`${name}_offsets`];
+    const [nextValue, shouldFetch] = getNextValue(
+      offsets,
+      batchSizes[name],
+      counter
+    );
+    if (shouldFetch) {
+      fetchOffset(name).then((offset) => commitOffset(name, offset));
+    }
+    if (!nextValue) {
+      throw new Error("No more ids available");
+    }
     localStorage.setItem(
-      getName(name),
+      getName(),
       JSON.stringify({
-        workspace: workspaceId,
-        ids,
+        ...object,
+        [name]: nextValue,
       })
     );
+    return nextValue;
   };
 
-  const popValue = (name: string) => {
-    const newValue = getValue(name);
-    const [id] = newValue.splice(0, 1);
-    setValue(name, newValue);
-    return id;
+  const getDocumentNumber = () => {
+    return getCounterValue("id") + USER_DOCUMENT_OFFSET;
   };
 
-  const addValues = (name: string, values: string[]) => {
-    const newValue = getValue(name);
-    setValue(name, [...newValue, ...values]);
+  const getTemplateNumber = () => {
+    return getCounterValue("template") + USER_TEMPLATE_OFFSET;
+  };
+
+  const getFieldNumber = (documentId: DocumentId) => {
+    const object = getObjectOrError();
+
+    const docs = object.docs;
+
+    const rawId = getRawDocumentId(documentId);
+
+    const exists = docs.includes(rawId);
+
+    const offsets = object.field_offsets;
+
+    let value: number;
+
+    if (exists) {
+      const string = getItem(getName(rawId));
+      if (!string) {
+        throw new Error("Field number should exist but was not found");
+      }
+      const counter = parseInt(string);
+      const [nextValue, shouldFetch] = getNextValue(
+        offsets,
+        batchSizes.field,
+        counter
+      );
+
+      if (shouldFetch) {
+        fetchOffset("field").then((offset) => commitOffset("field", offset));
+      }
+
+      if (!nextValue) {
+        throw new Error("No more ids available");
+      }
+
+      value = nextValue;
+    } else {
+      docs.push(rawId);
+      value = offsets[offsets.length - 1];
+    }
+
+    localStorage.setItem(getName(rawId), value.toString());
+    localStorage.setItem(
+      getName(),
+      JSON.stringify({
+        ...object,
+        docs,
+      })
+    );
+
+    return value;
   };
 
   const promises = React.useRef({
-    documents: null as (Promise<void> & { abort: () => void }) | null,
-    folders: null as (Promise<void> & { abort: () => void }) | null,
+    id: null as (Promise<number> & { abort: () => void }) | null,
+    template: null as (Promise<number> & { abort: () => void }) | null,
+    field: null as (Promise<number> & { abort: () => void }) | null,
   });
 
   const client = useClient();
 
-  const fetchIds = async (to: "documents" | "folders") => {
-    if (!promises.current[to]) {
-      const promise = client.ids.getIds.query({ name: to, size: 10 });
+  const commitOffset = (
+    name: "id" | "template" | "field",
+    offset: number | null
+  ) => {
+    if (offset === null) return;
+    const object = getObjectOrError();
+    localStorage.setItem(
+      getName(),
+      JSON.stringify({
+        ...object,
+        [`${name}_offsets`]: [offset, ...object[`${name}_offsets`]],
+      })
+    );
+  };
+
+  const fetchOffset = async (name: "id" | "template" | "field") => {
+    if (!promises.current[name]) {
+      const promise = client.ids.getOffset.query({
+        name,
+        size: batchSizes[name],
+      });
 
       const promiseExtended = promise
-        .then((result) => {
-          if (promises.current[to]) {
-            // don't do anything if component is unmounted.
-            console.log("RESULT", unwrap(result));
-            addValues(to, unwrap(result));
-          }
-        })
+        .then((result) => result.result)
         .finally(() => {
-          promises.current[to] = null;
+          promises.current[name] = null;
         });
 
       const abortablePromise = Object.assign(promiseExtended, {
@@ -96,45 +265,29 @@ export function IdGenerator({ children }: { children: React.ReactNode }) {
         },
       });
 
-      promises.current[to] = abortablePromise;
+      promises.current[name] = abortablePromise;
     }
-    return await promises.current[to];
-  };
-
-  const checkIds = async (from: "documents" | "folders") => {
-    if (getValue(from).length < 5) {
-      fetchIds(from);
-    }
-  };
-
-  const getId = async (from: "documents" | "folders"): Promise<string> => {
-    const id: string | undefined = popValue(from);
-    if (id) {
-      checkIds(from);
-      return id;
-    } else {
-      await fetchIds(from);
-      console.log("TRYING AGAIN");
-      return await getId(from);
-    }
+    return await promises.current[name];
   };
 
   React.useEffect(() => {
     if (!workspaceId) return;
-    checkIds("documents");
-    checkIds("folders");
+    initialize();
     return () => {
-      promises.current.documents?.abort();
-      promises.current.documents = null;
-      promises.current.folders?.abort();
-      promises.current.folders = null;
+      promises.current.id?.abort();
+      promises.current.id = null;
+      promises.current.template?.abort();
+      promises.current.template = null;
+      promises.current.field?.abort();
+      promises.current.field = null;
     };
   }, [workspaceId]);
 
   const ctx = React.useMemo(
     () => ({
-      getArticleId: () => getId("documents") as Promise<DocumentId>,
-      getFolderId: () => getId("folders"),
+      getDocumentNumber,
+      getTemplateNumber,
+      getFieldNumber,
     }),
     [workspaceId]
   );
@@ -146,14 +299,47 @@ export function IdGenerator({ children }: { children: React.ReactNode }) {
   return <IdContext.Provider value={ctx}>{children}</IdContext.Provider>;
 }
 
-export const useArticleIdGenerator = () => {
-  const ctx = React.useContext(IdContext);
-  if (!ctx) throw Error("No IdContext.Provider");
-  return ctx.getArticleId;
-};
-
 export const useFolderIdGenerator = () => {
   const ctx = React.useContext(IdContext);
   if (!ctx) throw Error("No IdContext.Provider");
-  return ctx.getFolderId;
+  return React.useCallback(
+    () => createDocumentId(ctx.getDocumentNumber()) as unknown as FolderId,
+    [ctx]
+  );
+};
+
+export const useDocumentIdGenerator = () => {
+  const ctx = React.useContext(IdContext);
+  if (!ctx) throw Error("No IdContext.Provider");
+  return React.useCallback(
+    ((parent?: DocumentId) => {
+      if (parent) {
+        return createDocumentId(ctx.getDocumentNumber(), parent);
+      }
+      return createDocumentId(ctx.getDocumentNumber());
+    }) as {
+      (): DocumentId;
+      (parent: DocumentId): NestedDocumentId;
+    },
+    [ctx]
+  );
+};
+
+export const useTemplateIdGenerator = () => {
+  const ctx = React.useContext(IdContext);
+  if (!ctx) throw Error("No IdContext.Provider");
+  return React.useCallback(
+    () => createDocumentId(ctx.getTemplateNumber()),
+    [ctx]
+  );
+};
+
+export const useFieldIdGenerator = () => {
+  const ctx = React.useContext(IdContext);
+  if (!ctx) throw Error("No IdContext.Provider");
+  return React.useCallback(
+    (documentId: DocumentId) =>
+      createFieldId(ctx.getFieldNumber(documentId), documentId),
+    [ctx]
+  );
 };

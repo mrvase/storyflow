@@ -1,43 +1,30 @@
 import {
   ArrowUpTrayIcon,
   BoltIcon,
-  CheckIcon,
   DocumentDuplicateIcon,
   DocumentIcon,
-  FunnelIcon,
-  ListBulletIcon,
-  PencilSquareIcon,
   PlusIcon,
-  TrashIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { extendPath } from "@storyflow/backend/extendPath";
-import { FIELDS } from "@storyflow/backend/fields";
-import { getComputationRecord } from "@storyflow/backend/flatten";
-import {
-  computeFieldId,
-  createFieldId,
-  getDocumentId,
-  minimizeId,
-} from "@storyflow/backend/ids";
-import { URL_ID } from "@storyflow/backend/templates";
+import { DEFAULT_FIELDS, DEFAULT_TEMPLATES } from "@storyflow/backend/fields";
+import { getTemplateDocumentId, isTemplateField } from "@storyflow/backend/ids";
 import {
   DBDocument,
   DocumentConfig,
   DocumentId,
   FieldId,
-  RestrictTo,
+  FolderId,
+  RawFieldId,
   SearchableProps,
-  TemplateFieldId,
 } from "@storyflow/backend/types";
 import { NoList, useDragItem } from "@storyflow/dnd";
 import { PropConfigArray } from "@storyflow/frontend/types";
 import { ServerPackage } from "@storyflow/state";
 import cl from "clsx";
 import React from "react";
-import { flushSync } from "react-dom";
 import { DocumentConfigOp, PropertyOp, targetTools } from "shared/operations";
-import { useArticle, useArticleList, useSaveArticle } from ".";
+import { useArticle, useOptimisticDocumentList, useSaveArticle } from ".";
 import { useDocumentLabel } from "./useDocumentLabel";
 import { getComponentType, useClientConfig } from "../client-config";
 import { useTemplateFolder } from "../folders/folders-context";
@@ -45,17 +32,29 @@ import Content from "../layout/components/Content";
 import { useSegment } from "../layout/components/SegmentContext";
 import { useOnLoadHandler } from "../layout/onLoadHandler";
 import { getPathFromSegment } from "../layout/utils";
-import { useDocumentCollab } from "./collab/DocumentCollabContext";
+import {
+  useDocumentCollab,
+  useDocumentMutate,
+} from "./collab/DocumentCollabContext";
 import { useFolder } from "../folders/collab/hooks";
-import { useDocumentConfig, useFieldConfig, useLabel } from "./collab/hooks";
+import { useDocumentConfig } from "./collab/hooks";
 import { FocusOrchestrator, useFocusedIds } from "../utils/useIsFocused";
 import { DocumentPageContext } from "./DocumentPageContext";
 import { GetDocument } from "./GetDocument";
 import { RenderTemplate } from "./RenderTemplate";
+import { useFieldIdGenerator } from "../id-generator";
+import {
+  FieldToolbarPortalProvider,
+  useFieldToolbarPortal,
+} from "./FieldToolbar";
+import { SWRClient } from "../client";
+import { ExtendTemplatePath } from "./TemplatePathContext";
 
-export const getVersionKey = (versions?: Record<TemplateFieldId, number>) => {
+export const getVersionKey = (versions?: Record<RawFieldId, number>) => {
   if (!versions) return -1;
-  return Object.values(versions).reduce((a, c) => a + c, 0);
+  const values = Object.values(versions);
+  if (!values.length) return -1;
+  return values.reduce((a, c) => a + c);
 };
 
 function useIsModified(id: string, initial: boolean, key: number) {
@@ -90,7 +89,7 @@ export const DocumentContent = ({
   toolbar,
 }: {
   id: DocumentId;
-  folder: string | undefined;
+  folder: FolderId | undefined;
   selected: boolean;
   label: string;
   children: React.ReactNode;
@@ -136,368 +135,112 @@ export const DocumentContent = ({
 function Toolbar({ id, config }: { id: DocumentId; config: DocumentConfig }) {
   const ids = useFocusedIds();
 
-  const getFieldIndex = (id: string) => {
+  const getFieldIndex = (id: FieldId | undefined) => {
+    if (!id) return -1;
+    if (isTemplateField(id)) {
+      return config.findIndex(
+        (el) => "template" in el && el.template === getTemplateDocumentId(id)
+      );
+    }
     return config.findIndex((el) => "id" in el && el.id === id);
   };
 
-  const index = getFieldIndex(ids[0]);
+  const generateFieldId = useFieldIdGenerator();
 
-  if (index >= 0) {
+  const index = getFieldIndex(ids[0] as FieldId);
+
+  if (ids.length > 1) {
     return (
-      <FieldToolbar
-        // needed because it relies on useFieldConfig which is assumed to be static
-        key={ids[0]}
-        documentId={id}
-        fieldId={ids[0] as FieldId}
-        index={index}
-      />
+      <Content.Toolbar>
+        <div className="h-6 px-2 flex-center gap-1.5 rounded dark:bg-yellow-400/10 dark:text-yellow-200/75 ring-1 ring-yellow-200/50 text-xs whitespace-nowrap">
+          {ids.length} valgt
+          <XMarkIcon className="w-3 h-3" />
+        </div>
+      </Content.Toolbar>
     );
   }
 
+  const setPortal = useFieldToolbarPortal();
+
   const fields = [
     {
-      label: "Label",
+      label: DEFAULT_FIELDS.label.label,
       item: () => ({
-        ...FIELDS.label,
-        id: computeFieldId(id, FIELDS.label.id),
+        template: getTemplateDocumentId(DEFAULT_FIELDS.label.id),
       }),
     },
     {
-      label: "Slug",
+      label: DEFAULT_FIELDS.slug.label,
       item: () => ({
-        ...FIELDS.slug,
-        id: computeFieldId(id, FIELDS.slug.id),
+        template: getTemplateDocumentId(DEFAULT_FIELDS.slug.id),
       }),
     },
     {
-      label: "Side",
+      label: DEFAULT_FIELDS.published.label,
       item: {
-        ...FIELDS.page,
-        id: computeFieldId(id, FIELDS.page.id),
+        template: getTemplateDocumentId(DEFAULT_FIELDS.published.id),
       },
     },
     {
-      label: "Layout",
+      label: DEFAULT_FIELDS.released.label,
       item: {
-        ...FIELDS.layout,
-        id: computeFieldId(id, FIELDS.layout.id),
+        template: getTemplateDocumentId(DEFAULT_FIELDS.released.id),
       },
     },
     {
-      label: "Omdirigering",
+      label: DEFAULT_FIELDS.user.label,
       item: {
-        ...FIELDS.redirect,
-        id: computeFieldId(id, FIELDS.redirect.id),
-      },
-    },
-    {
-      label: "Offentlig",
-      item: {
-        ...FIELDS.published,
-        id: computeFieldId(id, FIELDS.published.id),
-      },
-    },
-    {
-      label: "Udgivelsesdato",
-      item: {
-        ...FIELDS.released,
-        id: computeFieldId(id, FIELDS.released.id),
-      },
-    },
-    {
-      label: "Bruger",
-      item: {
-        ...FIELDS.user,
-        id: computeFieldId(id, FIELDS.user.id),
+        template: getTemplateDocumentId(DEFAULT_FIELDS.user.id),
       },
     },
   ];
+
   return (
-    <Content.Toolbar>
-      <NoList>
-        <DragButton
-          label={"Indsæt felt"}
-          item={() => ({
-            id: createFieldId(id),
-            label: "",
-            type: "default",
-          })}
-        />
-        <Content.ToolbarMenu label={"Indsæt specialfelt"} icon={BoltIcon}>
-          {fields.map((el) => (
-            <DragOption key={el.label} {...el} />
-          ))}
-        </Content.ToolbarMenu>
-        <TemplateMenu id={id} />
-      </NoList>
-    </Content.Toolbar>
+    <>
+      <div ref={setPortal} />
+      {ids.length === 0 && (
+        <Content.Toolbar>
+          <NoList>
+            <DragButton
+              label={"Indsæt felt"}
+              item={() => ({
+                id: generateFieldId(id),
+                label: "",
+                type: "default",
+              })}
+            />
+            <Content.ToolbarMenu label={"Indsæt specialfelt"} icon={BoltIcon}>
+              {fields.map((el) => (
+                <DragOption key={el.label} {...el} />
+              ))}
+            </Content.ToolbarMenu>
+            <TemplateMenu id={id} />
+          </NoList>
+        </Content.Toolbar>
+      )}
+    </>
   );
 }
 
 export function TemplateMenu({ id }: { id?: DocumentId }) {
-  const templateFolder = useTemplateFolder()?.id;
-  const { articles: templates } = useArticleList(templateFolder);
+  const templateFolder = useTemplateFolder()?._id;
+  const { articles: templates } = useOptimisticDocumentList(templateFolder);
 
   return (
     <Content.ToolbarMenu label={"Indsæt skabelon"} icon={BoltIcon}>
       {(templates ?? []).map((el) => (
-        <React.Fragment key={el.id}>
-          {el.id === id ? null : (
+        <React.Fragment key={el._id}>
+          {el._id === id ? null : (
             <DragOption
-              label={el.label ?? el.id}
+              label={el.label ?? el._id}
               item={{
-                template: el.id,
+                template: el._id,
               }}
             />
           )}
         </React.Fragment>
       ))}
     </Content.ToolbarMenu>
-  );
-}
-
-export function FieldToolbar({
-  documentId,
-  fieldId,
-  index,
-}: {
-  documentId: DocumentId;
-  fieldId: FieldId;
-  index?: number;
-}) {
-  const [config, setConfig] = useFieldConfig(fieldId);
-
-  const { push } = useDocumentCollab().mutate<DocumentConfigOp>(
-    documentId,
-    documentId
-  );
-
-  const templateFolder = useTemplateFolder()?.id;
-  const { articles: templates } = useArticleList(templateFolder);
-
-  const templateOptions = (templates ?? []).map((el) => ({
-    id: el.id,
-    label: el.label ?? el.id,
-  }));
-
-  const restrictToOptions = [
-    { id: "number" as "number", label: "Tal" },
-    { id: "image" as "image", label: "Billede" },
-    { id: "color" as "color", label: "Farve" },
-  ];
-
-  return (
-    <Content.Toolbar>
-      <FieldLabel id={fieldId} template={documentId} />
-      <Content.ToolbarMenu<{ id: DocumentId; label: string }>
-        icon={ListBulletIcon}
-        label="Vælg skabelon"
-        onSelect={(el) => setConfig("template", el.id)}
-        onClear={() => setConfig("template", undefined)}
-        selected={
-          config?.template
-            ? templateOptions.find((el) => el.id === config.template)
-            : undefined
-        }
-        options={templateOptions}
-      />
-      <Content.ToolbarMenu<{ id: RestrictTo; label: string }>
-        icon={FunnelIcon}
-        label="Begræns til"
-        onSelect={(el) => setConfig("restrictTo", el.id)}
-        onClear={() => setConfig("restrictTo", undefined)}
-        selected={
-          config?.restrictTo
-            ? restrictToOptions.find((el) => el.id === config.restrictTo)
-            : undefined
-        }
-        options={restrictToOptions}
-      />
-      {typeof index === "number" && (
-        <Content.ToolbarButton
-          data-focus-remain="true"
-          onClick={() => {
-            push({
-              target: targetTools.stringify({
-                field: "any",
-                operation: "document-config",
-                location: "",
-              }),
-              ops: [
-                {
-                  index,
-                  remove: 1,
-                },
-              ],
-            });
-          }}
-        >
-          <TrashIcon className="w-4 h-4" />
-        </Content.ToolbarButton>
-      )}
-    </Content.Toolbar>
-  );
-}
-
-function FieldLabel({ id, template }: { id: FieldId; template?: DocumentId }) {
-  const label = useLabel(id, template);
-
-  const articleId = getDocumentId(id);
-
-  const { push } = useDocumentCollab().mutate<PropertyOp>(articleId, articleId);
-
-  const onChange = (value: string) => {
-    push({
-      target: targetTools.stringify({
-        field: "any",
-        operation: "property",
-        location: id,
-      }),
-      ops: [
-        {
-          name: "label",
-          value: value,
-        },
-      ],
-    });
-  };
-  return <EditableLabel label="Label" value={label} onChange={onChange} />;
-}
-
-export function EditableLabel({
-  value: initialValue,
-  onChange,
-  className,
-  label,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  className?: string;
-  label?: string;
-}) {
-  const ref = React.useRef<HTMLInputElement | null>(null);
-
-  const [isEditing, setIsEditing] = React.useState(false);
-
-  const [value, setValue] = React.useState(initialValue);
-
-  React.useLayoutEffect(() => {
-    setValue(initialValue);
-    setWidth();
-  }, [initialValue]);
-
-  React.useLayoutEffect(() => setWidth(), [isEditing]);
-
-  const setWidth = () => {
-    if (ref.current) {
-      ref.current.style.width = "0px";
-      let value = ref.current.value;
-      if (value === "") ref.current.value = "Ingen label";
-      const newWidth = ref.current.scrollWidth;
-      if (value === "") ref.current.value = "";
-      ref.current.style.width = `${newWidth}px`;
-    }
-  };
-
-  const handleChange = (ev: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = ev.target.value;
-    flushSync(() => {
-      setValue(newValue);
-    });
-    setWidth();
-  };
-
-  const rejected = React.useRef(false);
-
-  const accept = () => {
-    if (!rejected.current) {
-      if (value !== initialValue) {
-        onChange(value);
-      }
-    } else {
-      rejected.current = false;
-    }
-  };
-
-  const reject = () => {
-    setValue(initialValue);
-    rejected.current = true;
-  };
-
-  const id = React.useId();
-
-  return (
-    <div
-      className={cl(
-        " text-xs text-gray-300 font-light flex h-6 ring-1 rounded",
-        isEditing ? "ring-gray-600" : "ring-button"
-      )}
-      data-focus-remain="true"
-    >
-      <label className="flex">
-        {label && (
-          <div className="h-6 px-2 flex-center bg-gray-750 rounded">
-            {label}
-          </div>
-        )}
-        <input
-          id={id}
-          ref={ref}
-          value={isEditing ? value : initialValue}
-          onChange={handleChange}
-          type="text"
-          className={cl(
-            "outline-none padding-0 margin-0 bg-transparent h-6 items-center px-2",
-            className
-          )}
-          placeholder="Ingen label"
-          onFocus={() => {
-            setIsEditing(true);
-            rejected.current = false;
-          }}
-          onBlur={() => {
-            setIsEditing(false);
-            accept();
-          }}
-          onKeyDown={(ev) => {
-            if (ev.key.toLowerCase() === "enter") {
-              ref.current?.blur();
-            }
-            if (ev.key.toLowerCase() === "escape") {
-              reject();
-              ref.current?.blur();
-            }
-          }}
-        />
-        {!isEditing && (
-          <div className="mr-2 h-full flex-center cursor-text">
-            <PencilSquareIcon className="w-3 h-3" />
-          </div>
-        )}
-      </label>
-      {isEditing && (
-        <>
-          <div
-            className="h-6 w-6 flex-center bg-gray-750 hover:bg-green-700/60 transition-colors rounded-l"
-            onMouseDown={(ev) => {
-              accept();
-            }}
-            onClick={(ev) => {}}
-          >
-            <CheckIcon className="w-3 h-3" />
-          </div>
-          <div
-            className="h-6 w-6 flex-center bg-gray-750 hover:bg-red-700/50 transition-colors rounded-r"
-            onMouseDown={(ev) => {
-              reject();
-            }}
-            onClick={(ev) => {}}
-          >
-            <XMarkIcon className="w-3 h-3" />
-          </div>
-        </>
-      )}
-    </div>
   );
 }
 
@@ -516,8 +259,8 @@ export function DocumentPage({
 
   const path = getPathFromSegment(current);
   const [type, articleId] = path.split("/").slice(-1)[0].split("-");
-
-  const id = minimizeId(articleId) as DocumentId;
+  if (!articleId) throw new Error("Invalid url");
+  const id = articleId as DocumentId;
 
   let { article, histories, error } = useArticle(id);
 
@@ -527,6 +270,16 @@ export function DocumentPage({
     <>
       {!error && article && (
         <Page
+          key={getVersionKey(article.versions)}
+          // ^ needed to re-render useDocumentConfig to create new queue instance
+          // TODO: Handle new queue instance in a reactive effect instead.
+          // solution. Make queue forEach a pure function that I can use in
+          // createCollaborativeState to initialize state the basis of initial history.
+          // then I do not need the queue instance at render time, and I can move the
+          // initialization to an effect that reacts to version change and re-initializes.
+          // To check version change, I should see if the latest seen index of the first
+          // server package exceeds the version of the document. Then the first package
+          // has not been created up against the current document.
           type={type === "t" ? "template" : "document"}
           isOpen={isOpen}
           article={article}
@@ -553,18 +306,18 @@ const Page = ({
   histories: Record<string, ServerPackage<DocumentConfigOp | PropertyOp>[]>;
   children: React.ReactNode;
 }) => {
-  const id = article.id;
+  const id = article._id;
 
   const config = useDocumentConfig(id, {
     config: article.config,
     history: histories[id] ?? [],
-    version: article.versions?.[id] ?? 0,
+    version: article.versions?.config ?? 0,
   });
 
   const folder = useFolder(article.folder);
+  const isApp = folder?.type === "app";
 
-  const templateId =
-    folder?.type === "app" ? getDocumentId(URL_ID) : folder?.template;
+  const templateId = folder?.template;
 
   const owner = article;
 
@@ -575,67 +328,110 @@ const Page = ({
   const ctx = React.useMemo(
     () => ({
       id,
-      imports: article
-        ? getComputationRecord(article, { includeImports: true })
-        : {},
-      article,
+      record: article.record,
     }),
-    [id, article]
+    [id, article.record]
   );
 
   return (
-    <FocusOrchestrator>
-      <DocumentPageContext.Provider value={ctx}>
-        <DocumentContent
-          version={getVersionKey(article?.versions)}
-          id={id}
-          variant={type === "template" ? "template" : undefined}
-          folder={article?.folder}
-          label={label ?? "Ingen label"}
-          selected={isOpen}
-          isModified={isModified}
-          toolbar={<Toolbar id={id} config={config} />}
-        >
-          <div className="pb-96 flex flex-col -mt-6">
-            {templateId && (
-              <GetDocument id={templateId}>
-                {(article) => (
-                  <RenderTemplate
-                    key={getVersionKey(owner.versions)} // for rerendering
-                    id={article.id}
-                    owner={owner.id}
-                    values={{
-                      ...getComputationRecord(article),
-                      ...getComputationRecord(owner),
-                    }}
-                    config={article.config}
-                    histories={histories}
-                    versions={owner.versions}
-                  />
+    <FieldToolbarPortalProvider>
+      <FocusOrchestrator>
+        <DocumentPageContext.Provider value={ctx}>
+          <DocumentContent
+            version={getVersionKey(article.versions)}
+            id={id}
+            variant={type === "template" ? "template" : undefined}
+            folder={article?.folder}
+            label={label ?? "Ingen label"}
+            selected={isOpen}
+            isModified={isModified}
+            toolbar={<Toolbar id={id} config={config} />}
+          >
+            <div className="pb-96 flex flex-col -mt-6">
+              {isApp && !templateId && config.length === 0 && (
+                <TemplateSelect documentId={article._id} />
+              )}
+              <ExtendTemplatePath template={owner._id}>
+                {templateId && (
+                  <GetDocument id={templateId}>
+                    {(article) => (
+                      <RenderTemplate
+                        key={getVersionKey(owner.versions)} // for rerendering
+                        id={article._id}
+                        config={article.config}
+                        owner={owner._id}
+                        versions={owner.versions}
+                        histories={histories}
+                      />
+                    )}
+                  </GetDocument>
                 )}
-              </GetDocument>
-            )}
-            <RenderTemplate
-              key={getVersionKey(owner.versions)} // for rerendering
-              id={owner.id}
-              owner={owner.id}
-              values={getComputationRecord(owner)}
-              config={config}
-              versions={owner.versions}
-              histories={histories}
-            />
-          </div>
-        </DocumentContent>
-        {children}
-      </DocumentPageContext.Provider>
-    </FocusOrchestrator>
+              </ExtendTemplatePath>
+              <RenderTemplate
+                key={getVersionKey(owner.versions)} // for rerendering
+                id={owner._id}
+                config={config}
+                owner={owner._id}
+                versions={owner.versions}
+                histories={histories}
+              />
+            </div>
+          </DocumentContent>
+          {children}
+        </DocumentPageContext.Provider>
+      </FocusOrchestrator>
+    </FieldToolbarPortalProvider>
   );
 };
 
-function SaveButton({ id, folder }: { id: string; folder: string }) {
+function TemplateSelect({ documentId }: { documentId: DocumentId }) {
+  const { push } = useDocumentMutate<DocumentConfigOp>(documentId, documentId);
+
+  return (
+    <div className="py-5 px-14 grid grid-cols-3 gap-5">
+      {[
+        DEFAULT_TEMPLATES.staticPage,
+        DEFAULT_TEMPLATES.dynamicPage,
+        DEFAULT_TEMPLATES.redirectPage,
+      ].map(({ label, id }) => (
+        <button
+          className="rounded bg-button ring-button p-5 text-center"
+          onClick={() => {
+            push({
+              target: targetTools.stringify({
+                operation: "document-config",
+                location: "",
+              }),
+              ops: [
+                {
+                  index: 0,
+                  insert: [{ template: id }],
+                },
+              ],
+            });
+          }}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function SaveButton({ id, folder }: { id: DocumentId; folder: FolderId }) {
   const collab = useDocumentCollab();
   const [isLoading, setIsLoading] = React.useState(false);
   const saveArticle = useSaveArticle(folder);
+
+  const { mutate: mutateUpdatedUrls } =
+    SWRClient.documents.getUpdatedUrls.useQuery(
+      {
+        namespace: folder,
+      },
+      {
+        immutable: true,
+      }
+    );
 
   const { libraries } = useClientConfig();
 
@@ -678,6 +474,7 @@ function SaveButton({ id, folder }: { id: string; folder: string }) {
           setIsLoading(true);
           await collab.sync(true);
           const result = await saveArticle({ id, searchable });
+          mutateUpdatedUrls();
           setIsLoading(false);
         }}
       >

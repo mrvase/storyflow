@@ -1,14 +1,5 @@
 import React from "react";
-import {
-  DecoratorNode,
-  DOMConversionMap,
-  DOMConversionOutput,
-  DOMExportOutput,
-  LexicalNode,
-  NodeKey,
-  SerializedLexicalNode,
-  Spread,
-} from "lexical";
+import { LexicalNode, NodeKey } from "lexical";
 import cl from "clsx";
 import { useIsSelected } from "./useIsSelected";
 import { caretClasses } from "./caret";
@@ -17,48 +8,46 @@ import { useGlobalState } from "../../state/state";
 import { getPreview } from "../default/getPreview";
 import {
   FieldId,
-  FieldImport,
-  TemplateFieldId,
-  Value,
+  HasSelect,
+  NestedField,
+  RawFieldId,
+  ValueArray,
 } from "@storyflow/backend/types";
-import { useBuilderPath } from "../BuilderPath";
-import { getDocumentId, computeFieldId } from "@storyflow/backend/ids";
+import { revertTemplateFieldId } from "@storyflow/backend/ids";
+import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 
 const useState = (
   id: FieldId,
-  templateId?: TemplateFieldId
-): [label: string, value: Value[] | undefined] => {
-  if (templateId) {
+  select?: RawFieldId
+): [label: string, value: ValueArray | undefined] => {
+  if (select) {
     const label1 = useLabel(id);
-    const label2 = useLabel(
-      computeFieldId(getDocumentId(templateId), templateId)
-    );
+    const label2 = useLabel(revertTemplateFieldId(select));
     return ["", [`[${label1} · ${label2}]`]];
   }
 
   if (!id) return ["", []];
-  const value = useGlobalState<Value[]>(id)[0];
+  const value = useGlobalState<ValueArray>(id)[0];
   const label = useLabel(id);
   return [label, value];
 };
 
-function ImportDecorator({
+function Decorator({
   nodeKey,
-  fieldImport,
+  value: fieldImport,
 }: {
-  text: string;
   nodeKey: string;
-  fieldImport: FieldImport;
+  value: HasSelect<NestedField>;
 }) {
-  const [, setPath] = useBuilderPath();
+  // const [, setPath] = useBuilderPath();
 
   const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
 
   const parameters = ["x", "y", "z"];
 
-  const isColumn = Boolean(fieldImport.pick);
+  const isColumn = Boolean(fieldImport.select);
 
-  const [label, value] = useState(fieldImport.fref, fieldImport.pick);
+  const [label, value] = useState(fieldImport.field, fieldImport.select);
 
   const preview = getPreview(value ?? []);
 
@@ -67,7 +56,7 @@ function ImportDecorator({
   return (
     <span
       className={cl(
-        "rounded-sm selection:bg-transparent relative",
+        "rounded selection:bg-transparent relative",
         isColumn
           ? "bg-sky-100 dark:bg-sky-400/20 text-sky-700/90 dark:text-sky-100/90"
           : "bg-teal-100 dark:bg-teal-400/20 text-teal-700/90 dark:text-teal-100/90",
@@ -83,6 +72,7 @@ function ImportDecorator({
       }}
       onClick={() => {
         if (isSelected && !selectClick.current) {
+          /*
           setPath((ps) => [
             ...ps,
             {
@@ -90,6 +80,7 @@ function ImportDecorator({
               label: fieldImport.id,
             },
           ]);
+          */
         }
         selectClick.current = false;
       }}
@@ -122,100 +113,45 @@ function ImportDecorator({
   );
 }
 
-function convertImportElement(
-  domNode: HTMLElement
-): DOMConversionOutput | null {
-  return null;
-}
+const type = "nested-field";
+type TokenType = HasSelect<NestedField>;
 
-export type SerializedImportNode = Spread<
-  {
-    type: "import";
-    value: FieldImport;
-  },
-  SerializedLexicalNode
->;
-
-export class ImportNode extends DecoratorNode<React.ReactNode> {
-  __value: FieldImport;
-
+export default class ChildNode extends TokenStreamNode<typeof type, TokenType> {
   static getType(): string {
-    return "import";
+    return type;
   }
 
-  static clone(node: ImportNode): ImportNode {
-    return new ImportNode(node.__value, node.__key);
+  static clone(node: ChildNode): ChildNode {
+    return new ChildNode(node.__token, node.__key);
   }
 
-  constructor(fieldImport: FieldImport, key?: NodeKey) {
-    super(key);
-    this.__value = fieldImport;
+  constructor(token: TokenType, key?: NodeKey) {
+    super(type, token, key);
   }
 
-  createDOM(): HTMLElement {
-    const element = document.createElement("span");
-    element.setAttribute("data-lexical-import", "true");
-    element.setAttribute("data-lexical-inline", "true");
-    return element;
+  isInline(): true {
+    return true;
   }
 
-  updateDOM(): false {
-    return false;
+  exportJSON(): SerializedTokenStreamNode<typeof type, TokenType> {
+    return super.exportJSON();
   }
 
-  getTextContent(): string {
-    return "x";
-  }
-
-  static importJSON(serializedImportNode: SerializedImportNode): ImportNode {
-    return $createImportNode(serializedImportNode.value);
-  }
-
-  exportJSON(): SerializedImportNode {
-    return {
-      type: "import",
-      value: this.__value,
-      version: 1,
-    };
-  }
-
-  exportDOM(): DOMExportOutput {
-    const element = document.createElement("span");
-    element.setAttribute("data-lexical-import", "true");
-    element.setAttribute("data-lexical-inline", "true");
-    element.textContent = "x";
-    return { element };
-  }
-
-  static importDOM(): DOMConversionMap | null {
-    return {
-      span: (domNode: HTMLElement) => {
-        if (!domNode.hasAttribute("data-lexical-import")) {
-          return null as any;
-        }
-        return {
-          conversion: convertImportElement,
-          priority: 1,
-        };
-      },
-    };
+  static importJSON(
+    serializedNode: SerializedTokenStreamNode<typeof type, TokenType>
+  ) {
+    return new ChildNode(serializedNode.token);
   }
 
   decorate(): React.ReactNode {
-    return (
-      <ImportDecorator
-        text={this.__text}
-        nodeKey={this.__key}
-        fieldImport={this.__value}
-      />
-    );
+    return <Decorator nodeKey={this.__key} value={this.__token} />;
   }
 }
 
-export function $createImportNode(fieldImport: FieldImport): ImportNode {
-  return new ImportNode(fieldImport);
+export function $createImportNode(value: TokenType): ChildNode {
+  return new ChildNode(value);
 }
 
 export function $isImportNode(node: LexicalNode): boolean {
-  return node instanceof ImportNode;
+  return node instanceof ChildNode;
 }

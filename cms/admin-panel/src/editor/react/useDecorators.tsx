@@ -6,10 +6,10 @@
  *
  */
 
-import type { LexicalEditor } from "lexical";
+import { $getNodeByKey, LexicalEditor } from "lexical";
 
 import { useEffect, useMemo, useState } from "react";
-import { createPortal, flushSync } from "react-dom";
+import ReactDOM from "react-dom";
 import { ErrorBoundary } from "react-error-boundary";
 import useLayoutEffect from "./useLayoutEffect";
 
@@ -25,7 +25,7 @@ export function useDecorators(editor: LexicalEditor): Array<JSX.Element> {
   // Subscribe to changes
   useLayoutEffect(() => {
     return editor.registerDecoratorListener<JSX.Element>((nextDecorators) => {
-      flushSync(() => {
+      ReactDOM.flushSync(() => {
         setDecorators(nextDecorators);
       });
     });
@@ -56,7 +56,7 @@ export function useDecorators(editor: LexicalEditor): Array<JSX.Element> {
       const element = editor.getElementByKey(nodeKey);
 
       if (element !== null) {
-        decoratedPortals.push(createPortal(reactDecorator, element));
+        decoratedPortals.push(ReactDOM.createPortal(reactDecorator, element));
       }
     }
 

@@ -5,12 +5,17 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**"]
     },
+    "public-api#build": {
+      "dependsOn": ["^build"],
+      "env": ["NODE_ENV", "MONGO_URL", "SECRET_KEY"],
+      "outputs": [".next/**"]
+    },
     "web#build": {
       "dependsOn": ["^build"],
       "env": [
         "NODE_ENV",
         "BASE_URL",
-        "NAMESPACE",
+        "NAMESPACES",
         "API_KEY",
         "MONGO_URL",
         "SECRET_KEY",

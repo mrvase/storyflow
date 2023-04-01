@@ -1,6 +1,6 @@
-import { registerLibraries, registerLibraryConfigs } from "@storyflow/react";
 import { RenderBuilder } from "@storyflow/react/builder";
 import { config, library } from "../components";
+import { registerLibraries, registerLibraryConfigs } from "@storyflow/react";
 
 registerLibraries([library]);
 registerLibraryConfigs([config]);

@@ -1,7 +1,8 @@
 import React from "react";
+
+/*
 import ReactDOM from "react-dom";
 import { useSegment } from "../../layout/components/SegmentContext";
-import { minimizeId } from "@storyflow/backend/ids";
 
 const BuilderContext = React.createContext<{
   ref: HTMLDivElement | null;
@@ -27,7 +28,6 @@ export function BuilderProvider({
   children?: React.ReactNode;
 }) {
   const [ref, setRef] = React.useState<HTMLDivElement | null>(null);
-
   const setRefCallback = React.useCallback((node: HTMLDivElement) => {
     if (node) {
       setRef(node);
@@ -48,7 +48,7 @@ export function BuilderProvider({
     () => ({
       ref,
       isOpen,
-      id: minimizeId(urlId),
+      id: urlId,
     }),
     [ref, isOpen, full]
   );
@@ -67,7 +67,7 @@ export function BuilderPortal({
   children,
   id,
 }: {
-  children: (selected: boolean) => React.ReactNode;
+  children: (selected: boolean) => React.ReactElement;
   id: string;
 }) {
   const { ref, isOpen, id: urlId } = useBuilder();
@@ -76,3 +76,4 @@ export function BuilderPortal({
     ? ReactDOM.createPortal(children(isOpen), ref)
     : null;
 }
+*/

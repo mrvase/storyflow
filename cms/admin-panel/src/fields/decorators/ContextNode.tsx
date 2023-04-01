@@ -1,37 +1,26 @@
 import React from "react";
-import {
-  DecoratorNode,
-  DOMConversionMap,
-  DOMConversionOutput,
-  DOMExportOutput,
-  LexicalNode,
-  NodeKey,
-  SerializedLexicalNode,
-  Spread,
-} from "lexical";
+import { LexicalNode, NodeKey } from "lexical";
 import cl from "clsx";
 import { useIsSelected } from "./useIsSelected";
 import { caretClasses } from "./caret";
 import { useGlobalContext } from "../../state/context";
 import { useDocumentPageContext } from "../../documents/DocumentPageContext";
 import { getPreview } from "../default/getPreview";
-import { ContextImport, Value } from "@storyflow/backend/types";
-import { useBuilderPath } from "../BuilderPath";
+import { ContextToken, ValueArray } from "@storyflow/backend/types";
+import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 
-const useState = (ctx: string): Value[] | undefined => {
+const useState = (ctx: string): ValueArray | undefined => {
   const { id: documentId } = useDocumentPageContext();
   const [value] = useGlobalContext(documentId, ctx);
-  console.log("VALUE", value);
   return [value[ctx]];
 };
 
-function ContextDecorator({
+function Decorator({
   nodeKey,
   value: { ctx },
 }: {
-  text: string;
   nodeKey: string;
-  value: ContextImport;
+  value: ContextToken;
 }) {
   const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
 
@@ -72,100 +61,45 @@ function ContextDecorator({
   );
 }
 
-function convertImportElement(
-  domNode: HTMLElement
-): DOMConversionOutput | null {
-  return null;
-}
+const type = "context";
+type TokenType = ContextToken;
 
-export type SerializedContextNode = Spread<
-  {
-    type: "context";
-    value: ContextImport;
-  },
-  SerializedLexicalNode
->;
-
-export class ContextNode extends DecoratorNode<React.ReactNode> {
-  __value: ContextImport;
-
+export default class ChildNode extends TokenStreamNode<typeof type, TokenType> {
   static getType(): string {
-    return "context";
+    return type;
   }
 
-  static clone(node: ContextNode): ContextNode {
-    return new ContextNode(node.__value, node.__key);
+  static clone(node: ChildNode): ChildNode {
+    return new ChildNode(node.__token, node.__key);
   }
 
-  constructor(value: ContextImport, key?: NodeKey) {
-    super(key);
-    this.__value = value;
+  constructor(token: TokenType, key?: NodeKey) {
+    super(type, token, key);
   }
 
-  createDOM(): HTMLElement {
-    const element = document.createElement("span");
-    element.setAttribute("data-lexical-import", "true");
-    element.setAttribute("data-lexical-inline", "true");
-    return element;
+  isInline(): true {
+    return true;
   }
 
-  updateDOM(): false {
-    return false;
+  exportJSON(): SerializedTokenStreamNode<typeof type, TokenType> {
+    return super.exportJSON();
   }
 
-  getTextContent(): string {
-    return "x";
-  }
-
-  static importJSON(serializedContextNode: SerializedContextNode): ContextNode {
-    return $createContextNode(serializedContextNode.value);
-  }
-
-  exportJSON(): SerializedContextNode {
-    return {
-      type: "context",
-      value: this.__value,
-      version: 1,
-    };
-  }
-
-  exportDOM(): DOMExportOutput {
-    const element = document.createElement("span");
-    element.setAttribute("data-lexical-import", "true");
-    element.setAttribute("data-lexical-inline", "true");
-    element.textContent = "x";
-    return { element };
-  }
-
-  static importDOM(): DOMConversionMap | null {
-    return {
-      span: (domNode: HTMLElement) => {
-        if (!domNode.hasAttribute("data-lexical-import")) {
-          return null as any;
-        }
-        return {
-          conversion: convertImportElement,
-          priority: 1,
-        };
-      },
-    };
+  static importJSON(
+    serializedNode: SerializedTokenStreamNode<typeof type, TokenType>
+  ) {
+    return new ChildNode(serializedNode.token);
   }
 
   decorate(): React.ReactNode {
-    return (
-      <ContextDecorator
-        text={this.__text}
-        nodeKey={this.__key}
-        value={this.__value}
-      />
-    );
+    return <Decorator nodeKey={this.__key} value={this.__token} />;
   }
 }
 
-export function $createContextNode(value: ContextImport): ContextNode {
-  return new ContextNode(value);
+export function $createContextNode(value: TokenType): ChildNode {
+  return new ChildNode(value);
 }
 
 export function $isContextNode(node: LexicalNode): boolean {
-  return node instanceof ContextNode;
+  return node instanceof ChildNode;
 }

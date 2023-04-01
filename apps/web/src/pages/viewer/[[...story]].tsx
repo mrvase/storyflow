@@ -130,7 +130,7 @@ function IframeHead({ iframe }: { iframe: HTMLIFrameElement | undefined }) {
         const elements: React.ReactElement[] = [];
         let i = 0;
         document.head.childNodes.forEach((el) => {
-          if (isElementNode(el) && el.tagName === "LINK") {
+          if (isElementNode(el) && ["LINK", "STYLE"].includes(el.tagName)) {
             const props: any = {
               key: i++,
             };

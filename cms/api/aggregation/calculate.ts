@@ -1,40 +1,35 @@
 import { Narrow, Operators } from "./types";
 import {
-  DBDocument,
   FieldId,
-  FieldImport,
   FunctionName,
   Operator,
-  FlatFieldImport,
-  DocumentId,
-  PrimitiveValue,
-  TemplateFieldId,
-  FlatValue,
-  PossiblyNestedFlatComputation,
-  FlatLayoutElement,
-  DBSymbol,
-  FlatPlaceholder,
+  NestedElement,
+  RawFieldId,
+  NestedField,
+  Parameter,
+  DBDocumentRaw,
+  NestedDocument,
+  DBId,
+  DBValueArray,
+  HasDBId,
+  DBSyntaxStreamBlock,
+  DBSyntaxStream,
+  NestedDocumentId,
 } from "@storyflow/backend/types";
-
-type Parameter = { x: number; value?: PrimitiveValue };
-
-export type FlatComputation = (FlatValue | FlatPlaceholder | DBSymbol)[];
-
-type ComputationBlock = {
-  id: FieldId;
-  value: FlatComputation;
-};
+import { queryArrayProp } from "./queryArrayProp";
 
 type Accummulator = {
-  value: FlatValue[][];
-  stack: FlatValue[][][];
-  imports: FieldId[];
-  function: PossiblyNestedFlatComputation;
+  value: DBValueArray[];
+  stack: DBValueArray[][];
+  imports: DBId<FieldId>[];
+  nested: string[];
+  function: DBSyntaxStream;
+  updated: boolean;
 };
 
 const calculateCombinations = (
-  $: Operators<DBDocument>,
-  value: FlatValue[][]
+  $: Operators<DBDocumentRaw>,
+  value: DBValueArray[]
 ) => {
   return $.reduce(
     levelImplicitAndExplicitArrays($, value),
@@ -48,18 +43,19 @@ const calculateCombinations = (
               $.concatArrays([], combination, [element])
             )
           ),
-        [] as FlatComputation[]
+        [] as DBValueArray[]
       ),
-    [[]] as FlatComputation[]
+    [[]] as DBValueArray[]
   );
 };
 
 const compute = (
-  $: Operators<DBDocument>,
-  operator: Operator | FunctionName | "}" | "]" | ")",
+  $: Operators<DBDocumentRaw>,
+  operator: Operator | FunctionName | "root" | "}" | "]" | ")",
   acc: Accummulator
 ) =>
   $.switch()
+    .case($.eq(operator, "root"), () => acc.value)
     .case($.in(operator, [")", "]"]), () =>
       $.define()
         .let({
@@ -83,7 +79,7 @@ const compute = (
                   ]),
                 acc
               ),
-            [] as FlatValue[]
+            [] as DBValueArray
           ),
         })
         .return(({ spread }) =>
@@ -205,10 +201,10 @@ const compute = (
                             ]),
                           () => $.concatArrays(acc, [cur])
                         ),
-                      [] as FlatComputation
+                      [] as DBValueArray
                     )
                   ),
-                [] as FlatComputation
+                [] as DBValueArray
               ),
             ])
             .case($.in(operator, ["url", "slug"]), () => [
@@ -293,7 +289,7 @@ const compute = (
     );
 
 const isObjectWithProp = <Object, Prop extends string>(
-  $: Operators<DBDocument>,
+  $: Operators<DBDocumentRaw>,
   object: Object,
   prop: Prop,
   type:
@@ -305,6 +301,7 @@ const isObjectWithProp = <Object, Prop extends string>(
     | "null"
     | "double"
     | "date"
+    | "objectId"
 ): boolean => {
   return $.cond(
     $.eq($.type(object), "object"),
@@ -316,9 +313,9 @@ const isObjectWithProp = <Object, Prop extends string>(
 };
 
 const levelImplicitAndExplicitArrays = (
-  $: Operators<DBDocument>,
-  arr: FlatValue[][]
-): FlatValue[][] => {
+  $: Operators<DBDocumentRaw>,
+  arr: DBValueArray[]
+): DBValueArray[] => {
   return $.reduce(
     arr,
     (acc, cur) =>
@@ -329,7 +326,7 @@ const levelImplicitAndExplicitArrays = (
           () => cur
         ),
       ]),
-    [] as FlatValue[][]
+    [] as DBValueArray[]
   );
 };
 
@@ -344,7 +341,7 @@ const slugCharacters = [
 ];
 
 const replaceAllWithRegex = (
-  $: Operators<DBDocument>,
+  $: Operators<DBDocumentRaw>,
   string: string,
   regex: string,
   options: string
@@ -373,180 +370,163 @@ const replaceAllWithRegex = (
   );
 };
 
-type IgnorableImport = { fref: string; ignore: boolean };
-type FlatComputationWithIgnorableImport = (
-  | FlatComputation[number]
-  | IgnorableImport
-)[];
+type IgnorableImport = { field: DBId<FieldId>; ignore: boolean };
+type StreamWithIgnorableImport = (DBSyntaxStream[number] | IgnorableImport)[];
 
 export const calculate = (
-  $: Operators<DBDocument>,
-  block: ComputationBlock,
-  imports: ComputationBlock[]
+  $: Operators<DBDocumentRaw>,
+  block: DBSyntaxStreamBlock,
+  imports: DBSyntaxStreamBlock[]
 ) => {
   return $.define()
     .let({
       result: $.reduce(
-        block.value,
+        block.v,
         (acc, cur) => {
           return $.define()
-            .let({ pick: isObjectWithProp($, cur, "p", "string") })
-            .let(({ pick }) => ({
-              next: $.switch()
-                .case(isObjectWithProp($, cur, "type", "string"), () =>
-                  $.concatArrays(
-                    [{ "(": true }, ""] as FlatComputationWithIgnorableImport,
-                    $.reduce(
-                      $.objectToArray((cur as FlatLayoutElement).props),
-                      (acc, el) =>
-                        $.concatArrays(acc, [
-                          {
-                            fref: $.concat([(cur as any).id, "/", el.k]),
-                            ignore: $.not(el.v),
-                          },
-                        ]),
-                      [] as FlatComputationWithIgnorableImport
+            .let({
+              isSelect: isObjectWithProp($, cur, "f", "string"),
+              nestedDocumentId: $.cond(
+                $.or(
+                  $.eq($.type((cur as any).element), "string"),
+                  $.eq($.type((cur as any).folder), "objectId"),
+                  $.eq($.type((cur as any).field), "objectId")
+                ),
+                () =>
+                  $.substrBytes(
+                    $.toString(
+                      (
+                        cur as Narrow<
+                          typeof cur,
+                          { id: DBId<NestedDocumentId> }
+                        >
+                      ).id
                     ),
-                    ["", { ")": true }] as FlatComputationWithIgnorableImport
-                  )
-                )
-                .case(pick, () =>
+                    12,
+                    12
+                  ),
+                () => null
+              ),
+            })
+            .let(({ isSelect, nestedDocumentId }) => ({
+              children: $.cond(
+                $.toBool(nestedDocumentId),
+                () =>
+                  $.filter(
+                    imports as (DBSyntaxStreamBlock & {
+                      result: DBSyntaxStream;
+                      function: DBSyntaxStream;
+                      updated?: boolean;
+                    })[],
+                    (el) =>
+                      $.eq(
+                        $.substrBytes($.toString(el.k), 0, 12),
+                        nestedDocumentId!
+                      )
+                  ),
+                () => []
+              ),
+              next: $.cond(
+                isSelect,
+                () =>
                   $.concatArrays(
-                    [{ "(": true }] as FlatComputationWithIgnorableImport,
+                    [{ "(": true }],
                     $.reduce(
                       acc.value,
-                      (acc, comp) =>
+                      (acc: DBSyntaxStream, comp) =>
                         $.reduce(
                           comp,
                           (acc, el) =>
                             $.cond(
-                              isObjectWithProp($, el, "dref", "string"),
+                              isObjectWithProp($, el, "id", "objectId"),
                               () =>
                                 $.concatArrays(acc, [
                                   { "[": true },
                                   {
-                                    fref: $.concat([
-                                      (
-                                        el as Narrow<
-                                          typeof el,
-                                          { dref: DocumentId }
-                                        >
-                                      ).dref,
-                                      (
-                                        cur as Narrow<
-                                          typeof cur,
-                                          { p: TemplateFieldId }
-                                        >
-                                      ).p,
-                                    ]),
-                                  } as FieldImport,
+                                    field: $.toObjectId(
+                                      $.concat([
+                                        $.substrBytes(
+                                          $.toString(
+                                            (el as HasDBId<NestedDocument>).id
+                                          ),
+                                          12,
+                                          12
+                                        ),
+                                        (
+                                          cur as Narrow<
+                                            typeof cur,
+                                            { f: RawFieldId }
+                                          >
+                                        ).f,
+                                      ])
+                                    ),
+                                  } as HasDBId<NestedField>,
                                   {
                                     "]": true,
                                   },
                                 ]),
-                              () =>
-                                $.concatArrays(acc, [
-                                  { "[": true },
-                                  {
-                                    fref: $.concat([
-                                      (el as Narrow<typeof el, { id: string }>)
-                                        .id,
-                                      "/",
-                                      (
-                                        cur as Narrow<
-                                          typeof cur,
-                                          { p: TemplateFieldId }
-                                        >
-                                      ).p,
-                                    ]),
-                                  } as FieldImport,
-                                  {
-                                    "]": true,
-                                  },
-                                ])
+                              () => acc
                             ),
                           acc
                         ),
-                      [] as FlatComputationWithIgnorableImport
+                      []
                     ),
-                    [{ ")": true }] as FlatComputationWithIgnorableImport
-                  )
-                )
-                .default(() => [cur]),
-              acc: $.cond(
-                pick,
-                () =>
-                  $.mergeObjects(acc, {
+                    [{ ")": true }]
+                  ),
+                () => [cur]
+              ),
+              acc: $.mergeObjects(
+                acc,
+                $.cond(
+                  isSelect,
+                  () => ({
                     value: $.last(acc.stack),
                     stack: $.pop(acc.stack),
                   }),
-                () => acc
+                  () => ({})
+                ),
+                $.cond(
+                  $.toBool(nestedDocumentId),
+                  () => ({
+                    nested: $.setUnion(acc.nested, [nestedDocumentId]),
+                  }),
+                  () => ({})
+                )
               ),
             }))
-            .return(({ next, acc }) =>
+            .return(({ next, acc, children }) =>
               $.reduce(
                 next,
                 (acc, cur) =>
                   $.define()
                     .let({
-                      imp: $.cond(
-                        isObjectWithProp($, cur, "fref", "string"),
-                        () => cur as FieldImport | IgnorableImport,
-                        () => null
-                      ),
+                      isImport: isObjectWithProp($, cur, "field", "objectId"),
                     })
-                    .let(({ imp }) => ({
-                      args: $.cond(
-                        $.toBool((imp as FieldImport).id), // do not look for args if it is ignorable import
-                        () =>
-                          $.map(
-                            $.range(0, 2),
-                            (index) =>
-                              $.find(imports, (el) =>
-                                $.eq(
-                                  el.id,
-                                  $.concat([
-                                    (imp as FieldImport).id,
-                                    "/",
-                                    $.toString(index),
-                                  ]) as FieldId
-                                )
-                              ) as ComputationBlock & {
-                                result: PossiblyNestedFlatComputation;
-                                function: PossiblyNestedFlatComputation;
-                              }
-                          ),
-                        () => [null]
-                      ),
+                    .let(({ isImport }) => ({
                       importedField: $.cond(
-                        $.toBool(imp),
+                        isImport,
                         () =>
                           $.find(imports, (el) =>
-                            $.eq(el.id, (imp as FieldImport).fref)
-                          ) as ComputationBlock & {
-                            result: PossiblyNestedFlatComputation;
-                            function: PossiblyNestedFlatComputation;
+                            $.eq(el.k, (cur as HasDBId<NestedField>).field)
+                          ) as DBSyntaxStreamBlock & {
+                            result: DBSyntaxStream;
+                            function: DBSyntaxStream;
+                            updated?: boolean;
                           },
                         () => null
                       ),
                     }))
-                    .let(({ imp, importedField, args }) => ({
+                    .let(({ isImport, importedField }) => ({
                       next: $.switch()
                         .case(
-                          $.and(
-                            $.toBool(imp),
-                            $.or(
-                              $.not($.toBool(importedField)),
-                              $.toBool((imp as IgnorableImport).ignore)
-                            )
-                          ),
+                          $.and(isImport, $.not($.toBool(importedField))),
                           () => []
                         )
                         .case($.toBool(importedField), () =>
                           $.concatArrays(
-                            [{ "(": true }] as FlatComputation,
+                            [{ "(": true }] as DBSyntaxStream,
                             $.cond(
-                              $.anyElementTrue(args),
+                              $.gt($.size(children), 0),
                               () =>
                                 $.getField(
                                   importedField as Exclude<
@@ -554,7 +534,7 @@ export const calculate = (
                                     null
                                   >,
                                   "function"
-                                ),
+                                ) as DBSyntaxStream,
                               () =>
                                 $.getField(
                                   importedField as Exclude<
@@ -562,15 +542,16 @@ export const calculate = (
                                     null
                                   >,
                                   "result"
-                                )
+                                ) as DBSyntaxStream
                             ),
-                            [{ ")": true }] as FlatComputation
+                            [{ ")": true }] as DBSyntaxStream
                           )
                         )
-                        .default(() => [cur]),
+                        .default(() => [
+                          cur as Exclude<typeof cur, IgnorableImport>,
+                        ]),
                     }))
-                    .return(({ imp, args, next }) => {
-                      // console.log("IMP", imp, args);
+                    .return(({ importedField, next }) => {
                       return $.mergeObjects(
                         $.reduce(
                           next,
@@ -588,9 +569,17 @@ export const calculate = (
                                     .case($.isNumber((curObj as any).x), () =>
                                       $.define()
                                         .let({
-                                          arg: $.at(
-                                            args,
-                                            (curObj as Parameter).x
+                                          arg: $.find(children, (child) =>
+                                            $.eq(
+                                              $.substrBytes(
+                                                $.toString(child.k),
+                                                23,
+                                                1
+                                              ),
+                                              $.toString(
+                                                (curObj as Parameter).x
+                                              )
+                                            )
                                           ),
                                         })
                                         .return(({ arg }) =>
@@ -627,11 +616,11 @@ export const calculate = (
                                       $.eq($.type((cur as any).n), "bool"),
                                       () => acc
                                     )
-                                    // if fetcher: IGNORE
+                                    // if nested element: IGNORE
                                     .case(
                                       $.eq(
-                                        $.type((cur as any).filters),
-                                        "array"
+                                        $.type((cur as any).element),
+                                        "string"
                                       ),
                                       () => acc
                                     )
@@ -701,7 +690,7 @@ export const calculate = (
                                               $.mergeObjects(acc, {
                                                 value: $.concatArrays(
                                                   acc.value,
-                                                  [[cur]]
+                                                  [[cur as any]]
                                                 ),
                                               }),
                                             () => {
@@ -727,32 +716,23 @@ export const calculate = (
                               },
                               () =>
                                 $.mergeObjects(acc, {
-                                  value: $.concatArrays(acc.value, [[cur]]),
+                                  value: $.concatArrays(acc.value, [
+                                    [cur as any],
+                                  ]),
                                 })
                             ),
                           acc
                         ),
                         {
-                          imports: $.setUnion(
-                            acc.imports,
-                            [$.ifNull(imp?.fref, "")],
-                            $.reduce(
-                              $.range(0, 2),
-                              (acc, index) =>
-                                $.cond(
-                                  $.toBool($.at(args, index)),
-                                  () =>
-                                    $.concatArrays(acc, [
-                                      $.concat([
-                                        (imp as FieldImport).id,
-                                        "/",
-                                        $.toString(index),
-                                      ]),
-                                    ]),
-                                  () => acc
-                                ),
-                              [] as string[]
-                            )
+                          imports: $.cond(
+                            $.toBool(importedField),
+                            () => $.setUnion(acc.imports, [importedField?.k]),
+                            () => acc.imports
+                          ),
+                          updated: $.or(
+                            acc.updated,
+                            $.anyElementTrue(queryArrayProp(children).updated!),
+                            $.toBool(importedField?.updated)
                           ),
                           function: $.concatArrays(acc.function, next),
                         }
@@ -766,7 +746,9 @@ export const calculate = (
           value: [],
           stack: [],
           imports: [],
+          nested: [],
           function: [],
+          updated: false,
         } as Accummulator
       ),
     })
@@ -774,9 +756,11 @@ export const calculate = (
       result: $.reduce(
         result.value,
         (acc, cur) => $.concatArrays(acc, cur),
-        [] as FlatComputation
+        [] as DBValueArray
       ),
       imports: result.imports,
       function: result.function,
+      nested: result.nested,
+      updated: result.updated,
     }));
 };

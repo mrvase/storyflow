@@ -1,11 +1,5 @@
 import * as React from "react";
-import {
-  BuilderSelectionProvider,
-  ExtendPath,
-  useBuilderSelection,
-} from "./contexts";
 import { dispatchers, listeners } from "./events";
-import RenderComponent from "./RenderComponent";
 import { RenderContext } from "../src/RenderContext";
 import { useCMSElement } from "./useCMSElement";
 import { getSiblings } from "./focus";
@@ -13,31 +7,28 @@ import { Path, ValueArray } from "@storyflow/frontend/types";
 import ReactDOM from "react-dom";
 import { getLibraryConfigs } from "../config";
 import { useCSS } from "./useCSS";
+import RenderChildren from "./RenderChildren";
+import { SelectedPathProvider, useSelectedPath } from "./contexts";
 
 const LOG = true;
 export const log: typeof console.log = LOG
   ? (...args) => console.log("$$", ...args)
   : (...args) => {};
 
-export const stringifyPath = (path: Path) => {
-  let string = "";
-  path.forEach((el) => {
-    string += `${
-      "parentProp" in el && el.parentProp ? `/${el.parentProp}` : ""
-    }.${el.id}`;
-  });
-  return string.slice(1);
-};
+const generateKey = () => Math.random().toString(36).slice(2);
 
 const createState = () => {
   let state = {
-    id: null as string | null,
-    map: new Map<string, ValueArray | Record<string, ValueArray>>(),
+    root: {
+      id: null as string | null,
+      key: generateKey(),
+    },
+    map: new Map<string, ValueArray>(),
   };
 
   const update = (
-    map: Map<string, ValueArray | Record<string, ValueArray>>,
-    updates: Record<string, ValueArray | Record<string, ValueArray>>
+    map: Map<string, ValueArray>,
+    updates: Record<string, ValueArray>
   ) => {
     const batch = new Set<() => void>();
 
@@ -47,22 +38,7 @@ const createState = () => {
     };
 
     Object.entries(updates).forEach(([key, value]) => {
-      if (key.indexOf("/") < 0) {
-        // root
-        set(key, value);
-      } else {
-        // prop
-        set(key, value);
-
-        const parentKey = key.split(".").slice(0, -1).join(".");
-        const [elementId, propKey] = key.split(".").slice(-1)[0].split("/");
-        const props = map.get(`${parentKey}.${elementId}`) ?? {};
-
-        set(`${parentKey}.${elementId}`, {
-          ...props,
-          [propKey]: value,
-        });
-      }
+      set(key, value);
     });
 
     log("NEW MAP", map);
@@ -76,7 +52,10 @@ const createState = () => {
       const newMap = new Map<string, any>();
       update(newMap, record);
       state.map = newMap;
-      state.id = id;
+      state.root = {
+        key: generateKey(),
+        id,
+      };
       rootSubscriber?.();
     });
 
@@ -105,8 +84,8 @@ const createState = () => {
 
   const syncRoot = (): [
     (listener: () => void) => () => void,
-    () => Map<string, ValueArray | Record<string, ValueArray>>,
-    () => Map<string, ValueArray | Record<string, ValueArray>>
+    () => { id: string | null; key: string },
+    () => { id: string | null; key: string }
   ] => {
     return [
       (listener) => {
@@ -115,8 +94,8 @@ const createState = () => {
           rootSubscriber = null;
         };
       },
-      () => state.map,
-      () => state.map,
+      () => state.root,
+      () => state.root,
     ];
   };
 
@@ -124,8 +103,8 @@ const createState = () => {
     key: string
   ): [
     (listener: () => void) => () => void,
-    () => ValueArray | Record<string, ValueArray>,
-    () => ValueArray | Record<string, ValueArray>
+    () => ValueArray,
+    () => ValueArray
   ] => {
     return [
       (listener) => {
@@ -180,14 +159,9 @@ const objectKey = useObjectKey();
 export function RenderBuilder() {
   useCSS();
 
-  const root = useFullValue();
+  const { id, key } = useFullValue();
 
-  const id = React.useMemo(
-    () => Array.from(root.keys()).find((el) => el.split(".").length === 1),
-    [root]
-  );
-
-  log("ROOT", root, id);
+  log("ROOT", id, key);
 
   React.useEffect(() => {
     // unrender makes sure that initial state is passed again on HMR.
@@ -226,24 +200,24 @@ export function RenderBuilder() {
 
   return (
     <>
-      <BuilderSelectionProvider key={objectKey(root)}>
+      <SelectedPathProvider key={key}>
         <RenderContext.Provider value={useCMSElement}>
-          <Frame>
-            {id && (
-              <ExtendPath extend={id}>
-                <RenderComponent />
-              </ExtendPath>
-            )}
-          </Frame>
+          <Frame>{id && <RenderRoot id={id} />}</Frame>
         </RenderContext.Provider>
-      </BuilderSelectionProvider>
+      </SelectedPathProvider>
       <SelectPortal />
     </>
   );
 }
 
+const RenderRoot = ({ id }: { id: string }) => {
+  const value = useValue(id);
+  log("VALUE", id, value);
+  return <RenderChildren value={value} />;
+};
+
 const Frame = ({ children }: { children: React.ReactNode }) => {
-  const [, , deselect] = useBuilderSelection();
+  const [, select] = useSelectedPath();
 
   React.useEffect(() => {
     const onClick = (ev: MouseEvent) => {
@@ -255,7 +229,7 @@ const Frame = ({ children }: { children: React.ReactNode }) => {
       if (hasCMSParent) {
         return;
       }
-      deselect([]);
+      select([]);
     };
     document.addEventListener("click", onClick);
     return () => {

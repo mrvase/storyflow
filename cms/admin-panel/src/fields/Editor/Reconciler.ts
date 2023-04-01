@@ -15,7 +15,7 @@ import { tools } from "shared/editor-tools";
 import { getNextState } from "shared/computation-tools";
 import { InferAction, Target, ComputationOp } from "shared/operations";
 import { createQueueCache } from "../../state/collaboration";
-import { EditorComputation, FunctionName } from "@storyflow/backend/types";
+import { TokenStream } from "@storyflow/backend/types";
 import { LibraryConfig } from "@storyflow/frontend/types";
 import {
   $clearEditor,
@@ -31,16 +31,12 @@ export function Reconciler({
   initialValue,
   push,
   register,
-  setValue,
-  transform,
 }: {
-  initialValue: EditorComputation;
+  initialValue: TokenStream;
   // history: CollabHistory<TextOp | FunctionOp>;
   target: Target;
-  push: (ops: ComputationOp["ops"], tags: Set<string>) => void;
+  push: (ops: ComputationOp["ops"]) => void;
   register: (listener: QueueListener<ComputationOp>) => () => void;
-  setValue: (value: () => EditorComputation) => void;
-  transform?: FunctionName;
 }) {
   const editor = useEditorContext();
 
@@ -51,7 +47,6 @@ export function Reconciler({
 
     return register(({ trackedForEach, forEach }) => {
       const newOps: InferAction<ComputationOp>[] = [];
-
       // This forEach only adds any unique operation a single time.
       // Since we are using the bound register, it does not provide
       // the operations pushed from this specific field.
@@ -60,23 +55,14 @@ export function Reconciler({
           newOps.push(...operation.ops);
         }
       });
-
-      let update = false;
-
       const result = cache(forEach, (prev, { operation }) => {
         if (operation.target === target) {
           prev = getNextState(prev, operation);
-          update = true;
         }
         return prev;
       });
-
       if (newOps.length > 0) {
         reconcile(editor, result, newOps, libraries);
-      }
-
-      if (update) {
-        setValue(() => result);
       }
     });
   }, [editor, libraries]);
@@ -103,10 +89,7 @@ export function Reconciler({
           return;
         }
 
-        push(
-          action.map((el) => ({ ...el })),
-          tags
-        );
+        push(action.map((el) => ({ ...el })));
       }
     );
   }, [editor, push]);
@@ -116,7 +99,7 @@ export function Reconciler({
 
 function reconcile(
   editor: LexicalEditor,
-  value: EditorComputation,
+  value: TokenStream,
   actions: InferAction<ComputationOp>[],
   libraries: LibraryConfig[]
 ) {

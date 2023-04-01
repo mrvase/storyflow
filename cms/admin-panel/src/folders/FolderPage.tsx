@@ -12,10 +12,14 @@ import {
 } from "@heroicons/react/24/outline";
 import { useSegment } from "../layout/components/SegmentContext";
 import { useOnLoadHandler } from "../layout/onLoadHandler";
-import { minimizeId, restoreId } from "@storyflow/backend/ids";
 import { EditableLabel } from "../elements/EditableLabel";
 import cl from "clsx";
-import { DBFolder } from "@storyflow/backend/types";
+import {
+  DBFolder,
+  DocumentId,
+  FolderId,
+  SpaceId,
+} from "@storyflow/backend/types";
 import { SWRClient } from "../client";
 import { FolderDomainsContext, FolderDomainsProvider } from "./folder-domains";
 import { useFolder } from "./collab/hooks";
@@ -25,9 +29,12 @@ import { targetTools } from "shared/operations";
 import { createKey } from "../utils/createKey";
 import { AddTemplateDialog } from "./AddTemplateDialog";
 import { DocumentListSpace } from "./spaces/DocumentListSpace";
-import { useArticleTemplate } from "../documents";
+import { useArticle } from "../documents";
 import { useDocumentLabel } from "../documents/useDocumentLabel";
 import { FolderContext } from "./FolderPageContext";
+import { ROOT_FOLDER } from "@storyflow/backend/constants";
+import { useFieldFocus } from "../field-focus";
+import { addNestedFolder } from "../custom-events";
 
 export default function FolderPage({
   isOpen,
@@ -47,7 +54,7 @@ export default function FolderPage({
   const path = getPathFromSegment(current);
 
   const [, urlId] = path.split("/").slice(-1)[0].split("-");
-  const folderLookupId = urlId ? minimizeId(urlId) : "----";
+  const folderLookupId = (urlId ?? ROOT_FOLDER) as FolderId;
   const folder = useFolder(folderLookupId);
 
   useOnLoadHandler(true, onLoad);
@@ -71,7 +78,7 @@ export default function FolderPage({
     name: T,
     value: DBFolder[T]
   ) => {
-    return collab.mutate("folders", folder.id).push({
+    return collab.mutate("folders", folder._id).push({
       target: targetTools.stringify({
         location: "",
         operation: "property",
@@ -92,12 +99,11 @@ export default function FolderPage({
           selected={isOpen}
           icon={FolderIcon}
           header={
-            <EditableLabel
-              value={folder.label ?? ""}
+            <FolderLabel
+              folder={folder}
               onChange={(value) => {
                 mutateProp("label", value);
               }}
-              className={cl("font-medium")}
             />
           }
           toolbar={
@@ -110,7 +116,7 @@ export default function FolderPage({
                 <Content.ToolbarButton
                   data-focus-remain="true"
                   onClick={() => {
-                    collab.mutate("folders", folder.id).push({
+                    collab.mutate("folders", folder._id).push({
                       target: targetTools.stringify({
                         operation: "folder-spaces",
                         location: "",
@@ -141,7 +147,7 @@ export default function FolderPage({
                       mutate={(domains) => mutateProp("domains", domains)}
                     />
                     <div className="text-xs text-gray-600 font-light flex-center h-6 ring-1 ring-inset ring-gray-700 px-2 rounded cursor-default">
-                      ID: {restoreId(folder.id)} ({folder.id})
+                      ID: {folder._id.replace(/^0+/, "")}
                     </div>
                   </>
                 )}
@@ -154,7 +160,7 @@ export default function FolderPage({
               <AddTemplateDialog
                 isOpen={dialogIsOpen === "add-template"}
                 close={() => setDialogIsOpen(null)}
-                folderId={folder.id}
+                folderId={folder._id}
                 currentTemplate={folder.template}
               />
             </>
@@ -168,7 +174,7 @@ export default function FolderPage({
                       key={space.id}
                       index={index}
                       spaceId={space.id}
-                      folderId={folder.id}
+                      folderId={folder._id}
                       hidden={!isSelected}
                     />
                   );
@@ -177,8 +183,8 @@ export default function FolderPage({
               })}
               <DocumentListSpace
                 index={0}
-                spaceId={"any"}
-                folderId={folder.id}
+                spaceId={"" as SpaceId}
+                folderId={folder._id}
                 hidden={!isSelected}
               />
             </div>
@@ -194,17 +200,49 @@ export default function FolderPage({
   );
 }
 
+function FolderLabel({
+  folder,
+  onChange,
+}: {
+  folder: DBFolder;
+  onChange: (label: string) => void;
+}) {
+  const [focused] = useFieldFocus();
+
+  return focused ? (
+    <div
+      className="py-0.5 cursor-alias"
+      onMouseDown={(ev) => {
+        if (!focused) return;
+        ev.preventDefault();
+        addNestedFolder.dispatch({
+          folderId: folder._id,
+          templateId: folder.template,
+        });
+      }}
+    >
+      {folder.label ?? ""}
+    </div>
+  ) : (
+    <EditableLabel
+      value={folder.label ?? ""}
+      onChange={onChange}
+      className={cl("font-medium")}
+    />
+  );
+}
+
 export function FolderTemplateButton({
   template,
   openDialog,
 }: {
-  template?: string;
+  template?: DocumentId;
   openDialog: () => void;
 }) {
   const { current } = useSegment();
   const [, navigateTab] = useTabUrl();
 
-  const article = useArticleTemplate(template);
+  const { article } = useArticle(template);
   const label = useDocumentLabel(article);
 
   if (!template) {
@@ -231,7 +269,7 @@ export function FolderTemplateButton({
         label={`Rediger skabelon "${label}"`}
         onClick={() => {
           if (template) {
-            navigateTab(`${current}/t-${restoreId(template)}`);
+            navigateTab(`${current}/t-${template}`);
             return;
           }
         }}

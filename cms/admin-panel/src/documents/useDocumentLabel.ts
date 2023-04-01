@@ -1,18 +1,24 @@
-import { TemplateDocument, Value } from "@storyflow/backend/types";
+import { TemplateDocument, Value, ValueArray } from "@storyflow/backend/types";
 import { useGlobalState } from "../state/state";
-import { computeFieldId } from "@storyflow/backend/ids";
-import { CREATION_DATE_ID, LABEL_ID } from "@storyflow/backend/templates";
+import { computeFieldId, createTemplateFieldId } from "@storyflow/backend/ids";
+import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
+import { calculateFromRecord } from "@storyflow/backend/calculate";
 
-export const fallbackLabel = "[Titel]";
+export const fallbackLabel = "[Ingen titel]";
 
 export const getDocumentLabel = (doc: TemplateDocument | undefined) => {
   if (!doc) return undefined;
-  const defaultLabelValue = doc.values[LABEL_ID]?.[0];
+  /* TODO should be calculated */
+  const defaultLabelValue = calculateFromRecord(
+    createTemplateFieldId(doc._id, DEFAULT_FIELDS.label.id),
+    doc.record
+  )[0] as string | undefined;
   const defaultLabel =
-    typeof defaultLabelValue === "string" ? defaultLabelValue : null;
-  const creationDateString = doc.values[CREATION_DATE_ID]?.[0] as
-    | string
-    | undefined;
+    typeof defaultLabelValue === "string" ? defaultLabelValue.trim() : null;
+  const creationDateString = calculateFromRecord(
+    createTemplateFieldId(doc._id, DEFAULT_FIELDS.creation_date.id),
+    doc.record
+  )[0] as string | undefined;
   const creationDate = new Date(creationDateString ?? 0);
   return (
     defaultLabel ??
@@ -28,8 +34,8 @@ export const useDocumentLabel = <T extends TemplateDocument | undefined>(
 ): T extends undefined ? undefined : string => {
   const defaultLabel = getDocumentLabel(doc);
 
-  const [output] = useGlobalState<Value[]>(
-    doc ? computeFieldId(doc.id, LABEL_ID) : undefined
+  const [output] = useGlobalState<ValueArray>(
+    doc ? createTemplateFieldId(doc._id, DEFAULT_FIELDS.label.id) : undefined
   );
 
   if (typeof doc === "undefined") {
@@ -37,12 +43,15 @@ export const useDocumentLabel = <T extends TemplateDocument | undefined>(
   }
 
   if (doc?.label) {
-    return doc.label as any;
+    return (doc.label as any).trim() || fallbackLabel;
   }
 
   if (output && output.length > 0) {
-    return typeof output[0] === "string" ? output[0] : (fallbackLabel as any);
+    return (
+      (typeof output[0] === "string" ? output[0] : "")?.trim() ||
+      (fallbackLabel as any)
+    );
   }
 
-  return defaultLabel ?? (fallbackLabel as any);
+  return defaultLabel?.trim() || (fallbackLabel as any);
 };

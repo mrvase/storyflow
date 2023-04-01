@@ -25,23 +25,18 @@ export default async function handler(
   if (req.method === "POST") {
     const paths = req.body as string[];
 
-    console.log("PATHS", paths);
-
     try {
-      // This should be the actual path not a rewritten path
-      // e.g. for "/blog/[slug]" this should be "/blog/post-1"
-      await Promise.all(
-        paths.map(async (path) => {
-          await res.revalidate(path);
-        })
-      );
-      return res.json({ revalidated: true });
+      await Promise.all(paths.map((path) => res.revalidate(path)));
+      res.status(200).json({ revalidated: true });
     } catch (err) {
-      // If there was an error, Next.js will continue
-      // to show the last successfully generated page
-      return res.status(500).send("Error revalidating");
+      console.log("REVALIDATION ERROR", err);
+      res.status(500).json({ revalidated: false });
     }
+  } else if (req.method === "OPTIONS") {
+    res.status(200);
+  } else {
+    res.status(405);
   }
 
-  return res.status(200).end();
+  return res.end();
 }

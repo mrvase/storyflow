@@ -1,11 +1,12 @@
 import React from "react";
-import { DBFolder, Space } from "@storyflow/backend/types";
+import { DBFolder, FolderId, Space, SpaceId } from "@storyflow/backend/types";
 import { AddFolderOp, FolderOp, targetTools } from "shared/operations";
 import { createStaticStore } from "../../state/StaticStore";
 import { useInitialFolders } from "../folders-context";
 import { createReactSubject } from "../../state/useSubject";
 import { QueueListenerParam } from "@storyflow/state/collab/Queue";
-import { createCollaborativeState } from "./createCollaborativeState";
+import { createCollaborativeState } from "../../state/createCollaborativeState";
+import { useFolderCollab } from "./FolderCollabContext";
 
 const useFoldersSubject = createReactSubject<DBFolder[]>();
 
@@ -43,8 +44,7 @@ export function useFolders() {
   const version = initialFolders.length;
   const history = histories[""] ?? [];
 
-  return createCollaborativeState(
-    useFoldersSubject,
+  const operator = React.useCallback(
     ({ forEach }: QueueListenerParam<AddFolderOp>) => {
       let newArray = [...initialFolders];
 
@@ -56,29 +56,31 @@ export function useFolders() {
 
       return newArray;
     },
-    {
-      version,
-      history,
-      document: "folders",
-      key: "",
-    }
+    [initialFolders]
   );
+
+  const collab = useFolderCollab();
+  return createCollaborativeState(collab, useFoldersSubject, operator, {
+    version,
+    history,
+    document: "folders",
+    key: "",
+  });
 }
 
-export function useFolder(id: string): DBFolder {
+export function useFolder(id: FolderId): DBFolder {
   const { histories } = useInitialFolders();
 
-  const initialFolder = useFolders().find((el) => el.id === id); // support newly added folders
+  const initialFolder = useFolders().find((el) => el._id === id); // support newly added folders
 
   if (!initialFolder) {
     throw new Error("Folder not found");
   }
 
-  const version = initialFolder.versions?.[id] ?? 0;
+  const version = initialFolder.versions?.config ?? 0;
   const history = histories[id] ?? [];
 
-  return createCollaborativeState(
-    (callback) => folders.useKey(id, callback),
+  const operator = React.useCallback(
     ({ forEach }: QueueListenerParam<FolderOp>) => {
       const newFolder = { ...initialFolder };
       newFolder.spaces = [...(newFolder.spaces ?? [])];
@@ -98,6 +100,14 @@ export function useFolder(id: string): DBFolder {
 
       return newFolder;
     },
+    [initialFolder]
+  );
+
+  const collab = useFolderCollab();
+  return createCollaborativeState(
+    collab,
+    (callback) => folders.useKey(id, callback),
+    operator,
     {
       version,
       history,
@@ -111,8 +121,8 @@ export function useSpace<T extends Space>({
   folderId,
   spaceId,
 }: {
-  folderId: string;
-  spaceId: string;
+  folderId: FolderId;
+  spaceId: SpaceId;
 }): T {
   const { histories } = useInitialFolders();
 
@@ -135,8 +145,7 @@ export function useSpace<T extends Space>({
   const history = histories?.[key] ?? [];
   const version = folder?.versions?.[spaceId] ?? 0;
 
-  return createCollaborativeState(
-    (callback) => spaces.useKey(key, callback),
+  const operator = React.useCallback(
     ({ forEach }: QueueListenerParam<FolderOp>) => {
       const newSpace = { ...initialSpace };
       if ("items" in newSpace) {
@@ -144,6 +153,7 @@ export function useSpace<T extends Space>({
 
         forEach(({ operation }) => {
           if (targetTools.isOperation(operation, "space-items")) {
+            console.log("ACTION", operation);
             operation.ops.forEach((action) => {
               const { index, insert, remove } = action;
               newSpace.items.splice(index, remove ?? 0, ...(insert ?? []));
@@ -153,6 +163,14 @@ export function useSpace<T extends Space>({
       }
       return newSpace;
     },
+    [initialSpace]
+  );
+
+  const collab = useFolderCollab();
+  return createCollaborativeState(
+    collab,
+    (callback) => spaces.useKey(key, callback),
+    operator,
     {
       version,
       history,

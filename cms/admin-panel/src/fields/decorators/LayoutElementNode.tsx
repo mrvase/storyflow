@@ -1,181 +1,218 @@
 import React from "react";
-import {
-  DecoratorNode,
-  DOMConversionMap,
-  DOMConversionOutput,
-  DOMExportOutput,
-  LexicalNode,
-  NodeKey,
-  SerializedLexicalNode,
-  Spread,
-} from "lexical";
+import { LexicalNode, NodeKey } from "lexical";
 import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
-import { caretClasses } from "./caret";
-import { LayoutElement } from "@storyflow/backend/types";
-import { ParentPropContext } from "../default/DefaultField";
-import { useBuilderPath } from "../BuilderPath";
+import {
+  FieldId,
+  NestedDocumentId,
+  NestedElement,
+} from "@storyflow/backend/types";
 import { getConfigFromType, useClientConfig } from "../../client-config";
+import { ChevronUpDownIcon, CubeIcon } from "@heroicons/react/24/outline";
+import {
+  FieldRestrictionsContext,
+  FieldOptionsContext,
+} from "../FieldIdContext";
+import {
+  EditorFocusProvider,
+  useIsFocused,
+} from "../../editor/react/useIsFocused";
+import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
+import {
+  Attributes,
+  AttributesProvider,
+  useAttributesContext,
+} from "../Attributes";
+import { ExtendPath, usePath, useSelectedPath } from "../Path";
+import { PropConfig, RegularOptions } from "@storyflow/frontend/types";
+import { flattenProps } from "../../utils/flattenProps";
+import { DefaultField } from "../default/DefaultField";
+import { computeFieldId, getIdFromString } from "@storyflow/backend/ids";
 
-function LayoutElementDecorator({
+const TopLevelContext = React.createContext(true);
+
+function Decorator({
   value,
   nodeKey,
 }: {
-  value: LayoutElement;
+  value: NestedElement;
   nodeKey: string;
 }) {
-  const [, setPath] = useBuilderPath();
-  const parentProp = React.useContext(ParentPropContext);
+  const isTopLevel = React.useContext(TopLevelContext);
 
-  const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
+  const isFocused = useIsFocused();
 
-  const selectClick = React.useRef(false);
+  const path = usePath();
+  const [{ selectedPath, selectedDocument }, setPath] = useSelectedPath();
+  const isOpen = selectedDocument === value.id;
+
+  const { isSelected, select } = useIsSelected(nodeKey);
 
   const { libraries } = useClientConfig();
-  const config = getConfigFromType(value.type, libraries);
+  const config = getConfigFromType(value.element, libraries);
 
   const libraryLabel = libraries.find(
-    (el) => el.name === value.type.split(":")[0]
+    (el) => el.name === value.element.split(":")[0]
   )?.label;
 
+  let props = flattenProps(value.id, config?.props ?? []);
+
+  if (props.length) {
+    props.push({
+      name: "key",
+      id: computeFieldId(value.id, getIdFromString("key")),
+      label: "Generer liste",
+      type: "string",
+    });
+  }
+
   return (
-    <div className="py-0.5">
-      <div
-        className={cl(
-          "relative text-gray-800 dark:text-gray-200 cursor-default",
-          "flex items-center rounded px-2 py-0.5 text-sm bg-gray-100 dark:bg-gray-800 selection:bg-transparent",
-          isSelected && "ring-1 ring-amber-300",
-          !isSelected && "ring-1 ring-gray-200 dark:ring-gray-700",
-          isPseudoSelected && caretClasses
-        )}
-        onMouseDown={() => {
-          if (!isSelected) {
-            select();
-            selectClick.current = true;
-          }
-        }}
-        onClick={() => {
-          if (isSelected && !selectClick.current) {
-            setPath((ps) => [
-              ...ps,
-              {
-                id: value.id,
-                type: value.type,
-                parentProp: parentProp,
-              },
-            ]);
-          }
-          selectClick.current = false;
-        }}
-      >
-        {config?.label ?? value.type}
-        <span className="text-xs text-gray-400 ml-auto">{libraryLabel}</span>
-        {/*<button className="group h-full px-2 hover:bg-white/5 flex-center gap-1 rounded cursor-default transition-colors">
-          {component.label ?? value.type}{" "}
-          <ChevronDownIcon className="w-3 h-3 opacity-0 group-hover:opacity-75 transition-opacity" />
-      </button>*/}
-      </div>
+    <AttributesProvider>
+      <EditorFocusProvider>
+        <FocusContainer isOpen={isOpen} isSelected={isSelected}>
+          <div
+            className="flex items-center font-normal text-yellow-400/90 text-sm p-2.5 whitespace-nowrap"
+            onMouseDown={(ev) => {
+              // preventDefault added because it prevents a conflict with lexical
+              // which sets the selection as well, overwriting the selection set here.
+              // This happens only when the editor is first selected without a cursor,
+              // and you then click the element.
+              if (!isSelected) {
+                if (isFocused) {
+                  ev.preventDefault();
+                }
+                select();
+              }
+            }}
+          >
+            <CubeIcon className="w-4 h-4 mr-5 shrink-0" />
+            {config?.label ?? value.element}
+            <div className="overflow-x-auto no-scrollbar mx-2">
+              <Attributes entity={value} hideAsDefault={!isTopLevel} />
+            </div>
+            <div className="ml-auto">
+              <button
+                className="w-5 h-5 flex-center rounded-full bg-gray-800 hover:bg-gray-700 transition-colors"
+                onClick={() => {
+                  setPath(() => [...selectedPath, ...path, value.id]);
+                }}
+              >
+                <ChevronUpDownIcon className="w-4 h-4 rotate-45" />
+              </button>
+            </div>
+          </div>
+          <PrimaryProp documentId={value.id} props={props} />
+        </FocusContainer>
+      </EditorFocusProvider>
+    </AttributesProvider>
+  );
+}
+
+function FocusContainer({
+  children,
+  isOpen,
+  isSelected,
+}: {
+  children: React.ReactNode;
+  isOpen: boolean;
+  isSelected: boolean;
+}) {
+  const isFocused = useIsFocused();
+
+  let ring = "";
+
+  if (isOpen) {
+    ring = "ring-1 dark:ring-yellow-200/50";
+  } else if (isSelected) {
+    ring = "ring-1 dark:ring-gray-200";
+  } else {
+    ring = "ring-1 ring-gray-200 dark:ring-gray-700";
+  }
+
+  return (
+    <div
+      className={cl(
+        "relative cursor-default",
+        "rounded selection:bg-transparent",
+        ring,
+        isFocused ? "bg-gray-800" : "bg-gray-850",
+        "transition-[background-color,box-shadow]"
+      )}
+    >
+      {children}
     </div>
   );
 }
 
-function convertImportElement(
-  domNode: HTMLElement
-): DOMConversionOutput | null {
-  return null;
+function PrimaryProp({
+  documentId,
+  props,
+}: {
+  documentId: NestedDocumentId;
+  props: (PropConfig<RegularOptions> & { id: FieldId })[];
+}) {
+  const [propId] = useAttributesContext();
+
+  const config = props.find((el) => el.id === propId);
+
+  if (!config) {
+    return null;
+  }
+
+  return (
+    <ExtendPath id={documentId} type="document">
+      <ExtendPath id={config.id} type="field">
+        <TopLevelContext.Provider key={config.id} value={false}>
+          <FieldRestrictionsContext.Provider value={config.type}>
+            <FieldOptionsContext.Provider
+              value={"options" in config ? config.options ?? null : null}
+            >
+              <div className="cursor-auto pl-[2.875rem] pr-2.5 pb-2.5">
+                <DefaultField id={config.id} showPromptButton />
+              </div>
+            </FieldOptionsContext.Provider>
+          </FieldRestrictionsContext.Provider>
+        </TopLevelContext.Provider>
+      </ExtendPath>
+    </ExtendPath>
+  );
 }
 
-export type SerializedLayoutElementNode = Spread<
-  {
-    type: "layout-element";
-    value: LayoutElement;
-  },
-  SerializedLexicalNode
->;
+const type = "layout-element";
+type TokenType = NestedElement;
 
-export class LayoutElementNode extends DecoratorNode<React.ReactNode> {
-  __value: LayoutElement;
-
+export default class ChildNode extends TokenStreamNode<typeof type, TokenType> {
   static getType(): string {
-    return "layout-element";
+    return type;
   }
 
-  static clone(node: LayoutElementNode): LayoutElementNode {
-    return new LayoutElementNode(node.__value, node.__key);
+  static clone(node: ChildNode): ChildNode {
+    return new ChildNode(node.__token, node.__key);
   }
 
-  constructor(value: LayoutElement, key?: NodeKey) {
-    super(key);
-    this.__value = value;
+  constructor(token: TokenType, key?: NodeKey) {
+    super(type, token, key);
   }
 
-  createDOM(): HTMLElement {
-    const element = document.createElement("div");
-    element.setAttribute("data-lexical-layout-element", "true");
-    return element;
-  }
-
-  updateDOM(): false {
-    return false;
-  }
-
-  isInline(): false {
-    return false;
-  }
-
-  getTextContent(): string {
-    return `%`;
+  exportJSON(): SerializedTokenStreamNode<typeof type, TokenType> {
+    return super.exportJSON();
   }
 
   static importJSON(
-    serializedLayoutElementNode: SerializedLayoutElementNode
-  ): LayoutElementNode {
-    return $createLayoutElementNode(serializedLayoutElementNode.value);
-  }
-
-  exportJSON(): SerializedLayoutElementNode {
-    const self = this.getLatest();
-    return {
-      type: "layout-element",
-      value: self.__value,
-      version: 1,
-    };
-  }
-
-  exportDOM(): DOMExportOutput {
-    const element = document.createElement("div");
-    element.setAttribute("data-lexical-layout-element", "true");
-    element.textContent = `%`;
-    return { element };
-  }
-
-  static importDOM(): DOMConversionMap | null {
-    return {
-      span: (domNode: HTMLElement) => {
-        if (!domNode.hasAttribute("data-lexical-layout-element")) {
-          return null as any;
-        }
-        return {
-          conversion: convertImportElement,
-          priority: 1,
-        };
-      },
-    };
+    serializedNode: SerializedTokenStreamNode<typeof type, TokenType>
+  ) {
+    return new ChildNode(serializedNode.token);
   }
 
   decorate(): React.ReactNode {
-    return <LayoutElementDecorator value={this.__value} nodeKey={this.__key} />;
+    return <Decorator nodeKey={this.__key} value={this.__token} />;
   }
 }
 
-export function $createLayoutElementNode(
-  element: LayoutElement
-): LayoutElementNode {
-  return new LayoutElementNode(element);
+export function $createLayoutElementNode(value: TokenType): ChildNode {
+  return new ChildNode(value);
 }
 
-export function $isLayoutElementNode(
-  node: LexicalNode
-): node is LayoutElementNode {
-  return node instanceof LayoutElementNode;
+export function $isLayoutElementNode(node: LexicalNode): node is ChildNode {
+  return node instanceof ChildNode;
 }

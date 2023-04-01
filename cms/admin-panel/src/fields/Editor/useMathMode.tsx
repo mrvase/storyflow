@@ -1,10 +1,9 @@
 import * as React from "react";
 import { useEditorContext } from "../../editor/react/EditorProvider";
-import { ComputationOp } from "shared/operations";
-import { EditorComputation } from "@storyflow/backend/types";
+import { TokenStream } from "@storyflow/backend/types";
 import { useClientConfig } from "../../client-config";
 import { operators } from "@storyflow/backend/types";
-import { insertComputation } from "./insertComputation";
+import { replaceWithComputation } from "./insertComputation";
 
 export function useMathMode(defaultValue: boolean = false) {
   const editor = useEditorContext();
@@ -28,9 +27,9 @@ export function useMathMode(defaultValue: boolean = false) {
         }
         let [anchor] = $getIndexesFromSelection(selection);
  
-        const compute = $getComputation($getRoot());
+        const strean = $getComputation($getRoot());
  
-        return tools.slice(compute, 0, anchor);
+        return tools.slice(stream, 0, anchor);
       });
  
       const numberOpeners: number[] = [];
@@ -39,13 +38,13 @@ export function useMathMode(defaultValue: boolean = false) {
       const textClosers: number[] = [];
  
       computation.forEach((el, index) => {
-        if (tools.isSymbol(el, "(")) {
+        if (symb.isSymbol(el, "(")) {
           numberOpeners.push(index);
-        } else if (tools.isSymbol(el, ")")) {
+        } else if (symb.isSymbol(el, ")")) {
           numberClosers.push(index);
-        } else if (tools.isSymbol(el, "(")) {
+        } else if (symb.isSymbol(el, "(")) {
           textOpeners.push(index);
-        } else if (tools.isSymbol(el, ")")) {
+        } else if (symb.isSymbol(el, ")")) {
           textClosers.push(index);
         }
       });
@@ -62,9 +61,10 @@ export function useMathMode(defaultValue: boolean = false) {
           Math.max(0, ...numberOpeners) > Math.max(0, ...textOpeners);
       }
       */
-      const insert = (compute: EditorComputation) => {
+      const insert = (stream: TokenStream) => {
+        if (event.defaultPrevented) return;
         event.preventDefault();
-        insertComputation(editor, compute, libraries);
+        replaceWithComputation(editor, stream, libraries);
       };
 
       if (mathMode) {
@@ -84,7 +84,7 @@ export function useMathMode(defaultValue: boolean = false) {
           insert([{ "]": true }]);
         }
       } else {
-        if (!mathMode && event.key === "*") {
+        if (event.key === "*") {
           insert([`\\*`]);
         }
       }

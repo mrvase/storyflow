@@ -1,197 +1,277 @@
-import type { DocumentId, FieldId, TemplateFieldId } from "./types";
+import type {
+  DBId,
+  DocumentId,
+  FieldId,
+  FolderId,
+  NestedDocumentId,
+  RawDocumentId,
+  RawFieldId,
+  RawFolderId,
+} from "./types";
 
-export const createFieldId = (
-  documentId: DocumentId,
-  templateDocumentId?: DocumentId
+/*
+Types
+
+WorkspaceId: [string 1b]
+RawDocumentId: [WorkspaceId 1b][string 5b]
+DocumentId: [RawDocumentId 6b][RawDocumentId 6b]
+ShortTemplateId: [string 2b] (b5 and b6 in RawDocumentId)
+RawFieldId: [WorkspaceId 1b][ShortTemplateId 2b][string 3b]
+FieldId: [RawDocumentId 6b][RawFieldId 6b]
+
+*/
+
+const ROOT_PARENT_NUMBER = 0;
+export const ROOT_FOLDER_NUMBER = 1;
+export const TEMPLATE_FOLDER_NUMBER = 2;
+export const SYSTEM_TEMPLATE_OFFSET = 3;
+export const USER_TEMPLATE_OFFSET = 256;
+export const USER_DOCUMENT_OFFSET = 256 ** 2;
+
+const WORKSPACE_ID = "00"; // 1b
+const NULL_TEMPLATE_ID = "0000"; // 2b
+
+const ROOT_PARENT_RAW = `${WORKSPACE_ID}${toHex(ROOT_PARENT_NUMBER, "5b")}`;
+
+/*
+
+Dokumenter
+00 00 00 00 00 00 ubrugt (ingen forælder / ingen template)
+00 00 00 00 00 01 - 00 00 00 00 00 FF bruges af systemet
+-> 00 00 00 00 00 01 root folder
+-> 00 00 00 00 00 02 template folder
+00 00 00 00 01 00 - 00 00 00 00 FF FF bruges til templates
+00 00 00 01 00 00 - FF FF FF FF FF FF bruges til dokumenter
+*/
+
+function toHex(number: number, length: `${number}b`) {
+  const no = parseInt(length, 10);
+  if (no < 1 || no > 6) {
+    throw new Error("Invalid length");
+  } else if (number > 256 ** no) {
+    throw new Error(`Number too large: ${number}`);
+  }
+  return number.toString(16).padStart(no * 2, "0");
+}
+
+export const getRawDocumentId = (id: DocumentId | NestedDocumentId) => {
+  if (id.length !== 24) {
+    throw new Error(`Invalid document id: ${id}`);
+  }
+  return id.slice(12, 24) as RawDocumentId;
+};
+
+export const getRawFolderId = (id: FolderId) => {
+  if (id.length !== 24) {
+    throw new Error(`Invalid document id: ${id}`);
+  }
+  return id.slice(12, 24) as RawFolderId;
+};
+
+export function getRawFieldId(id: FieldId) {
+  if (id.length !== 24) {
+    throw new Error(`Invalid field id: ${id}`);
+  }
+  return id.slice(12, 24) as RawFieldId;
+}
+
+export function createDocumentId(number: number): DocumentId;
+export function createDocumentId(
+  number: number,
+  parent: DocumentId
+): NestedDocumentId;
+export function createDocumentId(
+  number: number,
+  parent?: DocumentId
+): DocumentId | NestedDocumentId {
+  const first = parent ? getRawDocumentId(parent) : ROOT_PARENT_RAW;
+  const last = `${WORKSPACE_ID}${toHex(number, "5b")}`;
+
+  return `${first}${last}` as DocumentId | NestedDocumentId;
+}
+
+export const getWorkspaceId = (id: DocumentId | NestedDocumentId) => {
+  return getRawDocumentId(id).slice(0, 2);
+};
+
+export const createFieldId = (number: number, documentId: DocumentId) => {
+  const hex = toHex(number, "3b");
+
+  return [
+    getRawDocumentId(documentId),
+    WORKSPACE_ID,
+    NULL_TEMPLATE_ID,
+    hex,
+  ].join("") as FieldId;
+};
+
+export const getFieldNumber = (id: FieldId | RawFieldId) => {
+  return parseInt(id.slice(-6), 16);
+};
+
+export const replaceDocumentId = (
+  id: FieldId,
+  newDocumentId: DocumentId | NestedDocumentId
 ) => {
-  return `${documentId}${templateDocumentId ?? documentId}${createId(
-    2
-  )}` as FieldId;
-};
-
-export const isDocumentId = (
-  id: DocumentId | TemplateFieldId | FieldId
-): id is DocumentId => {
-  return id.length === 4;
-};
-
-export const replaceDocumentId = (id: FieldId, newDocumentId: DocumentId) => {
-  return `${newDocumentId}${id.slice(4)}` as FieldId;
+  return `${getRawDocumentId(newDocumentId)}${getRawFieldId(id)}` as FieldId;
 };
 
 export const computeFieldId = (
-  documentId: DocumentId,
-  templateFieldId: TemplateFieldId
+  documentId: DocumentId | NestedDocumentId,
+  rawFieldId: RawFieldId
 ) => {
-  return `${documentId}${templateFieldId}` as FieldId;
+  if (rawFieldId.length !== 12) {
+    throw new Error(`Invalid raw field id: ${rawFieldId}`);
+  }
+  return `${getRawDocumentId(documentId)}${rawFieldId}` as FieldId;
 };
 
-export const getTemplateFieldId = (id: FieldId) => {
-  return id.slice(4) as TemplateFieldId;
+export const getDocumentId = (id: FieldId) => {
+  if (id.length !== 24) {
+    throw new Error(`Invalid field id: ${id}`);
+  }
+  return `${WORKSPACE_ID}${toHex(0, "5b")}${id.slice(0, 12)}` as
+    | DocumentId
+    | NestedDocumentId;
 };
 
-export const getDocumentId = (id: FieldId | TemplateFieldId) => {
-  return id.slice(0, 4) as DocumentId;
+export const computeShortTemplateId = (id: DocumentId) => {
+  return getRawDocumentId(id).slice(8, 12);
 };
 
-export const getTemplateDocumentId = (id: FieldId) => {
-  return id.slice(4, 8) as DocumentId;
+export const getTemplateDocumentId = (id: RawFieldId | FieldId) => {
+  if (![12, 24].includes(id.length)) {
+    throw new Error(`Invalid field id: ${id}`);
+  }
+
+  const shortId = id.length === 24 ? id.slice(14, 18) : id.slice(2, 6);
+
+  if (shortId === NULL_TEMPLATE_ID && id.length === 24) {
+    return getDocumentId(id as FieldId) as DocumentId;
+  }
+
+  return `${ROOT_PARENT_RAW}${shortId.padStart(12, "0")}` as DocumentId;
 };
 
 export const isTemplateField = (id: FieldId) => {
-  return getDocumentId(id) !== getTemplateDocumentId(id);
+  return getTemplateDocumentId(id) !== getDocumentId(id);
 };
 
-const chars16 = "0123456789abcdef";
-const chars64 =
-  "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
-// const chars64 ="-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".slice("");
-
-type CharMap = Record<string, string>;
-
-const getHexCharMaps = () => {
-  return Array.from<number>({ length: 4096 }).reduce(
-    (acc, _, index) => {
-      const hex = `${chars16[Math.floor(index / (16 * 16)) % 16]}${
-        chars16[Math.floor(index / 16) % 16]
-      }${chars16[index % 16]}`;
-      const char = `${chars64[Math.floor(index / 64) % 64]}${
-        chars64[index % 64]
-      }`;
-      acc[0][hex] = char;
-      acc[1][char] = hex;
-      return acc;
-    },
-    [{}, {}] as [CharMap, CharMap]
-  );
-};
-
-const getNumberHexMap = () => {
-  return Array.from<number>({ length: 256 }).reduce((acc, _, index) => {
-    const hex = `${chars16[Math.floor(index / 16) % 16]}${chars16[index % 16]}`;
-    acc[index] = hex;
-    return acc;
-  }, {} as CharMap);
-};
-
-const [hexToChar, charToHex] = getHexCharMaps();
-const numberToHex = getNumberHexMap();
-
-export const createIdFromNumber = (number: number) => {
-  // Vi skal bruge 0 <= number < 65536
-  // og dette svarer til "number % 65536"
-  number &= 0xffffff;
-  // "number >> 8" svarer til "Math.floor(number / 256)""
-  // "number & 0xff" svarer til "number % 255"
-  const a = (number >> 16) & 0xff;
-  const b = (number >> 8) & 0xff;
-  const c = number & 0xff;
-  const hex = `${numberToHex[a]}${numberToHex[b]}${numberToHex[c]}`;
-  return minimizeId(hex);
-};
-
-export const createId = (length = 2) => {
-  const createFourDigitId = () => {
-    const number = Math.floor(Math.random() * 16777215);
-    return createIdFromNumber(number);
-  };
-  return Array.from({ length }, () => createFourDigitId()).join("");
-};
-
-const split = (id: string, size = 3) => {
-  const length = Math.ceil(id.length / size);
-  return Array.from({ length }, (_, x) =>
-    id.substring(size * x, size * (x + 1))
-  );
-};
-
-const getConverter = (map: CharMap) => {
-  const size = Object.keys(map)[0].length;
-  return (id: string) =>
-    split(id, size)
-      .map((el) => map[el])
-      .join("");
-};
-
-export const minimizeId = getConverter(hexToChar);
-export const restoreId = getConverter(charToHex);
-
-const stringToId = (string: string) => {
-  // - case-insensitive
-  // - 0-9 are treated as a-j
-  // - $ and _ are both treated as z
-  // - # is treated on its own
-  // - rest of symbols are ignored
-
-  // we end up with 27 characters. That means 5 characters can be encoded in 3 bits.
-
-  const array = string
-    .toLowerCase()
-    .split("")
-    .filter((el) => el.match(/[0-9a-z$_#]/));
-
-  const groups = Math.ceil(array.length / 5);
-  const numbers = [0, 0];
-
-  // The maximum possible return value is 27 + 27*27 + 27*27^2 + 27*27^3 + 27*27^4=14900787.
-  // This is lower than what can be contained in the corresponding three bits: 257^3=16777216.
-  const radix = 27;
-
-  let nextOffset = 0;
-
-  for (let i = 0; i < groups; i++) {
-    let group = array.splice(0, 5);
-
-    if (group.length === 0) {
-      // nothing to be added
-      return;
-    }
-
-    let number = group
-      .map((el, index) => {
-        let int;
-        if (el === "_" || el === "$") {
-          int = 25; // overlaps with z
-        } else if (el === "#") {
-          int = 26;
-        } else {
-          int = parseInt(el, 36); // 0 - 25
-          int = int >= 10 ? int - 10 : int;
-        }
-        let base = radix ** index;
-        // Adds 1 to make sure 0/a are different from nothing.
-        // This adjusts the range to 1-27
-        return (int + 1) * base;
-      })
-      .reduce((a, c) => a + c);
-
-    // we produce the offset on the basis of the above
-    // calculation in isolation. We then add the former offset afterwards.
-    // This means that the group is only entangled with
-    // the previous one, creating entanglement across
-    // the two numbers.
-
-    const newOffset = (16777216 - number) % 1876429;
-    // ^^ takes what is missing up to the maximum bit value but
-    //    makes sure it is no higher than the difference between
-    //    the maximum bit value and the maximum possible return value.
-
-    number += nextOffset;
-    nextOffset = newOffset; // (256^3 - number) % (256^3 - (27 + 27*27 + 27*27^2 + 27*27^3 + 27*27^4))
-
-    // we do this so that the position of the group
-    // has significance as well.
-    // this ensures that aaaaabbbbbccccc !== cccccbbbbbaaaaa.
-    // Nothing happens to the first and second group.
-    // This ensures that character combinations below 10 chars
-    // are truly unique. After this, uniqueness is lost anyway.
-    number *= 1 + 1000 * Math.floor(i / 2);
-
-    numbers[Number(i % 2)] += number;
+export const createRawTemplateFieldId = (fieldId: FieldId) => {
+  if (isTemplateField(fieldId)) {
+    return getRawFieldId(fieldId);
   }
 
-  const toHex = (n: number) => (n & 0xffffff).toString(16).padStart(6, "0");
-  // svarer til % 16777216
+  const fieldDocumentId = getDocumentId(fieldId) as DocumentId;
+  const fieldWorkspaceId = getWorkspaceId(fieldDocumentId);
+  const shortTemplateId = computeShortTemplateId(fieldDocumentId);
+  const hex = fieldId.slice(18, 24);
 
-  return numbers.map(toHex).join("");
+  return [
+    fieldWorkspaceId, // 1b
+    shortTemplateId, // 2b
+    hex, // 3b
+  ].join("") as RawFieldId;
+};
+
+export const createTemplateFieldId = (
+  documentId: DocumentId | NestedDocumentId,
+  fieldId: FieldId
+) => {
+  if (isTemplateField(fieldId)) {
+    return replaceDocumentId(fieldId, documentId);
+  }
+
+  return computeFieldId(documentId, createRawTemplateFieldId(fieldId));
+};
+
+export function revertTemplateFieldId(fieldId: FieldId | RawFieldId) {
+  const documentId = getTemplateDocumentId(fieldId);
+  /*
+  const number = parseInt(documentId.slice(1), 16);
+  if (number < 256 && fieldId.length === 24) {
+    if (overwritingTemplate) {
+      return replaceDocumentId(fieldId as FieldId, overwritingTemplate);
+    }
+    return fieldId as FieldId;
+  }
+  */
+  return createFieldId(getFieldNumber(fieldId), documentId);
+}
+
+export const unwrapObjectId = <T>(id: DBId<T>): T => {
+  if (typeof id === "string") return id;
+  return id.toHexString() as T;
+};
+
+export const isNestedDocumentId = (
+  id: DocumentId | NestedDocumentId
+): id is NestedDocumentId => {
+  return id.slice(0, 12) !== ROOT_PARENT_RAW;
+};
+
+export const isFieldOfDocument = (
+  id: FieldId,
+  documentId: DocumentId | NestedDocumentId
+) => {
+  const fieldDocument = getDocumentId(id);
+  return getRawDocumentId(fieldDocument) === getRawDocumentId(documentId);
+};
+
+const radix = 27;
+
+export const getIdFromString = (string: string): RawFieldId => {
+  // The maximum possible return value is 27 + 27*27 + 27*27^2 + 27*27^3 + 27*27^4=14900787.
+  // This is lower than what can be contained in the corresponding three bits: 257^3=16777216.
+
+  string = string.toLowerCase();
+  const numbers: number[] = [];
+
+  const add = (number: number) => {
+    if (i % 5 === 0) {
+      numbers.unshift(number);
+    } else {
+      numbers[0] = numbers[0] * radix + number;
+    }
+    i++;
+  };
+
+  let i = 0;
+  let skip = 0;
+
+  while (i < string.length) {
+    let el = string[i + skip];
+    if (el === "_" || el === "$") {
+      add(25); // overlaps with z
+    } else if (el === "#") {
+      add(26);
+    } else {
+      let int = parseInt(el, 36); // 0 - 25
+      if (Number.isNaN(int)) {
+        skip++;
+        continue;
+      }
+      add((int >= 10 ? int - 10 : int) + 1);
+    }
+  }
+
+  numbers.reverse();
+
+  const result = numbers.splice(0, 2);
+  result[1] ??= 0;
+
+  numbers.forEach((el, i) => {
+    if (i % 2) {
+      result[0] += (16777216 - el) % 1876429;
+      result[1] += (el * (1 + 1000 * (i + 3))) & 0xffffff;
+    } else {
+      result[1] += (16777216 - el) % 1876429;
+      result[0] += (el * (1 + 1000 * (i + 3))) & 0xffffff;
+    }
+  });
+
+  return `${toHex(result[1] & 0xffffff, "3b")}${toHex(
+    result[0] & 0xffffff,
+    "3b"
+  )}` as RawFieldId;
 };

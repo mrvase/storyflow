@@ -2,7 +2,7 @@ import { error, isError, isSuccess, success, unwrap } from "@storyflow/result";
 import type { API } from "@sfrpc/types";
 import { APIToClient, QueryOptions, SharedOptions } from "./types";
 import { dedupedFetch } from "./dedupedFetch";
-import { getContext, queryKey } from "./utils";
+import { externalKey, getContext, queryKey } from "./utils";
 
 export const proxyErrorMessage = "client proxy not accessed correctly";
 
@@ -68,7 +68,13 @@ export const mutation = (route: string, input: any, context?: any) => {
 
 export function createClient<T extends API>(
   apiUrl: string = "/api",
-  ctx?: Record<string, any>
+  globalOptions: {
+    context?: Record<string, any>;
+    cache?: {
+      read: (key: string) => unknown;
+      write: (key: string, value: unknown) => void;
+    };
+  } = {}
 ) {
   return new Proxy({} as APIToClient<T>, {
     get(_, route) {
@@ -80,29 +86,85 @@ export function createClient<T extends API>(
             if (typeof procedure !== "string")
               throw new Error(proxyErrorMessage);
             return {
-              query: async (input: any, options?: QueryOptions<any>) => {
+              key(
+                input: any,
+                options?: Pick<QueryOptions<any, any, any>, "context">
+              ) {
+                return queryKey(
+                  `${apiUrl}/${route}/${procedure}`,
+                  input,
+                  getContext(options?.context, globalOptions.context)
+                );
+              },
+              async query(input: any, options?: QueryOptions<any, any, any>) {
+                const ctx = getContext(options?.context, globalOptions.context);
+
                 const key = queryKey(
                   `${apiUrl}/${route}/${procedure}`,
                   input,
-                  getContext(options?.context, ctx)
+                  ctx
                 );
-                if (options?.useCache) {
-                  const cached = options.useCache.read(key);
+
+                const cache = options?.cache ?? globalOptions?.cache;
+
+                if (cache) {
+                  const cached = cache.read(key);
                   if (typeof cached !== "undefined") {
                     return success(cached);
                   }
                 }
-                const result = await query(key);
-                if (options?.useCache && !isError(result)) {
-                  options.useCache.write(key, unwrap(result));
+
+                let fetcher = query;
+
+                if (options?.cachePreload && cache) {
+                  fetcher = (key) => {
+                    const result = query(key).then((result) => {
+                      if (isSuccess(result)) {
+                        const preloadFunc = (
+                          [externalProcedure, input]: [string, any],
+                          data: any
+                        ) => {
+                          const key = externalKey(
+                            {
+                              apiUrl,
+                              route,
+                              externalProcedure,
+                            },
+                            input,
+                            ctx
+                          );
+
+                          let cached = cache.read(key);
+                          if (!cached) {
+                            cache.write(key, data);
+                          }
+                        };
+
+                        options.cachePreload?.(unwrap(result), preloadFunc);
+                      }
+
+                      return result;
+                    });
+
+                    return Object.assign(result, {
+                      abort: (query as unknown as { abort: () => void }).abort,
+                    });
+                  };
                 }
+
+                const result = await fetcher(key);
+
+                if (cache && !isError(result)) {
+                  cache.write(key, unwrap(result));
+                }
+
                 return result;
               },
-              mutation: (input: any, options?: SharedOptions) => {
+              mutation(input: any, options?: SharedOptions) {
                 return mutation(
                   `${apiUrl}/${route}/${procedure}`,
                   input,
-                  getContext(options?.context, ctx)
+                  getContext(options?.context, globalOptions.context)
                 );
               },
             };

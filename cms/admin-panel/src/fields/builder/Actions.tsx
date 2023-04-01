@@ -8,9 +8,10 @@ import {
 import { ComputationOp, targetTools } from "shared//operations";
 import { createComponent } from "../Editor/createComponent";
 import { getInfoFromType, useClientConfig } from "../../client-config";
-import { useDocumentCollab } from "../../documents/collab/DocumentCollabContext";
-import { getDocumentId, getTemplateFieldId } from "@storyflow/backend/ids";
-import { FieldId } from "@storyflow/backend/types";
+import { useDocumentMutate } from "../../documents/collab/DocumentCollabContext";
+import { getDocumentId, getRawFieldId } from "@storyflow/backend/ids";
+import { DocumentId, FieldId } from "@storyflow/backend/types";
+import { useDocumentIdGenerator } from "../../id-generator";
 
 export default function Actions({
   id,
@@ -23,10 +24,13 @@ export default function Actions({
   type: string | undefined;
   parentPath?: string;
 }) {
-  const { push } = useDocumentCollab().mutate<ComputationOp>(
+  const { push } = useDocumentMutate<ComputationOp>(
     getDocumentId(id),
-    getTemplateFieldId(id)
+    getRawFieldId(id)
   );
+
+  const documentId = getDocumentId(id) as DocumentId;
+  const generateDocumentId = useDocumentIdGenerator();
 
   const { libraries } = useClientConfig();
 
@@ -51,7 +55,12 @@ export default function Actions({
             ops: [
               {
                 index,
-                insert: [createComponent(name, { library, libraries })],
+                insert: [
+                  createComponent(generateDocumentId(documentId), name, {
+                    library,
+                    libraries,
+                  }),
+                ],
               },
             ],
           });
@@ -77,7 +86,12 @@ export default function Actions({
             ops: [
               {
                 index: index + 1,
-                insert: [createComponent(name, { library, libraries })],
+                insert: [
+                  createComponent(generateDocumentId(documentId), name, {
+                    library,
+                    libraries,
+                  }),
+                ],
               },
             ],
           });

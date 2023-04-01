@@ -193,6 +193,15 @@ export default function useIsFocused({
         return;
       }
 
+      let noSelect = false;
+      document.elementsFromPoint(ev.clientX, ev.clientY)?.forEach((element) => {
+        if (element.getAttribute("data-focus-ignore")) {
+          noSelect = true;
+        }
+      });
+
+      if (noSelect) return;
+
       setTimeout(() => {
         setIsFocused(true, multiple && ev.shiftKey);
       });

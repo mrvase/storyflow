@@ -7,7 +7,6 @@
  */
 import {
   createEditor,
-  EditorState,
   EditorThemeClasses,
   Klass,
   LexicalEditor,
@@ -85,7 +84,7 @@ export function EditorProvider({
     editor.setEditable(isEditable !== undefined ? isEditable : true);
   }, []);
 
-  const isFocused = useIsFocused(editor);
+  const isFocused = useIsFocused();
 
   return (
     <EditorContext.Provider value={editor}>

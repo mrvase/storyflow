@@ -5,20 +5,12 @@ import {
   PlusIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
-import {
-  getDocumentId,
-  getTemplateFieldId,
-  minimizeId,
-  replaceDocumentId,
-  restoreId,
-} from "@storyflow/backend/ids";
-import { CREATION_DATE_ID } from "@storyflow/backend/templates";
-import { DocumentId } from "@storyflow/backend/types";
+import { computeFieldId, createTemplateFieldId } from "@storyflow/backend/ids";
+import { DocumentId, FolderId, SpaceId } from "@storyflow/backend/types";
 import React from "react";
-import { tools } from "shared/editor-tools";
 import {
   fetchArticle,
-  useArticleList,
+  useOptimisticDocumentList,
   useArticleListMutation,
 } from "../../documents";
 import { getDocumentLabel } from "../../documents/useDocumentLabel";
@@ -30,30 +22,31 @@ import Table from "../../documents/components/Table";
 import { useClient } from "../../client";
 import { addDocumentImport } from "../../custom-events";
 import { useFieldFocus } from "../../field-focus";
-import { useArticleIdGenerator } from "../../id-generator";
 import { useSegment } from "../../layout/components/SegmentContext";
 import { useTabUrl } from "../../layout/utils";
 import { useCurrentFolder } from "../FolderPageContext";
 import Space from "./Space";
 import Loader from "../../elements/Loader";
 import { useDeleteForm } from "./useDeleteForm";
+import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
+import { useDocumentIdGenerator } from "../../id-generator";
+import { calculateFromRecord } from "@storyflow/backend/calculate";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
 
 export function DocumentListSpace({
   spaceId,
   folderId,
   hidden,
   index,
-  rows: rowsFromProps,
 }: {
-  spaceId: string;
-  folderId: string;
+  spaceId: SpaceId;
+  folderId: FolderId;
   hidden: boolean;
   index: number;
-  rows?: any;
 }) {
   const { form, handleDelete } = useDeleteForm({ folderId });
 
-  const { articles } = useArticleList(folderId);
+  const { articles } = useOptimisticDocumentList(folderId);
 
   if (!articles) {
     return (
@@ -66,10 +59,14 @@ export function DocumentListSpace({
   }
 
   const rows = articles.map((el) => ({
-    id: restoreId(el.id),
+    id: el._id,
     columns: [
       {
-        value: <LinkableLabel id={el.id}>{getDocumentLabel(el)}</LinkableLabel>,
+        value: (
+          <LinkableLabel id={el._id}>
+            {getDocumentLabel(el) || "[Ingen titel]"}
+          </LinkableLabel>
+        ),
       },
     ],
   }));
@@ -117,7 +114,7 @@ function LinkableLabel({
         if (!focused) return;
         ev.preventDefault();
         addDocumentImport.dispatch({
-          documentId: minimizeId(id) as DocumentId,
+          documentId: id as DocumentId,
           templateId: folder?.template,
         });
       }}
@@ -140,7 +137,7 @@ function ImportButton() {
 function ExportButton() {
   const folder = useCurrentFolder();
 
-  const { articles } = useArticleList(folder?.id);
+  const { articles } = useOptimisticDocumentList(folder?._id);
 
   const client = useClient();
 
@@ -152,8 +149,8 @@ function ExportButton() {
     const ids = fields.map((el) => el.id);
     const header = fields.map((el) => el.label);
     const rows = articles.map((el) =>
-      ids.map(
-        (id) => JSON.stringify(el.values[getTemplateFieldId(id)]?.[0]) ?? ""
+      ids.map((id) =>
+        JSON.stringify(calculateFromRecord(id, el.record)?.[0] ?? "")
       )
     );
     let csvContent =
@@ -174,49 +171,41 @@ function ExportButton() {
   return <Space.Button icon={ArrowDownTrayIcon} onClick={handleExport} />;
 }
 
-function AddArticleButton({ folder }: { folder: string }) {
+function AddArticleButton({ folder }: { folder: FolderId }) {
   const template = useCurrentFolder()?.template;
 
   const mutateArticles = useArticleListMutation();
-  const generateId = useArticleIdGenerator();
+  const generateDocumentId = useDocumentIdGenerator();
   const [, navigateTab] = useTabUrl();
   const { current } = useSegment();
   const client = useClient();
 
   const addArticle = async () => {
     try {
-      const id = await generateId();
-      const defaultValues = template
-        ? await getDefaultValuesFromTemplateAsync(template, client)
-        : null;
-      const compute = (defaultValues?.compute ?? []).map((block) => ({
-        id: replaceDocumentId(block.id, id),
-        value: block.value.map((el) =>
-          tools.isFieldImport(el)
-            ? {
-                ...el,
-                fref:
-                  getDocumentId(block.id) === getDocumentId(el.fref)
-                    ? replaceDocumentId(el.fref, id)
-                    : el.fref,
-              }
-            : el
-        ),
-      }));
+      const id = generateDocumentId();
+      const record = template
+        ? await getDefaultValuesFromTemplateAsync(id, template, {
+            client,
+            generateDocumentId,
+          })
+        : {};
+
+      record[createTemplateFieldId(id, DEFAULT_FIELDS.creation_date.id)] = {
+        ...DEFAULT_SYNTAX_TREE,
+        children: [new Date()],
+      };
+
       mutateArticles({
         folder,
         actions: [
           {
             type: "insert",
             id,
-            values: Object.assign(defaultValues?.values ?? {}, {
-              [CREATION_DATE_ID]: [new Date()],
-            }),
-            compute,
+            record,
           },
         ],
       });
-      navigateTab(`${current}/d-${restoreId(id)}`, { navigate: true });
+      navigateTab(`${current}/d-${id}`, { navigate: true });
     } catch (err) {
       console.log(err);
     }

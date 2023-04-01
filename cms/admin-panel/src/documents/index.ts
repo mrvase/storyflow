@@ -1,33 +1,36 @@
 import { unwrap } from "@storyflow/result";
 import { createQueue } from "@storyflow/state";
 import React from "react";
-import { Client, SWRClient, useCache } from "../client";
+import { Client, SWRClient, cache } from "../client";
 import {
-  ComputationBlock,
+  SyntaxTreeRecord,
   DBDocument,
   DocumentId,
-  TemplateDocument,
-  FlatComputation,
-  ValueRecord,
+  FolderId,
+  SortSpec,
+  RawFieldId,
+  ValueArray,
 } from "@storyflow/backend/types";
 import { pushAndRetry } from "../utils/retryOnError";
-import { TEMPLATES } from "@storyflow/backend/templates";
+import { DEFAULT_FIELDS, DEFAULT_TEMPLATES } from "@storyflow/backend/fields";
+import { TEMPLATE_FOLDER } from "@storyflow/backend/constants";
+import { getTemplateDocumentId } from "@storyflow/backend/ids";
 
 type ArticleListMutation =
   | {
       type: "insert";
-      id: string;
+      id: DocumentId;
       label?: string;
-      values: ValueRecord;
-      compute: { id: string; value: FlatComputation }[];
+      record: SyntaxTreeRecord;
+      // values: ValueRecord;
     }
   | {
       type: "remove";
-      id: string;
+      id: DocumentId;
     };
 
 type ArticleListOperation = {
-  folder: string;
+  folder: FolderId;
   actions: ArticleListMutation[];
 };
 
@@ -36,16 +39,15 @@ const queue = createQueue<ArticleListOperation>("documents", {
 }).initialize(0, []);
 
 const getArticleFromInsert = (
-  folder: string,
+  folder: FolderId,
   action: ArticleListMutation
 ): DBDocument | undefined => {
   if (action.type !== "insert") return;
   return {
-    id: action.id as DocumentId,
+    _id: action.id as DocumentId,
     folder,
-    versions: {},
-    values: action.values,
-    compute: action.compute as ComputationBlock[],
+    versions: { config: 0 },
+    record: action.record,
     config: [],
     ...(action.label && { label: action.label }),
   };
@@ -53,11 +55,11 @@ const getArticleFromInsert = (
 
 const optimisticUpdate = (
   articles: DBDocument[],
-  folder: string,
+  folder: FolderId,
   actions: ArticleListMutation[]
 ): DBDocument[] => {
   let inserts: DBDocument[] = [];
-  let removes: string[] = [];
+  let removes: DocumentId[] = [];
 
   actions.forEach((action) => {
     if (action.type === "insert") {
@@ -67,16 +69,63 @@ const optimisticUpdate = (
     }
   });
 
-  return [...articles, ...inserts].filter((el) => !removes.includes(el.id));
+  return [...articles, ...inserts].filter((el) => !removes.includes(el._id));
 };
 
-export function useArticleList(folderId: string | undefined) {
-  const { data, error } = SWRClient.articles.getList.useQuery(
-    folderId as string,
+export async function fetchDocumentList(
+  params: {
+    folder: FolderId;
+    limit: number;
+    sort?: SortSpec;
+    filters?: Record<RawFieldId, ValueArray>;
+  },
+  client: Client
+) {
+  console.log("FETCHING LIST", params);
+
+  const result = unwrap(
+    await client.documents.getList.query(params, {
+      cachePreload: (result, preload) => {
+        result.articles.forEach((doc) => {
+          preload(["get", doc._id], () => {
+            return {
+              doc,
+              histories: result.historiesRecord[doc._id],
+            };
+          });
+        });
+      },
+    })
+  );
+  console.log("FETCHING LIST RESULT", result);
+
+  return result;
+}
+
+export function useDocumentList(folderId: FolderId | undefined) {
+  const { data, error } = SWRClient.documents.getList.useQuery(
+    { folder: folderId!, limit: 50 },
     {
       inactive: !folderId,
+      immutable: true,
+      cachePreload: (result, preload) => {
+        result.articles.forEach((doc) => {
+          preload(["get", doc._id], () => {
+            return {
+              doc,
+              histories: result.historiesRecord[doc._id],
+            };
+          });
+        });
+      },
     }
   );
+
+  return { data, error };
+}
+
+export function useOptimisticDocumentList(folderId: FolderId | undefined) {
+  const { data, error } = useDocumentList(folderId);
 
   const [operations, setOperations] = React.useState<ArticleListOperation[]>(
     []
@@ -126,40 +175,89 @@ export async function fetchArticle(
   id: string,
   client: Client
 ): Promise<DBDocument | undefined> {
-  const result = await client.articles.get.query(id, {
-    useCache,
-  });
-  return unwrap(result)?.article;
-  /*
-  const key = SWRKey(`http://localhost:3001/api/articles/get`, id);
-  let exists = SWRCache.get(key);
-  if (!exists || exists.isLoading === true) {
-    const result = await client.articles.get.query(id);
-    if (isError(result)) {
-      return;
-    }
-    const data = unwrap(result);
-    exists = SWRCache.get(key);
-    if (!exists) {
-      SWRCache.set(key, {
-        data,
-        isValidating: false,
-        isLoading: false,
-        error: undefined,
-      });
-    } else {
-      // cache might not be set yet, if swr has set isLoading = true
-      return data.article;
-    }
+  const defaultTemplate = TEMPLATES.find((el) => el._id === id);
+  if (defaultTemplate) {
+    return defaultTemplate;
   }
-  return SWRCache.get(key).data.article as Article;
-  */
+
+  const result = await client.documents.get.query(id);
+  return unwrap(result)?.doc;
 }
 
+export function fetchArticleSync(
+  id: string,
+  client: Client
+): PromiseLike<DBDocument | undefined> {
+  const defaultTemplate = TEMPLATES.find((el) => el._id === id) as any;
+
+  if (defaultTemplate) {
+    return {
+      then(callback) {
+        return callback ? callback(defaultTemplate) : defaultTemplate;
+      },
+    };
+  }
+
+  const key = client.documents.get.key(id);
+  const exists = cache.read(key);
+  if (typeof exists !== "undefined") {
+    return {
+      then(callback) {
+        return callback ? callback(exists.doc) : exists.doc;
+      },
+    };
+  }
+  const result = client.documents.get.query(id).then((res) => unwrap(res)?.doc);
+  return result;
+}
+
+const TEMPLATES = [
+  ...Object.values(DEFAULT_FIELDS).map((el) => {
+    const id = getTemplateDocumentId(el.id);
+
+    const template: DBDocument = {
+      _id: id,
+      folder: TEMPLATE_FOLDER,
+      config: [el],
+      record: {},
+      label: el.label,
+    };
+
+    return template;
+  }),
+  ...Object.values(DEFAULT_TEMPLATES).map((el) => {
+    const id = el.id;
+
+    const template: DBDocument = {
+      _id: id,
+      folder: TEMPLATE_FOLDER,
+      config: el.config,
+      record: {},
+      label: el.label,
+    };
+
+    return template;
+  }),
+];
+
 export function useArticle(
-  articleId: string | undefined,
+  articleId: DocumentId | undefined,
   options: { inactive?: boolean } = {}
 ) {
+  const defaultTemplate = TEMPLATES.find((el) => el._id === articleId);
+
+  if (defaultTemplate) {
+    return React.useMemo(
+      () => ({
+        article: defaultTemplate as DBDocument,
+        histories: {},
+        mutate: () => {},
+        error: undefined,
+      }),
+      []
+    );
+  }
+
   const [initialArticle, setInitialArticle] = React.useState(() => {
     const operations: ArticleListOperation[] = [];
     queue.forEach(({ operation }) => {
@@ -168,10 +266,10 @@ export function useArticle(
     return getArticleFromOperations(articleId, operations);
   });
 
-  const { data, error, mutate } = SWRClient.articles.get.useQuery(
+  const { data, error, mutate } = SWRClient.documents.get.useQuery(
     articleId as string,
     {
-      inactive: options.inactive || !articleId,
+      inactive: options.inactive || !articleId, // maybe: || Boolean(initialArticle),
     }
   );
 
@@ -183,8 +281,8 @@ export function useArticle(
 
   const article = React.useMemo(() => {
     if (!articleId) return undefined;
-    if (data?.article) {
-      return data.article;
+    if (data?.doc) {
+      return data.doc;
     }
     return initialArticle;
   }, [articleId, data, initialArticle]);
@@ -197,33 +295,20 @@ export function useArticle(
   };
 }
 
-export function useArticleTemplate(
-  id: string | undefined,
-  options: { inactive?: boolean } = {}
-): TemplateDocument | undefined {
-  const defaultTemplate = TEMPLATES.find((el) => el.id === id);
-  if (defaultTemplate) {
-    return defaultTemplate;
-  }
-  const { article } = useArticle(id, options);
-
-  return article;
-}
-
 export const useArticleListMutation = () => {
-  const mutate = SWRClient.articles.listOperation.useMutation({
+  const mutate = SWRClient.documents.sync.useMutation({
     cacheUpdate: (input, mutate) => {
-      const groups = input.reduce(
-        (acc: Record<string, ArticleListMutation[]>, cur) => {
-          return {
-            [cur.folder]: [...(acc[cur.folder] ?? []), ...cur.actions],
-          };
-        },
-        {}
-      );
+      const groups = input.reduce((acc, cur) => {
+        return {
+          [cur.folder as FolderId]: [
+            ...(acc[cur.folder as FolderId] ?? []),
+            ...(cur.actions as ArticleListMutation[]),
+          ],
+        };
+      }, {} as Record<FolderId, ArticleListMutation[]>);
 
       Object.entries(groups).map(([folder, actions]) => {
-        mutate(["getList", folder], (ps, result) => {
+        mutate(["getList", { folder, limit: 50 }], (ps, result) => {
           if (result === undefined) {
             // we handle optimistic updates separately
             // so that we do not update the cache
@@ -231,9 +316,14 @@ export const useArticleListMutation = () => {
             return ps;
           }
 
-          const articles = optimisticUpdate(ps.articles, folder, actions);
+          const articles = optimisticUpdate(
+            ps.articles,
+            folder as FolderId,
+            actions
+          );
 
           return {
+            ...ps,
             articles,
           };
         });
@@ -246,27 +336,29 @@ export const useArticleListMutation = () => {
   };
 };
 
-export const useSaveArticle = (folder: string) => {
-  return SWRClient.articles.save.useMutation({
+export const useSaveArticle = (folder: FolderId) => {
+  return SWRClient.fields.save.useMutation({
     cacheUpdate: ({ id }, mutate) => {
-      mutate(["getList", folder], (ps, result) => {
+      mutate(["documents/getList", { folder, limit: 50 }], (ps, result) => {
         if (!result) {
           return ps;
         }
-        const index = ps.articles.findIndex((el) => el.id === id);
+        const index = ps.articles.findIndex((el) => el._id === id);
         const newArticles = [...ps.articles];
         newArticles[index] = { ...newArticles[index], ...result };
         return {
+          ...ps,
           articles: newArticles,
         };
       });
-      mutate(["get", id], (ps, result) => {
+      mutate(["documents/get", id], (ps, result) => {
         if (!result) {
           return ps;
         }
+        console.log("RESULT", id, result);
         return {
           ...ps,
-          article: result,
+          doc: result,
           histories: {},
         };
       });

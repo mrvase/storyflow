@@ -83,6 +83,7 @@ export function createDocumentCollaboration(
     return {
       push(op) {
         const queue = queues.get<Operation>(document, key)!;
+        console.log("PUSHED TO QUEUE", op, queue);
         let changed = false;
         if (queue.mergeableNoop) {
           // make sure to always have mergeableNoop at the end with normal push

@@ -72,7 +72,6 @@ export const createDragHandleProps = <Element extends HTMLElement>({
         },
         onDragEnd: (ev: DragEvent) => {
           ev.stopPropagation();
-          console.log("DRAG END", ev);
           events.stopDragging();
         },
       } as Record<string, any>);

@@ -3,58 +3,52 @@ import { useSortableItem } from "@storyflow/dnd";
 import {
   ChevronRightIcon,
   ChevronUpDownIcon,
+  ComputerDesktopIcon,
+  LinkIcon,
   LockClosedIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import React from "react";
 import { useFieldFocus } from "../field-focus";
-import { BuilderPortal } from "./builder/BuilderPortal";
 import { addImport } from "../custom-events";
-import { FieldPage } from "./FieldPage";
 import { useSegment } from "../layout/components/SegmentContext";
 import { useTabUrl } from "../layout/utils";
-import { PropertyOp, targetTools } from "shared/operations";
-import { getDocumentId, restoreId } from "@storyflow/backend/ids";
 import { useLabel } from "../documents/collab/hooks";
 import {
-  Computation,
-  DocumentId,
   FieldConfig,
   FieldId,
+  NestedDocumentId,
 } from "@storyflow/backend/types";
 import { getTranslateDragEffect } from "../utils/dragEffects";
 import useIsFocused from "../utils/useIsFocused";
-import { Path } from "@storyflow/frontend/types";
+import { useIsFocused as useIsEditorFocused } from "../editor/react/useIsFocused";
 import { getDefaultField } from "@storyflow/backend/fields";
-import { IframeProvider } from "./builder/BuilderIframe";
-import { useFieldId } from "./FieldIdContext";
-import { useDocumentCollab } from "../documents/collab/DocumentCollabContext";
-import { BuilderPathProvider, useBuilderPath } from "./BuilderPath";
-import { useDocumentPageContext } from "../documents/DocumentPageContext";
-import { useLocalStorage } from "../state/useLocalStorage";
 import useTabs from "../layout/useTabs";
 import { getConfigFromType, useClientConfig } from "../client-config";
+import { isTemplateField } from "@storyflow/backend/ids";
+import { FieldToolbarPortal } from "../documents/FieldToolbar";
+import { EditorFocusProvider } from "../editor/react/useIsFocused";
+import { Attributes, AttributesProvider } from "./Attributes";
+import { SelectedPathProvider, useNestedEntity, useSelectedPath } from "./Path";
+import { useFolder } from "../folders/collab/hooks";
 
 type Props = {
   fieldConfig: FieldConfig;
   index: number;
   children: React.ReactNode;
-  initialValue: Computation;
-  template: DocumentId;
   dragHandleProps?: any;
 };
 
 export function FieldContainer({
   children,
-  initialValue,
   index,
   fieldConfig,
-  template,
   dragHandleProps: dragHandlePropsFromProps,
 }: Props) {
+  const id = fieldConfig.id;
+
   let props: any = {};
   let dragHandleProps: any;
-
-  let isFocused = false;
 
   if (!dragHandlePropsFromProps) {
     const {
@@ -62,216 +56,259 @@ export function FieldContainer({
       ref,
       state,
     } = useSortableItem({
-      id: fieldConfig.id,
+      id,
       index: index,
       item: fieldConfig,
     });
 
     const style = getTranslateDragEffect(state);
 
-    const { isFocused: isFocused_, handlers } = useIsFocused({
-      multiple: true,
-      id: fieldConfig.id,
-    });
-
-    isFocused = isFocused_;
-
     const dragProps = {
       ref,
       style,
     };
 
-    Object.assign(props, dragProps, handlers);
+    Object.assign(props, dragProps);
 
     dragHandleProps = dragHandlePropsFromHook;
   } else {
     dragHandleProps = dragHandlePropsFromProps;
   }
 
+  const { isFocused, handlers } = useIsFocused({
+    multiple: true,
+    id,
+  });
+
   return (
-    <IframeProvider>
-      <BuilderPathProvider>
-        <div
-          {...props}
-          className={cl(
-            "relative grow shrink basis-0 group/container",
-            isFocused && "focused"
-          )}
-        >
-          <LabelBar
-            fieldConfig={fieldConfig}
-            template={template}
-            dragHandleProps={dragHandleProps}
-            isFocused={isFocused}
-          />
-          {children}
-        </div>
-        <BuilderPortal id={fieldConfig.id}>
-          {(isOpen) => (
-            <FieldPage
-              selected={isOpen}
-              id={fieldConfig.id}
-              initialValue={initialValue}
-            >
-              <div className={cl("pt-5 -mt-2.5 relative grow shrink basis-0")}>
-                {/*<div
-                className={cl(
-                  "-z-10 absolute inset-2.5 top-0 rounded-lg pointer-events-none",
-                  "bg-gray-850"
-                  // "ring-1 ring-inset ring-gray-750"
-                )}
-                />*/}
-                {children}
-              </div>
-            </FieldPage>
-          )}
-        </BuilderPortal>
-      </BuilderPathProvider>
-    </IframeProvider>
+    <EditorFocusProvider>
+      <AttributesProvider>
+        <SelectedPathProvider id={id}>
+          <FieldToolbarPortal show={isFocused} />
+          <div
+            {...props}
+            {...handlers}
+            className={cl(
+              "relative grow shrink basis-0 group/container px-2.5 mt-5",
+              isFocused && "focused"
+            )}
+          >
+            <FocusContainer isFocused={isFocused}>
+              <LabelBar
+                id={id}
+                dragHandleProps={dragHandleProps}
+                isFocused={isFocused}
+              />
+              <div className="pl-9">{children}</div>
+            </FocusContainer>
+          </div>
+        </SelectedPathProvider>
+      </AttributesProvider>
+    </EditorFocusProvider>
+  );
+}
+
+function FocusContainer({
+  children,
+  isFocused: isFieldFocused,
+}: {
+  children: React.ReactNode;
+  isFocused: boolean;
+}) {
+  const isEditorFocused = useIsEditorFocused();
+
+  let ring = "";
+
+  if (isEditorFocused) {
+    ring = "ring-1 bg-gray-50 dark:ring-yellow-200/50 dark:bg-gray-800";
+  } else if (isFieldFocused) {
+    ring = "ring-1 ring-yellow-200/25";
+  } else {
+    ring = "ring-1 ring-transparent group-hover/container:ring-gray-800";
+  }
+
+  return (
+    <div
+      className={cl(
+        ring,
+        "relative p-2.5 rounded-md ring-1",
+        "transition-[background-color,box-shadow]"
+      )}
+    >
+      {children}
+    </div>
   );
 }
 
 function LabelBar({
-  fieldConfig,
+  id,
   dragHandleProps,
-  template,
   isFocused,
 }: {
-  fieldConfig: FieldConfig;
+  id: FieldId;
   dragHandleProps: any;
-  template: DocumentId;
   isFocused: boolean;
 }) {
-  const [path, setPath] = useBuilderPath();
-
-  const articleId = useDocumentPageContext().id;
-  const isNative = template === articleId;
+  const [{ selectedDocument }, setPath] = useSelectedPath();
 
   const [isEditing] = [true]; //useLocalStorage<boolean>("editing-articles", false);
 
   const [, navigateTab] = useTabUrl();
   const { current, full } = useSegment();
-  const isOpen = full.endsWith(`/c-${restoreId(fieldConfig.id)}`);
-  const [, specialFieldConfig] = getDefaultField(fieldConfig.id);
+  const isOpen = full.endsWith(`/c-${id}`);
+  const specialFieldConfig = getDefaultField(id);
 
   const fullscreen = () => {
-    navigateTab(
-      isOpen ? `${current}` : `${current}/c-${restoreId(fieldConfig.id)}`
-    );
+    navigateTab(isOpen ? `${current}` : `${current}/c-${id}`);
   };
 
   return (
-    <div
-      className={cl(
-        "flex px-5 pt-5",
-        path.length === 0 ? "h-12 pb-2" : "h-[3.75rem] pb-5"
-      )}
-      onDoubleClick={fullscreen}
-    >
-      <Dot
-        id={fieldConfig.id}
-        isNative={isNative}
-        dragHandleProps={isEditing ? dragHandleProps : {}}
-      />
-      <div className={cl("ml-5 flex")}>
-        {path.length === 0 ? (
-          <Label
-            id={fieldConfig.id}
-            isNative={isNative}
-            template={template}
-            // isEditable={isNative && isEditing}
-          />
-        ) : (
-          <PathMap path={path} setPath={setPath} />
+    <div className={cl("flex", "h-8 pb-3")} onDoubleClick={fullscreen}>
+      <Dot id={id} dragHandleProps={isEditing ? dragHandleProps : {}} />
+      <div
+        className={cl(
+          "ml-5 mr-auto flex items-center gap-2 text-sm font-normal select-none whitespace-nowrap"
         )}
+      >
+        <Label id={id} />
+        <PathMap />
+        <Attributes />
       </div>
       {specialFieldConfig && (
-        <div className="ml-3 backdrop:mr-8 text-xs my-0.5 font-light bg-yellow-300 text-yellow-800/90 dark:bg-yellow-400/10 dark:text-yellow-200/75 px-1.5 rounded">
+        <div
+          className={cl(
+            "flex-center text-xs h-6 -my-0.5 font-light bg-yellow-300 text-yellow-800/90 dark:bg-yellow-400/10 dark:text-yellow-200/75 px-1.5 rounded whitespace-nowrap",
+            isFocused
+              ? "opacity-100"
+              : "opacity-0 group-hover/container:opacity-50",
+            "transition-opacity"
+          )}
+        >
           {specialFieldConfig.label}
         </div>
       )}
       <button
         className={cl(
-          "ml-auto shrink-0 text-sm font-light flex-center -m-0.5 p-0.5 w-5 h-5 bg-gray-750 rounded-full",
+          "ml-2 shrink-0 text-xs font-light flex-center gap-2 px-2 h-6 -my-0.5 bg-white/10 rounded",
           isFocused
-            ? "opacity-75"
-            : "opacity-0 group-hover/container:opacity-50",
-          // "opacity-0 group-hover/container:opacity-50",
+            ? "opacity-50"
+            : "opacity-0 group-hover/container:opacity-20",
           "group-hover/container:hover:opacity-100 transition-opacity"
         )}
         onClick={fullscreen}
       >
-        <ChevronUpDownIcon className="w-4 h-4 rotate-45" />
+        <ComputerDesktopIcon className="w-3 h-3" /> Se preview
       </button>
+      {selectedDocument && (
+        <button
+          className="-my-1 ml-1 -mr-1 w-7 h-7 flex-center"
+          onClick={() => {
+            setPath([]);
+          }}
+        >
+          <XMarkIcon className="w-4 h-4" />
+        </button>
+      )}
     </div>
   );
 }
 
-export function PathMap({
-  path,
-  setPath,
-}: {
-  path: Path;
-  setPath: (value: Path) => void;
-}) {
-  const { libraries } = useClientConfig();
+export function PathMap() {
+  const [{ selectedPath }] = useSelectedPath();
+
+  const selectedElements = selectedPath.reduce((a, c, i) => {
+    if (i % 2 === 0) {
+      a.push([c, undefined] as unknown as [FieldId, NestedDocumentId]);
+    } else {
+      a[a.length - 1][1] = c as NestedDocumentId;
+    }
+    return a;
+  }, [] as [FieldId, NestedDocumentId][]);
+
   return (
-    <div className="text-sm font-light text-white/50 flex items-center gap-2 flex-wrap">
-      <button
-        type="button"
-        onClick={() => setPath([])}
-        className="hover:underline"
-      >
-        <LabelText />
-      </button>
-      {path.map((el, index) => (
-        <React.Fragment key={el.id}>
+    <>
+      {selectedElements.map(([fieldId, documentId]) => (
+        <React.Fragment key={documentId}>
           <div className="opacity-75">
             <ChevronRightIcon className="w-3 h-3" />
           </div>
-          <button
-            type="button"
-            onClick={() => setPath(path.slice(0, index + 1))}
-            className="hover:underline text-yellow-400 flexitems-center"
-          >
-            {el && "label" in el
-              ? el.label
-              : getConfigFromType(el.type, libraries)?.label}
-          </button>
+          <ElementLabel fieldId={fieldId} documentId={documentId} />
         </React.Fragment>
       ))}
-    </div>
+    </>
   );
 }
 
-function Dot({
-  id,
-  isNative,
-  dragHandleProps,
-}: {
-  id: FieldId;
-  isNative: boolean;
-  dragHandleProps: any;
+function ElementLabel(props: {
+  fieldId: FieldId;
+  documentId: NestedDocumentId;
 }) {
-  const [focused] = useFieldFocus();
-  const isLink = focused && focused !== id;
+  const [, setPath] = useSelectedPath();
+  const entity = useNestedEntity(props);
 
-  const isEditable = isNative;
+  const { libraries } = useClientConfig();
+
+  if (!entity) {
+    return null;
+  }
+
+  if ("folder" in entity) {
+    const folder = useFolder(entity.folder);
+
+    return (
+      <button
+        type="button"
+        onClick={() =>
+          setPath((ps) => {
+            const index = ps.findIndex((el) => el === props.documentId);
+            if (index < 0) {
+              return ps;
+            }
+            return ps.slice(0, index + 1);
+          })
+        }
+        className="hover:underline text-yellow-400 flexitems-center"
+      >
+        {folder.label ?? "no"}
+      </button>
+    );
+  }
+
+  if ("element" in entity) {
+    const config = getConfigFromType(entity.element, libraries);
+
+    return (
+      <button
+        type="button"
+        onClick={() =>
+          setPath((ps) => {
+            const index = ps.findIndex((el) => el === props.documentId);
+            if (index < 0) {
+              return ps;
+            }
+            return ps.slice(0, index + 1);
+          })
+        }
+        className="hover:underline text-yellow-400 flexitems-center"
+      >
+        {config?.label ?? "no"}
+      </button>
+    );
+  }
+
+  return null;
+}
+
+function Dot({ id, dragHandleProps }: { id: FieldId; dragHandleProps: any }) {
+  const isNative = !isTemplateField(id);
+
   const isDraggable = "draggable" in dragHandleProps;
 
   const [, navigateTab] = useTabUrl();
   const { current, full } = useSegment();
-  const isOpen = full.endsWith(`/c-${restoreId(id)}`);
+  const isOpen = full.endsWith(`/c-${id}`);
 
-  /*
-  const Icon = isOpen
-    ? ArrowsPointingInIcon
-    : isEditable && isDraggable
-    ? ChevronUpDownIcon
-    : ArrowsPointingOutIcon;
-  */
-
-  const Icon = isEditable ? ChevronUpDownIcon : LockClosedIcon;
+  const Icon = isNative ? ChevronUpDownIcon : LockClosedIcon;
 
   const { tabs } = useTabs();
 
@@ -281,7 +318,7 @@ function Dot({
         onDrop={() => {
           const index = Math.max(...tabs.map((el) => el.index)) + 1;
           const currentUrl = current.split("/").slice(2).join("/");
-          const tab = isOpen ? currentUrl : `${currentUrl}/c-${restoreId(id)}`;
+          const tab = isOpen ? currentUrl : `${currentUrl}/c-${id}`;
           navigateTab(`/~${index}/${tab}`);
         }}
       >
@@ -291,43 +328,20 @@ function Dot({
             "group w-6 h-6 p-1 -m-1 translate-y-0.5",
             isDraggable && "cursor-grab"
           )}
-          /*
-          onClick={() => {
-            navigateTab(
-              isOpen ? `${current}` : `${current}/c-${restoreId(id)}`
-            );
-          }}
-          */
         >
           <div
             className={cl(
               "flex-center w-4 h-4 rounded-full group-hover:scale-[1.5] transition-transform",
-              !isEditable
+              !isNative
                 ? "bg-gray-200 dark:bg-teal-600/50 dark:group-hover:bg-teal-800/50"
                 : "bg-gray-200 dark:bg-gray-600/50"
-              /*
-              isOpen
-                ? "bg-gray-200 dark:bg-gray-600/50 dark:group-hover:bg-red-800/50"
-                : !isEditable
-                ? "bg-gray-200 dark:bg-teal-600/50 dark:group-hover:bg-teal-800/50"
-                : isDraggable
-                ? "bg-gray-200 dark:bg-gray-600/50"
-                : "bg-gray-200 dark:bg-gray-600/50 dark:group-hover:bg-sky-800/50"
-              */
             )}
           >
             <div
               className={cl(
                 "flex-center w-2 h-2 m-1 rounded-full group-hover:scale-[2] transition-[transform,background-color]",
-                !isEditable && "dark:group-hover:bg-teal-800",
+                !isNative && "dark:group-hover:bg-teal-800",
                 "dark:bg-white/20"
-                /*
-                isOpen
-                  ? "dark:bg-white/20 dark:group-hover:bg-red-800"
-                  : isDraggable && isEditable
-                  ? "dark:bg-white/20"
-                  : "dark:bg-white/20 dark:group-hover:bg-sky-800"
-                */
               )}
             >
               <Icon className="w-[0.3rem] h-1.5 opacity-0 group-hover:opacity-75 transition-opacity" />
@@ -335,88 +349,27 @@ function Dot({
           </div>
         </div>
       </Draggable>
-      {/*
-      <button
-        tabIndex={-1}
-        className={cl(
-          isLink
-            ? "opacity-25 hover:opacity-100"
-            : "opacity-0 pointer-events-none",
-          "absolute z-10 top-11 w-6 h-6 p-1 -mx-1 transition-opacity duration-75"
-        )}
-        onMouseDown={(ev) => {
-          if (isLink) {
-            ev.preventDefault();
-            ev.stopPropagation();
-            addImport.dispatch({ id, imports: [] });
-          }
-        }}
-      >
-        <LinkIcon className="w-4 h-4" />
-      </button>
-      */}
     </>
   );
 }
 
-function LabelText() {
-  const id = useFieldId();
-  const label = useLabel(id);
-  return (
-    <span className="text-sm text-gray-400 font-normal">{label || "Top"}</span>
-  );
-}
+function Label({ id }: { id: FieldId }) {
+  const [{ selectedPath }, setPath] = useSelectedPath();
+  const isNative = !isTemplateField(id);
 
-function Label({
-  id,
-  isNative,
-  template,
-}: {
-  id: FieldId;
-  isNative?: boolean;
-  template: DocumentId;
-}) {
   const [focused] = useFieldFocus();
   const isLink = focused && focused !== id;
+  const label = useLabel(id);
 
-  const label = useLabel(id, template);
-
-  const articleId = getDocumentId(id);
-
-  const { push } = useDocumentCollab().mutate<PropertyOp>(articleId, articleId);
-
-  const onChange = (value: string) => {
-    push({
-      target: targetTools.stringify({
-        field: "any",
-        operation: "property",
-        location: id,
-      }),
-      ops: [
-        {
-          name: "label",
-          value: value,
-        },
-      ],
-    });
-  };
-
-  /*
-  isEditable ? (
-    <EditableLabel
-      value={label}
-      onChange={onChange}
-      className="text-sm text-gray-400 placeholder:text-gray-300 dark:placeholder:text-gray-500 font-normal"
-    />
-  ) : 
-  */
+  console.log("LABEL", label);
 
   return (
-    <span
+    <div
       className={cl(
-        "text-sm font-normal select-none",
+        "flex items-center gap-1",
         isNative ? "text-gray-400" : "text-teal-600/90 dark:text-teal-400/90",
-        isLink ? "cursor-alias" : "cursor-default"
+        isLink ? "cursor-alias" : "cursor-default",
+        selectedPath.length && "hover:underline"
       )}
       onMouseDown={(ev) => {
         if (isLink) {
@@ -425,9 +378,15 @@ function Label({
           addImport.dispatch({ id, imports: [] });
         }
       }}
+      onClick={() => {
+        if (!isLink && selectedPath.length) {
+          setPath([]);
+        }
+      }}
     >
       {label || "Ingen label"}
-    </span>
+      {isLink && <LinkIcon className="w-3 h-3 opacity-50" />}
+    </div>
   );
 }
 
