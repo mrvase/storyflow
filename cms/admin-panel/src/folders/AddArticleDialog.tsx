@@ -4,7 +4,7 @@ import { useArticleListMutation } from "../documents";
 import { getDefaultValuesFromTemplateAsync } from "../documents/template-fields";
 import { useTabUrl } from "../layout/utils";
 import { useSegment } from "../layout/components/SegmentContext";
-import { computeFieldId, createTemplateFieldId } from "@storyflow/backend/ids";
+import { createTemplateFieldId } from "@storyflow/backend/ids";
 import {
   DocumentId,
   FieldId,
@@ -86,7 +86,7 @@ export function AddArticleDialog({
                       slug,
                     ],
                   },
-                  getConfig("url").transform
+                  getConfig("url").transform!
                 );
 
               record[createTemplateFieldId(id, DEFAULT_FIELDS.label.id)] = {

@@ -188,7 +188,7 @@ export function fetchArticleSync(
   id: string,
   client: Client
 ): PromiseLike<DBDocument | undefined> {
-  const defaultTemplate = TEMPLATES.find((el) => el._id === id);
+  const defaultTemplate = TEMPLATES.find((el) => el._id === id) as any;
 
   if (defaultTemplate) {
     return {
