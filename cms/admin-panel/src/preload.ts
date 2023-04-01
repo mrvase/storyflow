@@ -4,16 +4,7 @@ import useSWR from "swr";
 import { TEMPLATE_FOLDER } from "@storyflow/backend/constants";
 import { useOptimisticDocumentList } from "./documents";
 
-let preloaded = false;
-
-const API_URL =
-  process.env.NODE_ENV === "production" ? `/api` : `http://localhost:3000/api`;
-
 export function Preload() {
-  const client = useClient();
-
-  const ctx = useQueryContext();
-
   useSWR(
     "COLORS",
     () =>
@@ -38,6 +29,9 @@ export function Preload() {
   useOptimisticDocumentList(TEMPLATE_FOLDER);
 
   /*
+  const client = useClient();
+  const ctx = useQueryContext();
+  
   React.useLayoutEffect(() => {
     const cache = provider();
     if (!preloaded) {

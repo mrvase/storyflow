@@ -8,7 +8,6 @@ import { cors as corsFactory } from "../middleware/cors";
 import { createSessionStorage } from "@storyflow/session";
 import { cookieOptions } from "../cookie-options";
 import { error, success } from "@storyflow/result";
-import { globals } from "../middleware/globals";
 import {
   calculate,
   calculateFromRecord,
@@ -32,7 +31,6 @@ import { ObjectId } from "mongodb";
 import { parseDocument } from "../routes/documents";
 import { getFieldRecord, getGraph } from "shared/computation-tools";
 import {
-  computeFieldId,
   createRawTemplateFieldId,
   createTemplateFieldId,
   getDocumentId,
@@ -69,6 +67,8 @@ const authorization = async (ctx: MiddlewareContext) => {
       .db("cms")
       .collection("organizations")
       .findOne({ slug });
+
+    console.log("**** GETTING ORGANIZATION");
 
     if (!organization) {
       throw error({ message: "Not authorized.", status: 401 });
@@ -145,7 +145,7 @@ const createElementRecordGetter = (
             .db(dbName)
             .collection<DBDocumentRaw>("documents")
             .find({ folder: new ObjectId(el.folder.folder), ...filters })
-            .sort({ _id: -1 })
+            .sort({ _id: 1 })
             .limit(el.limit)
             .toArray();
 
@@ -506,39 +506,6 @@ export const public_ = createRoute({
       */
 
       return success([...ordinaryUrls.map((el) => el.url), ...staticUrls]);
-    },
-  }),
-  generateKey: createProcedure({
-    middleware(ctx) {
-      return ctx.use(globals);
-    },
-    schema() {
-      return z.string();
-    },
-    async mutation(domainId, { slug }) {
-      const client = await clientPromise;
-
-      const randomKey = `${Math.random()
-        .toString(16)
-        .substring(2, 14)}${Math.random().toString(16).substring(2, 14)}`;
-
-      const hash = await bcrypt.hash(randomKey, 10);
-
-      await client
-        .db("cms")
-        .collection("organizations")
-        .updateOne(
-          {
-            slug,
-          },
-          {
-            $set: {
-              [`keys.${domainId}`]: hash,
-            },
-          }
-        );
-
-      return success(`${domainId}@${slug}:${randomKey}`);
     },
   }),
 });

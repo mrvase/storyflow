@@ -94,7 +94,7 @@ export function SettingsDialog({ close }: { close: () => void }) {
                 <button
                   onClick={async () => {
                     const keyResponse =
-                      await client.public.generateKey.mutation(id);
+                      await client.settings.generateKey.mutation(id);
                     if (isSuccess(keyResponse)) {
                       setKeys((ps) => ({ ...ps, [id]: unwrap(keyResponse) }));
                     }

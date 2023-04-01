@@ -12,6 +12,59 @@ importers:
       prettier: 2.8.7
       turbo: 1.8.8
 
+  apps/public-api:
+    specifiers:
+      '@babel/core': ^7.0.0
+      '@sfrpc/client': workspace:*
+      '@sfrpc/server': workspace:*
+      '@sfrpc/types': workspace:*
+      '@storyflow/auth': workspace:*
+      '@storyflow/react': workspace:*
+      '@storyflow/result': workspace:*
+      '@storyflow/server': workspace:*
+      '@storyflow/session': workspace:*
+      '@types/node': ^17.0.45
+      '@types/qs': ^6.9.7
+      '@types/react': ^18.0.22
+      '@types/react-dom': ^18.0.7
+      api: workspace:*
+      eslint: 7.32.0
+      eslint-config-custom: workspace:*
+      mongodb: ^4.13.0
+      next: ^13.1.1
+      react: 18.2.0
+      react-dom: 18.2.0
+      server-only: ^0.0.1
+      tsconfig: workspace:*
+      typescript: ^4.9.4
+      zod: ^3.20.2
+    dependencies:
+      '@sfrpc/client': link:../../rpc/client
+      '@sfrpc/server': link:../../rpc/server
+      '@storyflow/auth': link:../../utils/auth
+      '@storyflow/react': link:../../packages/react
+      '@storyflow/result': link:../../utils/result
+      '@storyflow/server': link:../../packages/server
+      '@storyflow/session': link:../../utils/session
+      api: link:../../cms/api
+      mongodb: 4.13.0
+      next: 13.1.4_pjwopsidmaokadturxaafygjp4
+      react: 18.2.0
+      react-dom: 18.2.0_react@18.2.0
+      server-only: 0.0.1
+      zod: 3.20.2
+    devDependencies:
+      '@babel/core': 7.20.12
+      '@sfrpc/types': link:../../rpc/types
+      '@types/node': 17.0.45
+      '@types/qs': 6.9.7
+      '@types/react': 18.0.27
+      '@types/react-dom': 18.0.10
+      eslint: 7.32.0
+      eslint-config-custom: link:../../setup/eslint-config-custom
+      tsconfig: link:../../setup/tsconfig
+      typescript: 4.9.4
+
   apps/web:
     specifiers:
       '@babel/core': ^7.0.0

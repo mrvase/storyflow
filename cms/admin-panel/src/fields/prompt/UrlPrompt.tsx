@@ -70,6 +70,8 @@ export function UrlPrompt({
 
   const { articles: list } = useOptimisticDocumentList(app);
 
+  console.log("LIST LIST", app, list);
+
   const onAppEnter = React.useCallback((id: FolderId) => {
     setApp(id);
   }, []);
@@ -118,7 +120,7 @@ export function UrlPrompt({
   }
 
   return (
-    <>
+    <div className="p-2.5">
       {options.map(
         ({ id, label, secondaryText, Icon, onEnter, onEnterLabel }, index) => (
           <Option
@@ -132,6 +134,6 @@ export function UrlPrompt({
           </Option>
         )
       )}
-    </>
+    </div>
   );
 }

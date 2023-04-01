@@ -258,7 +258,7 @@ function PushOnBlurPlugin({
         COMMAND_PRIORITY_EDITOR
       )
     );
-  }, []);
+  }, [editor]);
 
   return null;
 }

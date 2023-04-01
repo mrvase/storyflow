@@ -111,6 +111,8 @@ export function Overlay({ children }: { children?: React.ReactNode }) {
 
         const DOMNode: HTMLElement | null = editor.getElementByKey(node.__key);
 
+        console.log("DOM NODE", DOMNode, rootY, rootX);
+
         if (!DOMNode) {
           reset();
           return;
@@ -189,7 +191,7 @@ export function Overlay({ children }: { children?: React.ReactNode }) {
   return (
     <div
       className={cl(
-        "absolute w-full left-10 z-10 bg-gray-800 gradient-border rounded shadow-lg shadow-black/20 font-light text-sm max-w-2xl",
+        "absolute w-full top-0 -left-1.5 z-10 bg-gray-800 gradient-border rounded shadow-lg shadow-black/20 font-light text-sm max-w-2xl",
         "flex flex-col divide-y divide-white/5",
         position !== null
           ? "opacity-100 transition-opacity duration-300"

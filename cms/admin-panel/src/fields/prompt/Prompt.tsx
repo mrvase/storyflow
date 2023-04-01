@@ -35,9 +35,9 @@ import { $replaceWithBlocks } from "../Editor/insertComputation";
 import { $getBlocksFromComputation } from "../Editor/transforms";
 import { ElementPrompt } from "./ElementPrompt";
 import { FilePrompt } from "./FilePrompt";
-import { Option } from "./Option";
 import { Options, useOptionActions } from "./OptionsContext";
 import { UrlPrompt } from "./UrlPrompt";
+import { ParagraphStylePrompt } from "./ParagraphStylePrompt";
 
 const panes = [
   {
@@ -377,20 +377,7 @@ export function Prompt({
                   </div>
                 </div>
               </div>
-              <div className="p-2.5">
-                <div className="font-normal opacity-50 mb-1 ml-1">
-                  Formater afsnit
-                </div>
-                <Option value={null} onEnter={() => {}}>
-                  Overskrift 1
-                </Option>
-                <Option value={null} onEnter={() => {}}>
-                  Overskrift 2
-                </Option>
-                <Option value={null} onEnter={() => {}}>
-                  Overskrift 3
-                </Option>
-              </div>
+              <ParagraphStylePrompt />
               {children}
             </>
           )}

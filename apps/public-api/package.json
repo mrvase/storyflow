@@ -1,0 +1,40 @@
+{
+  "name": "public-api",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "next dev --port 4000",
+    "build": "next build",
+    "build:vite": "rm -rf public/dashboard && vite build && mv public/index.html public/dashboard/index.html",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@sfrpc/client": "workspace:*",
+    "@sfrpc/server": "workspace:*",
+    "@storyflow/auth": "workspace:*",
+    "@storyflow/react": "workspace:*",
+    "@storyflow/result": "workspace:*",
+    "@storyflow/server": "workspace:*",
+    "@storyflow/session": "workspace:*",
+    "api": "workspace:*",
+    "mongodb": "^4.13.0",
+    "next": "^13.1.1",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "server-only": "^0.0.1",
+    "zod": "^3.20.2"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.0.0",
+    "@sfrpc/types": "workspace:*",
+    "@types/node": "^17.0.45",
+    "@types/qs": "^6.9.7",
+    "@types/react": "^18.0.22",
+    "@types/react-dom": "^18.0.7",
+    "eslint": "7.32.0",
+    "eslint-config-custom": "workspace:*",
+    "tsconfig": "workspace:*",
+    "typescript": "^4.9.4"
+  }
+}

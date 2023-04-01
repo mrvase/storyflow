@@ -25,6 +25,12 @@ import { TokenStream } from "@storyflow/backend/types";
 import { LibraryConfig } from "@storyflow/frontend/types";
 import { spliceTextWithNodes } from "./spliceTextWithNodes";
 import { $isPromptNode } from "../decorators/PromptNode";
+import { $isHeadingNode, HeadingNode } from "../../editor/react/HeadingNode";
+
+const $isTextBlockNode = (
+  node: LexicalNode | null | undefined
+): node is ParagraphNode | HeadingNode =>
+  $isParagraphNode(node) || $isHeadingNode(node);
 
 const $isMergeableTextNode = (node: LexicalNode | null | undefined) =>
   $isTextNode(node) && !$isPromptNode(node);
@@ -46,8 +52,8 @@ export function $replaceWithBlocks(
         .reduce((a, c) => a.insertBefore(c), node);
 
     const merge = (
-      left: ParagraphNode,
-      right: ParagraphNode,
+      left: ParagraphNode | HeadingNode,
+      right: ParagraphNode | HeadingNode,
       options: { keep?: "left" | "right"; cursor?: "middle" | "right" } = {}
     ) => {
       const leftChild = left.getLastChild()!;
@@ -477,7 +483,7 @@ export function $replaceWithBlocks(
         node: newBlocks[newBlocks.length - 1],
       };
 
-      if ($isParagraphNode(leftBlock) && $isParagraphNode(newBlocks[0])) {
+      if ($isTextBlockNode(leftBlock) && $isTextBlockNode(newBlocks[0])) {
         select = merge(leftBlock, newBlocks[0], { cursor: "right" });
         newBlocks.shift();
 
@@ -494,14 +500,14 @@ export function $replaceWithBlocks(
         });
       }
 
-      if ($isParagraphNode(rightBlock)) {
+      if ($isTextBlockNode(rightBlock)) {
         let lastNewParagraph: ParagraphNode | null = null;
         let lastNew = newBlocks[newBlocks.length - 1]; // possibly undefined
 
-        if ($isParagraphNode(lastNew)) {
+        if ($isTextBlockNode(lastNew)) {
           lastNewParagraph = lastNew;
           newBlocks.pop();
-        } else if (lastNew === undefined && $isParagraphNode(leftBlock)) {
+        } else if (lastNew === undefined && $isTextBlockNode(leftBlock)) {
           lastNewParagraph = leftBlock;
         }
 
@@ -546,7 +552,7 @@ export function $replaceWithBlocks(
         const parent = select.node.getParent();
         if ($isTextNode(next)) {
           next.select(0, 0);
-        } else if ($isParagraphNode(parent)) {
+        } else if ($isTextBlockNode(parent)) {
           const index = (
             select.node as DecoratorNode<any>
           ).getIndexWithinParent();
