@@ -11,7 +11,7 @@ import { ContentEditable } from "../../editor/react/ContentEditable";
 import Editor from "../Editor/Editor";
 import { getPreview } from "./getPreview";
 import { Placeholder } from "./Placeholder";
-import { Plus } from "./MagicButton";
+import { PromptButton } from "./PromptButton";
 import { TemplateHeader } from "./TemplateHeader";
 import { tools } from "shared/editor-tools";
 import { useDefaultState } from "./useDefaultState";
@@ -50,10 +50,10 @@ const isAdjacent = (
 
 export function DefaultField({
   id,
-  button,
+  showPromptButton,
 }: {
   id: FieldId;
-  button?: boolean;
+  showPromptButton?: boolean;
 }) {
   const rootId = useFieldId();
   const [config] = useFieldConfig(rootId);
@@ -191,7 +191,7 @@ export function DefaultField({
               {preview || "[Tom]"}
             </div>
           )}
-          {button && <Plus />}
+          {showPromptButton && <PromptButton />}
           <PushOnBlurPlugin push={push} />
           <OverlayWrapper />
         </div>

@@ -41,7 +41,7 @@ export function DefaultFieldRoot({ id, version, history }: FieldProps) {
     <>
       <PreloadFieldState id={id} />
       <ExtendPath id={currentId} type="field">
-        <DefaultField key={currentId} id={currentId} button />
+        <DefaultField key={currentId} id={currentId} showPromptButton />
       </ExtendPath>
     </>
   );

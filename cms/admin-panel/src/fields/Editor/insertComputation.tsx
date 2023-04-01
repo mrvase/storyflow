@@ -15,15 +15,9 @@ import {
   ParagraphNode,
   TextNode,
 } from "lexical";
-import {
-  $getBlocksFromComputation,
-  $getIndexFromPoint,
-  $getStartAndEnd,
-  getNodesFromComputation,
-} from "./transforms";
+import { $getBlocksFromComputation, $getStartAndEnd } from "./transforms";
 import { TokenStream } from "@storyflow/backend/types";
 import { LibraryConfig } from "@storyflow/frontend/types";
-import { spliceTextWithNodes } from "./spliceTextWithNodes";
 import { $isPromptNode } from "../decorators/PromptNode";
 import { $isHeadingNode, HeadingNode } from "../../editor/react/HeadingNode";
 
@@ -583,6 +577,7 @@ export function replaceWithComputation(
   });
 }
 
+/*
 export async function insertComputation(
   editor: LexicalEditor,
   insert: TokenStream,
@@ -666,9 +661,5 @@ export async function insertComputation(
       }
     });
   });
-  /*
-  if (action !== false) {
-    push(action);
-  }
-  */
 }
+*/

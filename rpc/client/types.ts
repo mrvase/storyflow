@@ -48,7 +48,7 @@ export type QueryOptions<
     read: (key: string) => unknown | undefined;
     write: (key: string, data: unknown) => void;
   };
-  cachePreload: CachePreload<UserAPI, DefaultRoute, APIObject>;
+  cachePreload?: CachePreload<UserAPI, DefaultRoute, APIObject>;
 };
 
 type ProcedureCall<

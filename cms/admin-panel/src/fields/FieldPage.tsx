@@ -14,12 +14,10 @@ import {
   SyntaxTreeRecord,
   SyntaxTree,
   ValueArray,
-  NestedDocumentId,
 } from "@storyflow/backend/types";
 import { extendPath } from "@storyflow/backend/extendPath";
 import Content from "../layout/components/Content";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-import { useLocalStorage } from "../state/useLocalStorage";
 import { useClientConfig } from "../client-config";
 import { createComponent } from "./Editor/createComponent";
 import { useDocumentMutate } from "../documents/collab/DocumentCollabContext";
@@ -34,7 +32,6 @@ import {
 import { ChevronLeftIcon } from "@heroicons/react/24/outline";
 import { useSegment } from "../layout/components/SegmentContext";
 import { getPathFromSegment, useTabUrl } from "../layout/utils";
-import { PathMap } from "./FieldContainer";
 import { ComponentConfig, LibraryConfig } from "@storyflow/frontend/types";
 import { useDocumentIdGenerator } from "../id-generator";
 import { tokens } from "@storyflow/backend/tokens";

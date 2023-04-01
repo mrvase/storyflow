@@ -56,18 +56,3 @@ export function SystemTemplatePage() {
     </FolderContext.Provider>
   );
 }
-
-function DragButton({ folder }: { folder: DBFolder }) {
-  const { ref, dragHandleProps } = useDragItem({
-    id: `new-folder-${folder._id}`,
-    type: "folders",
-    item: folder,
-    mode: "move",
-  });
-
-  return (
-    <div ref={ref} {...dragHandleProps} className="cursor-grab">
-      <DragIcon className="w-4 h-4" />
-    </div>
-  );
-}

@@ -5,7 +5,6 @@ import {
 } from "../../editor/react/EditorProvider";
 import useLayoutEffect from "../../editor/react/useLayoutEffect";
 import { registerPlainText } from "../../editor/registerPlainText";
-import { $getSelection, $isRootNode } from "lexical";
 import { mergeRegister } from "../../editor/utils/mergeRegister";
 import {
   addContext,
@@ -15,17 +14,12 @@ import {
   addNestedDocument,
   addNestedFolder,
 } from "../../custom-events";
-import {
-  $getLastBlock,
-  getNodesFromComputation,
-  isInlineElement,
-} from "./transforms";
 import { DocumentId, TokenStream } from "@storyflow/backend/types";
 import { useClientConfig } from "../../client-config";
 import { useFieldConfig } from "../../documents/collab/hooks";
 import { useFieldId } from "../FieldIdContext";
 import { createComponent } from "./createComponent";
-import { insertComputation, replaceWithComputation } from "./insertComputation";
+import { replaceWithComputation } from "./insertComputation";
 import { useDocumentIdGenerator } from "../../id-generator";
 import { getDocumentId } from "@storyflow/backend/ids";
 

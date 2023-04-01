@@ -6,18 +6,11 @@ import {
   $getRoot,
   $getSelection,
   $isNodeSelection,
-  $isParagraphNode,
   $isRangeSelection,
   $isTextNode,
   LexicalNode,
 } from "lexical";
 import { useIsFocused as useEditorIsFocused } from "../../editor/react/useIsFocused";
-import {
-  $createHeadingNode,
-  $isHeadingNode,
-} from "../../editor/react/HeadingNode";
-import { useFieldConfig } from "../../documents/collab/hooks";
-import { useFieldId } from "../FieldIdContext";
 import {
   $getComputation,
   $getIndexesFromSelection,
@@ -26,7 +19,7 @@ import { tools } from "shared/editor-tools";
 import { $createPromptNode } from "../decorators/PromptNode";
 import { $replaceWithBlocks } from "../Editor/insertComputation";
 
-export function Plus() {
+export function PromptButton() {
   const editor = useEditorContext();
 
   const isFocused = useEditorIsFocused();

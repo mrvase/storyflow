@@ -168,7 +168,7 @@ function PrimaryProp({
               value={"options" in config ? config.options ?? null : null}
             >
               <div className="cursor-auto pl-[2.875rem] pr-2.5 pb-2.5">
-                <DefaultField id={config.id} button />
+                <DefaultField id={config.id} showPromptButton />
               </div>
             </FieldOptionsContext.Provider>
           </FieldRestrictionsContext.Provider>

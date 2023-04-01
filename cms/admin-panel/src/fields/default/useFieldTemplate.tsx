@@ -5,8 +5,11 @@ import { useFieldConfig } from "../../documents/collab/hooks";
 import { useClient } from "../../client";
 import { useArticle } from "../../documents";
 
+// TODO - make sure all templates are fetched and then make this sync!
+
 export const useTemplate = (templateId: DocumentId | undefined) => {
   const { article } = useArticle(templateId);
+
   const [template, setTemplate] = React.useState<FieldConfig[]>();
 
   const client = useClient();

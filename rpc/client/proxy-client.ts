@@ -140,7 +140,7 @@ export function createClient<T extends API>(
                           }
                         };
 
-                        options.cachePreload(unwrap(result), preloadFunc);
+                        options.cachePreload?.(unwrap(result), preloadFunc);
                       }
 
                       return result;
