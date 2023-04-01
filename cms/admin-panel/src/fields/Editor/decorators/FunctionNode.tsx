@@ -1,18 +1,9 @@
 import React from "react";
-import {
-  DecoratorNode,
-  DOMConversionMap,
-  DOMConversionOutput,
-  DOMExportOutput,
-  LexicalNode,
-  NodeKey,
-  SerializedLexicalNode,
-  Spread,
-} from "lexical";
+import { LexicalNode, NodeKey } from "lexical";
 import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
 import { caretClasses } from "./caret";
-import { FunctionName, TokenStream } from "@storyflow/backend/types";
+import { FunctionName } from "@storyflow/backend/types";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 
 function Decorator({

@@ -45,7 +45,7 @@ import { tools } from "shared/editor-tools";
 import {
   $isTokenStreamNode,
   TokenStreamNode,
-} from "../decorators/TokenStreamNode";
+} from "./decorators/TokenStreamNode";
 
 const EVENT_LATENCY = 50;
 let clipboardEventTimeout: null | number = null;

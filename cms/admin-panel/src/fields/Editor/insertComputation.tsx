@@ -18,7 +18,7 @@ import {
 import { $getBlocksFromComputation, $getStartAndEnd } from "./transforms";
 import { TokenStream } from "@storyflow/backend/types";
 import { LibraryConfig } from "@storyflow/frontend/types";
-import { $isPromptNode } from "../decorators/PromptNode";
+import { $isPromptNode } from "./decorators/PromptNode";
 import { $isHeadingNode, HeadingNode } from "../../editor/react/HeadingNode";
 
 const $isTextBlockNode = (

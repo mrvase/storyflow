@@ -29,7 +29,7 @@ import {
 import React from "react";
 import { useClientConfig } from "../../client-config";
 import { useEditorContext } from "../../editor/react/EditorProvider";
-import PromptNode, { $isPromptNode } from "../decorators/PromptNode";
+import PromptNode, { $isPromptNode } from "../Editor/decorators/PromptNode";
 import { useFieldOptions, useFieldRestriction } from "../FieldIdContext";
 import { $replaceWithBlocks } from "../Editor/insertComputation";
 import { $getBlocksFromComputation } from "../Editor/transforms";

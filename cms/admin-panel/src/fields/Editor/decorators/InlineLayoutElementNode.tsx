@@ -4,11 +4,11 @@ import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
 import { caretClasses } from "./caret";
 import { NestedElement, ValueArray } from "@storyflow/backend/types";
-import { getConfigFromType, useClientConfig } from "../../client-config";
-import { useGlobalState } from "../../state/state";
+import { getConfigFromType, useClientConfig } from "../../../client-config";
+import { useGlobalState } from "../../../state/state";
 import { computeFieldId, getIdFromString } from "@storyflow/backend/ids";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
-import { usePath, useSelectedPath } from "../Path";
+import { usePath, useSelectedPath } from "../../Path";
 
 function Decorator({
   value,

@@ -1,41 +1,18 @@
 import cl from "clsx";
-import { SwatchIcon } from "@heroicons/react/24/outline";
-import { ColorToken } from "@storyflow/backend/types";
+import { PhotoIcon } from "@heroicons/react/24/outline";
+import { FileToken } from "@storyflow/backend/types";
 import { LexicalNode, NodeKey } from "lexical";
 import React from "react";
-import { getColorName } from "../../utils/colors";
+import { useFileLabel } from "../../../files";
 import { caretClasses } from "./caret";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 import { useIsSelected } from "./useIsSelected";
-import useSWR from "swr";
 
-function Decorator({
-  nodeKey,
-  value,
-}: {
-  nodeKey: string;
-  value: ColorToken | { name: string; label?: string; value?: string };
-}) {
-  const { data } = useSWR("COLORS", {
-    revalidateOnMount: false,
-    revalidateOnFocus: false,
-    revalidateOnReconnect: false,
-    revalidateIfStale: false,
-  });
-
+function Decorator({ nodeKey, value }: { nodeKey: string; value: FileToken }) {
   const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
   const selectClick = React.useRef(false);
 
-  let label: string | undefined;
-  let color: string;
-
-  if (!("color" in value)) {
-    label = "label" in value ? value.label : value.name;
-    color = "value" in value ? value.value! : "#ffffff";
-  } else {
-    color = value.color;
-    label = getColorName(color.slice(1), data[0], data[1]).split(" / ")[0];
-  }
+  const label = useFileLabel(value.src);
 
   return (
     <span
@@ -52,21 +29,15 @@ function Decorator({
       }}
     >
       <span className="flex-center gap-2">
-        <SwatchIcon className="w-4 h-4 inline" />
+        <PhotoIcon className="w-4 h-4 inline" />
         {label}
-        <div
-          className="w-4 h-4 rounded ring-1 ring-inset ring-white/50"
-          style={{ backgroundColor: color }}
-        />
       </span>
     </span>
   );
 }
 
-export const ColorDecorator = Decorator;
-
-const type = "color-token";
-type TokenType = ColorToken;
+const type = "file-token";
+type TokenType = FileToken;
 
 export default class ChildNode extends TokenStreamNode<typeof type, TokenType> {
   static getType(): string {
@@ -100,10 +71,10 @@ export default class ChildNode extends TokenStreamNode<typeof type, TokenType> {
   }
 }
 
-export function $createColorNode(value: TokenType): ChildNode {
+export function $createFileNode(value: TokenType): ChildNode {
   return new ChildNode(value);
 }
 
-export function $isColorNode(node: LexicalNode): boolean {
+export function $isFileNode(node: LexicalNode): boolean {
   return node instanceof ChildNode;
 }

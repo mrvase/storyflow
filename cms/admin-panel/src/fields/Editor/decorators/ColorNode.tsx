@@ -1,57 +1,41 @@
-import React from "react";
 import cl from "clsx";
-import { CustomToken } from "@storyflow/backend/types";
-import { useIsSelected } from "./useIsSelected";
-import { caretClasses } from "./caret";
-import { TagIcon } from "@heroicons/react/24/outline";
-import { Option } from "@storyflow/frontend/types";
-import { useFieldRestriction, useFieldOptions } from "../FieldIdContext";
-import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
+import { SwatchIcon } from "@heroicons/react/24/outline";
+import { ColorToken } from "@storyflow/backend/types";
 import { LexicalNode, NodeKey } from "lexical";
-import { ColorDecorator } from "./ColorNode";
-
-type OptionObject = { name: string; label?: string; value?: string };
+import React from "react";
+import { getColorName } from "../../../utils/colors";
+import { caretClasses } from "./caret";
+import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
+import { useIsSelected } from "./useIsSelected";
+import useSWR from "swr";
 
 function Decorator({
   nodeKey,
   value,
 }: {
   nodeKey: string;
-  value: CustomToken;
+  value: ColorToken | { name: string; label?: string; value?: string };
 }) {
-  const restrictTo = useFieldRestriction();
+  const { data } = useSWR("COLORS", {
+    revalidateOnMount: false,
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+    revalidateIfStale: false,
+  });
 
-  const options = useFieldOptions();
-  const option = (options as Option[]).find(
-    (option): option is OptionObject =>
-      typeof option === "object" && option.name === value.name
-  );
-
-  if (restrictTo === "color" && option) {
-    return <ColorDecorator nodeKey={nodeKey} value={option} />;
-  }
-
-  return <CustomDecorator nodeKey={nodeKey} value={value} />;
-}
-
-function CustomDecorator({
-  nodeKey,
-  value,
-}: {
-  nodeKey: string;
-  value: CustomToken;
-}) {
   const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
   const selectClick = React.useRef(false);
 
-  const options = useFieldOptions();
+  let label: string | undefined;
+  let color: string;
 
-  const option = (options as Option[]).find(
-    (option): option is { name: string; label?: string } =>
-      typeof option === "object" && option.name === value.name
-  );
-
-  let label = option && "label" in option ? option.label : value.name;
+  if (!("color" in value)) {
+    label = "label" in value ? value.label : value.name;
+    color = "value" in value ? value.value! : "#ffffff";
+  } else {
+    color = value.color;
+    label = getColorName(color.slice(1), data[0], data[1]).split(" / ")[0];
+  }
 
   return (
     <span
@@ -68,15 +52,21 @@ function CustomDecorator({
       }}
     >
       <span className="flex-center gap-2">
-        <TagIcon className="w-4 h-4 inline" />
+        <SwatchIcon className="w-4 h-4 inline" />
         {label}
+        <div
+          className="w-4 h-4 rounded ring-1 ring-inset ring-white/50"
+          style={{ backgroundColor: color }}
+        />
       </span>
     </span>
   );
 }
 
-const type = "custom-token";
-type TokenType = CustomToken;
+export const ColorDecorator = Decorator;
+
+const type = "color-token";
+type TokenType = ColorToken;
 
 export default class ChildNode extends TokenStreamNode<typeof type, TokenType> {
   static getType(): string {
@@ -89,6 +79,10 @@ export default class ChildNode extends TokenStreamNode<typeof type, TokenType> {
 
   constructor(token: TokenType, key?: NodeKey) {
     super(type, token, key);
+  }
+
+  isInline(): true {
+    return true;
   }
 
   exportJSON(): SerializedTokenStreamNode<typeof type, TokenType> {
@@ -106,10 +100,10 @@ export default class ChildNode extends TokenStreamNode<typeof type, TokenType> {
   }
 }
 
-export function $createCustomTokenNode(value: TokenType): ChildNode {
+export function $createColorNode(value: TokenType): ChildNode {
   return new ChildNode(value);
 }
 
-export function $isCustomTokenNode(node: LexicalNode): boolean {
+export function $isColorNode(node: LexicalNode): boolean {
   return node instanceof ChildNode;
 }

@@ -1,22 +1,13 @@
 import React from "react";
-import {
-  DecoratorNode,
-  DOMConversionMap,
-  DOMConversionOutput,
-  DOMExportOutput,
-  LexicalNode,
-  NodeKey,
-  SerializedLexicalNode,
-  Spread,
-} from "lexical";
+import { LexicalNode, NodeKey } from "lexical";
 import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
 import { caretClasses } from "./caret";
+import { Parameter } from "@storyflow/backend/types";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
-import { Operator } from "@storyflow/backend/types";
 
-function Decorator({ nodeKey }: { value: { ",": true }; nodeKey: string }) {
-  const { isSelected, select, isPseudoSelected } = useIsSelected(nodeKey);
+function Decorator({ value, nodeKey }: { value: Parameter; nodeKey: string }) {
+  const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
 
   return (
     <div
@@ -24,20 +15,21 @@ function Decorator({ nodeKey }: { value: { ",": true }; nodeKey: string }) {
     >
       <span
         className={cl(
-          "relative w-2 flex-center opacity-50", // selection:bg-transparent
-          // isSelected && "ring-2 ring-amber-300",
+          "relative bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-800 dark:text-fuchsia-200 font-serif",
+          "w-4 h-4 my-1 flex-center rounded-full  text-sm pb-[2px] selection:bg-transparent",
+          //isSelected && "ring-2 ring-amber-300",
+          "ring-1 ring-fuchsia-200 dark:ring-fuchsia-700",
           isPseudoSelected && caretClasses
         )}
         onMouseDown={() => select()}
       >
-        ,
+        {value.x ?? "x"}
       </span>
     </div>
   );
 }
-
-const type = "comma";
-type TokenType = { ",": true };
+const type = "parameter";
+type TokenType = Parameter;
 
 export default class ChildNode extends TokenStreamNode<typeof type, TokenType> {
   static getType(): string {
@@ -71,10 +63,10 @@ export default class ChildNode extends TokenStreamNode<typeof type, TokenType> {
   }
 }
 
-export function $createCommaNode(value: TokenType): ChildNode {
+export function $createParameterNode(value: TokenType): ChildNode {
   return new ChildNode(value);
 }
 
-export function $isCommaNode(node: LexicalNode): boolean {
+export function $isParameterNode(node: LexicalNode): boolean {
   return node instanceof ChildNode;
 }

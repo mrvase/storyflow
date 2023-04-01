@@ -3,9 +3,9 @@ import { LexicalNode, NodeKey } from "lexical";
 import cl from "clsx";
 import { useIsSelected } from "./useIsSelected";
 import { caretClasses } from "./caret";
-import { useGlobalContext } from "../../state/context";
-import { useDocumentPageContext } from "../../documents/DocumentPageContext";
-import { getPreview } from "../default/getPreview";
+import { useGlobalContext } from "../../../state/context";
+import { useDocumentPageContext } from "../../../documents/DocumentPageContext";
+import { getPreview } from "../../default/getPreview";
 import { ContextToken, ValueArray } from "@storyflow/backend/types";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 

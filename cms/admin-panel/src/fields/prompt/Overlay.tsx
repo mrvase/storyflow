@@ -13,11 +13,11 @@ import {
 import React from "react";
 import { tools } from "shared/editor-tools";
 import { useEditorContext } from "../../editor/react/EditorProvider";
-import { $isColorNode } from "../decorators/ColorNode";
+import { $isColorNode } from "../Editor/decorators/ColorNode";
 import PromptNode, {
   $createPromptNode,
   $isPromptNode,
-} from "../decorators/PromptNode";
+} from "../Editor/decorators/PromptNode";
 import { $replaceWithBlocks } from "../Editor/insertComputation";
 import {
   $getComputation,

@@ -15,7 +15,7 @@ import {
   $isTokenStreamNode,
   ObjectToken,
   TokenStreamNode,
-} from "../decorators/TokenStreamNode";
+} from "../Editor/decorators/TokenStreamNode";
 
 export const useSelectedToken = (callback: (token: ObjectToken) => void) => {
   const [tokenNode, setTokenNode] = React.useState<{

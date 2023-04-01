@@ -7,26 +7,26 @@ import {
   NestedDocumentId,
   NestedElement,
 } from "@storyflow/backend/types";
-import { getConfigFromType, useClientConfig } from "../../client-config";
+import { getConfigFromType, useClientConfig } from "../../../client-config";
 import { ChevronUpDownIcon, CubeIcon } from "@heroicons/react/24/outline";
 import {
   FieldRestrictionsContext,
   FieldOptionsContext,
-} from "../FieldIdContext";
+} from "../../FieldIdContext";
 import {
   EditorFocusProvider,
   useIsFocused,
-} from "../../editor/react/useIsFocused";
+} from "../../../editor/react/useIsFocused";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 import {
   Attributes,
   AttributesProvider,
   useAttributesContext,
-} from "../Attributes";
-import { ExtendPath, usePath, useSelectedPath } from "../Path";
+} from "../../Attributes";
+import { ExtendPath, usePath, useSelectedPath } from "../../Path";
 import { PropConfig, RegularOptions } from "@storyflow/frontend/types";
-import { flattenProps } from "../../utils/flattenProps";
-import { DefaultField } from "../default/DefaultField";
+import { flattenProps } from "../../../utils/flattenProps";
+import { DefaultField } from "../../default/DefaultField";
 import { computeFieldId, getIdFromString } from "@storyflow/backend/ids";
 
 const TopLevelContext = React.createContext(true);

@@ -1,22 +1,33 @@
 import React from "react";
-import {
-  DecoratorNode,
-  DOMConversionMap,
-  DOMConversionOutput,
-  DOMExportOutput,
-  LexicalNode,
-  NodeKey,
-  SerializedLexicalNode,
-  Spread,
-} from "lexical";
+import { LexicalNode, NodeKey } from "lexical";
 import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
 import { caretClasses } from "./caret";
-import { Parameter } from "@storyflow/backend/types";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
+import { Operator } from "@storyflow/backend/types";
 
-function Decorator({ value, nodeKey }: { value: Parameter; nodeKey: string }) {
-  const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
+function Decorator({ value, nodeKey }: { value: TokenType; nodeKey: string }) {
+  const { isSelected, select, isPseudoSelected } = useIsSelected(nodeKey);
+
+  const key = Object.keys(value)[0] as "(" | ")" | "[" | "]";
+
+  const open = (
+    <svg viewBox="0 0 4 16" width={6} height={24} className="absolute">
+      <path
+        d="M4,0 A 10 10 0 0 0 4 16 A 20 20 0 0 1 4 0"
+        className={cl(key === "[" ? "fill-amber-500" : "fill-gray-500")}
+      />
+    </svg>
+  );
+
+  const close = (
+    <svg viewBox="0 0 4 16" width={6} height={24} className="absolute">
+      <path
+        d="M0,0 A 10 10 0 0 1 0 16 A 20 20 0 0 0 0 0"
+        className={cl(key === "]" ? "fill-amber-500" : "fill-gray-500")}
+      />
+    </svg>
+  );
 
   return (
     <div
@@ -24,21 +35,23 @@ function Decorator({ value, nodeKey }: { value: Parameter; nodeKey: string }) {
     >
       <span
         className={cl(
-          "relative bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-800 dark:text-fuchsia-200 font-serif",
-          "w-4 h-4 my-1 flex-center rounded-full  text-sm pb-[2px] selection:bg-transparent",
-          //isSelected && "ring-2 ring-amber-300",
-          "ring-1 ring-fuchsia-200 dark:ring-fuchsia-700",
+          "relative w-[6px] h-6 flex-center selection:bg-transparent text-xs text-gray-800",
           isPseudoSelected && caretClasses
         )}
         onMouseDown={() => select()}
       >
-        {value.x ?? "x"}
+        {["(", "["].includes(key) ? open : close}
       </span>
     </div>
   );
 }
-const type = "parameter";
-type TokenType = Parameter;
+
+const type = "bracket";
+type TokenType =
+  | { ["("]: true }
+  | { [")"]: true }
+  | { ["["]: true }
+  | { ["]"]: true };
 
 export default class ChildNode extends TokenStreamNode<typeof type, TokenType> {
   static getType(): string {
@@ -72,10 +85,10 @@ export default class ChildNode extends TokenStreamNode<typeof type, TokenType> {
   }
 }
 
-export function $createParameterNode(value: TokenType): ChildNode {
+export function $createBracketNode(value: TokenType): ChildNode {
   return new ChildNode(value);
 }
 
-export function $isParameterNode(node: LexicalNode): boolean {
+export function $isBracketNode(node: LexicalNode): boolean {
   return node instanceof ChildNode;
 }

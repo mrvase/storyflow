@@ -9,11 +9,11 @@ import {
   NestedFolder,
 } from "@storyflow/backend/types";
 import { FolderIcon } from "@heroicons/react/24/outline";
-import { useFieldId } from "../FieldIdContext";
-import { useFieldTemplate } from "../default/useFieldTemplate";
-import { useFolder } from "../../folders/collab/hooks";
+import { useFieldId } from "../../FieldIdContext";
+import { useFieldTemplate } from "../../default/useFieldTemplate";
+import { useFolder } from "../../../folders/collab/hooks";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
-import { usePath, useSelectedPath } from "../Path";
+import { usePath, useSelectedPath } from "../../Path";
 
 function Decorator({
   value,

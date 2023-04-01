@@ -3,9 +3,9 @@ import { LexicalNode, NodeKey } from "lexical";
 import cl from "clsx";
 import { useIsSelected } from "./useIsSelected";
 import { caretClasses } from "./caret";
-import { useLabel } from "../../documents/collab/hooks";
-import { useGlobalState } from "../../state/state";
-import { getPreview } from "../default/getPreview";
+import { useLabel } from "../../../documents/collab/hooks";
+import { useGlobalState } from "../../../state/state";
+import { getPreview } from "../../default/getPreview";
 import {
   FieldId,
   HasSelect,

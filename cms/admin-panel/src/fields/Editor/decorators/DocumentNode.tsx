@@ -16,21 +16,21 @@ import {
   DocumentIcon,
   LinkIcon,
 } from "@heroicons/react/24/outline";
-import { useFieldId } from "../FieldIdContext";
-import { useFieldConfig } from "../../documents/collab/hooks";
+import { useFieldId } from "../../FieldIdContext";
+import { useFieldConfig } from "../../../documents/collab/hooks";
 import { Menu } from "@headlessui/react";
-import { MenuTransition } from "../../elements/transitions/MenuTransition";
-import { useArticle, useOptimisticDocumentList } from "../../documents";
-import { useFieldTemplate } from "../default/useFieldTemplate";
-import { calculateFn } from "../default/calculateFn";
-import { useGlobalState } from "../../state/state";
-import { useDocumentPageContext } from "../../documents/DocumentPageContext";
+import { MenuTransition } from "../../../elements/transitions/MenuTransition";
+import { useArticle, useOptimisticDocumentList } from "../../../documents";
+import { useFieldTemplate } from "../../default/useFieldTemplate";
+import { calculateFn } from "../../default/calculateFn";
+import { useGlobalState } from "../../../state/state";
+import { useDocumentPageContext } from "../../../documents/DocumentPageContext";
 import {
   createTemplateFieldId,
   isNestedDocumentId,
 } from "@storyflow/backend/ids";
-import { useClient } from "../../client";
-import { getPreview } from "../default/getPreview";
+import { useClient } from "../../../client";
+import { getPreview } from "../../default/getPreview";
 import { TEMPLATE_FOLDER } from "@storyflow/backend/constants";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 

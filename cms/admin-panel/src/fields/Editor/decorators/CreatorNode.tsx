@@ -3,7 +3,7 @@ import { LexicalNode, NodeKey } from "lexical";
 import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
 import { FieldId, NestedCreator } from "@storyflow/backend/types";
-import { DefaultField } from "../default/DefaultField";
+import { DefaultField } from "../../default/DefaultField";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 
 function Decorator({

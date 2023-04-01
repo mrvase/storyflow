@@ -13,10 +13,10 @@ import {
   KEY_DELETE_COMMAND,
 } from "lexical";
 import React from "react";
-import { useEditorContext } from "../../editor/react/EditorProvider";
-import { useIsFocused } from "../../editor/react/useIsFocused";
-import { mergeRegister } from "../../editor/utils/mergeRegister";
-import { $selectNode } from "../Editor/transforms";
+import { useEditorContext } from "../../../editor/react/EditorProvider";
+import { useIsFocused } from "../../../editor/react/useIsFocused";
+import { mergeRegister } from "../../../editor/utils/mergeRegister";
+import { $selectNode } from "../transforms";
 
 export const useIsSelected = (nodeKey: string) => {
   const editor = useEditorContext();

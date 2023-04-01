@@ -36,26 +36,26 @@ import {
 import {
   $createDocumentNode,
   $isDocumentNode,
-} from "../decorators/DocumentNode";
-import { $createFunctionNode } from "../decorators/FunctionNode";
-import { $createImportNode } from "../decorators/ImportNode";
-import { $createInlineLayoutElementNode } from "../decorators/InlineLayoutElementNode";
+} from "./decorators/DocumentNode";
+import { $createFunctionNode } from "./decorators/FunctionNode";
+import { $createImportNode } from "./decorators/ImportNode";
+import { $createInlineLayoutElementNode } from "./decorators/InlineLayoutElementNode";
 import {
   $createLayoutElementNode,
   $isLayoutElementNode,
-} from "../decorators/LayoutElementNode";
-import { $createOperatorNode } from "../decorators/OperatorNode";
-import { $createParameterNode } from "../decorators/ParameterNode";
-import { $createCustomTokenNode } from "../decorators/CustomTokenNode";
-import { $createContextNode } from "../decorators/ContextNode";
-import { $createFolderNode } from "../decorators/FolderNode";
-import { $createCreatorNode } from "../decorators/CreatorNode";
-import { $isPromptNode } from "../decorators/PromptNode";
-import { $isTokenStreamNode } from "../decorators/TokenStreamNode";
-import { $createFileNode } from "../decorators/FileNode";
-import { $createColorNode } from "../decorators/ColorNode";
-import { $createCommaNode } from "../decorators/CommaNode";
-import { $createBracketNode } from "../decorators/BracketNode";
+} from "./decorators/LayoutElementNode";
+import { $createOperatorNode } from "./decorators/OperatorNode";
+import { $createParameterNode } from "./decorators/ParameterNode";
+import { $createCustomTokenNode } from "./decorators/CustomTokenNode";
+import { $createContextNode } from "./decorators/ContextNode";
+import { $createFolderNode } from "./decorators/FolderNode";
+import { $createCreatorNode } from "./decorators/CreatorNode";
+import { $isPromptNode } from "./decorators/PromptNode";
+import { $isTokenStreamNode } from "./decorators/TokenStreamNode";
+import { $createFileNode } from "./decorators/FileNode";
+import { $createColorNode } from "./decorators/ColorNode";
+import { $createCommaNode } from "./decorators/CommaNode";
+import { $createBracketNode } from "./decorators/BracketNode";
 
 export const isInlineElement = (
   libraries: LibraryConfig[],
