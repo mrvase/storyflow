@@ -1,20 +1,14 @@
 import {
   ArrowUpTrayIcon,
   BoltIcon,
-  CheckIcon,
   DocumentDuplicateIcon,
   DocumentIcon,
-  PencilSquareIcon,
   PlusIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { extendPath } from "@storyflow/backend/extendPath";
 import { DEFAULT_FIELDS, DEFAULT_TEMPLATES } from "@storyflow/backend/fields";
-import {
-  getDocumentId,
-  getTemplateDocumentId,
-  isTemplateField,
-} from "@storyflow/backend/ids";
+import { getTemplateDocumentId, isTemplateField } from "@storyflow/backend/ids";
 import {
   DBDocument,
   DocumentConfig,
@@ -181,26 +175,6 @@ function Toolbar({ id, config }: { id: DocumentId; config: DocumentConfig }) {
         template: getTemplateDocumentId(DEFAULT_FIELDS.slug.id),
       }),
     },
-    /*
-    {
-      label: "Side",
-      item: {
-        template: getTemplateDocumentId(DEFAULT_FIELDS.page.id),
-      },
-    },
-    {
-      label: "Layout",
-      item: {
-        template: getTemplateDocumentId(DEFAULT_FIELDS.layout.id),
-      },
-    },
-    {
-      label: "Omdirigering",
-      item: {
-        template: getTemplateDocumentId(DEFAULT_FIELDS.redirect.id),
-      },
-    },
-    */
     {
       label: DEFAULT_FIELDS.published.label,
       item: {

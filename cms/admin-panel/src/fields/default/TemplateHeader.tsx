@@ -117,7 +117,7 @@ function TransformMenu({
           value={config?.transform?.type === "sortlimit"}
           setValue={(value) => {
             const transform = value
-              ? ({ type: "sortlimit", data: { limit: 10 } } as const)
+              ? ({ type: "sortlimit", data: { limit: 50 } } as const)
               : undefined;
             setConfig("transform", transform);
             setTransform(transform);

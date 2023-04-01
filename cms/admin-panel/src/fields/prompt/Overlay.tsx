@@ -25,6 +25,7 @@ import {
 } from "../Editor/transforms";
 import { ColorOverlay } from "./ColorOverlay";
 import { Prompt } from "./Prompt";
+import { useRestorableSelection } from "./useRestorableSelection";
 
 const matchers: ((
   node: LexicalNode
@@ -67,9 +68,13 @@ export function Overlay({ children }: { children?: React.ReactNode }) {
     setPrompt("");
   };
 
+  const [isHolded, holdActions] = useRestorableSelection();
+
   React.useLayoutEffect(() => {
     return editor.registerUpdateListener(({ editorState }) => {
       editorState.read(() => {
+        if (isHolded.current) return;
+
         const selection = $getSelection();
 
         if (!$isNodeSelection(selection) && !$isRangeSelection(selection)) {
@@ -136,20 +141,21 @@ export function Overlay({ children }: { children?: React.ReactNode }) {
         setPrompt(match.prompt);
       });
     });
-  }, [editor]);
+  }, [editor, isHolded]);
 
   React.useEffect(() => {
     return mergeRegister(
       editor.registerCommand(
         BLUR_COMMAND,
         () => {
+          if (isHolded.current) return false;
           reset();
           return false;
         },
         COMMAND_PRIORITY_HIGH
       )
     );
-  }, [editor]);
+  }, [editor, isHolded]);
 
   React.useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -204,7 +210,11 @@ export function Overlay({ children }: { children?: React.ReactNode }) {
       }
     >
       {type === "prompt" && (
-        <Prompt node={node as PromptNode} prompt={prompt!}>
+        <Prompt
+          node={node as PromptNode}
+          prompt={prompt!}
+          holdActions={holdActions}
+        >
           {children}
         </Prompt>
       )}

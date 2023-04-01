@@ -13,6 +13,7 @@ import { Spinner } from "../../elements/Spinner";
 import { useUrlInfo } from "../../users";
 import { useOptionEvents } from "./Option";
 import { useOption } from "./OptionsContext";
+import { HoldActions } from "./useRestorableSelection";
 
 function useFileInput(setLabel?: (label: string) => void) {
   const [dragging, setDragging] = React.useState(false);
@@ -102,16 +103,11 @@ function useFileInput(setLabel?: (label: string) => void) {
 
 export function FilePrompt({
   prompt,
-  //  holdActions,
+  holdActions,
   replacePromptWithStream,
 }: {
   prompt: string;
-  /*
-  holdActions: {
-    hold: () => void;
-    release: () => void;
-  };
-  */
+  holdActions: HoldActions;
   replacePromptWithStream: (stream: TokenStream) => void;
 }) {
   const { organization } = useUrlInfo();
@@ -147,6 +143,7 @@ export function FilePrompt({
             replacePromptWithStream([{ src }]);
             return true;
           }}
+          holdActions={holdActions}
         />
       </div>
       {filteredFiles.map(({ name, label }) => (
@@ -164,6 +161,7 @@ export function FilePrompt({
 function UploadOption({
   upload,
   prompt,
+  holdActions,
 }: {
   upload: (
     file: File,
@@ -171,13 +169,14 @@ function UploadOption({
     data?: { width?: number; height?: number; size?: number }
   ) => Promise<boolean>;
   prompt: string;
+  holdActions: HoldActions;
 }) {
   const [label, setLabel] = React.useState("");
 
   const [{ file, preview }, { onChange, dragEvents, resetFile }] = useFileInput(
     (label: string) => {
       if (!prompt) setLabel(label);
-      // holdActions.release();
+      holdActions.release();
     }
   );
 
@@ -223,7 +222,7 @@ function UploadOption({
             setIsUploading(false);
           } else {
             console.log("HOLD");
-            // holdActions.hold();
+            holdActions.hold();
           }
         }}
         {...dragEvents}
@@ -326,7 +325,7 @@ function FileContainer({
 
 function File({ name, organization }: { name: string; organization: string }) {
   const type = getFileTypeFromExtension(getFileExtension(name) ?? "");
-  const src = `https://awss3stack-mybucket15d133bf-1wx5fzxzweii4.s3.eu-west-1.amazonaws.com/${organization}/${name}`;
+  const src = `https://cdn.storyflow.dk/${organization}/${name}`;
   return (
     <>
       {type === "image" && (

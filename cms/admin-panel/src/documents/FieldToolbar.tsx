@@ -1,11 +1,9 @@
 import cl from "clsx";
 import {
-  ArrowDownTrayIcon,
   CheckIcon,
   FunnelIcon,
   ListBulletIcon,
   PencilSquareIcon,
-  ScissorsIcon,
   TrashIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
@@ -18,11 +16,9 @@ import { useTemplateFolder } from "../folders/folders-context";
 import Content from "../layout/components/Content";
 import { useDocumentMutate } from "./collab/DocumentCollabContext";
 import { useFieldConfig } from "./collab/hooks";
-import { Checkbox } from "../elements/Checkbox";
 import { useContextWithError } from "../utils/contextError";
 import { useFieldId } from "../fields/FieldIdContext";
 import { getDocumentId } from "@storyflow/backend/ids";
-import { Range } from "../elements/Range";
 
 const FieldToolbarPortalContext = React.createContext<
   [HTMLDivElement | null, React.Dispatch<HTMLDivElement | null>] | null

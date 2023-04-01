@@ -6,8 +6,8 @@ import { cookieOptions } from "api/cookie-options";
 import { User } from "api/types";
 
 export const config = {
-  matcher: "/bldafbladflkglsakdf",
-  //  "/((?!index|public|static|api|_next|favicon.ico|colors.json|sw.js|blog|priser|login|logout|opret-org|registrer|bruger|builder|viewer|verify|dashboard\\/assets).+)",
+  matcher:
+    "/((?!index|public|static|api|_next|favicon.ico|colors.json|sw.js|blog|priser|login|logout|opret-org|registrer|bruger|builder|viewer|verify|dashboard\\/assets).+)",
 };
 
 const sessionStorage = createSessionStorage({

@@ -19,7 +19,7 @@ export function Range({
         type="range"
         className="w-full"
         min={1}
-        max={25}
+        max={50}
         value={value}
         onChange={handleChange}
         onMouseUp={() => valueFromProps !== value && setValueFromProps(value)}

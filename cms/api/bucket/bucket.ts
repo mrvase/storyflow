@@ -96,11 +96,12 @@ export const bucket = createRoute({
       }
 
       const client = new S3Client({
+        region: "auto",
+        endpoint: `https://${process.env.S3_ACCOUNT_ID}.r2.cloudflarestorage.com`,
         credentials: {
           accessKeyId: process.env.S3_ACCESS_KEY ?? "",
           secretAccessKey: process.env.S3_SECRET_KEY ?? "",
         },
-        region: process.env.S3_REGION,
       });
 
       try {
@@ -109,23 +110,16 @@ export const bucket = createRoute({
           Key: `${slug}/${name}`,
           ContentLength: size,
           ContentType: type,
-          ...(access === "public" && { Tagging: "public=true" }),
         });
 
         const url = await getSignedUrl(client, command, {
           expiresIn: 60,
-          unhoistableHeaders: new Set(["x-amz-tagging"]),
         });
 
         return success({
           name,
           url,
-          headers:
-            access === "public"
-              ? {
-                  "x-amz-tagging": "public=true",
-                }
-              : ({} as Record<string, string>),
+          headers: {},
         });
       } catch (err) {
         console.error(err);

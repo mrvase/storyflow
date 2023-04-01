@@ -29,9 +29,6 @@ import { $replaceWithBlocks } from "../Editor/insertComputation";
 export function Plus() {
   const editor = useEditorContext();
 
-  const id = useFieldId();
-  const [config] = useFieldConfig(id);
-
   const isFocused = useEditorIsFocused();
 
   const offset = 0;
@@ -64,37 +61,6 @@ export function Plus() {
       });
     });
   }, [editor]);
-
-  const formatHeading = () => {
-    editor.update(() => {
-      const selection = $getSelection();
-      if ($isRangeSelection(selection)) {
-        let node: LexicalNode = selection.anchor.getNode();
-        if (selection.anchor.type === "text") {
-          node = node.getParent() as LexicalNode;
-          node = (node.isInline() ? node.getParent() : node) as LexicalNode;
-        }
-        let targetElement: LexicalNode | null = null;
-        if ($isParagraphNode(node)) {
-          targetElement = $createHeadingNode("h1");
-        }
-        if ($isHeadingNode(node)) {
-          const tag = node.__tag;
-          const level = parseInt(tag.slice(1), 10);
-          if (level < 2) {
-            targetElement = $createHeadingNode(`h${(level + 1) as 2 | 3}`);
-          } else {
-            targetElement = $createParagraphNode();
-          }
-        }
-        if (targetElement) {
-          targetElement.setFormat(node.getFormatType());
-          targetElement.setIndent(node.getIndent());
-          node.replace(targetElement, true);
-        }
-      }
-    });
-  };
 
   const Icon = PaintBrushIcon; // mathMode ? CalculatorIcon : PaintBrushIcon;
 

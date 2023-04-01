@@ -104,7 +104,7 @@ export async function fetchDocumentList(
 
 export function useDocumentList(folderId: FolderId | undefined) {
   const { data, error } = SWRClient.documents.getList.useQuery(
-    { folder: folderId!, limit: 10 },
+    { folder: folderId!, limit: 50 },
     {
       inactive: !folderId,
       immutable: true,
@@ -308,7 +308,7 @@ export const useArticleListMutation = () => {
       }, {} as Record<FolderId, ArticleListMutation[]>);
 
       Object.entries(groups).map(([folder, actions]) => {
-        mutate(["getList", { folder, limit: 10 }], (ps, result) => {
+        mutate(["getList", { folder, limit: 50 }], (ps, result) => {
           if (result === undefined) {
             // we handle optimistic updates separately
             // so that we do not update the cache
@@ -339,7 +339,7 @@ export const useArticleListMutation = () => {
 export const useSaveArticle = (folder: FolderId) => {
   return SWRClient.fields.save.useMutation({
     cacheUpdate: ({ id }, mutate) => {
-      mutate(["documents/getList", { folder, limit: 10 }], (ps, result) => {
+      mutate(["documents/getList", { folder, limit: 50 }], (ps, result) => {
         if (!result) {
           return ps;
         }

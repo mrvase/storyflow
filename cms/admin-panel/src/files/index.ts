@@ -45,7 +45,7 @@ export function useFiles() {
       const upload = await fetch(url, {
         method: "PUT",
         body: file,
-        headers: headers,
+        mode: "cors",
       });
 
       if (upload.ok) {

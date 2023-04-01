@@ -175,6 +175,7 @@ const createElementRecordGetter = (
               calculate(value, getState),
             ])
             .filter(([, value]) => value.length > 0)
+            .map(([key, value]) => [key, { $elemMatch: { $in: value } }])
         );
         fetchFilters.set(el.folder, filters);
       });
@@ -294,6 +295,7 @@ export const public_ = createRoute({
         });
 
       if (!docRaw) {
+        console.log("NO PAGE");
         return success(null);
       }
 
@@ -331,6 +333,8 @@ export const public_ = createRoute({
           ...(typeof titleArray[0] === "string" && { title: titleArray[0] }),
         },
       };
+
+      console.log("RESULT", result);
 
       return success(result);
     },

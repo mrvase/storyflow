@@ -38,6 +38,7 @@ import { FilePrompt } from "./FilePrompt";
 import { Options, useOptionActions } from "./OptionsContext";
 import { UrlPrompt } from "./UrlPrompt";
 import { ParagraphStylePrompt } from "./ParagraphStylePrompt";
+import { HoldActions } from "./useRestorableSelection";
 
 const panes = [
   {
@@ -117,10 +118,12 @@ export function Prompt({
   node,
   prompt,
   children,
+  holdActions,
 }: {
   node: PromptNode;
   prompt: string;
   children?: React.ReactNode;
+  holdActions: HoldActions;
 }) {
   const editor = useEditorContext();
 
@@ -398,6 +401,7 @@ export function Prompt({
             <FilePrompt
               prompt={prompt}
               replacePromptWithStream={replacePromptWithStream}
+              holdActions={holdActions}
             />
           )}
         </>
