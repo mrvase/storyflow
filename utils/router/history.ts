@@ -1,10 +1,15 @@
-import { To, Location, Action, Listener, History } from "./types";
-import { parsePath, createPath } from "./utils";
+import { Location, Action, Listener, History } from "./types";
+import { parsePath, createPath, createKey } from "./utils";
 
 const PopStateEventType = "popstate";
 
-export type HistoryOptions = {
+type HistoryOptions = {
   window?: Window;
+};
+
+type HistoryState = {
+  usr: any;
+  key?: string;
 };
 
 export function createHistory(options: HistoryOptions = {}): History {
@@ -13,26 +18,17 @@ export function createHistory(options: HistoryOptions = {}): History {
   let action: Action = "POP";
   let listener: Listener | null = null;
 
-  function handlePop() {
-    action = "POP";
-    if (listener) {
-      listener({ action, location: history.location });
-    }
-  }
-
-  function push(to: To, state?: any) {
+  function push(to: string | Location) {
     action = "PUSH";
-    let location = createLocation(history.location, to, state);
 
+    let location = createLocation(history.location, to);
     let historyState = getHistoryState(location);
     let url = history.createHref(location);
 
-    // try...catch because iOS limits us to 100 pushState calls :/
+    // try...catch because iOS limits us to 100 pushState calls
     try {
       globalHistory.pushState(historyState, "", url);
     } catch (error) {
-      // They are going to lose state here, but there is no real
-      // way to warn them about it since the page will refresh...
       window.location.assign(url);
     }
 
@@ -41,16 +37,24 @@ export function createHistory(options: HistoryOptions = {}): History {
     }
   }
 
-  function replace(to: To, state?: any) {
+  function replace(to: string | Location) {
     action = "REPLACE";
-    let location = createLocation(history.location, to, state);
 
+    let location = createLocation(history.location, to);
     let historyState = getHistoryState(location);
     let url = history.createHref(location);
+
     globalHistory.replaceState(historyState, "", url);
 
     if (listener) {
       listener({ action, location });
+    }
+  }
+
+  function handlePop() {
+    action = "POP";
+    if (listener) {
+      listener({ action, location: history.location });
     }
   }
 
@@ -86,46 +90,35 @@ export function createHistory(options: HistoryOptions = {}): History {
   return history;
 }
 
-function getLocation(window: Window, globalHistory: Window["history"]) {
+function getLocation(
+  window: Window,
+  globalHistory: Window["history"]
+): Readonly<Location> {
   let { pathname, search, hash } = window.location;
-  return createLocation(
-    "",
-    { pathname, search, hash },
+  return {
+    pathname,
+    search,
+    hash,
     // state defaults to `null` because `window.history.state` does
-    (globalHistory.state && globalHistory.state.usr) || null,
-    (globalHistory.state && globalHistory.state.key) || "default"
-  );
-}
-
-function createKey() {
-  return Math.random().toString(36).substr(2, 8);
+    state: (globalHistory.state && globalHistory.state.usr) || null,
+    key: (globalHistory.state && globalHistory.state.key) || "default",
+  };
 }
 
 function createLocation(
   current: string | Location,
-  to: To,
-  state: any = null,
-  key?: string
+  next: string | Location
 ): Readonly<Location> {
   let location: Readonly<Location> = {
     pathname: typeof current === "string" ? current : current.pathname,
     search: "",
     hash: "",
-    ...(typeof to === "string" ? parsePath(to) : to),
-    state,
-    // TODO: This could be cleaned up.  push/replace should probably just take
-    // full Locations now and avoid the need to run through this flow at all
-    // But that's a pretty big refactor to the current test suite so going to
-    // keep as is for the time being and just let any incoming keys take precedence
-    key: (to && (to as Location).key) || key || createKey(),
+    key: createKey(),
+    state: null,
+    ...(typeof next === "string" ? parsePath(next) : next),
   };
   return location;
 }
-
-type HistoryState = {
-  usr: any;
-  key?: string;
-};
 
 function getHistoryState(location: Location): HistoryState {
   return {

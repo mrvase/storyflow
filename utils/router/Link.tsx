@@ -1,7 +1,7 @@
 import React from "react";
-import { useHref, useNavigate, useResolvedPath } from "./hooks";
-import { useLocation, useNavigator } from "./Router";
-import { NavigateOptions, Path, To } from "./types";
+import { useNavigate } from "./Router";
+import { useLocation } from "./Router";
+import { To } from "./types";
 import { createPath, resolveTo } from "./utils";
 
 export interface LinkProps
@@ -13,17 +13,24 @@ export interface LinkProps
   to: To;
 }
 
+export function useHref(to: To): string {
+  let { pathname } = useLocation();
+  return React.useMemo(
+    () => createPath(resolveTo(to, pathname)),
+    [to, pathname]
+  );
+}
+
 export const Link = React.forwardRef<HTMLAnchorElement, LinkProps>(
   (
     { onClick, reload, replace, target, to, state, scroll = true, ...rest },
     ref
   ) => {
-    let href = useHref(to);
-    let internalOnClick = useLinkClickHandler(to, {
+    const href = useHref(to);
+    const internalOnClick = useLinkClickHandler(to, {
       replace,
       target,
       state,
-      scroll,
     });
     function handleClick(
       event: React.MouseEvent<HTMLAnchorElement, MouseEvent>
@@ -52,34 +59,27 @@ export function useLinkClickHandler<E extends Element = HTMLAnchorElement>(
     target,
     replace: replaceProp,
     state,
-    scroll,
   }: {
     target?: React.HTMLAttributeAnchorTarget;
     replace?: boolean;
     state?: any;
-    scroll?: boolean;
   } = {}
 ): (event: React.MouseEvent<E, MouseEvent>) => void {
-  let navigate = useNavigate();
-  let location = useLocation();
-  let path = useResolvedPath(to);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const href = useHref(to);
 
   return React.useCallback(
     (event: React.MouseEvent<E, MouseEvent>) => {
       if (shouldProcessLinkClick(event, target)) {
         event.preventDefault();
 
-        // If the URL hasn't changed, a regular <a> will do a replace instead of
-        // a push, so do the same here unless the replace prop is explicitly set
-        let replace =
-          replaceProp !== undefined
-            ? replaceProp
-            : createPath(location) === createPath(path);
+        let replace = replaceProp ?? createPath(location) === href;
 
-        navigate(to, { replace, scroll, state });
+        navigate(to, { replace, state });
       }
     },
-    [location, navigate, path, replaceProp, target, to, scroll]
+    [location, navigate, href, replaceProp, target, to]
   );
 }
 

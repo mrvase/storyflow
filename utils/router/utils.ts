@@ -1,5 +1,9 @@
 import { Path, To } from "./types";
 
+export function createKey() {
+  return Math.random().toString(36).substring(2, 10);
+}
+
 export const joinPaths = (paths: string[]): string =>
   paths.join("/").replace(/\/\/+/g, "/");
 

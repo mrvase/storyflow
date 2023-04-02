@@ -1,3 +1,3 @@
-export { Router, useLocation, useAction } from "./Router";
+export { Router, useLocation, useAction, useNavigate } from "./Router";
 export { Link } from "./Link";
-export { useSearchParam, useNavigate } from "./hooks";
+export { useSearchParam } from "./search-param";
