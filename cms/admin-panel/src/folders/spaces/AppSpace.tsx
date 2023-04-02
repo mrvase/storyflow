@@ -4,7 +4,7 @@ import { useOptimisticDocumentList } from "../../documents";
 import { getDocumentLabel } from "../../documents/useDocumentLabel";
 import Table from "../../documents/components/Table";
 import Space from "./Space";
-import { useAppPageContext } from "../AppPage";
+import { useAppPageContext } from "../AppPageContext";
 import Loader from "../../elements/Loader";
 import { useDeleteForm } from "./useDeleteForm";
 import { FolderId, SpaceId } from "@storyflow/backend/types";

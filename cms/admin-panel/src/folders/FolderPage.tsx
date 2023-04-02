@@ -21,7 +21,10 @@ import {
   SpaceId,
 } from "@storyflow/backend/types";
 import { SWRClient } from "../client";
-import { FolderDomainsContext, FolderDomainsProvider } from "./folder-domains";
+import {
+  FolderDomainsContext,
+  FolderDomainsProvider,
+} from "./FolderDomainsContext";
 import { useFolder } from "./collab/hooks";
 import { useFolderCollab } from "./collab/FolderCollabContext";
 import { FolderGridSpace } from "./spaces/FolderGridSpace";

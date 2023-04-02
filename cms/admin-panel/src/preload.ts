@@ -1,5 +1,5 @@
 import { useClient, useQueryContext } from "./client";
-import { hexColorToRgb } from "./utils/colors";
+import { hexColorToRgb } from "./data/colors";
 import useSWR from "swr";
 import { TEMPLATE_FOLDER } from "@storyflow/backend/constants";
 import { useOptimisticDocumentList } from "./documents";

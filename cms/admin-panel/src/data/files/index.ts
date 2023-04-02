@@ -1,5 +1,5 @@
 import { isError, unwrap } from "@storyflow/result";
-import { SWRClient, useClient } from "../client";
+import { SWRClient, useClient } from "../../client";
 
 function useFilesQuery() {
   return SWRClient.files.getAll.useQuery(undefined, {

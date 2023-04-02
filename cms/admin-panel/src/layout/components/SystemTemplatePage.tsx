@@ -4,7 +4,7 @@ import { DocumentDuplicateIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { DragIcon } from "../../folders/spaces/DragIcon";
 import { useDragItem } from "@storyflow/dnd";
 import { DBFolder } from "@storyflow/backend/types";
-import { useTemplateFolder } from "../../folders/folders-context";
+import { useTemplateFolder } from "../../folders/FoldersContext";
 import { FolderContext } from "../../folders/FolderPageContext";
 import Space from "../../folders/spaces/Space";
 import { useDeleteForm } from "../../folders/spaces/useDeleteForm";

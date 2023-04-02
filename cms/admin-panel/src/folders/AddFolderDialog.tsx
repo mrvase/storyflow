@@ -4,7 +4,7 @@ import { DBFolder, DocumentId } from "@storyflow/backend/types";
 import { useFolderCollab } from "./collab/FolderCollabContext";
 import { targetTools } from "shared/operations";
 import { useArticleListMutation } from "../documents";
-import { computeFieldId, createTemplateFieldId } from "@storyflow/backend/ids";
+import { createTemplateFieldId } from "@storyflow/backend/ids";
 import { ComputerDesktopIcon, FolderIcon } from "@heroicons/react/24/outline";
 import { DialogOption } from "../elements/DialogOption";
 import { useDocumentIdGenerator, useFolderIdGenerator } from "../id-generator";

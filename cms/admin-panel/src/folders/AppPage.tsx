@@ -24,7 +24,10 @@ import { SWRClient, useClient } from "../client";
 import { useClientConfig } from "../client-config";
 import { unwrap } from "@storyflow/result";
 import { DomainsButton } from "./FolderPage";
-import { FolderDomainsContext, FolderDomainsProvider } from "./folder-domains";
+import {
+  FolderDomainsContext,
+  FolderDomainsProvider,
+} from "./FolderDomainsContext";
 import { useFolder } from "./collab/hooks";
 import { useFolderCollab } from "./collab/FolderCollabContext";
 import { targetTools } from "shared/operations";
@@ -32,17 +35,7 @@ import { AppSpace } from "./spaces/AppSpace";
 import { getFieldRecord, getGraph } from "shared/computation-tools";
 import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
 import { calculateFromRecord } from "@storyflow/backend/calculate";
-
-const AppPageContext = React.createContext<{
-  addArticleWithUrl: (parent: Pick<DBDocument, "_id" | "record">) => void;
-  urls: { id: FieldId; value: string; indent: number }[];
-} | null>(null);
-
-export const useAppPageContext = () => {
-  const ctx = React.useContext(AppPageContext);
-  if (!ctx) throw new Error("FolderPageContext.Provider not found.");
-  return ctx;
-};
+import { AppPageContext } from "./AppPageContext";
 
 export default function AppPage({
   isOpen,

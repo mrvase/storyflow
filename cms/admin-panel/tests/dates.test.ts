@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseDateFromString } from "../src/utils/dates";
+import { parseDateFromString } from "../src/data/dates";
 
 describe("Dates - handles quaters", () => {
   it("kvart i", () => {

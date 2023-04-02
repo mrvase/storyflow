@@ -27,7 +27,7 @@ import { DocumentConfigOp, PropertyOp, targetTools } from "shared/operations";
 import { useArticle, useOptimisticDocumentList, useSaveArticle } from ".";
 import { useDocumentLabel } from "./useDocumentLabel";
 import { getComponentType, useClientConfig } from "../client-config";
-import { useTemplateFolder } from "../folders/folders-context";
+import { useTemplateFolder } from "../folders/FoldersContext";
 import Content from "../layout/components/Content";
 import { useSegment } from "../layout/components/SegmentContext";
 import { useOnLoadHandler } from "../layout/onLoadHandler";

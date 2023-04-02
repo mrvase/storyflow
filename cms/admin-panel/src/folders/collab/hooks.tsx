@@ -2,7 +2,7 @@ import React from "react";
 import { DBFolder, FolderId, Space, SpaceId } from "@storyflow/backend/types";
 import { AddFolderOp, FolderOp, targetTools } from "shared/operations";
 import { createStaticStore } from "../../state/StaticStore";
-import { useInitialFolders } from "../folders-context";
+import { useInitialFolders } from "../FoldersContext";
 import { createReactSubject } from "../../state/useSubject";
 import { QueueListenerParam } from "@storyflow/state/collab/Queue";
 import { createCollaborativeState } from "../../state/createCollaborativeState";

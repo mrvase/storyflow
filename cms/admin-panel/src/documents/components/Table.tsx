@@ -109,27 +109,6 @@ function Row({
           </td>
         );
       })}
-      {/*
-      <td className="w-10">
-        <button
-          onMouseDown={(ev) => {
-            ev.stopPropagation(); // block select of tab
-            ev.preventDefault();
-          }}
-          onClick={(ev) => {
-            ev.stopPropagation();
-            navigateTab(
-              `/~${parseInt(current.slice(2, 4), 10) + 1}/${current.slice(
-                4
-              )}/d-${id}`
-            );
-          }}
-          className="w-10 h-10 flex-center hover:bg-gray-100 transition-colors"
-        >
-          <ArrowTopRightOnSquareIcon className="w-4 h-4" />
-        </button>
-      </td>
-        */}
     </tr>
   );
 }

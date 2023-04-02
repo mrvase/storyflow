@@ -5,7 +5,7 @@ import type {
   LibraryConfig,
 } from "@storyflow/frontend/types";
 import { SWRClient } from "./client";
-import { useFolderDomains } from "./folders/folder-domains";
+import { useFolderDomains } from "./folders/FolderDomainsContext";
 
 const ClientConfigContext = React.createContext<Record<
   string,

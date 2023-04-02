@@ -10,11 +10,8 @@ import { useTabUrl } from "../layout/utils";
 import { useSegment } from "../layout/components/SegmentContext";
 import { DialogOption } from "../elements/DialogOption";
 import { DocumentDuplicateIcon, PlusIcon } from "@heroicons/react/24/outline";
-import { useTemplateFolder } from "./folders-context";
-import {
-  useDocumentIdGenerator,
-  useTemplateIdGenerator,
-} from "../id-generator";
+import { useTemplateFolder } from "./FoldersContext";
+import { useTemplateIdGenerator } from "../id-generator";
 import { DocumentId } from "@storyflow/backend/types";
 
 export function AddTemplateDialog({

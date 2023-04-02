@@ -5,7 +5,7 @@ import {
   PlusIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
-import { computeFieldId, createTemplateFieldId } from "@storyflow/backend/ids";
+import { createTemplateFieldId } from "@storyflow/backend/ids";
 import { DocumentId, FolderId, SpaceId } from "@storyflow/backend/types";
 import React from "react";
 import {

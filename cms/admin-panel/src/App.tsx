@@ -4,7 +4,7 @@ import { SWRConfig } from "swr";
 import { provider, QueryContextProvider } from "./client";
 import { ClientConfigProvider } from "./client-config";
 import { FieldFocusProvider } from "./field-focus";
-import { FoldersProvider } from "./folders/folders-context";
+import { FoldersProvider } from "./folders/FoldersContext";
 import { IdGenerator } from "./id-generator";
 import Layout from "./layout/components/Layout";
 import { Preload } from "./preload";

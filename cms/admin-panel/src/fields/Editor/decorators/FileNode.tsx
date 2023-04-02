@@ -3,7 +3,7 @@ import { PhotoIcon } from "@heroicons/react/24/outline";
 import { FileToken } from "@storyflow/backend/types";
 import { LexicalNode, NodeKey } from "lexical";
 import React from "react";
-import { useFileLabel } from "../../../files";
+import { useFileLabel } from "../../../data/files";
 import { caretClasses } from "./caret";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 import { useIsSelected } from "./useIsSelected";

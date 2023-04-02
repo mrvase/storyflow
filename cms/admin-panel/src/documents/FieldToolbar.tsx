@@ -12,7 +12,7 @@ import React from "react";
 import ReactDOM from "react-dom";
 import { DocumentConfigOp, PropertyOp, targetTools } from "shared/operations";
 import { useOptimisticDocumentList } from ".";
-import { useTemplateFolder } from "../folders/folders-context";
+import { useTemplateFolder } from "../folders/FoldersContext";
 import Content from "../layout/components/Content";
 import { useDocumentMutate } from "./collab/DocumentCollabContext";
 import { useFieldConfig } from "./collab/hooks";

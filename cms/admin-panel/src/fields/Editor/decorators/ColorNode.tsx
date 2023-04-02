@@ -3,7 +3,7 @@ import { SwatchIcon } from "@heroicons/react/24/outline";
 import { ColorToken } from "@storyflow/backend/types";
 import { LexicalNode, NodeKey } from "lexical";
 import React from "react";
-import { getColorName } from "../../../utils/colors";
+import { getColorName } from "../../../data/colors";
 import { caretClasses } from "./caret";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 import { useIsSelected } from "./useIsSelected";

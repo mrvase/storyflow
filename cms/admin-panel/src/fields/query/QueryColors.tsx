@@ -4,7 +4,7 @@ import React from "react";
 import { ColorPicker } from "../../elements/ColorPicker/ColorPicker";
 import { hexToRgba } from "../../elements/ColorPicker/convert";
 import useSWR from "swr";
-import { getColorName } from "../../utils/colors";
+import { getColorName } from "../../data/colors";
 import { Option as OptionComponent, useOptionEvents } from "./Option";
 import {
   ColorToken,

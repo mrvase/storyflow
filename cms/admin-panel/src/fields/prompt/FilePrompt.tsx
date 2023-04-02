@@ -7,8 +7,8 @@ import {
   getFileTypeFromExtension,
   getImageSize,
   getVideoSize,
-} from "../../utils/file";
-import { useFiles } from "../../files";
+} from "../../data/files/file";
+import { useFiles } from "../../data/files";
 import { Spinner } from "../../elements/Spinner";
 import { useUrlInfo } from "../../users";
 import { useOptionEvents } from "./Option";

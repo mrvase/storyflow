@@ -10,12 +10,11 @@ import React from "react";
 import { SWRClient } from "../../client";
 import { Option as OptionComponent } from "./Option";
 import { markMatchingString } from "./helpers";
-import { parseDateFromString } from "../../utils/dates";
+import { parseDateFromString } from "../../data/dates";
 import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
 import { createTemplateFieldId, getDocumentId } from "@storyflow/backend/ids";
 import { calculateFromRecord } from "@storyflow/backend/calculate";
 import { useDocumentIdGenerator } from "../../id-generator";
-import { createComponent } from "../Editor/createComponent";
 import { useFieldId } from "../FieldIdContext";
 
 export function QueryCommands({
