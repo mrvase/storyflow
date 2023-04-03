@@ -240,10 +240,7 @@ const TEMPLATES = [
   }),
 ];
 
-export function useArticle(
-  articleId: DocumentId | undefined,
-  options: { inactive?: boolean } = {}
-) {
+export function useArticle(articleId: DocumentId | undefined) {
   const defaultTemplate = TEMPLATES.find((el) => el._id === articleId);
 
   if (defaultTemplate) {
@@ -269,7 +266,7 @@ export function useArticle(
   const { data, error, mutate } = SWRClient.documents.get.useQuery(
     articleId as string,
     {
-      inactive: options.inactive || !articleId, // maybe: || Boolean(initialArticle),
+      inactive: !articleId, // maybe: || Boolean(initialArticle),
     }
   );
 

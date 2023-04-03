@@ -6,13 +6,12 @@ import {
 } from "../documents";
 import { useFolderCollab } from "./collab/FolderCollabContext";
 import { targetTools } from "shared/operations";
-import { useTabUrl } from "../layout/utils";
-import { useSegment } from "../layout/components/SegmentContext";
 import { DialogOption } from "../elements/DialogOption";
 import { DocumentDuplicateIcon, PlusIcon } from "@heroicons/react/24/outline";
 import { useTemplateFolder } from "./FoldersContext";
 import { useTemplateIdGenerator } from "../id-generator";
 import { DocumentId } from "@storyflow/backend/types";
+import { usePanel, useRoute } from "../panel-router/Routes";
 
 export function AddTemplateDialog({
   isOpen,
@@ -27,8 +26,8 @@ export function AddTemplateDialog({
 }) {
   const mutateArticles = useArticleListMutation();
   const generateTemplateId = useTemplateIdGenerator();
-  const [, navigateTab] = useTabUrl();
-  const { current } = useSegment();
+  const [, navigate] = usePanel();
+  const route = useRoute();
 
   const collab = useFolderCollab();
 
@@ -63,7 +62,7 @@ export function AddTemplateDialog({
             },
           ],
         });
-        navigateTab(`${current}/t-${id}`, { navigate: true });
+        navigate(`${route}/t${id}`, { navigate: true });
       }
       close();
     },

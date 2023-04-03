@@ -22,8 +22,6 @@ import Table from "../../documents/components/Table";
 import { useClient } from "../../client";
 import { addDocumentImport } from "../../custom-events";
 import { useFieldFocus } from "../../field-focus";
-import { useSegment } from "../../layout/components/SegmentContext";
-import { useTabUrl } from "../../layout/utils";
 import { useCurrentFolder } from "../FolderPageContext";
 import Space from "./Space";
 import Loader from "../../elements/Loader";
@@ -32,6 +30,7 @@ import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
 import { useDocumentIdGenerator } from "../../id-generator";
 import { calculateFromRecord } from "@storyflow/backend/calculate";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
+import { usePanel, useRoute } from "../../panel-router/Routes";
 
 export function DocumentListSpace({
   spaceId,
@@ -176,8 +175,8 @@ function AddArticleButton({ folder }: { folder: FolderId }) {
 
   const mutateArticles = useArticleListMutation();
   const generateDocumentId = useDocumentIdGenerator();
-  const [, navigateTab] = useTabUrl();
-  const { current } = useSegment();
+  const [, navigate] = usePanel();
+  const route = useRoute();
   const client = useClient();
 
   const addArticle = async () => {
@@ -205,7 +204,7 @@ function AddArticleButton({ folder }: { folder: FolderId }) {
           },
         ],
       });
-      navigateTab(`${current}/d-${id}`, { navigate: true });
+      navigate(`${route}/d${id}`, { navigate: true });
     } catch (err) {
       console.log(err);
     }

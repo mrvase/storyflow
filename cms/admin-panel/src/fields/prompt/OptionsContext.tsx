@@ -1,6 +1,6 @@
 import React from "react";
 import { useContextWithError } from "../../utils/contextError";
-import { Actions, Reducers, useReducer } from "./useReducer";
+import { Actions, Reducers, useReducer } from "../../utils/useReducer";
 
 function sortByDomNode<T>(
   nodes: T[],

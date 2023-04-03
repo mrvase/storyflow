@@ -13,7 +13,7 @@ import React from "react";
 import { useLocalStorage } from "../../state/useLocalStorage";
 import Dialog from "../../elements/Dialog";
 import { SettingsDialog } from "./SettingsDialog";
-import { useTabUrl } from "../utils";
+import { usePanelActions } from "../../panel-router/PanelRouter";
 
 export default function Nav() {
   const [isOpen, setIsOpen] = useLocalStorage<boolean>("nav-is-open", true);
@@ -27,7 +27,7 @@ export default function Nav() {
     document.body.classList[darkMode ? "add" : "remove"]("dark");
   }, [darkMode]);
 
-  let [, navigateTab] = useTabUrl();
+  const actions = usePanelActions();
 
   return (
     <>
@@ -49,19 +49,19 @@ export default function Nav() {
           <div className="mt-auto flex justify-end gap-2">
             <button
               className="flex-center w-10 h-10 hover:bg-gray-400/25 dark:hover:bg-gray-850 rounded transition-colors"
-              onClick={() => navigateTab("/~0/folders")}
+              onClick={() => actions.open({ path: "/folders", index: 0 })}
             >
               <FolderIcon className="w-5 h-5" />
             </button>
             <button
               className="flex-center w-10 h-10 hover:bg-gray-400/25 dark:hover:bg-gray-850 rounded transition-colors"
-              onClick={() => navigateTab("/~0/templates")}
+              onClick={() => actions.open({ path: "/templates", index: 0 })}
             >
               <DocumentIcon className="w-5 h-5" />
             </button>
             <button
               className="flex-center w-10 h-10 hover:bg-gray-400/25 dark:hover:bg-gray-850 rounded transition-colors"
-              onClick={() => navigateTab("/~0/files")}
+              onClick={() => actions.open({ path: "/files", index: 0 })}
             >
               <PhotoIcon className="w-5 h-5" />
             </button>

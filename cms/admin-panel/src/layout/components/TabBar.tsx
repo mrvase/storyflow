@@ -9,23 +9,15 @@ import {
   AdjustmentsHorizontalIcon,
   ChevronLeftIcon,
 } from "@heroicons/react/24/outline";
-import { Tab } from "../types";
 import cl from "clsx";
 import { useLocalStorage } from "../../state/useLocalStorage";
 import { useDocumentCollab } from "../../documents/collab/DocumentCollabContext";
 import { CommandLine } from "./CommandLine";
+import { usePanelActions } from "../../panel-router/PanelRouter";
 
-export default function TabBar({
-  tabs,
-  autoSizeTabs,
-  setNoOfTabs,
-  addTab,
-}: {
-  tabs: Tab[];
-  autoSizeTabs: boolean;
-  setNoOfTabs: (callback: (ps: number | null) => number | null) => void;
-  addTab: () => void;
-}) {
+export default function TabBar() {
+  const actions = usePanelActions();
+
   const [, setSidebarIsOpen] = useLocalStorage<boolean>(
     "sidebar-is-open",
     false
@@ -35,17 +27,10 @@ export default function TabBar({
     true
   );
 
-  /*
-  const [isEditing, setIsEditing] = useLocalStorage<boolean>(
-    "editing-articles",
-    false
-  );
-  */
-
   return (
     <div
       className={cl(
-        "h-12 flex px-2 pb-2 gap-2",
+        "bottom-1 z-10 w-full absolute h-10 flex px-3 gap-2",
         "text-gray-600 dark:text-gray-200"
       )}
     >
@@ -62,33 +47,35 @@ export default function TabBar({
             : { width: "2.5rem", marginRight: "0rem", opacity: 1 }
         }
       >
+        <div className={cl("h-8 w-8 border-4 border-gray-850 rounded-lg")}>
+          <button
+            className={cl(
+              "h-6 w-6 flex-center rounded-md transition-[color,box-shadow]",
+              "bg-button text-button ring-button"
+            )}
+            onClick={() => setNavIsOpen((ps) => !ps)}
+          >
+            {navIsOpen ? (
+              <ChevronLeftIcon className="w-4 h-4" />
+            ) : (
+              <Bars3Icon className="w-4 h-4" />
+            )}
+          </button>
+        </div>
+      </div>
+      <div
+        className={cl("h-8 w-8 border-4 border-gray-850 rounded-lg", "ml-auto")}
+      >
         <button
           className={cl(
-            "text-sm h-10 w-10 shrink-0 flex-center rounded-md transition-[color,box-shadow]",
+            "text-sm h-6 w-6 shrink-0 flex-center rounded-md transition-[color,box-shadow]",
             "bg-button ring-button text-button"
           )}
-          onClick={() => setNavIsOpen((ps) => !ps)}
+          onClick={() => setSidebarIsOpen((ps) => !ps)}
         >
-          {navIsOpen ? (
-            <ChevronLeftIcon className="w-4 h-4" />
-          ) : (
-            <Bars3Icon className="w-4 h-4" />
-          )}
+          <StatusButton />
         </button>
       </div>
-      <CommandLine />
-      <button
-        className="text-sm h-10 w-10 shrink-0 px-2 flex-center rounded-md bg-white dark:bg-gray-850 border border-gray-200 dark:border-gray-800 text-gray-300 hover:text-white hover:bg-opacity-100 transition-colors"
-        onClick={() => addTab()}
-      >
-        <PlusIcon className="w-4 h-4" />
-      </button>
-      <button
-        className="text-sm h-10 w-10 shrink-0 px-2 flex-center rounded-md bg-white dark:bg-gray-850 border border-gray-200 dark:border-gray-800 text-gray-300 hover:text-white hover:bg-opacity-100 transition-colors"
-        onClick={() => setSidebarIsOpen((ps) => !ps)}
-      >
-        <AdjustmentsHorizontalIcon className="w-4 h-4" />
-      </button>
     </div>
   );
 }
@@ -179,7 +166,7 @@ export function StatusButton() {
   return (
     <button
       className={cl(
-        "h-10 w-10 shrink-0 flex-center text-sm rounded-md",
+        "h-4 w-4",
         ["uploading", "modified"].includes(current)
           ? "text-yellow-400"
           : "text-green-400"

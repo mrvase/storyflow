@@ -1,13 +1,10 @@
 import React from "react";
-import { getPathFromSegment } from "../layout/utils";
 import Content from "../layout/components/Content";
 import {
   ArrowPathIcon,
   ComputerDesktopIcon,
 } from "@heroicons/react/24/outline";
 import { useOptimisticDocumentList } from "../documents";
-import { useSegment } from "../layout/components/SegmentContext";
-import { useOnLoadHandler } from "../layout/onLoadHandler";
 import { createTemplateFieldId } from "@storyflow/backend/ids";
 import { EditableLabel } from "../elements/EditableLabel";
 import cl from "clsx";
@@ -16,13 +13,11 @@ import {
   DBDocument,
   FieldId,
   DBFolder,
-  FolderId,
   SpaceId,
   SyntaxTreeRecord,
 } from "@storyflow/backend/types";
 import { SWRClient, useClient } from "../client";
 import { useClientConfig } from "../client-config";
-import { unwrap } from "@storyflow/result";
 import { DomainsButton } from "./FolderPage";
 import {
   FolderDomainsContext,
@@ -36,27 +31,16 @@ import { getFieldRecord, getGraph } from "shared/computation-tools";
 import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
 import { calculateFromRecord } from "@storyflow/backend/calculate";
 import { AppPageContext } from "./AppPageContext";
+import { usePanel, useRoute } from "../panel-router/Routes";
+import { parseSegment } from "../layout/components/routes";
 
-export default function AppPage({
-  isOpen,
-  isSelected,
-  onLoad,
-  numberOfVisibleTabs,
-  children,
-}: {
-  isOpen: boolean;
-  isSelected: boolean;
-  onLoad?: () => void;
-  numberOfVisibleTabs: number;
-  children?: React.ReactNode;
-}) {
-  const { current } = useSegment();
-  const path = getPathFromSegment(current);
-  const [type, urlId] = path.split("/").slice(-1)[0].split("-");
-  if (!urlId) throw new Error("Invalid url");
-  const folderLookupId = urlId as FolderId;
+export default function AppPage({ children }: { children?: React.ReactNode }) {
+  const route = useRoute();
+  const segment = parseSegment<"app">(route);
+  const folder = useFolder(segment.id);
 
-  const folder = useFolder(folderLookupId);
+  const [{ path }] = usePanel();
+  const isSelected = path === route;
 
   const { articles } = useOptimisticDocumentList(folder?._id);
 
@@ -102,8 +86,6 @@ export default function AppPage({
 
     return ordered;
   }, [articles]);
-
-  useOnLoadHandler(true, onLoad);
 
   const [dialogIsOpen, setDialogIsOpen] = React.useState<null | string>(null);
   const [parentUrl, setParentUrl] = React.useState<null | {
@@ -163,7 +145,6 @@ export default function AppPage({
     <AppPageContext.Provider value={ctx}>
       <FolderDomainsProvider domains={folder?.domains ?? []}>
         <Content
-          selected={isOpen}
           icon={ComputerDesktopIcon}
           header={
             <EditableLabel
@@ -218,7 +199,7 @@ export default function AppPage({
               }}
               folder={folder._id}
               parentUrl={parentUrl ?? undefined}
-              type={type}
+              type="app"
             />
           )}
           <div className="flex flex-col">

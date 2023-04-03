@@ -24,8 +24,6 @@ export function AppSpace({
 
   const { articles } = useOptimisticDocumentList(folderId);
 
-  console.log("FOLDER", folderId, articles);
-
   const { urls, addArticleWithUrl } = useAppPageContext();
 
   if (!articles) {

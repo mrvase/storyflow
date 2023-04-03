@@ -1,70 +1,43 @@
 import cl from "clsx";
 import {
+  BookmarkIcon,
   ComputerDesktopIcon,
   DocumentDuplicateIcon,
   DocumentIcon,
   FolderIcon,
   HomeIcon,
-  Square2StackIcon,
+  PlusIcon,
   Squares2X2Icon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import React from "react";
 import Loader from "../../elements/Loader";
-import { Tab } from "../types";
-import useLocationLabel from "../useLocationLabel";
-import { useTabUrl } from "../utils";
+import useLocationLabel from "./useLocationLabel";
+import { PanelData } from "../../panel-router/types";
+import { usePanel } from "../../panel-router/Routes";
+import { usePanelActions } from "../../panel-router/PanelRouter";
 
 export default function LocationBar({
-  tab,
   isFocused,
   dragHandleProps,
-  selected,
-  setSelected,
-  segments,
-  pinned,
-  togglePin,
+  data,
 }: {
-  tab: Tab;
-  segments: string[];
   isFocused: boolean;
-  selected: string;
-  setSelected: (value: string) => void;
   dragHandleProps: any;
-  pinned: boolean;
-  togglePin: () => void;
+  data: PanelData;
 }) {
-  const [, navigateTab] = useTabUrl();
+  const actions = usePanelActions();
+  const [{ path }, navigate, close] = usePanel(data);
 
-  const isSystemWindow = tab.segment.startsWith("/~0");
+  const segments = [
+    "",
+    ...path
+      .split("/")
+      .filter(Boolean)
+      .map((_, index, arr) => arr.slice(0, index + 1).join("/")),
+  ];
 
-  const segmentsMemo = React.useRef<string[]>([]);
-  const prevSegment = React.useRef<string>("");
-
-  React.useEffect(() => {
-    if (
-      prevSegment.current.startsWith(tab.segment) &&
-      prevSegment.current.length > tab.segment.length
-    ) {
-      segmentsMemo.current.unshift(prevSegment.current);
-    } else {
-      segmentsMemo.current = [];
-    }
-    prevSegment.current = tab.segment;
-  }, [tab.segment]);
-
-  /*
-  const [query, setQuery] = React.useState("");
-
-  const suggestion = React.useMemo(() => {
-    if (query === "") {
-      return;
-    }
-    return folders?.find((el) =>
-      el.label.toLowerCase().startsWith(query.toLowerCase())
-    );
-  }, [query]);
-  */
+  const isSystemWindow = path.endsWith("folders") || path.endsWith("templates");
 
   if (isSystemWindow) {
     return (
@@ -79,7 +52,7 @@ export default function LocationBar({
           onMouseDown={(ev) => ev.stopPropagation()} // prevent focus
           onClick={(ev) => {
             ev.stopPropagation();
-            navigateTab(tab.segment, { close: true });
+            close();
           }}
         >
           <XMarkIcon className="w-4 h-4" />
@@ -101,54 +74,43 @@ export default function LocationBar({
         {...dragHandleProps}
       >
         <div className="flex gap-2 pl-2 h-full overflow-x-auto no-scrollbar grow">
-          {segments.map((el) => (
+          {segments.map((segment, index) => (
             <LocationBarItem
-              key={el}
-              segment={el}
-              current={selected === el}
-              onHover={() => setSelected(el)}
+              key={segment}
+              segment={segment}
+              isCurrent={index === segments.length - 1}
+              onHover={() => {}}
+              navigate={navigate}
             />
           ))}
-          {/*
-          <div className="flex h-full grow text-[0px] relative">
-            <div className="px-1 h-full flex items-center text-sm absolute pointer-events-none opacity-50">
-              <span className="text-transparent">
-                {(suggestion?.label ?? query).slice(0, query.length)}
-              </span>
-              <span>{(suggestion?.label ?? "").slice(query.length)}</span>
-            </div>
-            <input
-              type="text"
-              className={cl(
-                "px-1 m-0 py-2.5 text-sm w-0 min-w-[100px] grow bg-transparent outline-none",
-                !query
-                  ? "dark:text-white"
-                  : suggestion
-                  ? "text-green-600 dark:text-green-400"
-                  : "text-red-600 dark:text-red-400"
-              )}
-              value={(suggestion?.label ?? query).slice(0, query.length)}
-              onMouseEnter={() => setSelected(segments[segments.length - 1])}
-              onChange={(ev) => setQuery(ev.target.value)}
-            />
-          </div>
-        */}
         </div>
         <button
           className={cl(
-            "shrink-0 ml-auto mr-2 flex items-center justify-center h-full px-3",
-            pinned && "text-teal-500"
+            "shrink-0 ml-auto flex items-center justify-center h-full px-3"
           )}
-          onClick={() => togglePin()}
         >
-          <Square2StackIcon className="w-4 h-4" />
+          <BookmarkIcon className="w-4 h-4" />
         </button>
         <button
-          className="shrink-0 mr-2 ml-auto flex items-center justify-center h-full px-3"
+          className={cl(
+            "shrink-0 flex items-center justify-center h-full px-3"
+          )}
+          onClick={(ev) => {
+            ev.stopPropagation();
+            actions.open({
+              path,
+              index: data.index + 1,
+            });
+          }}
+        >
+          <PlusIcon className="w-4 h-4" />
+        </button>
+        <button
+          className="shrink-0 flex items-center justify-center h-full px-3"
           onMouseDown={(ev) => ev.stopPropagation()} // prevent focus
           onClick={(ev) => {
             ev.stopPropagation();
-            navigateTab(tab.segment, { close: true });
+            close();
           }}
         >
           <XMarkIcon className="w-4 h-4" />
@@ -160,11 +122,18 @@ export default function LocationBar({
 
 function LocationBarItem({
   segment,
-  current,
+  isCurrent,
+  navigate,
   onHover,
 }: {
   segment: string;
-  current: boolean;
+  isCurrent: boolean;
+  navigate: (
+    path: string,
+    options?: {
+      navigate?: boolean | undefined;
+    }
+  ) => string;
   onHover: () => void;
 }) {
   const { label, type } = useLocationLabel(segment);
@@ -184,14 +153,14 @@ function LocationBarItem({
         </div>
       );
     }
-    if (type === "component") {
+    if (type === "field") {
       return (
         <div className="flex items-center">
           <Squares2X2Icon className="w-4 h-4 mr-2" /> {label}
         </div>
       );
     }
-    if (type === "data") {
+    if (type === "document") {
       return (
         <div className="flex items-center">
           <DocumentIcon className="w-4 h-4 mr-2" /> {label}
@@ -211,15 +180,13 @@ function LocationBarItem({
     return "[Tom]";
   };
 
-  const [, navigateTab] = useTabUrl();
-
   const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const clearTimer = () => {
     timer.current && clearTimeout(timer.current);
   };
 
   const onMouseEnter = () => {
-    if (current) return;
+    if (isCurrent) return;
     timer.current = setTimeout(onHover, 400);
   };
 
@@ -239,13 +206,13 @@ function LocationBarItem({
           : type === "app"
           ? "bg-yellow-100 dark:bg-yellow-300 text-black"
           */
-          current
+          isCurrent
           ? "bg-white dark:bg-gray-850"
           : "bg-button ring-button text-button"
       )}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      onClick={() => navigateTab(segment)}
+      onClick={() => navigate(segment, { navigate: true })}
     >
       {type === "loading" ? (
         <Loader />

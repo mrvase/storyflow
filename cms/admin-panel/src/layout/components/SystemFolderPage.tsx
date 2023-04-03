@@ -31,7 +31,7 @@ export function SystemFolderPage() {
   };
 
   return (
-    <Content selected icon={FolderIcon} header="Alle mapper">
+    <Content icon={FolderIcon} header="Alle mapper">
       <div className="px-5">
         <div>
           <div className="flex items-center ml-9 mb-1 justify-between">

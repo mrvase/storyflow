@@ -2,8 +2,6 @@ import React from "react";
 import Dialog from "../elements/Dialog";
 import { useArticleListMutation } from "../documents";
 import { getDefaultValuesFromTemplateAsync } from "../documents/template-fields";
-import { useTabUrl } from "../layout/utils";
-import { useSegment } from "../layout/components/SegmentContext";
 import { createTemplateFieldId } from "@storyflow/backend/ids";
 import {
   DocumentId,
@@ -17,6 +15,7 @@ import { useDocumentIdGenerator } from "../id-generator";
 import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
 import { getConfig, insertRootInTransform } from "shared/initialValues";
+import { usePanel, useRoute } from "../panel-router/Routes";
 
 export function AddArticleDialog({
   isOpen,
@@ -35,12 +34,12 @@ export function AddArticleDialog({
     record: SyntaxTreeRecord;
     url: string;
   };
-  type: string;
+  type: "app" | "folder";
 }) {
   const mutateArticles = useArticleListMutation();
   const generateDocumentId = useDocumentIdGenerator();
-  const [, navigateTab] = useTabUrl();
-  const { current } = useSegment();
+  const [, navigate] = usePanel();
+  const route = useRoute();
   const client = useClient();
 
   const [label, setLabel] = React.useState("");
@@ -50,7 +49,7 @@ export function AddArticleDialog({
     <Dialog
       isOpen={isOpen}
       close={close}
-      title={`Tilføj ${type === "a" ? "side" : "artikel"}`}
+      title={`Tilføj ${type === "app" ? "side" : "artikel"}`}
     >
       <form
         onSubmit={async (ev) => {
@@ -105,7 +104,7 @@ export function AddArticleDialog({
                 },
               ],
             });
-            navigateTab(`${current}/d-${id}`, { navigate: true });
+            navigate(`${route}/d${id}`, { navigate: true });
             close();
           } catch (err) {
             console.log(err);

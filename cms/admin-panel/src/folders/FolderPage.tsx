@@ -1,6 +1,4 @@
 import React from "react";
-import { useTabUrl } from "../layout/utils";
-import { getPathFromSegment } from "../layout/utils";
 import Content from "../layout/components/Content";
 import {
   ArrowPathRoundedSquareIcon,
@@ -10,16 +8,9 @@ import {
   PencilIcon,
   PlusIcon,
 } from "@heroicons/react/24/outline";
-import { useSegment } from "../layout/components/SegmentContext";
-import { useOnLoadHandler } from "../layout/onLoadHandler";
 import { EditableLabel } from "../elements/EditableLabel";
 import cl from "clsx";
-import {
-  DBFolder,
-  DocumentId,
-  FolderId,
-  SpaceId,
-} from "@storyflow/backend/types";
+import { DBFolder, DocumentId, SpaceId } from "@storyflow/backend/types";
 import { SWRClient } from "../client";
 import {
   FolderDomainsContext,
@@ -35,39 +26,22 @@ import { DocumentListSpace } from "./spaces/DocumentListSpace";
 import { useArticle } from "../documents";
 import { useDocumentLabel } from "../documents/useDocumentLabel";
 import { FolderContext } from "./FolderPageContext";
-import { ROOT_FOLDER } from "@storyflow/backend/constants";
 import { useFieldFocus } from "../field-focus";
 import { addNestedFolder } from "../custom-events";
+import { usePanel, useRoute } from "../panel-router/Routes";
+import { parseSegment } from "../layout/components/routes";
 
 export default function FolderPage({
-  isOpen,
-  isSelected,
-  onLoad,
-  numberOfVisibleTabs,
   children,
 }: {
-  isOpen: boolean;
-  isSelected: boolean;
-  onLoad?: () => void;
-  numberOfVisibleTabs: number;
   children?: React.ReactNode;
 }) {
-  const { current } = useSegment();
+  const route = useRoute();
+  const segment = parseSegment<"folder">(route);
+  const folder = useFolder(segment.id);
 
-  const path = getPathFromSegment(current);
-
-  const [, urlId] = path.split("/").slice(-1)[0].split("-");
-  const folderLookupId = (urlId ?? ROOT_FOLDER) as FolderId;
-  const folder = useFolder(folderLookupId);
-
-  useOnLoadHandler(true, onLoad);
-
-  const cols = {
-    1: "grid-cols-4",
-    2: "grid-cols-2",
-    3: "grid-cols-1",
-    4: "grid-cols-1",
-  }[numberOfVisibleTabs]!;
+  const [{ path }] = usePanel();
+  const isSelected = path === route;
 
   const [dialogIsOpen, setDialogIsOpen] = React.useState<null | string>(null);
 
@@ -99,7 +73,6 @@ export default function FolderPage({
     <FolderContext.Provider value={folder}>
       <FolderDomainsProvider domains={folder?.domains ?? []}>
         <Content
-          selected={isOpen}
           icon={FolderIcon}
           header={
             <FolderLabel
@@ -242,8 +215,8 @@ export function FolderTemplateButton({
   template?: DocumentId;
   openDialog: () => void;
 }) {
-  const { current } = useSegment();
-  const [, navigateTab] = useTabUrl();
+  const route = useRoute();
+  const [{ path }, navigate] = usePanel();
 
   const { article } = useArticle(template);
   const label = useDocumentLabel(article);
@@ -272,7 +245,7 @@ export function FolderTemplateButton({
         label={`Rediger skabelon "${label}"`}
         onClick={() => {
           if (template) {
-            navigateTab(`${current}/t-${template}`);
+            navigate(`${route}/t${template}`, { navigate: true });
             return;
           }
         }}

@@ -2,7 +2,6 @@ import React from "react";
 import cl from "clsx";
 import { Link } from "@storyflow/router";
 import {
-  ArrowTopRightOnSquareIcon,
   ComputerDesktopIcon,
   FolderIcon,
   FolderOpenIcon,
@@ -10,10 +9,9 @@ import {
 import { useSortableItem } from "@storyflow/dnd";
 import { getTranslateDragEffect } from "../../utils/dragEffects";
 import { DBFolder, FolderId } from "@storyflow/backend/types";
-import { useTabUrl } from "../../layout/utils";
-import { useSegment } from "../../layout/components/SegmentContext";
 import { DragIcon } from "./DragIcon";
 import { useFolder } from "../collab/hooks";
+import { usePanel, useRoute } from "../../panel-router/Routes";
 
 export function FolderItem({
   index,
@@ -22,17 +20,16 @@ export function FolderItem({
   index: number;
   folder: DBFolder | FolderId;
 }) {
-  const { current, full } = useSegment();
+  const [{ path }, navigate] = usePanel();
+  const route = useRoute();
 
   const folder = typeof folder_ === "string" ? useFolder(folder_) : folder_;
 
   const typeCode = { data: "f", app: "a" }[folder.type as "data"] ?? "f";
 
-  const isOpen = full.startsWith(`${current}/${typeCode}-${folder._id}`);
+  const isOpen = path.startsWith(`${route}/${typeCode}${folder._id}`);
 
-  const to = `${current}/${typeCode}-${folder._id}`;
-
-  const [, navigateTab] = useTabUrl();
+  const to = `${route}/${typeCode}${folder._id}`;
 
   if (!folder) {
     return null;
@@ -77,7 +74,7 @@ export function FolderItem({
     <div className="w-56">
       <Link
         ref={ref as any}
-        to={navigateTab(to, { navigate: false })}
+        to={navigate(to, { navigate: false })}
         className={cl(
           "group flex items-center px-3 py-4 rounded-md text-lg font-light transition-colors border",
           colors

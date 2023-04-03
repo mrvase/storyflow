@@ -29,9 +29,6 @@ import { useDocumentLabel } from "./useDocumentLabel";
 import { getComponentType, useClientConfig } from "../client-config";
 import { useTemplateFolder } from "../folders/FoldersContext";
 import Content from "../layout/components/Content";
-import { useSegment } from "../layout/components/SegmentContext";
-import { useOnLoadHandler } from "../layout/onLoadHandler";
-import { getPathFromSegment } from "../layout/utils";
 import {
   useDocumentCollab,
   useDocumentMutate,
@@ -49,6 +46,8 @@ import {
 } from "./FieldToolbar";
 import { SWRClient } from "../client";
 import { ExtendTemplatePath } from "./TemplatePathContext";
+import { usePanel, useRoute } from "../panel-router/Routes";
+import { parseSegment } from "../layout/components/routes";
 
 export const getVersionKey = (versions?: Record<RawFieldId, number>) => {
   if (!versions) return -1;
@@ -80,7 +79,6 @@ function useIsModified(id: string, initial: boolean, key: number) {
 export const DocumentContent = ({
   id,
   folder,
-  selected,
   label,
   children,
   isModified: initialIsModified,
@@ -90,7 +88,6 @@ export const DocumentContent = ({
 }: {
   id: DocumentId;
   folder: FolderId | undefined;
-  selected: boolean;
   label: string;
   children: React.ReactNode;
   isModified: boolean;
@@ -104,7 +101,6 @@ export const DocumentContent = ({
 
   return (
     <Content
-      selected={selected}
       icon={variant === "template" ? DocumentDuplicateIcon : DocumentIcon}
       header={
         <span className={cl(variant === "template" && "text-teal-500")}>
@@ -244,27 +240,13 @@ export function TemplateMenu({ id }: { id?: DocumentId }) {
   );
 }
 
-export function DocumentPage({
-  isOpen,
-  isSelected,
-  onLoad,
-  children,
-}: {
-  isOpen: boolean;
-  isSelected: boolean;
-  onLoad?: () => void;
-  children?: React.ReactNode;
-}) {
-  const { current } = useSegment();
+export function DocumentPage({ children }: { children?: React.ReactNode }) {
+  const route = useRoute();
+  const segment = parseSegment<"document" | "template">(route);
+  let { article, histories, error } = useArticle(segment.id);
 
-  const path = getPathFromSegment(current);
-  const [type, articleId] = path.split("/").slice(-1)[0].split("-");
-  if (!articleId) throw new Error("Invalid url");
-  const id = articleId as DocumentId;
-
-  let { article, histories, error } = useArticle(id);
-
-  useOnLoadHandler(Boolean(article), onLoad);
+  const [{ path }] = usePanel();
+  const isSelected = path === route;
 
   return (
     <>
@@ -280,8 +262,7 @@ export function DocumentPage({
           // To check version change, I should see if the latest seen index of the first
           // server package exceeds the version of the document. Then the first package
           // has not been created up against the current document.
-          type={type === "t" ? "template" : "document"}
-          isOpen={isOpen}
+          type={segment.type}
           article={article}
           histories={histories}
         >
@@ -295,13 +276,11 @@ export function DocumentPage({
 
 const Page = ({
   type,
-  isOpen,
   article,
   histories,
   children,
 }: {
   type: "template" | "document";
-  isOpen: boolean;
   article: DBDocument;
   histories: Record<string, ServerPackage<DocumentConfigOp | PropertyOp>[]>;
   children: React.ReactNode;
@@ -343,7 +322,6 @@ const Page = ({
             variant={type === "template" ? "template" : undefined}
             folder={article?.folder}
             label={label ?? "Ingen label"}
-            selected={isOpen}
             isModified={isModified}
             toolbar={<Toolbar id={id} config={config} />}
           >

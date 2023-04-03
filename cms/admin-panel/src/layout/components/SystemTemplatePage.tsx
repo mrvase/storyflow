@@ -1,9 +1,5 @@
-import React from "react";
 import Content from "./Content";
 import { DocumentDuplicateIcon, TrashIcon } from "@heroicons/react/24/outline";
-import { DragIcon } from "../../folders/spaces/DragIcon";
-import { useDragItem } from "@storyflow/dnd";
-import { DBFolder } from "@storyflow/backend/types";
 import { useTemplateFolder } from "../../folders/FoldersContext";
 import { FolderContext } from "../../folders/FolderPageContext";
 import Space from "../../folders/spaces/Space";
@@ -39,7 +35,7 @@ export function SystemTemplatePage() {
 
   return (
     <FolderContext.Provider value={folder}>
-      <Content selected icon={DocumentDuplicateIcon} header="Alle skabeloner">
+      <Content icon={DocumentDuplicateIcon} header="Alle skabeloner">
         <Space
           label="Sider"
           buttons={<Space.Button icon={TrashIcon} onClick={handleDelete} />}

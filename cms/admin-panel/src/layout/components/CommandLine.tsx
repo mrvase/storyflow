@@ -1,6 +1,5 @@
 import React from "react";
 import cl from "clsx";
-import { StatusButton } from "./TabBar";
 import { useClient } from "../../client";
 import { unwrap } from "@storyflow/result";
 import { isDev } from "../../utils/isDev";
@@ -62,7 +61,6 @@ export function CommandLine() {
         )}
         placeholder="Indtast kommando"
       />
-      <StatusButton />
     </div>
   );
 }

@@ -29,8 +29,6 @@ import { calculateFn } from "./default/calculateFn";
 import { HomeIcon, LinkIcon, StarIcon } from "@heroicons/react/24/outline";
 import { useAppPageContext } from "../folders/AppPageContext";
 import { Link } from "@storyflow/router";
-import { useSegment } from "../layout/components/SegmentContext";
-import { useTabUrl } from "../layout/utils";
 import { useArticle, useDocumentList } from "../documents";
 import { getDocumentLabel } from "../documents/useDocumentLabel";
 import { getConfig } from "shared/initialValues";
@@ -41,6 +39,7 @@ import { calculate, calculateFromRecord } from "@storyflow/backend/calculate";
 import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
 import { useDocumentIdGenerator } from "../id-generator";
 import { createTokenStream, parseTokenStream } from "shared/parse-token-stream";
+import { usePanel, useRoute } from "../panel-router/Routes";
 
 export const toSlug = (value: string) =>
   value
@@ -263,11 +262,11 @@ export default function UrlField({ id, version, history }: FieldProps) {
     });
   }, [client]);
 
-  const { current } = useSegment();
-  const [, navigateTab] = useTabUrl();
+  const [, navigate] = usePanel();
+  const route = useRoute();
 
   const replacePage = (id: string) =>
-    navigateTab(`${current.split("/").slice(0, -1).join("/")}/d-${id}`, {
+    navigate(`${route.split("/").slice(0, -1).join("/")}/d${id}`, {
       navigate: false,
     });
 

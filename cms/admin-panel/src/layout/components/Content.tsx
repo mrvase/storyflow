@@ -11,10 +11,10 @@ import {
 import { Menu } from "@headlessui/react";
 import { MenuTransition } from "../../elements/transitions/MenuTransition";
 import { useLocalStorage } from "../../state/useLocalStorage";
+import { useRouteTransition } from "../../panel-router/Routes";
 
 function Content({
   children,
-  selected,
   buttons,
   header,
   toolbar,
@@ -22,7 +22,6 @@ function Content({
   icon: Icon,
 }: {
   children: React.ReactNode;
-  selected: boolean;
   header?: React.ReactNode;
   buttons?: React.ReactNode;
   toolbar?: React.ReactNode;
@@ -31,16 +30,19 @@ function Content({
 }) {
   const { isFocused } = useBranchIsFocused();
 
-  const [isOpen, setIsOpen] = useLocalStorage<boolean>("toolbar-open", true);
+  const [, setIsOpen] = useLocalStorage<boolean>("toolbar-open", true);
+
+  const status = useRouteTransition();
 
   return (
     <div
       className={cl(
-        "inset-0 absolute transition-[opacity,transform] ease-out overflow-y-auto no-scrollbar",
+        "overflow-y-auto overflow-x-hidden no-scrollbar",
+        "inset-0 absolute transition-[opacity,transform] duration-200 ease-out",
         "bg-white dark:bg-gray-850 text-gray-700 dark:text-white", // for when transparency is added on non-focus
-        selected
-          ? "opacity-100 translate-x-0"
-          : "opacity-0 translate-x-10 pointer-events-none"
+        status === "exited"
+          ? "opacity-0 translate-x-10 pointer-events-none"
+          : "opacity-100 translate-x-0"
       )}
     >
       {header && (

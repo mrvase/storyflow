@@ -11,8 +11,6 @@ import {
 import React from "react";
 import { useFieldFocus } from "../field-focus";
 import { addImport } from "../custom-events";
-import { useSegment } from "../layout/components/SegmentContext";
-import { useTabUrl } from "../layout/utils";
 import { useLabel } from "../documents/collab/hooks";
 import {
   FieldConfig,
@@ -23,7 +21,6 @@ import { getTranslateDragEffect } from "../utils/dragEffects";
 import useIsFocused from "../utils/useIsFocused";
 import { useIsFocused as useIsEditorFocused } from "../editor/react/useIsFocused";
 import { getDefaultField } from "@storyflow/backend/fields";
-import useTabs from "../layout/useTabs";
 import { getConfigFromType, useClientConfig } from "../client-config";
 import { isTemplateField } from "@storyflow/backend/ids";
 import { FieldToolbarPortal } from "../documents/FieldToolbar";
@@ -31,6 +28,8 @@ import { EditorFocusProvider } from "../editor/react/useIsFocused";
 import { Attributes, AttributesProvider } from "./Attributes";
 import { SelectedPathProvider, useNestedEntity, useSelectedPath } from "./Path";
 import { useFolder } from "../folders/collab/hooks";
+import { usePanel, useRoute } from "../panel-router/Routes";
+import { usePanelActions } from "../panel-router/PanelRouter";
 
 type Props = {
   fieldConfig: FieldConfig;
@@ -153,13 +152,15 @@ function LabelBar({
 
   const [isEditing] = [true]; //useLocalStorage<boolean>("editing-articles", false);
 
-  const [, navigateTab] = useTabUrl();
-  const { current, full } = useSegment();
-  const isOpen = full.endsWith(`/c-${id}`);
+  const [{ path }, navigate] = usePanel();
+  const route = useRoute();
+
+  const isOpen = path.endsWith(`/c${id}`);
+
   const specialFieldConfig = getDefaultField(id);
 
   const fullscreen = () => {
-    navigateTab(isOpen ? `${current}` : `${current}/c-${id}`);
+    navigate(isOpen ? route : `${route}/c${id}`, { navigate: true });
   };
 
   return (
@@ -304,22 +305,20 @@ function Dot({ id, dragHandleProps }: { id: FieldId; dragHandleProps: any }) {
 
   const isDraggable = "draggable" in dragHandleProps;
 
-  const [, navigateTab] = useTabUrl();
-  const { current, full } = useSegment();
-  const isOpen = full.endsWith(`/c-${id}`);
+  const actions = usePanelActions();
+  const [{ path, index }] = usePanel();
+  const route = useRoute();
+
+  const isOpen = path.endsWith(`/c${id}`);
 
   const Icon = isNative ? ChevronUpDownIcon : LockClosedIcon;
-
-  const { tabs } = useTabs();
 
   return (
     <>
       <Draggable
         onDrop={() => {
-          const index = Math.max(...tabs.map((el) => el.index)) + 1;
-          const currentUrl = current.split("/").slice(2).join("/");
-          const tab = isOpen ? currentUrl : `${currentUrl}/c-${id}`;
-          navigateTab(`/~${index}/${tab}`);
+          const path = isOpen ? route : `${route}/c${id}`;
+          actions.open({ path, index: index + 1 });
         }}
       >
         <div

@@ -1,8 +1,7 @@
 import cl from "clsx";
-import { useTabUrl } from "../../layout/utils";
-import { useUnsafeSegment } from "../../layout/components/SegmentContext";
 import { CheckIcon } from "@heroicons/react/24/outline";
 import { useDragItem } from "@storyflow/dnd";
+import { usePanel, useRoute } from "../../panel-router/Routes";
 
 export default function Table({
   rows,
@@ -47,11 +46,8 @@ function Row({
   columns: { name?: string; value?: any }[];
   indent?: number;
 }) {
-  const [, navigateTab] = useTabUrl();
-
-  const segment = useUnsafeSegment();
-
-  let current = segment ? segment.current : null;
+  const [, navigate] = usePanel();
+  const route = useRoute();
 
   const { dragHandleProps, ref } = useDragItem<HTMLTableRowElement, string>({
     id,
@@ -74,13 +70,9 @@ function Row({
           <td
             key={index}
             className={cl("p-2.5 border-0", "w-full")}
-            onClick={
-              current !== null
-                ? () => {
-                    navigateTab(`${current}/d-${id}`);
-                  }
-                : undefined
-            }
+            onClick={() => {
+              navigate(`${route}/d${id}`, { navigate: true });
+            }}
           >
             {}
             {index === 0 && indent ? (

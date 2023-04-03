@@ -29,9 +29,6 @@ import {
   getIdFromString,
   getRawFieldId,
 } from "@storyflow/backend/ids";
-import { ChevronLeftIcon } from "@heroicons/react/24/outline";
-import { useSegment } from "../layout/components/SegmentContext";
-import { getPathFromSegment, useTabUrl } from "../layout/utils";
 import { ComponentConfig, LibraryConfig } from "@storyflow/frontend/types";
 import { useDocumentIdGenerator } from "../id-generator";
 import { tokens } from "@storyflow/backend/tokens";
@@ -44,11 +41,12 @@ import {
 } from "./Attributes";
 import { createKey } from "../utils/createKey";
 import { BuilderIframe } from "./builder/BuilderIframe";
-import { useOnLoadHandler } from "../layout/onLoadHandler";
 import { SelectedPathProvider, SyncBuilderPath, useSelectedPath } from "./Path";
 import { DefaultField } from "./default/DefaultField";
 import { FieldIdContext } from "./FieldIdContext";
 import { EditorFocusProvider } from "../editor/react/useIsFocused";
+import { useRoute } from "../panel-router/Routes";
+import { parseSegment } from "../layout/components/routes";
 
 const useBuilderRendered = ({
   listeners,
@@ -297,31 +295,6 @@ const ElementActions = ({
   return null;
 };
 
-function Toolbar() {
-  const [, navigateTab] = useTabUrl();
-  const { current } = useSegment();
-
-  return (
-    <div className="flex mb-5">
-      <div className="mt-3.5 -ml-2.5 mr-5">
-        <Content.ToolbarButton
-          icon={ChevronLeftIcon}
-          onClick={() => {
-            navigateTab(current);
-          }}
-        >
-          Tilbage
-        </Content.ToolbarButton>
-      </div>
-      <div className="mt-3.5 mr-auto flex items-center">{/*<PathMap />*/}</div>
-      {/* isNative && <FieldToolbar documentId={documentId} fieldId={id} /> */}
-      <div className="mt-3.5 ml-2">
-        <Content.ToolbarButton>Publicer ændringer</Content.ToolbarButton>
-      </div>
-    </div>
-  );
-}
-
 const useIframe = () => {
   const [uniqueId] = React.useState(() => createKey());
 
@@ -358,24 +331,10 @@ const useIframe = () => {
   return ctx;
 };
 
-export function FieldPage({
-  isOpen,
-  isSelected,
-  children,
-  onLoad,
-}: {
-  isOpen: boolean;
-  isSelected: boolean;
-  children?: React.ReactNode;
-  onLoad: () => void;
-}) {
-  const { current } = useSegment();
-  const path = getPathFromSegment(current);
-  const [, fieldId] = path.split("/").slice(-1)[0].split("-");
-  if (!fieldId) throw new Error("Invalid url");
-  const id = fieldId as FieldId;
-
-  useOnLoadHandler(true, onLoad);
+export function FieldPage({ children }: { children?: React.ReactNode }) {
+  const route = useRoute();
+  const segment = parseSegment<"field">(route);
+  const id = segment.id;
 
   const documentId = getDocumentId(id);
   const templateFieldId = getRawFieldId(id);
@@ -400,7 +359,7 @@ export function FieldPage({
         >
           <SyncBuilderPath listeners={listeners} id={id} />
           <ElementActions id={id} listeners={listeners} push={push} />
-          <Content selected={isOpen} className="relative h-full">
+          <Content className="relative h-full">
             <PropagateStatePlugin
               id={id}
               rendered={rendered}
@@ -427,7 +386,7 @@ export function FieldPage({
                 )}
               />
               <Panel collapsible>
-                <div className="p-2.5">
+                <div className="p-2.5 h-full overflow-y-auto overflow-x-hidden no-scrollbar">
                   <FieldPanel id={id} />
                 </div>
               </Panel>
