@@ -160,7 +160,9 @@ function LabelBar({
   const specialFieldConfig = getDefaultField(id);
 
   const fullscreen = () => {
-    navigate(isOpen ? route : `${route}/c${id}`, { navigate: true });
+    navigate(isOpen ? route : `${route}/c${parseInt(id, 16).toString(16)}`, {
+      navigate: true,
+    });
   };
 
   return (

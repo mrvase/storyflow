@@ -212,7 +212,7 @@ function LocationBarItem({
       )}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      onClick={() => navigate(segment, { navigate: true })}
+      onClick={() => navigate(`/${segment}`, { navigate: true })}
     >
       {type === "loading" ? (
         <Loader />

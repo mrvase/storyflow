@@ -24,18 +24,13 @@ import { getIdFromString } from "../utils/getIdsFromString";
 export const IndexContext = React.createContext(0);
 export const SpreadContext = React.createContext(false);
 
-const BUCKET_NAME = "awss3stack-mybucket15d133bf-1wx5fzxzweii4";
-const BUCKET_REGION = "eu-west-1";
-
 const slug =
   typeof window !== "undefined"
     ? new URLSearchParams(window.location.search).get("slug")!
     : "";
 
 const getImageObject = (name: string) => {
-  const src = slug
-    ? `https://${BUCKET_NAME}.s3.${BUCKET_REGION}.amazonaws.com/${slug}/${name}`
-    : "";
+  const src = slug ? `https://cdn.storyflow.dk/${slug}/${name}` : "";
 
   const width = name ? parseInt(name.split("-")[4] ?? "0", 16) : 0;
   const height = name ? parseInt(name.split("-")[5] ?? "0", 16) : 0;

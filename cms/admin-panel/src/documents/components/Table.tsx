@@ -71,7 +71,9 @@ function Row({
             key={index}
             className={cl("p-2.5 border-0", "w-full")}
             onClick={() => {
-              navigate(`${route}/d${id}`, { navigate: true });
+              navigate(`${route}/d${parseInt(id, 16).toString(16)}`, {
+                navigate: true,
+              });
             }}
           >
             {}

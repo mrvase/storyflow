@@ -29,7 +29,7 @@ export function FolderItem({
 
   const isOpen = path.startsWith(`${route}/${typeCode}${folder._id}`);
 
-  const to = `${route}/${typeCode}${folder._id}`;
+  const to = `${route}/${typeCode}${parseInt(folder._id, 16).toString(16)}`;
 
   if (!folder) {
     return null;

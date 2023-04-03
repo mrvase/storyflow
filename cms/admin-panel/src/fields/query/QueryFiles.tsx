@@ -308,7 +308,7 @@ function FileContainer({
 }
 function File({ name, organization }: { name: string; organization: string }) {
   const type = getFileTypeFromExtension(getFileExtension(name) ?? "");
-  const src = `https://awss3stack-mybucket15d133bf-1wx5fzxzweii4.s3.eu-west-1.amazonaws.com/${organization}/${name}`;
+  const src = `https://cdn.storyflow.dk/${organization}/${name}`;
   return (
     <>
       {type === "image" && (
