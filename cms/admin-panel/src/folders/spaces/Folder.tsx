@@ -6,7 +6,7 @@ import {
   FolderIcon,
   FolderOpenIcon,
 } from "@heroicons/react/24/outline";
-import { useSortableItem } from "@storyflow/dnd";
+import { useDragItem, useSortableItem } from "@storyflow/dnd";
 import { getTranslateDragEffect } from "../../utils/dragEffects";
 import { DBFolder, FolderId } from "@storyflow/backend/types";
 import { DragIcon } from "./DragIcon";
@@ -20,7 +20,7 @@ export function FolderItem({
   index: number;
   folder: DBFolder | FolderId;
 }) {
-  const [{ path }, navigate] = usePanel();
+  const [{ path, index: panelIndex }, navigate] = usePanel();
   const route = useRoute();
 
   const folder = typeof folder_ === "string" ? useFolder(folder_) : folder_;
@@ -70,9 +70,16 @@ export function FolderItem({
     templates: "",
   }[folder.type];
 
+  const { dragHandleProps: linkDragHandleProps } = useDragItem({
+    type: `link:${panelIndex}`,
+    item: to,
+    mode: "link",
+  });
+
   return (
     <div className="w-56">
       <Link
+        {...linkDragHandleProps}
         ref={ref as any}
         to={navigate(to, { navigate: false })}
         className={cl(

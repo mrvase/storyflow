@@ -4,4 +4,4 @@ export { default as DropShadow } from "./items/DropShadow";
 export { default as useDragItem } from "./items/useDragItem";
 export { default as useSortableItem } from "./items/useSortableItem";
 export { default as Sortable, NoList } from "./items/Sortable";
-export type { DragState } from "./items/useDraggable";
+export type { DragState } from "./items/utils";

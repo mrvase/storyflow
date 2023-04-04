@@ -122,6 +122,18 @@ export const useEvents = (
         destinationList?.onChange([add]);
       }
     } else if (mode === "link") {
+      const rect = rectMapToArray(state.rectMap).find(
+        (el) => el.identifier.uniqueId === destination.uniqueId
+      );
+
+      const reject =
+        rect?.canReceive.link({
+          type: state.source.type,
+          item: state.shadow.item,
+        }) === "reject";
+
+      if (reject) return;
+
       const destinationList = destination.uniqueListId
         ? state.getList(destination.uniqueListId)
         : undefined;
@@ -134,7 +146,7 @@ export const useEvents = (
 
       destinationList?.onChange([add]);
     }
-  }, [state.source, state.destination, state.mode]);
+  }, [state.source, state.rectMap, state.destination, state.mode]);
 
   return {
     startDragging,

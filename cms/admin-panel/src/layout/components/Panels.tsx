@@ -6,6 +6,7 @@ import { usePanels, usePanelActions } from "../../panel-router/PanelRouter";
 import { Panel } from "./Panel";
 import { routes } from "./routes";
 import { Routes } from "../../panel-router/Routes";
+import { LinkReceiver } from "./LinkReceiver";
 
 export function Panels() {
   const panels = usePanels();
@@ -32,7 +33,8 @@ export function Panels() {
   );
 
   return (
-    <div className="w-full h-full flex">
+    <div className="w-full h-full flex overflow-hidden">
+      <LinkReceiver index={0} edge="left" id="link-left" />
       <Sortable
         type="panels"
         id="panels"
@@ -51,7 +53,9 @@ export function Panels() {
                   style={{
                     order: data.index,
                   }}
-                />
+                >
+                  <LinkReceiver index={data.index} id={`new-${data.key}`} />
+                </PanelResizeHandle>
               )}
               <Panel data={data} single={panels.data.length === 1}>
                 <Routes routes={routes} data={data} />
@@ -60,6 +64,7 @@ export function Panels() {
           ))}
         </PanelGroup>
       </Sortable>
+      <LinkReceiver index={panels.data.length} edge="right" id="link-right" />
     </div>
   );
 }

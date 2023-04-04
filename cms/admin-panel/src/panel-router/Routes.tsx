@@ -3,7 +3,7 @@ import React from "react";
 import { useContextWithError } from "../utils/contextError";
 import { usePanelActions } from "./PanelRouter";
 import { PanelData, RouteConfig } from "./types";
-import { getPanelsFromUrl, getUrlFromPanels } from "./utils";
+import { getPanelsFromUrl, getUrlFromPanels, replacePanelPath } from "./utils";
 
 /*
 [
@@ -70,13 +70,10 @@ export function usePanel(data?: PanelData) {
 
   const getHref = React.useCallback(
     (path: string, options: { navigate?: boolean } = {}) => {
-      const panels = getPanelsFromUrl(pathname);
-      console.log("GET HREF PATHNAME", pathname, panels, index);
-      panels.data[index].path = path;
-      const href = getUrlFromPanels(panels);
-
-      if (options.navigate) navigate(href);
-
+      const href = replacePanelPath(pathname, { path, index });
+      if (options.navigate) {
+        navigate(href);
+      }
       return href;
     },
     [pathname, navigate, index]
@@ -268,10 +265,6 @@ function RouteTransition({
   }
 
   React.useEffect(() => {
-    console.log("MOUNTED");
-  }, []);
-
-  React.useEffect(() => {
     setStatus(exit ? "exited" : "entered");
   }, [exit]);
 
@@ -285,13 +278,6 @@ function RouteTransition({
       };
     }
   }, [exit]);
-
-  const className = [
-    "transition-[opacity,transform] duration-500",
-    status === "exited"
-      ? "opacity-0 translate-x-10"
-      : "opacity-100 translate-x-0",
-  ].join(" ");
 
   return !exited ? (
     <TransitionContext.Provider value={status}>

@@ -15,8 +15,6 @@ export const getPanelsFromUrl = (url: string): Panels => {
 
   const paths = panelPath.split(/\/\~/g).slice(1);
 
-  console.log("PATHS", url, prefix, panelPath, paths);
-
   return {
     prefix,
     data: paths.map((el, index) => {
@@ -34,4 +32,13 @@ export const getUrlFromPanels = ({ prefix, data }: Panels): string => {
     .slice()
     .sort((a, b) => a.index - b.index)
     .reduce((a, c) => a + `/~${c.path === "/" ? "" : c.path}`, "")}`;
+};
+
+export const replacePanelPath = (
+  pathname: string,
+  next: { index: number; path: string }
+) => {
+  const panels = getPanelsFromUrl(pathname);
+  panels.data[next.index].path = next.path;
+  return getUrlFromPanels(panels);
 };

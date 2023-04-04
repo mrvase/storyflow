@@ -5,7 +5,7 @@ import { ListContext } from "./Sortable";
 import { getFrame } from "../typeGuards";
 import { createKey, translateRect } from "../utils";
 import type { CanReceive } from "../types";
-
+/*
 export type DragState = {
   mode: "move" | "link" | null;
   isShadow: boolean;
@@ -73,7 +73,7 @@ const noReceive: CanReceive = {
   move: () => "ignore",
 };
 
-/** SHADOW STATE */
+// SHADOW STATE
 export default function useDraggable<T>(
   props: ListItemProps<T>
 ): UseDraggableReturn;
@@ -86,7 +86,7 @@ export default function useDraggable<T, U extends StandaloneDeliverProps<T>>(
 export default function useDraggable<T, U extends StandaloneProps<T>>(
   props: U
 ): UseDraggableReturn;
-/** NORMAL STATE */
+// NORMAL STATE
 export default function useDraggable<T>({
   type: typeProp,
   id,
@@ -167,12 +167,6 @@ export default function useDraggable<T>({
                   const { left: x, top: y } =
                     ref.current.getBoundingClientRect();
                   const { clientX, clientY } = ev;
-                  /*
-                  let isChrome = navigator.userAgent.match(
-                    /chrome|chromium|crios/i
-                  );
-                  let ratio = window.devicePixelRatio;
-                  */
                   let scale = 1;
                   ev.dataTransfer.setDragImage(
                     ref.current,
@@ -276,3 +270,4 @@ export default function useDraggable<T>({
     },
   };
 }
+*/

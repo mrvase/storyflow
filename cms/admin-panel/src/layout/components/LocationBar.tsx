@@ -16,6 +16,7 @@ import useLocationLabel from "./useLocationLabel";
 import { PanelData } from "../../panel-router/types";
 import { usePanel } from "../../panel-router/Routes";
 import { usePanelActions } from "../../panel-router/PanelRouter";
+import { useDragItem } from "@storyflow/dnd";
 
 export default function LocationBar({
   isFocused,
@@ -27,7 +28,7 @@ export default function LocationBar({
   data: PanelData;
 }) {
   const actions = usePanelActions();
-  const [{ path }, navigate, close] = usePanel(data);
+  const [{ path, index: panelIndex }, navigate, close] = usePanel(data);
 
   const segments = [
     "",
@@ -70,7 +71,10 @@ export default function LocationBar({
       )}
     >
       <div
-        className={cl("h-full flex", isFocused ? "opacity-100" : "opacity-25")}
+        className={cl(
+          "h-full flex pr-2",
+          isFocused ? "opacity-100" : "opacity-25"
+        )}
         {...dragHandleProps}
       >
         <div className="flex gap-2 pl-2 h-full overflow-x-auto no-scrollbar grow">
@@ -81,19 +85,22 @@ export default function LocationBar({
               isCurrent={index === segments.length - 1}
               onHover={() => {}}
               navigate={navigate}
+              panelIndex={panelIndex}
             />
           ))}
         </div>
         <button
           className={cl(
-            "shrink-0 ml-auto flex items-center justify-center h-full px-3"
+            "shrink-0 ml-auto flex items-center justify-center h-full px-2",
+            "opacity-50 hover:opacity-100 transition-opacity"
           )}
         >
           <BookmarkIcon className="w-4 h-4" />
         </button>
         <button
           className={cl(
-            "shrink-0 flex items-center justify-center h-full px-3"
+            "shrink-0 flex items-center justify-center h-full px-2",
+            "opacity-50 hover:opacity-100 transition-opacity"
           )}
           onClick={(ev) => {
             ev.stopPropagation();
@@ -106,7 +113,10 @@ export default function LocationBar({
           <PlusIcon className="w-4 h-4" />
         </button>
         <button
-          className="shrink-0 flex items-center justify-center h-full px-3"
+          className={cl(
+            "shrink-0 flex items-center justify-center h-full px-2",
+            "opacity-50 hover:opacity-100 transition-opacity"
+          )}
           onMouseDown={(ev) => ev.stopPropagation()} // prevent focus
           onClick={(ev) => {
             ev.stopPropagation();
@@ -124,6 +134,7 @@ function LocationBarItem({
   segment,
   isCurrent,
   navigate,
+  panelIndex,
   onHover,
 }: {
   segment: string;
@@ -134,6 +145,7 @@ function LocationBarItem({
       navigate?: boolean | undefined;
     }
   ) => string;
+  panelIndex: number;
   onHover: () => void;
 }) {
   const { label, type } = useLocationLabel(segment);
@@ -196,8 +208,17 @@ function LocationBarItem({
 
   React.useEffect(() => clearTimer);
 
+  const to = `/${segment}`;
+
+  const { dragHandleProps } = useDragItem({
+    type: `link:${panelIndex}`,
+    item: to,
+    mode: "link",
+  });
+
   return (
     <button
+      {...dragHandleProps}
       className={cl(
         "px-3 my-2 h-7 text-sm leading-none rounded-md font-light",
         type === "template"
@@ -210,9 +231,9 @@ function LocationBarItem({
           ? "bg-white dark:bg-gray-850"
           : "bg-button ring-button text-button"
       )}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
-      onClick={() => navigate(`/${segment}`, { navigate: true })}
+      // onMouseEnter={onMouseEnter}
+      // onMouseLeave={onMouseLeave}
+      onClick={() => navigate(to, { navigate: true })}
     >
       {type === "loading" ? (
         <Loader />

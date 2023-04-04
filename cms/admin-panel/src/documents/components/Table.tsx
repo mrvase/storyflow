@@ -46,36 +46,33 @@ function Row({
   columns: { name?: string; value?: any }[];
   indent?: number;
 }) {
-  const [, navigate] = usePanel();
+  const [{ index: panelIndex }, navigate] = usePanel();
   const route = useRoute();
 
-  const { dragHandleProps, ref } = useDragItem<HTMLTableRowElement, string>({
-    id,
-    type: "article",
-    item: id,
+  const to = `${route}/d${parseInt(id, 16).toString(16)}`;
+
+  const { dragHandleProps } = useDragItem({
+    type: `link:${panelIndex}`,
+    item: to,
     mode: "link",
   });
 
   return (
     <tr
-      ref={ref}
       className="border-t border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition-[background-color]"
       {...dragHandleProps}
+      onClick={() => {
+        navigate(to, {
+          navigate: true,
+        });
+      }}
     >
       <td className="w-[1%] text-[0px] border-0 p-0">
         <Checkbox id={id} />
       </td>
       {columns.map((el, index) => {
         return (
-          <td
-            key={index}
-            className={cl("p-2.5 border-0", "w-full")}
-            onClick={() => {
-              navigate(`${route}/d${parseInt(id, 16).toString(16)}`, {
-                navigate: true,
-              });
-            }}
-          >
+          <td key={index} className={cl("p-2.5 border-0", "w-full")}>
             {}
             {index === 0 && indent ? (
               <div className="mr-3 flex items-center">

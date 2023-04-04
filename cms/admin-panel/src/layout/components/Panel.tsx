@@ -8,6 +8,7 @@ import LocationBar from "./LocationBar";
 import { Panel as ResizablePanel } from "react-resizable-panels";
 import { useSortableItem } from "@storyflow/dnd";
 import { getTranslateDragEffect } from "../../utils/dragEffects";
+import { LinkReceiver } from "./LinkReceiver";
 
 function ErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
   const [showMessage, toggleMessage] = React.useReducer((ps) => !ps, false);
@@ -79,6 +80,11 @@ export function Panel({
         order={data.index}
         style={{ ...style, order: data.index }}
       >
+        <LinkReceiver
+          id={`existing-${data.key}`}
+          type="existing"
+          index={data.index}
+        />
         <div
           ref={ref}
           {...handlers}

@@ -1,5 +1,5 @@
 import cl from "clsx";
-import { useSortableItem } from "@storyflow/dnd";
+import { useDragItem, useSortableItem } from "@storyflow/dnd";
 import {
   ChevronRightIcon,
   ChevronUpDownIcon,
@@ -152,21 +152,33 @@ function LabelBar({
 
   const [isEditing] = [true]; //useLocalStorage<boolean>("editing-articles", false);
 
-  const [{ path }, navigate] = usePanel();
+  const [{ path, index: panelIndex }, navigate] = usePanel();
   const route = useRoute();
 
   const isOpen = path.endsWith(`/c${id}`);
 
   const specialFieldConfig = getDefaultField(id);
 
+  const to = isOpen ? route : `${route}/c${parseInt(id, 16).toString(16)}`;
+
   const fullscreen = () => {
-    navigate(isOpen ? route : `${route}/c${parseInt(id, 16).toString(16)}`, {
+    navigate(to, {
       navigate: true,
     });
   };
 
+  const { dragHandleProps: linkDragHandleProps } = useDragItem({
+    type: `link:${panelIndex}`,
+    item: to,
+    mode: "link",
+  });
+
   return (
-    <div className={cl("flex", "h-8 pb-3")} onDoubleClick={fullscreen}>
+    <div
+      className={cl("flex", "h-8 pb-3")}
+      onDoubleClick={fullscreen}
+      {...linkDragHandleProps}
+    >
       <Dot id={id} dragHandleProps={isEditing ? dragHandleProps : {}} />
       <div
         className={cl(
@@ -317,39 +329,32 @@ function Dot({ id, dragHandleProps }: { id: FieldId; dragHandleProps: any }) {
 
   return (
     <>
-      <Draggable
-        onDrop={() => {
-          const path = isOpen ? route : `${route}/c${id}`;
-          actions.open({ path, index: index + 1 });
-        }}
+      <div
+        {...dragHandleProps}
+        className={cl(
+          "group w-6 h-6 p-1 -m-1 translate-y-0.5",
+          isDraggable && "cursor-grab"
+        )}
       >
         <div
-          {...dragHandleProps}
           className={cl(
-            "group w-6 h-6 p-1 -m-1 translate-y-0.5",
-            isDraggable && "cursor-grab"
+            "flex-center w-4 h-4 rounded-full group-hover:scale-[1.5] transition-transform",
+            !isNative
+              ? "bg-gray-200 dark:bg-teal-600/50 dark:group-hover:bg-teal-800/50"
+              : "bg-gray-200 dark:bg-gray-600/50"
           )}
         >
           <div
             className={cl(
-              "flex-center w-4 h-4 rounded-full group-hover:scale-[1.5] transition-transform",
-              !isNative
-                ? "bg-gray-200 dark:bg-teal-600/50 dark:group-hover:bg-teal-800/50"
-                : "bg-gray-200 dark:bg-gray-600/50"
+              "flex-center w-2 h-2 m-1 rounded-full group-hover:scale-[2] transition-[transform,background-color]",
+              !isNative && "dark:group-hover:bg-teal-800",
+              "dark:bg-white/20"
             )}
           >
-            <div
-              className={cl(
-                "flex-center w-2 h-2 m-1 rounded-full group-hover:scale-[2] transition-[transform,background-color]",
-                !isNative && "dark:group-hover:bg-teal-800",
-                "dark:bg-white/20"
-              )}
-            >
-              <Icon className="w-[0.3rem] h-1.5 opacity-0 group-hover:opacity-75 transition-opacity" />
-            </div>
+            <Icon className="w-[0.3rem] h-1.5 opacity-0 group-hover:opacity-75 transition-opacity" />
           </div>
         </div>
-      </Draggable>
+      </div>
     </>
   );
 }
@@ -387,80 +392,6 @@ function Label({ id }: { id: FieldId }) {
     >
       {label || "Ingen label"}
       {isLink && <LinkIcon className="w-3 h-3 opacity-50" />}
-    </div>
-  );
-}
-
-function Draggable({
-  children,
-  onDrop,
-}: {
-  children: React.ReactNode;
-  onDrop: () => void;
-}) {
-  const [start, setStart] = React.useState(0);
-  const [x, setX] = React.useState(0);
-  const [isDragging, setIsDragging] = React.useState(false);
-
-  React.useEffect(() => {
-    if (isDragging) {
-      const handleMove = (ev: DragEvent) => {
-        ev.preventDefault();
-        setX(ev.clientX - start);
-      };
-
-      window.addEventListener("dragover", handleMove);
-      return () => {
-        window.removeEventListener("dragover", handleMove);
-      };
-    }
-  }, [isDragging, start]);
-
-  const accepted = Math.abs(x) >= 20;
-
-  React.useEffect(() => {
-    if (isDragging) {
-      const handleDrop = (ev: DragEvent) => {
-        ev.preventDefault();
-        if (accepted) {
-          onDrop();
-        }
-      };
-
-      window.addEventListener("drop", handleDrop);
-      return () => {
-        window.removeEventListener("drop", handleDrop);
-      };
-    }
-  }, [isDragging, accepted]);
-
-  const dragImage = React.useRef<HTMLSpanElement | null>(null);
-
-  const onDragStart = React.useCallback((ev: React.DragEvent) => {
-    ev.dataTransfer.setDragImage(dragImage.current!, 0, 0);
-    setStart(ev.clientX);
-    setIsDragging(true);
-  }, []);
-
-  const onDragEnd = React.useCallback((ev: React.DragEvent) => {
-    ev.preventDefault();
-    setIsDragging(false);
-    setX(0);
-    setStart(0);
-  }, []);
-
-  return (
-    <div
-      draggable="true"
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
-      style={{ transform: `translateX(${Math.min(Math.max(x, -20), 20)}px)` }}
-    >
-      <span
-        ref={dragImage}
-        className="absolute block w-1 h-1 pointer-events-none opacity-0"
-      ></span>
-      {children}
     </div>
   );
 }
