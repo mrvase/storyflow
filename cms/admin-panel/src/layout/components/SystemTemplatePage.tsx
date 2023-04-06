@@ -17,7 +17,7 @@ export function SystemTemplatePage() {
   if (!articles) {
     return (
       <Space label="Data" buttons={<></>}>
-        <div className="ml-9">
+        <div className="ml-14">
           <Loader size="md" />
         </div>
       </Space>

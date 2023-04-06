@@ -92,16 +92,6 @@ export function DocumentListSpace({
     [articles, template]
   );
 
-  if (!articles) {
-    return (
-      <Space label="Data" buttons={<></>}>
-        <div className="ml-9">
-          <Loader size="md" />
-        </div>
-      </Space>
-    );
-  }
-
   return (
     <>
       <Space
@@ -115,10 +105,18 @@ export function DocumentListSpace({
           </>
         }
       >
+        {!articles && (
+          <div className="ml-14">
+            <Loader size="md" />
+          </div>
+        )}
         <form
           ref={form}
           onSubmit={(ev) => ev.preventDefault()}
-          className="px-2.5"
+          className={cl(
+            "px-2.5 transition-opacity duration-300",
+            !articles ? "opacity-0" : "opacity-100"
+          )}
         >
           <Table labels={labels} rows={rows} />
         </form>
