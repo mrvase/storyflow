@@ -73,7 +73,7 @@ export function AppSpace({
           onSubmit={(ev) => ev.preventDefault()}
           className="px-2.5"
         >
-          <Table rows={rows} />
+          <Table labels={["Label"]} rows={rows} />
         </form>
       </Space>
     </>

@@ -47,6 +47,7 @@ export function SystemFolderPage() {
         {folders && (
           <form ref={form} onSubmit={(ev) => ev.preventDefault()}>
             <Table
+              labels={["Navn"]}
               rows={folders.map((el) => ({
                 id: el._id,
                 columns: [

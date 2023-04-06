@@ -4,8 +4,10 @@ import { useDragItem } from "@storyflow/dnd";
 import { usePanel, useRoute } from "../../panel-router/Routes";
 
 export default function Table({
+  labels,
   rows,
 }: {
+  labels: string[];
   rows: {
     id: string;
     columns: { name?: string; value?: any }[];
@@ -13,11 +15,21 @@ export default function Table({
   }[];
 }) {
   return (
-    <table className={cl("w-full leading-none font-light")} border={0}>
+    <table
+      className={cl("w-full leading-none font-light table-fixed")}
+      border={0}
+    >
       <thead>
         <tr className="font-normal">
-          <td className=""></td>
-          <td className="p-2.5">Navn</td>
+          <td className="w-9"></td>
+          {labels.map((label) => (
+            <td
+              className="p-2.5 truncate"
+              style={{ width: `calc(100% / ${labels.length})` }}
+            >
+              {label}
+            </td>
+          ))}
         </tr>
       </thead>
       <tbody>
@@ -26,7 +38,7 @@ export default function Table({
         ))}
         {rows.length === 0 ? (
           <tr className="border-t border-gray-100 dark:border-gray-800">
-            <td className="w-[1%] p-3 text-[0px]">
+            <td className="w-9 p-3 text-[0px]">
               <div className="w-3" />
             </td>
             <td className="p-3 text-sm text-gray-500">Ingen elementer</td>
@@ -67,13 +79,12 @@ function Row({
         });
       }}
     >
-      <td className="w-[1%] text-[0px] border-0 p-0">
+      <td className="w-9 text-[0px] border-0 p-0">
         <Checkbox id={id} />
       </td>
       {columns.map((el, index) => {
         return (
-          <td key={index} className={cl("p-2.5 border-0", "w-full")}>
-            {}
+          <td key={index} className={cl("p-2.5 truncate")}>
             {index === 0 && indent ? (
               <div className="mr-3 flex items-center">
                 <svg
@@ -106,7 +117,7 @@ function Row({
 
 function Checkbox({ id }: { id: string }) {
   return (
-    <label className="block p-2.5">
+    <label className="block p-2.5" onClick={(ev) => ev.stopPropagation()}>
       <div className="w-4 h-4 relative z-0 flex-center">
         <input name={id} type="checkbox" className="peer w-0 h-0 opacity-0" />
         <div className="absolute inset-0 -z-10 bg-white dark:bg-gray-750 peer-checked:bg-gray-500 rounded transition-colors" />

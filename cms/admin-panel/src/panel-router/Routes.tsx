@@ -3,7 +3,7 @@ import React from "react";
 import { useContextWithError } from "../utils/contextError";
 import { usePanelActions } from "./PanelRouter";
 import { PanelData, RouteConfig } from "./types";
-import { getPanelsFromUrl, getUrlFromPanels, replacePanelPath } from "./utils";
+import { replacePanelPath } from "./utils";
 
 /*
 [
@@ -136,6 +136,8 @@ export function Routes({
     [path]
   );
 
+  const replace = prevSegments.length === currentSegments.length;
+
   const depth = Math.max(prevSegments.length, currentSegments.length);
 
   const firstNonMatch = React.useMemo(() => {
@@ -195,8 +197,26 @@ export function Routes({
       } else if (firstNonMatch !== null && index >= firstNonMatch) {
         // handles two paths
         return [
+          prevMatch ? (
+            <RouteTransition
+              key={prevSegment}
+              exit
+              replace={firstNonMatch === index && replace}
+            >
+              <PanelContext.Provider value={prevData}>
+                <RouteContext.Provider
+                  value={prevSegments.slice(0, index + 1).join("/")}
+                >
+                  <prevMatch.component>{[children[1]]}</prevMatch.component>
+                </RouteContext.Provider>
+              </PanelContext.Provider>
+            </RouteTransition>
+          ) : null,
           currentMatch ? (
-            <RouteTransition key={currentSegment}>
+            <RouteTransition
+              key={currentSegment}
+              replace={firstNonMatch === index && replace}
+            >
               <PanelContext.Provider value={data}>
                 <RouteContext.Provider
                   value={currentSegments.slice(0, index + 1).join("/")}
@@ -204,17 +224,6 @@ export function Routes({
                   <currentMatch.component>
                     {[children[0]]}
                   </currentMatch.component>
-                </RouteContext.Provider>
-              </PanelContext.Provider>
-            </RouteTransition>
-          ) : null,
-          prevMatch ? (
-            <RouteTransition key={prevSegment} exit>
-              <PanelContext.Provider value={prevData}>
-                <RouteContext.Provider
-                  value={prevSegments.slice(0, index + 1).join("/")}
-                >
-                  <prevMatch.component>{[children[1]]}</prevMatch.component>
                 </RouteContext.Provider>
               </PanelContext.Provider>
             </RouteTransition>
@@ -254,19 +263,26 @@ export const useRouteTransition = () =>
 function RouteTransition({
   children,
   exit,
+  replace,
 }: {
   children: React.ReactNode;
   exit?: boolean;
+  replace?: boolean;
 }) {
-  const [status, setStatus] = React.useState("exited");
+  const [status, setStatus] = React.useState(
+    `unmounted${replace ? "-replace" : ""}`
+  );
   const [exited, setExited] = React.useState(false);
   if (!exit && exited) {
     setExited(false);
+    setStatus(`unmounted${replace ? "-replace" : ""}`);
   }
 
   React.useEffect(() => {
-    setStatus(exit ? "exited" : "entered");
-  }, [exit]);
+    setStatus(
+      `${exit ? "exited" : "entered"}${exit && replace ? "-replace" : ""}`
+    );
+  }, [exit, replace]);
 
   React.useEffect(() => {
     if (exit) {

@@ -40,9 +40,14 @@ function Content({
         "overflow-y-auto overflow-x-hidden no-scrollbar",
         "inset-0 absolute transition-[opacity,transform] duration-200 ease-out",
         "bg-white dark:bg-gray-850 text-gray-700 dark:text-white", // for when transparency is added on non-focus
-        status === "exited"
-          ? "opacity-0 translate-x-10 pointer-events-none"
-          : "opacity-100 translate-x-0"
+        (status.startsWith("exited") && !status.endsWith("replace")) ||
+          status.startsWith("unmounted")
+          ? "opacity-0 pointer-events-none"
+          : "opacity-100",
+        (status.startsWith("exited") || status.startsWith("unmounted")) &&
+          !status.endsWith("replace")
+          ? "translate-x-10"
+          : "translate-x-0"
       )}
     >
       {header && (

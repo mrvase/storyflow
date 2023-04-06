@@ -89,7 +89,7 @@ export function Panel({
           ref={ref}
           {...handlers}
           className={cl(
-            "w-full h-full flex flex-col rounded-md overflow-hidden border border-gray-200 dark:border-gray-800"
+            "@container w-full h-full flex flex-col rounded-md overflow-hidden border border-gray-200 dark:border-gray-800"
           )}
         >
           <LocationBar

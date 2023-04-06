@@ -77,7 +77,7 @@ export function FolderItem({
   });
 
   return (
-    <div className="w-56">
+    <div className="">
       <Link
         {...linkDragHandleProps}
         ref={ref as any}

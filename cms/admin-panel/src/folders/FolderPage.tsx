@@ -41,7 +41,7 @@ export default function FolderPage({
   const folder = useFolder(segment.id);
 
   const [{ path }] = usePanel();
-  const isSelected = path === route;
+  const isSelected = (path || "/") === (route || "/");
 
   const [dialogIsOpen, setDialogIsOpen] = React.useState<null | string>(null);
 

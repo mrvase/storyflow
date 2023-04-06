@@ -5,7 +5,10 @@ import {
   PlusIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
-import { createTemplateFieldId } from "@storyflow/backend/ids";
+import {
+  createTemplateFieldId,
+  getTemplateDocumentId,
+} from "@storyflow/backend/ids";
 import { DocumentId, FolderId, SpaceId } from "@storyflow/backend/types";
 import React from "react";
 import {
@@ -28,9 +31,12 @@ import Loader from "../../elements/Loader";
 import { useDeleteForm } from "./useDeleteForm";
 import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
 import { useDocumentIdGenerator } from "../../id-generator";
-import { calculateFromRecord } from "@storyflow/backend/calculate";
+import { calculate, calculateFromRecord } from "@storyflow/backend/calculate";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
 import { usePanel, useRoute } from "../../panel-router/Routes";
+import { useTemplate } from "../../fields/default/useFieldTemplate";
+import { useFolder } from "../collab/hooks";
+import { getPreview } from "../../fields/default/getPreview";
 
 export function DocumentListSpace({
   spaceId,
@@ -47,6 +53,45 @@ export function DocumentListSpace({
 
   const { articles } = useOptimisticDocumentList(folderId);
 
+  const folder = useFolder(folderId);
+  const template = (useTemplate(folder.template) ?? [])
+    .filter(
+      (el) =>
+        getTemplateDocumentId(el.id) !==
+        getTemplateDocumentId(DEFAULT_FIELDS.label.id)
+    )
+    .slice(0, 3);
+
+  const labels = React.useMemo(
+    () => ["Navn", ...template.map((el) => el.label)],
+    [template]
+  );
+
+  const rows = React.useMemo(
+    () =>
+      (articles ?? []).map((el) => ({
+        id: el._id,
+        columns: [
+          {
+            value: (
+              <LinkableLabel id={el._id}>
+                {getDocumentLabel(el) || "[Ingen titel]"}
+              </LinkableLabel>
+            ),
+          },
+          ...template.map((field) => ({
+            value: getPreview(
+              calculateFromRecord(
+                createTemplateFieldId(el._id, field.id),
+                el.record
+              )
+            ),
+          })),
+        ],
+      })),
+    [articles, template]
+  );
+
   if (!articles) {
     return (
       <Space label="Data" buttons={<></>}>
@@ -56,19 +101,6 @@ export function DocumentListSpace({
       </Space>
     );
   }
-
-  const rows = articles.map((el) => ({
-    id: el._id,
-    columns: [
-      {
-        value: (
-          <LinkableLabel id={el._id}>
-            {getDocumentLabel(el) || "[Ingen titel]"}
-          </LinkableLabel>
-        ),
-      },
-    ],
-  }));
 
   return (
     <>
@@ -88,7 +120,7 @@ export function DocumentListSpace({
           onSubmit={(ev) => ev.preventDefault()}
           className="px-2.5"
         >
-          <Table rows={rows} />
+          <Table labels={labels} rows={rows} />
         </form>
       </Space>
     </>

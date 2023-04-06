@@ -129,7 +129,11 @@ function FolderGrid({
       disabled={hidden}
       onChange={onChange}
     >
-      <div className={cl("flex flex-wrap gap-2 pl-14 min-h-[1rem]")}>
+      <div
+        className={cl(
+          "grid grid-cols-1 @lg:grid-cols-2 @2xl:grid-cols-3 @4xl:grid-cols-4 gap-2 pl-14 pr-5 min-h-[1rem]"
+        )}
+      >
         {space.items.length === 0 && (
           <div className="absolute text-gray-500 font-light text-sm">
             Ingen mapper

@@ -45,7 +45,7 @@ export function SystemTemplatePage() {
             onSubmit={(ev) => ev.preventDefault()}
             className="px-2.5"
           >
-            <Table rows={rows} />
+            <Table labels={["Navn"]} rows={rows} />
           </form>
         </Space>
       </Content>
