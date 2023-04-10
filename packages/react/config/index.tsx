@@ -104,6 +104,14 @@ const defaultLibraryConfig: LibraryConfig = {
       ],
       inline: true,
     },
+    Loop: {
+      label: "Loop",
+      name: "loop",
+      props: [
+        { name: "children", type: "children", label: "Indhold" },
+        { name: "data", type: "children", label: "Data" },
+      ],
+    },
   },
 };
 

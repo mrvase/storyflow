@@ -56,6 +56,8 @@ export function EditorProvider({
   children,
   initialize,
 }: Props): JSX.Element {
+  const parent = React.useContext(EditorContext);
+
   const editor = React.useMemo(() => {
     const { theme, namespace, nodes, onError } = initialConfig;
 
@@ -65,6 +67,7 @@ export function EditorProvider({
       nodes,
       onError: (error) => onError(error, editor),
       theme,
+      parentEditor: parent || undefined,
     });
 
     editor.update(
@@ -77,7 +80,7 @@ export function EditorProvider({
     );
 
     return editor;
-  }, []);
+  }, [parent]);
 
   useLayoutEffect(() => {
     const isEditable = initialConfig.editable;

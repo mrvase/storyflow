@@ -171,7 +171,7 @@ function FocusContainer({
     <div
       className={cl(
         "relative cursor-default",
-        "rounded selection:bg-transparent",
+        "rounded",
         ring,
         isFocused ? "bg-gray-800" : "bg-gray-850",
         "transition-[background-color,box-shadow]"

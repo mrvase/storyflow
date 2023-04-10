@@ -18,7 +18,6 @@ import { useFieldId } from "../FieldIdContext";
 import { HeadingNode } from "../../editor/react/HeadingNode";
 import nodes from "./decorators/nodes";
 import { CopyPastePlugin } from "./CopyPastePlugin";
-import { useMathMode } from "./useMathMode";
 
 const editorConfig = {
   namespace: "EDITOR",

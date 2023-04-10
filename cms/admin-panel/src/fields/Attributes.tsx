@@ -8,7 +8,6 @@ import {
   NestedEntity,
   ValueArray,
 } from "@storyflow/backend/types";
-import { PropConfig, RegularOptions } from "@storyflow/frontend/types";
 import { useFieldId } from "./FieldIdContext";
 import { getConfigFromType, useClientConfig } from "../client-config";
 import {
