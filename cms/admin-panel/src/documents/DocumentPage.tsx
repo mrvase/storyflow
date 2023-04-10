@@ -48,6 +48,7 @@ import { SWRClient } from "../client";
 import { ExtendTemplatePath } from "./TemplatePathContext";
 import { usePanel, useRoute } from "../panel-router/Routes";
 import { parseSegment } from "../layout/components/routes";
+import { Menu } from "../layout/components/Menu";
 
 export const getVersionKey = (versions?: Record<RawFieldId, number>) => {
   if (!versions) return -1;
@@ -115,9 +116,6 @@ export const DocumentContent = ({
             isModified ? "opacity-100" : "opacity-0 pointer-events-none"
           )}
         >
-          <span className="text-xs opacity-50 font-light ml-5 cursor-default hover:underline">
-            ændret d. 22/2 10:33
-          </span>
           {folder && <SaveButton id={id} folder={folder} />}
         </div>
       }
@@ -205,11 +203,15 @@ function Toolbar({ id, config }: { id: DocumentId; config: DocumentConfig }) {
                 type: "default",
               })}
             />
-            <Content.ToolbarMenu label={"Indsæt specialfelt"} icon={BoltIcon}>
+            <Menu
+              as={Content.ToolbarButton}
+              label="Indsæt specialfelt"
+              icon={BoltIcon}
+            >
               {fields.map((el) => (
                 <DragOption key={el.label} {...el} />
               ))}
-            </Content.ToolbarMenu>
+            </Menu>
             <TemplateMenu id={id} />
           </NoList>
         </Content.Toolbar>
@@ -223,7 +225,11 @@ export function TemplateMenu({ id }: { id?: DocumentId }) {
   const { articles: templates } = useOptimisticDocumentList(templateFolder);
 
   return (
-    <Content.ToolbarMenu label={"Indsæt skabelon"} icon={BoltIcon}>
+    <Menu
+      as={Content.ToolbarButton}
+      label={"Indsæt skabelon"}
+      icon={DocumentDuplicateIcon}
+    >
       {(templates ?? []).map((el) => (
         <React.Fragment key={el._id}>
           {el._id === id ? null : (
@@ -236,7 +242,7 @@ export function TemplateMenu({ id }: { id?: DocumentId }) {
           )}
         </React.Fragment>
       ))}
-    </Content.ToolbarMenu>
+    </Menu>
   );
 }
 
@@ -314,8 +320,8 @@ const Page = ({
 
   return (
     <FieldToolbarPortalProvider>
-      <FocusOrchestrator>
-        <DocumentPageContext.Provider value={ctx}>
+      <DocumentPageContext.Provider value={ctx}>
+        <FocusOrchestrator>
           <DocumentContent
             version={getVersionKey(article.versions)}
             id={id}
@@ -355,9 +361,9 @@ const Page = ({
               />
             </div>
           </DocumentContent>
-          {children}
-        </DocumentPageContext.Provider>
-      </FocusOrchestrator>
+        </FocusOrchestrator>
+        {children}
+      </DocumentPageContext.Provider>
     </FieldToolbarPortalProvider>
   );
 };
@@ -497,7 +503,7 @@ export function DragOption({ label, item }: { label: string; item: any }) {
   });
 
   return (
-    <Content.ToolbarMenuOption
+    <Menu.Item
       ref={ref as React.MutableRefObject<HTMLButtonElement | null>}
       {...dragHandleProps}
       label={label}

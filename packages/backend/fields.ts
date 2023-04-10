@@ -150,3 +150,13 @@ export function getDefaultField(
     return getTemplateDocumentId(value.id) === getTemplateDocumentId(id);
   });
 }
+
+export function isDefaultField(
+  id: FieldId,
+  label: keyof typeof DEFAULT_FIELDS
+): boolean {
+  return (
+    getTemplateDocumentId(DEFAULT_FIELDS[label].id) ===
+    getTemplateDocumentId(id)
+  );
+}

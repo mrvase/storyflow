@@ -20,7 +20,7 @@ import {
 import { getTranslateDragEffect } from "../utils/dragEffects";
 import useIsFocused from "../utils/useIsFocused";
 import { useIsFocused as useIsEditorFocused } from "../editor/react/useIsFocused";
-import { getDefaultField } from "@storyflow/backend/fields";
+import { getDefaultField, isDefaultField } from "@storyflow/backend/fields";
 import { getConfigFromType, useClientConfig } from "../client-config";
 import { isTemplateField } from "@storyflow/backend/ids";
 import { FieldToolbarPortal } from "../documents/FieldToolbar";
@@ -30,6 +30,7 @@ import { SelectedPathProvider, useNestedEntity, useSelectedPath } from "./Path";
 import { useFolder } from "../folders/collab/hooks";
 import { usePanel, useRoute } from "../panel-router/Routes";
 import { usePanelActions } from "../panel-router/PanelRouter";
+import { useLocalStorage } from "../state/useLocalStorage";
 
 type Props = {
   fieldConfig: FieldConfig;
@@ -79,6 +80,8 @@ export function FieldContainer({
     id,
   });
 
+  const [isOpen] = useLocalStorage<boolean>("toolbar-open", true);
+
   return (
     <EditorFocusProvider>
       <AttributesProvider>
@@ -86,10 +89,9 @@ export function FieldContainer({
           <FieldToolbarPortal show={isFocused} />
           <div
             {...props}
-            {...handlers}
+            {...(isOpen ? handlers : {})}
             className={cl(
-              "relative grow shrink basis-0 group/container px-2.5 mt-5",
-              isFocused && "focused"
+              "relative grow shrink basis-0 group/container px-2.5 mt-5"
             )}
           >
             <FocusContainer isFocused={isFocused}>
@@ -118,23 +120,39 @@ function FocusContainer({
 
   let ring = "";
 
+  const [isOpen] = useLocalStorage<boolean>("toolbar-open", true);
+
   if (isEditorFocused) {
-    ring = "ring-1 bg-gray-50 dark:ring-yellow-200/50 dark:bg-gray-800";
+    ring = "ring-1"; // bg-gray-50 dark:bg-gray-800
+    ring += isOpen ? " dark:ring-yellow-200/60" : " dark:ring-gray-600";
   } else if (isFieldFocused) {
-    ring = "ring-1 ring-yellow-200/25";
+    ring = "ring-1 ring-yellow-200/40";
   } else {
-    ring = "ring-1 ring-transparent group-hover/container:ring-gray-800";
+    ring = "ring-1 ring-transparent group-hover/container:ring-gray-700/50";
   }
 
   return (
     <div
       className={cl(
         ring,
-        "relative p-2.5 rounded-md ring-1",
+        "relative p-2.5 rounded ring-1",
         "transition-[background-color,box-shadow]"
       )}
     >
       {children}
+    </div>
+  );
+
+  return (
+    <div
+      className={cl(
+        ring,
+        "relative ml-2.5 mt-2.5 pb-2.5 pr-2.5 rounded rounded-tl-none ring-1",
+        "transition-[background-color,box-shadow]"
+      )}
+    >
+      <div className="absolute -top-[1px] -left-[1px] w-3 h-3 border-t border-l border-gray-850" />
+      <div className="-translate-x-2">{children}</div>
     </div>
   );
 }
@@ -175,7 +193,7 @@ function LabelBar({
 
   return (
     <div
-      className={cl("flex", "h-8 pb-3")}
+      className={cl("flex", "h-8 pb-3" /* -translate-y-2.5 */)}
       onDoubleClick={fullscreen}
       {...linkDragHandleProps}
     >
@@ -188,6 +206,14 @@ function LabelBar({
         <Label id={id} />
         <PathMap />
         <Attributes />
+        {(isDefaultField(id, "layout") || isDefaultField(id, "page")) && (
+          <button
+            className="rounded-full px-2 py-0.5 text-xs ring-button text-gray-500 ml-1 mr-3 flex-center gap-1"
+            onClick={fullscreen}
+          >
+            <ComputerDesktopIcon className="w-3 h-3" /> Åbn preview
+          </button>
+        )}
       </div>
       {specialFieldConfig && (
         <div
@@ -195,14 +221,14 @@ function LabelBar({
             "flex-center text-xs h-6 -my-0.5 font-light bg-yellow-300 text-yellow-800/90 dark:bg-yellow-400/10 dark:text-yellow-200/75 px-1.5 rounded whitespace-nowrap",
             isFocused
               ? "opacity-100"
-              : "opacity-0 group-hover/container:opacity-50",
+              : "opacity-0 group-hover/container:opacity-80",
             "transition-opacity"
           )}
         >
           {specialFieldConfig.label}
         </div>
       )}
-      <button
+      {/*<button
         className={cl(
           "ml-2 shrink-0 text-xs font-light flex-center gap-2 px-2 h-6 -my-0.5 bg-white/10 rounded",
           isFocused
@@ -213,10 +239,10 @@ function LabelBar({
         onClick={fullscreen}
       >
         <ComputerDesktopIcon className="w-3 h-3" /> Se preview
-      </button>
+      </button>*/}
       {selectedDocument && (
         <button
-          className="-my-1 ml-1 -mr-1 w-7 h-7 flex-center"
+          className="-my-1 ml-1 -mr-1 w-7 h-7 flex-center shrink-0"
           onClick={() => {
             setPath([]);
           }}
@@ -372,7 +398,7 @@ function Label({ id }: { id: FieldId }) {
   return (
     <div
       className={cl(
-        "flex items-center gap-1",
+        "flex items-center gap-1 bg-gray-850 px-1.5 -ml-1.5",
         isNative ? "text-gray-400" : "text-teal-600/90 dark:text-teal-400/90",
         isLink ? "cursor-alias" : "cursor-default",
         selectedPath.length && "hover:underline"

@@ -2,6 +2,7 @@ import cl from "clsx";
 import {
   ArrowDownTrayIcon,
   ArrowUpTrayIcon,
+  EllipsisHorizontalIcon,
   PlusIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
@@ -29,14 +30,15 @@ import { useCurrentFolder } from "../FolderPageContext";
 import Space from "./Space";
 import Loader from "../../elements/Loader";
 import { useDeleteForm } from "./useDeleteForm";
-import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
+import { DEFAULT_FIELDS, isDefaultField } from "@storyflow/backend/fields";
 import { useDocumentIdGenerator } from "../../id-generator";
-import { calculate, calculateFromRecord } from "@storyflow/backend/calculate";
+import { calculateFromRecord } from "@storyflow/backend/calculate";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
 import { usePanel, useRoute } from "../../panel-router/Routes";
 import { useTemplate } from "../../fields/default/useFieldTemplate";
 import { useFolder } from "../collab/hooks";
 import { getPreview } from "../../fields/default/getPreview";
+import { Menu } from "../../layout/components/Menu";
 
 export function DocumentListSpace({
   spaceId,
@@ -55,11 +57,7 @@ export function DocumentListSpace({
 
   const folder = useFolder(folderId);
   const template = (useTemplate(folder.template) ?? [])
-    .filter(
-      (el) =>
-        getTemplateDocumentId(el.id) !==
-        getTemplateDocumentId(DEFAULT_FIELDS.label.id)
-    )
+    .filter((el) => !isDefaultField(el.id, "label"))
     .slice(0, 3);
 
   const labels = React.useMemo(
@@ -95,18 +93,25 @@ export function DocumentListSpace({
   return (
     <>
       <Space
-        label="Data"
+        id={spaceId}
+        label={
+          <>
+            Data
+            <AddArticleButton folder={folderId} />
+          </>
+        }
         buttons={
           <>
-            <ImportButton />
-            <ExportButton />
             <Space.Button icon={TrashIcon} onClick={handleDelete} />
-            <AddArticleButton folder={folderId} />
+            <Menu as={Space.Button} icon={EllipsisHorizontalIcon} align="right">
+              <ImportButton />
+              <ExportButton />
+            </Menu>
           </>
         }
       >
         {!articles && (
-          <div className="ml-14">
+          <div className="ml-9">
             <Loader size="md" />
           </div>
         )}
@@ -114,7 +119,7 @@ export function DocumentListSpace({
           ref={form}
           onSubmit={(ev) => ev.preventDefault()}
           className={cl(
-            "px-2.5 transition-opacity duration-300",
+            "transition-opacity duration-300",
             !articles ? "opacity-0" : "opacity-100"
           )}
         >
@@ -160,7 +165,13 @@ function LinkableLabel({
 function ImportButton() {
   const handleImport = () => {};
 
-  return <Space.Button icon={ArrowUpTrayIcon} onClick={handleImport} />;
+  return (
+    <Menu.Item
+      label="Importer dokumenter"
+      icon={ArrowUpTrayIcon}
+      onClick={handleImport}
+    />
+  );
 }
 
 function ExportButton() {
@@ -197,7 +208,13 @@ function ExportButton() {
     document.body.removeChild(link);
   };
 
-  return <Space.Button icon={ArrowDownTrayIcon} onClick={handleExport} />;
+  return (
+    <Menu.Item
+      label="Eksporter dokumenter"
+      icon={ArrowDownTrayIcon}
+      onClick={handleExport}
+    />
+  );
 }
 
 function AddArticleButton({ folder }: { folder: FolderId }) {
@@ -241,10 +258,13 @@ function AddArticleButton({ folder }: { folder: FolderId }) {
   };
   return (
     <button
-      className="px-3 rounded py-1.5 ring-button text-button"
+      className={cl(
+        "rounded-full px-2 py-0.5 text-xs ring-button text-gray-500 ml-3 flex-center gap-1"
+        // "opacity-0 group-hover/space:opacity-100 transition-opacity"
+      )}
       onClick={addArticle}
     >
-      <PlusIcon className="w-4 h-4" />
+      <PlusIcon className="w-3 h-3" /> Tilføj
     </button>
   );
 }

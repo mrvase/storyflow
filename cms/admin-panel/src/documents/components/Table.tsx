@@ -7,31 +7,35 @@ export default function Table({
   labels,
   rows,
 }: {
-  labels: string[];
+  labels?: string[];
   rows: {
     id: string;
-    columns: { name?: string; value?: any }[];
+    columns: { name?: string; value?: any; width?: string }[];
     indent?: number;
   }[];
 }) {
   return (
     <table
-      className={cl("w-full leading-none font-light table-fixed")}
+      className={cl(
+        "w-[calc(100%+1.25rem)] leading-none font-light table-fixed -mx-2.5 -mb-2.5"
+      )}
       border={0}
     >
-      <thead>
-        <tr className="font-normal">
-          <td className="w-9"></td>
-          {labels.map((label) => (
-            <td
-              className="p-2.5 truncate"
-              style={{ width: `calc(100% / ${labels.length})` }}
-            >
-              {label}
-            </td>
-          ))}
-        </tr>
-      </thead>
+      {labels && (
+        <thead>
+          <tr className="font-normal">
+            <td className="w-9"></td>
+            {labels.map((label) => (
+              <td
+                className="p-2.5 truncate"
+                style={{ width: `calc(100% / ${labels.length})` }}
+              >
+                {label}
+              </td>
+            ))}
+          </tr>
+        </thead>
+      )}
       <tbody>
         {rows.map(({ id, columns, indent }, index) => (
           <Row key={id} id={id} columns={columns} indent={indent} />
@@ -55,7 +59,7 @@ function Row({
   indent,
 }: {
   id: string;
-  columns: { name?: string; value?: any }[];
+  columns: { name?: string; value?: any; width?: string }[];
   indent?: number;
 }) {
   const [{ index: panelIndex }, navigate] = usePanel();
@@ -84,7 +88,11 @@ function Row({
       </td>
       {columns.map((el, index) => {
         return (
-          <td key={index} className={cl("p-2.5 truncate")}>
+          <td
+            key={index}
+            className={cl("p-2.5 truncate")}
+            style={{ width: el.width }}
+          >
             {index === 0 && indent ? (
               <div className="mr-3 flex items-center">
                 <svg

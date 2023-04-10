@@ -150,10 +150,10 @@ function PropPreview({
   return (
     <div
       className={cl(
-        "rounded-full flex items-center border px-2 font-light text-xs transition-colors",
+        "rounded-full flex items-center px-2 py-0.5 font-light text-xs transition-colors ring-inset ring-gray-750",
         selected
-          ? "border-gray-600 text-gray-500"
-          : "border-gray-750 text-gray-700 hover:border-gray-600 hover:text-gray-500"
+          ? "bg-gray-750 text-gray-400 ring-1"
+          : "text-gray-700 hover:ring-1"
       )}
       onMouseDown={(ev) => {
         select(!selected);
@@ -162,9 +162,16 @@ function PropPreview({
     >
       <span className="font-normal whitespace-nowrap">
         {prop.label}
-        {preview ? <>:&nbsp;</> : ""}
+        {preview ? <>&nbsp;&nbsp;</> : ""}
       </span>
-      <span className="text-gray-500 max-w-[80px] truncate">{preview}</span>
+      <span
+        className={cl(
+          selected ? "text-gray-400" : "text-gray-500",
+          "max-w-[80px] truncate"
+        )}
+      >
+        {preview}
+      </span>
     </div>
   );
 }

@@ -2,14 +2,12 @@ import React from "react";
 import cl from "clsx";
 import { useBranchIsFocused } from "./BranchFocusContext";
 import {
-  CheckIcon,
   ChevronDownIcon,
   ChevronUpIcon,
   CogIcon,
   MinusIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
-import { Menu } from "@headlessui/react";
-import { MenuTransition } from "../../elements/transitions/MenuTransition";
 import { useLocalStorage } from "../../state/useLocalStorage";
 import { useRouteTransition } from "../../panel-router/Routes";
 
@@ -70,6 +68,7 @@ function Content({
                 {Icon && (
                   <div
                     onClick={() => setIsOpen((ps) => !ps)}
+                    data-focus-remain="true"
                     className={
                       "opacity-25 hover:opacity-100 transition-opacity"
                     }
@@ -80,10 +79,7 @@ function Content({
               </div>
               {header}
             </div>
-            <div className="flex flex-center">
-              {buttons}
-              <SettingsButton />
-            </div>
+            <div className="flex flex-center">{buttons}</div>
           </div>
           <ToolbarWrapper toolbar={toolbar} isFocused={isFocused} />
         </div>
@@ -139,7 +135,7 @@ function ToolbarWrapper({
             className="w-4 mr-4 opacity-25 hover:opacity-100 transition-opacity"
             onClick={() => setIsOpen(false)}
           >
-            <MinusIcon className="w-4 h-4" />
+            <ChevronUpIcon className="w-4 h-4" />
           </div>
           <div>{toolbar}</div>
         </div>
@@ -169,7 +165,7 @@ const ToolbarButton = React.forwardRef<
       ref={ref}
       {...props}
       className={cl(
-        "ring-button flex-center gap-1.5 text-xs font-light py-1 px-2 rounded whitespace-nowrap",
+        "ring-button flex-center gap-1.5 text-xs font-light h-6 px-2 rounded whitespace-nowrap",
         active ? "bg-button-active" : "bg-button",
         selected === false
           ? "text-gray-800 dark:text-white text-opacity-50 dark:text-opacity-50"
@@ -180,7 +176,7 @@ const ToolbarButton = React.forwardRef<
       )}
     >
       {Icon && <Icon className="w-3 h-3" />}
-      {props.children}
+      <span className={Icon ? "hidden @lg:block" : ""}>{props.children}</span>
       {typeof selected === "boolean" &&
         (active ? (
           <ChevronUpIcon className="w-3 h-3" />
@@ -191,155 +187,7 @@ const ToolbarButton = React.forwardRef<
   );
 });
 
-function ToolbarMenu<T extends { label: string; disabled?: boolean }>({
-  icon,
-  label,
-  selected,
-  onClear,
-  ...props
-}: {
-  icon: React.FC<{ className: string }>;
-  label: string;
-  selected?: T[] | T | null;
-  onClear?: () => void;
-} & (
-  | {
-      options: T[];
-      onSelect: (value: T) => void;
-      multi?: boolean;
-    }
-  | { children: React.ReactNode }
-)) {
-  const selectedArray = selected
-    ? Array.isArray(selected)
-      ? selected
-      : [selected]
-    : null;
-
-  return (
-    <Menu>
-      {({ open }) => (
-        <div className="block text-sm font-light">
-          <Menu.Button
-            as={ToolbarButton}
-            active={open}
-            data-focus-remain="true"
-            selected={Boolean(
-              !Array.isArray(selectedArray) || selectedArray.length > 0
-            )}
-            icon={icon}
-          >
-            {selectedArray?.map((el) => el.label).join(", ") || label}
-          </Menu.Button>
-          <MenuTransition show={open} className="absolute z-10">
-            <Menu.Items
-              static
-              className="bg-button mt-1 rounded shadow flex flex-col outline-none overflow-hidden w-52 ring-1 ring-gray-600"
-              data-focus-remain="true"
-            >
-              {selected && onClear && (
-                <ToolbarMenuOption onClick={onClear} label="Fjern" />
-              )}
-              {"children" in props
-                ? props.children
-                : props.options.map((el) => (
-                    <ToolbarMenuOption
-                      key={el.label}
-                      disabled={el.disabled}
-                      selected={
-                        props.multi
-                          ? selectedArray?.some((s) => s === el)
-                          : undefined
-                      }
-                      onClick={(ev) => {
-                        if (props.multi || el.disabled) ev.preventDefault();
-                        if (!el.disabled) props.onSelect(el);
-                      }}
-                      label={el.label}
-                    />
-                  ))}
-            </Menu.Items>
-          </MenuTransition>
-        </div>
-      )}
-    </Menu>
-  );
-}
-
-const ToolbarMenuOption = React.forwardRef<
-  HTMLButtonElement,
-  React.ComponentProps<"button"> & {
-    icon?: React.FC<{ className: string }>;
-    label: string;
-    disabled?: boolean;
-    selected?: boolean;
-  }
->(({ label, disabled, selected, icon: Icon, ...props }, ref) => {
-  return (
-    <Menu.Item>
-      {({ active }) => (
-        <button
-          {...props}
-          className={cl(
-            "py-2 px-2 font-light flex items-center gap-2 text-xs transition-colors",
-            active && "rounded bg-gray-700",
-            disabled && "text-gray-500",
-            props.className
-          )}
-        >
-          {typeof selected === "boolean" && (
-            <div
-              className={cl(
-                "w-3 h-3 flex-center rounded bg-black/10 dark:bg-white/10"
-              )}
-            >
-              {selected ? <CheckIcon className="w-2.5 h-2.5" /> : null}
-            </div>
-          )}
-          {typeof selected !== "boolean" && Icon && (
-            <Icon className="w-3 h-3" />
-          )}
-          <span className="truncate">{label}</span>
-        </button>
-      )}
-    </Menu.Item>
-  );
-});
-
-const Buttons = ({ children }: { children: React.ReactNode }) => {
-  return (
-    <div className="flex gap-1.5 text-gray-600 dark:text-white">{children}</div>
-  );
-};
-
-const Button = React.forwardRef<
-  HTMLButtonElement,
-  React.ComponentProps<"button"> & {
-    icon?: React.FC<{ className: string }>;
-    active?: boolean;
-  }
->(({ icon: Icon, active, ...props }, ref) => {
-  return (
-    <button
-      ref={ref}
-      {...props}
-      className={cl(
-        "flex-center rounded-md h-7 px-3 text-sm outline-0 outline focus-visible:outline-2 outline-offset-2 outline-teal-600 transition-shadow",
-        Icon && cl("hover:ring-1 ring-inset ring-gray-200 dark:ring-gray-700"),
-        props.className
-      )}
-    >
-      {Icon && <Icon className="w-4 h-4" />}
-      {props.children}
-    </button>
-  );
-});
-
 export default Object.assign(Content, {
-  Buttons,
-  Button,
   Toolbar,
   ToolbarButton,
-  ToolbarMenu,
-  ToolbarMenuOption,
 });

@@ -33,6 +33,7 @@ import { calculateFromRecord } from "@storyflow/backend/calculate";
 import { AppPageContext } from "./AppPageContext";
 import { usePanel, useRoute } from "../panel-router/Routes";
 import { parseSegment } from "../layout/components/routes";
+import { FocusOrchestrator } from "../utils/useIsFocused";
 
 export default function AppPage({ children }: { children?: React.ReactNode }) {
   const route = useRoute();
@@ -144,73 +145,75 @@ export default function AppPage({ children }: { children?: React.ReactNode }) {
   return (
     <AppPageContext.Provider value={ctx}>
       <FolderDomainsProvider domains={folder?.domains ?? []}>
-        <Content
-          icon={ComputerDesktopIcon}
-          header={
-            <EditableLabel
-              value={folder?.label ?? ""}
-              onChange={(value) => {
-                mutateProp("label", value);
-              }}
-              className={cl("text-yellow-300")}
-            />
-          }
-          toolbar={
-            isEditing ? (
-              <Content.Toolbar>
-                {folder && (
-                  <>
-                    <DomainsButton
-                      parentDomains={parentDomains ?? undefined}
-                      domains={folder.domains}
-                      mutate={(domains) => mutateProp("domains", domains)}
-                    />
-                    <div className="text-xs text-gray-600 font-light flex-center h-6 ring-1 ring-inset ring-gray-700 px-2 rounded cursor-default">
-                      ID: {folder._id.replace(/^0+/, "")}
-                    </div>
-                  </>
+        <FocusOrchestrator>
+          <Content
+            icon={ComputerDesktopIcon}
+            header={
+              <EditableLabel
+                value={folder?.label ?? ""}
+                onChange={(value) => {
+                  mutateProp("label", value);
+                }}
+                className={cl("text-yellow-300")}
+              />
+            }
+            toolbar={
+              isEditing ? (
+                <Content.Toolbar>
+                  {folder && (
+                    <>
+                      <DomainsButton
+                        parentDomains={parentDomains ?? undefined}
+                        domains={folder.domains}
+                        mutate={(domains) => mutateProp("domains", domains)}
+                      />
+                      <div className="text-xs text-gray-600 font-light flex-center h-6 ring-1 ring-inset ring-gray-700 px-2 rounded cursor-default">
+                        ID: {folder._id.replace(/^0+/, "")}
+                      </div>
+                    </>
+                  )}
+                </Content.Toolbar>
+              ) : null
+            }
+            buttons={
+              <div
+                className={cl(
+                  "flex-center",
+                  "transition-opacity",
+                  true ? "opacity-100" : "opacity-0 pointer-events-none"
                 )}
-              </Content.Toolbar>
-            ) : null
-          }
-          buttons={
-            <div
-              className={cl(
-                "flex-center",
-                "transition-opacity",
-                true ? "opacity-100" : "opacity-0 pointer-events-none"
-              )}
-            >
-              {folder && config.revalidateUrl && (
-                <RefreshButton
-                  namespace={folder._id}
-                  revalidateUrl={config.revalidateUrl}
-                />
-              )}
+              >
+                {folder && config.revalidateUrl && (
+                  <RefreshButton
+                    namespace={folder._id}
+                    revalidateUrl={config.revalidateUrl}
+                  />
+                )}
+              </div>
+            }
+          >
+            {folder && (
+              <AddArticleDialog
+                isOpen={dialogIsOpen === "add-article"}
+                close={() => {
+                  setDialogIsOpen(null);
+                  setParentUrl(null);
+                }}
+                folder={folder._id}
+                parentUrl={parentUrl ?? undefined}
+                type="app"
+              />
+            )}
+            <div className="flex flex-col">
+              <AppSpace
+                index={0}
+                folderId={folder._id}
+                spaceId={"" as SpaceId}
+                hidden={!isSelected}
+              />
             </div>
-          }
-        >
-          {folder && (
-            <AddArticleDialog
-              isOpen={dialogIsOpen === "add-article"}
-              close={() => {
-                setDialogIsOpen(null);
-                setParentUrl(null);
-              }}
-              folder={folder._id}
-              parentUrl={parentUrl ?? undefined}
-              type="app"
-            />
-          )}
-          <div className="flex flex-col">
-            <AppSpace
-              index={0}
-              folderId={folder._id}
-              spaceId={"" as SpaceId}
-              hidden={!isSelected}
-            />
-          </div>
-        </Content>
+          </Content>
+        </FocusOrchestrator>
         {children}
       </FolderDomainsProvider>
     </AppPageContext.Provider>

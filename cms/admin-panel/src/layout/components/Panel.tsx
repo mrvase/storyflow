@@ -4,7 +4,7 @@ import { ErrorBoundary, FallbackProps } from "react-error-boundary";
 import { PanelData } from "../../panel-router/types";
 import useIsFocused from "../../utils/useIsFocused";
 import { BranchFocusContext } from "./BranchFocusContext";
-import LocationBar from "./LocationBar";
+import { LocationBar } from "./LocationBar";
 import { Panel as ResizablePanel } from "react-resizable-panels";
 import { useSortableItem } from "@storyflow/dnd";
 import { getTranslateDragEffect } from "../../utils/dragEffects";
@@ -79,6 +79,7 @@ export function Panel({
         id={data.key}
         order={data.index}
         style={{ ...style, order: data.index }}
+        minSize={25}
       >
         <LinkReceiver
           id={`existing-${data.key}`}

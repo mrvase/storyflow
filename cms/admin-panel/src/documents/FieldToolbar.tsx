@@ -19,6 +19,7 @@ import { useFieldConfig } from "./collab/hooks";
 import { useContextWithError } from "../utils/contextError";
 import { useFieldId } from "../fields/FieldIdContext";
 import { getDocumentId } from "@storyflow/backend/ids";
+import { Menu } from "../layout/components/Menu";
 
 const FieldToolbarPortalContext = React.createContext<
   [HTMLDivElement | null, React.Dispatch<HTMLDivElement | null>] | null
@@ -84,7 +85,8 @@ export function FieldToolbar({ index }: { index?: number }) {
         <XMarkIcon className="w-3 h-3" />
       </div>
       <FieldLabel id={fieldId} label={config?.label ?? ""} />
-      <Content.ToolbarMenu<{ id: DocumentId; label: string }>
+      <Menu<{ id: DocumentId; label: string }>
+        as={Content.ToolbarButton}
         icon={ListBulletIcon}
         label="Vælg skabelon"
         onSelect={(el) => setConfig("template", el.id)}
@@ -96,7 +98,8 @@ export function FieldToolbar({ index }: { index?: number }) {
         }
         options={templateOptions}
       />
-      <Content.ToolbarMenu<{ id: RestrictTo; label: string }>
+      <Menu<{ id: RestrictTo; label: string }>
+        as={Content.ToolbarButton}
         icon={FunnelIcon}
         label="Begræns til"
         onSelect={(el) => setConfig("restrictTo", el.id)}
@@ -109,7 +112,8 @@ export function FieldToolbar({ index }: { index?: number }) {
         options={restrictToOptions}
       />
       {/* config?.template && (
-        <Content.ToolbarMenu
+        <Menu
+          as={Content.ToolbarButton}
           icon={ArrowDownTrayIcon}
           label="Hent mapper"
           onSelect={(el) => setConfig("restrictTo", el.id)}
@@ -121,7 +125,7 @@ export function FieldToolbar({ index }: { index?: number }) {
           }
         >
           // children
-        </Content.ToolbarMenu>
+        </Menu>
       )*/}
       {typeof index === "number" && (
         <Content.ToolbarButton
@@ -166,7 +170,7 @@ function FieldLabel({ id, label }: { id: FieldId; label: string }) {
       ],
     });
   };
-  return <EditableLabel label="Label" value={label} onChange={onChange} />;
+  return <EditableLabel value={label} onChange={onChange} />;
 }
 
 function EditableLabel({

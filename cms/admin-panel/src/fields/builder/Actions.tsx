@@ -1,4 +1,3 @@
-import Content from "../../layout/components/Content";
 import {
   ArrowDownRightIcon,
   ArrowUpLeftIcon,
@@ -12,6 +11,10 @@ import { useDocumentMutate } from "../../documents/collab/DocumentCollabContext"
 import { getDocumentId, getRawFieldId } from "@storyflow/backend/ids";
 import { DocumentId, FieldId } from "@storyflow/backend/types";
 import { useDocumentIdGenerator } from "../../id-generator";
+
+function Button(props: any) {
+  return null;
+}
 
 export default function Actions({
   id,
@@ -35,10 +38,10 @@ export default function Actions({
   const { libraries } = useClientConfig();
 
   return (
-    <Content.Buttons>
-      <Content.Button
+    <>
+      <Button
         icon={SquaresPlusIcon}
-        onMouseDown={(ev) => {
+        onMouseDown={(ev: any) => {
           ev.preventDefault();
         }}
         onClick={() => {
@@ -67,9 +70,9 @@ export default function Actions({
         }}
         className="rotate-180"
       />
-      <Content.Button
+      <Button
         icon={SquaresPlusIcon}
-        onMouseDown={(ev) => {
+        onMouseDown={(ev: any) => {
           ev.preventDefault();
         }}
         onClick={() => {
@@ -97,9 +100,9 @@ export default function Actions({
           });
         }}
       />
-      <Content.Button
+      <Button
         icon={ArrowUpLeftIcon}
-        onMouseDown={(ev) => {
+        onMouseDown={(ev: any) => {
           ev.preventDefault();
         }}
         onClick={() => {
@@ -124,9 +127,9 @@ export default function Actions({
           });
         }}
       />
-      <Content.Button
+      <Button
         icon={ArrowDownRightIcon}
-        onMouseDown={(ev) => {
+        onMouseDown={(ev: any) => {
           ev.preventDefault();
         }}
         onClick={() => {
@@ -151,9 +154,9 @@ export default function Actions({
           });
         }}
       />
-      <Content.Button
+      <Button
         icon={TrashIcon}
-        onMouseDown={(ev) => {
+        onMouseDown={(ev: any) => {
           ev.preventDefault();
         }}
         onClick={() => {
@@ -175,6 +178,6 @@ export default function Actions({
           });
         }}
       />
-    </Content.Buttons>
+    </>
   );
 }

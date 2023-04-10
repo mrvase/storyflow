@@ -30,6 +30,8 @@ import { useFieldFocus } from "../field-focus";
 import { addNestedFolder } from "../custom-events";
 import { usePanel, useRoute } from "../panel-router/Routes";
 import { parseSegment } from "../layout/components/routes";
+import { Menu } from "../layout/components/Menu";
+import { FocusOrchestrator } from "../utils/useIsFocused";
 
 export default function FolderPage({
   children,
@@ -72,104 +74,106 @@ export default function FolderPage({
   return (
     <FolderContext.Provider value={folder}>
       <FolderDomainsProvider domains={folder?.domains ?? []}>
-        <Content
-          icon={FolderIcon}
-          header={
-            <FolderLabel
-              folder={folder}
-              onChange={(value) => {
-                mutateProp("label", value);
-              }}
-            />
-          }
-          toolbar={
-            isEditing ? (
-              <Content.Toolbar>
-                <FolderTemplateButton
-                  template={folder?.template}
-                  openDialog={() => setDialogIsOpen("add-template")}
+        <FocusOrchestrator>
+          <Content
+            icon={FolderIcon}
+            header={
+              <FolderLabel
+                folder={folder}
+                onChange={(value) => {
+                  mutateProp("label", value);
+                }}
+              />
+            }
+            toolbar={
+              isEditing ? (
+                <Content.Toolbar>
+                  <FolderTemplateButton
+                    template={folder?.template}
+                    openDialog={() => setDialogIsOpen("add-template")}
+                  />
+                  <Content.ToolbarButton
+                    data-focus-remain="true"
+                    onClick={() => {
+                      collab.mutate("folders", folder._id).push({
+                        target: targetTools.stringify({
+                          operation: "folder-spaces",
+                          location: "",
+                        }),
+                        ops: [
+                          {
+                            index: 0,
+                            insert: [
+                              {
+                                id: createKey(),
+                                type: "folders",
+                                items: [],
+                              },
+                            ],
+                          },
+                        ],
+                      });
+                    }}
+                    icon={PlusIcon}
+                  >
+                    Tilføj space
+                  </Content.ToolbarButton>
+                  {folder && (
+                    <>
+                      <DomainsButton
+                        parentDomains={parentDomains ?? undefined}
+                        domains={folder.domains}
+                        mutate={(domains) => mutateProp("domains", domains)}
+                      />
+                      <div className="text-xs text-gray-600 font-light flex-center h-6 ring-1 ring-inset ring-gray-700 px-2 rounded cursor-default">
+                        ID: {folder._id.replace(/^0+/, "")}
+                      </div>
+                    </>
+                  )}
+                </Content.Toolbar>
+              ) : null
+            }
+          >
+            {folder && (
+              <>
+                <AddTemplateDialog
+                  isOpen={dialogIsOpen === "add-template"}
+                  close={() => setDialogIsOpen(null)}
+                  folderId={folder._id}
+                  currentTemplate={folder.template}
                 />
-                <Content.ToolbarButton
-                  data-focus-remain="true"
-                  onClick={() => {
-                    collab.mutate("folders", folder._id).push({
-                      target: targetTools.stringify({
-                        operation: "folder-spaces",
-                        location: "",
-                      }),
-                      ops: [
-                        {
-                          index: 0,
-                          insert: [
-                            {
-                              id: createKey(),
-                              type: "folders",
-                              items: [],
-                            },
-                          ],
-                        },
-                      ],
-                    });
-                  }}
-                  icon={PlusIcon}
-                >
-                  Tilføj space
-                </Content.ToolbarButton>
-                {folder && (
-                  <>
-                    <DomainsButton
-                      parentDomains={parentDomains ?? undefined}
-                      domains={folder.domains}
-                      mutate={(domains) => mutateProp("domains", domains)}
-                    />
-                    <div className="text-xs text-gray-600 font-light flex-center h-6 ring-1 ring-inset ring-gray-700 px-2 rounded cursor-default">
-                      ID: {folder._id.replace(/^0+/, "")}
-                    </div>
-                  </>
-                )}
-              </Content.Toolbar>
-            ) : null
-          }
-        >
-          {folder && (
-            <>
-              <AddTemplateDialog
-                isOpen={dialogIsOpen === "add-template"}
-                close={() => setDialogIsOpen(null)}
-                folderId={folder._id}
-                currentTemplate={folder.template}
-              />
-            </>
-          )}
-          {folder ? (
-            <div className="flex flex-col gap-8">
-              {(folder.spaces ?? []).map((space, index) => {
-                if (space.type === "folders") {
-                  return (
-                    <FolderGridSpace
-                      key={space.id}
-                      index={index}
-                      spaceId={space.id}
-                      folderId={folder._id}
-                      hidden={!isSelected}
-                    />
-                  );
-                }
-                return null;
-              })}
-              <DocumentListSpace
-                index={0}
-                spaceId={"" as SpaceId}
-                folderId={folder._id}
-                hidden={!isSelected}
-              />
-            </div>
-          ) : (
-            <div className="text-center py-5 text-xl font-bold text-gray-300">
-              {/*Vent et øjeblik*/}
-            </div>
-          )}
-        </Content>
+              </>
+            )}
+            {folder ? (
+              <div className="flex flex-col gap-8">
+                {(folder.spaces ?? []).map((space, index) => {
+                  if (space.type === "folders") {
+                    return (
+                      <FolderGridSpace
+                        key={space.id}
+                        index={index}
+                        spaceId={space.id}
+                        folderId={folder._id}
+                        hidden={!isSelected}
+                      />
+                    );
+                  }
+                  return null;
+                })}
+                <DocumentListSpace
+                  index={0}
+                  spaceId={`${folder._id}-documents` as SpaceId}
+                  folderId={folder._id}
+                  hidden={!isSelected}
+                />
+              </div>
+            ) : (
+              <div className="text-center py-5 text-xl font-bold text-gray-300">
+                {/*Vent et øjeblik*/}
+              </div>
+            )}
+          </Content>
+        </FocusOrchestrator>
         {children}
       </FolderDomainsProvider>
     </FolderContext.Provider>
@@ -236,11 +240,12 @@ export function FolderTemplateButton({
   }
 
   return (
-    <Content.ToolbarMenu
+    <Menu
+      as={Content.ToolbarButton}
       label={`Skabelon: ${label}`}
       icon={DocumentDuplicateIcon}
     >
-      <Content.ToolbarMenuOption
+      <Menu.Item
         icon={PencilIcon}
         label={`Rediger skabelon "${label}"`}
         onClick={() => {
@@ -250,14 +255,14 @@ export function FolderTemplateButton({
           }
         }}
       />
-      <Content.ToolbarMenuOption
+      <Menu.Item
         icon={ArrowPathRoundedSquareIcon}
         label="Skift skabelon"
         onClick={() => {
           openDialog();
         }}
       />
-    </Content.ToolbarMenu>
+    </Menu>
   );
 }
 
@@ -295,7 +300,8 @@ export function DomainsButton({
   if (!data?.domains || data.domains.length === 0) return null;
 
   return (
-    <Content.ToolbarMenu<{ id: string; label: string }>
+    <Menu<{ id: string; label: string }>
+      as={Content.ToolbarButton}
       icon={GlobeAltIcon}
       label="Hjemmesider"
       onSelect={(selected) => {

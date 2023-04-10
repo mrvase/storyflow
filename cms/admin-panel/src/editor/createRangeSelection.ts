@@ -1,16 +1,20 @@
-import { $createRangeSelection as _create, TextNode } from "lexical";
+import {
+  $createRangeSelection as $createRangeSelection_,
+  LexicalNode,
+} from "lexical";
 
 export default function $createRangeSelection(
-  anchor: { node: TextNode; offset: number; type?: "element" | "text" },
-  focus: { node: TextNode; offset: number; type?: "element" | "text" }
+  anchor: { node: LexicalNode; offset: number; type?: "element" | "text" },
+  focus: { node: LexicalNode; offset: number; type?: "element" | "text" }
 ) {
-  const selection = _create();
+  const selection = $createRangeSelection_();
 
   selection.anchor.set(
     anchor.node.getKey(),
     anchor.offset,
     anchor.type ?? "text"
   );
+
   selection.focus.set(focus.node.getKey(), focus.offset, focus.type ?? "text");
 
   /*

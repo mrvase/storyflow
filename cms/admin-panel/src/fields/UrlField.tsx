@@ -15,7 +15,6 @@ import {
   createTemplateFieldId,
   getDocumentId,
   getRawFieldId,
-  getTemplateDocumentId,
 } from "@storyflow/backend/ids";
 import { createQueueCache } from "../state/collaboration";
 import {
@@ -36,7 +35,7 @@ import { getNextState } from "shared/computation-tools";
 import cl from "clsx";
 import { useDocumentPageContext } from "../documents/DocumentPageContext";
 import { calculate, calculateFromRecord } from "@storyflow/backend/calculate";
-import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
+import { DEFAULT_FIELDS, isDefaultField } from "@storyflow/backend/fields";
 import { useDocumentIdGenerator } from "../id-generator";
 import { createTokenStream, parseTokenStream } from "shared/parse-token-stream";
 import { usePanel, useRoute } from "../panel-router/Routes";
@@ -277,7 +276,7 @@ export default function UrlField({ id, version, history }: FieldProps) {
 
   return (
     <div className="">
-      <div className="outline-none rounded font-light flex items-center px-3 mb-2 bg-gray-800 ring-button">
+      <div className="outline-none rounded font-light flex items-center px-3 mb-2.5 bg-gray-800 ring-button">
         {/*parents[0] ? (
             <Link
               to={replacePage(parents[0]?._id ?? "")}
@@ -371,8 +370,7 @@ export default function UrlField({ id, version, history }: FieldProps) {
           />
         )}
       </div>
-      {getTemplateDocumentId(id) ===
-        getTemplateDocumentId(DEFAULT_FIELDS.url.id) && (
+      {isDefaultField(id, "url") && (
         <div className="flex items-center ml-5">
           <div className="flex flex-wrap gap-2">
             {children.map((el, index) => (
@@ -383,7 +381,12 @@ export default function UrlField({ id, version, history }: FieldProps) {
                 data-focus-ignore="true"
               >
                 <SubPageLine first={index === 0} />
-                <span className="opacity-75 group-hover:opacity-100 transition-opacity relative overflow-hidden bg-gray-800 px-1 py-0.5 rounded after:absolute after:bottom-0 after:left-0 after:right-0 after:border-b-2 after:border-green-300/50">
+                <span
+                  className={cl(
+                    "opacity-75 group-hover:opacity-100 transition-opacity relative overflow-hidden bg-gray-800 px-1.5 py-0.5 rounded"
+                    // "after:absolute after:bottom-0 after:left-0 after:right-0 after:border-b-2 after:border-green-300/50"
+                  )}
+                >
                   {getDocumentLabel(el)}
                 </span>
               </Link>
@@ -399,7 +402,7 @@ export default function UrlField({ id, version, history }: FieldProps) {
               data-focus-ignore="true"
             >
               <SubPageLine first={children.length === 0} />
-              <span className="opacity-40 group-hover:opacity-100 transition-opacity italic py-0.5">
+              <span className="opacity-40 group-hover:opacity-100 transition-opacity py-0.5">
                 Tilføj underside
               </span>
             </button>

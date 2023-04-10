@@ -42,7 +42,7 @@ export function AppSpace({
                 {
                   value: (
                     <button
-                      className="rounded px-2 py-0.5 text-sm text-gray-800 dark:text-white text-opacity-50 hover:text-opacity-100 dark:text-opacity-50 dark:hover:text-opacity-100 ring-button flex items-center gap-2 whitespace-nowrap"
+                      className="ml-auto rounded px-2 py-0.5 text-sm text-gray-800 dark:text-white text-opacity-50 hover:text-opacity-100 dark:text-opacity-50 dark:hover:text-opacity-100 ring-button flex items-center gap-2 whitespace-nowrap"
                       onClick={(ev) => {
                         ev.stopPropagation();
                         addArticleWithUrl(doc);
@@ -51,6 +51,7 @@ export function AppSpace({
                       <PlusIcon className="w-3 h-3" /> Tilføj underside
                     </button>
                   ),
+                  width: "200px",
                 },
               ],
               indent: el.indent,
@@ -62,11 +63,12 @@ export function AppSpace({
 
   return (
     <Space
+      id={spaceId}
       label="Sider"
       buttons={<Space.Button icon={TrashIcon} onClick={handleDelete} />}
     >
       {!articles && (
-        <div className="ml-14">
+        <div className="ml-9">
           <Loader size="md" />
         </div>
       )}
@@ -74,11 +76,11 @@ export function AppSpace({
         ref={form}
         onSubmit={(ev) => ev.preventDefault()}
         className={cl(
-          "px-2.5 transition-opacity duration-300",
+          "transition-opacity duration-300",
           !articles ? "opacity-0" : "opacity-100"
         )}
       >
-        <Table labels={["Label"]} rows={rows} />
+        <Table rows={rows} />
       </form>
     </Space>
   );

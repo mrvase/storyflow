@@ -77,28 +77,26 @@ export function FolderItem({
   });
 
   return (
-    <div className="">
-      <Link
-        {...linkDragHandleProps}
-        ref={ref as any}
-        to={navigate(to, { navigate: false })}
-        className={cl(
-          "group flex items-center px-3 py-4 rounded-md text-lg font-light transition-colors border",
-          colors
-        )}
-        style={style}
+    <Link
+      {...linkDragHandleProps}
+      ref={ref as any}
+      to={navigate(to, { navigate: false })}
+      className={cl(
+        "group flex items-center px-3 py-4 rounded-md text-lg font-light transition-colors border",
+        colors
+      )}
+      style={style}
+    >
+      <div
+        className="w-4 h-4 mr-3 shrink-0 opacity-25 hover:opacity-100 transition-opacity cursor-grab"
+        {...dragHandleProps}
       >
-        <div
-          className="w-4 h-4 mr-3 shrink-0 opacity-25 hover:opacity-100 transition-opacity cursor-grab"
-          {...dragHandleProps}
-        >
-          <DragIcon className="w-4 h-4" />
-        </div>
-        <span className="truncate">{label}</span>
-        <div className="ml-auto transition-opacity w-8 h-8 flex-center rounded-md">
-          <Icon className="w-5 h-5 shrink-0 opacity-25 group-hover:opacity-75 transition-opacity" />{" "}
-        </div>
-      </Link>
-    </div>
+        <DragIcon className="w-4 h-4" />
+      </div>
+      <span className="truncate">{label}</span>
+      <div className="ml-auto transition-opacity w-8 h-8 flex-center rounded-md">
+        <Icon className="w-5 h-5 shrink-0 opacity-25 group-hover:opacity-75 transition-opacity" />{" "}
+      </div>
+    </Link>
   );
 }

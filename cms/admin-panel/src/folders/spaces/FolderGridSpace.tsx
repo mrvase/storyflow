@@ -6,10 +6,16 @@ import { FolderItem } from "./Folder";
 import { useFolders, useSpace } from "../collab/hooks";
 import { useFolderCollab } from "../collab/FolderCollabContext";
 import Space from "./Space";
-import { FolderPlusIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import {
+  EllipsisHorizontalIcon,
+  FolderPlusIcon,
+  TrashIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
 import React from "react";
 import { AddFolderDialog } from "../AddFolderDialog";
 import { Splice, targetTools } from "shared/operations";
+import { Menu } from "../../layout/components/Menu";
 
 export function FolderGridSpace({
   spaceId,
@@ -49,6 +55,7 @@ export function FolderGridSpace({
         spaceId={spaceId}
       />
       <Space
+        id={spaceId}
         label={"Undermapper"}
         buttons={
           <>
@@ -56,7 +63,13 @@ export function FolderGridSpace({
               icon={FolderPlusIcon}
               onClick={() => setDialogIsOpen("add-folder")}
             />
-            <Space.Button icon={XMarkIcon} onClick={handleDelete} />
+            <Menu as={Space.Button} icon={EllipsisHorizontalIcon} align="right">
+              <Menu.Item
+                label="Slet space"
+                icon={TrashIcon}
+                onClick={handleDelete}
+              />
+            </Menu>
           </>
         }
       >
@@ -131,7 +144,7 @@ function FolderGrid({
     >
       <div
         className={cl(
-          "grid grid-cols-1 @lg:grid-cols-2 @2xl:grid-cols-3 @4xl:grid-cols-4 gap-2 pl-14 pr-5 min-h-[1rem]"
+          "grid grid-cols-1 @lg:grid-cols-2 @2xl:grid-cols-3 @4xl:grid-cols-4 gap-2 pl-9 min-h-[1.5rem]"
         )}
       >
         {space.items.length === 0 && (

@@ -1,5 +1,5 @@
 import React from "react";
-import { LexicalNode, NodeKey } from "lexical";
+import { $getRoot, $setSelection, LexicalNode, NodeKey } from "lexical";
 import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
 import {
@@ -28,6 +28,8 @@ import { PropConfig, RegularOptions } from "@storyflow/frontend/types";
 import { flattenProps } from "../../../utils/flattenProps";
 import { DefaultField } from "../../default/DefaultField";
 import { computeFieldId, getIdFromString } from "@storyflow/backend/ids";
+import { useEditorContext } from "../../../editor/react/EditorProvider";
+import $createRangeSelection from "../../../editor/createRangeSelection";
 
 const TopLevelContext = React.createContext(true);
 
@@ -85,6 +87,7 @@ function Decorator({
               }
             }}
           >
+            <InterSelectionArea nodeKey={nodeKey} />
             <CubeIcon className="w-4 h-4 mr-5 shrink-0" />
             {config?.label ?? value.element}
             <div className="overflow-x-auto no-scrollbar mx-2">
@@ -105,6 +108,41 @@ function Decorator({
         </FocusContainer>
       </EditorFocusProvider>
     </AttributesProvider>
+  );
+}
+
+function InterSelectionArea({ nodeKey }: { nodeKey: string }) {
+  const editor = useEditorContext();
+
+  return (
+    <div
+      className="absolute w-full h-3 -top-3 left-0 cursor-text"
+      onMouseDown={(ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        editor.update(() => {
+          const node = $getRoot();
+          const offset = node
+            .getChildren()
+            .findIndex((el) => el.getKey() === nodeKey);
+          if (offset < 0) return;
+          const selection = $createRangeSelection(
+            {
+              node,
+              offset,
+              type: "element",
+            },
+            {
+              node,
+              offset,
+              type: "element",
+            }
+          );
+          $setSelection(selection);
+        });
+        editor.focus();
+      }}
+    />
   );
 }
 

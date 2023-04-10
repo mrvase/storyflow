@@ -1,5 +1,6 @@
 import cl from "clsx";
 import {
+  Bars3BottomLeftIcon,
   BookmarkIcon,
   ComputerDesktopIcon,
   DocumentDuplicateIcon,
@@ -12,13 +13,18 @@ import {
 } from "@heroicons/react/24/outline";
 import React from "react";
 import Loader from "../../elements/Loader";
-import useLocationLabel from "./useLocationLabel";
 import { PanelData } from "../../panel-router/types";
 import { usePanel } from "../../panel-router/Routes";
 import { usePanelActions } from "../../panel-router/PanelRouter";
 import { useDragItem } from "@storyflow/dnd";
+import { parseSegment } from "./routes";
+import { useOptimisticDocumentList, useArticle } from "../../documents";
+import { useLabel } from "../../documents/collab/hooks";
+import { useDocumentLabel } from "../../documents/useDocumentLabel";
+import { useFolder } from "../../folders/collab/hooks";
+import { ROOT_FOLDER } from "@storyflow/backend/constants";
 
-export default function LocationBar({
+export function LocationBar({
   isFocused,
   dragHandleProps,
   data,
@@ -130,6 +136,11 @@ export default function LocationBar({
   );
 }
 
+const loadingState = {
+  type: "loading",
+  label: "",
+};
+
 function LocationBarItem({
   segment,
   isCurrent,
@@ -148,49 +159,38 @@ function LocationBarItem({
   panelIndex: number;
   onHover: () => void;
 }) {
-  const { label, type } = useLocationLabel(segment);
+  const data = parseSegment(segment);
 
-  const getTitle = () => {
-    if (type === "folder") {
-      return (
-        <div className="flex items-center">
-          <FolderIcon className="w-4 h-4 mr-2" /> {label}
-        </div>
-      );
+  const type = data.type;
+
+  let loading = false;
+  let label = "";
+
+  if (type === "field") {
+    label = useLabel(data.id);
+  } else if (type === "folder" || type === "app") {
+    const { articles, error } = useOptimisticDocumentList(data.id);
+    label = useFolder(data.id)?.label ?? "";
+
+    if (!articles && !error) {
+      loading = true;
     }
-    if (type === "app") {
-      return (
-        <div className="flex items-center">
-          <ComputerDesktopIcon className="w-4 h-4 mr-2" /> {label}
-        </div>
-      );
+  } else if (type === "document" || type === "template") {
+    let { article, error } = useArticle(data.id);
+    label = useDocumentLabel(article) ?? "";
+
+    if (!article && !error) {
+      loading = true;
     }
-    if (type === "field") {
-      return (
-        <div className="flex items-center">
-          <Squares2X2Icon className="w-4 h-4 mr-2" /> {label}
-        </div>
-      );
-    }
-    if (type === "document") {
-      return (
-        <div className="flex items-center">
-          <DocumentIcon className="w-4 h-4 mr-2" /> {label}
-        </div>
-      );
-    }
-    if (type === "template") {
-      return (
-        <div className="flex items-center">
-          <DocumentDuplicateIcon className="w-4 h-4 mr-2" /> {label}
-        </div>
-      );
-    }
-    if (type === "home") {
-      return <div>{<HomeIcon className="w-4 h-4" />}</div>;
-    }
-    return "[Tom]";
-  };
+  }
+
+  const Icon = {
+    folder: FolderIcon,
+    app: ComputerDesktopIcon,
+    field: Bars3BottomLeftIcon,
+    document: DocumentIcon,
+    template: DocumentIcon,
+  }[type];
 
   const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const clearTimer = () => {
@@ -235,10 +235,17 @@ function LocationBarItem({
       // onMouseLeave={onMouseLeave}
       onClick={() => navigate(to, { navigate: true })}
     >
-      {type === "loading" ? (
+      {loading ? (
         <Loader />
       ) : (
-        <span className="truncate">{getTitle()}</span>
+        <div className="flex items-center">
+          <Icon className="w-4 h-4" />
+          <span
+            className={cl("truncate ml-2", !isCurrent && "hidden @lg:block")}
+          >
+            {label}
+          </span>
+        </div>
       )}
     </button>
   );
