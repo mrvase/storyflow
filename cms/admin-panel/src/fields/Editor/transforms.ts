@@ -16,6 +16,7 @@ import {
   $isRootNode,
   $setSelection,
   $createNodeSelection,
+  ParagraphNode,
 } from "lexical";
 import { GridSelection, PointType } from "lexical/LexicalSelection";
 import { tools } from "shared/editor-tools";
@@ -32,6 +33,7 @@ import { isSymbol } from "@storyflow/backend/symbols";
 import {
   $createHeadingNode,
   $isHeadingNode,
+  HeadingNode,
 } from "../../editor/react/HeadingNode";
 import {
   $createDocumentNode,
@@ -66,7 +68,9 @@ export const isInlineElement = (
   return result;
 };
 
-export const $isBlockNode = (node: LexicalNode | null | undefined) =>
+export const $isTextBlockNode = (
+  node: LexicalNode | null | undefined
+): node is ParagraphNode | HeadingNode =>
   $isHeadingNode(node) || $isParagraphNode(node);
 
 const $getTextContent = (node: LexicalNode, endAt?: string) => {
@@ -85,7 +89,11 @@ const $getTextContent = (node: LexicalNode, endAt?: string) => {
           if (child.__key === endAt) {
             return { content: textContent, ended: true };
           }
-          if (i > 0 && $isBlockNode(child) && $isBlockNode(children[i - 1])) {
+          if (
+            i > 0 &&
+            $isTextBlockNode(child) &&
+            $isTextBlockNode(children[i - 1])
+          ) {
             textContent += "\n";
           }
           if ($isHeadingNode(child)) {
@@ -163,7 +171,11 @@ export const $getComputation = (node: LexicalNode, endAt?: string) => {
           if (child.__key === endAt) {
             return { content, ended: true };
           }
-          if (i > 0 && $isBlockNode(child) && $isBlockNode(children[i - 1])) {
+          if (
+            i > 0 &&
+            $isTextBlockNode(child) &&
+            $isTextBlockNode(children[i - 1])
+          ) {
             content = tools.concat(content, [{ n: true }]);
           }
           if ($isHeadingNode(child)) {

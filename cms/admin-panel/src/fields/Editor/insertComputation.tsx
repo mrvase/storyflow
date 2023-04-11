@@ -15,16 +15,15 @@ import {
   ParagraphNode,
   TextNode,
 } from "lexical";
-import { $getBlocksFromComputation, $getStartAndEnd } from "./transforms";
+import {
+  $getBlocksFromComputation,
+  $getStartAndEnd,
+  $isTextBlockNode,
+} from "./transforms";
 import { TokenStream } from "@storyflow/backend/types";
 import { LibraryConfig } from "@storyflow/frontend/types";
 import { $isPromptNode } from "./decorators/PromptNode";
-import { $isHeadingNode, HeadingNode } from "../../editor/react/HeadingNode";
-
-const $isTextBlockNode = (
-  node: LexicalNode | null | undefined
-): node is ParagraphNode | HeadingNode =>
-  $isParagraphNode(node) || $isHeadingNode(node);
+import { HeadingNode } from "../../editor/react/HeadingNode";
 
 const $isMergeableTextNode = (node: LexicalNode | null | undefined) =>
   $isTextNode(node) && !$isPromptNode(node);

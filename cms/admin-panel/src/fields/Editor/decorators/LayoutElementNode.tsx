@@ -116,7 +116,7 @@ function InterSelectionArea({ nodeKey }: { nodeKey: string }) {
 
   return (
     <div
-      className="absolute w-full h-3 -top-3 left-0 cursor-text"
+      className="absolute h-3 -top-3 inset-x-0 cursor-text"
       onMouseDown={(ev) => {
         ev.preventDefault();
         ev.stopPropagation();
@@ -138,9 +138,9 @@ function InterSelectionArea({ nodeKey }: { nodeKey: string }) {
               type: "element",
             }
           );
+          editor.getRootElement()?.focus();
           $setSelection(selection);
         });
-        editor.focus();
       }}
     />
   );
@@ -163,6 +163,8 @@ function FocusContainer({
     ring = "ring-1 dark:ring-yellow-200/50";
   } else if (isSelected) {
     ring = "ring-1 dark:ring-gray-200";
+  } else if (isFocused) {
+    ring = "ring-1 dark:ring-gray-600";
   } else {
     ring = "ring-1 ring-gray-200 dark:ring-gray-700";
   }
@@ -205,7 +207,7 @@ function PrimaryProp({
             <FieldOptionsContext.Provider
               value={"options" in config ? config.options ?? null : null}
             >
-              <div className="cursor-auto pl-[2.875rem] pr-2.5 pb-2.5">
+              <div className="cursor-auto pl-[2.875rem] pr-2.5">
                 <DefaultField id={config.id} showPromptButton />
               </div>
             </FieldOptionsContext.Provider>

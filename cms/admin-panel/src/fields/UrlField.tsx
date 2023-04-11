@@ -275,7 +275,7 @@ export default function UrlField({ id, version, history }: FieldProps) {
   }
 
   return (
-    <div className="">
+    <div className="pb-2.5">
       <div className="outline-none rounded font-light flex items-center px-3 mb-2.5 bg-gray-800 ring-button">
         {/*parents[0] ? (
             <Link

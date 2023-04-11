@@ -135,7 +135,7 @@ function FocusContainer({
     <div
       className={cl(
         ring,
-        "relative p-2.5 rounded ring-1",
+        "relative p-2.5 pb-0 rounded ring-1",
         "transition-[background-color,box-shadow]"
       )}
     >

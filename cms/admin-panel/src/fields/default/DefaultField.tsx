@@ -16,7 +16,7 @@ import { TemplateHeader } from "./TemplateHeader";
 import { tools } from "shared/editor-tools";
 import { useDefaultState } from "./useDefaultState";
 import { useEditorContext } from "../../editor/react/EditorProvider";
-import { BLUR_COMMAND, COMMAND_PRIORITY_EDITOR } from "lexical";
+import { $getRoot, BLUR_COMMAND, COMMAND_PRIORITY_EDITOR } from "lexical";
 import { mergeRegister } from "../../editor/utils/mergeRegister";
 import { Overlay } from "../prompt/Overlay";
 import { Option } from "../prompt/Option";
@@ -181,7 +181,7 @@ export function DefaultField({
           <ContentEditable
             className={cl(
               "grow editor outline-none font-light selection:bg-gray-700",
-              "text-base leading-6"
+              "text-base leading-6 pb-2.5"
             )}
             // data-value={!isPrimitive ? preview : ""}
           />
@@ -194,9 +194,52 @@ export function DefaultField({
           {showPromptButton && <PromptButton />}
           <PushOnBlurPlugin push={push} />
           <OverlayWrapper />
+          <BottomSelectionArea />
         </div>
       </Editor>
     </>
+  );
+}
+
+function BottomSelectionArea() {
+  const editor = useEditorContext();
+
+  return (
+    <div
+      className="absolute inset-x-0 bottom-0 h-2.5 cursor-text"
+      onMouseDown={(ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        editor.update(() => {
+          editor.getRootElement()?.focus();
+          $getRoot().selectEnd();
+          /*
+          if ($isTextBlockNode(node)) {
+          } else if (node) {
+            const offset =
+              root
+                .getChildren()
+                .findIndex((el) => el.getKey() === node!.getKey()) + 1;
+            console.log("HERE", node, offset);
+            if (offset < 1) return;
+            const selection = $createRangeSelection(
+              {
+                node: root,
+                offset,
+                type: "element",
+              },
+              {
+                node: root,
+                offset,
+                type: "element",
+              }
+            );
+            $setSelection(selection);
+          }
+          */
+        });
+      }}
+    />
   );
 }
 

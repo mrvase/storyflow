@@ -112,7 +112,11 @@ a {
   margin: 0 !important;
 }
 
-[data-lexical-cursor="true"]:after {
+[data-lexical-cursor="true"]:first-child + * {
+  margin: 0px;
+}
+
+.editor:focus > [data-lexical-cursor="true"]:after {
   content: "";
   position: absolute;
   top: 4px;
@@ -122,13 +126,9 @@ a {
   animation: blink 1000ms steps(1) infinite;
 }
 
-[data-lexical-cursor="true"]:first-child:after {
+.editor:focus > [data-lexical-cursor="true"]:first-child:after {
   top: 0px;
   transform: translateY(-5px);
-}
-
-[data-lexical-cursor="true"]:first-child + * {
-  margin: 0px;
 }
 
 /*
