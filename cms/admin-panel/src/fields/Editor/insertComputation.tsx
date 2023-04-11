@@ -117,25 +117,17 @@ export function $replaceWithBlocks(
     // to make methods not consider selection for performance
     $setSelection(null);
 
-    // hvis edge er tekst: TextNode
-    // hvis edge er decorator:
-    // - inline: ParagraphNode
-    // - block: RootNode
-
     if ($isRangeSelection(selection)) {
       const [startPoint, endPoint] = $getStartAndEnd(selection);
       let startNode = startPoint.getNode();
       let endNode = endPoint.getNode();
 
-      console.log(
-        "$ selection",
-        selection.anchor.type,
-        selection.anchor.offset,
-        selection.focus.type,
-        selection.focus.offset,
+      console.log("$ selection", {
+        anchor: { ...selection.anchor },
+        focus: { ...selection.focus },
         startNode,
-        endNode
-      );
+        endNode,
+      });
 
       // handle empty root node
       if ($isRootNode(startNode) && startNode.getTextContent() === "") {
@@ -145,6 +137,9 @@ export function $replaceWithBlocks(
 
       let leftBlock: LexicalNode | null = null;
       let rightBlock: LexicalNode | null = null;
+
+      let blockLeftMerge = false;
+      let blockRightMerge = false;
 
       if (selection.isCollapsed()) {
         console.log("$ COLLAPSED");
@@ -156,12 +151,15 @@ export function $replaceWithBlocks(
             rightBlock = textNode.getParentOrThrow() as ParagraphNode;
 
             if (prevChildren.length) {
+              // There are other inline nodes. Split into two blocks that contain inline nodes that come before and after the cursor.
               leftBlock = $createParagraphNode();
               rightBlock.splice(0, prevChildren.length, []);
               leftBlock.append(...prevChildren);
               rightBlock.insertBefore(leftBlock);
             } else {
+              // We are at the beginning of the block.
               leftBlock = rightBlock.getPreviousSibling();
+              blockLeftMerge = true;
             }
           } else if (startPoint.offset === startNode.getTextContent().length) {
             const textNode = startNode as TextNode;
@@ -170,6 +168,7 @@ export function $replaceWithBlocks(
             leftBlock = textNode.getParentOrThrow() as ParagraphNode;
 
             if (nextChildren.length) {
+              // There are other inline nodes...
               rightBlock = $createParagraphNode();
               leftBlock.splice(
                 leftBlock.getChildrenSize() - nextChildren.length,
@@ -179,9 +178,13 @@ export function $replaceWithBlocks(
               rightBlock.append(...nextChildren);
               leftBlock.insertAfter(rightBlock);
             } else {
+              // We are at the end of the block.
               rightBlock = leftBlock.getNextSibling();
+              blockRightMerge = true;
             }
           } else {
+            // We are in the middle of a text node. Split it into two separate blocks with each their part of the text node.
+
             const [, textRight] = (startNode as TextNode).splitText(
               startPoint.offset
             );
@@ -195,11 +198,12 @@ export function $replaceWithBlocks(
             rightBlock.insertBefore(leftBlock);
           }
         } else {
-          // should insert to the right of the element
           if ($isRootNode(startNode)) {
+            // the index indicates the position of a block element
             leftBlock = startNode.getChildAtIndex(startPoint.offset - 1);
           } else {
-            leftBlock = startNode;
+            // the index indicates the position of an inline element
+            leftBlock = startNode; // the block element
 
             let inlineNode = startNode.getChildAtIndex(startPoint.offset - 1);
 
@@ -224,16 +228,48 @@ export function $replaceWithBlocks(
       } else {
         console.log("$ NOT COLLAPSED");
 
-        let startIndexNode =
+        const startIndexNode =
           startPoint.type === "element"
             ? startNode.getChildAtIndex(startPoint.offset - 1)
             : null;
-        let endIndexNode =
+
+        const endIndexNode =
           endPoint.type === "element"
             ? endNode.getChildAtIndex(endPoint.offset - 1)
             : null;
 
-        if (endPoint.type === "text") {
+        // handle endpoint first and get rightBlock
+
+        if (endPoint.offset === endNode.getTextContent().length) {
+          // we start with this to block right merge even if we are also at the start of the block
+
+          /* tekst|(possible decorator) */
+          const textNode = endNode as TextNode;
+          const nextChildren = textNode.getNextSiblings();
+
+          let restBlock = textNode.getParentOrThrow() as ParagraphNode;
+
+          if (nextChildren.length) {
+            rightBlock = $createParagraphNode();
+            restBlock.splice(
+              restBlock.getChildrenSize() - nextChildren.length,
+              nextChildren.length,
+              []
+            );
+            rightBlock.append(...nextChildren);
+            restBlock.insertAfter(rightBlock);
+            console.log(
+              "$ not collapsed -> endpoint -> text -> offset last -> does have next",
+              [...nextChildren]
+            );
+          } else {
+            rightBlock = restBlock.getNextSibling();
+            console.log(
+              "$ not collapsed -> endpoint -> text -> offset last -> does NOT have next"
+            );
+            blockRightMerge = true;
+          }
+        } else if (endPoint.type === "text") {
           if (endPoint.offset === 0) {
             /* (possible decorator)|tekst */
             const textNode = endNode as TextNode;
@@ -253,32 +289,6 @@ export function $replaceWithBlocks(
               let restBlock = rightBlock.getPreviousSibling();
               console.log(
                 "$ not collapsed -> endpoint -> text -> offset 0 -> does NOT have prev"
-              );
-            }
-          } else if (endPoint.offset === endNode.getTextContent().length) {
-            /* tekst|(possible decorator) */
-            const textNode = endNode as TextNode;
-            const nextChildren = textNode.getNextSiblings();
-
-            let restBlock = textNode.getParentOrThrow() as ParagraphNode;
-
-            if (nextChildren.length) {
-              rightBlock = $createParagraphNode();
-              restBlock.splice(
-                restBlock.getChildrenSize() - nextChildren.length,
-                nextChildren.length,
-                []
-              );
-              rightBlock.append(...nextChildren);
-              restBlock.insertAfter(rightBlock);
-              console.log(
-                "$ not collapsed -> endpoint -> text -> offset last -> does have next",
-                [...nextChildren]
-              );
-            } else {
-              rightBlock = restBlock.getNextSibling();
-              console.log(
-                "$ not collapsed -> endpoint -> text -> offset last -> does NOT have next"
               );
             }
           } else {
@@ -341,6 +351,8 @@ export function $replaceWithBlocks(
           }
         }
 
+        // then handle startPoint and get leftBlock
+
         if (startPoint.type === "text") {
           if (startPoint.offset === 0) {
             /* (possible decorator)|tekst */
@@ -362,6 +374,7 @@ export function $replaceWithBlocks(
               console.log(
                 "$ not collapsed -> startpoint -> text -> offset 0 -> does NOT have prev"
               );
+              blockLeftMerge = true;
             }
           } else if (startPoint.offset === startNode.getTextContent().length) {
             /* tekst|(possible decorator) */
@@ -476,7 +489,11 @@ export function $replaceWithBlocks(
         node: newBlocks[newBlocks.length - 1],
       };
 
-      if ($isTextBlockNode(leftBlock) && $isTextBlockNode(newBlocks[0])) {
+      if (
+        !blockLeftMerge &&
+        $isTextBlockNode(leftBlock) &&
+        $isTextBlockNode(newBlocks[0])
+      ) {
         select = merge(leftBlock, newBlocks[0], { cursor: "right" });
         newBlocks.shift();
 
@@ -504,7 +521,7 @@ export function $replaceWithBlocks(
           lastNewParagraph = leftBlock;
         }
 
-        if (lastNewParagraph) {
+        if (!blockRightMerge && lastNewParagraph) {
           select = merge(lastNewParagraph, rightBlock, {
             keep: "right",
           });

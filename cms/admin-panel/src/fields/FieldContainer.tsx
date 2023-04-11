@@ -194,7 +194,7 @@ function LabelBar({
   return (
     <div
       className={cl("flex", "h-8 pb-3" /* -translate-y-2.5 */)}
-      onDoubleClick={fullscreen}
+      // onDoubleClick={fullscreen}
       {...linkDragHandleProps}
     >
       <Dot id={id} dragHandleProps={isEditing ? dragHandleProps : {}} />

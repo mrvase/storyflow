@@ -51,8 +51,7 @@ function Decorator({
           "relative",
           "rounded text-sm selection:bg-transparent",
           isSelected && "ring-1 ring-white",
-          color,
-          isPseudoSelected && caretClasses
+          color
         )}
         onMouseDown={() => {
           if (!isSelected) {
