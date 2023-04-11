@@ -23,27 +23,37 @@ import {
 import { TokenStream } from "@storyflow/backend/types";
 import { LibraryConfig } from "@storyflow/frontend/types";
 import { $isPromptNode } from "./decorators/PromptNode";
-import { HeadingNode } from "../../editor/react/HeadingNode";
+import { $isHeadingNode, HeadingNode } from "../../editor/react/HeadingNode";
 
 const $isMergeableTextNode = (node: LexicalNode | null | undefined) =>
   $isTextNode(node) && !$isPromptNode(node);
+
+const remove = (node: LexicalNode) => node.remove(); // removeNode(node, false, false);
+
+const insertAfter = (node: LexicalNode, inserts: LexicalNode[]) =>
+  inserts.reduce((a, c) => a.insertAfter(c), node);
+
+const insertBefore = (node: LexicalNode, inserts: LexicalNode[]) =>
+  inserts
+    .slice()
+    .reverse()
+    .reduce((a, c) => a.insertBefore(c), node);
+
+function $createSimilarNode(node: ParagraphNode): ParagraphNode;
+function $createSimilarNode(node: HeadingNode): HeadingNode;
+function $createSimilarNode(node: ParagraphNode | HeadingNode) {
+  if ($isHeadingNode(node)) {
+    return new HeadingNode(node.getTag());
+  } else if ($isParagraphNode(node)) {
+    return $createParagraphNode();
+  }
+}
 
 export function $replaceWithBlocks(
   editor: LexicalEditor,
   newBlocks: LexicalNode[]
 ) {
   try {
-    const remove = (node: LexicalNode) => node.remove(); // removeNode(node, false, false);
-
-    const insertAfter = (node: LexicalNode, inserts: LexicalNode[]) =>
-      inserts.reduce((a, c) => a.insertAfter(c), node);
-
-    const insertBefore = (node: LexicalNode, inserts: LexicalNode[]) =>
-      inserts
-        .slice()
-        .reverse()
-        .reduce((a, c) => a.insertBefore(c), node);
-
     const merge = (
       left: ParagraphNode | HeadingNode,
       right: ParagraphNode | HeadingNode,
@@ -148,11 +158,11 @@ export function $replaceWithBlocks(
             const textNode = startNode as TextNode;
             const prevChildren = textNode.getPreviousSiblings();
 
-            rightBlock = textNode.getParentOrThrow() as ParagraphNode;
+            rightBlock = textNode.getParentOrThrow();
 
             if (prevChildren.length) {
               // There are other inline nodes. Split into two blocks that contain inline nodes that come before and after the cursor.
-              leftBlock = $createParagraphNode();
+              leftBlock = $createSimilarNode(rightBlock as ParagraphNode);
               rightBlock.splice(0, prevChildren.length, []);
               leftBlock.append(...prevChildren);
               rightBlock.insertBefore(leftBlock);
@@ -165,11 +175,11 @@ export function $replaceWithBlocks(
             const textNode = startNode as TextNode;
             const nextChildren = textNode.getNextSiblings();
 
-            leftBlock = textNode.getParentOrThrow() as ParagraphNode;
+            leftBlock = textNode.getParentOrThrow();
 
             if (nextChildren.length) {
               // There are other inline nodes...
-              rightBlock = $createParagraphNode();
+              rightBlock = $createSimilarNode(leftBlock as ParagraphNode);
               leftBlock.splice(
                 leftBlock.getChildrenSize() - nextChildren.length,
                 nextChildren.length,
@@ -189,8 +199,8 @@ export function $replaceWithBlocks(
               startPoint.offset
             );
 
-            leftBlock = $createParagraphNode();
-            rightBlock = textRight.getParentOrThrow() as ParagraphNode;
+            rightBlock = textRight.getParentOrThrow();
+            leftBlock = $createSimilarNode(rightBlock as ParagraphNode);
 
             let prevChildren = textRight.getPreviousSiblings();
             rightBlock.splice(0, prevChildren.length, []);
@@ -211,7 +221,7 @@ export function $replaceWithBlocks(
               const nextChildren = inlineNode.getNextSiblings();
 
               if (nextChildren.length) {
-                rightBlock = $createParagraphNode();
+                rightBlock = $createSimilarNode(leftBlock as ParagraphNode);
                 (leftBlock as ParagraphNode).splice(
                   leftBlock.getChildrenSize() - nextChildren.length,
                   nextChildren.length,
@@ -250,7 +260,7 @@ export function $replaceWithBlocks(
           let restBlock = textNode.getParentOrThrow() as ParagraphNode;
 
           if (nextChildren.length) {
-            rightBlock = $createParagraphNode();
+            rightBlock = $createSimilarNode(restBlock);
             restBlock.splice(
               restBlock.getChildrenSize() - nextChildren.length,
               nextChildren.length,
@@ -275,10 +285,10 @@ export function $replaceWithBlocks(
             const textNode = endNode as TextNode;
             const prevChildren = textNode.getPreviousSiblings();
 
-            rightBlock = textNode.getParentOrThrow() as ParagraphNode;
+            rightBlock = textNode.getParentOrThrow();
 
             if (prevChildren.length) {
-              let restBlock = $createParagraphNode();
+              let restBlock = $createSimilarNode(rightBlock as ParagraphNode);
               rightBlock.splice(0, prevChildren.length, []);
               restBlock.append(...prevChildren);
               rightBlock.insertBefore(restBlock);
@@ -296,8 +306,8 @@ export function $replaceWithBlocks(
               endPoint.offset
             );
 
-            let restBlock = $createParagraphNode();
-            rightBlock = textRight.getParentOrThrow() as ParagraphNode;
+            rightBlock = textRight.getParentOrThrow();
+            let restBlock = $createSimilarNode(rightBlock as ParagraphNode);
 
             let prevChildren = textRight.getPreviousSiblings();
             rightBlock.splice(0, prevChildren.length, []);
@@ -313,7 +323,7 @@ export function $replaceWithBlocks(
           } else {
             let inlineNode = endIndexNode;
 
-            rightBlock = inlineNode.getParentOrThrow() as ParagraphNode; // this might have changed to a restBlock
+            rightBlock = inlineNode.getParentOrThrow() as LexicalNode; // this might have changed to a restBlock
 
             console.log("$ INLINE", inlineNode);
 
@@ -325,7 +335,7 @@ export function $replaceWithBlocks(
               ];
 
               if (prevChildren.length) {
-                let restBlock = $createParagraphNode();
+                let restBlock = $createSimilarNode(rightBlock as ParagraphNode);
                 (rightBlock as ParagraphNode).splice(
                   0,
                   prevChildren.length,
@@ -359,10 +369,10 @@ export function $replaceWithBlocks(
             const textNode = startNode as TextNode;
             const prevChildren = textNode.getPreviousSiblings();
 
-            const restBlock = textNode.getParentOrThrow() as ParagraphNode;
+            const restBlock = textNode.getParentOrThrow();
 
             if (prevChildren.length) {
-              leftBlock = $createParagraphNode();
+              leftBlock = $createSimilarNode(restBlock as ParagraphNode);
               restBlock.splice(0, prevChildren.length, []);
               leftBlock.append(...prevChildren);
               restBlock.insertBefore(leftBlock);
@@ -381,10 +391,10 @@ export function $replaceWithBlocks(
             const textNode = startNode as TextNode;
             const nextChildren = textNode.getNextSiblings();
 
-            leftBlock = textNode.getParentOrThrow() as ParagraphNode;
+            leftBlock = textNode.getParentOrThrow();
 
             if (nextChildren.length) {
-              const restBlock = $createParagraphNode();
+              const restBlock = $createSimilarNode(leftBlock as ParagraphNode);
               leftBlock.splice(
                 leftBlock.getChildrenSize() - nextChildren.length,
                 nextChildren.length,
@@ -407,8 +417,8 @@ export function $replaceWithBlocks(
               startPoint.offset
             );
 
-            leftBlock = $createParagraphNode();
             let restBlock = textRight.getParentOrThrow() as ParagraphNode;
+            leftBlock = $createSimilarNode(restBlock);
 
             let prevChildren = textRight.getPreviousSiblings();
             restBlock.splice(0, prevChildren.length, []);
@@ -428,12 +438,12 @@ export function $replaceWithBlocks(
             let inlineNode = startIndexNode;
 
             if (inlineNode) {
-              leftBlock = inlineNode.getParentOrThrow() as ParagraphNode; // this might have changed to a restBlock
+              leftBlock = inlineNode.getParentOrThrow() as LexicalNode; // this might have changed to a restBlock
 
               const nextChildren = inlineNode.getNextSiblings();
 
               if (nextChildren.length) {
-                let restBlock = $createParagraphNode();
+                let restBlock = $createSimilarNode(leftBlock as ParagraphNode);
                 (leftBlock as ParagraphNode).splice(
                   leftBlock.getChildrenSize() - nextChildren.length,
                   nextChildren.length,
@@ -510,7 +520,7 @@ export function $replaceWithBlocks(
         });
       }
 
-      if ($isTextBlockNode(rightBlock)) {
+      if (!blockRightMerge && $isTextBlockNode(rightBlock)) {
         let lastNewParagraph: ParagraphNode | null = null;
         let lastNew = newBlocks[newBlocks.length - 1]; // possibly undefined
 
@@ -521,7 +531,7 @@ export function $replaceWithBlocks(
           lastNewParagraph = leftBlock;
         }
 
-        if (!blockRightMerge && lastNewParagraph) {
+        if (lastNewParagraph) {
           select = merge(lastNewParagraph, rightBlock, {
             keep: "right",
           });
@@ -542,12 +552,17 @@ export function $replaceWithBlocks(
 
       if (newBlocks.length > 0) {
         if (leftBlock) {
+          console.log("$ inserting after left block");
           insertAfter(leftBlock, newBlocks);
         } else if (rightBlock) {
+          console.log("$ inserting before right block");
           insertBefore(rightBlock, newBlocks);
         } else {
+          console.log("$ inserting in root");
           $getRoot().append(...newBlocks);
         }
+      } else {
+        console.log("$ no new blocks");
       }
 
       if (leftBlock && leftBlock.getChildrenSize?.() === 0) {

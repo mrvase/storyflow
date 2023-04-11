@@ -197,7 +197,7 @@ export function Overlay({ children }: { children?: React.ReactNode }) {
   return (
     <div
       className={cl(
-        "absolute w-full top-0 -left-1.5 z-10 bg-gray-800 gradient-border rounded shadow-lg shadow-black/20 font-light text-sm max-w-2xl",
+        "absolute w-full top-0 -left-1.5 z-10 gradient-border rounded shadow-lg shadow-black/20 font-light text-sm max-w-2xl",
         "flex flex-col divide-y divide-white/5",
         position !== null
           ? "opacity-100 transition-opacity duration-300"
@@ -209,16 +209,18 @@ export function Overlay({ children }: { children?: React.ReactNode }) {
           : undefined
       }
     >
-      {type === "prompt" && (
-        <Prompt
-          node={node as PromptNode}
-          prompt={prompt!}
-          holdActions={holdActions}
-        >
-          {children}
-        </Prompt>
-      )}
-      {type === "color" && <ColorOverlay />}
+      <div className="max-h-72 overflow-y-auto no-scrollbar m-[1px]">
+        {type === "prompt" && (
+          <Prompt
+            node={node as PromptNode}
+            prompt={prompt!}
+            holdActions={holdActions}
+          >
+            {children}
+          </Prompt>
+        )}
+        {type === "color" && <ColorOverlay />}
+      </div>
     </div>
   );
 }
