@@ -1,13 +1,9 @@
 import {
-  CalendarDaysIcon,
-  CheckIcon,
   CubeIcon,
   CursorArrowRaysIcon,
   DocumentIcon,
   LinkIcon,
   PhotoIcon,
-  SwatchIcon,
-  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { mergeRegister } from "../../editor/utils/mergeRegister";
 import { TokenStream } from "@storyflow/backend/types";
@@ -20,10 +16,8 @@ import {
   $setSelection,
   BLUR_COMMAND,
   COMMAND_PRIORITY_HIGH,
-  KEY_ARROW_DOWN_COMMAND,
   KEY_ARROW_LEFT_COMMAND,
   KEY_ARROW_RIGHT_COMMAND,
-  KEY_ARROW_UP_COMMAND,
   KEY_ESCAPE_COMMAND,
 } from "lexical";
 import React from "react";
@@ -35,10 +29,13 @@ import { $replaceWithBlocks } from "../Editor/insertComputation";
 import { $getBlocksFromComputation } from "../Editor/transforms";
 import { ElementPrompt } from "./ElementPrompt";
 import { FilePrompt } from "./FilePrompt";
-import { Options, useOptionActions } from "./OptionsContext";
+import { OptionEventsPlugin, Options } from "./OptionsContext";
 import { UrlPrompt } from "./UrlPrompt";
 import { ParagraphStylePrompt } from "./ParagraphStylePrompt";
 import { HoldActions } from "./useRestorableSelection";
+import { $exitPromptNode, $getPromptNode } from "./utils";
+import { TokenPrompt } from "./TokenPrompt";
+import { ReferencePrompt } from "./ReferencePrompt";
 
 const panes = [
   {
@@ -68,52 +65,6 @@ const panes = [
   },
 ] as const;
 
-const $getPromptNode = () => {
-  const selection = $getSelection();
-
-  if (!$isRangeSelection(selection)) {
-    return;
-  }
-
-  return selection
-    .getNodes()
-    .find((node): node is PromptNode => $isPromptNode(node));
-};
-
-function OptionEventsPlugin() {
-  const editor = useEditorContext();
-  const actions = useOptionActions();
-
-  React.useEffect(() => {
-    return mergeRegister(
-      editor.registerCommand(
-        KEY_ARROW_DOWN_COMMAND,
-        (ev) => {
-          ev?.preventDefault();
-          actions.selectNext();
-          return true;
-        },
-        COMMAND_PRIORITY_HIGH
-      ),
-      editor.registerCommand(
-        KEY_ARROW_UP_COMMAND,
-        (ev) => {
-          ev?.preventDefault();
-          actions.selectPrevious();
-          return true;
-        },
-        COMMAND_PRIORITY_HIGH
-      )
-    );
-  }, []);
-
-  React.useEffect(() => {
-    actions.goToItem(0);
-  }, []);
-
-  return null;
-}
-
 export function Prompt({
   node,
   prompt,
@@ -140,40 +91,18 @@ export function Prompt({
 
   const { libraries } = useClientConfig();
 
-  const $exitPromptNode = React.useCallback(
-    (node_?: PromptNode) => {
-      const node = node_ ?? $getPromptNode();
-
-      if (!node) {
-        return;
-      }
-
-      const stream = node.getTokenStream();
-      if (stream.length) {
-        node.select(0);
-        $replaceWithBlocks(
-          editor,
-          $getBlocksFromComputation(stream, libraries)
-        );
-      } else {
-        node.remove();
-      }
-    },
-    [editor, libraries]
-  );
-
   React.useEffect(() => {
     return editor.registerNodeTransform(PromptNode, (node) => {
       if (node.getTextContent() === "\uFEFF") {
-        $exitPromptNode(node);
+        $exitPromptNode(libraries, node);
       } else if (node.getTextContent() === "\uFEFF\uFEFF/") {
         node.select(0, 3);
         const p = $createParagraphNode();
         p.append($createTextNode("/"));
-        $replaceWithBlocks(editor, [p]);
+        $replaceWithBlocks([p]);
       }
     });
-  }, [editor]);
+  }, [editor, libraries]);
 
   /*
   React.useEffect(() => {
@@ -268,7 +197,7 @@ export function Prompt({
         (ev) => {
           ev?.preventDefault();
           editor.update(() => {
-            $exitPromptNode();
+            $exitPromptNode(libraries);
           });
           return true;
         },
@@ -278,7 +207,7 @@ export function Prompt({
         BLUR_COMMAND,
         () => {
           editor.update(() => {
-            $exitPromptNode();
+            $exitPromptNode(libraries);
             $setSelection(null);
           });
           return false;
@@ -286,7 +215,7 @@ export function Prompt({
         COMMAND_PRIORITY_HIGH
       )
     );
-  }, [editor]);
+  }, [editor, libraries]);
 
   const [currentPane_, setCurrentPane] =
     React.useState<(typeof panes)[number]["id"]>();
@@ -307,7 +236,7 @@ export function Prompt({
       editor.update(() => {
         $getPromptNode()?.select(0);
         const blocks = $getBlocksFromComputation(stream, libraries);
-        $replaceWithBlocks(editor, blocks);
+        $replaceWithBlocks(blocks);
       });
     },
     [editor, libraries]
@@ -340,72 +269,54 @@ export function Prompt({
           ))}
         </div>
       )}
-      {stream && stream.length > 0 ? (
-        <div className="p-2.5">
-          <div className="bg-yellow-500/20 text-yellow-200 rounded p-2.5">
-            {JSON.stringify(stream)}
+      <div className="max-h-52 overflow-y-auto no-scrollbar m-[1px]">
+        {stream && stream.length > 0 ? (
+          <div className="p-2.5">
+            <div className="bg-yellow-500/20 text-yellow-200 rounded p-2.5">
+              {JSON.stringify(stream)}
+            </div>
           </div>
-        </div>
-      ) : (
-        <>
-          {currentPane === "actions" && (
-            <>
-              <div className="p-2.5">
-                <div className="p-2.5 rounded">
-                  <div className="group flex items-center gap-2">
-                    <div className="group-hover:opacity-50 group-hover:hover:opacity-100 transition-opacity cursor-default bg-gradient-to-b from-cyan-600 to-cyan-700 shadow-sm text-sky-100/90 rounded px-2 py-0.5 flex-center gap-2">
-                      <CalendarDaysIcon className="w-4 h-4 inline" />
-                      25. marts 2023
-                    </div>
-                    <div
-                      className="group-hover:opacity-50 group-hover:hover:opacity-100 transition-opacity cursor-default bg-gradient-to-b dark:bg-white shadow-sm text-black rounded px-2 py-0.5 flex-center gap-2"
-                      onMouseDown={(ev) => {
-                        ev.preventDefault();
-                      }}
-                      onClick={() => {
-                        replacePromptWithStream([{ color: "#ffffff" }]);
-                      }}
-                    >
-                      <SwatchIcon className="w-4 h-4 inline" />
-                      White
-                    </div>
-                    <div className="group-hover:opacity-50 group-hover:hover:opacity-100 transition-opacity cursor-default bg-gradient-to-b from-emerald-600 to-emerald-700 shadow-sm text-green-100/90 rounded px-2 py-0.5 flex-center gap-2">
-                      <CheckIcon className="w-4 h-4 inline" />
-                      Sand
-                    </div>
-                    <div className="group-hover:opacity-50 group-hover:hover:opacity-100 transition-opacity cursor-default bg-gradient-to-b from-pink-600 to-pink-700 shadow-sm text-red-100/90 rounded px-2 py-0.5 flex-center gap-2">
-                      <XMarkIcon className="w-4 h-4 inline" />
-                      Falsk
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <ParagraphStylePrompt />
-              {children}
-            </>
-          )}
-          {currentPane === "elements" && (
-            <ElementPrompt
-              prompt={prompt}
-              options={restrictTo === "children" ? options ?? [] : []}
-              replacePromptWithStream={replacePromptWithStream}
-            />
-          )}
-          {currentPane === "urls" && (
-            <UrlPrompt
-              prompt={prompt}
-              replacePromptWithStream={replacePromptWithStream}
-            />
-          )}
-          {currentPane === "images" && (
-            <FilePrompt
-              prompt={prompt}
-              replacePromptWithStream={replacePromptWithStream}
-              holdActions={holdActions}
-            />
-          )}
-        </>
-      )}
+        ) : (
+          <>
+            {currentPane === "actions" && (
+              <>
+                <TokenPrompt
+                  prompt={prompt}
+                  replacePromptWithStream={replacePromptWithStream}
+                />
+                <ParagraphStylePrompt prompt={prompt} />
+                {children}
+              </>
+            )}
+            {currentPane === "elements" && (
+              <ElementPrompt
+                prompt={prompt}
+                options={restrictTo === "children" ? options ?? [] : []}
+                replacePromptWithStream={replacePromptWithStream}
+              />
+            )}
+            {currentPane === "documents" && (
+              <ReferencePrompt
+                prompt={prompt}
+                replacePromptWithStream={replacePromptWithStream}
+              />
+            )}
+            {currentPane === "urls" && (
+              <UrlPrompt
+                prompt={prompt}
+                replacePromptWithStream={replacePromptWithStream}
+              />
+            )}
+            {currentPane === "images" && (
+              <FilePrompt
+                prompt={prompt}
+                replacePromptWithStream={replacePromptWithStream}
+                holdActions={holdActions}
+              />
+            )}
+          </>
+        )}
+      </div>
     </Options>
   );
 }

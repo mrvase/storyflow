@@ -86,7 +86,7 @@ export function PromptButton() {
               const node = selection.getNodes()[0];
               node.replace(paragraph);
             } else {
-              $replaceWithBlocks(editor, [paragraph]);
+              $replaceWithBlocks([paragraph]);
             }
             prompt.select(2, 2);
           });

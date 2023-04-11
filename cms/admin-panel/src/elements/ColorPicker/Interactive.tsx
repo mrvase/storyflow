@@ -67,13 +67,15 @@ const isInvalid = (
 
 interface Props {
   onMove: (interaction: Interaction) => void;
+  onMoveEnd: (interaction: Interaction) => void;
   onKey: (offset: Interaction) => void;
   children: React.ReactNode;
 }
 
-const InteractiveBase = ({ onMove, onKey, ...rest }: Props) => {
+const InteractiveBase = ({ onMove, onKey, onMoveEnd, ...rest }: Props) => {
   const container = React.useRef<HTMLDivElement>(null);
   const onMoveCallback = useEventCallback<Interaction>(onMove);
+  const onMoveEndCallback = useEventCallback<Interaction>(onMoveEnd);
   const onKeyCallback = useEventCallback<Interaction>(onKey);
   const touchId = React.useRef<null | number>(null);
   const hasTouch = React.useRef(false);
@@ -114,17 +116,27 @@ const InteractiveBase = ({ onMove, onKey, ...rest }: Props) => {
         ? event.touches.length > 0
         : event.buttons > 0;
 
-      if (isDown && container.current) {
-        onMoveCallback(
-          getRelativePosition(container.current, event, touchId.current)
-        );
+      let func: (interaction: Interaction) => void;
+
+      if (isDown) {
+        func = onMoveCallback;
       } else {
+        func = onMoveEndCallback;
         toggleDocumentEvents(false);
+      }
+      if (func && container.current) {
+        func(getRelativePosition(container.current, event, touchId.current));
       }
     };
 
-    const handleMoveEnd = () => toggleDocumentEvents(false);
+    const handleMoveEnd = (event: MouseEvent | TouchEvent) => {
+      toggleDocumentEvents(false);
 
+      const el = container.current;
+      if (!el) return;
+
+      onMoveEndCallback(getRelativePosition(el, event, touchId.current));
+    };
     /*
       const handleKeyDown = (event: React.KeyboardEvent) => {
         const keyCode = event.which || event.keyCode;

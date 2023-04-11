@@ -49,10 +49,7 @@ function $createSimilarNode(node: ParagraphNode | HeadingNode) {
   }
 }
 
-export function $replaceWithBlocks(
-  editor: LexicalEditor,
-  newBlocks: LexicalNode[]
-) {
+export function $replaceWithBlocks(newBlocks: LexicalNode[]) {
   try {
     const merge = (
       left: ParagraphNode | HeadingNode,
@@ -604,7 +601,7 @@ export function replaceWithComputation(
 ) {
   editor.update(() => {
     const newBlocks = $getBlocksFromComputation(insert, libraries);
-    return $replaceWithBlocks(editor, newBlocks);
+    return $replaceWithBlocks(newBlocks);
   });
 }
 

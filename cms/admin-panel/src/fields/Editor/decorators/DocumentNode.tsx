@@ -82,14 +82,13 @@ function Decorator({
   const { record: documentRecord } = useDocumentPageContext();
 
   return (
-    <div className="py-0.5">
+    <div className="">
       <div
         className={cl(
           "relative",
           "rounded text-sm selection:bg-transparent",
           isSelected && "ring-1 ring-white",
-          color,
-          isPseudoSelected && caretClasses
+          color
         )}
         onMouseDown={() => {
           if (!isSelected) {
@@ -124,7 +123,7 @@ function Decorator({
           </div>
         )}
         {docs.map(({ id: docId, record }) => (
-          <div key={docId} className="flex w-full py-1.5">
+          <div key={docId} className="flex w-full py-1">
             {!hasTemplate ? (
               <TemplateSelect
                 setTemplateId={(value) => setConfig("template", value)}

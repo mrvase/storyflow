@@ -60,6 +60,15 @@ export function Option<T>({
 }) {
   const [isSelected, ref] = useOption();
 
+  React.useEffect(() => {
+    if (isSelected) {
+      ref.current?.scrollIntoView({
+        block: "nearest",
+        inline: "nearest",
+      });
+    }
+  }, [isSelected]);
+
   const { onClick } = useOptionEvents({ isSelected, onEnter, value });
 
   return (

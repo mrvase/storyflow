@@ -1,4 +1,11 @@
+import {
+  KEY_ARROW_DOWN_COMMAND,
+  COMMAND_PRIORITY_HIGH,
+  KEY_ARROW_UP_COMMAND,
+} from "lexical";
 import React from "react";
+import { useEditorContext } from "../../editor/react/EditorProvider";
+import { mergeRegister } from "../../editor/utils/mergeRegister";
 import { useContextWithError } from "../../utils/contextError";
 import { Actions, Reducers, useReducer } from "../../utils/useReducer";
 
@@ -149,4 +156,38 @@ export function useOption() {
     ctx.selectedId ? ctx.selectedId === id : ctx.defaultId === id,
     ref,
   ] as [boolean, typeof ref];
+}
+
+export function OptionEventsPlugin() {
+  const editor = useEditorContext();
+  const actions = useOptionActions();
+
+  React.useEffect(() => {
+    return mergeRegister(
+      editor.registerCommand(
+        KEY_ARROW_DOWN_COMMAND,
+        (ev) => {
+          ev?.preventDefault();
+          actions.selectNext();
+          return true;
+        },
+        COMMAND_PRIORITY_HIGH
+      ),
+      editor.registerCommand(
+        KEY_ARROW_UP_COMMAND,
+        (ev) => {
+          ev?.preventDefault();
+          actions.selectPrevious();
+          return true;
+        },
+        COMMAND_PRIORITY_HIGH
+      )
+    );
+  }, []);
+
+  React.useEffect(() => {
+    actions.goToItem(0);
+  }, []);
+
+  return null;
 }

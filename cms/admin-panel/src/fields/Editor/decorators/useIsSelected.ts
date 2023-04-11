@@ -96,6 +96,7 @@ export const useIsSelected = (nodeKey: string) => {
   }, [editor, nodeKey, onDelete]);
 
   const select = () => {
+    editor.getRootElement()?.focus();
     editor.update(() => {
       $selectNode(nodeKey);
     });

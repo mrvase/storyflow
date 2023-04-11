@@ -2,7 +2,7 @@ import React from "react";
 import cl from "clsx";
 import { Interaction, Interactive } from "./Interactive";
 import { Pointer } from "./Pointer";
-import { hsvaToHslString } from "./convert";
+import { hsvaToHex, hsvaToHslString } from "./convert";
 import { HsvaColor } from "./types";
 import { clamp, round } from "./utils";
 import { useColorManipulation } from "./useColorManipulation";
@@ -10,12 +10,21 @@ import { useColorManipulation } from "./useColorManipulation";
 const SaturationBase = ({
   hsva,
   onChange,
+  onEnd,
 }: {
   hsva: HsvaColor;
   onChange: (newColor: { s: number; v: number }) => void;
+  onEnd?: (newColor: { s: number; v: number }) => void;
 }) => {
   const handleMove = (interaction: Interaction) => {
     onChange({
+      s: interaction.left * 100,
+      v: 100 - interaction.top * 100,
+    });
+  };
+
+  const handleMoveEnd = (interaction: Interaction) => {
+    onEnd?.({
       s: interaction.left * 100,
       v: 100 - interaction.top * 100,
     });
@@ -38,6 +47,7 @@ const SaturationBase = ({
     >
       <Interactive
         onMove={handleMove}
+        onMoveEnd={handleMoveEnd}
         onKey={handleKey}
         aria-label="Color"
         aria-valuetext={`Saturation ${round(hsva.s)}%, Brightness ${round(
@@ -57,12 +67,18 @@ const SaturationBase = ({
 const HueBase = ({
   hue,
   onChange,
+  onEnd,
 }: {
   hue: number;
   onChange: (newHue: { h: number }) => void;
+  onEnd?: (newHue: { h: number }) => void;
 }) => {
   const handleMove = (interaction: Interaction) => {
     onChange({ h: 360 * interaction.top });
+  };
+
+  const handleMoveEnd = (interaction: Interaction) => {
+    onEnd?.({ h: 360 * interaction.top });
   };
 
   const handleKey = (offset: Interaction) => {
@@ -76,6 +92,7 @@ const HueBase = ({
     <div className="relative w-8 h-32 hue rounded-sm ring-1 ring-inset ring-white/25">
       <Interactive
         onMove={handleMove}
+        onMoveEnd={handleMoveEnd}
         onKey={handleKey}
         aria-label="Hue"
         aria-valuenow={round(hue)}
@@ -97,18 +114,24 @@ const Saturation = React.memo(SaturationBase);
 export const ColorPicker = ({
   color = "#fff",
   onChange,
+  onEnd,
   className,
 }: {
   color: string;
   onChange: (value: string) => void;
+  onEnd?: (value: string) => void;
   className?: string;
 }): JSX.Element => {
   const [hsva, updateHsva] = useColorManipulation(color, onChange);
 
+  const handleEnd = React.useCallback(() => {
+    onEnd?.(hsvaToHex(hsva));
+  }, [onEnd, hsva]);
+
   return (
     <div className={cl("flex", className)}>
-      <Saturation hsva={hsva} onChange={updateHsva} />
-      <Hue hue={hsva.h} onChange={updateHsva} />
+      <Saturation hsva={hsva} onChange={updateHsva} onEnd={handleEnd} />
+      <Hue hue={hsva.h} onChange={updateHsva} onEnd={handleEnd} />
     </div>
   );
 };

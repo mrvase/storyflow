@@ -13,19 +13,27 @@ import {
 import React from "react";
 import { tools } from "shared/editor-tools";
 import { useEditorContext } from "../../editor/react/EditorProvider";
-import { $isColorNode } from "../Editor/decorators/ColorNode";
+import ColorNode, { $isColorNode } from "../Editor/decorators/ColorNode";
 import PromptNode, {
   $createPromptNode,
   $isPromptNode,
 } from "../Editor/decorators/PromptNode";
 import { $replaceWithBlocks } from "../Editor/insertComputation";
 import {
+  $getBlocksFromComputation,
   $getComputation,
   $getIndexesFromSelection,
 } from "../Editor/transforms";
 import { ColorOverlay } from "./ColorOverlay";
 import { Prompt } from "./Prompt";
-import { useRestorableSelection } from "./useRestorableSelection";
+import { HoldActions, useRestorableSelection } from "./useRestorableSelection";
+import FileNode, { $isFileNode } from "../Editor/decorators/FileNode";
+import { Options, OptionEventsPlugin } from "./OptionsContext";
+import { FilePrompt } from "./FilePrompt";
+import { FileToken, TokenStream } from "@storyflow/backend/types";
+import { useIsFocused } from "../../editor/react/useIsFocused";
+import { useFieldRestriction } from "../FieldIdContext";
+import { useClientConfig } from "../../client-config";
 
 const matchers: ((
   node: LexicalNode
@@ -46,12 +54,21 @@ const matchers: ((
       };
     }
   },
+  (node: LexicalNode) => {
+    if ($isFileNode(node)) {
+      return {
+        type: "file",
+        prompt: "",
+      };
+    }
+  },
 ];
 
 export function Overlay({ children }: { children?: React.ReactNode }) {
   const editor = useEditorContext();
 
   const [type, setType] = React.useState<string | null>(null);
+
   const [node, setNode] = React.useState<LexicalNode | null>(null);
   const [prompt, setPrompt] = React.useState<string>("");
   const [position, setPosition] = React.useState<{
@@ -69,6 +86,9 @@ export function Overlay({ children }: { children?: React.ReactNode }) {
   };
 
   const [isHolded, holdActions] = useRestorableSelection();
+
+  const restrictTo = useFieldRestriction();
+  const isFocused = useIsFocused();
 
   React.useLayoutEffect(() => {
     return editor.registerUpdateListener(({ editorState }) => {
@@ -89,20 +109,34 @@ export function Overlay({ children }: { children?: React.ReactNode }) {
           return;
         }
 
-        let node = nodes[0];
+        let node = nodes[0] as LexicalNode;
+        let newNode: LexicalNode | null = null;
 
         let match: { type: string; prompt: string } | undefined;
 
         for (const matcher of matchers) {
           match = matcher(node);
           if (match !== undefined) {
+            newNode = node;
             break;
           }
         }
 
         if (match === undefined) {
-          reset();
-          return;
+          const type = {
+            image: "file",
+            color: "color",
+          }[(restrictTo as string) || ""];
+
+          if (type && isFocused) {
+            match = {
+              type,
+              prompt: "",
+            };
+          } else {
+            reset();
+            return;
+          }
         }
 
         const rootRect = editor.getRootElement()?.getBoundingClientRect();
@@ -136,12 +170,12 @@ export function Overlay({ children }: { children?: React.ReactNode }) {
             y,
           };
         });
-        setNode(node);
+        setNode(newNode);
         setType(match.type);
         setPrompt(match.prompt);
       });
     });
-  }, [editor, isHolded]);
+  }, [editor, isHolded, restrictTo, isFocused]);
 
   React.useEffect(() => {
     return mergeRegister(
@@ -177,7 +211,7 @@ export function Overlay({ children }: { children?: React.ReactNode }) {
             stream
           );
           paragraph.append(prompt);
-          $replaceWithBlocks(editor, [paragraph]);
+          $replaceWithBlocks([paragraph]);
           prompt.select(2, 2);
         });
       }
@@ -209,18 +243,56 @@ export function Overlay({ children }: { children?: React.ReactNode }) {
           : undefined
       }
     >
-      <div className="max-h-72 overflow-y-auto no-scrollbar m-[1px]">
-        {type === "prompt" && (
-          <Prompt
-            node={node as PromptNode}
-            prompt={prompt!}
-            holdActions={holdActions}
-          >
-            {children}
-          </Prompt>
-        )}
-        {type === "color" && <ColorOverlay />}
-      </div>
+      {type === "prompt" && (
+        <Prompt
+          node={node as PromptNode}
+          prompt={prompt!}
+          holdActions={holdActions}
+        >
+          {children}
+        </Prompt>
+      )}
+      {type === "color" && <ColorOverlay node={node as ColorNode} />}
+      {type === "file" && (
+        <FileOverlay node={node as FileNode} holdActions={holdActions} />
+      )}
     </div>
+  );
+}
+
+function FileOverlay({
+  node,
+  holdActions,
+}: {
+  node?: FileNode;
+  holdActions: HoldActions;
+}) {
+  const editor = useEditorContext();
+  const { libraries } = useClientConfig();
+
+  const replacePromptWithStream = React.useCallback(
+    (stream: TokenStream) => {
+      editor.update(() => {
+        const token = stream[0] as FileToken;
+        if (node) {
+          node.setToken(token);
+        } else {
+          const blocks = $getBlocksFromComputation(stream, libraries);
+          $replaceWithBlocks(blocks);
+        }
+      });
+    },
+    [editor, node, libraries]
+  );
+
+  return (
+    <Options>
+      <OptionEventsPlugin />
+      <FilePrompt
+        prompt=""
+        holdActions={holdActions}
+        replacePromptWithStream={replacePromptWithStream}
+      />
+    </Options>
   );
 }

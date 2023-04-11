@@ -46,6 +46,7 @@ import {
   $isTokenStreamNode,
   TokenStreamNode,
 } from "./decorators/TokenStreamNode";
+import { $replaceWithBlocks } from "./insertComputation";
 
 const EVENT_LATENCY = 50;
 let clipboardEventTimeout: null | number = null;
@@ -294,6 +295,8 @@ export function CopyPastePlugin() {
                 const stream = createTokenStream(entry);
 
                 const blocks = $getBlocksFromComputation(stream, libraries);
+                $replaceWithBlocks(blocks);
+                /*
                 const lastNode = $getLastBlock(selection, libraries);
                 if ($isRootNode(lastNode)) {
                   lastNode.append(...blocks);
@@ -312,6 +315,7 @@ export function CopyPastePlugin() {
                       });
                   }
                 }
+                */
                 return true;
               } catch (err) {
                 console.log("ERROR", err);

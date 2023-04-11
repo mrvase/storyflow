@@ -1,12 +1,12 @@
 import {
   DocumentId,
   TokenStream,
-  FolderId,
   NestedField,
   ValueArray,
+  DBFolder,
 } from "@storyflow/backend/types";
 import { createTemplateFieldId, getDocumentId } from "@storyflow/backend/ids";
-import { ComputerDesktopIcon, LinkIcon } from "@heroicons/react/24/outline";
+import { LinkIcon } from "@heroicons/react/24/outline";
 import { $getRoot, $getSelection, $isRangeSelection } from "lexical";
 import React from "react";
 import { useEditorContext } from "../../editor/react/EditorProvider";
@@ -32,10 +32,6 @@ export function UrlPrompt({
 }) {
   const editor = useEditorContext();
 
-  const id = useFieldId();
-  const documentId = getDocumentId(id) as DocumentId;
-  const generateDocumentId = useDocumentIdGenerator();
-
   const getPrevSymbol = () => {
     return editor.getEditorState().read(() => {
       const selection = $getSelection();
@@ -58,71 +54,75 @@ export function UrlPrompt({
     }
   }, []);
 
-  const fullQuery = parentUrl?.[0] ? `${parentUrl[0]}/${prompt}` : prompt;
-
-  let options: any[] = [];
+  const combinedPrompt = parentUrl?.[0] ? `${parentUrl[0]}/${prompt}` : prompt;
 
   const apps = useAppFolders();
 
-  const [app, setApp] = React.useState(
-    apps?.length === 1 ? apps[0]._id : undefined
+  return (
+    <>
+      {apps.map((app) => (
+        <AppUrls
+          key={app._id}
+          app={app}
+          prompt={combinedPrompt}
+          replacePromptWithStream={replacePromptWithStream}
+        />
+      ))}
+    </>
   );
+}
 
-  const { articles: list } = useOptimisticDocumentList(app);
+function AppUrls({
+  app,
+  prompt,
+  replacePromptWithStream,
+}: {
+  app: DBFolder;
+  prompt: string;
+  replacePromptWithStream: (stream: TokenStream) => void;
+}) {
+  const id = useFieldId();
+  const documentId = getDocumentId(id) as DocumentId;
+  const generateDocumentId = useDocumentIdGenerator();
 
-  console.log("LIST LIST", app, list);
-
-  const onAppEnter = React.useCallback((id: FolderId) => {
-    setApp(id);
-  }, []);
+  const { articles: list } = useOptimisticDocumentList(app._id);
 
   const onEnter = React.useCallback(
     (id: DocumentId) => {
-      const fieldImport: NestedField = {
+      const nestedField: NestedField = {
         id: generateDocumentId(documentId),
         field: createTemplateFieldId(id, DEFAULT_FIELDS.url.id),
       };
-      replacePromptWithStream([fieldImport]);
+      replacePromptWithStream([nestedField]);
     },
-    [parentUrl, replacePromptWithStream]
+    [replacePromptWithStream]
   );
 
-  if (!app) {
-    options =
-      apps?.map((el) => ({
+  const options = (list ?? []).reduce((acc, el) => {
+    const url =
+      (calculateFromRecord(
+        createTemplateFieldId(el._id, DEFAULT_FIELDS.url.id),
+        el.record
+      )?.[0] as string) ?? "";
+    if (url.startsWith(prompt.toLowerCase())) {
+      acc.push({
         id: el._id,
-        label: el.label,
+        label: markMatchingString(url || "[forside]", prompt),
+        onEnterLabel: "Indsæt",
         // secondaryText: "Vis links",
-        Icon: ComputerDesktopIcon,
-        onEnter: onAppEnter,
-        onEnterLabel: "Vis links",
-      })) ?? [];
-  } else if (list) {
-    options = list.reduce((acc, el) => {
-      const url =
-        (calculateFromRecord(
-          createTemplateFieldId(el._id, DEFAULT_FIELDS.url.id),
-          el.record
-        )?.[0] as string) ?? "";
-      if (url.startsWith(fullQuery.toLowerCase())) {
-        acc.push({
-          id: el._id,
-          label: markMatchingString(url, fullQuery) || "[forside]",
-          onEnterLabel: "Indsæt",
-          // secondaryText: "Vis links",
-          Icon: LinkIcon,
-          onEnter,
-        });
-        return acc;
-      }
+        Icon: LinkIcon,
+        onEnter,
+      });
       return acc;
-    }, [] as any[]);
-  }
+    }
+    return acc;
+  }, [] as any[]);
 
   return (
     <div className="p-2.5">
+      <div className="font-normal opacity-50 mb-1 ml-1">{app.label}</div>
       {options.map(
-        ({ id, label, secondaryText, Icon, onEnter, onEnterLabel }, index) => (
+        ({ id, label, secondaryText, Icon, onEnter, onEnterLabel }) => (
           <Option
             value={id}
             onEnter={onEnter}
