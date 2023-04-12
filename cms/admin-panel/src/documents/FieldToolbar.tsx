@@ -45,18 +45,31 @@ export function useFieldToolbarPortal() {
   )?.[1];
 }
 
-export function FieldToolbarPortal({ show }: { show: boolean }) {
+export function FieldToolbarPortal({
+  show,
+  index,
+}: {
+  show: boolean;
+  index: number;
+}) {
   const portal = useContextWithError(
     FieldToolbarPortalContext,
     "FieldToolbarPortal"
   )?.[0];
 
   return portal && show
-    ? ReactDOM.createPortal(<FieldToolbar />, portal)
+    ? ReactDOM.createPortal(<FieldToolbar index={index} />, portal)
     : null;
 }
 
-export function FieldToolbar({ index }: { index?: number }) {
+const restrictToOptions = [
+  { id: "children" as "children", label: "Rich Text" },
+  { id: "number" as "number", label: "Tal" },
+  { id: "image" as "image", label: "Billede" },
+  { id: "color" as "color", label: "Farve" },
+];
+
+export function FieldToolbar({ index }: { index: number }) {
   const fieldId = useFieldId();
   const documentId = getDocumentId(fieldId);
 
@@ -67,16 +80,14 @@ export function FieldToolbar({ index }: { index?: number }) {
   const templateFolder = useTemplateFolder()?._id;
   const { articles: templates } = useOptimisticDocumentList(templateFolder);
 
-  const templateOptions = (templates ?? []).map((el) => ({
-    id: el._id,
-    label: el.label ?? el._id,
-  }));
-
-  const restrictToOptions = [
-    { id: "number" as "number", label: "Tal" },
-    { id: "image" as "image", label: "Billede" },
-    { id: "color" as "color", label: "Farve" },
-  ];
+  const templateOptions = React.useMemo(
+    () =>
+      (templates ?? []).map((el) => ({
+        id: el._id,
+        label: el.label ?? el._id,
+      })),
+    [templates]
+  );
 
   return (
     <Content.Toolbar>

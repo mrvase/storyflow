@@ -57,21 +57,9 @@ export const useDocumentConfig = (
     version?: number;
   }
 ) => {
-  /*
-  if (!config && data.config) {
-    setConfig(data.config);
-  }
-  */
-
   React.useEffect(() => {
     return templatesPurger(templateId);
   }, []);
-
-  /*
-  React.useEffect(() => {
-    return labelsPurger(templateId);
-  }, []);
-  */
 
   let { mutate } = useArticle(templateId);
 
@@ -168,8 +156,6 @@ export const useDocumentConfig = (
       onInvalidVersion: refreshOnVersionChange,
     }
   );
-
-  console.log("CONFIG", state);
 
   return state;
 };

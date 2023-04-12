@@ -376,7 +376,7 @@ export function FieldPage({ children }: { children?: React.ReactNode }) {
                   >
                     <BuilderIframe {...iframeProps} />
                   </div>
-                  <FieldOverlay id={id} />
+                  {/*<FieldOverlay id={id} />*/}
                 </div>
               </Panel>
               <PanelResizeHandle
@@ -402,7 +402,7 @@ export function FieldPage({ children }: { children?: React.ReactNode }) {
 function FieldPanel({ id }: { id: FieldId }) {
   const [{ selectedField = id }] = useSelectedPath();
 
-  console.log("PUSH SELECTED", selectedField);
+  console.log("SELECTED", id);
 
   return (
     <EditorFocusProvider>

@@ -31,6 +31,7 @@ import { useFolder } from "../folders/collab/hooks";
 import { usePanel, useRoute } from "../panel-router/Routes";
 import { usePanelActions } from "../panel-router/PanelRouter";
 import { useLocalStorage } from "../state/useLocalStorage";
+import { useFieldRestriction } from "./FieldIdContext";
 
 type Props = {
   fieldConfig: FieldConfig;
@@ -86,7 +87,7 @@ export function FieldContainer({
     <EditorFocusProvider>
       <AttributesProvider>
         <SelectedPathProvider id={id}>
-          <FieldToolbarPortal show={isFocused} />
+          <FieldToolbarPortal show={isFocused} index={index} />
           <div
             {...props}
             {...(isOpen ? handlers : {})}
@@ -177,7 +178,7 @@ function LabelBar({
 
   const specialFieldConfig = getDefaultField(id);
 
-  const to = isOpen ? route : `${route}/c${parseInt(id, 16).toString(16)}`;
+  const to = isOpen ? route : `${route}/c${id}`;
 
   const fullscreen = () => {
     navigate(to, {
@@ -190,6 +191,8 @@ function LabelBar({
     item: to,
     mode: "link",
   });
+
+  const restrictTo = useFieldRestriction();
 
   return (
     <div
@@ -206,7 +209,9 @@ function LabelBar({
         <Label id={id} />
         <PathMap />
         <Attributes />
-        {(isDefaultField(id, "layout") || isDefaultField(id, "page")) && (
+        {(isDefaultField(id, "layout") ||
+          isDefaultField(id, "page") ||
+          restrictTo === "children") && (
           <button
             className="rounded-full px-2 py-0.5 text-xs ring-button text-gray-500 ml-1 mr-3 flex-center gap-1"
             onClick={fullscreen}

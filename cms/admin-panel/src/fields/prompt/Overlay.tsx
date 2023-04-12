@@ -193,7 +193,12 @@ export function Overlay({ children }: { children?: React.ReactNode }) {
 
   React.useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (["/", "<", "@"].includes(event.key) && !event.defaultPrevented) {
+      const keys = ["/", "@"];
+      if (restrictTo === "children") {
+        keys.push("<");
+      }
+
+      if (keys.includes(event.key) && !event.defaultPrevented) {
         event.preventDefault();
         editor.update(() => {
           const selection = $getSelection();
@@ -226,7 +231,7 @@ export function Overlay({ children }: { children?: React.ReactNode }) {
         }
       });
     }
-  }, [editor, isOpen]);
+  }, [editor, isOpen, restrictTo]);
 
   return (
     <div

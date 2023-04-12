@@ -11,6 +11,12 @@ export function createDiffOperations<T extends any[]>(
 
   const { compare = (a: T[number], b: T[number]) => a === b } = options;
 
+  /*
+  THIS FUNCTION IS CREATED BY GPT-4
+  system: You are an expert algorithm puzzle solver. When given a puzzle, you think through how to solve it with pseudo-code. You then provide an algorithm in javascript with comments explaining each step.
+  user: We have two arrays of strings, firstArray and secondArray. We need to create an algorithm that takes the two arrays as inputs and outputs the longest common subsequence. Note that it should return the actual array of the subsequence, not only its length. Adjacent elements of the subsequence do not have to be adjacent in the input arrays. However, it must be the case that if an element comes after another element in the subsequence, then this is true as well for the input arrays.
+  */
+
   function longestCommonSubsequence(firstArray: T, secondArray: T): T {
     // Create a 2D table to store the lengths of common subsequences for different subproblems.
     let table = Array(firstArray.length + 1)

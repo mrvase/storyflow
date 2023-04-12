@@ -63,7 +63,7 @@ const panes = [
     icon: PhotoIcon,
     label: "Billeder",
   },
-] as const;
+] satisfies { id: string; icon: React.FC<any>; label: string }[];
 
 export function Prompt({
   node,
@@ -117,6 +117,7 @@ export function Prompt({
     });
   }, [editor]);
   */
+  const restrictTo = useFieldRestriction();
 
   React.useEffect(() => {
     return mergeRegister(
@@ -145,10 +146,10 @@ export function Prompt({
           ev?.preventDefault();
 
           setCurrentPane((ps = "actions") => {
-            const currentIndex = panes.findIndex((p) => p.id === ps);
+            const currentIndex = visiblePanes.findIndex((p) => p.id === ps);
             return currentIndex <= 0
-              ? panes[panes.length - 1].id
-              : panes[currentIndex - 1].id;
+              ? visiblePanes[visiblePanes.length - 1].id
+              : visiblePanes[currentIndex - 1].id;
           });
           return true;
         },
@@ -178,17 +179,17 @@ export function Prompt({
           ev?.preventDefault();
 
           setCurrentPane((ps = "actions") => {
-            const currentIndex = panes.findIndex((p) => p.id === ps);
-            return currentIndex === panes.length - 1
-              ? panes[0].id
-              : panes[currentIndex + 1].id;
+            const currentIndex = visiblePanes.findIndex((p) => p.id === ps);
+            return currentIndex === visiblePanes.length - 1
+              ? visiblePanes[0].id
+              : visiblePanes[currentIndex + 1].id;
           });
           return true;
         },
         COMMAND_PRIORITY_HIGH
       )
     );
-  }, [editor, showMenu]);
+  }, [editor, showMenu, restrictTo]);
 
   React.useEffect(() => {
     return mergeRegister(
@@ -220,6 +221,11 @@ export function Prompt({
   const [currentPane_, setCurrentPane] =
     React.useState<(typeof panes)[number]["id"]>();
 
+  let visiblePanes: (typeof panes)[number][] = panes;
+  if (restrictTo !== "children") {
+    visiblePanes = panes.filter((el) => el.id !== "elements");
+  }
+
   const defaultPane = {
     "/": "actions",
     "<": "elements",
@@ -229,7 +235,6 @@ export function Prompt({
   const currentPane = currentPane_ ?? defaultPane;
 
   const options = useFieldOptions() ?? undefined;
-  const restrictTo = useFieldRestriction();
 
   const replacePromptWithStream = React.useCallback(
     (stream: TokenStream) => {
@@ -246,12 +251,13 @@ export function Prompt({
     <Options>
       <OptionEventsPlugin />
       {showMenu && (
-        <div className="grid grid-cols-5 gap-2.5 p-2.5 text-xs">
-          {panes.map((pane, index) => (
+        <div className="flex gap-2.5 p-2.5 text-xs">
+          {visiblePanes.map((pane, index) => (
             <div
               key={index}
               className={cl(
                 "flex-center gap-2 rounded cursor-default py-2 px-3 transition-opacity",
+                "grow shrink basis-0",
                 currentPane === pane.id
                   ? "bg-gray-800"
                   : "opacity-50 hover:opacity-100"
@@ -280,11 +286,13 @@ export function Prompt({
           <>
             {currentPane === "actions" && (
               <>
+                {restrictTo === "children" && (
+                  <ParagraphStylePrompt prompt={prompt} />
+                )}
                 <TokenPrompt
                   prompt={prompt}
                   replacePromptWithStream={replacePromptWithStream}
                 />
-                <ParagraphStylePrompt prompt={prompt} />
                 {children}
               </>
             )}

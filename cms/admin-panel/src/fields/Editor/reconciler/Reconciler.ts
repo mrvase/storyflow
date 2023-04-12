@@ -122,6 +122,7 @@ function reconcile(
       const oldBlocks = root.getChildren();
       const newBlocks = $createBlocksFromStream(value, libraries);
 
+      /** UPDATE CONTENT */
       const operations = createDiffOperations(oldBlocks, newBlocks, {
         compare: (a, b) => {
           if (a.type !== b.type) return false;
@@ -129,15 +130,14 @@ function reconcile(
         },
       });
 
-      console.log("** OPERATIONS", operations[0].index);
-
-      /** UPDATE CONTENT */
-      // $clearEditor();
-      // $initializeEditor(value, libraries);
-
       operations.forEach(({ index, insert, remove }) => {
         root.splice(index, remove, insert);
       });
+
+      /*
+      $clearEditor();
+      $initializeEditor(value, libraries);
+      */
 
       /** UPDATE SELECTION */
       if (

@@ -106,8 +106,11 @@ export function DefaultField({
     [actions, target]
   );
 
+  const hasLocalPush = React.useRef(false);
+
   const pushWithBatching = React.useCallback(
     (next: ComputationOp["ops"]) => {
+      hasLocalPush.current = true;
       return push((prev, noop) => {
         let result: ComputationOp["ops"][] = [];
         if (!prev || prev === noop) {
@@ -192,7 +195,7 @@ export function DefaultField({
             </div>
           )}
           {showPromptButton && <PromptButton />}
-          <PushOnBlurPlugin push={push} />
+          <PushOnBlurPlugin push={push} hasLocalPush={hasLocalPush} />
           <OverlayWrapper />
           <BottomSelectionArea />
         </div>
@@ -265,6 +268,7 @@ function OverlayWrapper() {
 
 function PushOnBlurPlugin({
   push,
+  hasLocalPush,
 }: {
   push: (
     payload:
@@ -274,6 +278,7 @@ function PushOnBlurPlugin({
           noop: ComputationOp["ops"]
         ) => ComputationOp["ops"][])
   ) => void;
+  hasLocalPush: React.MutableRefObject<boolean>;
 }) {
   const editor = useEditorContext();
 
@@ -305,8 +310,10 @@ function PushOnBlurPlugin({
 
   React.useEffect(() => {
     return () => {
-      console.log("CLOSE PUSH");
-      escapePush();
+      if (hasLocalPush.current) {
+        console.log("CLOSE PUSH");
+        escapePush();
+      }
     };
   }, [editor, escapePush]);
 

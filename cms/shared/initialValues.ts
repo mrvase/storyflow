@@ -143,7 +143,7 @@ export const getConfig = <T extends keyof typeof fieldConfig>(
 ): (typeof fieldConfig)[T] & { defaultValue: SyntaxTree } => {
   const config = fieldConfig[key];
   if (!config) {
-    throw new Error("Unknown field type used to request config.");
+    throw new Error(`Unknown field type used to request config: ${key}`);
   }
 
   const root = {

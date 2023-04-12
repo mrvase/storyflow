@@ -54,8 +54,8 @@ export function RenderField<T extends FieldType>({
             <Component
               {...{
                 id,
-                version,
                 fieldConfig,
+                version,
                 history,
               }}
             />
