@@ -164,7 +164,7 @@ export function StatusButton() {
   }[current]!;
 
   return (
-    <button
+    <div
       className={cl(
         "h-4 w-4",
         ["uploading", "modified"].includes(current)
@@ -174,6 +174,6 @@ export function StatusButton() {
       onClick={() => collab.sync()}
     >
       <Icon className="w-4 h-4" />
-    </button>
+    </div>
   );
 }

@@ -109,67 +109,71 @@ function reconcile(
   editor.update(
     () => {
       /** SAVE CURRENT SELECTION */
-      const selection = $getSelection();
-      let anchor: number | null = null;
-      let focus: number | null = null;
+      try {
+        const selection = $getSelection();
+        let anchor: number | null = null;
+        let focus: number | null = null;
 
-      if ($isSelection(selection)) {
-        [anchor, focus] = $getIndexesFromSelection(selection);
-      }
+        if ($isSelection(selection)) {
+          [anchor, focus] = $getIndexesFromSelection(selection);
+        }
 
-      const root = $getRoot();
+        const root = $getRoot();
 
-      const oldBlocks = root.getChildren();
-      const newBlocks = $createBlocksFromStream(value, libraries);
+        const oldBlocks = root.getChildren();
+        const newBlocks = $createBlocksFromStream(value, libraries);
 
-      /** UPDATE CONTENT */
-      const operations = createDiffOperations(oldBlocks, newBlocks, {
-        compare: (a, b) => {
-          if (a.type !== b.type) return false;
-          return tools.equals($getComputation(a), $getComputation(b));
-        },
-      });
+        /** UPDATE CONTENT */
+        const operations = createDiffOperations(oldBlocks, newBlocks, {
+          compare: (a, b) => {
+            if (a.type !== b.type) return false;
+            return tools.equals($getComputation(a), $getComputation(b));
+          },
+        });
 
-      operations.forEach(({ index, insert, remove }) => {
-        root.splice(index, remove, insert);
-      });
+        operations.forEach(({ index, insert, remove }) => {
+          root.splice(index, remove, insert);
+        });
 
-      /*
+        /*
       $clearEditor();
       $initializeEditor(value, libraries);
       */
 
-      /** UPDATE SELECTION */
-      if (
-        anchor !== null &&
-        focus !== null &&
-        document.activeElement === editor.getRootElement()
-      ) {
-        anchor = actions.reduce((acc: number, cur) => {
-          if ("name" in cur) return acc;
-          if (cur.index > acc) return acc;
-          return acc + tools.getLength(cur.insert ?? []) - (cur.remove ?? 0);
-        }, anchor);
+        /** UPDATE SELECTION */
+        if (
+          anchor !== null &&
+          focus !== null &&
+          document.activeElement === editor.getRootElement()
+        ) {
+          anchor = actions.reduce((acc: number, cur) => {
+            if ("name" in cur) return acc;
+            if (cur.index > acc) return acc;
+            return acc + tools.getLength(cur.insert ?? []) - (cur.remove ?? 0);
+          }, anchor);
 
-        focus = anchor;
+          focus = anchor;
 
-        let [anchorNode, anchorOffset] = $getPointFromIndex("cursor", anchor);
-        let [focusNode, focusOffset] = $getPointFromIndex("cursor", focus);
+          let [anchorNode, anchorOffset] = $getPointFromIndex("cursor", anchor);
+          let [focusNode, focusOffset] = $getPointFromIndex("cursor", focus);
 
-        if ($isTextNode(anchorNode) && $isTextNode(focusNode)) {
-          const newSelection = $createRangeSelection(
-            { node: anchorNode, offset: anchorOffset },
-            {
-              node: focusNode,
-              offset: focusOffset,
-            }
-          );
-          $setSelection(newSelection);
-          return;
+          if ($isTextNode(anchorNode) && $isTextNode(focusNode)) {
+            const newSelection = $createRangeSelection(
+              { node: anchorNode, offset: anchorOffset },
+              {
+                node: focusNode,
+                offset: focusOffset,
+              }
+            );
+            $setSelection(newSelection);
+            return;
+          }
         }
-      }
 
-      $setSelection(null);
+        $setSelection(null);
+      } catch (err) {
+        console.error(err);
+      }
     },
     {
       tag: "reconciliation",

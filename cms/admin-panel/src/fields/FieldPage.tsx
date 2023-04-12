@@ -402,8 +402,6 @@ export function FieldPage({ children }: { children?: React.ReactNode }) {
 function FieldPanel({ id }: { id: FieldId }) {
   const [{ selectedField = id }] = useSelectedPath();
 
-  console.log("SELECTED", id);
-
   return (
     <EditorFocusProvider>
       <DefaultField key={selectedField} id={selectedField} />

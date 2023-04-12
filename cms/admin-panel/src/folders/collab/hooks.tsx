@@ -153,7 +153,6 @@ export function useSpace<T extends Space>({
 
         forEach(({ operation }) => {
           if (targetTools.isOperation(operation, "space-items")) {
-            console.log("ACTION", operation);
             operation.ops.forEach((action) => {
               const { index, insert, remove } = action;
               newSpace.items.splice(index, remove ?? 0, ...(insert ?? []));

@@ -169,14 +169,6 @@ export function Routes({
         throw new Error("Page does not exist: " + currentSegment);
       }
 
-      console.log("MATCH", {
-        index,
-        currentSegment,
-        prevSegment,
-        currentMatch,
-        prevMatch,
-      });
-
       if (firstNonMatch !== null && index === firstNonMatch - 1) {
         // has both paths as children (merges)
         // (will always exist since first segment is always a match)

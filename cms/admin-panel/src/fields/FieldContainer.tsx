@@ -198,7 +198,6 @@ function LabelBar({
     <div
       className={cl("flex", "h-8 pb-3" /* -translate-y-2.5 */)}
       // onDoubleClick={fullscreen}
-      {...linkDragHandleProps}
     >
       <Dot id={id} dragHandleProps={isEditing ? dragHandleProps : {}} />
       <div
@@ -215,6 +214,7 @@ function LabelBar({
           <button
             className="rounded-full px-2 py-0.5 text-xs ring-button text-gray-500 ml-1 mr-3 flex-center gap-1"
             onClick={fullscreen}
+            {...linkDragHandleProps}
           >
             <ComputerDesktopIcon className="w-3 h-3" /> Åbn preview
           </button>

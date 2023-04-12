@@ -43,7 +43,7 @@ export function useDefaultState(id: FieldId) {
       };
     }
     fieldType = config.type ?? "default";
-    console.log("**", config);
+
     transform = React.useMemo(
       () => config!.transform ?? getConfig(fieldType).transform,
       [config]

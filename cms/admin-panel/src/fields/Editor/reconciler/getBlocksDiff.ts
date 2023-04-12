@@ -77,6 +77,8 @@ export function createDiffOperations<T extends any[]>(
 
     const LCSLength = longestCommonSubsequence.length;
 
+    let adjustLength = 0;
+
     while (idxLCS < LCSLength) {
       const currentLCS = longestCommonSubsequence[idxLCS];
 
@@ -98,6 +100,7 @@ export function createDiffOperations<T extends any[]>(
 
       // Add the operation if there is something to remove or insert.
       if (remove !== 0 || insert.length !== 0) {
+        adjustLength += insert.length - remove;
         operations.push({
           index,
           remove,
@@ -116,7 +119,7 @@ export function createDiffOperations<T extends any[]>(
     // What comes after the last common element is handled in one operation.
     if (idx1 < firstArray.length || idx2 < secondArray.length) {
       operations.push({
-        index: idx1,
+        index: idx1 + adjustLength,
         remove: firstArray.length - idx1,
         insert: secondArray.slice(idx2) as T,
       });
@@ -147,6 +150,12 @@ export function createDiffOperations<T extends any[]>(
   const testCase = firstArray.slice() as T;
   performSpliceOperations(testCase, operations);
   if (!compareArrays(testCase, secondArray)) {
+    console.log("Algorithm failed", {
+      firstArray,
+      testCase,
+      secondArray,
+      operations,
+    });
     throw new Error("Algorithm failed");
   }
 

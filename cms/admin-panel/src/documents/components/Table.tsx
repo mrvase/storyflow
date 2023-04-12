@@ -27,6 +27,7 @@ export default function Table({
             <td className="w-9"></td>
             {labels.map((label) => (
               <td
+                key={label}
                 className="p-2.5 truncate"
                 style={{ width: `calc(100% / ${labels.length})` }}
               >
