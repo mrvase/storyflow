@@ -4,7 +4,7 @@ import { useEditorContext } from "../../editor/react/EditorProvider";
 import { ColorPicker } from "../../elements/ColorPicker/ColorPicker";
 import ColorNode from "../Editor/decorators/ColorNode";
 import { Options } from "./OptionsContext";
-import { $getBlocksFromComputation } from "../Editor/transforms";
+import { $createBlocksFromStream } from "../Editor/transforms";
 import { $replaceWithBlocks } from "../Editor/insertComputation";
 import { useClientConfig } from "../../client-config";
 
@@ -32,7 +32,7 @@ export function ColorOverlay({ node }: { node?: ColorNode }) {
       if (node) {
         node.setToken({ color });
       } else {
-        const blocks = $getBlocksFromComputation([{ color }], libraries);
+        const blocks = $createBlocksFromStream([{ color }], libraries);
         $replaceWithBlocks(blocks);
       }
     });

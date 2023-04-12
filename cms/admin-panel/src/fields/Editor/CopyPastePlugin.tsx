@@ -1,16 +1,14 @@
 import React from "react";
 import {
-  $getBlocksFromComputation,
+  $createBlocksFromStream,
   $getComputation,
   $getIndexesFromSelection,
-  $getLastBlock,
 } from "./transforms";
 import {
   $getRoot,
   $getSelection,
   $isNodeSelection,
   $isRangeSelection,
-  $isRootNode,
   COMMAND_PRIORITY_CRITICAL,
   COMMAND_PRIORITY_EDITOR,
   COPY_COMMAND,
@@ -294,7 +292,7 @@ export function CopyPastePlugin() {
 
                 const stream = createTokenStream(entry);
 
-                const blocks = $getBlocksFromComputation(stream, libraries);
+                const blocks = $createBlocksFromStream(stream, libraries);
                 $replaceWithBlocks(blocks);
                 /*
                 const lastNode = $getLastBlock(selection, libraries);

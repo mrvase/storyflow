@@ -5,7 +5,7 @@ import { Target, ComputationOp } from "shared/operations";
 import React from "react";
 import { $initializeEditor } from "./transforms";
 import { TokenStream } from "@storyflow/backend/types";
-import { Reconciler } from "./Reconciler";
+import { Reconciler } from "./reconciler/Reconciler";
 import {
   EditorFocusPlugin,
   useIsFocused,

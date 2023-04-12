@@ -16,7 +16,7 @@ import {
   TextNode,
 } from "lexical";
 import {
-  $getBlocksFromComputation,
+  $createBlocksFromStream,
   $getStartAndEnd,
   $isTextBlockNode,
 } from "./transforms";
@@ -600,7 +600,7 @@ export function replaceWithComputation(
   libraries: LibraryConfig[]
 ) {
   editor.update(() => {
-    const newBlocks = $getBlocksFromComputation(insert, libraries);
+    const newBlocks = $createBlocksFromStream(insert, libraries);
     return $replaceWithBlocks(newBlocks);
   });
 }

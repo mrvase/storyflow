@@ -2,7 +2,7 @@ import { LibraryConfig } from "@storyflow/frontend/types";
 import { $getSelection, $isRangeSelection } from "lexical";
 import PromptNode, { $isPromptNode } from "../Editor/decorators/PromptNode";
 import { $replaceWithBlocks } from "../Editor/insertComputation";
-import { $getBlocksFromComputation } from "../Editor/transforms";
+import { $createBlocksFromStream } from "../Editor/transforms";
 
 export const $getPromptNode = () => {
   const selection = $getSelection();
@@ -29,7 +29,7 @@ export const $exitPromptNode = (
   const stream = node.getTokenStream();
   if (stream.length) {
     node.select(0);
-    $replaceWithBlocks($getBlocksFromComputation(stream, libraries));
+    $replaceWithBlocks($createBlocksFromStream(stream, libraries));
   } else {
     node.remove();
   }

@@ -20,7 +20,7 @@ import PromptNode, {
 } from "../Editor/decorators/PromptNode";
 import { $replaceWithBlocks } from "../Editor/insertComputation";
 import {
-  $getBlocksFromComputation,
+  $createBlocksFromStream,
   $getComputation,
   $getIndexesFromSelection,
 } from "../Editor/transforms";
@@ -277,7 +277,7 @@ function FileOverlay({
         if (node) {
           node.setToken(token);
         } else {
-          const blocks = $getBlocksFromComputation(stream, libraries);
+          const blocks = $createBlocksFromStream(stream, libraries);
           $replaceWithBlocks(blocks);
         }
       });

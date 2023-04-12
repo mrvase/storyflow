@@ -26,7 +26,7 @@ import { useEditorContext } from "../../editor/react/EditorProvider";
 import PromptNode, { $isPromptNode } from "../Editor/decorators/PromptNode";
 import { useFieldOptions, useFieldRestriction } from "../FieldIdContext";
 import { $replaceWithBlocks } from "../Editor/insertComputation";
-import { $getBlocksFromComputation } from "../Editor/transforms";
+import { $createBlocksFromStream } from "../Editor/transforms";
 import { ElementPrompt } from "./ElementPrompt";
 import { FilePrompt } from "./FilePrompt";
 import { OptionEventsPlugin, Options } from "./OptionsContext";
@@ -235,7 +235,7 @@ export function Prompt({
     (stream: TokenStream) => {
       editor.update(() => {
         $getPromptNode()?.select(0);
-        const blocks = $getBlocksFromComputation(stream, libraries);
+        const blocks = $createBlocksFromStream(stream, libraries);
         $replaceWithBlocks(blocks);
       });
     },

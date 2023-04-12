@@ -17,6 +17,7 @@ import {
   $setSelection,
   $createNodeSelection,
   ParagraphNode,
+  LexicalEditor,
 } from "lexical";
 import { GridSelection, PointType } from "lexical/LexicalSelection";
 import { tools } from "shared/editor-tools";
@@ -385,7 +386,7 @@ export const $getPointFromIndex = (
   return [node, index - i];
 };
 
-export const getNodesFromComputation = (
+export const $createInlinesFromStream = (
   stream: TokenStream,
   libraries: LibraryConfig[]
 ) => {
@@ -484,27 +485,28 @@ export const getNodesFromComputation = (
   }, []);
 };
 
-export function $getBlocksFromComputation(
-  initialState: TokenStream,
+const isBlockElement = (
+  el: TokenStream[number],
   libraries: LibraryConfig[]
-) {
-  const blocks: LexicalNode[] = [];
+) => {
+  return (
+    (tokens.isNestedElement(el) && !isInlineElement(libraries, el)) ||
+    tokens.isNestedDocument(el) ||
+    tokens.isNestedFolder(el) ||
+    tokens.isNestedCreator(el)
+  );
+};
 
-  const isBlockElement = (el: TokenStream[number]) => {
-    return (
-      (tokens.isNestedElement(el) && !isInlineElement(libraries, el)) ||
-      tokens.isNestedDocument(el) ||
-      tokens.isNestedFolder(el) ||
-      tokens.isNestedCreator(el)
-    );
-  };
-
-  const arrSplit = tools.split(
-    initialState,
-    (el) => tokens.isLineBreak(el) || isBlockElement(el)
+const splitStreamByBlocks = (
+  stream: TokenStream,
+  libraries: LibraryConfig[]
+) => {
+  const splitResult = tools.split(
+    stream,
+    (el) => tokens.isLineBreak(el) || isBlockElement(el, libraries)
   );
 
-  const arr = arrSplit
+  const blocks = splitResult
     // we need to do this filter before the other one since the other one needs
     // to check both the current and next element
     .filter((el) => el.length > 0)
@@ -516,37 +518,46 @@ export function $getBlocksFromComputation(
         tokens.isLineBreak(arr[index + 1]?.[0])
     );
 
-  if (!arr.length) {
+  return blocks;
+};
+
+export function $createBlocksFromStream(
+  initialState: TokenStream,
+  libraries: LibraryConfig[]
+) {
+  const blocks: LexicalNode[] = [];
+
+  const streamBlocks = splitStreamByBlocks(initialState, libraries);
+
+  if (!streamBlocks.length) {
     const paragraphNode = $createParagraphNode();
     blocks.push(paragraphNode);
     return blocks;
   }
 
-  arr.forEach((computation) => {
-    if (computation.length === 1 && isBlockElement(computation[0])) {
-      if (tokens.isNestedElement(computation[0])) {
-        blocks.push($createLayoutElementNode(computation[0]));
-      } else if (tokens.isNestedFolder(computation[0])) {
-        blocks.push($createFolderNode(computation[0] as any));
-      } else if (tokens.isNestedCreator(computation[0])) {
-        blocks.push($createCreatorNode(computation[0] as any));
+  streamBlocks.forEach((stream) => {
+    if (stream.length === 1 && isBlockElement(stream[0], libraries)) {
+      if (tokens.isNestedElement(stream[0])) {
+        blocks.push($createLayoutElementNode(stream[0]));
+      } else if (tokens.isNestedFolder(stream[0])) {
+        blocks.push($createFolderNode(stream[0] as any));
+      } else if (tokens.isNestedCreator(stream[0])) {
+        blocks.push($createCreatorNode(stream[0] as any));
       } else {
-        blocks.push($createDocumentNode(computation[0] as any));
+        blocks.push($createDocumentNode(stream[0] as any));
       }
-    } else if (tokens.isLineBreak(computation[0])) {
+    } else if (tokens.isLineBreak(stream[0])) {
       const paragraphNode = $createParagraphNode();
       blocks.push(paragraphNode);
     } else {
       const isHeading: false | string =
-        typeof computation[0] === "string" &&
-        (computation[0].match(/^(\#+)\s/)?.[1] ?? false);
+        typeof stream[0] === "string" &&
+        (stream[0].match(/^(\#+)\s/)?.[1] ?? false);
       const paragraphNode = isHeading
         ? $createHeadingNode(`h${isHeading.length}` as "h1")
         : $createParagraphNode();
-      computation = isHeading
-        ? tools.slice(computation, 1 + isHeading.length)
-        : computation;
-      const nodes = getNodesFromComputation(computation, libraries);
+      stream = isHeading ? tools.slice(stream, 1 + isHeading.length) : stream;
+      const nodes = $createInlinesFromStream(stream, libraries);
       paragraphNode.append(...nodes);
       blocks.push(paragraphNode);
     }
@@ -562,10 +573,16 @@ export function $initializeEditor(
   const root = $getRoot();
 
   if (root.isEmpty()) {
-    const blocks = $getBlocksFromComputation(initialState, libraries);
+    const blocks = $createBlocksFromStream(initialState, libraries);
     root.append(...blocks);
   }
 }
+
+export async function replaceEditor(
+  editor: LexicalEditor,
+  stream: TokenStream,
+  libraries: LibraryConfig[]
+) {}
 
 export function $clearEditor() {
   const root = $getRoot();

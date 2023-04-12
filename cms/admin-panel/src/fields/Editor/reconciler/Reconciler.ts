@@ -7,24 +7,27 @@ import {
   LexicalEditor,
 } from "lexical";
 import React from "react";
-import { useClientConfig } from "../../client-config";
-import $createRangeSelection from "../../editor/createRangeSelection";
-import { useEditorContext } from "../../editor/react/EditorProvider";
-import { getComputationDiff } from "../../editor/utils/getComputationDiff";
+import { useClientConfig } from "../../../client-config";
+import $createRangeSelection from "../../../editor/createRangeSelection";
+import { useEditorContext } from "../../../editor/react/EditorProvider";
+import { getComputationDiff } from "./getComputationDiff";
 import { tools } from "shared/editor-tools";
 import { getNextState } from "shared/computation-tools";
 import { InferAction, Target, ComputationOp } from "shared/operations";
-import { createQueueCache } from "../../state/collaboration";
+import { createQueueCache } from "../../../state/collaboration";
 import { TokenStream } from "@storyflow/backend/types";
 import { LibraryConfig } from "@storyflow/frontend/types";
 import {
   $clearEditor,
+  $createBlocksFromStream,
   $getComputation,
   $getIndexesFromSelection,
   $getPointFromIndex,
   $initializeEditor,
   $isSelection,
-} from "./transforms";
+  $isTextBlockNode,
+} from "../transforms";
+import { createDiffOperations } from "./getBlocksDiff";
 
 export function Reconciler({
   target,
@@ -114,9 +117,27 @@ function reconcile(
         [anchor, focus] = $getIndexesFromSelection(selection);
       }
 
+      const root = $getRoot();
+
+      const oldBlocks = root.getChildren();
+      const newBlocks = $createBlocksFromStream(value, libraries);
+
+      const operations = createDiffOperations(oldBlocks, newBlocks, {
+        compare: (a, b) => {
+          if (a.type !== b.type) return false;
+          return tools.equals($getComputation(a), $getComputation(b));
+        },
+      });
+
+      console.log("** OPERATIONS", operations[0].index);
+
       /** UPDATE CONTENT */
-      $clearEditor();
-      $initializeEditor(value, libraries);
+      // $clearEditor();
+      // $initializeEditor(value, libraries);
+
+      operations.forEach(({ index, insert, remove }) => {
+        root.splice(index, remove, insert);
+      });
 
       /** UPDATE SELECTION */
       if (
@@ -154,47 +175,4 @@ function reconcile(
       tag: "reconciliation",
     }
   );
-  // FOR EXTERNAL CHANGES
-  // take in text result of all current actions
-  // in the same update:
-  // compare to current text result of editor
-  // make changes accordingly, paragraph by paragraph
-  // (we could have just replaced the entire dom, but we need the perf)
-  //
-  // alg:
-  // what we will and will not achieve
-  // - it will keep blocks that have not changed
-  // - it will not keep blocks that have been swapped although not changed otherwise
-  // - it will replace the dom elements of changed blocks entirely
-  //
-  // map: [block, [indexes]]
-  //
-  // alt:
-  // run through them all first and create map
-  // gå igennem alle igen (lad os sige, der er fire)
-  // 1 [1, x, x, x] - ved første: tag dens laveste indeks // finder i Map med O(1)
-  // 2 [3, 1, x, x] - tag dens laveste indeks efter 1 og dens laveste indeks i det hele taget
-  // 3 [x, 2, 2, x] - det sidste 2 kunne være et u for: kan ikke gøre det bedre.
-  // 4 [x, 4, 4, 1]
-  // nu summer jeg hvor mange der findes i hver kolonne og tager den kolonne med flest
-  // i dette tilfælde er det kolonne 3. Så det er mit map.
-  // 1 => x, 2 => 1, 3 => 2, 4 => 4
-  // Den er lige nu:
-  // [tom]
-  // [tom]
-  // hej
-  // [tom]
-  //
-  // Den skal blive:
-  // [tom]
-  // hej
-  // bla
-  // [tom]
-  //
-  // Operationer
-  // - sletter x'ere
-  //   1 => 1, 2 => 2, 3 => 4
-  // - fra bunden: Indsætter de felter, der ikke er fundet
-  //   1 => 1, 2 => 2, 3 => ny, 4 => 4
-  // pengene passer
 }
