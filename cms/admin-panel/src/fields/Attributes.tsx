@@ -149,17 +149,17 @@ function PropPreview({
   return (
     <div
       className={cl(
-        "rounded-full flex items-center px-2 py-0.5 text-xs transition-colors ring-inset ring-gray-750",
+        "rounded-full flex items-center px-2 py-0.5 text-xs transition-colors ring-inset ring-gray-750 font-medium",
         selected
           ? "bg-gray-750 text-gray-400 ring-1"
-          : "text-gray-700 hover:ring-1"
+          : "text-gray-500 hover:ring-1"
       )}
       onMouseDown={(ev) => {
         select(!selected);
         ev.stopPropagation();
       }}
     >
-      <span className="font-normal whitespace-nowrap">
+      <span className="whitespace-nowrap">
         {prop.label}
         {preview ? <>&nbsp;&nbsp;</> : ""}
       </span>

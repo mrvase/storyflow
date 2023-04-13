@@ -293,14 +293,14 @@ export default function UrlField({ id, version, history }: FieldProps) {
           )*/}
         <Link
           to={replacePage(parents[0]?._id ?? "")}
-          className="mr-3 opacity-50 hover:opacity-75 transition-opacity"
+          className="mr-3 text-gray-400 hover:text-gray-100 transition-colors"
           data-focus-ignore="true"
         >
           <HomeIcon className="w-4 h-4" />
         </Link>
         <Link
           to={replacePage(parents[0]?._id ?? "")}
-          className="opacity-50 hover:opacity-75 transition-opacity"
+          className="text-gray-400 hover:text-gray-100 transition-colors"
           data-focus-ignore="true"
         >
           www.kfs.dk
@@ -310,7 +310,9 @@ export default function UrlField({ id, version, history }: FieldProps) {
           <React.Fragment key={parents[index + 1]?._id}>
             <Link
               to={replacePage(parents[index + 1]?._id ?? "")}
-              className={cl("truncate opacity-50 hover:opacity-75 shrink-0")}
+              className={cl(
+                "truncate text-gray-400 hover:text-gray-100 transition-colors shrink-0"
+              )}
               data-focus-ignore="true"
             >
               {el || <HomeIcon className="w-3 h-3" />}
@@ -343,7 +345,7 @@ export default function UrlField({ id, version, history }: FieldProps) {
         <input
           type="text"
           className={cl(
-            "w-full py-1.5 bg-transparent outline-none placeholder:text-white/25"
+            "w-full py-1.5 bg-transparent outline-none placeholder:text-gray-500"
           )}
           value={slug === "*" ? "" : slug}
           onChange={(ev) => handleChange(ev.target.value)}
@@ -400,7 +402,7 @@ export default function UrlField({ id, version, history }: FieldProps) {
               data-focus-ignore="true"
             >
               <SubPageLine first={children.length === 0} />
-              <span className="opacity-40 group-hover:opacity-100 transition-opacity py-0.5">
+              <span className="text-gray-400 group-hover:text-gray-100 transition-colors py-0.5">
                 Tilføj underside
               </span>
             </button>

@@ -103,7 +103,7 @@ const MenuItem = React.forwardRef<
           className={cl(
             "py-2 px-2 flex items-center gap-2 text-xs transition-colors",
             active && "rounded bg-gray-700",
-            disabled && "text-gray-500",
+            disabled && "text-gray-400",
             props.className
           )}
         >

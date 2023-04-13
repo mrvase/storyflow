@@ -124,12 +124,13 @@ function FocusContainer({
   const [isOpen] = useLocalStorage<boolean>("toolbar-open", true);
 
   if (isEditorFocused) {
-    ring = "ring-1"; // bg-gray-50 dark:bg-gray-800
-    ring += isOpen ? " dark:ring-yellow-200/60" : " dark:ring-gray-600";
+    ring = isOpen ? " dark:ring-yellow-200/60" : " dark:ring-gray-600";
   } else if (isFieldFocused) {
-    ring = "ring-1 ring-yellow-200/40";
+    ring = "ring-yellow-200/40";
   } else {
-    ring = "ring-1 ring-transparent group-hover/container:ring-gray-700/50";
+    ring = isOpen
+      ? "ring-transparent group-hover/container:ring-gray-700/50"
+      : "ring-transparent";
   }
 
   return (
@@ -202,7 +203,7 @@ function LabelBar({
       <Dot id={id} dragHandleProps={isEditing ? dragHandleProps : {}} />
       <div
         className={cl(
-          "ml-5 mr-auto flex items-center gap-2 text-sm font-normal select-none whitespace-nowrap"
+          "ml-5 mr-auto flex items-center gap-2 text-sm select-none whitespace-nowrap"
         )}
       >
         <Label id={id} />
@@ -212,7 +213,7 @@ function LabelBar({
           isDefaultField(id, "page") ||
           restrictTo === "children") && (
           <button
-            className="rounded-full px-2 py-0.5 text-xs ring-button text-gray-500 ml-1 mr-3 flex-center gap-1"
+            className="rounded-full font-medium px-2 py-0.5 text-xs ring-button text-gray-400 ml-1 mr-3 flex-center gap-1"
             onClick={fullscreen}
             {...linkDragHandleProps}
           >

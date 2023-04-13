@@ -291,7 +291,7 @@ export function DomainsButton({
       label: getLabel(el.configUrl),
       disabled: parentDomains.includes(el.id),
     }));
-  }, [domains]);
+  }, [data?.domains]);
 
   const selected = options.filter(
     (el) => parentDomains.includes(el.id) || domains.includes(el.id)

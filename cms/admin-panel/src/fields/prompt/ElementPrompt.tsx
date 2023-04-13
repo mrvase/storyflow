@@ -72,7 +72,7 @@ export function ElementPrompt({
 
   return (
     <div className="p-2.5">
-      <div className="font-normal opacity-50 mb-1 ml-1">Vælg element</div>
+      <div className="font-medium opacity-50 mb-1 ml-1">Vælg element</div>
       {filtered.map((el) => (
         <Option
           key={`${el.libraryName}:${el.name}`}

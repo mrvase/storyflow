@@ -90,7 +90,7 @@ function FolderPrompt({
 
   return (
     <div className="p-2.5">
-      <div className="font-normal opacity-50 mb-1 ml-1">Mapper</div>
+      <div className="font-medium opacity-50 mb-1 ml-1">Mapper</div>
       {options.map(({ value, label, Icon, onEnter, onEnterLabel }) => (
         <Option
           value={value}
@@ -176,7 +176,7 @@ function DocumentPrompt({
 
   return (
     <div className="p-2.5">
-      <div className="font-normal opacity-50 mb-1 ml-1">Dokumenter</div>
+      <div className="font-medium opacity-50 mb-1 ml-1">Dokumenter</div>
       {prompt === "" && (
         <div className="px-1 py-2.5 text-gray-400 italic">Indtast søgning</div>
       )}

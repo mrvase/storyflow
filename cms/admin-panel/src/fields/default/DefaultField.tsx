@@ -189,7 +189,7 @@ export function DefaultField({
             // data-value={!isPrimitive ? preview : ""}
           />
           {!isPrimitive && (
-            <div className="-ml-9 preview hidden text-gray-500 rounded text-sm pb-2.5">
+            <div className="-ml-9 preview hidden text-gray-400 rounded text-sm pb-2.5">
               <Bars2Icon className="shrink-0 w-4 mt-0.5 h-4 mr-5 opacity-50" />
               {preview || "[Tom]"}
             </div>
@@ -252,7 +252,7 @@ function OverlayWrapper() {
   return (
     <Overlay>
       <div className="p-2.5">
-        <div className="font-normal opacity-50 mb-1 ml-1">Tilstand</div>
+        <div className="font-medium opacity-50 mb-1 ml-1">Tilstand</div>
         <Option
           value={null}
           onEnter={() => {

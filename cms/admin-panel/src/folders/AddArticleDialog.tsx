@@ -111,7 +111,7 @@ export function AddArticleDialog({
           }
         }}
       >
-        <div className="text-sm font-normal mb-1">Navn</div>
+        <div className="text-sm font-medium mb-1">Navn</div>
         <input
           type="text"
           name="label"
@@ -126,7 +126,7 @@ export function AddArticleDialog({
           className="bg-white/5 rounded py-2 px-2.5 outline-none w-full"
           autoComplete="off"
         />
-        <div className="text-sm font-normal mt-2 mb-1">URL</div>
+        <div className="text-sm font-medium mt-2 mb-1">URL</div>
         <input
           type="text"
           name="slug"
@@ -138,12 +138,12 @@ export function AddArticleDialog({
         <div className="flex flex-row-reverse mt-5 gap-2">
           <button
             type="submit"
-            className="h-8 px-3 flex-center bg-white/10 hover:bg-white/20 rounded font-normal text-sm transition-colors"
+            className="h-8 px-3 flex-center bg-white/10 hover:bg-white/20 rounded font-medium text-sm transition-colors"
           >
             Opret
           </button>
           <button
-            className="h-8 px-3 flex-center bg-black/10 hover:bg-black/20 rounded font-normal text-sm transition-colors"
+            className="h-8 px-3 flex-center bg-black/10 hover:bg-black/20 rounded font-medium text-sm transition-colors"
             onClick={(ev) => {
               ev.preventDefault();
               close();

@@ -51,7 +51,7 @@ export default function Dialog({
                     {title}
                   </HeadlessDialog.Title>
                   <button
-                    className="h-8 w-8 flex-center opacity-50 hover:opacity-100 rounded font-normal text-sm transition-opacity"
+                    className="h-8 w-8 flex-center opacity-50 hover:opacity-100 rounded font-medium text-sm transition-opacity"
                     onClick={(ev) => {
                       ev.preventDefault();
                       close();
