@@ -17,6 +17,7 @@ import { SWRClient } from "../../client";
 import { calculateFromRecord } from "@storyflow/backend/calculate";
 import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
 import Loader from "../../elements/Loader";
+import { useFieldConfig } from "../../documents/collab/hooks";
 
 export function ReferencePrompt({
   prompt,
@@ -54,21 +55,33 @@ function FolderPrompt({
 
   const folders = useFolders();
 
+  const fieldId = useFieldId();
+  const [fieldConfig, setFieldConfig] = useFieldConfig(fieldId);
+
+  console.log("FOLDERS", folders);
+
   const onEnter = React.useCallback(
-    (folder: FolderId) => {
+    ({ folder, templateId }: { folder: FolderId; templateId?: DocumentId }) => {
       const nestedFolder: NestedFolder = {
         id: generateDocumentId(documentId),
         folder,
       };
       replacePromptWithStream([nestedFolder]);
+      console.log("HERE 2", templateId);
+      if (templateId && !fieldConfig?.template) {
+        setFieldConfig("template", templateId);
+      }
     },
-    [replacePromptWithStream]
+    [replacePromptWithStream, fieldConfig, setFieldConfig]
   );
 
   const options = folders
     .filter((el) => el.label.toLowerCase().startsWith(prompt.toLowerCase()))
     .map((el) => ({
-      id: el._id,
+      value: {
+        folder: el._id,
+        templateId: el.template,
+      },
       label: markMatchingString(el.label, prompt),
       onEnterLabel: "Indsæt",
       Icon: ComputerDesktopIcon,
@@ -78,9 +91,9 @@ function FolderPrompt({
   return (
     <div className="p-2.5">
       <div className="font-normal opacity-50 mb-1 ml-1">Mapper</div>
-      {options.map(({ id, label, Icon, onEnter, onEnterLabel }) => (
+      {options.map(({ value, label, Icon, onEnter, onEnterLabel }) => (
         <Option
-          value={id}
+          value={value}
           onEnter={onEnter}
           onEnterLabel={onEnterLabel}
           Icon={Icon}
@@ -118,30 +131,46 @@ function DocumentPrompt({
     }
   }, [prompt]);
 
+  const fieldId = useFieldId();
+  const [fieldConfig, setFieldConfig] = useFieldConfig(fieldId);
+
   const onEnter = React.useCallback(
-    (id: DocumentId) => {
+    ({ id, templateId }: { id: DocumentId; templateId?: DocumentId }) => {
       const nestedDocument: NestedDocument = {
         id,
       };
       replacePromptWithStream([nestedDocument]);
+      console.log("HERE", templateId, fieldConfig);
+      if (templateId && !fieldConfig?.template) {
+        setFieldConfig("template", templateId);
+      }
     },
-    [replacePromptWithStream]
+    [replacePromptWithStream, fieldConfig, setFieldConfig]
   );
 
-  const options = (data ?? []).map((el) => ({
-    id: el._id,
-    label:
-      (calculateFromRecord(
-        createTemplateFieldId(el._id, DEFAULT_FIELDS.label.id),
-        el.record
-      )?.[0] as string) ?? "",
-    secondary: el._id,
-    Icon: DocumentIcon,
-    onEnter,
-    onEnterLabel: "Tilføj",
-    onArrowRight() {},
-    onArrowRightLabel: "Se felter",
-  }));
+  const folders = useFolders();
+
+  const options = React.useMemo(
+    () =>
+      (data ?? []).map((el) => ({
+        value: {
+          id: el._id,
+          templateId: folders.find((f) => f._id === el.folder)?.template,
+        },
+        label:
+          (calculateFromRecord(
+            createTemplateFieldId(el._id, DEFAULT_FIELDS.label.id),
+            el.record
+          )?.[0] as string) ?? "",
+        secondary: el._id,
+        Icon: DocumentIcon,
+        onEnter,
+        onEnterLabel: "Tilføj",
+        onArrowRight() {},
+        onArrowRightLabel: "Se felter",
+      })),
+    [data, folders, onEnter]
+  );
 
   const isReady = !isLoading && (prompt === "" || search !== "");
 
@@ -161,9 +190,9 @@ function DocumentPrompt({
           Ingen dokumenter fundet
         </div>
       )}
-      {options.map(({ id, label, Icon, onEnter, onEnterLabel }) => (
+      {options.map(({ value, label, Icon, onEnter, onEnterLabel }) => (
         <Option
-          value={id}
+          value={value}
           onEnter={onEnter}
           onEnterLabel={onEnterLabel}
           Icon={Icon}

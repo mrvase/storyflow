@@ -19,15 +19,6 @@ export function TokenPrompt({
 }) {
   const [isSelected, ref] = useOption();
 
-  React.useEffect(() => {
-    if (isSelected) {
-      ref.current?.scrollIntoView({
-        block: "nearest",
-        inline: "nearest",
-      });
-    }
-  }, [isSelected]);
-
   const date = React.useMemo(() => {
     return parseDateFromString(prompt);
   }, [prompt]);

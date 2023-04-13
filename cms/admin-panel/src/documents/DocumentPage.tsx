@@ -346,6 +346,7 @@ const Page = ({
                         owner={owner._id}
                         versions={owner.versions}
                         histories={histories}
+                        index={null}
                       />
                     )}
                   </GetDocument>
@@ -358,6 +359,7 @@ const Page = ({
                 owner={owner._id}
                 versions={owner.versions}
                 histories={histories}
+                index={null}
               />
             </div>
           </DocumentContent>

@@ -152,10 +152,20 @@ export function useOption() {
     return ctx.register(item);
   }, []);
 
-  return [
-    ctx.selectedId ? ctx.selectedId === id : ctx.defaultId === id,
-    ref,
-  ] as [boolean, typeof ref];
+  const isSelected = ctx.selectedId
+    ? ctx.selectedId === id
+    : ctx.defaultId === id;
+
+  React.useEffect(() => {
+    if (isSelected) {
+      ref.current?.scrollIntoView({
+        block: "nearest",
+        inline: "nearest",
+      });
+    }
+  }, [isSelected]);
+
+  return [isSelected, ref] as [boolean, typeof ref];
 }
 
 export function OptionEventsPlugin() {

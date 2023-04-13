@@ -20,6 +20,7 @@ import { useContextWithError } from "../utils/contextError";
 import { useFieldId } from "../fields/FieldIdContext";
 import { getDocumentId } from "@storyflow/backend/ids";
 import { Menu } from "../layout/components/Menu";
+import { useTopFieldIndex } from "./FieldIndexContext";
 
 const FieldToolbarPortalContext = React.createContext<
   [HTMLDivElement | null, React.Dispatch<HTMLDivElement | null>] | null
@@ -45,20 +46,14 @@ export function useFieldToolbarPortal() {
   )?.[1];
 }
 
-export function FieldToolbarPortal({
-  show,
-  index,
-}: {
-  show: boolean;
-  index: number;
-}) {
+export function FieldToolbarPortal({ show }: { show: boolean }) {
   const portal = useContextWithError(
     FieldToolbarPortalContext,
     "FieldToolbarPortal"
   )?.[0];
 
   return portal && show
-    ? ReactDOM.createPortal(<FieldToolbar index={index} />, portal)
+    ? ReactDOM.createPortal(<FieldToolbar />, portal)
     : null;
 }
 
@@ -69,8 +64,9 @@ const restrictToOptions = [
   { id: "color" as "color", label: "Farve" },
 ];
 
-export function FieldToolbar({ index }: { index: number }) {
+export function FieldToolbar() {
   const fieldId = useFieldId();
+  const topIndex = useTopFieldIndex();
   const documentId = getDocumentId(fieldId);
 
   const [config, setConfig] = useFieldConfig(fieldId);
@@ -122,23 +118,7 @@ export function FieldToolbar({ index }: { index: number }) {
         }
         options={restrictToOptions}
       />
-      {/* config?.template && (
-        <Menu
-          as={Content.ToolbarButton}
-          icon={ArrowDownTrayIcon}
-          label="Hent mapper"
-          onSelect={(el) => setConfig("restrictTo", el.id)}
-          onClear={() => setConfig("restrictTo", undefined)}
-          selected={
-            config?.restrictTo
-              ? restrictToOptions.find((el) => el.id === config.restrictTo)
-              : undefined
-          }
-        >
-          // children
-        </Menu>
-      )*/}
-      {typeof index === "number" && (
+      {typeof topIndex === "number" && (
         <Content.ToolbarButton
           data-focus-remain="true"
           onClick={() => {
@@ -149,7 +129,7 @@ export function FieldToolbar({ index }: { index: number }) {
               }),
               ops: [
                 {
-                  index,
+                  index: topIndex,
                   remove: 1,
                 },
               ],

@@ -493,23 +493,25 @@ const isBlockElement = (
     (tokens.isNestedElement(el) && !isInlineElement(libraries, el)) ||
     tokens.isNestedDocument(el) ||
     tokens.isNestedFolder(el) ||
+    tokens.isFileToken(el) ||
     tokens.isNestedCreator(el)
   );
 };
 
-const splitStreamByBlocks = (
+export function splitStreamByBlocks(
   stream: TokenStream,
   libraries: LibraryConfig[]
-) => {
+) {
   const splitResult = tools.split(
     stream,
     (el) => tokens.isLineBreak(el) || isBlockElement(el, libraries)
   );
 
-  const blocks = splitResult
+  let blocks = splitResult
     // we need to do this filter before the other one since the other one needs
     // to check both the current and next element
-    .filter((el) => el.length > 0)
+    .filter((el) => el.length > 0);
+  /*
     .filter(
       (el, index, arr) =>
         // strings create paragraphs themselves
@@ -517,9 +519,10 @@ const splitStreamByBlocks = (
         index === arr.length - 1 ||
         tokens.isLineBreak(arr[index + 1]?.[0])
     );
+    */
 
   return blocks;
-};
+}
 
 export function $createBlocksFromStream(
   initialState: TokenStream,
@@ -535,7 +538,7 @@ export function $createBlocksFromStream(
     return blocks;
   }
 
-  streamBlocks.forEach((stream) => {
+  streamBlocks.forEach((stream, index) => {
     if (stream.length === 1 && isBlockElement(stream[0], libraries)) {
       if (tokens.isNestedElement(stream[0])) {
         blocks.push($createLayoutElementNode(stream[0]));
@@ -543,12 +546,19 @@ export function $createBlocksFromStream(
         blocks.push($createFolderNode(stream[0] as any));
       } else if (tokens.isNestedCreator(stream[0])) {
         blocks.push($createCreatorNode(stream[0] as any));
+      } else if (tokens.isFileToken(stream[0])) {
+        blocks.push($createFileNode(stream[0] as any));
       } else {
         blocks.push($createDocumentNode(stream[0] as any));
       }
     } else if (tokens.isLineBreak(stream[0])) {
-      const paragraphNode = $createParagraphNode();
-      blocks.push(paragraphNode);
+      if (
+        index === streamBlocks.length - 1 ||
+        tokens.isLineBreak(streamBlocks[index + 1]?.[0])
+      ) {
+        const paragraphNode = $createParagraphNode();
+        blocks.push(paragraphNode);
+      }
     } else {
       const isHeading: false | string =
         typeof stream[0] === "string" &&

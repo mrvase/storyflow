@@ -1,5 +1,5 @@
 import * as React from "react";
-import { ExtendPath } from "./contexts";
+import { ExtendPath, usePath, useSelectedPath } from "./contexts";
 import RenderElement, { IndexContext, SpreadContext } from "./RenderElement";
 import { log } from "./RenderBuilder";
 import { Component, ValueArray } from "@storyflow/frontend/types";
@@ -8,6 +8,7 @@ import { createRenderArray } from "@storyflow/frontend/render";
 import { ParseRichText } from "../src/ParseRichText";
 import { getLibraries, getLibraryConfigs } from "../config";
 import { getConfigByType } from "../config/getConfigByType";
+import { EditorProvider } from "./editor";
 
 const getDefaultComponent = (type: string) => {
   // we use this only to get the default render components
@@ -24,8 +25,6 @@ const getDefaultComponent = (type: string) => {
 export default function RenderChildren({ value }: { value: ValueArray }) {
   const index = React.useContext(IndexContext);
   const spread = React.useContext(SpreadContext);
-
-  log("RENDER CHILDREN VALUE", value);
 
   const renderArray = React.useMemo(() => {
     let array: ValueArray = [];
@@ -63,60 +62,36 @@ export default function RenderChildren({ value }: { value: ValueArray }) {
               const type = `H${block.$heading[0]}`;
               const Component = getDefaultComponent(type)!;
               const string = String(block.$heading[1]);
-              /*
-              <ExtendPath
-                key={`${index}-${childIndex}`}
-                extend={`[${index}]`}
-              >
-                <AddPathSegment
-                  {...{
-                    id: `[${index}]`,
-                    type,
-                    parentProp,
-                  }}
-                >
-                </AddPathSegment>
-              </ExtendPath>
-              */
               return (
-                <Component key={`${index}-${childIndex}`}>
-                  <ParseRichText>{string}</ParseRichText>
-                </Component>
+                <ExtendPath key={`${index}-${childIndex}`} id={`[${index}]`}>
+                  <Component>
+                    <ParseRichText>{string}</ParseRichText>
+                  </Component>
+                </ExtendPath>
               );
             }
             if ("$text" in block) {
               const type = "Text";
               const Component = getDefaultComponent(type)!;
-              /*
-              <ExtendPath
-                key={`${index}-${childIndex}`}
-                extend={`[${index}]`}
-              >
-                <AddPathSegment
-                  {...{
-                    id: `[${index}]`,
-                    type,
-                    parentProp,
-                  }}
-                >
-                </AddPathSegment>
-              </ExtendPath>
-              */
               return (
-                <Component key={`${index}-${childIndex}`}>
-                  {block.$text.map((el, textElementIndex) => {
-                    if (typeof el === "object") {
-                      return createElement(el);
-                    }
-                    return (
-                      <ParseRichText
-                        key={`${index}-${childIndex}-${textElementIndex}`}
-                      >
-                        {String(el)}
-                      </ParseRichText>
-                    );
-                  })}
-                </Component>
+                <ExtendPath key={`${index}-${childIndex}`} id={`[${index}]`}>
+                  <EditorProvider string={block.$text.join("")}>
+                    <Component>
+                      {block.$text.map((el, textElementIndex) => {
+                        if (typeof el === "object") {
+                          return createElement(el);
+                        }
+                        return (
+                          <ParseRichText
+                            key={`${index}-${childIndex}-${textElementIndex}`}
+                          >
+                            {String(el)}
+                          </ParseRichText>
+                        );
+                      })}
+                    </Component>
+                  </EditorProvider>
+                </ExtendPath>
               );
             }
             return createElement(block);
@@ -131,6 +106,19 @@ export default function RenderChildren({ value }: { value: ValueArray }) {
 }
 
 const AddComponent = () => {
+  const path = usePath();
+  const [isSelected, setIsSelected] = React.useState(false);
+  const [subscribe, select] = useSelectedPath();
+  React.useEffect(() => {
+    return subscribe((currentPath) => {
+      if (currentPath.join("") === path.join("")) {
+        setIsSelected(true);
+      } else if (isSelected) {
+        setIsSelected(false);
+      }
+    });
+  }, [isSelected]);
+
   return (
     <div
       data-clickable-element="true"
@@ -152,19 +140,32 @@ const AddComponent = () => {
         alignItems: "center",
         fontFamily: "sans-serif",
         pointerEvents: "auto",
-        cursor: "default",
+        outlineWidth: "1px",
+        outlineOffset: "-1px",
+        ...(isSelected && {
+          outlineStyle: "solid",
+          outlineColor: "rgb(253 224 71)",
+        }),
+        border: "1px solid #ddd",
+        backgroundColor: "#f8f8f8",
+        borderRadius: "4px",
+        cursor: "pointer",
       }}
+      onFocus={(ev) => {
+        ev.stopPropagation();
+        select(path);
+      }}
+      tabIndex={0}
     >
       <div
         style={{
           padding: "0.25rem 0.25rem",
           borderRadius: "999px",
-          backgroundColor: "rgb(224 230 235)",
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
           fontSize: "0.75rem",
-          color: "rgb(107 114 128)",
+          color: "#bbb",
         }}
       >
         <svg

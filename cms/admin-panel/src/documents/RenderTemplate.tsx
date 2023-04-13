@@ -17,6 +17,7 @@ import { ServerPackage } from "@storyflow/state";
 import { getVersionKey } from "./DocumentPage";
 import { GetDocument } from "./GetDocument";
 import { ExtendTemplatePath } from "./TemplatePathContext";
+import { TopFieldIndexProvider } from "./FieldIndexContext";
 
 export function RenderTemplate({
   id,
@@ -24,14 +25,14 @@ export function RenderTemplate({
   config,
   versions,
   histories,
-  index = null,
+  index,
 }: {
   id: DocumentId;
   owner: DocumentId;
   config: DBDocument["config"];
   versions?: DBDocument["versions"];
   histories: Record<string, ServerPackage<AnyOp>[]>;
-  index?: number | null;
+  index: number | null;
 }) {
   const isMain = id === owner;
 
@@ -111,27 +112,7 @@ export function RenderTemplate({
   ) => {
     if (Array.isArray(fieldConfig)) {
       return null;
-    }
-
-    if ("template" in fieldConfig && !("id" in fieldConfig)) {
-      return (
-        <GetDocument id={fieldConfig.template} key={fieldConfig.template}>
-          {(article) => (
-            <RenderTemplate
-              key={getVersionKey(versions)} // for rerendering
-              id={article._id}
-              owner={owner}
-              config={article.config}
-              histories={histories}
-              versions={versions}
-              index={index}
-            />
-          )}
-        </GetDocument>
-      );
-    }
-
-    if ("text" in fieldConfig) {
+    } else if ("text" in fieldConfig) {
       return (
         <RenderHeading
           key={`${fieldConfig.text}-${index}`}
@@ -139,26 +120,46 @@ export function RenderTemplate({
           index={index}
         />
       );
+    } else if ("template" in fieldConfig && !("id" in fieldConfig)) {
+      return (
+        <TopFieldIndexProvider index={index}>
+          <GetDocument id={fieldConfig.template} key={fieldConfig.template}>
+            {(article) => (
+              <RenderTemplate
+                key={getVersionKey(versions)} // for rerendering
+                id={article._id}
+                owner={owner}
+                config={article.config}
+                histories={histories}
+                versions={versions}
+                index={index}
+              />
+            )}
+          </GetDocument>
+        </TopFieldIndexProvider>
+      );
+    } else {
+      const fieldId = isMain
+        ? fieldConfig.id
+        : createTemplateFieldId(owner, fieldConfig.id);
+
+      return (
+        <TopFieldIndexProvider index={index}>
+          <RenderField
+            key={fieldId}
+            id={fieldId}
+            fieldConfig={{
+              ...fieldConfig,
+              id: fieldId,
+            }}
+            version={versions?.[getRawFieldId(fieldId)] ?? 0}
+            history={histories[getRawFieldId(fieldId)] ?? []}
+            index={index}
+            dragHandleProps={dragHandleProps}
+          />
+        </TopFieldIndexProvider>
+      );
     }
-
-    const fieldId = isMain
-      ? fieldConfig.id
-      : createTemplateFieldId(owner, fieldConfig.id);
-
-    return (
-      <RenderField
-        key={fieldId}
-        id={fieldId}
-        fieldConfig={{
-          ...fieldConfig,
-          id: fieldId,
-        }}
-        version={versions?.[getRawFieldId(fieldId)] ?? 0}
-        history={histories[getRawFieldId(fieldId)] ?? []}
-        index={index}
-        dragHandleProps={dragHandleProps}
-      />
-    );
   };
 
   return (

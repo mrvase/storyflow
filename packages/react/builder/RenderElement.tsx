@@ -20,6 +20,7 @@ import { getLibraries, getLibraryConfigs } from "../config";
 import { extendPath } from "../utils/extendPath";
 import RenderChildren from "./RenderChildren";
 import { getIdFromString } from "../utils/getIdsFromString";
+import { NoEditor } from "./editor";
 
 export const IndexContext = React.createContext(0);
 export const SpreadContext = React.createContext(false);
@@ -128,8 +129,6 @@ export default function RenderElement({
       }, [] as [string, ValueArray][])
     );
 
-  log("PROPS", uncomputedProps);
-
   const keyId = `${elementId.slice(12, 24)}${getIdFromString("key")}`;
   const key = useValue(keyId) ?? [];
 
@@ -226,5 +225,9 @@ function RenderElementWithProps({
 
   log("PROPS PROPS", props);
 
-  return <config.component {...props} />;
+  return (
+    <NoEditor>
+      <config.component {...props} />
+    </NoEditor>
+  );
 }

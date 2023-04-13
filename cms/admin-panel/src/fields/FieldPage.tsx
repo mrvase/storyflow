@@ -47,6 +47,7 @@ import { FieldIdContext } from "./FieldIdContext";
 import { EditorFocusProvider } from "../editor/react/useIsFocused";
 import { useRoute } from "../panel-router/Routes";
 import { parseSegment } from "../layout/components/routes";
+import { splitStreamByBlocks } from "./Editor/transforms";
 
 const useBuilderRendered = ({
   listeners,
@@ -222,34 +223,46 @@ const ElementActions = ({
     });
   }, [id, libraries, tokenStream, parentId, elementId]);
 
-  const editorComputationToBlocks = () => {
-    if (!tokenStream) return [];
-    const blocks: { index: number; length: number }[] = [];
-    let length = 0;
-    tools.forEach(
-      tokenStream,
-      (value, index) => {
-        length++;
-        if (tokens.isNestedElement(value)) {
-          blocks.push({
-            index,
-            length,
-          });
-          length = 0;
-        }
-      },
-      true
-    );
-    return blocks;
-  };
-
   React.useEffect(() => {
     return listeners.moveComponent.subscribe(({ parent, from, to }) => {
       console.log("MOVE", parent, from, to, tokenStream);
       if (!tokenStream || !parentId) return;
+      const blocks = splitStreamByBlocks(tokenStream, libraries);
+
+      let length = 0;
+      let fromIndex = 0;
+      let toIndex = 0;
+
+      let index = 0;
+      blocks.forEach((el) => {
+        if (index < from) {
+          fromIndex += tools.getLength(el);
+        }
+        if (index < to) {
+          toIndex += tools.getLength(el);
+        }
+        /*
+        if (to > from && index === to) {
+          toIndex += tools.getLength(el) - 1;
+        }
+        */
+        if (index === from) {
+          length = tools.getLength(el);
+        }
+        if (
+          !tokens.isLineBreak(el[0]) ||
+          index === blocks.length - 1 ||
+          tokens.isLineBreak(blocks[index + 1]?.[0])
+        ) {
+          // increase index only if it is a rendered block
+          index++;
+        }
+      });
+
+      /*
       let fromIndex: number | null = null;
       let toIndex: number | null = null;
-      let i = -1;
+
       tools.forEach(
         tokenStream,
         (value, index) => {
@@ -272,6 +285,7 @@ const ElementActions = ({
       if (fromIndex === null || toIndex === null) {
         return;
       }
+      */
 
       push({
         target: targetTools.stringify({
@@ -282,7 +296,7 @@ const ElementActions = ({
         ops: [
           {
             index: fromIndex,
-            remove: 1,
+            remove: length,
           },
           {
             index: toIndex,
@@ -290,13 +304,14 @@ const ElementActions = ({
         ],
       });
     });
-  }, [id, tokenStream, parentId]);
+  }, [id, tokenStream, parentId, libraries]);
 
   return null;
 };
 
 const useIframe = () => {
   const [uniqueId] = React.useState(() => createKey());
+  const [iframe, setIframe] = React.useState<HTMLIFrameElement>();
 
   const listeners = React.useMemo(() => {
     const events = createEventsFromIframeToCMS();
@@ -312,9 +327,18 @@ const useIframe = () => {
 
   const ref = React.useCallback((node: HTMLIFrameElement) => {
     if (node) {
+      setIframe(node);
       dispatchers.setTarget(uniqueId, node.contentWindow);
     }
   }, []);
+
+  React.useLayoutEffect(() => {
+    if (iframe) {
+      return listeners.updateFrameHeight.subscribe((height) => {
+        iframe.style.height = `${height}px`;
+      });
+    }
+  }, [iframe]);
 
   const ctx = React.useMemo(
     () => ({
@@ -374,9 +398,12 @@ export function FieldPage({ children }: { children?: React.ReactNode }) {
                       rendered ? "opacity-100" : "opacity-0"
                     )}
                   >
-                    <BuilderIframe {...iframeProps} />
+                    <BuilderIframe
+                      {...iframeProps}
+                      heightListener={listeners.updateFrameHeight.subscribe}
+                    />
                   </div>
-                  {/*<FieldOverlay id={id} />*/}
+                  <FieldOverlay id={id} />
                 </div>
               </Panel>
               <PanelResizeHandle

@@ -7,6 +7,7 @@ import { useFileLabel } from "../../../data/files";
 import { caretClasses } from "./caret";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 import { useIsSelected } from "./useIsSelected";
+import { useUrlInfo } from "../../../users";
 
 function Decorator({ nodeKey, value }: { nodeKey: string; value: FileToken }) {
   const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
@@ -15,11 +16,13 @@ function Decorator({ nodeKey, value }: { nodeKey: string; value: FileToken }) {
   const label = useFileLabel(value.src);
 
   return (
-    <span
+    <div
       className={cl(
-        "bg-gray-50 dark:bg-sky-400/20 text-sky-100/90 rounded-sm selection:bg-transparent relative px-2",
-        isSelected ? "ring-1 ring-amber-300" : "dark:ring-gray-600",
-        isPseudoSelected && caretClasses
+        "bg-gradient-to-b from-gray-800/90 to-gray-800/90 text-gray-200",
+        "rounded relative ring-1",
+        "flex gap-2 items-center",
+        isSelected ? "ring-white" : "dark:ring-gray-700"
+        // isPseudoSelected && caretClasses
       )}
       onMouseDown={() => {
         if (!isSelected) {
@@ -28,11 +31,22 @@ function Decorator({ nodeKey, value }: { nodeKey: string; value: FileToken }) {
         }
       }}
     >
-      <span className="flex-center gap-2">
-        <PhotoIcon className="w-4 h-4 inline" />
-        {label}
-      </span>
-    </span>
+      <Image src={value.src} />
+      <div>{label}</div>
+    </div>
+  );
+}
+
+function Image({ src }: { src: string }) {
+  const { organization } = useUrlInfo();
+  return (
+    <div className="flex-center h-10 w-10 rounded overflow-hidden bg-white/5">
+      <img
+        src={`https://cdn.storyflow.dk/${organization}/${src}`}
+        className="max-w-full max-h-full w-auto h-auto"
+        loading="lazy"
+      />
+    </div>
   );
 }
 
@@ -50,10 +64,6 @@ export default class ChildNode extends TokenStreamNode<typeof type, TokenType> {
 
   constructor(token: TokenType, key?: NodeKey) {
     super(type, token, key);
-  }
-
-  isInline(): true {
-    return true;
   }
 
   exportJSON(): SerializedTokenStreamNode<typeof type, TokenType> {

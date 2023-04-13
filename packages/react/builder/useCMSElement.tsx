@@ -1,5 +1,6 @@
 import * as React from "react";
 import { usePath, useSelectedPath } from "./contexts";
+import { useEditorContext } from "./editor";
 import { dispatchers } from "./events";
 
 const getPathIds = (path: string[]): [parent: string, element: string] => {
@@ -35,26 +36,16 @@ const btnStyle = {
   height: "18px",
   padding: "2px",
   backgroundColor: "rgb(253 224 71)",
+  cursor: "pointer",
 } as {};
 
 export const EventHandler = ({ path }: { path: string[] }) => {
   const [parent = "root", element] = getPathIds(path);
 
   const [isSelected, setIsSelected] = React.useState(false);
-
-  const [inset, setInset] = React.useState<boolean>(true);
-
-  const measureHeight = React.useCallback((node: HTMLElement | null) => {
-    if (node) {
-      const { height, width } = node.getBoundingClientRect();
-      setInset(height > 50 && width > 50);
-    }
-  }, []);
-
   const [subscribe, select] = useSelectedPath();
   React.useEffect(() => {
     return subscribe((currentPath) => {
-      console.log("$$ PATH", currentPath, path);
       if (currentPath.join("") === path.join("")) {
         setIsSelected(true);
       } else if (isSelected) {
@@ -62,6 +53,14 @@ export const EventHandler = ({ path }: { path: string[] }) => {
       }
     });
   }, [isSelected]);
+
+  const [inset, setInset] = React.useState<boolean>(true);
+  const measureHeight = React.useCallback((node: HTMLElement | null) => {
+    if (node) {
+      const { height, width } = node.getBoundingClientRect();
+      setInset(height > 50 && width > 50);
+    }
+  }, []);
 
   const events = useDragEvents(path);
 
@@ -254,8 +253,34 @@ export const useCMSElement = (
     );
   }
 
+  const editor = useEditorContext();
+
+  const [isEditable, setIsEditable] = React.useState(false);
+
+  React.useEffect(() => {
+    if (editor) {
+      return editor.registerEditableListener((currentIsEditable) => {
+        setIsEditable(currentIsEditable);
+      });
+    }
+  }, [editor]);
+
+  const ref = React.useCallback(
+    (rootElement: null | HTMLDivElement) => {
+      if (editor && editor.getRootElement() === null) {
+        editor.setRootElement(rootElement);
+      }
+    },
+    [editor]
+  );
+
   return {
     ...props,
+    ...(editor && {
+      onDoubleClick: () => setIsEditable(true),
+      ref: isEditable ? ref : undefined,
+      contentEditable: isEditable,
+    }),
     tabIndex: -1,
     style: {
       position: "relative" as "relative",

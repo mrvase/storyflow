@@ -130,9 +130,10 @@ export function createDiffOperations<T extends any[]>(
   }
 
   function performSpliceOperations(firstArray: T, operations: Operation[]) {
-    for (let i = operations.length - 1; i >= 0; i--) {
+    for (let i = 0; i < operations.length; i++) {
       const { index, remove, insert } = operations[i];
       firstArray.splice(index, remove, ...insert);
+      console.log("spliced", firstArray.slice());
     }
   }
 

@@ -31,6 +31,7 @@ export const createEventsFromIframeToCMS = () => {
       from: number;
       to: number;
     }>("move-component", state),
+    updateFrameHeight: createIframeEvent<number>("update-frame-height", state),
   };
 };
 

@@ -7,7 +7,10 @@
     "build:package": "pnpm run build"
   },
   "dependencies": {
-    "@storyflow/frontend": "workspace:*"
+    "@lexical/selection": "^0.9.1",
+    "@lexical/utils": "^0.9.1",
+    "@storyflow/frontend": "workspace:*",
+    "lexical": "^0.9.1"
   },
   "devDependencies": {
     "@rollup/plugin-typescript": "^11.0.0",

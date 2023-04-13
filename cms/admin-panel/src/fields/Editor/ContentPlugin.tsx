@@ -1,8 +1,5 @@
 import * as React from "react";
-import {
-  useEditorContext,
-  useIsFocusedContext,
-} from "../../editor/react/EditorProvider";
+import { useEditorContext } from "../../editor/react/EditorProvider";
 import useLayoutEffect from "../../editor/react/useLayoutEffect";
 import { registerPlainText } from "../../editor/registerPlainText";
 import { mergeRegister } from "../../editor/utils/mergeRegister";
@@ -22,6 +19,7 @@ import { createComponent } from "./createComponent";
 import { replaceWithComputation } from "./insertComputation";
 import { useDocumentIdGenerator } from "../../id-generator";
 import { getDocumentId } from "@storyflow/backend/ids";
+import { useIsFocused } from "../../editor/react/useIsFocused";
 
 export function ContentPlugin() {
   const editor = useEditorContext();
@@ -39,7 +37,7 @@ export function ContentPlugin() {
 
 function useEditorEvents() {
   const editor = useEditorContext();
-  const isFocused = useIsFocusedContext();
+  const isFocused = useIsFocused();
 
   const { libraries } = useClientConfig();
 
@@ -53,27 +51,6 @@ function useEditorEvents() {
 
   React.useEffect(() => {
     if (isFocused) {
-      /*
-      const addBlockElement = (computation: TokenStream) => {
-        const node = getNodesFromComputation(computation, libraries)[0];
-        const selection = $getSelection();
-        if (!selection) return;
-        const lastNode = $getLastBlock(selection, libraries);
-        if ($isRootNode(lastNode)) {
-          lastNode.append(node);
-        } else if (lastNode) {
-          const isEmpty = lastNode.getTextContent() === "";
-          if (isEmpty) {
-            lastNode.insertBefore(node);
-          } else {
-            lastNode.insertAfter(node);
-          }
-          return;
-        }
-        // $insertNodeToNearestRoot(node);
-      };
-      */
-
       return mergeRegister(
         addImport.subscribe(async ({ id: externalId, templateId, imports }) => {
           if (fieldId && imports.includes(fieldId)) {

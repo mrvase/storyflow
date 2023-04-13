@@ -49,16 +49,16 @@ const defaultLibrary = {
   name: "",
   components: {
     Text: ({ children }: any) => {
-      return <p>{children}</p>;
+      return <cms.p>{children}</cms.p>;
     },
     H1: ({ children }: any) => {
-      return <h1>{children}</h1>;
+      return <cms.h1>{children}</cms.h1>;
     },
     H2: ({ children }: any) => {
-      return <h2>{children}</h2>;
+      return <cms.h2>{children}</cms.h2>;
     },
     H3: ({ children }: any) => {
-      return <h3>{children}</h3>;
+      return <cms.h3>{children}</cms.h3>;
     },
     Outlet: () => (
       <cms.div

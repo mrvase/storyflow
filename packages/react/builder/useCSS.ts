@@ -3,8 +3,33 @@ import React from "react";
 let isInserted = false;
 
 const css = `
-* {
+body {
+  overflow: hidden;
+}
+
+*:not([contenteditable="true"]) {
   pointer-events: none !important;
+}
+
+*[contenteditable="true"] {
+  pointer-events: auto !important;
+  z-index: 2;
+}
+
+*[contenteditable="true"]::before {
+  content: "";
+  position: absolute;
+  pointer-events: none !important;
+  z-index: 1;
+  left: 0px;
+  right: 0px;
+  top: 0px;
+  bottom: 0px;
+  outline-width: 1px;
+  outline-offset: -1px;
+  outline-style: solid;
+  outline-color: rgb(253 224 71);
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.05);
 }
 
 [data-clickable-element="true"],

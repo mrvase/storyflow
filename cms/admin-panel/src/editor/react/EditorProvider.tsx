@@ -13,7 +13,6 @@ import {
   LexicalNode,
 } from "lexical";
 import * as React from "react";
-import { useIsFocused } from "./useIsFocused";
 import useLayoutEffect from "./useLayoutEffect";
 
 type Props = {
@@ -29,23 +28,14 @@ type Props = {
 };
 
 const EditorContext = React.createContext<LexicalEditor | null>(null);
-const FocusedContext = React.createContext(false);
+
+export const INITIALIZATION_TAG = "initialize";
 
 export function useEditorContext() {
   const context = React.useContext(EditorContext);
 
   if (context == null) {
     throw new Error("useEditorContext: cannot find an EditorContext");
-  }
-
-  return context;
-}
-
-export function useIsFocusedContext() {
-  const context = React.useContext(FocusedContext);
-
-  if (context == null) {
-    throw new Error("useIsFocusedContext: cannot find an FocusedContext");
   }
 
   return context;
@@ -75,7 +65,7 @@ export function EditorProvider({
         initialize();
       },
       {
-        tag: "cms",
+        tag: INITIALIZATION_TAG,
       }
     );
 
@@ -87,13 +77,7 @@ export function EditorProvider({
     editor.setEditable(isEditable !== undefined ? isEditable : true);
   }, []);
 
-  const isFocused = useIsFocused();
-
   return (
-    <EditorContext.Provider value={editor}>
-      <FocusedContext.Provider value={isFocused}>
-        {children}
-      </FocusedContext.Provider>
-    </EditorContext.Provider>
+    <EditorContext.Provider value={editor}>{children}</EditorContext.Provider>
   );
 }

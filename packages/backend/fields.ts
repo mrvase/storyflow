@@ -62,11 +62,13 @@ export const DEFAULT_FIELDS = {
     id: generateTemplateFieldId(),
     type: "default",
     label: "Side",
+    restrictTo: "children",
   },
   layout: {
     id: generateTemplateFieldId(),
     type: "default",
     label: "Layout",
+    restrictTo: "children",
   },
   redirect: {
     id: generateTemplateFieldId(),

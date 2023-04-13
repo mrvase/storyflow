@@ -87,7 +87,7 @@ export function FieldContainer({
     <EditorFocusProvider>
       <AttributesProvider>
         <SelectedPathProvider id={id}>
-          <FieldToolbarPortal show={isFocused} index={index} />
+          <FieldToolbarPortal show={isFocused} />
           <div
             {...props}
             {...(isOpen ? handlers : {})}
@@ -350,12 +350,6 @@ function Dot({ id, dragHandleProps }: { id: FieldId; dragHandleProps: any }) {
 
   const isDraggable = "draggable" in dragHandleProps;
 
-  const actions = usePanelActions();
-  const [{ path, index }] = usePanel();
-  const route = useRoute();
-
-  const isOpen = path.endsWith(`/c${id}`);
-
   const Icon = isNative ? ChevronUpDownIcon : LockClosedIcon;
 
   return (
@@ -397,8 +391,6 @@ function Label({ id }: { id: FieldId }) {
   const [focused] = useFieldFocus();
   const isLink = focused && focused !== id;
   const label = useLabel(id);
-
-  console.log("LABEL", label);
 
   return (
     <div
