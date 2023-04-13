@@ -49,7 +49,7 @@ export function SettingsDialog({ close }: { close: () => void }) {
             >
               <div
                 className={cl(
-                  "flex items-center inset-0 px-3 absolute -z-10 font-light pointer-events-none transition-opacity",
+                  "flex items-center inset-0 px-3 absolute -z-10 pointer-events-none transition-opacity",
                   showAutoComplete(configUrl, index)
                     ? "opacity-50"
                     : "opacity-0"
@@ -60,7 +60,7 @@ export function SettingsDialog({ close }: { close: () => void }) {
               </div>
               <input
                 type="text"
-                className="h-10 flex items-center px-3 grow bg-transparent outline-none font-light auto-complete"
+                className="h-10 flex items-center px-3 grow bg-transparent outline-none auto-complete"
                 onFocus={() => setFocused(index)}
                 onBlur={() => setFocused(null)}
                 value={configUrl}
@@ -89,7 +89,7 @@ export function SettingsDialog({ close }: { close: () => void }) {
               </button>
             </div>
             {!isNew && (
-              <div className="text-xs font-light">
+              <div className="text-xs">
                 Key: {keys[id] ?? ""} (
                 <button
                   onClick={async () => {
@@ -107,7 +107,7 @@ export function SettingsDialog({ close }: { close: () => void }) {
             )}
           </>
         ))}
-        <div className="h-10 font-light text-sm">
+        <div className="h-10 text-sm">
           <button
             className="group h-10 flex items-center opacity-50 hover:opacity-100 transition-opacity"
             onClick={() =>
@@ -147,13 +147,13 @@ export function SettingsDialog({ close }: { close: () => void }) {
       </div>
       <div className="flex justify-end">
         <button
-          className="rounded px-4 py-2 text-sm font-light opacity-50 hover:opacity-100 transition-opacity"
+          className="rounded px-4 py-2 text-sm opacity-50 hover:opacity-100 transition-opacity"
           onClick={close}
         >
           Annuller
         </button>
         <button
-          className="flex rounded px-4 py-2 bg-teal-600 hover:bg-teal-500 text-sm font-light transition-colors"
+          className="flex rounded px-4 py-2 bg-teal-600 hover:bg-teal-500 text-sm transition-colors"
           onClick={async () => {
             if (!loading) {
               setLoading(true);

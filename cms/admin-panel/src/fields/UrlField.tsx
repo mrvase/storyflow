@@ -97,9 +97,7 @@ const useRelatedPages = (articleId: DocumentId, initialUrl: string) => {
 export default function UrlField({ id, version, history }: FieldProps) {
   if (id === "") {
     return (
-      <div className="text-gray-400 font-light leading-6 pt-1 pb-5">
-        Intet indhold
-      </div>
+      <div className="text-gray-400 leading-6 pt-1 pb-5">Intet indhold</div>
     );
   }
 
@@ -276,7 +274,7 @@ export default function UrlField({ id, version, history }: FieldProps) {
 
   return (
     <div className="pb-2.5">
-      <div className="outline-none rounded font-light flex items-center px-3 mb-2.5 bg-gray-800 ring-button">
+      <div className="outline-none rounded flex items-center px-3 mb-2.5 bg-gray-800 ring-button">
         {/*parents[0] ? (
             <Link
               to={replacePage(parents[0]?._id ?? "")}
@@ -362,7 +360,7 @@ export default function UrlField({ id, version, history }: FieldProps) {
           <input
             type="text"
             placeholder="indtast eksempel"
-            className="w-full max-w-[16rem] bg-transparent outline-none font-light border-0 rounded px-2 text-sm py-2"
+            className="w-full max-w-[16rem] bg-transparent outline-none border-0 rounded px-2 text-sm py-2"
             value={values.param0}
             onChange={(ev) => {
               setValues({ param0: ev.target.value });
@@ -377,7 +375,7 @@ export default function UrlField({ id, version, history }: FieldProps) {
               <Link
                 key={el._id}
                 to={replacePage(el._id)}
-                className="group text-sm font-light flex-center gap-2"
+                className="group text-sm flex-center gap-2"
                 data-focus-ignore="true"
               >
                 <SubPageLine first={index === 0} />
@@ -392,7 +390,7 @@ export default function UrlField({ id, version, history }: FieldProps) {
               </Link>
             ))}
             <button
-              className="group text-sm font-light flex-center gap-2"
+              className="group text-sm flex-center gap-2"
               onClick={() =>
                 ctx.addArticleWithUrl({
                   _id: documentId,

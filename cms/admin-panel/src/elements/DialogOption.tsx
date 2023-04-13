@@ -71,7 +71,7 @@ export function DialogOption({
             <input
               type="text"
               name="value"
-              className="ring-button bg-transparent rounded h-8 flex items-center px-2.5 outline-none w-full font-light"
+              className="ring-button bg-transparent rounded h-8 flex items-center px-2.5 outline-none w-full"
               autoComplete="off"
             />
           )}

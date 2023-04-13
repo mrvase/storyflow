@@ -55,7 +55,7 @@ export default function Select({
       >
         <div
           className={cl(
-            "h-8 w-full cursor-default overflow-hidden rounded-t font-light",
+            "h-8 w-full cursor-default overflow-hidden rounded-t",
             "ring-button",
             !isOpen && "rounded-b"
           )}
@@ -70,7 +70,7 @@ export default function Select({
           <Combobox.Input
             ref={inputRef}
             className={cl(
-              "border-none h-full w-full flex px-3 outline-none bg-transparent font-light",
+              "border-none h-full w-full flex px-3 outline-none bg-transparent",
               !isOpen && "cursor-default"
             )}
             displayValue={(value) => ""}

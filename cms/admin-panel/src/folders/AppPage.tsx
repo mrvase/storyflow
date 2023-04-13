@@ -167,7 +167,7 @@ export default function AppPage({ children }: { children?: React.ReactNode }) {
                         domains={folder.domains}
                         mutate={(domains) => mutateProp("domains", domains)}
                       />
-                      <div className="text-xs text-gray-600 font-light flex-center h-6 ring-1 ring-inset ring-gray-700 px-2 rounded cursor-default">
+                      <div className="text-xs text-gray-600 flex-center h-6 ring-1 ring-inset ring-gray-700 px-2 rounded cursor-default">
                         ID: {folder._id.replace(/^0+/, "")}
                       </div>
                     </>
@@ -242,7 +242,7 @@ function RefreshButton({
       {number > 0 && (
         <span
           title={(data ?? []).map((el) => `/${el}`).join(", ")}
-          className="text-xs opacity-50 font-light ml-5 cursor-default hover:underline"
+          className="text-xs opacity-50 ml-5 cursor-default hover:underline"
         >
           {number} {number === 1 ? "side" : "sider"} ændret
         </span>
@@ -254,7 +254,7 @@ function RefreshButton({
         </div>
       )*/}
         <button
-          className="relative z-0 bg-button-yellow ring-button-yellow text-button rounded px-3 py-1 font-light flex-center gap-2 text-sm overflow-hidden"
+          className="relative z-0 bg-button-yellow ring-button-yellow text-button rounded px-3 py-1 flex-center gap-2 text-sm overflow-hidden"
           onClick={async () => {
             if (revalidateUrl && data?.length) {
               setIsLoading(true);

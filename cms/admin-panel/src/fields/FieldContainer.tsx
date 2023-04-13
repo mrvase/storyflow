@@ -223,7 +223,7 @@ function LabelBar({
       {specialFieldConfig && (
         <div
           className={cl(
-            "flex-center text-xs h-6 -my-0.5 font-light bg-yellow-300 text-yellow-800/90 dark:bg-yellow-400/10 dark:text-yellow-200/75 px-1.5 rounded whitespace-nowrap",
+            "flex-center text-xs h-6 -my-0.5 bg-yellow-300 text-yellow-800/90 dark:bg-yellow-400/10 dark:text-yellow-200/75 px-1.5 rounded whitespace-nowrap",
             isFocused
               ? "opacity-100"
               : "opacity-0 group-hover/container:opacity-80",
@@ -235,7 +235,7 @@ function LabelBar({
       )}
       {/*<button
         className={cl(
-          "ml-2 shrink-0 text-xs font-light flex-center gap-2 px-2 h-6 -my-0.5 bg-white/10 rounded",
+          "ml-2 shrink-0 text-xs flex-center gap-2 px-2 h-6 -my-0.5 bg-white/10 rounded",
           isFocused
             ? "opacity-50"
             : "opacity-0 group-hover/container:opacity-20",
@@ -313,7 +313,7 @@ function ElementLabel(props: {
             return ps.slice(0, index + 1);
           })
         }
-        className="hover:underline text-yellow-400 flexitems-center"
+        className="hover:underline text-yellow-400 flex items-center font-medium"
       >
         {folder.label ?? "no"}
       </button>
@@ -335,7 +335,7 @@ function ElementLabel(props: {
             return ps.slice(0, index + 1);
           })
         }
-        className="hover:underline text-yellow-400 flexitems-center"
+        className="hover:underline text-yellow-400 flex items-center font-medium"
       >
         {config?.label ?? "no"}
       </button>
@@ -395,7 +395,7 @@ function Label({ id }: { id: FieldId }) {
   return (
     <div
       className={cl(
-        "flex items-center gap-1 bg-gray-850 px-1.5 -ml-1.5",
+        "flex items-center gap-1 bg-gray-850 px-1.5 -ml-1.5 font-medium",
         isNative ? "text-gray-400" : "text-teal-600/90 dark:text-teal-400/90",
         isLink ? "cursor-alias" : "cursor-default",
         selectedPath.length && "hover:underline"

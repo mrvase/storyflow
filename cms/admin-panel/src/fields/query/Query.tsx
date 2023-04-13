@@ -420,7 +420,7 @@ export function Query({
     <>
       <div
         className={cl(
-          "absolute left-5 right-5 z-10 bg-gray-800 ring-1 ring-gray-700 rounded shadow-lg font-light",
+          "absolute left-5 right-5 z-10 bg-gray-800 ring-1 ring-gray-700 rounded shadow-lg",
           show
             ? "opacity-100 transition-opacity"
             : "opacity-0 pointer-events-none"

@@ -229,7 +229,7 @@ function EditableLabel({
   return (
     <div
       className={cl(
-        " text-xs text-gray-300 font-light flex h-6 ring-1 rounded",
+        " text-xs text-gray-300 flex h-6 ring-1 rounded",
         isEditing ? "ring-gray-600" : "ring-button"
       )}
       data-focus-remain="true"

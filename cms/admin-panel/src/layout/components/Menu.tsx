@@ -36,12 +36,7 @@ function Menu<T extends { label: string; disabled?: boolean }>({
   return (
     <HeadlessMenu>
       {({ open }) => (
-        <div
-          className={cl(
-            "block text-sm font-light",
-            align === "right" && "relative"
-          )}
-        >
+        <div className={cl("block text-sm", align === "right" && "relative")}>
           <HeadlessMenu.Button
             as={as}
             active={open}
@@ -106,7 +101,7 @@ const MenuItem = React.forwardRef<
         <button
           {...props}
           className={cl(
-            "py-2 px-2 font-light flex items-center gap-2 text-xs transition-colors",
+            "py-2 px-2 flex items-center gap-2 text-xs transition-colors",
             active && "rounded bg-gray-700",
             disabled && "text-gray-500",
             props.className

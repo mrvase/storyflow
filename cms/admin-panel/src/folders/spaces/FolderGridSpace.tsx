@@ -148,9 +148,7 @@ function FolderGrid({
         )}
       >
         {space.items.length === 0 && (
-          <div className="absolute text-gray-500 font-light text-sm">
-            Ingen mapper
-          </div>
+          <div className="absolute text-gray-500 text-sm">Ingen mapper</div>
         )}
         {folderItems.map((folder, index) => (
           <FolderItem folder={folder._id} index={index} key={folder._id} />

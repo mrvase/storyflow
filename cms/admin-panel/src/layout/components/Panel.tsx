@@ -13,7 +13,7 @@ import { LinkReceiver } from "./LinkReceiver";
 function ErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
   const [showMessage, toggleMessage] = React.useReducer((ps) => !ps, false);
   return (
-    <div className="p-5 bg-white dark:bg-gray-850 text-center h-full text-gray-700 dark:text-white font-light">
+    <div className="p-5 bg-white dark:bg-gray-850 text-center h-full text-gray-700 dark:text-white">
       Der skete en fejl 💥
       <br />
       <br />

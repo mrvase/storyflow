@@ -14,7 +14,7 @@ export function DefaultFieldRoot({ id, version, history }: FieldProps) {
   /*
   if (id === "") {
     return (
-      <div className="text-gray-400 font-light leading-6 pb-5">
+      <div className="text-gray-400 leading-6 pb-5">
         Intet indhold
       </div>
     );

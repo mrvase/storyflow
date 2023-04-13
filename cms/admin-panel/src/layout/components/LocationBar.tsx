@@ -50,7 +50,7 @@ export function LocationBar({
     return (
       <div
         className={cl(
-          "h-11 shrink-0 grow-0 flex items-center pl-5 text-sm font-light",
+          "h-11 shrink-0 grow-0 flex items-center pl-5 text-sm",
           "bg-white dark:bg-gray-850"
         )}
       >
@@ -220,7 +220,7 @@ function LocationBarItem({
     <button
       {...dragHandleProps}
       className={cl(
-        "px-3 my-2 h-7 text-sm leading-none rounded-md font-light",
+        "px-3 my-2 h-7 text-sm leading-none rounded-md",
         type === "template"
           ? "bg-teal-800"
           : /*

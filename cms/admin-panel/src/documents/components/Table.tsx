@@ -17,7 +17,7 @@ export default function Table({
   return (
     <table
       className={cl(
-        "w-[calc(100%+1.25rem)] leading-none font-light table-fixed -mx-2.5 -mb-2.5"
+        "w-[calc(100%+1.25rem)] leading-none table-fixed -mx-2.5 -mb-2.5"
       )}
       border={0}
     >

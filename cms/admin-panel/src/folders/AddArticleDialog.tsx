@@ -123,7 +123,7 @@ export function AddArticleDialog({
               setSlug(toSlug(newLabel));
             }
           }}
-          className="bg-white/5 rounded py-2 px-2.5 outline-none w-full font-light"
+          className="bg-white/5 rounded py-2 px-2.5 outline-none w-full"
           autoComplete="off"
         />
         <div className="text-sm font-normal mt-2 mb-1">URL</div>
@@ -132,7 +132,7 @@ export function AddArticleDialog({
           name="slug"
           value={slug}
           onChange={(ev) => setSlug(ev.target.value)}
-          className="bg-white/5 rounded py-2 px-2.5 outline-none w-full font-light"
+          className="bg-white/5 rounded py-2 px-2.5 outline-none w-full"
           autoComplete="off"
         />
         <div className="flex flex-row-reverse mt-5 gap-2">

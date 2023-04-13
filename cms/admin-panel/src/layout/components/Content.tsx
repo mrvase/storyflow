@@ -64,7 +64,7 @@ function Content({
             )}
           >
             <div className="text-gray-800 dark:text-white text-2xl leading-none flex-center font-medium">
-              <div className="text-sm font-light w-4 mt-0.5 mr-5">
+              <div className="text-sm w-4 mt-0.5 mr-5">
                 {Icon && (
                   <div
                     onClick={() => setIsOpen((ps) => !ps)}
@@ -165,7 +165,7 @@ const ToolbarButton = React.forwardRef<
       ref={ref}
       {...props}
       className={cl(
-        "ring-button flex-center gap-1.5 text-xs font-light h-6 px-2 rounded whitespace-nowrap",
+        "ring-button flex-center gap-1.5 text-xs h-6 px-2 rounded whitespace-nowrap",
         active ? "bg-button-active" : "bg-button",
         selected === false
           ? "text-gray-800 dark:text-white text-opacity-50 dark:text-opacity-50"

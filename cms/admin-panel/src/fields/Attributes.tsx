@@ -149,7 +149,7 @@ function PropPreview({
   return (
     <div
       className={cl(
-        "rounded-full flex items-center px-2 py-0.5 font-light text-xs transition-colors ring-inset ring-gray-750",
+        "rounded-full flex items-center px-2 py-0.5 text-xs transition-colors ring-inset ring-gray-750",
         selected
           ? "bg-gray-750 text-gray-400 ring-1"
           : "text-gray-700 hover:ring-1"

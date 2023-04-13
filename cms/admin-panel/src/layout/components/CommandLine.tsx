@@ -57,7 +57,7 @@ export function CommandLine() {
         }}
         type="text"
         className={cl(
-          "w-full h-full flex items-center bg-transparent outline-none px-3 font-light placeholder:text-gray-400/50"
+          "w-full h-full flex items-center bg-transparent outline-none px-3 placeholder:text-gray-400/50"
         )}
         placeholder="Indtast kommando"
       />

@@ -73,7 +73,7 @@ function Decorator({
       <EditorFocusProvider>
         <FocusContainer isOpen={isOpen} isSelected={isSelected}>
           <div
-            className="flex items-center font-normal text-yellow-400/90 text-sm p-2.5 whitespace-nowrap"
+            className="flex items-center font-medium text-yellow-400/90 text-sm p-2.5 whitespace-nowrap"
             onMouseDown={(ev) => {
               // preventDefault added because it prevents a conflict with lexical
               // which sets the selection as well, overwriting the selection set here.

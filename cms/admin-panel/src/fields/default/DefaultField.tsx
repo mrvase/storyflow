@@ -183,13 +183,13 @@ export function DefaultField({
           <Placeholder />
           <ContentEditable
             className={cl(
-              "grow editor outline-none font-light selection:bg-gray-700",
+              "grow editor outline-none selection:bg-gray-700",
               "text-base leading-6 pb-2.5"
             )}
             // data-value={!isPrimitive ? preview : ""}
           />
           {!isPrimitive && (
-            <div className="-ml-9 preview hidden text-gray-500 rounded text-sm font-light pb-2.5">
+            <div className="-ml-9 preview hidden text-gray-500 rounded text-sm pb-2.5">
               <Bars2Icon className="shrink-0 w-4 mt-0.5 h-4 mr-5 opacity-50" />
               {preview || "[Tom]"}
             </div>

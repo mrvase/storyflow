@@ -454,7 +454,7 @@ function SaveButton({ id, folder }: { id: DocumentId; folder: FolderId }) {
         </div>
       )*/}
       <button
-        className="relative z-0 bg-button-teal ring-button-teal text-button rounded px-3 py-1 font-light flex-center gap-2 text-sm overflow-hidden"
+        className="relative z-0 bg-button-teal ring-button-teal text-button rounded px-3 py-1 flex-center gap-2 text-sm overflow-hidden"
         onClick={async () => {
           if (isLoading) return;
           setIsLoading(true);

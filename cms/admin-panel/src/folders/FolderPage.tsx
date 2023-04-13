@@ -125,7 +125,7 @@ export default function FolderPage({
                         domains={folder.domains}
                         mutate={(domains) => mutateProp("domains", domains)}
                       />
-                      <div className="text-xs text-gray-600 font-light flex-center h-6 ring-1 ring-inset ring-gray-700 px-2 rounded cursor-default">
+                      <div className="text-xs text-gray-600 flex-center h-6 ring-1 ring-inset ring-gray-700 px-2 rounded cursor-default">
                         ID: {folder._id.replace(/^0+/, "")}
                       </div>
                     </>
