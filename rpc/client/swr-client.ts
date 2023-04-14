@@ -51,8 +51,11 @@ const extendMutate = (
   };
 };
 
-const SWRFetcher = async (key: string) => {
-  const result = await dedupedFetch.fetch(key);
+const SWRFetcher = async (
+  key: string,
+  throttle?: { key: string; ms: number }
+) => {
+  const result = await dedupedFetch.fetch(key, { throttle });
   if (isError(result)) {
     throw result;
   }
@@ -83,19 +86,25 @@ export function createSWRClient<UserAPI extends API>(
                   immutable,
                   context,
                   cachePreload,
+                  throttle,
                   ...SWROptions
                 }: UseQueryOptions<any, any, any> = {}
               ) => {
                 const ctx = useContext?.();
 
-                let fetcher = SWRFetcher;
+                let fetcher = React.useCallback(
+                  (key: string) => {
+                    return SWRFetcher(key, throttle);
+                  },
+                  [throttle?.key, throttle?.ms]
+                );
 
                 if (cachePreload) {
                   const { cache, mutate } = useSWRConfig();
 
                   fetcher = React.useCallback(
                     async (key) => {
-                      const result = await SWRFetcher(key);
+                      const result = await SWRFetcher(key, throttle);
 
                       if (result !== undefined) {
                         const preloadFunc = (
@@ -131,7 +140,7 @@ export function createSWRClient<UserAPI extends API>(
 
                       return result;
                     },
-                    [cache]
+                    [cache, throttle?.key, throttle?.ms]
                   );
                 }
 

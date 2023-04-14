@@ -49,6 +49,7 @@ export type QueryOptions<
     write: (key: string, data: unknown) => void;
   };
   cachePreload?: CachePreload<UserAPI, DefaultRoute, APIObject>;
+  throttle?: { key: string; ms: number };
 };
 
 type ProcedureCall<
@@ -87,27 +88,8 @@ export type UseQueryOptions<
 > = SharedOptions & {
   inactive?: boolean;
   immutable?: boolean;
-  cachePreload?: (
-    result: UnwrapResult<Awaited<ReturnType<APIObject["query"]>>>,
-    preload: <
-      Route extends keyof UserAPI = DefaultRoute,
-      EP extends keyof UserAPI[Route] = keyof UserAPI[Route]
-    >(
-      query: [
-        key: EP extends string
-          ? (Route extends string ? `${Route}/${EP}` : never) | EP
-          : never,
-        input: UserAPI[Route][EP] extends { query: any }
-          ? Parameters<UserAPI[Route][EP]["query"]>[0]
-          : undefined
-      ],
-      callback: EP extends keyof UserAPI[Route]
-        ? UserAPI[Route][EP] extends { query: any }
-          ? () => UnwrapResult<Awaited<ReturnType<UserAPI[Route][EP]["query"]>>>
-          : never
-        : never
-    ) => void
-  ) => void;
+  cachePreload?: CachePreload<UserAPI, DefaultRoute, APIObject>;
+  throttle?: { key: string; ms: number };
 } & SWRConfiguration;
 
 export type UseMutationOptions<

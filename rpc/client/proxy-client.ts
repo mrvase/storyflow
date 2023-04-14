@@ -6,12 +6,15 @@ import { externalKey, getContext, queryKey } from "./utils";
 
 export const proxyErrorMessage = "client proxy not accessed correctly";
 
-const query = (key: string) => {
+const query = (key: string, throttle?: { key: string; ms: number }) => {
   const abortController = new AbortController();
 
   const getResult = async () => {
     try {
-      const response = await dedupedFetch.fetch(key, abortController);
+      const response = await dedupedFetch.fetch(key, {
+        abortController,
+        throttle,
+      });
       if (response.status >= 400) {
         return error({ message: "Fetch failed", detail: "status code" });
       }
@@ -118,33 +121,35 @@ export function createClient<T extends API>(
 
                 if (options?.cachePreload && cache) {
                   fetcher = (key) => {
-                    const result = query(key).then((result) => {
-                      if (isSuccess(result)) {
-                        const preloadFunc = (
-                          [externalProcedure, input]: [string, any],
-                          data: any
-                        ) => {
-                          const key = externalKey(
-                            {
-                              apiUrl,
-                              route,
-                              externalProcedure,
-                            },
-                            input,
-                            ctx
-                          );
+                    const result = query(key, options?.throttle).then(
+                      (result) => {
+                        if (isSuccess(result)) {
+                          const preloadFunc = (
+                            [externalProcedure, input]: [string, any],
+                            data: any
+                          ) => {
+                            const key = externalKey(
+                              {
+                                apiUrl,
+                                route,
+                                externalProcedure,
+                              },
+                              input,
+                              ctx
+                            );
 
-                          let cached = cache.read(key);
-                          if (!cached) {
-                            cache.write(key, data);
-                          }
-                        };
+                            let cached = cache.read(key);
+                            if (!cached) {
+                              cache.write(key, data);
+                            }
+                          };
 
-                        options.cachePreload?.(unwrap(result), preloadFunc);
+                          options.cachePreload?.(unwrap(result), preloadFunc);
+                        }
+
+                        return result;
                       }
-
-                      return result;
-                    });
+                    );
 
                     return Object.assign(result, {
                       abort: (query as unknown as { abort: () => void }).abort,

@@ -26,6 +26,7 @@ import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
 
 type FetcherResult = { _id: DocumentId; record: SyntaxTreeRecord }[];
 
+/*
 function createPromise<T>() {
   let props: {
     resolve: (value: T | PromiseLike<T>) => void;
@@ -112,6 +113,7 @@ function createFetcherStore() {
 }
 
 const fetcherStore = createFetcherStore();
+*/
 
 export const calculateFn = (
   fieldId: FieldId | string,
@@ -164,8 +166,17 @@ export const calculateFn = (
       const state = store.use<FetcherResult>(string);
 
       if (!state.initialized()) {
-        const promise = fetcherStore.get(importId.folder.id, string, client);
-        promise.then((result_) => state.set(() => result_));
+        const promise = fetchDocumentList(
+          {
+            folder: importId.folder.folder,
+            limit: importId.limit,
+            sort: importId.sort ?? {},
+            filters,
+          },
+          client,
+          importId.folder.id
+        ); // fetcherStore.get(importId.folder.id, string, client);
+        promise.then((result) => state.set(() => result.articles));
       }
 
       return state.value?.map(({ _id }) => ({ id: _id })) ?? [];
