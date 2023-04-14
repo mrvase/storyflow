@@ -79,10 +79,9 @@ export async function fetchDocumentList(
     sort?: SortSpec;
     filters?: Record<RawFieldId, ValueArray>;
   },
-  client: Client
+  client: Client,
+  throttleKey?: string
 ) {
-  console.log("FETCHING LIST", params);
-
   const result = unwrap(
     await client.documents.getList.query(params, {
       cachePreload: (result, preload) => {
@@ -95,18 +94,34 @@ export async function fetchDocumentList(
           });
         });
       },
+      throttle: throttleKey
+        ? {
+            key: throttleKey,
+            ms: 250,
+          }
+        : undefined,
     })
   );
-  console.log("FETCHING LIST RESULT", result);
 
   return result;
 }
 
-export function useDocumentList(folderId: FolderId | undefined) {
+export function useDocumentList(
+  arg:
+    | {
+        folder: FolderId;
+        limit: number;
+        sort?: SortSpec;
+        filters?: Record<RawFieldId, ValueArray>;
+      }
+    | FolderId
+    | undefined,
+  throttleKey?: string
+) {
   const { data, error } = SWRClient.documents.getList.useQuery(
-    { folder: folderId!, limit: 50 },
+    typeof arg === "object" ? arg : { folder: arg!, limit: 50 },
     {
-      inactive: !folderId,
+      inactive: typeof arg === "undefined",
       immutable: true,
       cachePreload: (result, preload) => {
         result.articles.forEach((doc) => {
@@ -118,6 +133,12 @@ export function useDocumentList(folderId: FolderId | undefined) {
           });
         });
       },
+      throttle: throttleKey
+        ? {
+            key: throttleKey,
+            ms: 250,
+          }
+        : undefined,
     }
   );
 
