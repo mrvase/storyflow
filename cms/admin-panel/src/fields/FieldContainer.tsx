@@ -3,9 +3,9 @@ import { useDragItem, useSortableItem } from "@storyflow/dnd";
 import {
   ChevronRightIcon,
   ChevronUpDownIcon,
-  ComputerDesktopIcon,
   LinkIcon,
   LockClosedIcon,
+  WindowIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import React from "react";
@@ -29,7 +29,6 @@ import { Attributes, AttributesProvider } from "./Attributes";
 import { SelectedPathProvider, useNestedEntity, useSelectedPath } from "./Path";
 import { useFolder } from "../folders/collab/hooks";
 import { usePanel, useRoute } from "../panel-router/Routes";
-import { usePanelActions } from "../panel-router/PanelRouter";
 import { useLocalStorage } from "../state/useLocalStorage";
 import { useFieldRestriction } from "./FieldIdContext";
 
@@ -92,7 +91,7 @@ export function FieldContainer({
             {...props}
             {...(isOpen ? handlers : {})}
             className={cl(
-              "relative grow shrink basis-0 group/container px-2.5 mt-5"
+              "relative grow shrink basis-0 group/container px-2.5 mt-8"
             )}
           >
             <FocusContainer isFocused={isFocused}>
@@ -142,19 +141,6 @@ function FocusContainer({
       )}
     >
       {children}
-    </div>
-  );
-
-  return (
-    <div
-      className={cl(
-        ring,
-        "relative ml-2.5 mt-2.5 pb-2.5 pr-2.5 rounded rounded-tl-none ring-1",
-        "transition-[background-color,box-shadow]"
-      )}
-    >
-      <div className="absolute -top-[1px] -left-[1px] w-3 h-3 border-t border-l border-gray-850" />
-      <div className="-translate-x-2">{children}</div>
     </div>
   );
 }
@@ -217,7 +203,7 @@ function LabelBar({
             onClick={fullscreen}
             {...linkDragHandleProps}
           >
-            <ComputerDesktopIcon className="w-3 h-3" /> Åbn preview
+            <WindowIcon className="w-3 h-3" /> Åbn preview
           </button>
         )}
       </div>

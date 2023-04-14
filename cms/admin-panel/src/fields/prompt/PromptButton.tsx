@@ -1,4 +1,5 @@
 import React from "react";
+import cl from "clsx";
 import { useEditorContext } from "../../editor/react/EditorProvider";
 import { PaintBrushIcon } from "@heroicons/react/24/outline";
 import {
@@ -18,6 +19,9 @@ import {
 import { tools } from "shared/editor-tools";
 import { $createPromptNode } from "../Editor/decorators/PromptNode";
 import { $replaceWithBlocks } from "../Editor/insertComputation";
+import { $exitPromptNode, $getPromptNode } from "./utils";
+import { useClientConfig } from "../../client-config";
+import { useIsEmpty } from "../../editor/react/useIsEmpty";
 
 export function PromptButton() {
   const editor = useEditorContext();
@@ -26,15 +30,18 @@ export function PromptButton() {
 
   const offset = 0;
 
-  const [y, setY] = React.useState<number | null>(null);
+  const [y, setY] = React.useState<number | null>(0);
 
   const normalize = (value: number) => value;
+
+  const { libraries } = useClientConfig();
 
   React.useEffect(() => {
     return editor.registerUpdateListener(({ editorState }) => {
       editorState.read(() => {
         const selection = $getSelection();
         let node: LexicalNode;
+
         if ($isRangeSelection(selection)) {
           node = selection.anchor.getNode();
         } else if ($isNodeSelection(selection)) {
@@ -53,14 +60,19 @@ export function PromptButton() {
         setY(normalize(offset + y - root));
       });
     });
-  }, [editor]);
+  }, [editor, libraries]);
 
   const Icon = PaintBrushIcon; // mathMode ? CalculatorIcon : PaintBrushIcon;
 
-  return isFocused && y !== null ? (
+  const isEmpty = useIsEmpty(editor);
+
+  return isFocused || isEmpty ? (
     <>
       <div
-        className="absolute top-0 -left-[2.875rem] w-8 h-8 p-2 -m-1 mx-1 opacity-50 hover:opacity-100"
+        className={cl(
+          "absolute top-0 -left-[2.875rem] w-8 h-8 p-2 -m-1 mx-1 hover:opacity-100",
+          isEmpty && !isFocused ? "opacity-25" : "opacity-50"
+        )}
         style={{ transform: `translateY(${y}px)` }}
         onMouseDown={(ev) => {
           ev.preventDefault();
@@ -70,6 +82,15 @@ export function PromptButton() {
           }
           */
           editor.update(() => {
+            if (!isFocused) {
+              editor.getRootElement()?.focus();
+              $getRoot().selectEnd();
+            }
+            if ($getPromptNode()) {
+              $exitPromptNode(libraries);
+              return;
+            }
+
             const selection = $getSelection();
             if (!$isRangeSelection(selection) && !$isNodeSelection(selection)) {
               return;

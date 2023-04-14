@@ -26,7 +26,7 @@ export const BuilderIframe = React.forwardRef<
       className="w-full h-full overflow-auto no-scrollbar snap-mandatory snap-x"
     >
       <div className="w-[200%] py-96">
-        <div className="w-1/2 p-5 snap-start">
+        <div className="ml-[25%] w-1/2 p-5 snap-start">
           <iframe
             ref={ref}
             src={`${builderUrl}?uniqueId=${uniqueId}&slug=${organization}`}

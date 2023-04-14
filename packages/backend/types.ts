@@ -218,7 +218,7 @@ export type SyntaxStreamSymbol =
   | { "{": true }
   | { "}": true }
   | { ")": "root" }
-  | { ")": "select"; f: RawFieldId }
+  | { ")": "select"; f: RawFieldId; i?: RawDocumentId }
   | { ")": "sortlimit"; l: number; s?: SortSpec }
   | { ")": Exclude<Operator | FunctionName, "select" | "sortlimit"> }
   | null;

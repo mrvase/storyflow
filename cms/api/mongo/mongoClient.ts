@@ -5,9 +5,9 @@ const MONGO_URL = process.env.MONGO_URL as string;
 const uri = `${MONGO_URL}?retryWrites=true&w=majority`;
 
 const options: MongoClientOptions = {
-  connectTimeoutMS: 5000,
-  serverSelectionTimeoutMS: 5000,
-  socketTimeoutMS: 5000,
+  connectTimeoutMS: 10000,
+  serverSelectionTimeoutMS: 10000,
+  socketTimeoutMS: 10000,
 };
 
 export type ClientPromise = Promise<MongoClient>;

@@ -106,7 +106,7 @@ const defaultLibraryConfig: LibraryConfig = {
     },
     Loop: {
       label: "Loop",
-      name: "loop",
+      name: "Loop",
       props: [
         { name: "children", type: "children", label: "Indhold" },
         { name: "data", type: "children", label: "Data" },

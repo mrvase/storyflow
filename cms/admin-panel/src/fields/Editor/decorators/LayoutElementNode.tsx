@@ -8,7 +8,12 @@ import {
   NestedElement,
 } from "@storyflow/backend/types";
 import { getConfigFromType, useClientConfig } from "../../../client-config";
-import { ChevronUpDownIcon, CubeIcon } from "@heroicons/react/24/outline";
+import {
+  ChevronUpDownIcon,
+  CodeBracketSquareIcon,
+  CubeIcon,
+  WindowIcon,
+} from "@heroicons/react/24/outline";
 import {
   FieldRestrictionsContext,
   FieldOptionsContext,
@@ -68,12 +73,24 @@ function Decorator({
     });
   }
 
+  const Icon =
+    value.element === "Loop"
+      ? CodeBracketSquareIcon
+      : value.element === "Outlet"
+      ? WindowIcon
+      : CubeIcon;
+
   return (
     <AttributesProvider>
       <EditorFocusProvider>
         <FocusContainer isOpen={isOpen} isSelected={isSelected}>
           <div
-            className="flex items-center font-medium text-yellow-400/90 text-sm p-2.5 whitespace-nowrap"
+            className={cl(
+              "flex items-center font-medium text-sm p-2.5 whitespace-nowrap",
+              value.element.indexOf(":") > 0
+                ? "text-yellow-400"
+                : "text-red-400"
+            )}
             onMouseDown={(ev) => {
               // preventDefault added because it prevents a conflict with lexical
               // which sets the selection as well, overwriting the selection set here.
@@ -88,10 +105,14 @@ function Decorator({
             }}
           >
             <InterSelectionArea nodeKey={nodeKey} />
-            <CubeIcon className="w-4 h-4 mr-5 shrink-0" />
+            <Icon className="w-4 h-4 mr-5 shrink-0" />
             {config?.label ?? value.element}
             <div className="overflow-x-auto no-scrollbar mx-2">
-              <Attributes entity={value} hideAsDefault={!isTopLevel} />
+              <Attributes
+                entity={value}
+                hideAsDefault={!isTopLevel}
+                color={value.element.indexOf(":") > 0 ? "yellow" : "red"}
+              />
             </div>
             <div className="ml-auto">
               <button

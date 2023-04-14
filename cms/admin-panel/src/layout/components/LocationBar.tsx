@@ -1,14 +1,11 @@
 import cl from "clsx";
 import {
-  Bars3BottomLeftIcon,
   BookmarkIcon,
   ComputerDesktopIcon,
-  DocumentDuplicateIcon,
   DocumentIcon,
   FolderIcon,
-  HomeIcon,
   PlusIcon,
-  Squares2X2Icon,
+  WindowIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import React from "react";
@@ -22,7 +19,6 @@ import { useOptimisticDocumentList, useArticle } from "../../documents";
 import { useLabel } from "../../documents/collab/hooks";
 import { useDocumentLabel } from "../../documents/useDocumentLabel";
 import { useFolder } from "../../folders/collab/hooks";
-import { ROOT_FOLDER } from "@storyflow/backend/constants";
 
 export function LocationBar({
   isFocused,
@@ -187,7 +183,7 @@ function LocationBarItem({
   const Icon = {
     folder: FolderIcon,
     app: ComputerDesktopIcon,
-    field: Bars3BottomLeftIcon,
+    field: WindowIcon,
     document: DocumentIcon,
     template: DocumentIcon,
   }[type];

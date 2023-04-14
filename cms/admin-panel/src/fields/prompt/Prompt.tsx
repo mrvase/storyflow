@@ -4,6 +4,7 @@ import {
   DocumentIcon,
   LinkIcon,
   PhotoIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { mergeRegister } from "../../editor/utils/mergeRegister";
 import { TokenStream } from "@storyflow/backend/types";
@@ -250,6 +251,19 @@ export function Prompt({
   return (
     <Options>
       <OptionEventsPlugin />
+      <button
+        className="absolute -right-3 -top-3 w-6 h-6 rounded-full bg-gray-800 border border-gray-700 hover:bg-gray-750 transition-colors flex-center"
+        onMouseDown={(ev) => {
+          ev.preventDefault();
+        }}
+        onClick={() => {
+          editor.update(() => {
+            $exitPromptNode(libraries);
+          });
+        }}
+      >
+        <XMarkIcon className="w-4 h-4" />
+      </button>
       {showMenu && (
         <div className="flex gap-2.5 p-2.5 text-xs">
           {visiblePanes.map((pane, index) => (

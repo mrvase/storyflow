@@ -14,6 +14,7 @@ import { useFieldTemplate } from "../../default/useFieldTemplate";
 import { useFolder } from "../../../folders/collab/hooks";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 import { usePath, useSelectedPath } from "../../Path";
+import { Attributes, AttributesProvider } from "../../Attributes";
 
 function Decorator({
   value,
@@ -45,7 +46,7 @@ function Decorator({
   const folder = useFolder(value.folder);
 
   return (
-    <div className="">
+    <AttributesProvider>
       <div
         className={cl(
           "relative",
@@ -75,7 +76,10 @@ function Decorator({
           <div className="w-8 flex-center">
             <FolderIcon className="w-4 h-4" />
           </div>
-          <div className="px-2">{folder.label}</div>
+          <div className="px-2 ">{folder.label}</div>
+          <div className="pl-2">
+            <Attributes entity={value} hideAsDefault color="red" />
+          </div>
         </div>
         {/*docs.length === 0 && (
           <div className="w-full px-2 py-0.5 select-none">
@@ -102,7 +106,7 @@ function Decorator({
           </div>
         ))*/}
       </div>
-    </div>
+    </AttributesProvider>
   );
 }
 

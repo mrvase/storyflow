@@ -11,7 +11,7 @@ import { ContentEditable } from "../../editor/react/ContentEditable";
 import Editor from "../Editor/Editor";
 import { getPreview } from "./getPreview";
 import { Placeholder } from "./Placeholder";
-import { PromptButton } from "./PromptButton";
+import { PromptButton } from "../prompt/PromptButton";
 import { TemplateHeader } from "./TemplateHeader";
 import { tools } from "shared/editor-tools";
 import { useDefaultState } from "./useDefaultState";

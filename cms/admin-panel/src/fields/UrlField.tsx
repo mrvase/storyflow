@@ -293,7 +293,7 @@ export default function UrlField({ id, version, history }: FieldProps) {
           )*/}
         <Link
           to={replacePage(parents[0]?._id ?? "")}
-          className="mr-3 text-gray-400 hover:text-gray-100 transition-colors"
+          className="mr-5 text-gray-400 hover:text-gray-100 transition-colors"
           data-focus-ignore="true"
         >
           <HomeIcon className="w-4 h-4" />
