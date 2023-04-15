@@ -1,7 +1,6 @@
 import { ContentPlugin } from "./ContentPlugin";
 import { DecoratorPlugin } from "./DecoratorPlugin";
 import { EditorProvider } from "../../editor/react/EditorProvider";
-import { Target, ComputationOp } from "shared/operations";
 import React from "react";
 import { $initializeEditor } from "./transforms";
 import { TokenStream } from "@storyflow/backend/types";
@@ -18,6 +17,7 @@ import { useFieldId } from "../FieldIdContext";
 import { HeadingNode } from "../../editor/react/HeadingNode";
 import nodes from "./decorators/nodes";
 import { CopyPastePlugin } from "./CopyPastePlugin";
+import { FieldOperation } from "shared/operations";
 
 const editorConfig = {
   namespace: "EDITOR",
@@ -33,9 +33,9 @@ export default function Editor({
   children = null,
   target,
 }: {
-  target?: Target;
-  push?: (ops: ComputationOp["ops"]) => void;
-  register?: (listener: QueueListener<ComputationOp>) => () => void;
+  target?: string;
+  push?: (ops: FieldOperation[1]) => void;
+  register?: (listener: QueueListener<FieldOperation>) => () => void;
   initialValue: TokenStream;
   children?: React.ReactNode;
 }) {
@@ -52,7 +52,7 @@ export default function Editor({
       <CopyPastePlugin />
       <EditorFocusPlugin />
       <FieldFocusPlugin />
-      {push && register && target && (
+      {push && register && typeof target === "string" && (
         <Reconciler
           target={target}
           push={push}

@@ -12,7 +12,7 @@ import { useFolders } from "../../folders/collab/hooks";
 import { Option } from "./Option";
 import { useFieldId } from "../FieldIdContext";
 import { useDocumentIdGenerator } from "../../id-generator";
-import { markMatchingString } from "../query/helpers";
+import { markMatchingString } from "./helpers";
 import { SWRClient } from "../../client";
 import { calculateFromRecord } from "@storyflow/backend/calculate";
 import { DEFAULT_FIELDS } from "@storyflow/backend/fields";

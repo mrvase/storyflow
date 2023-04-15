@@ -1,4 +1,9 @@
 import { unwrapObjectId } from "@storyflow/backend/ids";
+import {
+  isFunctionSymbol,
+  isOperator,
+  isOperatorSymbol,
+} from "@storyflow/backend/symbols";
 import { tokens } from "@storyflow/backend/tokens";
 import {
   operators,
@@ -8,20 +13,16 @@ import {
   WithSyntaxError,
   SyntaxStream,
   SyntaxStreamSymbol,
-  HasDBId,
   Operator,
   FunctionName,
-  RawFieldId,
   ValueArray,
   DBValueArray,
   DBId,
-  SortSpec,
-  Transform,
+  FunctionSymbol,
+  HasDBId,
+  NestedEntity,
+  FunctionData,
 } from "@storyflow/backend/types";
-
-function isObject(value: any): value is Record<string, any> {
-  return value !== null && typeof value === "object";
-}
 
 const returnToNullParent = (
   current: SyntaxNode<WithSyntaxError>,
@@ -33,38 +34,41 @@ const returnToNullParent = (
   return current;
 };
 
+function isObject(value: unknown): value is Record<string, any> {
+  return value !== null && typeof value === "object";
+}
+
+function isNestedEntityWithDBId(value: any): value is HasDBId<NestedEntity> {
+  return tokens.isNestedEntity(value);
+}
+
 type KeysOfUnion<T> = T extends T ? keyof T : never;
 type SymbolKey = KeysOfUnion<SyntaxStreamSymbol>;
 
-function isSymbol<T extends SymbolKey>(
+function isSymbol<T extends ")">(
   value: any,
-  key: ")",
-  func: "select"
-): value is { ")": "select"; f: RawFieldId };
-function isSymbol<T extends SymbolKey>(
+  type: T
+): value is { ")": true | false | Operator };
+function isSymbol<T extends true | false | Operator>(
   value: any,
-  key: ")",
-  func: "sortlimit"
-): value is { ")": "sortlimit"; l: number; s?: SortSpec };
-function isSymbol<T extends ")", F extends Operator | FunctionName>(
+  type: T
+): value is { ")": T };
+function isSymbol<T extends "(" | "[" | "]">(
   value: any,
-  key: T
-): value is { ")": true | false | F };
-function isSymbol<T extends SymbolKey>(
-  value: any,
-  key: T
+  type: T
 ): value is { [key in T]: true };
-function isSymbol<T extends ")", F extends Operator | FunctionName | "root">(
+function isSymbol<T extends FunctionName>(
   value: any,
-  key: T,
-  func: F
-): value is { ")": F };
-function isSymbol<T extends SymbolKey, F extends Operator | FunctionName>(
+  type: T
+): value is Extract<FunctionSymbol, { [key in T]: any }>;
+function isSymbol<T extends SymbolKey>(
   value: any,
-  key: T,
-  func?: F
+  type: T
 ): value is SyntaxStreamSymbol {
-  return isObject(value) && key in value && (!func || value[key] === func);
+  if (isOperator(type)) {
+    return isObject(value) && ")" in value && value[")"] === type;
+  }
+  return isObject(value) && type in value;
 }
 
 export function createSyntaxStream(
@@ -112,25 +116,14 @@ export function createSyntaxStream(
       let openingBracket: SyntaxStreamSymbol = { "(": true };
       let closingBracket: SyntaxStreamSymbol = { ")": true };
 
-      if (value.type === "merge") {
-        openingBracket = { "{": true };
-        closingBracket = { "}": true };
+      if (value.type === null) {
+        // do nothing
+        closingBracket = { ")": true };
       } else if (value.type === "array") {
         openingBracket = { "[": true };
         closingBracket = { "]": true };
-      } else if (value.type === "select") {
-        closingBracket = { ")": "select", f: value.data!.select };
-      } else if (value.type === "sortlimit") {
-        closingBracket = {
-          ")": "sortlimit",
-          l: value.data!.limit,
-          ...(value.data!.sort && { s: value.data!.sort }),
-        };
-      } else if (value.type === "root") {
-        // inserted when not at top level
-        closingBracket = { ")": "root" };
       } else if (value.type !== null) {
-        closingBracket = { ")": value.type as "+" };
+        closingBracket = { [value.type as "in"]: value.data ?? true };
       }
 
       flattened.unshift(openingBracket);
@@ -160,7 +153,7 @@ export function parseSyntaxStream(
   let current: SyntaxNode<WithSyntaxError> = root;
 
   (stream as DBSyntaxStream).forEach((token) => {
-    if (isSymbol(token, "(") || isSymbol(token, "{") || isSymbol(token, "[")) {
+    if (isSymbol(token, "(") || isSymbol(token, "[")) {
       // An opening bracket always creates a group with operation null
       // and the operation stays null. So when we enter children groups,
       // we know we can return to the latest bracket group by returning
@@ -171,23 +164,32 @@ export function parseSyntaxStream(
       current = node;
     } else if (isSymbol(token, ")") && token[")"] === false) {
       current.children.push({ error: ")" });
-    } else if (isSymbol(token, ")", "select")) {
-      current.type = "select";
-      current.data = { select: token.f };
+    } else if (isFunctionSymbol(token)) {
+      const [type, data] = Object.entries(token)[0] as [
+        FunctionName,
+        FunctionData
+      ];
+
+      current.type = type;
+      if (data !== true) {
+        current.data = data;
+      }
+      if ("root" in token) {
+        hasNestedRoot = true;
+      }
+
+      // it is conceivable that I should return to null first,
+      // then set the type and then return to the parent, like
+      // in the case of ")" and "]".
+      // Here I end up at the parent, because I have just set
+      // the type to non-null.
       current = returnToNullParent(current, parents);
-    } else if (isSymbol(token, ")", "sortlimit")) {
-      current.type = "sortlimit";
-      current.data = { limit: token.l, sort: token.s };
-      current = returnToNullParent(current, parents);
-    } else if (
-      isSymbol(token, ")") ||
-      isSymbol(token, "}") ||
-      isSymbol(token, "]")
-    ) {
+    } else if (isOperatorSymbol(token)) {
       current = returnToNullParent(current, parents);
 
-      // auto bracket
-      if (["/", "*"].includes((token as any)[")"])) {
+      const type = Object.keys(token)[0] as Operator;
+
+      if (["/", "*"].includes(type)) {
         current.children = current.children.map((child) => {
           if (
             isObject(child) &&
@@ -203,27 +205,22 @@ export function parseSyntaxStream(
         });
       }
 
-      if (operators.includes((token as any)[")"])) {
-        current.children = current.children.map((child) => {
-          if (isObject(child) && "error" in child && child.error === ",") {
-            return { error: "missing" };
-          }
-          return child;
-        });
-      }
+      current.type = type;
 
-      if ((token as any)[")"] && (token as any)[")"] === "root") {
-        current.type = "root";
-        hasNestedRoot = true;
-      } else if (
-        (token as any)[")"] &&
-        typeof (token as any)[")"] !== "boolean"
-      ) {
-        current.type = (token as any)[")"];
-      } else if (isSymbol(token, "]")) {
+      current.children = current.children.map((child) => {
+        if (isObject(child) && "error" in child && child.error === ",") {
+          return { error: "missing" };
+        }
+        return child;
+      });
+
+      const parent = parents.get(current)!;
+      current = parent;
+    } else if (isSymbol(token, ")") || isSymbol(token, "]")) {
+      current = returnToNullParent(current, parents);
+
+      if (isSymbol(token, "]")) {
         current.type = "array";
-      } else if (isSymbol(token, "}")) {
-        current.type = "merge";
       }
 
       const parent = parents.get(current)!;
@@ -232,12 +229,19 @@ export function parseSyntaxStream(
       // Replaced with { error: "missing" } if we turn out to be in operator.
       // We cannot have erroneous comma in operator.
       current.children.push({ error: "," });
-    } else if (tokens.isNestedEntity(token)) {
+    } else if (isNestedEntityWithDBId(token)) {
       current.children.push(removeNestedObjectIds([token])[0] as any);
     } else if (Array.isArray(token)) {
       current.children.push(removeNestedObjectIds(token));
+    } else if (isObject(token) && "n" in token) {
+      current.children.push(token);
+    } else if (isObject(token) && "x" in token) {
+      current.children.push(token);
+    } else if (tokens.isToken(token)) {
+      current.children.push(token);
     } else {
-      current.children.push(token as any);
+      // primitive value
+      current.children.push(token);
     }
   });
 

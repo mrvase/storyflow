@@ -4,13 +4,13 @@ import {
   SquaresPlusIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
-import { ComputationOp, targetTools } from "shared//operations";
 import { createComponent } from "../Editor/createComponent";
 import { getInfoFromType, useClientConfig } from "../../client-config";
 import { useDocumentMutate } from "../../documents/collab/DocumentCollabContext";
 import { getDocumentId, getRawFieldId } from "@storyflow/backend/ids";
 import { DocumentId, FieldId } from "@storyflow/backend/types";
 import { useDocumentIdGenerator } from "../../id-generator";
+import { FieldOperation } from "shared/operations";
 
 function Button(props: any) {
   return null;
@@ -27,7 +27,7 @@ export default function Actions({
   type: string | undefined;
   parentPath?: string;
 }) {
-  const { push } = useDocumentMutate<ComputationOp>(
+  const { push } = useDocumentMutate<FieldOperation>(
     getDocumentId(id),
     getRawFieldId(id)
   );
@@ -47,15 +47,9 @@ export default function Actions({
         onClick={() => {
           if (!type || typeof index !== "number") return;
           const { name, library } = getInfoFromType(type);
-          push({
-            target: targetTools.stringify({
-              field: "default",
-              operation: "computation",
-              location: parentPath
-                ? parentPath.split(".").slice(1).join(".")
-                : "",
-            }),
-            ops: [
+          push([
+            parentPath ? parentPath.split(".").slice(1).join(".") : "",
+            [
               {
                 index,
                 insert: [
@@ -66,7 +60,7 @@ export default function Actions({
                 ],
               },
             ],
-          });
+          ]);
         }}
         className="rotate-180"
       />
@@ -78,15 +72,9 @@ export default function Actions({
         onClick={() => {
           if (!type || typeof index !== "number") return;
           const { name, library } = getInfoFromType(type);
-          push({
-            target: targetTools.stringify({
-              field: "default",
-              operation: "computation",
-              location: parentPath
-                ? parentPath.split(".").slice(1).join(".")
-                : "",
-            }),
-            ops: [
+          push([
+            parentPath ? parentPath.split(".").slice(1).join(".") : "",
+            [
               {
                 index: index + 1,
                 insert: [
@@ -97,7 +85,7 @@ export default function Actions({
                 ],
               },
             ],
-          });
+          ]);
         }}
       />
       <Button
@@ -107,15 +95,9 @@ export default function Actions({
         }}
         onClick={() => {
           if (typeof index !== "number") return;
-          push({
-            target: targetTools.stringify({
-              field: "default",
-              operation: "computation",
-              location: parentPath
-                ? parentPath.split(".").slice(1).join(".")
-                : "",
-            }),
-            ops: [
+          push([
+            parentPath ? parentPath.split(".").slice(1).join(".") : "",
+            [
               {
                 index,
                 remove: 1,
@@ -124,7 +106,7 @@ export default function Actions({
                 index: index - 1,
               },
             ],
-          });
+          ]);
         }}
       />
       <Button
@@ -134,15 +116,9 @@ export default function Actions({
         }}
         onClick={() => {
           if (typeof index !== "number") return;
-          push({
-            target: targetTools.stringify({
-              field: "default",
-              operation: "computation",
-              location: parentPath
-                ? parentPath.split(".").slice(1).join(".")
-                : "",
-            }),
-            ops: [
+          push([
+            parentPath ? parentPath.split(".").slice(1).join(".") : "",
+            [
               {
                 index,
                 remove: 1,
@@ -151,7 +127,7 @@ export default function Actions({
                 index: index + 1,
               },
             ],
-          });
+          ]);
         }}
       />
       <Button
@@ -161,21 +137,15 @@ export default function Actions({
         }}
         onClick={() => {
           if (typeof index !== "number") return;
-          push({
-            target: targetTools.stringify({
-              field: "default",
-              operation: "computation",
-              location: parentPath
-                ? parentPath.split(".").slice(1).join(".")
-                : "",
-            }),
-            ops: [
+          push([
+            parentPath ? parentPath.split(".").slice(1).join(".") : "",
+            [
               {
                 index,
                 remove: 1,
               },
             ],
-          });
+          ]);
         }}
       />
     </>

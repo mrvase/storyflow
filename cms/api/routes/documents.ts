@@ -267,9 +267,15 @@ export const documents = createRoute({
               }),
             ]
           : []),
-        client
-          .del(...removes.map((id) => `${slug}:${id}`))
-          .then((number) => ({ acknowledged: number === removes.length })),
+        ...(removes.length
+          ? [
+              client
+                .del(...removes.map((id) => `${slug}:${id}`))
+                .then((number) => ({
+                  acknowledged: number === removes.length,
+                })),
+            ]
+          : []),
       ]);
 
       /**
@@ -291,9 +297,7 @@ export const documents = createRoute({
     schema() {
       return z.object({
         folder: z.string(),
-        sort: z
-          .record(z.string(), z.union([z.literal(-1), z.literal(1)]))
-          .optional(),
+        sort: z.array(z.string()).optional(),
         limit: z.number(),
         filters: z.record(z.string(), z.any()).optional(),
       });

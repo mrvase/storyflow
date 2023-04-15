@@ -5,11 +5,13 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   CogIcon,
-  MinusIcon,
-  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { useLocalStorage } from "../../state/useLocalStorage";
-import { useRouteTransition } from "../../panel-router/Routes";
+import {
+  usePanel,
+  useRoute,
+  useRouteTransition,
+} from "../../panel-router/Routes";
 
 function Content({
   children,
@@ -28,6 +30,10 @@ function Content({
 }) {
   const { isFocused } = useBranchIsFocused();
 
+  const route = useRoute();
+  const [{ path }] = usePanel();
+  const isSelected = (path || "/") === (route || "/");
+
   const [, setIsOpen] = useLocalStorage<boolean>("toolbar-open", true);
 
   const status = useRouteTransition();
@@ -45,7 +51,8 @@ function Content({
         (status.startsWith("exited") || status.startsWith("unmounted")) &&
           !status.endsWith("replace")
           ? "translate-x-10"
-          : "translate-x-0"
+          : "translate-x-0",
+        !isSelected && "pointer-events-none"
       )}
     >
       {header && (

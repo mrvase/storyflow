@@ -1,8 +1,8 @@
 import { TokenStream } from "@storyflow/backend/types";
 import { tools } from "shared/editor-tools";
-import { InferAction, ComputationOp } from "shared/operations";
+import { FieldOperation, InferAction } from "shared/operations";
 
-type Action = InferAction<ComputationOp>;
+type Action = InferAction<FieldOperation>;
 
 export const getComputationDiff = (
   _oldValue: TokenStream,

@@ -16,7 +16,7 @@ import {
   isNestedDocumentId,
   replaceDocumentId,
 } from "@storyflow/backend/ids";
-import { fetchArticle } from "./index";
+import { fetchDocument } from "./index";
 import { getSyntaxTreeEntries } from "shared/computation-tools";
 import { isSyntaxTree } from "@storyflow/backend/syntax-tree";
 import { tokens } from "@storyflow/backend/tokens";
@@ -49,7 +49,6 @@ export const copyRecord = (
       }
 
       const modifyNode = (node: SyntaxTree): SyntaxTree => {
-        console.log("NODE", node);
         return {
           ...node,
           children: node.children.map((token) => {
@@ -116,7 +115,7 @@ export const getDefaultValuesFromTemplateAsync = async (
     };
   }
 ) => {
-  const doc = await fetchArticle(templateId, options.client);
+  const doc = await fetchDocument(templateId, options.client);
 
   if (doc) {
     return copyRecord(doc.record, {
@@ -148,7 +147,7 @@ export const getTemplateFieldsAsync = async (
           return [el];
         } else if ("template" in el && !templates.has(el.template)) {
           templates.add(el.template);
-          const article = await fetchArticle(el.template, client);
+          const article = await fetchDocument(el.template, client);
           if (!article) return [];
           return await getFields(article.config);
         }

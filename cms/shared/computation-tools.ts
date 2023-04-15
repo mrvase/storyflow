@@ -2,7 +2,6 @@ import {
   DBDocumentRaw,
   DocumentId,
   FieldId,
-  NestedDocumentId,
   NestedField,
   RawFieldId,
   SyntaxNode,
@@ -12,8 +11,9 @@ import {
   NestedDocument,
   NestedElement,
   NestedFolder,
+  Transform,
 } from "@storyflow/backend/types";
-import { ComputationOp, targetTools } from "./operations";
+import { FieldOperation, isSpliceAction, isToggleAction } from "./operations";
 import { tools } from "./editor-tools";
 import {
   computeFieldId,
@@ -22,7 +22,6 @@ import {
   unwrapObjectId,
 } from "@storyflow/backend/ids";
 import { createSpliceTransformer } from "./splice-transform";
-import { getConfig } from "./initialValues";
 import { createTokenStream } from "./parse-token-stream";
 import { parseSyntaxStream } from "./parse-syntax-stream";
 import { tokens } from "@storyflow/backend/tokens";
@@ -102,25 +101,6 @@ export const getPickedDocumentIds = (fref: FieldId, pool: SyntaxTreeRecord) => {
 
   traverseNode(value);
 
-  /*
-  value.forEach((c, i) => {
-    if (symb.isNestedField(c)) {
-      drefs.push(...getPickedDocumentIds(c.field, pool));
-    } else if (i > 0 && symb.isDBSymbol(c, "p")) {
-      const prev = value[i - 1];
-      if (symb.isNestedField(prev)) {
-        const secondaryDrefs = getPickedDocumentIds(prev.field, pool);
-        secondaryDrefs.forEach((dref) => {
-          const id = computeFieldId(dref, c.p);
-          drefs.push(...getPickedDocumentIds(id, pool));
-        });
-      }
-    } else if (symb.isNestedDocument(c) && !isNestedDocumentId(c.id)) {
-      drefs.push(c.id);
-    }
-  }, [] as FieldId[]);
-  */
-
   return drefs;
 };
 
@@ -148,89 +128,95 @@ export const getImportIds = (value: SyntaxTree, pool: SyntaxTreeRecord) => {
 
   traverseNode(value);
 
-  /*
-  value.forEach((c, i) => {
-    if (symb.isNestedField(c)) {
-      imports.push(c.field);
-    } else if (i > 0 && symb.isDBSymbol(c, "p")) {
-      const prev = value[i - 1];
-      if (symb.isNestedField(prev)) {
-        const drefs = getPickedDocumentIds(prev.field, pool);
-        drefs.forEach((dref) => imports.push(computeFieldId(dref, c.p)));
-      }
-    }
-  }, [] as FieldId[]);
-  */
-
   return imports;
 };
 
-export const getNextState = (stream: TokenStream, operation: ComputationOp) => {
-  /**
-   * if it is root, it should remove arguments before altering
-   */
-
-  let newValue = stream;
+// applyFieldOperation
+export const applyFieldOperation = (
+  state: { stream: TokenStream; transforms: Transform[] },
+  operation: FieldOperation
+): { stream: TokenStream; transforms: Transform[] } => {
+  let newStream = state.stream;
+  let newTransforms = state.transforms;
   let removed: TokenStream = [];
-  operation.ops.forEach((action) => {
-    const { index, insert = [], remove = 0 } = action;
-    const move = !action.insert && !action.remove;
-    if (move) {
-      newValue = tools.concat(
-        tools.slice(newValue, 0, index),
-        removed,
-        tools.slice(newValue, index)
-      );
-    } else {
-      if (remove > 0) {
-        removed = tools.slice(newValue, index, index + remove);
-        const slice1 = tools.slice(newValue, 0, index);
-        const slice2 = tools.slice(newValue, index + remove);
-        newValue = tools.concat(slice1, slice2);
-      }
-      if (insert.length > 0 && !(insert.length === 1 && insert[0] === "")) {
-        newValue = tools.concat(
-          tools.slice(newValue, 0, index),
-          insert,
-          tools.slice(newValue, index)
+  operation[1].forEach((action) => {
+    if (isSpliceAction(action)) {
+      const { index, insert = [], remove = 0 } = action;
+      const move = !action.insert && !action.remove;
+      if (move) {
+        newStream = tools.concat(
+          tools.slice(newStream, 0, index),
+          removed,
+          tools.slice(newStream, index)
         );
+      } else {
+        if (remove > 0) {
+          removed = tools.slice(newStream, index, index + remove);
+          const slice1 = tools.slice(newStream, 0, index);
+          const slice2 = tools.slice(newStream, index + remove);
+          newStream = tools.concat(slice1, slice2);
+        }
+        if (insert.length > 0 && !(insert.length === 1 && insert[0] === "")) {
+          newStream = tools.concat(
+            tools.slice(newStream, 0, index),
+            insert,
+            tools.slice(newStream, index)
+          );
+        }
       }
+    } else if (isToggleAction(action)) {
+      const index = newTransforms.findIndex((t) => t.type === action.name);
+      if (index >= 0) {
+        if (action.value === null) {
+          // delete
+          newTransforms.splice(index, 1);
+        } else {
+          // update
+          newTransforms[index] = {
+            type: action.name,
+            ...(action.value !== true && { value: action.value }),
+          };
+        }
+      } else {
+        if (action.value !== null) {
+          // create
+          newTransforms.push({
+            type: action.name,
+            ...(action.value !== true && { value: action.value }),
+          });
+        }
+      }
+      // TODO
     }
   });
 
-  return newValue;
-};
-
-const getArrayMethods = (operation: ComputationOp) => {
-  // const { input } = targetTools.parse(operation.target);
   return {
-    splice: tools.slice,
-    getLength: tools.getLength,
+    stream: newStream,
+    transforms: newTransforms,
   };
 };
 
-export const createComputationTransformer = (
+const arrayMethods = {
+  splice: tools.slice,
+  getLength: tools.getLength,
+};
+
+export const createTokenStreamTransformer = (
   fieldId: FieldId,
   initialRecord: SyntaxTreeRecord
 ) => {
-  const getInitialValue = (operation: ComputationOp) => {
-    const { location, field } = targetTools.parse(operation.target);
+  const getInitialValue = (operation: FieldOperation) => {
+    const target = operation[0];
 
-    if (location === "") {
-      let value = initialRecord[fieldId];
-      if (!value) {
-        value = getConfig(field ?? "default").defaultValue;
-      }
+    if (target === "") {
+      let value = initialRecord[fieldId] ?? DEFAULT_SYNTAX_TREE;
       return createTokenStream(value);
     }
 
-    let value = initialRecord[location as FieldId] ?? DEFAULT_SYNTAX_TREE;
+    let value = initialRecord[target as FieldId] ?? DEFAULT_SYNTAX_TREE;
     return createTokenStream(value);
   };
-  return createSpliceTransformer<ComputationOp>(
-    getInitialValue,
-    getArrayMethods
-  );
+  return createSpliceTransformer<FieldOperation>(getInitialValue, arrayMethods);
 };
 
 export const getSyntaxTreeRecord = (

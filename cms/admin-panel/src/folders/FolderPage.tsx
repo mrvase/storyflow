@@ -19,11 +19,10 @@ import {
 import { useFolder } from "./collab/hooks";
 import { useFolderCollab } from "./collab/FolderCollabContext";
 import { FolderGridSpace } from "./spaces/FolderGridSpace";
-import { targetTools } from "shared/operations";
 import { createKey } from "../utils/createKey";
 import { AddTemplateDialog } from "./AddTemplateDialog";
 import { DocumentListSpace } from "./spaces/DocumentListSpace";
-import { useArticle } from "../documents";
+import { useDocument } from "../documents";
 import { useDocumentLabel } from "../documents/useDocumentLabel";
 import { FolderContext } from "./FolderPageContext";
 import { useFieldFocus } from "../field-focus";
@@ -57,18 +56,15 @@ export default function FolderPage({
     name: T,
     value: DBFolder[T]
   ) => {
-    return collab.mutate("folders", folder._id).push({
-      target: targetTools.stringify({
-        location: "",
-        operation: "property",
-      }),
-      ops: [
+    return collab.mutate("folders", folder._id).push([
+      "",
+      [
         {
           name,
           value,
         },
       ],
-    });
+    ]);
   };
 
   return (
@@ -95,12 +91,9 @@ export default function FolderPage({
                   <Content.ToolbarButton
                     data-focus-remain="true"
                     onClick={() => {
-                      collab.mutate("folders", folder._id).push({
-                        target: targetTools.stringify({
-                          operation: "folder-spaces",
-                          location: "",
-                        }),
-                        ops: [
+                      collab.mutate("folders", folder._id).push([
+                        "",
+                        [
                           {
                             index: 0,
                             insert: [
@@ -112,7 +105,7 @@ export default function FolderPage({
                             ],
                           },
                         ],
-                      });
+                      ]);
                     }}
                     icon={PlusIcon}
                   >
@@ -222,7 +215,7 @@ export function FolderTemplateButton({
   const route = useRoute();
   const [{ path }, navigate] = usePanel();
 
-  const { article } = useArticle(template);
+  const { article } = useDocument(template);
   const label = useDocumentLabel(article);
 
   if (!template) {

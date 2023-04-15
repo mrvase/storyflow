@@ -59,11 +59,11 @@ describe("calculator - functions", () => {
       { "(": true },
       2,
       { id: "imp", fref: "a" as FieldId, args: {} },
-      { ")": "*" },
+      { "*": true },
     ];
     const result: Value[] = [2 * (6 / 2)];
     const imports: ComputationBlock[] = [
-      { id: "a", value: [{ "(": true }, 6, { x: 0, value: 2 }, { ")": "/" }] },
+      { id: "a", value: [{ "(": true }, 6, { x: 0, value: 2 }, { "/": true }] },
     ];
 
     return test(computation, result, imports);
@@ -76,7 +76,7 @@ describe("calculator - functions", () => {
     const result: Value[] = [2];
 
     const imports: ComputationBlock[] = [
-      { id: "a", value: [{ "(": true }, 6, { x: 0, value: 2 }, { ")": "/" }] },
+      { id: "a", value: [{ "(": true }, 6, { x: 0, value: 2 }, { "/": true }] },
       { id: "root.imp/0", value: [3] },
     ];
 
@@ -87,11 +87,11 @@ describe("calculator - functions", () => {
       { "(": true },
       2,
       { id: "imp", fref: "a" as FieldId, args: {} },
-      { ")": "*" },
+      { "*": true },
     ];
     const result: Value[] = [2 * (6 / 3)];
     const imports: ComputationBlock[] = [
-      { id: "a", value: [{ "(": true }, 6, { x: 0, value: 2 }, { ")": "/" }] },
+      { id: "a", value: [{ "(": true }, 6, { x: 0, value: 2 }, { "/": true }] },
       { id: "root.imp/0", value: [3] },
     ];
 
@@ -108,7 +108,7 @@ describe("calculator - imports and arrays", () => {
       3,
       { "]": true },
       3,
-      { ")": "*" },
+      { "*": true },
     ];
     const result: Value[] = [6, 9];
 
@@ -124,7 +124,7 @@ describe("calculator - imports and arrays", () => {
       { "]": true },
       3,
       2,
-      { ")": "*" },
+      { "*": true },
     ];
     const result: Value[] = [12, 18];
 
@@ -142,7 +142,7 @@ describe("calculator - imports and arrays", () => {
       3,
       4,
       { "]": true },
-      { ")": "*" },
+      { "*": true },
     ];
     const result: Value[] = [3, 6, 4, 8];
 
@@ -322,12 +322,12 @@ describe("calculator merge", () => {
 
 describe("calculator logical operators", () => {
   it("evaluates equals function to true", () => {
-    const computation: Computation = [{ "(": true }, 1, 1, { ")": "=" }];
+    const computation: Computation = [{ "(": true }, 1, 1, { "=": true }];
     const result: Value[] = [true];
     return test(computation, result);
   });
   it("evaluates equals function to false", () => {
-    const computation: Computation = [{ "(": true }, 1, 2, { ")": "=" }];
+    const computation: Computation = [{ "(": true }, 1, 2, { "=": true }];
     const result: Value[] = [false];
     return test(computation, result);
   });
@@ -339,7 +339,7 @@ describe("calculator logical operators", () => {
       2,
       { "]": true },
       2,
-      { ")": "=" },
+      { "=": true },
     ];
     const result: Value[] = [false, true];
     return test(computation, result);
@@ -440,7 +440,7 @@ describe("calculator filter function", () => {
       0,
       { "]": true },
       1,
-      { ")": "=" },
+      { "=": true },
       { ")": "filter" },
     ];
     const result: Value[] = [0, 2];

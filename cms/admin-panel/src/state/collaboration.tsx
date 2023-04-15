@@ -13,23 +13,26 @@ import {
   QueueTransformStrategy,
   QueueInvertStrategy,
 } from "@storyflow/state";
-import { AnyOp } from "shared/operations";
+import { StdOperation } from "shared/operations";
 import { clone } from "../utils/clone";
 import { useSubject } from "./useSubject";
 
 export type QueueOptions<Operation extends DefaultOperation> = {
-  transform: QueueTransformStrategy<Operation>;
+  transform?: QueueTransformStrategy<Operation>;
   invert?: QueueInvertStrategy<Operation>;
   mergeableNoop?: Operation;
 };
 
-export function createDocumentCollaboration(
-  mutation: Parameters<typeof syncQueueMap<AnyOp>>[1],
+export function createCollaboration(
+  mutation: Parameters<typeof syncQueueMap<StdOperation>>[1],
   options: { duration?: number } = {}
 ) {
   const { duration = 3500 } = options;
 
-  const queues = createQueueMap<AnyOp, WithUndoRedo<Queue<AnyOp>>>();
+  const queues = createQueueMap<
+    StdOperation,
+    WithUndoRedo<Queue<StdOperation>>
+  >();
 
   let lastSync = 0;
 
@@ -66,7 +69,7 @@ export function createDocumentCollaboration(
     );
   };
 
-  const mutate = <Operation extends AnyOp>(
+  const mutate = <Operation extends StdOperation>(
     document: string, // article
     key: string, // article (templates / labels) // field name (text / component),
     tracker?: QueueTracker<Operation>
@@ -83,7 +86,6 @@ export function createDocumentCollaboration(
     return {
       push(op) {
         const queue = queues.get<Operation>(document, key)!;
-        console.log("PUSHED TO QUEUE", op, queue);
         let changed = false;
         if (queue.mergeableNoop) {
           // make sure to always have mergeableNoop at the end with normal push
@@ -114,7 +116,7 @@ export function createDocumentCollaboration(
     };
   };
 
-  const boundMutate = <Operation extends AnyOp>(
+  const boundMutate = <Operation extends StdOperation>(
     document: string, // article
     key: string // article (templates / labels) // field name (text / component),
   ) => {
@@ -129,7 +131,7 @@ export function createDocumentCollaboration(
     };
   };
 
-  const addQueue = <Operation extends AnyOp>(
+  const addQueue = <Operation extends StdOperation>(
     document: string,
     key: string,
     strategy: QueueOptions<Operation>
@@ -145,14 +147,23 @@ export function createDocumentCollaboration(
     return queue;
   };
 
-  const getOrAddQueue = <Operation extends AnyOp>(
+  const getOrAddQueue = <Operation extends StdOperation>(
     document: string,
     key: string,
     strategy: QueueOptions<Operation>
   ) => {
     const current = queues.get(document, key);
-    if (current) return current as any as WithUndoRedo<Queue<Operation>>;
+    if (current) return current as unknown as WithUndoRedo<Queue<Operation>>;
     return addQueue(document, key, strategy);
+  };
+
+  const getQueue = <Operation extends StdOperation>(
+    document: string,
+    key: string
+  ) => {
+    return queues.get(document, key) as unknown as WithUndoRedo<
+      Queue<Operation>
+    >;
   };
 
   return {
@@ -160,7 +171,7 @@ export function createDocumentCollaboration(
     syncOnInterval,
     mutate,
     boundMutate,
-    getQueue: queues.get,
+    getQueue,
     getOrAddQueue,
     registerEventListener,
     registerMutationListener,

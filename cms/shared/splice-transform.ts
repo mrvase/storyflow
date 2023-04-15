@@ -1,16 +1,12 @@
 import { ServerPackage, unwrapServerPackage } from "@storyflow/state";
 import { createServerPackage } from "@storyflow/state";
-import { AnyOp, DocumentOp, Splice } from "./operations";
+import { StdOperation, SpliceAction, isSpliceAction } from "./operations";
 
 const getClientId = (pkg: ServerPackage<any>) => {
   return unwrapServerPackage(pkg).clientId;
 };
 
-const isSplice = <T>(value: any): value is Splice<T> => {
-  return value && typeof value === "object" && "index" in value;
-};
-
-const moveIndex = <Operation extends AnyOp>(
+const moveIndex = <Operation extends StdOperation>(
   index: number,
   packages: ServerPackage<Operation>[],
   getLength: (value: any[]) => number
@@ -19,11 +15,11 @@ const moveIndex = <Operation extends AnyOp>(
 
   packages.forEach((pkg) => {
     const { operations } = unwrapServerPackage(pkg);
-    operations.forEach(({ ops }) => {
+    operations.forEach(([, actions]) => {
       let spanned = 0;
       let formerRemoved = 0;
-      ops.forEach((action) => {
-        if (!isSplice(action)) {
+      actions.forEach((action) => {
+        if (!isSpliceAction(action)) {
           return;
         }
         if (spanned > 0 && !action.insert && !action.remove) {
@@ -80,37 +76,30 @@ const getArrayMethods = <Operation extends AnyOp>(
 };
 */
 
-type SpliceAction = Splice<any>;
-type SpliceChar = [SpliceAction | null, number];
+type SpliceChar = [SpliceAction<any> | null, number];
 type SpliceState = SpliceChar[];
 
-export function createSpliceTransformer<Operation extends AnyOp>(
+export function createSpliceTransformer<Operation extends StdOperation>(
   getInitialValue: (operation: Operation) => any[],
-  _getArrayMethods?: (operation: Operation) => ArrayMethods | undefined
+  arrayMethods: ArrayMethods | undefined = defaultArrayMethods
 ) {
-  const getArrayMethods = (operation: Operation) => {
-    return _getArrayMethods?.(operation) ?? defaultArrayMethods;
-  };
-
   return (packages: ServerPackage<Operation>[]) => {
     const result: ServerPackage<Operation>[] = [];
 
     const stateMap = new Map<string, [index: number, state: SpliceState][]>();
 
     const getStates = (operation: Operation) => {
-      let states = stateMap.get(operation.target);
+      let states = stateMap.get(operation[0]);
       if (!states) {
         states = [];
-        stateMap.set(operation.target, states);
+        stateMap.set(operation[0], states);
         states.unshift([0, getInitialState(operation)]);
       }
       return states!;
     };
 
     const getInitialState = (operation: Operation): SpliceState => {
-      const length = getArrayMethods(operation).getLength(
-        getInitialValue(operation)
-      );
+      const length = arrayMethods.getLength(getInitialValue(operation));
       return Array.from({ length }, (_, index) => [null, index]);
     };
 
@@ -125,15 +114,12 @@ export function createSpliceTransformer<Operation extends AnyOp>(
      * been traversed. (e.g. the actual shared state vs temporary local state)
      */
 
-    const cachedExpansions = new Map<SpliceAction, SpliceState>();
+    const cachedExpansions = new Map<SpliceAction<any>, SpliceState>();
 
-    const expandOperation = (
-      operation: Operation,
-      action: SpliceAction
-    ): SpliceChar[] => {
+    const expandOperation = (action: SpliceAction<any>): SpliceChar[] => {
       let expansion = cachedExpansions.get(action);
       if (expansion) return expansion;
-      const length = getArrayMethods(operation).getLength(action.insert ?? []);
+      const length = arrayMethods.getLength(action.insert ?? []);
       expansion = Array.from(
         { length },
         (_, index) => [action, index] as SpliceChar
@@ -146,15 +132,15 @@ export function createSpliceTransformer<Operation extends AnyOp>(
 
     const ordinarySpliceTransform = (
       state: any[],
-      operation: DocumentOp<SpliceAction>
+      operation: StdOperation<SpliceAction<any>>
     ) => {
       let removed: any[] = [];
-      operation.ops.forEach((op) => {
-        if (!isSplice(op)) {
+      operation[1].forEach((op) => {
+        if (!isSpliceAction(op)) {
           return;
         }
-        let insert = expandOperation(operation as any, op) as [
-          SpliceAction | null,
+        let insert = expandOperation(op) as [
+          SpliceAction<any> | null,
           number
         ][];
         if (!op.insert && !op.remove) {
@@ -164,12 +150,10 @@ export function createSpliceTransformer<Operation extends AnyOp>(
       });
     };
 
-    packages.forEach((pkg, i) => {
-      const { clientId, index, ...rest } = unwrapServerPackage(pkg);
+    packages.forEach((pkg, packageIndex) => {
+      const { clientId, index, operations, ...rest } = unwrapServerPackage(pkg);
 
-      let operations = rest.operations;
-
-      const interceptions = result.slice(index, i);
+      const interceptions = result.slice(index, packageIndex);
 
       const externalInterceptions = interceptions.filter(
         (el) => getClientId(el) !== clientId
@@ -185,22 +169,22 @@ export function createSpliceTransformer<Operation extends AnyOp>(
         const nextStateMap = new Map<string, SpliceState>();
 
         const getNextLastSharedState = (operation: Operation) => {
-          let nextState = nextStateMap.get(operation.target);
+          let nextState = nextStateMap.get(operation[0]);
           if (!nextState) {
             const [, currentState] = getStates(operation).find(
               ([i]) => index >= i
             )!;
             nextState = [...currentState];
-            nextStateMap.set(operation.target, nextState);
+            nextStateMap.set(operation[0], nextState);
           }
           return nextState!;
         };
 
         // find new removes
         operations.forEach((operation, index) => {
-          const currentTarget = operation.target;
+          const currentTarget = operation[0];
 
-          let newOps = [] as Operation["ops"];
+          let newActions = [] as Operation[1];
 
           let refs = new WeakMap<any, SpliceChar[]>();
 
@@ -219,10 +203,10 @@ export function createSpliceTransformer<Operation extends AnyOp>(
             knownInterceptions.forEach((pkg) => {
               const { operations } = unwrapServerPackage(pkg);
               operations.forEach((operation) => {
-                if (operation.target === currentTarget) {
+                if (operation[0] === currentTarget) {
                   ordinarySpliceTransform(
                     lastSeenState,
-                    operation as DocumentOp<SpliceAction>
+                    operation as StdOperation<SpliceAction<any>>
                   );
                 }
               });
@@ -234,10 +218,10 @@ export function createSpliceTransformer<Operation extends AnyOp>(
             const [, currentState] = states[0];
             const state = [...currentState];
             operations.slice(0, index).forEach((operation) => {
-              if (operation.target === currentTarget) {
+              if (operation[0] === currentTarget) {
                 ordinarySpliceTransform(
                   state,
-                  operation as DocumentOp<SpliceAction>
+                  operation as StdOperation<SpliceAction<any>>
                 );
               }
             });
@@ -245,21 +229,21 @@ export function createSpliceTransformer<Operation extends AnyOp>(
           })();
 
           let formerRemovals: SpliceChar[] = [];
-          operation.ops.forEach((action) => {
-            if (!isSplice(action)) {
-              newOps.push(action as any);
+          operation[1].forEach((action) => {
+            if (!isSpliceAction(action)) {
+              newActions.push(action as any);
               return;
             }
 
             let removals: SpliceChar[] = [];
-            let actions: SpliceAction[] = [];
+            let spliceActions: SpliceAction<any>[] = [];
 
             if (action.remove) {
               // TODO: What if it does not remove something from the lastSeenState, but something inserted in this very serverpackage?
               removals = [...lastSeenState].splice(action.index, action.remove);
 
               // it might have become multiple operations, since the removed entities might have been split
-              actions = removals.reduce((acc, cur) => {
+              spliceActions = removals.reduce((acc, cur) => {
                 const former = acc[acc.length - 1];
                 const elIndex = currentServerPackageState.findIndex(
                   (el) => el === cur
@@ -272,17 +256,17 @@ export function createSpliceTransformer<Operation extends AnyOp>(
                   ) {
                     former.remove = (former.remove ?? 0) + 1;
                   } else {
-                    const operation: SpliceAction = {
+                    const newSpliceAction: SpliceAction<any> = {
                       index: elIndex,
                       remove: 1,
                       insert: [] as any[],
                     };
-                    acc.push(operation);
+                    acc.push(newSpliceAction);
                   }
                 }
 
                 return acc;
-              }, [] as SpliceAction[]);
+              }, [] as SpliceAction<any>[]);
             }
 
             if (action.insert || !action.remove) {
@@ -290,37 +274,39 @@ export function createSpliceTransformer<Operation extends AnyOp>(
               const newIndex = moveIndex(
                 action.index,
                 externalInterceptions,
-                getArrayMethods(operation).getLength
+                arrayMethods.getLength
               );
 
-              const existing = actions.find((el) => el.index === newIndex);
+              const existing = spliceActions.find(
+                (el) => el.index === newIndex
+              );
 
-              let newAction: SpliceAction = existing ?? {
+              const newSpliceAction: SpliceAction<any> = existing ?? {
                 index: newIndex,
               };
 
               if (!action.insert) {
-                refs.set(newAction, formerRemovals);
+                refs.set(newSpliceAction, formerRemovals);
               } else {
-                newAction.insert = action.insert;
+                newSpliceAction.insert = action.insert;
               }
 
               if (!existing) {
-                actions.push(newAction);
+                spliceActions.push(newSpliceAction);
               }
             }
 
             // handle internal indexes
             let offset = 0;
-            actions
+            spliceActions
               .sort((a, b) => a.index - b.index)
               .forEach((el) => {
                 el.index += offset;
-                offset += getArrayMethods(operation).getLength(el.insert ?? []);
+                offset += arrayMethods.getLength(el.insert ?? []);
                 offset -= el.remove ?? 0;
               });
 
-            newOps.push(...(actions as any));
+            newActions.push(...(spliceActions as any));
 
             formerRemovals = removals;
           });
@@ -328,11 +314,11 @@ export function createSpliceTransformer<Operation extends AnyOp>(
           /* transform next state */
 
           let removed: any[] = [];
-          newOps.forEach((action) => {
-            if (!isSplice(action)) {
+          newActions.forEach((action) => {
+            if (!isSpliceAction(action)) {
               return;
             }
-            let insert = expandOperation(operation, action) as SpliceChar[];
+            let insert = expandOperation(action) as SpliceChar[];
             if (refs.has(action)) {
               insert = refs.get(action)!;
             } else if (!action.insert && !action.remove) {
@@ -348,13 +334,14 @@ export function createSpliceTransformer<Operation extends AnyOp>(
             );
           });
 
-          operation.ops = newOps;
+          // REFERENCE NOT CHANGED
+          operation[1] = newActions;
         });
 
         // append next state
         nextStateMap.forEach((value, key) => {
           const states = stateMap.get(key)!;
-          states.unshift([i + 1, value]);
+          states.unshift([packageIndex + 1, value]);
         });
       } else {
         // handle next state here as well
@@ -362,11 +349,11 @@ export function createSpliceTransformer<Operation extends AnyOp>(
         const nextStateMap = new Map<string, SpliceState>();
 
         const getNextState = (operation: Operation) => {
-          let nextState = nextStateMap.get(operation.target);
+          let nextState = nextStateMap.get(operation[0]);
           if (!nextState) {
             const [, currentState] = getStates(operation)[0];
             nextState = [...currentState];
-            nextStateMap.set(operation.target, nextState);
+            nextStateMap.set(operation[0], nextState);
           }
           return nextState!;
         };
@@ -375,21 +362,21 @@ export function createSpliceTransformer<Operation extends AnyOp>(
           const nextState = getNextState(operation);
           ordinarySpliceTransform(
             nextState,
-            operation as DocumentOp<SpliceAction>
+            operation as StdOperation<SpliceAction<any>>
           );
         });
 
         // append next state
         nextStateMap.forEach((value, key) => {
           const states = stateMap.get(key)!;
-          states.unshift([i + 1, value]);
+          states.unshift([packageIndex + 1, value]);
         });
       }
 
       result.push(
         createServerPackage({
           ...rest,
-          index: i,
+          index: packageIndex,
           clientId,
           operations,
         }) as any

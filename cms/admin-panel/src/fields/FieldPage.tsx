@@ -6,7 +6,6 @@ import cl from "clsx";
 import React from "react";
 import { calculateFn } from "./default/calculateFn";
 import { tools } from "shared/editor-tools";
-import { ComputationOp, targetTools } from "shared/operations";
 import { store, useGlobalState } from "../state/state";
 import {
   DocumentId,
@@ -48,6 +47,7 @@ import { EditorFocusProvider } from "../editor/react/useIsFocused";
 import { useRoute } from "../panel-router/Routes";
 import { parseSegment } from "../layout/components/routes";
 import { splitStreamByBlocks } from "./Editor/transforms";
+import { FieldOperation } from "shared/operations";
 
 const useBuilderRendered = ({
   listeners,
@@ -78,7 +78,7 @@ const ElementActions = ({
 }: {
   id: FieldId;
   listeners: ReturnType<typeof createEventsFromIframeToCMS>;
-  push: any;
+  push: (op: FieldOperation) => void;
 }) => {
   const [{ selectedDocument, selectedField }, setBuilderPath] =
     useSelectedPath();
@@ -124,13 +124,9 @@ const ElementActions = ({
   const { libraries } = useClientConfig();
   React.useEffect(() => {
     return listeners.createComponent.subscribe(({ path, name, library }) => {
-      push({
-        target: targetTools.stringify({
-          field: "default",
-          operation: "computation",
-          location: path.split(".").slice(-1)[0],
-        }),
-        ops: [
+      push([
+        path.split(".").slice(-1)[0],
+        [
           {
             index: 0,
             insert: [
@@ -141,7 +137,7 @@ const ElementActions = ({
             ],
           },
         ],
-      });
+      ]);
     });
   }, [libraries, generateDocumentId]);
 
@@ -165,13 +161,9 @@ const ElementActions = ({
 
       if (index < 0) return;
 
-      push({
-        target: targetTools.stringify({
-          field: "default",
-          operation: "computation",
-          location: parentId === id ? "" : parentId,
-        }),
-        ops: [
+      push([
+        parentId === id ? "" : parentId,
+        [
           {
             index,
             insert: [
@@ -183,7 +175,7 @@ const ElementActions = ({
             remove: 1,
           },
         ],
-      });
+      ]);
     });
   }, [id, libraries, tokenStream, parentId, elementId, generateDocumentId]);
 
@@ -205,19 +197,15 @@ const ElementActions = ({
 
       if (index < 0) return;
 
-      push({
-        target: targetTools.stringify({
-          field: "default",
-          operation: "computation",
-          location: parentId === id ? "" : parentId,
-        }),
-        ops: [
+      push([
+        parentId === id ? "" : parentId,
+        [
           {
             index,
             remove: 1,
           },
         ],
-      });
+      ]);
 
       setBuilderPath((ps) => ps.slice(0, -1));
     });
@@ -287,13 +275,9 @@ const ElementActions = ({
       }
       */
 
-      push({
-        target: targetTools.stringify({
-          field: "default",
-          operation: "computation",
-          location: parentId === id ? "" : parentId,
-        }),
-        ops: [
+      push([
+        parentId === id ? "" : parentId,
+        [
           {
             index: fromIndex,
             remove: length,
@@ -302,7 +286,7 @@ const ElementActions = ({
             index: toIndex,
           },
         ],
-      });
+      ]);
     });
   }, [id, tokenStream, parentId, libraries]);
 
@@ -367,7 +351,7 @@ export function FieldPage({ children }: { children?: React.ReactNode }) {
 
   const rendered = useBuilderRendered({ listeners });
 
-  const { push } = useDocumentMutate<ComputationOp>(
+  const { push } = useDocumentMutate<FieldOperation>(
     documentId,
     templateFieldId
   );
@@ -480,7 +464,13 @@ const getRecordSnapshot = (
 
     if (!state.initialized()) {
       const initialValue = record[fieldId] ?? DEFAULT_SYNTAX_TREE;
-      state.set(() => calculateFn(fieldId, initialValue, { record, client }));
+      state.set(() =>
+        calculateFn(initialValue, {
+          record,
+          client,
+          documentId: getDocumentId(entry),
+        })
+      );
     }
 
     const value = state.value!;

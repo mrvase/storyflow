@@ -9,6 +9,8 @@ export const isSyntaxTree = (tree: any): tree is SyntaxTree => {
   );
 };
 
+/*
 export const isSyntaxTreeOrTransform = (tree: any): tree is Transform => {
   return tree !== null && typeof tree === "object" && "type" in tree;
 };
+*/

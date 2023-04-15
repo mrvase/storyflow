@@ -1,10 +1,10 @@
 import React from "react";
 import { useContextWithError } from "../../utils/contextError";
 import { useClient } from "../../client";
-import { createDocumentCollaboration } from "../../state/collaboration";
+import { createCollaboration } from "../../state/collaboration";
 
 export const FolderCollabContext = React.createContext<ReturnType<
-  typeof createDocumentCollaboration
+  typeof createCollaboration
 > | null>(null);
 
 export const useFolderCollab = () =>
@@ -22,7 +22,7 @@ export function FolderCollabProvider({
   const client = useClient();
 
   const collab = React.useMemo(() => {
-    return createDocumentCollaboration(client.folders.sync.mutation, {
+    return createCollaboration(client.folders.sync.mutation, {
       duration: 20000,
     });
   }, [client]);

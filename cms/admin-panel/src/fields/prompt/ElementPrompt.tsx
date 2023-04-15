@@ -10,7 +10,7 @@ import { useClientConfig } from "../../client-config";
 import { useDocumentIdGenerator } from "../../id-generator";
 import { createComponent } from "../Editor/createComponent";
 import { useFieldId } from "../FieldIdContext";
-import { markMatchingString } from "../query/helpers";
+import { markMatchingString } from "./helpers";
 import { Option } from "./Option";
 
 export function ElementPrompt({

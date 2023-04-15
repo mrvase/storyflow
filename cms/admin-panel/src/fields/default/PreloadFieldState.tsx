@@ -3,7 +3,6 @@ import { useGlobalState } from "../../state/state";
 import {
   FieldConfig,
   FieldId,
-  FieldType,
   NestedDocument,
   NestedElement,
   NestedField,
@@ -23,7 +22,7 @@ import { tokens } from "@storyflow/backend/tokens";
 import { getChildrenDocuments } from "shared/computation-tools";
 import { useDefaultState } from "./useDefaultState";
 
-const noTemplate: FieldConfig<FieldType>[] = [];
+const noTemplate: FieldConfig[] = [];
 
 export function PreloadFieldState({ id }: { id: FieldId }) {
   const { tree } = useDefaultState(id);

@@ -1,6 +1,6 @@
 import React from "react";
 import Dialog from "../elements/Dialog";
-import { useArticleListMutation } from "../documents";
+import { useDocumentListMutation } from "../documents";
 import { getDefaultValuesFromTemplateAsync } from "../documents/template-fields";
 import { createTemplateFieldId } from "@storyflow/backend/ids";
 import {
@@ -14,7 +14,7 @@ import { toSlug } from "../fields/UrlField";
 import { useDocumentIdGenerator } from "../id-generator";
 import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
-import { getConfig, insertRootInTransform } from "shared/initialValues";
+import { insertRootInTransforms } from "@storyflow/backend/transform";
 import { usePanel, useRoute } from "../panel-router/Routes";
 
 export function AddArticleDialog({
@@ -36,7 +36,7 @@ export function AddArticleDialog({
   };
   type: "app" | "folder";
 }) {
-  const mutateArticles = useArticleListMutation();
+  const mutateArticles = useDocumentListMutation();
   const generateDocumentId = useDocumentIdGenerator();
   const [, navigate] = usePanel();
   const route = useRoute();
@@ -73,7 +73,7 @@ export function AddArticleDialog({
               Object.assign(record, parentUrl.record);
 
               record[createTemplateFieldId(id, DEFAULT_FIELDS.url.id)] =
-                insertRootInTransform(
+                insertRootInTransforms(
                   {
                     ...DEFAULT_SYNTAX_TREE,
                     children: [
@@ -85,7 +85,7 @@ export function AddArticleDialog({
                       slug,
                     ],
                   },
-                  getConfig("url").transform!
+                  DEFAULT_FIELDS.url.initialValue.transforms
                 );
 
               record[createTemplateFieldId(id, DEFAULT_FIELDS.label.id)] = {

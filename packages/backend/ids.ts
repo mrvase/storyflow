@@ -126,13 +126,23 @@ export const computeFieldId = (
   return `${getRawDocumentId(documentId)}${rawFieldId}` as FieldId;
 };
 
-export const getDocumentId = (id: FieldId) => {
+export const getDocumentId = <
+  T extends DocumentId | NestedDocumentId = DocumentId | NestedDocumentId
+>(
+  id: FieldId
+): T => {
   if (id.length !== 24) {
     throw new Error(`Invalid field id: ${id}`);
   }
-  return `${WORKSPACE_ID}${toHex(0, "5b")}${id.slice(0, 12)}` as
-    | DocumentId
-    | NestedDocumentId;
+  return `${WORKSPACE_ID}${toHex(0, "5b")}${id.slice(0, 12)}` as T;
+};
+
+export const getParentDocumentId = (id: NestedDocumentId): DocumentId => {
+  if (id.length !== 24) {
+    throw new Error(`Invalid field id: ${id}`);
+  }
+
+  return `${WORKSPACE_ID}${toHex(0, "5b")}${id.slice(0, 12)}` as DocumentId;
 };
 
 export const computeShortTemplateId = (id: DocumentId) => {

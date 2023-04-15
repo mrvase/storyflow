@@ -2,15 +2,14 @@ import React from "react";
 import Dialog from "../elements/Dialog";
 import { DBFolder, DocumentId } from "@storyflow/backend/types";
 import { useFolderCollab } from "./collab/FolderCollabContext";
-import { targetTools } from "shared/operations";
-import { useArticleListMutation } from "../documents";
+import { useDocumentListMutation } from "../documents";
 import { createTemplateFieldId } from "@storyflow/backend/ids";
 import { ComputerDesktopIcon, FolderIcon } from "@heroicons/react/24/outline";
 import { DialogOption } from "../elements/DialogOption";
 import { useDocumentIdGenerator, useFolderIdGenerator } from "../id-generator";
 import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
-import { getConfig } from "shared/initialValues";
+import { insertRootInTransforms } from "@storyflow/backend/transform";
 
 export function AddFolderDialog({
   isOpen,
@@ -23,7 +22,7 @@ export function AddFolderDialog({
   folderId: string;
   spaceId: string;
 }) {
-  const mutateArticles = useArticleListMutation();
+  const mutateArticles = useDocumentListMutation();
   const generateFolderId = useFolderIdGenerator();
   const generateDocumentId = useDocumentIdGenerator();
 
@@ -43,25 +42,16 @@ export function AddFolderDialog({
         type: type as "app" | "data",
         spaces: [],
       };
-      collab.mutate("folders", "").push({
-        target: targetTools.stringify({
-          operation: "add-folder",
-          location: "",
-        }),
-        ops: [folder],
-      });
-      collab.mutate("folders", `${folderId}/${spaceId}`).push({
-        target: targetTools.stringify({
-          operation: "space-items",
-          location: "",
-        }),
-        ops: [
+      collab.mutate("folders", "").push(["", [{ add: folder }]]);
+      collab.mutate("folders", `${folderId}/${spaceId}`).push([
+        "",
+        [
           {
             index: 0,
             insert: [id],
           },
         ],
-      });
+      ]);
       if (frontId) {
         mutateArticles({
           folder: id,
@@ -75,7 +65,13 @@ export function AddFolderDialog({
                   children: ["Forside"],
                 },
                 [createTemplateFieldId(frontId, DEFAULT_FIELDS.url.id)]:
-                  getConfig("url").defaultValue,
+                  insertRootInTransforms(
+                    {
+                      ...DEFAULT_SYNTAX_TREE,
+                      children: DEFAULT_FIELDS.url.initialValue.children,
+                    },
+                    DEFAULT_FIELDS.url.initialValue.transforms
+                  ),
               },
             },
           ],

@@ -1,24 +1,19 @@
 import { store } from "../../state/state";
-import {
-  calculate,
-  FolderFetch,
-  StateGetter,
-} from "@storyflow/backend/calculate";
+import { calculate, StateGetter } from "@storyflow/backend/calculate";
 import { context, getContextKey } from "../../state/context";
-import { fetchDocumentList, fetchArticleSync } from "../../documents";
+import { fetchDocumentList, fetchDocumentSync } from "../../documents";
 import {
   FieldId,
-  NestedDocumentId,
   RawFieldId,
   DocumentId,
   SyntaxTreeRecord,
   SyntaxTree,
   ValueArray,
-  FolderId,
 } from "@storyflow/backend/types";
 import {
   createTemplateFieldId,
   getDocumentId,
+  getParentDocumentId,
   getRawFieldId,
 } from "@storyflow/backend/ids";
 import { Client } from "../../client";
@@ -116,12 +111,13 @@ const fetcherStore = createFetcherStore();
 */
 
 export const calculateFn = (
-  fieldId: FieldId | string,
   value: SyntaxTree,
   {
     record = {},
     client,
+    documentId,
   }: {
+    documentId: DocumentId;
     client: Client;
     record?: SyntaxTreeRecord;
   }
@@ -140,14 +136,11 @@ export const calculateFn = (
         template.map((id) => {
           const fieldId = createTemplateFieldId(importId.folder.id, id);
           const state = store.use<ValueArray>(fieldId, () =>
-            calculateFn(
-              id as FieldId,
-              record[id as FieldId] ?? DEFAULT_SYNTAX_TREE,
-              {
-                record,
-                client,
-              }
-            )
+            calculateFn(record[id as FieldId] ?? DEFAULT_SYNTAX_TREE, {
+              record,
+              client,
+              documentId: getParentDocumentId(importId.folder.id),
+            })
           );
           return [getRawFieldId(fieldId), state.value] as [
             RawFieldId,
@@ -170,7 +163,7 @@ export const calculateFn = (
           {
             folder: importId.folder.folder,
             limit: importId.limit,
-            sort: importId.sort ?? {},
+            sort: importId.sort ?? [],
             filters,
           },
           client,
@@ -184,7 +177,7 @@ export const calculateFn = (
 
     if (typeof importId === "object" && "ctx" in importId) {
       const value = context.use<ValueArray>(
-        getContextKey(getDocumentId(fieldId as FieldId), importId.ctx)
+        getContextKey(documentId, importId.ctx)
       ).value;
       return value ? [value] : [];
     }
@@ -196,34 +189,40 @@ export const calculateFn = (
     if (value || !external) {
       const fn = value
         ? () =>
-            tree ? value : calculateFn(importId, value, { record, client })
+            tree
+              ? value
+              : calculateFn(value, {
+                  record,
+                  client,
+                  documentId: getDocumentId(importId),
+                })
         : undefined;
 
       return store.use(stateId, fn).value;
     }
 
-    const asyncFn = fetchArticleSync(
-      getDocumentId(importId as FieldId),
-      client
-    ).then((article) => {
-      // returning undefined makes sure that the field is not initialized,
-      // so that if the field is initialized elsewhere, this field will react to it.
-      // (e.g. a not yet saved article)
-      if (!article) return undefined;
-      const value = article.record[importId as FieldId];
-      if (!value) return undefined;
+    const asyncFn = fetchDocumentSync(getDocumentId(importId), client).then(
+      (article) => {
+        // returning undefined makes sure that the field is not initialized,
+        // so that if the field is initialized elsewhere, this field will react to it.
+        // (e.g. a not yet saved article)
+        if (!article) return undefined;
+        const value = article.record[importId as FieldId];
+        if (!value) return undefined;
 
-      // TODO when returning tree, I should somehow give access to this record as well.
+        // TODO when returning tree, I should somehow give access to this record as well.
 
-      const fn = () =>
-        tree
-          ? value
-          : calculateFn(importId, value, {
-              record: article.record,
-              client,
-            });
-      return fn;
-    });
+        const fn = () =>
+          tree
+            ? value
+            : calculateFn(value, {
+                record: article.record,
+                client,
+                documentId: getDocumentId(importId),
+              });
+        return fn;
+      }
+    );
 
     return store.useAsync(stateId, asyncFn).value;
   };

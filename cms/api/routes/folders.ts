@@ -66,19 +66,21 @@ export const folders = createRoute({
         z.record(
           z.string(), // key
           ZodServerPackage(
-            z.union([
-              ZodDocumentOp(ZodToggle(z.any())),
-              ZodDocumentOp(ZodSplice(z.any())),
-              ZodDocumentOp(
+            ZodDocumentOp(
+              z.union([
+                ZodToggle(z.any()),
+                ZodSplice(z.any()),
                 z.object({
-                  _id: z.string(),
-                  type: z.string(),
-                  label: z.string(),
-                  spaces: z.any(),
-                })
-              ),
-              ZodDocumentOp(z.string()),
-            ])
+                  add: z.object({
+                    _id: z.string(),
+                    type: z.string(),
+                    label: z.string(),
+                    spaces: z.array(z.any()),
+                  }),
+                }),
+                z.object({ remove: z.string() }),
+              ])
+            )
           )
         )
       );

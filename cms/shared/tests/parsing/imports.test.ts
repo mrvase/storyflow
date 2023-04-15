@@ -14,14 +14,14 @@ describe("nesting - arithmetics", () => {
   const NestedField2 = createImport({
     tokens: [2, { _: "*" }, NestedField1],
     syntax: { ...root, children: [{ type: "*", children: [2, NestedField1] }] },
-    stream: [{ "(": true }, 2, NestedField1, { ")": "*" }],
+    stream: [{ "(": true }, 2, NestedField1, { "*": true }],
     value: [2 * 5],
   });
 
   createImport({
     tokens: [2, { _: "*" }, NestedField2],
     syntax: { ...root, children: [{ type: "*", children: [2, NestedField2] }] },
-    stream: [{ "(": true }, 2, NestedField2, { ")": "*" }],
+    stream: [{ "(": true }, 2, NestedField2, { "*": true }],
     value: [2 * 2 * 5],
   });
 

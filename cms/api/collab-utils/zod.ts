@@ -9,11 +9,7 @@ export const ZodServerPackage = <T extends z.ZodType>(Operation: T) =>
   ]);
 
 export const ZodDocumentOp = <T extends z.ZodType>(Action: T) =>
-  z.object({
-    target: z.string(),
-    mode: z.string().optional(),
-    ops: z.array(Action),
-  });
+  z.tuple([z.string(), z.array(Action)]).rest(z.string());
 
 export const ZodSplice = <T extends z.ZodType>(Action: T) =>
   z.object({

@@ -3,7 +3,6 @@ import cl from "clsx";
 import { FieldId, TokenStream } from "@storyflow/backend/types";
 import { getDocumentId, getRawFieldId } from "@storyflow/backend/ids";
 import { useFieldId } from "../FieldIdContext";
-import { ComputationOp } from "shared/operations";
 import { createTokenStream } from "shared/parse-token-stream";
 import { useDocumentCollab } from "../../documents/collab/DocumentCollabContext";
 import { useFieldConfig } from "../../documents/collab/hooks";
@@ -22,12 +21,19 @@ import { Overlay } from "../prompt/Overlay";
 import { Option } from "../prompt/Option";
 import { useMathMode } from "../Editor/useMathMode";
 import { Bars2Icon } from "@heroicons/react/24/outline";
+import {
+  FieldOperation,
+  StreamAction,
+  isSpliceAction,
+} from "shared/operations";
+import { splitTransformsAndRoot } from "@storyflow/backend/transform";
 
 type TextOps = [{ index: number; insert: [string]; remove?: 0 }];
 
-const isTextInsert = (ops: ComputationOp["ops"]): ops is TextOps => {
+const isTextInsert = (ops: FieldOperation[1]): ops is TextOps => {
   return (
     ops.length === 1 &&
+    isSpliceAction(ops[0]) &&
     Array.isArray(ops[0].insert) &&
     ops[0].insert.length === 1 &&
     !ops[0].remove &&
@@ -36,10 +42,17 @@ const isTextInsert = (ops: ComputationOp["ops"]): ops is TextOps => {
 };
 
 const isAdjacent = (
-  prev: ComputationOp["ops"],
-  next: ComputationOp["ops"]
+  prev: FieldOperation[1],
+  next: FieldOperation[1]
 ): boolean => {
-  if (prev.length !== 1 || next.length !== 1) return false;
+  if (
+    prev.length !== 1 ||
+    next.length !== 1 ||
+    !isSpliceAction(prev[0]) ||
+    !isSpliceAction(next[0])
+  ) {
+    return false;
+  }
   const prevEndingIndex =
     prev[0].index +
     tools.getLength(prev[0].insert ?? []) -
@@ -58,18 +71,21 @@ export function DefaultField({
   const rootId = useFieldId();
   const [config] = useFieldConfig(rootId);
 
-  const { target, initialValue, value, setTransform, isPrimitive } =
+  const { target, initialValue, value, isPrimitive, tree } =
     useDefaultState(id);
+
+  const transforms = React.useMemo(() => {
+    return splitTransformsAndRoot(tree)[0];
+  }, [tree]);
 
   const initialEditorValue = createTokenStream(initialValue);
 
   const preview = getPreview(value);
 
   const collab = useDocumentCollab();
-
   const actions = React.useMemo(
     () =>
-      collab.boundMutate<ComputationOp>(
+      collab.boundMutate<FieldOperation>(
         getDocumentId(rootId),
         getRawFieldId(rootId)
       ),
@@ -79,16 +95,16 @@ export function DefaultField({
   const push = React.useCallback(
     (
       payload:
-        | ComputationOp["ops"]
+        | FieldOperation[1]
         | ((
-            prev: ComputationOp["ops"] | undefined,
-            noop: ComputationOp["ops"]
-          ) => ComputationOp["ops"][])
+            prev: FieldOperation[1] | undefined,
+            noop: FieldOperation[1]
+          ) => FieldOperation[1][])
     ) => {
       return actions.mergeablePush((_prev, noop) => {
         const result = [];
         let prev = _prev;
-        if (_prev?.target !== target) {
+        if (_prev?.[0] !== target) {
           if (prev === noop) {
             prev = noop;
           } else {
@@ -98,9 +114,9 @@ export function DefaultField({
         }
         const newOps =
           typeof payload === "function"
-            ? payload(prev?.ops, noop.ops)
+            ? payload(prev?.[1], noop[1])
             : [payload];
-        return newOps.map((ops) => (ops === noop.ops ? noop : { target, ops }));
+        return newOps.map((ops) => (ops === noop[1] ? noop : [target, ops]));
       });
     },
     [actions, target]
@@ -109,15 +125,17 @@ export function DefaultField({
   const hasLocalPush = React.useRef(false);
 
   const pushWithBatching = React.useCallback(
-    (next: ComputationOp["ops"]) => {
+    (next: FieldOperation[1]) => {
       hasLocalPush.current = true;
       return push((prev, noop) => {
-        let result: ComputationOp["ops"][] = [];
+        let result: FieldOperation[1][] = [];
         if (!prev || prev === noop) {
           result = [next];
         } else {
           result = [prev, next];
           if (
+            isSpliceAction(prev[0]) &&
+            isSpliceAction(next[0]) &&
             isAdjacent(prev, next) &&
             (isTextInsert(prev) || !isTextInsert(next)) &&
             !(isTextInsert(next) && next[0].insert[0] === " ")
@@ -148,7 +166,7 @@ export function DefaultField({
               remove = (prev[0].remove ?? 0) + (next[0].remove ?? 0);
             }
 
-            const merged: ComputationOp["ops"] = [
+            const merged: StreamAction[] = [
               {
                 index,
               },
@@ -171,7 +189,7 @@ export function DefaultField({
   return (
     <>
       {id === rootId && config?.template && (
-        <TemplateHeader id={id} setTransform={setTransform} />
+        <TemplateHeader transforms={transforms} id={id} />
       )}
       <Editor
         target={target}
@@ -272,11 +290,11 @@ function PushOnBlurPlugin({
 }: {
   push: (
     payload:
-      | ComputationOp["ops"]
+      | FieldOperation[1]
       | ((
-          prev: ComputationOp["ops"] | undefined,
-          noop: ComputationOp["ops"]
-        ) => ComputationOp["ops"][])
+          prev: FieldOperation[1] | undefined,
+          noop: FieldOperation[1]
+        ) => FieldOperation[1][])
   ) => void;
   hasLocalPush: React.MutableRefObject<boolean>;
 }) {

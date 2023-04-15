@@ -1,10 +1,21 @@
+import { DEFAULT_SYNTAX_TREE, TEMPLATE_FOLDER } from "./constants";
 import {
   createDocumentId,
   createFieldId,
   getTemplateDocumentId,
   SYSTEM_TEMPLATE_OFFSET,
 } from "./ids";
-import { FieldConfig, FieldId } from "./types";
+import { insertRootInTransforms } from "./transform";
+import {
+  DBDocument,
+  FieldConfig,
+  FieldId,
+  FieldType,
+  RestrictTo,
+  SyntaxTree,
+  SyntaxTreeRecord,
+  Transform,
+} from "./types";
 
 /*
 const assignIds = <T extends Record<string, any>>(
@@ -37,112 +48,130 @@ const generateTemplateFieldId = () => {
   return createFieldId(0, generateTemplateId());
 };
 
+type DefaultFieldConfig = {
+  id: FieldId;
+  type?: FieldType;
+  label: string;
+  restrictTo?: RestrictTo;
+  initialValue?: {
+    transforms?: Transform[];
+    children?: SyntaxTree["children"];
+  };
+};
+
 export const DEFAULT_FIELDS = {
   creation_date: {
     id: generateTemplateFieldId(),
-    type: "default",
     label: "Oprettelsesdato",
   },
   label: {
     id: generateTemplateFieldId(),
-    type: "default",
     label: "Label",
   },
   url: {
     id: generateTemplateFieldId(),
     type: "url",
     label: "URL",
+    initialValue: {
+      transforms: [
+        {
+          type: "url",
+        },
+      ],
+      children: ["", ""],
+    },
   },
   slug: {
     id: generateTemplateFieldId(),
-    type: "slug",
     label: "URL-segment",
+    initialValue: {
+      transforms: [
+        {
+          type: "slug",
+        },
+      ],
+    },
   },
   page: {
     id: generateTemplateFieldId(),
-    type: "default",
     label: "Side",
     restrictTo: "children",
   },
   layout: {
     id: generateTemplateFieldId(),
-    type: "default",
     label: "Layout",
     restrictTo: "children",
   },
   redirect: {
     id: generateTemplateFieldId(),
-    type: "default",
     label: "Omdirigering",
   },
   published: {
     id: generateTemplateFieldId(),
-    type: "default",
     label: "Offentlig",
   },
   released: {
     id: generateTemplateFieldId(),
-    type: "default",
     label: "Udgivelsesdato",
   },
   user: {
     id: generateTemplateFieldId(),
-    type: "default",
     label: "Brugeremail",
   },
   params: {
     id: generateTemplateFieldId(),
-    type: "default",
     label: "URL-segmenter",
   },
-} as const;
+} satisfies Record<string, DefaultFieldConfig>;
+
+export const getDefaultValue = (field: DefaultFieldConfig) => {
+  if (!field.initialValue) return DEFAULT_SYNTAX_TREE;
+  const root = {
+    ...DEFAULT_SYNTAX_TREE,
+    children: field.initialValue.children ?? [],
+  };
+  return field.initialValue.transforms
+    ? insertRootInTransforms(root, field.initialValue.transforms)
+    : root;
+};
+
+export const generateTemplateFromDefaultFields = (
+  label: string,
+  fields: DefaultFieldConfig[]
+): DBDocument => {
+  const record: SyntaxTreeRecord = {};
+
+  fields.forEach((field) => {
+    if (field.initialValue) record[field.id] = getDefaultValue(field);
+  });
+
+  return {
+    _id: generateTemplateId(),
+    folder: TEMPLATE_FOLDER,
+    label,
+    config: fields.map((field) => ({
+      template: getTemplateDocumentId(field.id),
+    })),
+    record,
+  };
+};
 
 export const DEFAULT_TEMPLATES = {
-  staticPage: {
-    id: generateTemplateId(),
-    label: "Statisk side",
-    config: [
-      {
-        template: getTemplateDocumentId(DEFAULT_FIELDS.url.id),
-      },
-      {
-        template: getTemplateDocumentId(DEFAULT_FIELDS.layout.id),
-      },
-      {
-        template: getTemplateDocumentId(DEFAULT_FIELDS.page.id),
-      },
-    ],
-  },
-  dynamicPage: {
-    id: generateTemplateId(),
-    label: "Dynamisk side",
-    config: [
-      {
-        template: getTemplateDocumentId(DEFAULT_FIELDS.url.id),
-      },
-      {
-        template: getTemplateDocumentId(DEFAULT_FIELDS.params.id),
-      },
-      {
-        template: getTemplateDocumentId(DEFAULT_FIELDS.layout.id),
-      },
-      {
-        template: getTemplateDocumentId(DEFAULT_FIELDS.page.id),
-      },
-    ],
-  },
-  redirectPage: {
-    id: generateTemplateId(),
-    label: "Viderestilling",
-    config: [
-      {
-        template: getTemplateDocumentId(DEFAULT_FIELDS.url.id),
-      },
-      {
-        template: getTemplateDocumentId(DEFAULT_FIELDS.redirect.id),
-      },
-    ],
-  },
+  staticPage: generateTemplateFromDefaultFields("Statisk side", [
+    DEFAULT_FIELDS.url,
+    DEFAULT_FIELDS.layout,
+    DEFAULT_FIELDS.page,
+  ]),
+  dynamicPage: generateTemplateFromDefaultFields("Dynamisk side", [
+    DEFAULT_FIELDS.url,
+    DEFAULT_FIELDS.params,
+    DEFAULT_FIELDS.layout,
+    DEFAULT_FIELDS.page,
+  ]),
+  redirectPage: generateTemplateFromDefaultFields("Viderestilling", [
+    DEFAULT_FIELDS.url,
+    DEFAULT_FIELDS.redirect,
+  ]),
 };
 
 export function getDefaultField(

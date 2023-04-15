@@ -1,24 +1,18 @@
 import { computeFieldId, createFieldId } from "./ids";
 import { tokens } from "./tokens";
 import {
-  LineBreak,
   NestedFolder,
-  Parameter,
   SyntaxTree,
   ValueArray,
-  WithSyntaxError,
   ContextToken,
   DocumentId,
   FieldId,
-  FolderId,
   FunctionName,
-  NestedDocumentId,
-  NestedField,
   Operator,
-  RawFieldId,
-  SortSpec,
   SyntaxTreeRecord,
   NestedDocument,
+  GetFunctionData,
+  Sorting,
 } from "./types";
 import { isSyntaxTree } from "./syntax-tree";
 
@@ -74,7 +68,7 @@ parameters are: [[0, 1, 2, 3, 4, 5], [true, false, false]] (since square bracket
 export type FolderFetch = {
   folder: NestedFolder;
   limit: number;
-  sort?: SortSpec;
+  sort?: Sorting[];
 };
 
 type Importers = FieldId | FolderFetch | ContextToken;
@@ -434,9 +428,8 @@ export function calculate(node: SyntaxTree, getState: StateGetter): ValueArray {
 
     // run function
 
-    if (node.type === "sortlimit") {
-      const limit = (node.data!.limit as number) ?? 10;
-      const sort = (node.data!.sort as SortSpec) ?? {};
+    if (node.type === "fetch") {
+      const [limit, ...sort] = node.data as GetFunctionData<"fetch">;
 
       let docs = spreadImplicitArrays(values).reduce(
         (acc: NestedDocument[], el) => {
@@ -472,7 +465,7 @@ export function calculate(node: SyntaxTree, getState: StateGetter): ValueArray {
     }
 
     if (node.type === "select") {
-      const select = node.data!.select as RawFieldId;
+      const select = node.data as GetFunctionData<"select">;
 
       values = [
         spreadImplicitArrays(
@@ -495,13 +488,13 @@ export function calculate(node: SyntaxTree, getState: StateGetter): ValueArray {
     } else if (node.type === null) {
       // brackets
       values = [spreadImplicitArrays(values)];
-    } else if (node.type === ("array" as any)) {
+    } else if (node.type === "array") {
       values = [[spreadImplicitArrays(values)]];
     } else {
       values = compute(
         node.type as Exclude<
           typeof node.type,
-          "select" | "sortlimit" | "array" | null
+          "select" | "fetch" | "array" | "root" | null
         >,
         values
       );

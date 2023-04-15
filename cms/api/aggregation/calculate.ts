@@ -371,7 +371,6 @@ const replaceAllWithRegex = (
 };
 
 type IgnorableImport = { field: DBId<FieldId>; ignore: boolean };
-type StreamWithIgnorableImport = (DBSyntaxStream[number] | IgnorableImport)[];
 
 export const calculate = (
   $: Operators<DBDocumentRaw>,

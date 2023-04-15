@@ -1,4 +1,3 @@
-import { PlusIcon } from "@heroicons/react/24/outline";
 import { SpaceId } from "@storyflow/backend/types";
 import cl from "clsx";
 import React from "react";

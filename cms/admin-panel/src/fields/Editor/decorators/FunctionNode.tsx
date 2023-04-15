@@ -3,17 +3,17 @@ import { LexicalNode, NodeKey } from "lexical";
 import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
 import { caretClasses } from "./caret";
-import { FunctionName } from "@storyflow/backend/types";
+import { FunctionName, FunctionSymbol } from "@storyflow/backend/types";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 
 function Decorator({
   value,
   nodeKey,
 }: {
-  value: { ")": FunctionName };
+  value: FunctionSymbol;
   nodeKey: string;
 }) {
-  const func = value[")"];
+  const func = Object.keys(value)[0];
 
   const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
 
@@ -46,7 +46,7 @@ function Decorator({
 }
 
 const type = "function";
-type TokenType = { ")": FunctionName };
+type TokenType = FunctionSymbol;
 
 export default class ChildNode extends TokenStreamNode<typeof type, TokenType> {
   static getType(): string {

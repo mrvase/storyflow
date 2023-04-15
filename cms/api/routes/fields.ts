@@ -15,7 +15,6 @@ import {
   SyntaxTree,
   NestedField,
   ValueArray,
-  DocumentConfig,
   TemplateRef,
 } from "@storyflow/backend/types";
 import { ObjectId } from "mongodb";
@@ -31,10 +30,8 @@ import {
   getFieldConfigArray,
   setFieldConfig,
 } from "shared/getFieldConfig";
-import { AnyOp, targetTools } from "shared/operations";
-import { getConfig } from "shared/initialValues";
 import {
-  createComputationTransformer,
+  createTokenStreamTransformer,
   extractRootRecord,
   getSyntaxTreeRecord,
   getFieldRecord,
@@ -42,7 +39,10 @@ import {
 } from "shared/computation-tools";
 import { isSyntaxTree } from "@storyflow/backend/syntax-tree";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
-import { getNextState, getPickedDocumentIds } from "shared/computation-tools";
+import {
+  applyFieldOperation,
+  getPickedDocumentIds,
+} from "shared/computation-tools";
 import { createStages, Update } from "../aggregation/stages";
 import util from "util";
 import {
@@ -69,10 +69,15 @@ import {
 } from "@storyflow/backend/ids";
 import { parseDocument } from "./documents";
 import { deduplicate, getImports, getSortedValues } from "./helpers";
-import fs from "fs";
 import { createSyntaxStream } from "shared/parse-syntax-stream";
 import { createTokenStream, parseTokenStream } from "shared/parse-token-stream";
-import { tokens } from "@storyflow/backend/tokens";
+import {
+  DocumentOperation,
+  FieldOperation,
+  isSpliceAction,
+  isToggleAction,
+} from "shared/operations";
+import { splitTransformsAndRoot } from "@storyflow/backend/transform";
 
 export const fields = createRoute({
   sync: createProcedure({
@@ -85,10 +90,21 @@ export const fields = createRoute({
         z.record(
           z.string(), // key
           ZodServerPackage(
-            z.union([
-              ZodDocumentOp(ZodToggle(z.any())),
-              ZodDocumentOp(ZodSplice(z.any())),
-            ])
+            ZodDocumentOp(
+              z.union([
+                ZodToggle(z.any()),
+                ZodSplice(z.any()),
+                z.object({
+                  add: z.object({
+                    _id: z.string(),
+                    type: z.string(),
+                    label: z.string(),
+                    spaces: z.array(z.any()),
+                  }),
+                }),
+                z.object({ remove: z.string() }),
+              ])
+            )
           )
         )
       );
@@ -208,10 +224,13 @@ export const fields = createRoute({
         const pkgs = filterServerPackages(templateVersion, history);
 
         if (pkgs.length) {
+          /*
           const configsBefore = getFieldConfigArray(documentConfig).map(
             (el) => ({ ...el })
           );
+          */
           documentConfig = transformDocumentConfig(documentConfig, pkgs);
+          /*
           getFieldConfigArray(documentConfig)
             .map((el) => ({ ...el }))
             .forEach((el) => {
@@ -223,17 +242,12 @@ export const fields = createRoute({
                 updatedTransforms.add(el.id);
               }
             });
+          */
           versions.config = templateVersion + pkgs.length;
         }
       }
 
-      const allUpdates: Record<
-        FieldId,
-        {
-          initialTransform: Transform | undefined;
-          stream: TokenStream;
-        }
-      > = {};
+      const allUpdates: Record<FieldId, SyntaxTree> = {};
 
       (
         Object.entries(histories) as [
@@ -251,13 +265,13 @@ export const fields = createRoute({
         if (!pkgs.length) return;
 
         const newUpdates = transformField(fieldId, computationRecord, pkgs);
-
         Object.assign(allUpdates, newUpdates);
 
         updatedFieldsIds.add(fieldId);
         versions[id as RawFieldId] = fieldVersion + pkgs.length;
       });
 
+      /*
       // TODO
       // Skal tjekke ovenfor, om configs har fået ændret transforms.
       // Så laver jeg de felter til tokenStream og tilføjer dem til allUpdates uden initialTransform.
@@ -272,18 +286,9 @@ export const fields = createRoute({
           ),
         };
       });
+      */
 
-      const newRecord: SyntaxTreeRecord = Object.fromEntries(
-        Object.entries(allUpdates).map(([id, { stream, initialTransform }]) => {
-          const transform = getFieldConfig(
-            documentConfig,
-            id as FieldId
-          )?.transform;
-          return [id, parseTokenStream(stream, transform ?? initialTransform)];
-        })
-      );
-
-      Object.assign(computationRecord, newRecord);
+      Object.assign(computationRecord, allUpdates);
 
       // trim to not include removed nested fields
       computationRecord = extractRootRecord(documentId, computationRecord, {
@@ -619,61 +624,59 @@ export const fields = createRoute({
 const transformField = (
   fieldId: FieldId,
   initialRecord: SyntaxTreeRecord,
-  pkgs: ServerPackage<AnyOp>[]
-) => {
-  const transformer = createComputationTransformer(fieldId, initialRecord);
+  pkgs: ServerPackage<FieldOperation>[]
+): Record<FieldId, SyntaxTree> => {
+  const transformer = createTokenStreamTransformer(fieldId, initialRecord);
 
   const updates: Record<
     FieldId,
-    { initialTransform: Transform | undefined; stream: TokenStream }
+    { stream: TokenStream; transforms: Transform[] }
   > = {};
 
   transformer(pkgs).forEach((pkg) => {
     unwrapServerPackage(pkg).operations.forEach((operation) => {
-      const { location, field } = targetTools.parse(operation.target);
-      const id = location === "" ? fieldId : (location as FieldId);
+      const [target, ops] = operation;
+      const id = target === "" ? fieldId : (target as FieldId);
       if (!(id in updates)) {
-        const initialValue =
-          field && location === ""
-            ? getConfig(field).defaultValue
-            : DEFAULT_SYNTAX_TREE;
-
-        const initialTransform =
-          initialValue.type !== "root"
-            ? {
-                type: initialValue.type,
-                ...(initialValue.data && { payload: initialValue.data }),
-              }
-            : undefined;
+        const value = initialRecord[id] ?? DEFAULT_SYNTAX_TREE;
+        const [transforms, root] = splitTransformsAndRoot(value);
 
         updates[id] = {
-          stream: createTokenStream(initialRecord[id] ?? initialValue),
-          initialTransform,
+          stream: createTokenStream(root),
+          transforms,
         };
       }
-      updates[id].stream = getNextState(updates[id].stream, operation);
+      updates[id] = applyFieldOperation(updates[id], operation);
     });
   });
 
-  return updates;
+  return Object.fromEntries(
+    Object.entries(updates).map(([id, { stream, transforms }]) => {
+      return [
+        id,
+        parseTokenStream(
+          stream,
+          transforms.length > 0 ? transforms : undefined
+        ),
+      ];
+    })
+  );
 };
 
 const transformDocumentConfig = (
   config: DBDocument["config"],
-  history: ServerPackage<AnyOp>[]
+  history: ServerPackage<DocumentOperation>[]
 ) => {
   let newConfig = [...config];
 
   history.forEach((pkg) => {
     unwrapServerPackage(pkg).operations.forEach((operation) => {
-      if (targetTools.isOperation(operation, "document-config")) {
-        operation.ops.forEach((action) => {
+      operation[1].forEach((action) => {
+        if (isSpliceAction(action)) {
           const { index, insert, remove } = action;
           newConfig.splice(index, remove ?? 0, ...(insert ?? []));
-        });
-      } else if (targetTools.isOperation(operation, "property")) {
-        const fieldId = targetTools.getLocation(operation.target) as FieldId;
-        operation.ops.forEach((action) => {
+        } else if (isToggleAction(action)) {
+          const fieldId = operation[0] as FieldId;
           if (isTemplateField(fieldId)) {
             const templateId = getTemplateDocumentId(fieldId);
             const templateConfig = newConfig.find(
@@ -706,8 +709,8 @@ const transformDocumentConfig = (
             ...ps,
             [action.name]: action.value,
           }));
-        });
-      }
+        }
+      });
     });
   });
 

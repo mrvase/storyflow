@@ -8,12 +8,10 @@ import {
 } from "@heroicons/react/24/outline";
 import { extendPath } from "@storyflow/backend/extendPath";
 import { DEFAULT_FIELDS, DEFAULT_TEMPLATES } from "@storyflow/backend/fields";
-import { getTemplateDocumentId, isTemplateField } from "@storyflow/backend/ids";
+import { getTemplateDocumentId } from "@storyflow/backend/ids";
 import {
   DBDocument,
-  DocumentConfig,
   DocumentId,
-  FieldId,
   FolderId,
   RawFieldId,
   SearchableProps,
@@ -23,8 +21,7 @@ import { PropConfigArray } from "@storyflow/frontend/types";
 import { ServerPackage } from "@storyflow/state";
 import cl from "clsx";
 import React from "react";
-import { DocumentConfigOp, PropertyOp, targetTools } from "shared/operations";
-import { useArticle, useOptimisticDocumentList, useSaveArticle } from ".";
+import { useDocument, useOptimisticDocumentList, useSaveDocument } from ".";
 import { useDocumentLabel } from "./useDocumentLabel";
 import { getComponentType, useClientConfig } from "../client-config";
 import { useTemplateFolder } from "../folders/FoldersContext";
@@ -49,6 +46,7 @@ import { ExtendTemplatePath } from "./TemplatePathContext";
 import { usePanel, useRoute } from "../panel-router/Routes";
 import { parseSegment } from "../layout/components/routes";
 import { Menu } from "../layout/components/Menu";
+import { DocumentOperation } from "shared/operations";
 
 export const getVersionKey = (versions?: Record<RawFieldId, number>) => {
   if (!versions) return -1;
@@ -126,22 +124,10 @@ export const DocumentContent = ({
   );
 };
 
-function Toolbar({ id, config }: { id: DocumentId; config: DocumentConfig }) {
+function Toolbar({ id }: { id: DocumentId }) {
   const ids = useFocusedIds();
 
-  const getFieldIndex = (id: FieldId | undefined) => {
-    if (!id) return -1;
-    if (isTemplateField(id)) {
-      return config.findIndex(
-        (el) => "template" in el && el.template === getTemplateDocumentId(id)
-      );
-    }
-    return config.findIndex((el) => "id" in el && el.id === id);
-  };
-
   const generateFieldId = useFieldIdGenerator();
-
-  const index = getFieldIndex(ids[0] as FieldId);
 
   if (ids.length > 1) {
     return (
@@ -249,7 +235,7 @@ export function TemplateMenu({ id }: { id?: DocumentId }) {
 export function DocumentPage({ children }: { children?: React.ReactNode }) {
   const route = useRoute();
   const segment = parseSegment<"document" | "template">(route);
-  let { article, histories, error } = useArticle(segment.id);
+  let { article, histories, error } = useDocument(segment.id);
 
   return (
     <>
@@ -285,7 +271,7 @@ const Page = ({
 }: {
   type: "template" | "document";
   article: DBDocument;
-  histories: Record<string, ServerPackage<DocumentConfigOp | PropertyOp>[]>;
+  histories: Record<string, ServerPackage<DocumentOperation>[]>;
   children: React.ReactNode;
 }) => {
   const id = article._id;
@@ -326,7 +312,7 @@ const Page = ({
             folder={article?.folder}
             label={label ?? "Ingen label"}
             isModified={isModified}
-            toolbar={<Toolbar id={id} config={config} />}
+            toolbar={<Toolbar id={id} />}
           >
             <div className="pb-96 flex flex-col -mt-6">
               {isApp && !templateId && config.length === 0 && (
@@ -368,7 +354,7 @@ const Page = ({
 };
 
 function TemplateSelect({ documentId }: { documentId: DocumentId }) {
-  const { push } = useDocumentMutate<DocumentConfigOp>(documentId, documentId);
+  const { push } = useDocumentMutate<DocumentOperation>(documentId, documentId);
 
   return (
     <div className="py-5 px-14 grid grid-cols-3 gap-5">
@@ -376,22 +362,19 @@ function TemplateSelect({ documentId }: { documentId: DocumentId }) {
         DEFAULT_TEMPLATES.staticPage,
         DEFAULT_TEMPLATES.dynamicPage,
         DEFAULT_TEMPLATES.redirectPage,
-      ].map(({ label, id }) => (
+      ].map(({ label, _id }) => (
         <button
           className="rounded bg-button ring-button p-5 text-center"
           onClick={() => {
-            push({
-              target: targetTools.stringify({
-                operation: "document-config",
-                location: "",
-              }),
-              ops: [
+            push([
+              "",
+              [
                 {
                   index: 0,
-                  insert: [{ template: id }],
+                  insert: [{ template: _id }],
                 },
               ],
-            });
+            ]);
           }}
         >
           {label}
@@ -404,7 +387,7 @@ function TemplateSelect({ documentId }: { documentId: DocumentId }) {
 function SaveButton({ id, folder }: { id: DocumentId; folder: FolderId }) {
   const collab = useDocumentCollab();
   const [isLoading, setIsLoading] = React.useState(false);
-  const saveArticle = useSaveArticle(folder);
+  const saveArticle = useSaveDocument(folder);
 
   const { mutate: mutateUpdatedUrls } =
     SWRClient.documents.getUpdatedUrls.useQuery(

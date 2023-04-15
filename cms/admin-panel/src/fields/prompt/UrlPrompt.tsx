@@ -21,7 +21,7 @@ import { useFieldId } from "../FieldIdContext";
 import { useDocumentIdGenerator } from "../../id-generator";
 import { tokens } from "@storyflow/backend/tokens";
 import { useOptimisticDocumentList } from "../../documents";
-import { markMatchingString } from "../query/helpers";
+import { markMatchingString } from "./helpers";
 
 export function UrlPrompt({
   prompt,

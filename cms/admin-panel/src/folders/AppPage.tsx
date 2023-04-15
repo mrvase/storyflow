@@ -25,7 +25,6 @@ import {
 } from "./FolderDomainsContext";
 import { useFolder } from "./collab/hooks";
 import { useFolderCollab } from "./collab/FolderCollabContext";
-import { targetTools } from "shared/operations";
 import { AppSpace } from "./spaces/AppSpace";
 import { getFieldRecord, getGraph } from "shared/computation-tools";
 import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
@@ -122,18 +121,15 @@ export default function AppPage({ children }: { children?: React.ReactNode }) {
     name: T,
     value: DBFolder[T]
   ) => {
-    return collab.mutate("folders", folder._id).push({
-      target: targetTools.stringify({
-        location: "",
-        operation: "property",
-      }),
-      ops: [
+    return collab.mutate("folders", folder._id).push([
+      "",
+      [
         {
           name,
           value,
         },
       ],
-    });
+    ]);
   };
 
   const config = useClientConfig(folder?.domains?.[0]);

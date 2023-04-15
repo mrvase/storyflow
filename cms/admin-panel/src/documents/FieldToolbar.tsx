@@ -10,7 +10,6 @@ import {
 import { DocumentId, FieldId, RestrictTo } from "@storyflow/backend/types";
 import React from "react";
 import ReactDOM from "react-dom";
-import { DocumentConfigOp, PropertyOp, targetTools } from "shared/operations";
 import { useOptimisticDocumentList } from ".";
 import { useTemplateFolder } from "../folders/FoldersContext";
 import Content from "../layout/components/Content";
@@ -21,6 +20,7 @@ import { useFieldId } from "../fields/FieldIdContext";
 import { getDocumentId } from "@storyflow/backend/ids";
 import { Menu } from "../layout/components/Menu";
 import { useTopFieldIndex } from "./FieldIndexContext";
+import { DocumentOperation } from "shared/operations";
 
 const FieldToolbarPortalContext = React.createContext<
   [HTMLDivElement | null, React.Dispatch<HTMLDivElement | null>] | null
@@ -71,7 +71,7 @@ export function FieldToolbar() {
 
   const [config, setConfig] = useFieldConfig(fieldId);
 
-  const { push } = useDocumentMutate<DocumentConfigOp>(documentId, documentId);
+  const { push } = useDocumentMutate<DocumentOperation>(documentId, documentId);
 
   const templateFolder = useTemplateFolder()?._id;
   const { articles: templates } = useOptimisticDocumentList(templateFolder);
@@ -87,7 +87,7 @@ export function FieldToolbar() {
 
   return (
     <Content.Toolbar>
-      <div className="h-6 px-2 flex-center gap-1.5 rounded dark:bg-yellow-400/10 dark:text-yellow-200/75 ring-1 ring-yellow-200/50 text-xs whitespace-nowrap">
+      <div className="h-6 px-2 flex-center gap-1.5 rounded dark:bg-yellow-400/10 dark:text-yellow-200/75 ring-1 ring-yellow-200/50 text-xs whitespace-nowrap pointer-events-none">
         1 valgt
         <XMarkIcon className="w-3 h-3" />
       </div>
@@ -122,18 +122,15 @@ export function FieldToolbar() {
         <Content.ToolbarButton
           data-focus-remain="true"
           onClick={() => {
-            push({
-              target: targetTools.stringify({
-                operation: "document-config",
-                location: "",
-              }),
-              ops: [
+            push([
+              "",
+              [
                 {
                   index: topIndex,
                   remove: 1,
                 },
               ],
-            });
+            ]);
           }}
         >
           <TrashIcon className="w-4 h-4" />
@@ -145,21 +142,18 @@ export function FieldToolbar() {
 
 function FieldLabel({ id, label }: { id: FieldId; label: string }) {
   const articleId = getDocumentId(id);
-  const { push } = useDocumentMutate<PropertyOp>(articleId, articleId);
+  const { push } = useDocumentMutate<DocumentOperation>(articleId, articleId);
 
   const onChange = (value: string) => {
-    push({
-      target: targetTools.stringify({
-        operation: "property",
-        location: id,
-      }),
-      ops: [
+    push([
+      id,
+      [
         {
           name: "label",
           value: value,
         },
       ],
-    });
+    ]);
   };
   return <EditableLabel value={label} onChange={onChange} />;
 }

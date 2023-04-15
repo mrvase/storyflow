@@ -16,17 +16,11 @@ describe("select", () => {
           {
             type: "select",
             children: [NestedField],
-            data: {
-              select: "abc",
-            },
+            data: "abc",
           },
         ],
       },
-      stream: [
-        { "(": true },
-        NestedField,
-        { ")": "select", f: "abc" as RawFieldId },
-      ],
+      stream: [{ "(": true }, NestedField, { select: "abc" as RawFieldId }],
     },
   ]);
 });
@@ -127,16 +121,14 @@ describe("calculator pick function", () => {
           {
             type: "select",
             children: [NestedListField],
-            data: {
-              select: "000firstname",
-            },
+            data: "000firstname",
           },
         ],
       },
       stream: [
         { "(": true },
         NestedListField,
-        { ")": "select", f: "000firstname" as RawFieldId },
+        { select: "000firstname" as RawFieldId },
       ],
       value: ["Martin", "Peter", "Martin", "Peter"],
     },
@@ -164,26 +156,22 @@ describe("calculator pick function", () => {
           {
             type: "select",
             children: [NestedListField2],
-            data: {
-              select: "000firstname",
-            },
+            data: "000firstname",
           },
           {
             type: "select",
             children: [NestedListField3],
-            data: {
-              select: "0000lastname",
-            },
+            data: "0000lastname",
           },
         ],
       },
       stream: [
         { "(": true },
         NestedListField2,
-        { ")": "select", f: "000firstname" as RawFieldId },
+        { select: "000firstname" as RawFieldId },
         { "(": true },
         NestedListField3,
-        { ")": "select", f: "0000lastname" as RawFieldId },
+        { select: "0000lastname" as RawFieldId },
       ],
       value: [
         "Martin",
@@ -227,9 +215,7 @@ describe("calculator pick function", () => {
               {
                 type: "select",
                 children: [NestedListField4],
-                data: {
-                  select: "000firstname",
-                },
+                data: "000firstname",
               },
             ],
           },
@@ -239,9 +225,7 @@ describe("calculator pick function", () => {
               {
                 type: "select",
                 children: [NestedListField5],
-                data: {
-                  select: "0000lastname",
-                },
+                data: "0000lastname",
               },
             ],
           },
@@ -251,12 +235,12 @@ describe("calculator pick function", () => {
         { "[": true },
         { "(": true },
         NestedListField4,
-        { ")": "select", f: "000firstname" as RawFieldId },
+        { select: "000firstname" as RawFieldId },
         { "]": true },
         { "[": true },
         { "(": true },
         NestedListField5,
-        { ")": "select", f: "0000lastname" as RawFieldId },
+        { select: "0000lastname" as RawFieldId },
         { "]": true },
       ],
       value: [
@@ -282,16 +266,14 @@ describe("calculator pick function", () => {
           {
             type: "select",
             children: [NestedListField6],
-            data: {
-              select: "0description",
-            },
+            data: "0description",
           },
         ],
       },
       stream: [
         { "(": true },
         NestedListField6,
-        { ")": "select", f: "0description" as RawFieldId },
+        { select: "0description" as RawFieldId },
       ],
       value: [
         ["Martin Vase", "Martin Vase", "Martin Vase"],

@@ -119,19 +119,26 @@ export function createQueue<Operation extends DefaultOperation>(
 ): Queue<Operation> {
   const debug = createChangeDebugger();
 
-  const transform = options.transform ?? ((x) => x);
+  const {
+    mergeableNoop,
+    transform = (x) => x,
+    clientId = randomClientId,
+  } = options;
 
   const state = {
-    shared: transform([]),
+    shared: [] as ServerPackage<Operation>[],
     posted: [] as Operation[],
     queue: [] as Operation[],
     version: 0 as number,
     initialized: false,
-    // mergeIndex: 0
   };
 
   const getIndex = () => state.version + state.shared.length;
 
+  /*
+  we use an "initialize" method, because it allows us to
+  re-initialize later, while keeping the subscribed listeners
+  */
   function initialize(
     initialVersion: number,
     initialHistory: ServerPackage<Operation>[]
@@ -152,16 +159,13 @@ export function createQueue<Operation extends DefaultOperation>(
 
   // const timer = createTimer();
 
-  const clientId =
-    options.clientId !== undefined ? options.clientId : randomClientId;
-
   function _post(force = false) {
     if (!state.queue.length) return;
 
     const last = state.queue[state.queue.length - 1];
-    const lastIsNoop = last && last === options.mergeableNoop;
+    const lastIsNoop = last && last === mergeableNoop;
 
-    if (options.mergeableNoop && (!force || lastIsNoop)) {
+    if (mergeableNoop && (!force || lastIsNoop)) {
       state.posted = state.queue.slice(0, -1);
       state.queue = state.queue.slice(-1);
     } else {
@@ -188,7 +192,12 @@ export function createQueue<Operation extends DefaultOperation>(
     let operations: Operation[] = [];
 
     if (typeof operation === "function") {
-      operations = merge(operation);
+      operations = merge(
+        operation as (
+          latest: Operation | undefined,
+          noop: Operation
+        ) => Operation[]
+      );
     } else {
       operations = [operation];
     }
@@ -201,7 +210,7 @@ export function createQueue<Operation extends DefaultOperation>(
     state.queue.push(...operations);
     tracker?.push(...operations);
 
-    console.log("PUSH", operations, state.queue);
+    console.log("PUSH", operations, state.shared, state.queue);
 
     _triggerListeners({ origin: "push" });
     return true;
@@ -213,10 +222,7 @@ export function createQueue<Operation extends DefaultOperation>(
     const queue = state.queue;
 
     const [latest] = queue.splice(queue.length - 1, 1);
-    const operations = callback(
-      latest,
-      options.mergeableNoop ?? ({} as Operation)
-    );
+    const operations = callback(latest, mergeableNoop ?? ({} as Operation));
 
     if (operations.length === 1 && operations[0] === latest) {
       queue.push(...operations);

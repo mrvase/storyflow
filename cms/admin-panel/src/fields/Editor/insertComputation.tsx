@@ -1,6 +1,5 @@
 import {
   $createParagraphNode,
-  $createTextNode,
   $getRoot,
   $getSelection,
   $isNodeSelection,

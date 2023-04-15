@@ -1,6 +1,6 @@
 // export type OperationArray<A> = A extends any ? A[] : never;
 
-export type DefaultOperation = object;
+export type DefaultOperation = Record<string, any> | any[];
 
 export type ServerPackage<Operation extends DefaultOperation> = [
   key: string,

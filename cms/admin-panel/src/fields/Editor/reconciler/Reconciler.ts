@@ -15,8 +15,8 @@ import {
 } from "../../../editor/react/EditorProvider";
 import { getComputationDiff } from "./getComputationDiff";
 import { tools } from "shared/editor-tools";
-import { getNextState } from "shared/computation-tools";
-import { InferAction, Target, ComputationOp } from "shared/operations";
+import { applyFieldOperation } from "shared/computation-tools";
+import { FieldOperation, InferAction } from "shared/operations";
 import { createQueueCache } from "../../../state/collaboration";
 import { TokenStream } from "@storyflow/backend/types";
 import { LibraryConfig } from "@storyflow/frontend/types";
@@ -39,41 +39,44 @@ export function Reconciler({
 }: {
   initialValue: TokenStream;
   // history: CollabHistory<TextOp | FunctionOp>;
-  target: Target;
-  push: (ops: ComputationOp["ops"]) => void;
-  register: (listener: QueueListener<ComputationOp>) => () => void;
+  target: string;
+  push: (ops: FieldOperation[1]) => void;
+  register: (listener: QueueListener<FieldOperation>) => () => void;
 }) {
   const editor = useEditorContext();
 
   const { libraries } = useClientConfig();
 
   React.useEffect(() => {
-    const cache = createQueueCache(initialValue);
+    const cache = createQueueCache({ stream: initialValue, transforms: [] });
 
     return register(({ trackedForEach, forEach }) => {
       // trackedForEach only adds any unique operation a single time.
       // Since we are using the bound register, it does not provide
       // the operations pushed from this specific field.
 
-      const newOps: InferAction<ComputationOp>[] = [];
+      const newOps: InferAction<FieldOperation>[] = [];
       trackedForEach(({ operation }) => {
-        if (operation.target === target) {
-          newOps.push(...operation.ops);
+        if (operation[0] === target) {
+          newOps.push(...operation[1]);
         }
       });
 
       if (newOps.length === 0) return;
 
       const result = cache(forEach, (prev, { operation }) => {
-        if (operation.target === target) {
-          prev = getNextState(prev, operation);
+        if (operation[0] === target) {
+          prev.stream = applyFieldOperation(prev, operation).stream;
         }
         return prev;
       });
 
-      editor.update(() => $reconcile(editor, result, newOps, libraries), {
-        tag: RECONCILIATION_TAG,
-      });
+      editor.update(
+        () => $reconcile(editor, result.stream, newOps, libraries),
+        {
+          tag: RECONCILIATION_TAG,
+        }
+      );
     });
   }, [editor, libraries]);
 
@@ -110,7 +113,7 @@ export function Reconciler({
 function $reconcile(
   editor: LexicalEditor,
   value: TokenStream,
-  actions: InferAction<ComputationOp>[],
+  actions: InferAction<FieldOperation>[],
   libraries: LibraryConfig[]
 ) {
   /** SAVE CURRENT SELECTION */

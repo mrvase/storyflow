@@ -471,9 +471,9 @@ export const public_ = createRoute({
               type: "select",
               children: [
                 {
-                  type: "sortlimit",
+                  type: "fetch",
                   children: [record[fieldId]],
-                  data: { limit: 100 },
+                  data: [100],
                 },
               ],
               data: {

@@ -1,11 +1,11 @@
 import { DocumentId, FolderId } from "@storyflow/backend/types";
 import React from "react";
-import { useArticleListMutation } from "../../documents";
+import { useDocumentListMutation } from "../../documents";
 
 export function useDeleteForm({ folderId }: { folderId: FolderId }) {
   const form = React.useRef<HTMLFormElement | null>(null);
 
-  const mutateArticles = useArticleListMutation();
+  const mutateArticles = useDocumentListMutation();
 
   const handleDelete = () => {
     if (form.current && folderId) {

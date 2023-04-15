@@ -2,10 +2,9 @@ import React from "react";
 import Dialog from "../elements/Dialog";
 import {
   useOptimisticDocumentList,
-  useArticleListMutation,
+  useDocumentListMutation,
 } from "../documents";
 import { useFolderCollab } from "./collab/FolderCollabContext";
-import { targetTools } from "shared/operations";
 import { DialogOption } from "../elements/DialogOption";
 import { DocumentDuplicateIcon, PlusIcon } from "@heroicons/react/24/outline";
 import { useTemplateFolder } from "./FoldersContext";
@@ -24,7 +23,7 @@ export function AddTemplateDialog({
   folderId: string;
   currentTemplate?: string;
 }) {
-  const mutateArticles = useArticleListMutation();
+  const mutateArticles = useDocumentListMutation();
   const generateTemplateId = useTemplateIdGenerator();
   const [, navigate] = usePanel();
   const route = useRoute();
@@ -38,18 +37,15 @@ export function AddTemplateDialog({
       const label = (data.get("value") as string) ?? "";
       if (!label) return;
       const id = type === "new" ? generateTemplateId() : (label as DocumentId);
-      collab.mutate("folders", folderId).push({
-        target: targetTools.stringify({
-          operation: "property",
-          location: "",
-        }),
-        ops: [
+      collab.mutate("folders", folderId).push([
+        "",
+        [
           {
             name: "template",
             value: id,
           },
         ],
-      });
+      ]);
       if (type === "new") {
         mutateArticles({
           folder: templateFolder,

@@ -32,7 +32,7 @@ describe("auto-merging inline elements and not block elements", () => {
           },
         ],
       },
-      stream: [{ "{": true }, "Hej", NestedDocumentInline, { "}": true }],
+      stream: [{ "(": true }, "Hej", NestedDocumentInline, { merge: true }],
     },
 
     {
@@ -59,7 +59,13 @@ describe("auto-merging inline elements and not block elements", () => {
           },
         ],
       },
-      stream: ["Hej", { "{": true }, NestedDocumentInline, ".", { "}": true }],
+      stream: [
+        "Hej",
+        { "(": true },
+        NestedDocumentInline,
+        ".",
+        { merge: true },
+      ],
     },
 
     {
@@ -78,10 +84,10 @@ describe("auto-merging inline elements and not block elements", () => {
       stream: [
         "Hej",
         { n: true },
-        { "{": true },
+        { "(": true },
         NestedDocumentInline,
         ".",
-        { "}": true },
+        { merge: true },
       ],
     },
 
@@ -93,7 +99,7 @@ describe("auto-merging inline elements and not block elements", () => {
         2,
         { ",": true },
         3,
-        { ")": "slug" },
+        { slug: true },
         NestedDocument,
       ],
       syntax: {
@@ -114,7 +120,7 @@ describe("auto-merging inline elements and not block elements", () => {
         { "(": true },
         2,
         3,
-        { ")": "slug" },
+        { slug: true },
         NestedDocument,
       ],
     },
@@ -127,7 +133,7 @@ describe("auto-merging inline elements and not block elements", () => {
         2,
         { ",": true },
         3,
-        { ")": "slug" },
+        { slug: true },
         "Hmmm",
       ],
       syntax: {
@@ -148,15 +154,15 @@ describe("auto-merging inline elements and not block elements", () => {
         ],
       },
       stream: [
-        { "{": true },
+        { "(": true },
         NestedDocumentInline,
         "Tester",
         { "(": true },
         2,
         3,
-        { ")": "slug" },
+        { slug: true },
         "Hmmm",
-        { "}": true },
+        { merge: true },
       ],
     },
 
@@ -194,17 +200,17 @@ describe("auto-merging inline elements and not block elements", () => {
         ],
       },
       stream: [
-        { "{": true },
+        { "(": true },
         NestedDocumentInline,
         "Tester",
         { "(": true },
         { "(": true },
         5,
         2,
-        { ")": "*" },
+        { "*": true },
         { ")": true },
         "Hmmm",
-        { "}": true },
+        { merge: true },
       ],
     },
   ]);
