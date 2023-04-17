@@ -174,7 +174,7 @@ export const applyFieldOperation = (
           // update
           newTransforms[index] = {
             type: action.name,
-            ...(action.value !== true && { value: action.value }),
+            ...(action.value !== true && { data: action.value }),
           };
         }
       } else {
@@ -182,7 +182,7 @@ export const applyFieldOperation = (
           // create
           newTransforms.push({
             type: action.name,
-            ...(action.value !== true && { value: action.value }),
+            ...(action.value !== true && { data: action.value }),
           });
         }
       }

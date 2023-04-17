@@ -74,6 +74,8 @@ export function DefaultField({
   const { target, initialValue, value, isPrimitive, tree } =
     useDefaultState(id);
 
+  console.log("TREE", tree);
+
   const transforms = React.useMemo(() => {
     return splitTransformsAndRoot(tree)[0];
   }, [tree]);

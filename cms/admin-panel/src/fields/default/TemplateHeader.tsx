@@ -127,7 +127,7 @@ function TransformMenu({
           value={fetchTransform !== undefined}
           setValue={(value) => {
             push([
-              id,
+              "",
               [
                 {
                   name: "fetch",
@@ -149,9 +149,8 @@ function TransformMenu({
             <Range
               value={(fetchTransform.data as GetFunctionData<"fetch">)[0]}
               setValue={(limit) => {
-                const a: GetFunctionData<"fetch"> = {} as any;
                 push([
-                  id,
+                  "",
                   [
                     {
                       name: "fetch",
