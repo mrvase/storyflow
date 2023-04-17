@@ -1,6 +1,5 @@
-import React from "react";
 import cl from "clsx";
-import { FieldId, Transform } from "@storyflow/backend/types";
+import { FieldId, GetFunctionData, Transform } from "@storyflow/backend/types";
 import {
   ChevronDownIcon,
   ChevronUpIcon,
@@ -8,21 +7,26 @@ import {
   ScissorsIcon,
 } from "@heroicons/react/24/outline";
 import { addImport } from "../../custom-events";
-import { createRawTemplateFieldId } from "@storyflow/backend/ids";
+import {
+  createRawTemplateFieldId,
+  getDocumentId,
+  getRawFieldId,
+} from "@storyflow/backend/ids";
 import { useFieldTemplate } from "./useFieldTemplate";
 import { useFieldFocus } from "../../field-focus";
-import { useFieldConfig } from "../../documents/collab/hooks";
 import { Checkbox } from "../../elements/Checkbox";
 import { Range } from "../../elements/Range";
 import { Menu } from "@headlessui/react";
 import { MenuTransition } from "../../elements/transitions/MenuTransition";
+import { useDocumentMutate } from "../../documents/collab/DocumentCollabContext";
+import { FieldOperation } from "shared/operations";
 
 export function TemplateHeader({
   id,
-  setTransform,
+  transforms,
 }: {
   id: FieldId;
-  setTransform: (transform: Transform | undefined) => void;
+  transforms: Transform[];
 }) {
   const [focused] = useFieldFocus();
   const isLink = focused && focused !== id;
@@ -62,7 +66,7 @@ export function TemplateHeader({
                 className="bg-button mt-1 rounded shadow flex flex-col outline-none overflow-hidden w-52 ring-1 ring-gray-600"
                 data-focus-remain="true"
               >
-                <TransformMenu id={id} setTransform={setTransform} />
+                <TransformMenu id={id} transforms={transforms} />
               </Menu.Items>
             </MenuTransition>
           </div>
@@ -104,43 +108,56 @@ export function TemplateHeader({
 
 function TransformMenu({
   id,
-  setTransform,
+  transforms,
 }: {
   id: FieldId;
-  setTransform: (transform: Transform | undefined) => void;
+  transforms: Transform[];
 }) {
-  const [config, setConfig] = useFieldConfig(id);
+  const fetchTransform = transforms.find((el) => el.type === "fetch");
+
+  const { push } = useDocumentMutate<FieldOperation>(
+    getDocumentId(id),
+    getRawFieldId(id)
+  );
+
   return (
     <div className="p-2 flex flex-col gap-2">
       <div className="text-xs">
         <Checkbox
-          value={config?.transform?.type === "sortlimit"}
+          value={fetchTransform !== undefined}
           setValue={(value) => {
-            const transform = value
-              ? ({ type: "sortlimit", data: { limit: 50 } } as const)
-              : undefined;
-            setConfig("transform", transform);
-            setTransform(transform);
+            push([
+              "",
+              [
+                {
+                  name: "fetch",
+                  value: value ? ([50] as [number]) : null,
+                },
+              ],
+            ]);
           }}
           label="Hent dokumenter fra mapper"
           small
         />
       </div>
-      {config?.transform?.type === "sortlimit" && (
+      {fetchTransform !== undefined && (
         <>
           <div className="flex items-center gap-1.5 text-xs">
             <ScissorsIcon className="w-3 h-3" /> Begræns antal
           </div>
           <div className="py-1 pl-[1.175rem]">
             <Range
-              value={config.transform.data!.limit}
+              value={(fetchTransform.data as GetFunctionData<"fetch">)[0]}
               setValue={(limit) => {
-                const transform = {
-                  type: "sortlimit",
-                  data: { limit },
-                } as const;
-                setConfig("transform", transform);
-                setTransform(transform);
+                push([
+                  "",
+                  [
+                    {
+                      name: "fetch",
+                      value: [limit] as [number],
+                    },
+                  ],
+                ]);
               }}
             />
           </div>

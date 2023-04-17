@@ -1,20 +1,9 @@
 /*
-User input -> TokenStream
-TokenStream -> SyntaxTree
-SyntaxTree -> SyntaxStream
-SyntaxStream -> SyntaxTree
-SyntaxTree -> ValueArray
-SyntaxStream -> ValueArray
-SyntaxTree -> TokenStream
-SyntaxTree -> RenderTree
-
-
 User input --> Token Stream
                  <-[eq]->
         SyntaxTree<WithSyntaxError>
           <-[eq]->      --[ss]->
     SyntaxStream --[ss]-> ValueArray --> RenderTree
-
 */
 
 declare const brand: unique symbol;
@@ -163,8 +152,7 @@ export type TokenStreamSymbol =
   | { "]": true }
   | { ",": true }
   | { _: Operator }
-  | { ")": FunctionName }
-  | { ")": "sortlimit"; l: number; s?: SortSpec };
+  | FunctionSymbol;
 
 export type TokenStream = HasSelect<StreamEntity<TokenStreamSymbol>>[];
 
@@ -179,7 +167,7 @@ export type WithSyntaxError = {
 export type SyntaxNode<
   WithExtraChildren extends WithSyntaxError | never = WithSyntaxError | never
 > = {
-  type: Operator | FunctionName | "merge" | "array" | "root" | null;
+  type: Operator | FunctionName | "array" | null;
   children: (
     | SyntaxNode<WithExtraChildren>
     | Parameter
@@ -189,7 +177,7 @@ export type SyntaxNode<
     | any[] // like streams, they are never nested, but this allows us to have ValueArray as a child as well.
     | WithExtraChildren
   )[];
-  data?: Record<string, any>;
+  data?: any;
   open?: true;
 };
 
@@ -197,11 +185,9 @@ export type SyntaxTree<
   WithExtraChildren extends WithSyntaxError | never = WithSyntaxError | never
 > = SyntaxNode<WithExtraChildren>;
 
-export type Transform = Pick<SyntaxNode, "type" | "data"> & {
-  children?: (
-    | Exclude<SyntaxNode["children"][number], SyntaxNode>
-    | Transform
-  )[];
+export type Transform = {
+  type: FunctionName;
+  data?: SyntaxNode["data"];
 };
 
 export type SyntaxTreeRecord = { [key: FieldId]: SyntaxTree<WithSyntaxError> };
@@ -212,15 +198,12 @@ export type SyntaxTreeRecord = { [key: FieldId]: SyntaxTree<WithSyntaxError> };
 
 export type SyntaxStreamSymbol =
   | { "(": true }
-  | { ")": true | false } // false means it does not close anything (syntax error) - should be ignored
+  | { ")": true }
   | { "[": true }
   | { "]": true }
-  | { "{": true }
-  | { "}": true }
-  | { ")": "root" }
-  | { ")": "select"; f: RawFieldId; i?: RawDocumentId }
-  | { ")": "sortlimit"; l: number; s?: SortSpec }
-  | { ")": Exclude<Operator | FunctionName, "select" | "sortlimit"> }
+  | { ")": false } // false means it does not close anything (syntax error) - should be ignored
+  | OperatorSymbol
+  | FunctionSymbol
   | null;
 
 export type SyntaxStream = StreamEntity<SyntaxStreamSymbol>[];
@@ -258,8 +241,6 @@ export const operators = [
   "|",
 ] as const;
 
-export type Operator = (typeof operators)[number];
-
 export const functions = [
   "in",
   "concat",
@@ -268,12 +249,67 @@ export const functions = [
   "slug",
   "url",
   "select",
-  "sortlimit",
+  "root",
+  "merge",
+  "template",
+  "fetch",
 ] as const;
 
+export type Operator = (typeof operators)[number];
 export type FunctionName = (typeof functions)[number];
 
-export type FieldType = "default" | "url" | "slug";
+type StringToToken<K> = K extends string
+  ? {
+      [P in K]: true;
+    }
+  : never;
+
+type RecursivelyGenerateTokensFromArray<T extends readonly string[]> =
+  T extends readonly [infer K, ...infer Rest]
+    ?
+        | StringToToken<K>
+        | RecursivelyGenerateTokensFromArray<
+            Rest extends readonly string[] ? Rest : []
+          >
+    : T extends [infer K]
+    ? StringToToken<K>
+    : never;
+
+export type OperatorSymbol = RecursivelyGenerateTokensFromArray<
+  typeof operators
+>;
+
+export type Sorting = `${"-" | "+"}${RawFieldId}`;
+
+export type FunctionSymbol =
+  | { in: true }
+  | { concat: true }
+  | { sum: true }
+  | { filter: true }
+  | { slug: true }
+  | { url: true }
+  | { root: true }
+  | { merge: true }
+  | { template: RawDocumentId }
+  | { select: RawFieldId }
+  | { fetch: [limit: number, ...sortings: Sorting[]] };
+
+type Assert<T extends true> = T;
+type Keys = KeysOfUnion<FunctionSymbol>;
+type AssertFunctionEquality = Assert<
+  Keys extends FunctionName ? (FunctionName extends Keys ? true : false) : false
+>;
+
+type KeysOfUnion<T> = T extends T ? keyof T : never;
+type ValuesOfUnion<T> = T extends T ? T[keyof T] : never;
+
+export type FunctionData = ValuesOfUnion<FunctionSymbol>;
+export type GetFunctionData<T extends FunctionName> = Extract<
+  FunctionSymbol,
+  { [P in T]: any }
+>[T];
+
+export type FieldType = "url";
 
 export type RestrictTo =
   | "string"
@@ -283,15 +319,15 @@ export type RestrictTo =
   | "color"
   | "image"
   | "video"
-  | "children";
+  | "children"
+  | "data";
 
-export type FieldConfig<T extends FieldType = FieldType> = {
+export type FieldConfig = {
+  type?: "url";
   id: FieldId;
   label: string;
-  type: T;
   template?: DocumentId;
   restrictTo?: RestrictTo;
-  transform?: Transform;
 };
 
 export type TemplateRef = {
@@ -389,5 +425,3 @@ export interface Settings {
 }
 
 export type SearchableProps = Record<string, Record<string, boolean>>;
-
-export type SortSpec = Record<RawFieldId, 1 | -1>;

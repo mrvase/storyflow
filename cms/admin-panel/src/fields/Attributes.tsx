@@ -3,14 +3,13 @@ import React from "react";
 import {
   FieldConfig,
   FieldId,
-  FieldType,
   NestedDocumentId,
   NestedEntity,
   ValueArray,
 } from "@storyflow/backend/types";
 import { useFieldId } from "./FieldIdContext";
 import { getConfigFromType, useClientConfig } from "../client-config";
-import { createTemplateFieldId } from "@storyflow/backend/ids";
+import { createTemplateFieldId, getDocumentId } from "@storyflow/backend/ids";
 import { useGlobalState } from "../state/state";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
 import { useClient } from "../client";
@@ -43,7 +42,7 @@ export function AttributesProvider({
   );
 }
 
-const noTemplate: FieldConfig<FieldType>[] = [];
+const noTemplate: FieldConfig[] = [];
 
 export function Attributes({
   entity,
@@ -143,7 +142,11 @@ function PropPreview({
   const initialValue = record[prop.id] ?? DEFAULT_SYNTAX_TREE;
 
   const [output] = useGlobalState<ValueArray>(prop.id, () =>
-    calculateFn(rootId, initialValue, { record, client })
+    calculateFn(initialValue, {
+      record,
+      client,
+      documentId: getDocumentId(rootId),
+    })
   );
 
   const preview = ["number", "string"].includes(typeof output[0])

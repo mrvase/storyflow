@@ -4,20 +4,28 @@ import {
   FolderId,
   NestedFolder,
   NestedDocument,
+  FieldId,
 } from "@storyflow/backend/types";
 import { createTemplateFieldId, getDocumentId } from "@storyflow/backend/ids";
-import { ComputerDesktopIcon, DocumentIcon } from "@heroicons/react/24/outline";
+import {
+  Bars3BottomLeftIcon,
+  ComputerDesktopIcon,
+  DocumentIcon,
+} from "@heroicons/react/24/outline";
 import React from "react";
 import { useFolders } from "../../folders/collab/hooks";
 import { Option } from "./Option";
 import { useFieldId } from "../FieldIdContext";
 import { useDocumentIdGenerator } from "../../id-generator";
-import { markMatchingString } from "../query/helpers";
+import { markMatchingString } from "./helpers";
 import { SWRClient } from "../../client";
 import { calculateFromRecord } from "@storyflow/backend/calculate";
 import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
 import Loader from "../../elements/Loader";
 import { useFieldConfig } from "../../documents/collab/hooks";
+import { usePath } from "../Path";
+import { useLoopTemplate } from "../default/LoopTemplateContext";
+import { useTemplate } from "../default/useFieldTemplate";
 
 export function ReferencePrompt({
   prompt,
@@ -26,10 +34,12 @@ export function ReferencePrompt({
   prompt: string;
   replacePromptWithStream: (stream: TokenStream) => void;
 }) {
-  const apps = useFolders();
-
   return (
     <>
+      <TemplateFieldPrompt
+        prompt={prompt}
+        replacePromptWithStream={replacePromptWithStream}
+      />
       <DocumentPrompt
         prompt={prompt}
         replacePromptWithStream={replacePromptWithStream}
@@ -42,7 +52,7 @@ export function ReferencePrompt({
   );
 }
 
-function FolderPrompt({
+function TemplateFieldPrompt({
   prompt,
   replacePromptWithStream,
 }: {
@@ -53,12 +63,69 @@ function FolderPrompt({
   const documentId = getDocumentId(id) as DocumentId;
   const generateDocumentId = useDocumentIdGenerator();
 
+  const path = usePath();
+
+  const template = path
+    .map((el, i) => {
+      if (i % 2) {
+        return useLoopTemplate(el)[0];
+      }
+    })
+    .find(Boolean);
+
+  const fields = useTemplate(template as DocumentId);
+
+  const onEnter = React.useCallback(
+    (id: FieldId) => {
+      console.log("FIELD ID", id);
+    },
+    [replacePromptWithStream]
+  );
+
+  if (!template) {
+    return null;
+  }
+
+  const options = (fields ?? [])
+    .filter((el) => el.label.toLowerCase().startsWith(prompt.toLowerCase()))
+    .map((el) => ({
+      value: el.id,
+      label: markMatchingString(el.label, prompt),
+    }));
+
+  return (
+    <div className="p-2.5">
+      <div className="font-medium text-gray-400 mb-1 ml-1">
+        Felter fra Gentag
+      </div>
+      {options.map(({ value, label }) => (
+        <Option
+          value={value}
+          onEnter={onEnter}
+          onEnterLabel={"Indsæt"}
+          Icon={Bars3BottomLeftIcon}
+        >
+          {label}
+        </Option>
+      ))}
+    </div>
+  );
+}
+
+function FolderPrompt({
+  prompt,
+  replacePromptWithStream,
+}: {
+  prompt: string;
+  replacePromptWithStream: (stream: TokenStream) => void;
+}) {
+  const fieldId = useFieldId();
+  const documentId = getDocumentId(fieldId) as DocumentId;
+  const generateDocumentId = useDocumentIdGenerator();
+
   const folders = useFolders();
 
-  const fieldId = useFieldId();
   const [fieldConfig, setFieldConfig] = useFieldConfig(fieldId);
-
-  console.log("FOLDERS", folders);
 
   const onEnter = React.useCallback(
     ({ folder, templateId }: { folder: FolderId; templateId?: DocumentId }) => {
@@ -90,7 +157,7 @@ function FolderPrompt({
 
   return (
     <div className="p-2.5">
-      <div className="font-medium opacity-50 mb-1 ml-1">Mapper</div>
+      <div className="font-medium text-gray-400 mb-1 ml-1">Mapper</div>
       {options.map(({ value, label, Icon, onEnter, onEnterLabel }) => (
         <Option
           value={value}
@@ -176,7 +243,7 @@ function DocumentPrompt({
 
   return (
     <div className="p-2.5">
-      <div className="font-medium opacity-50 mb-1 ml-1">Dokumenter</div>
+      <div className="font-medium text-gray-400 mb-1 ml-1">Dokumenter</div>
       {prompt === "" && (
         <div className="px-1 py-2.5 text-gray-400 italic">Indtast søgning</div>
       )}

@@ -5,7 +5,7 @@ describe("concat", () => {
   const { createTests } = createEnvironment();
   createTests([
     {
-      tokens: [{ "(": true }, "a", { ",": true }, "b", { ")": "concat" }],
+      tokens: [{ "(": true }, "a", { ",": true }, "b", { concat: true }],
       syntax: {
         ...root,
         children: [
@@ -15,7 +15,7 @@ describe("concat", () => {
           },
         ],
       },
-      stream: [{ "(": true }, "a", "b", { ")": "concat" }],
+      stream: [{ "(": true }, "a", "b", { concat: true }],
       value: ["ab"],
     },
   ]);

@@ -18,6 +18,31 @@ import {
 } from "@storyflow/backend/types";
 import { queryArrayProp } from "./queryArrayProp";
 
+/*
+LineBreak √
+Parameter √
+(Tokens) (should pass through)
+- input √
+- ctx √
+- src √
+- color √
+- name √
+(NestedEntity) (has id field)
+- "NestedField" √
+- NestedElement √
+- NestedFolder √
+- NestedDocument √
+- NestedCreator √
+(Symbols) (must be interpreted)
+- "(" √
+- "[" √
+- (the rest is handled in compute:) 
+- ")"
+- "]"
+- Operators
+- Functions
+*/
+
 type Accummulator = {
   value: DBValueArray[];
   stack: DBValueArray[][];
@@ -51,7 +76,7 @@ const calculateCombinations = (
 
 const compute = (
   $: Operators<DBDocumentRaw>,
-  operator: Operator | FunctionName | "root" | "}" | "]" | ")",
+  operator: Operator | FunctionName | "]" | ")",
   acc: Accummulator
 ) =>
   $.switch()
@@ -123,7 +148,7 @@ const compute = (
       ],
     ])
     */
-    .case($.eq(operator, "}"), () => [
+    .case($.eq(operator, "merge"), () => [
       $.filter(
         $.reduce(
           acc.value,
@@ -218,27 +243,21 @@ const compute = (
                         $.switch()
                           .case($.isNumber(cur), () => $.toString(cur))
                           .case($.eq($.type(cur), "string"), () =>
-                            $.concat([
-                              $.cond(
-                                $.and(
-                                  $.eq(operator, "url"),
-                                  $.ne(cur, ""),
-                                  $.ne(acc, "")
-                                ),
-                                () => "/",
-                                () => ""
-                              ),
-                              replaceAllWithRegex(
-                                $,
-                                cur as string,
-                                $.cond(
-                                  $.eq(operator, "url"),
-                                  () => "[^\\w\\-\\*\\/]",
-                                  () => "[^\\w\\-]"
-                                ),
-                                "i"
-                              ),
-                            ])
+                            $.cond(
+                              $.and($.eq(acc, "/"), $.eq(cur, "/")),
+                              () => "",
+                              () =>
+                                replaceAllWithRegex(
+                                  $,
+                                  cur as string,
+                                  $.cond(
+                                    $.eq(operator, "url"),
+                                    () => "[^\\w\\-\\*\\/]",
+                                    () => "[^\\w\\-]"
+                                  ),
+                                  "i"
+                                )
+                            )
                           )
                           .default(() => ""),
                       ]),
@@ -305,9 +324,7 @@ const isObjectWithProp = <Object, Prop extends string>(
 ): boolean => {
   return $.cond(
     $.eq($.type(object), "object"),
-    () => {
-      return $.eq($.type((object as any)[prop]), type);
-    },
+    () => $.eq($.type((object as any)[prop]), type),
     () => false
   );
 };
@@ -322,7 +339,7 @@ const levelImplicitAndExplicitArrays = (
       $.concatArrays(acc, [
         $.cond(
           $.isArray($.first(cur)),
-          () => $.first(cur),
+          () => $.first(cur) as any,
           () => cur
         ),
       ]),
@@ -339,6 +356,12 @@ const slugCharacters = [
   ["ø", "oe"],
   ["å", "aa"],
 ];
+
+const append = ($: Operators<DBDocumentRaw>, acc: Accummulator, cur: any) => {
+  return $.mergeObjects(acc, {
+    value: $.concatArrays(acc.value, [[cur]]),
+  });
+};
 
 const replaceAllWithRegex = (
   $: Operators<DBDocumentRaw>,
@@ -371,7 +394,6 @@ const replaceAllWithRegex = (
 };
 
 type IgnorableImport = { field: DBId<FieldId>; ignore: boolean };
-type StreamWithIgnorableImport = (DBSyntaxStream[number] | IgnorableImport)[];
 
 export const calculate = (
   $: Operators<DBDocumentRaw>,
@@ -385,7 +407,7 @@ export const calculate = (
         (acc, cur) => {
           return $.define()
             .let({
-              isSelect: isObjectWithProp($, cur, "f", "string"),
+              isSelect: isObjectWithProp($, cur, "select", "string"),
               nestedDocumentId: $.cond(
                 $.or(
                   $.eq($.type((cur as any).element), "string"),
@@ -455,9 +477,9 @@ export const calculate = (
                                         (
                                           cur as Narrow<
                                             typeof cur,
-                                            { f: RawFieldId }
+                                            { select: RawFieldId }
                                           >
-                                        ).f,
+                                        ).select,
                                       ])
                                     ),
                                   } as HasDBId<NestedField>,
@@ -565,7 +587,7 @@ export const calculate = (
                                 >;
                                 return (
                                   $.switch()
-                                    // if [number]:
+                                    // if Parameter:
                                     .case($.isNumber((curObj as any).x), () =>
                                       $.define()
                                         .let({
@@ -611,25 +633,31 @@ export const calculate = (
                                         )
                                     )
                                     // if "n": IGNORE
-                                    // if "/": DO NOT IGNORE - will be handled by merge
                                     .case(
-                                      $.eq($.type((cur as any).n), "bool"),
+                                      $.eq($.type((curObj as any).n), "bool"),
                                       () => acc
                                     )
                                     // if nested element: IGNORE
                                     .case(
                                       $.eq(
-                                        $.type((cur as any).element),
+                                        $.type((curObj as any).element),
                                         "string"
                                       ),
                                       () => acc
                                     )
-                                    // if "(" or "{" "[": STACK
+                                    // if any other nested entity (Folder, Document, Creator): APPEND
+                                    .case(
+                                      $.eq(
+                                        $.type((curObj as any).id),
+                                        "string"
+                                      ),
+                                      () => append($, acc, cur)
+                                    )
+                                    // if "(" or "[": STACK
                                     .case(
                                       $.in("bool", [
-                                        $.type((cur as any)["("]),
-                                        $.type((cur as any)["{"]),
-                                        $.type((cur as any)["["]),
+                                        $.type((curObj as any)["("]),
+                                        $.type((curObj as any)["["]),
                                       ]),
                                       () =>
                                         $.mergeObjects(acc, {
@@ -642,67 +670,29 @@ export const calculate = (
                                     .default(() =>
                                       $.define()
                                         .let({
-                                          operator: $.switch()
-                                            .case(
-                                              $.eq(
-                                                $.type((cur as any)[")"]),
-                                                "string"
-                                              ),
-                                              () =>
-                                                (
-                                                  cur as Narrow<
-                                                    typeof cur,
-                                                    {
-                                                      ")":
-                                                        | Operator
-                                                        | FunctionName;
-                                                    }
-                                                  >
-                                                )[")"]
-                                            )
-                                            .case(
-                                              $.eq(
-                                                $.type((cur as any)["}"]),
-                                                "bool"
-                                              ),
-                                              () => "}" as "}"
-                                            )
-                                            .case(
-                                              $.eq(
-                                                $.type((cur as any)[")"]),
-                                                "bool"
-                                              ),
-                                              () => ")" as ")"
-                                            )
-                                            .case(
-                                              $.eq(
-                                                $.type((cur as any)["]"]),
-                                                "bool"
-                                              ),
-                                              () => "]" as "]"
-                                            )
-                                            .default(() => null),
+                                          firstKey: $.getField(
+                                            $.first($.objectToArray(curObj)),
+                                            "k"
+                                          ),
                                         })
-                                        .return(({ operator }) => {
+                                        .return(({ firstKey }) => {
                                           return $.cond(
-                                            $.eq(operator, null),
-                                            () =>
-                                              $.mergeObjects(acc, {
-                                                value: $.concatArrays(
-                                                  acc.value,
-                                                  [[cur as any]]
-                                                ),
-                                              }),
+                                            // skip tokens
+                                            $.in(firstKey, [
+                                              "input",
+                                              "ctx",
+                                              "src",
+                                              "color",
+                                              "name",
+                                            ]),
+                                            () => append($, acc, cur),
                                             () => {
                                               return $.mergeObjects(acc, {
                                                 value: $.concatArrays(
                                                   $.last(acc.stack),
                                                   compute(
                                                     $,
-                                                    operator as Exclude<
-                                                      typeof operator,
-                                                      null
-                                                    >,
+                                                    firstKey as any,
                                                     acc
                                                   )
                                                 ),
@@ -714,12 +704,7 @@ export const calculate = (
                                     )
                                 );
                               },
-                              () =>
-                                $.mergeObjects(acc, {
-                                  value: $.concatArrays(acc.value, [
-                                    [cur as any],
-                                  ]),
-                                })
+                              () => append($, acc, cur)
                             ),
                           acc
                         ),

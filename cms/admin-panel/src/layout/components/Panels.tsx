@@ -33,7 +33,7 @@ export function Panels() {
   );
 
   return (
-    <div className="w-full h-full flex overflow-hidden">
+    <div className="relative w-full h-full flex overflow-hidden">
       <LinkReceiver index={0} edge="left" id="link-left" />
       <Sortable
         type="panels"
@@ -41,7 +41,7 @@ export function Panels() {
         onChange={onChange}
         canReceive={{
           link: () => "ignore",
-          move: ({ type, item }) => (type === "panels" ? "accept" : "ignore"),
+          move: ({ type }) => (type === "panels" ? "accept" : "ignore"),
         }}
       >
         <PanelGroup direction="horizontal">

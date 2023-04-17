@@ -13,7 +13,7 @@ export type QueueInvertStrategy<Operation extends DefaultOperation> = (
   context: { clientId: string }
 ) => Operation | null;
 
-export function withUndoRedo<Operation extends { mode?: string }>(
+export function withUndoRedo<Operation extends DefaultOperation>(
   queue: Queue<Operation>,
   strategy?: QueueInvertStrategy<Operation>
 ): WithUndoRedo<Queue<Operation>> {

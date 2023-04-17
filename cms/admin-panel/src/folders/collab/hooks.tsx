@@ -1,12 +1,18 @@
 import React from "react";
 import { DBFolder, FolderId, Space, SpaceId } from "@storyflow/backend/types";
-import { AddFolderOp, FolderOp, targetTools } from "shared/operations";
 import { createStaticStore } from "../../state/StaticStore";
 import { useInitialFolders } from "../FoldersContext";
 import { createReactSubject } from "../../state/useSubject";
 import { QueueListenerParam } from "@storyflow/state/collab/Queue";
 import { createCollaborativeState } from "../../state/createCollaborativeState";
 import { useFolderCollab } from "./FolderCollabContext";
+import {
+  FolderListOperation,
+  FolderOperation,
+  SpaceOperation,
+  isSpliceAction,
+  isToggleAction,
+} from "shared/operations";
 
 const useFoldersSubject = createReactSubject<DBFolder[]>();
 
@@ -45,12 +51,17 @@ export function useFolders() {
   const history = histories[""] ?? [];
 
   const operator = React.useCallback(
-    ({ forEach }: QueueListenerParam<AddFolderOp>) => {
+    ({ forEach }: QueueListenerParam<FolderListOperation>) => {
       let newArray = [...initialFolders];
 
       forEach(({ operation }) => {
-        operation.ops.forEach((action) => {
-          newArray.push(action);
+        operation[1].forEach((action) => {
+          if (typeof action === "object" && !("add" in action)) {
+            newArray.push(action as any);
+          }
+          if ("add" in action) {
+            newArray.push(action.add);
+          }
         });
       });
 
@@ -81,21 +92,19 @@ export function useFolder(id: FolderId): DBFolder {
   const history = histories[id] ?? [];
 
   const operator = React.useCallback(
-    ({ forEach }: QueueListenerParam<FolderOp>) => {
+    ({ forEach }: QueueListenerParam<FolderOperation>) => {
       const newFolder = { ...initialFolder };
       newFolder.spaces = [...(newFolder.spaces ?? [])];
 
       forEach(({ operation }) => {
-        if (targetTools.isOperation(operation, "folder-spaces")) {
-          operation.ops.forEach((action) => {
+        operation[1].forEach((action) => {
+          if (isSpliceAction(action)) {
             const { index, insert, remove } = action;
             newFolder.spaces!.splice(index, remove ?? 0, ...(insert ?? []));
-          });
-        } else if (targetTools.isOperation(operation, "property")) {
-          operation.ops.forEach((action) => {
+          } else if (isToggleAction(action)) {
             newFolder[action.name as "label"] = action.value;
-          });
-        }
+          }
+        });
       });
 
       return newFolder;
@@ -146,18 +155,18 @@ export function useSpace<T extends Space>({
   const version = folder?.versions?.[spaceId] ?? 0;
 
   const operator = React.useCallback(
-    ({ forEach }: QueueListenerParam<FolderOp>) => {
+    ({ forEach }: QueueListenerParam<SpaceOperation>) => {
       const newSpace = { ...initialSpace };
       if ("items" in newSpace) {
         newSpace.items = [...newSpace.items];
 
         forEach(({ operation }) => {
-          if (targetTools.isOperation(operation, "space-items")) {
-            operation.ops.forEach((action) => {
+          operation[1].forEach((action) => {
+            if (isSpliceAction(action)) {
               const { index, insert, remove } = action;
               newSpace.items.splice(index, remove ?? 0, ...(insert ?? []));
-            });
-          }
+            }
+          });
         });
       }
       return newSpace;

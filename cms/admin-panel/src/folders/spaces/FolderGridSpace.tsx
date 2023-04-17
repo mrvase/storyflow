@@ -14,8 +14,8 @@ import {
 } from "@heroicons/react/24/outline";
 import React from "react";
 import { AddFolderDialog } from "../AddFolderDialog";
-import { Splice, targetTools } from "shared/operations";
 import { Menu } from "../../layout/components/Menu";
+import { SpaceItemsAction } from "shared/operations";
 
 export function FolderGridSpace({
   spaceId,
@@ -32,18 +32,15 @@ export function FolderGridSpace({
 
   const collab = useFolderCollab();
   const handleDelete = () => {
-    collab.mutate("folders", `${folderId}`).push({
-      target: targetTools.stringify({
-        location: "",
-        operation: "folder-spaces",
-      }),
-      ops: [
+    collab.mutate("folders", folderId).push([
+      "",
+      [
         {
           index,
           remove: 1,
         },
       ],
-    });
+    ]);
   };
 
   return (
@@ -105,7 +102,7 @@ function FolderGrid({
 
   const onChange = React.useCallback(
     (actions: DragResultAction[]) => {
-      const ops: Splice<string>[] = actions.map((action) => {
+      const ops: SpaceItemsAction[] = actions.map((action) => {
         if (action.type === "add") {
           return {
             index: action.index,
@@ -118,13 +115,7 @@ function FolderGrid({
           };
         }
       });
-      collab.mutate("folders", `${folderId}/${spaceId}`).push({
-        target: targetTools.stringify({
-          location: "",
-          operation: "space-items",
-        }),
-        ops,
-      });
+      collab.mutate("folders", `${folderId}/${spaceId}`).push(["", ops]);
     },
     [collab, folderId, spaceId]
   );

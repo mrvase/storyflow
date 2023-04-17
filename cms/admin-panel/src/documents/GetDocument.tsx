@@ -1,6 +1,6 @@
 import React from "react";
 import { DocumentId, TemplateDocument } from "@storyflow/backend/types";
-import { useArticle } from ".";
+import { useDocument } from ".";
 
 export const GetDocument = ({
   id,
@@ -9,7 +9,7 @@ export const GetDocument = ({
   id: DocumentId;
   children: (article: TemplateDocument) => React.ReactNode;
 }) => {
-  let { article } = useArticle(id);
+  let { article } = useDocument(id);
   if (!article) return null;
   return <>{children(article)}</>;
 };

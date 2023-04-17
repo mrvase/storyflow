@@ -1,24 +1,18 @@
 import { computeFieldId, createFieldId } from "./ids";
 import { tokens } from "./tokens";
 import {
-  LineBreak,
   NestedFolder,
-  Parameter,
   SyntaxTree,
   ValueArray,
-  WithSyntaxError,
   ContextToken,
   DocumentId,
   FieldId,
-  FolderId,
   FunctionName,
-  NestedDocumentId,
-  NestedField,
   Operator,
-  RawFieldId,
-  SortSpec,
   SyntaxTreeRecord,
   NestedDocument,
+  GetFunctionData,
+  Sorting,
 } from "./types";
 import { isSyntaxTree } from "./syntax-tree";
 
@@ -74,7 +68,7 @@ parameters are: [[0, 1, 2, 3, 4, 5], [true, false, false]] (since square bracket
 export type FolderFetch = {
   folder: NestedFolder;
   limit: number;
-  sort?: SortSpec;
+  sort?: Sorting[];
 };
 
 type Importers = FieldId | FolderFetch | ContextToken;
@@ -212,33 +206,31 @@ function compute(
           let strings = values.map((el) =>
             ["number", "string"].includes(typeof el) ? `${el}` : ""
           );
-          return strings
-            .map((string, index) => {
-              if (string === "") {
-                return "";
-              }
-              const matches = Array.from(
-                string.matchAll(type === "url" ? /[^\w\/\*\-]/g : /[^\w\-]/g)
-              );
+          const string = strings.reduce((acc, string, index) => {
+            if (string === "" || (acc === "/" && string === "/")) {
+              return acc;
+            }
 
-              let offset = 0;
+            const matches = Array.from(
+              string.matchAll(type === "url" ? /[^\w\/\*\-]/g : /[^\w\-]/g)
+            );
 
-              matches.forEach((el) => {
-                const match = el[0];
-                const anchor = el.index! + offset;
-                const focus = anchor + match.length;
-                const replacement =
-                  slugCharacters.find(([char]) => char === match)?.[1] ?? "";
-                string =
-                  string.slice(0, anchor) + replacement + string.slice(focus);
-                offset += replacement.length - match.length;
-              });
+            let offset = 0;
 
-              return `${string.toLowerCase()}${
-                type === "url" && index !== strings.length - 1 ? "/" : ""
-              }`;
-            })
-            .join("");
+            matches.forEach((el) => {
+              const match = el[0];
+              const anchor = el.index! + offset;
+              const focus = anchor + match.length;
+              const replacement =
+                slugCharacters.find(([char]) => char === match)?.[1] ?? "";
+              string =
+                string.slice(0, anchor) + replacement + string.slice(focus);
+              offset += replacement.length - match.length;
+            });
+
+            return `${acc}${string.toLowerCase()}`;
+          }, "");
+          return string;
         }),
       ];
     case "in":
@@ -434,9 +426,8 @@ export function calculate(node: SyntaxTree, getState: StateGetter): ValueArray {
 
     // run function
 
-    if (node.type === "sortlimit") {
-      const limit = (node.data!.limit as number) ?? 10;
-      const sort = (node.data!.sort as SortSpec) ?? {};
+    if (node.type === "fetch") {
+      const [limit, ...sort] = node.data as GetFunctionData<"fetch">;
 
       let docs = spreadImplicitArrays(values).reduce(
         (acc: NestedDocument[], el) => {
@@ -472,7 +463,7 @@ export function calculate(node: SyntaxTree, getState: StateGetter): ValueArray {
     }
 
     if (node.type === "select") {
-      const select = node.data!.select as RawFieldId;
+      const select = node.data as GetFunctionData<"select">;
 
       values = [
         spreadImplicitArrays(
@@ -495,13 +486,13 @@ export function calculate(node: SyntaxTree, getState: StateGetter): ValueArray {
     } else if (node.type === null) {
       // brackets
       values = [spreadImplicitArrays(values)];
-    } else if (node.type === ("array" as any)) {
+    } else if (node.type === "array") {
       values = [[spreadImplicitArrays(values)]];
     } else {
       values = compute(
         node.type as Exclude<
           typeof node.type,
-          "select" | "sortlimit" | "array" | null
+          "select" | "fetch" | "array" | "root" | null
         >,
         values
       );

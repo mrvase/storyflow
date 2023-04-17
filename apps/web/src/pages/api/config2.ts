@@ -26,7 +26,7 @@ export default async function handler(
     createConfig({
       builderUrl: `${process.env.BASE_URL as string}/builder`,
       revalidateUrl: `${process.env.BASE_URL as string}/api/revalidate`,
-      libraries: [],
+      libraries: [config],
     })
   );
 }

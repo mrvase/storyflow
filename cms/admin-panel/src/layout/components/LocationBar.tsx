@@ -15,7 +15,7 @@ import { usePanel } from "../../panel-router/Routes";
 import { usePanelActions } from "../../panel-router/PanelRouter";
 import { useDragItem } from "@storyflow/dnd";
 import { parseSegment } from "./routes";
-import { useOptimisticDocumentList, useArticle } from "../../documents";
+import { useOptimisticDocumentList, useDocument } from "../../documents";
 import { useLabel } from "../../documents/collab/hooks";
 import { useDocumentLabel } from "../../documents/useDocumentLabel";
 import { useFolder } from "../../folders/collab/hooks";
@@ -91,14 +91,14 @@ export function LocationBar({
             />
           ))}
         </div>
-        <button
+        {/*<button
           className={cl(
             "shrink-0 ml-auto flex items-center justify-center h-full px-2",
             "opacity-50 hover:opacity-100 transition-opacity"
           )}
         >
           <BookmarkIcon className="w-4 h-4" />
-        </button>
+        </button>*/}
         <button
           className={cl(
             "shrink-0 flex items-center justify-center h-full px-2",
@@ -172,7 +172,7 @@ function LocationBarItem({
       loading = true;
     }
   } else if (type === "document" || type === "template") {
-    let { article, error } = useArticle(data.id);
+    let { article, error } = useDocument(data.id);
     label = useDocumentLabel(article) ?? "";
 
     if (!article && !error) {

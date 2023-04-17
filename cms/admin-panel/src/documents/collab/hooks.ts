@@ -4,16 +4,13 @@ import {
   DocumentId,
   FieldConfig,
   FieldId,
-  RawFieldId,
   TemplateRef,
 } from "@storyflow/backend/types";
 import { useDocumentCollab, useDocumentMutate } from "./DocumentCollabContext";
-import { PropertyOp, targetTools, DocumentConfigOp } from "shared/operations";
 import { getFieldConfig, setFieldConfig } from "shared/getFieldConfig";
 import { createPurger, createStaticStore } from "../../state/StaticStore";
-import { useArticle } from "..";
+import { useDocument } from "..";
 import {
-  computeFieldId,
   getDocumentId,
   getTemplateDocumentId,
   isTemplateField,
@@ -24,6 +21,11 @@ import { ServerPackage } from "@storyflow/state";
 import { createCollaborativeState } from "../../state/createCollaborativeState";
 import { QueueListenerParam } from "@storyflow/state/collab/Queue";
 import { useTemplatePath } from "../TemplatePathContext";
+import {
+  DocumentOperation,
+  isSpliceAction,
+  isToggleAction,
+} from "shared/operations";
 
 /*
 export const labels = createStaticStore<
@@ -53,7 +55,7 @@ export const useDocumentConfig = (
   templateId: DocumentId, // template id
   data: {
     config: DocumentConfig;
-    history?: ServerPackage<DocumentConfigOp | PropertyOp>[];
+    history?: ServerPackage<DocumentOperation>[];
     version?: number;
   }
 ) => {
@@ -61,7 +63,7 @@ export const useDocumentConfig = (
     return templatesPurger(templateId);
   }, []);
 
-  let { mutate } = useArticle(templateId);
+  let { mutate } = useDocument(templateId);
 
   const refreshed = React.useRef(false);
 
@@ -80,20 +82,19 @@ export const useDocumentConfig = (
   const collab = useDocumentCollab();
 
   const operator = React.useCallback(
-    ({ forEach }: QueueListenerParam<DocumentConfigOp | PropertyOp>) => {
+    ({ forEach }: QueueListenerParam<DocumentOperation>) => {
       let newTemplate = [...data.config];
 
       forEach(({ operation }) => {
-        if (targetTools.isOperation(operation, "document-config")) {
-          operation.ops.forEach((action) => {
+        const [target, ops] = operation;
+        ops.forEach((action) => {
+          if (isSpliceAction(action)) {
             // reordering of fields
             const { index, insert, remove } = action;
             newTemplate.splice(index, remove ?? 0, ...(insert ?? []));
-          });
-        } else if (targetTools.isOperation(operation, "property")) {
-          // changing properties
-          const fieldId = targetTools.getLocation(operation.target) as FieldId;
-          operation.ops.forEach((action) => {
+          } else if (isToggleAction(action)) {
+            // changing properties
+            const fieldId = target as FieldId;
             // TODO: it is now possible to set an overwriting config for template fields.
             // if the overwriting config has not been set before, there is no property
             // for it. So we need to create the property with an array, and add
@@ -133,8 +134,8 @@ export const useDocumentConfig = (
               ...ps,
               [action.name]: action.value,
             }));
-          });
-        }
+          }
+        });
       });
 
       return newTemplate;
@@ -185,7 +186,7 @@ export function useFieldConfig(
   };
 
   const useNonReactiveConfig = (fieldId: FieldId) => {
-    const { article: template } = useArticle(
+    const { article: template } = useDocument(
       getDocumentId(fieldId) as DocumentId
     );
     return getFieldConfig(template?.config ?? [], fieldId);
@@ -226,14 +227,14 @@ export function useFieldConfig(
   } else {
     // should not update reactively
     const id = revertTemplateFieldId(fieldId);
-    const { article: template } = useArticle(templateDocumentId);
+    const { article: template } = useDocument(templateDocumentId);
     config = template?.config?.find(
       (el): el is FieldConfig => "id" in el && el.id === id
     );
   }
   */
 
-  const { push } = useDocumentMutate<PropertyOp>(documentId, documentId);
+  const { push } = useDocumentMutate<DocumentOperation>(documentId, documentId);
 
   const setter = React.useCallback(
     <Name extends keyof FieldConfig>(
@@ -246,18 +247,15 @@ export function useFieldConfig(
       // if (!isNative) return;
       const value =
         typeof payload === "function" ? payload(config?.[name]) : payload;
-      push({
-        target: targetTools.stringify({
-          operation: "property",
-          location: fieldId,
-        }),
-        ops: [
+      push([
+        fieldId,
+        [
           {
             name,
             value,
           },
         ],
-      });
+      ]);
     },
     [config, push]
   );
@@ -289,7 +287,7 @@ export function useLabel(
   }, [config]);
 
   const templateId = getDocumentId(originalFieldId) as DocumentId;
-  const { article } = useArticle(templateId);
+  const { article } = useDocument(templateId);
 
   const initialLabel = React.useMemo(() => {
     if (!article) {

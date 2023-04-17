@@ -66,25 +66,25 @@ const flattenList = (list_: (NestedDocument | DocumentImport)[]) => {
 
 describe("calculator - simple arithmetics", () => {
   it("multiplies", () => {
-    const computation: Computation = [{ "(": true }, 2, 5, { ")": "*" }];
+    const computation: Computation = [{ "(": true }, 2, 5, { "*": true }];
     const result: Value[] = [2 * 5];
 
     return test(computation, result);
   });
   it("adds", () => {
-    const computation: Computation = [{ "(": true }, 2, 5, { ")": "+" }];
+    const computation: Computation = [{ "(": true }, 2, 5, { "+": true }];
     const result: Value[] = [2 + 5];
 
     return test(computation, result);
   });
   it("divides", () => {
-    const computation: Computation = [{ "(": true }, 2, 5, { ")": "/" }];
+    const computation: Computation = [{ "(": true }, 2, 5, { "/": true }];
     const result: Value[] = [2 / 5];
 
     return test(computation, result);
   });
   it("subtracts", () => {
-    const computation: Computation = [{ "(": true }, 2, 5, { ")": "-" }];
+    const computation: Computation = [{ "(": true }, 2, 5, { "-": true }];
     const result: Value[] = [2 - 5];
 
     return test(computation, result);
@@ -93,7 +93,7 @@ describe("calculator - simple arithmetics", () => {
 
 describe("calculator - complex arithmetics", () => {
   it("multiplies many numbers", () => {
-    const computation: Computation = [{ "(": true }, 2, 5, 3, 4, { ")": "*" }];
+    const computation: Computation = [{ "(": true }, 2, 5, 3, 4, { "*": true }];
     const result: Value[] = [2 * 5 * 3 * 4];
 
     return test(computation, result);
@@ -104,9 +104,9 @@ describe("calculator - complex arithmetics", () => {
       { "(": true },
       5,
       3,
-      { ")": "+" },
+      { "+": true },
       2,
-      { ")": "*" },
+      { "*": true },
     ];
     const result: Value[] = [(5 + 3) * 2];
 
@@ -120,7 +120,7 @@ describe("calculator - imports", () => {
       { "(": true },
       2,
       { id: "imp", fref: "a" as FieldId },
-      { ")": "*" },
+      { "*": true },
     ];
     const result: Value[] = [2 * 5];
     const imports: ComputationBlock[] = [{ id: "a", value: [5] }];
@@ -132,7 +132,7 @@ describe("calculator - imports", () => {
       { "(": true },
       2,
       { id: "imp", fref: "a" as FieldId },
-      { ")": "*" },
+      { "*": true },
     ];
     const result: Value[] = [2 * (5 - 3 - 1)];
 
@@ -145,7 +145,7 @@ describe("calculator - imports", () => {
           5,
           { id: "imp", fref: "b" as FieldId },
           1,
-          { ")": "-" },
+          { "-": true },
         ],
       },
     ];
@@ -160,11 +160,11 @@ describe("calculator - functions", () => {
       { "(": true },
       2,
       { id: "imp", fref: "a" as FieldId },
-      { ")": "*" },
+      { "*": true },
     ];
     const result: Value[] = [2 * (6 / 2)];
     const imports: ComputationBlock[] = [
-      { id: "a", value: [{ "(": true }, 6, { x: 0, value: 2 }, { ")": "/" }] },
+      { id: "a", value: [{ "(": true }, 6, { x: 0, value: 2 }, { "/": true }] },
     ];
 
     return test(computation, result, imports);
@@ -175,7 +175,7 @@ describe("calculator - functions", () => {
     const result: Value[] = [2];
 
     const imports: ComputationBlock[] = [
-      { id: "a", value: [{ "(": true }, 6, { x: 0, value: 2 }, { ")": "/" }] },
+      { id: "a", value: [{ "(": true }, 6, { x: 0, value: 2 }, { "/": true }] },
       { id: "imp/0", value: [3] },
     ];
 
@@ -186,11 +186,11 @@ describe("calculator - functions", () => {
       { "(": true },
       2,
       { id: "imp", fref: "a" as FieldId },
-      { ")": "*" },
+      { "*": true },
     ];
     const result: Value[] = [2 * (6 / 3)];
     const imports: ComputationBlock[] = [
-      { id: "a", value: [{ "(": true }, 6, { x: 0, value: 2 }, { ")": "/" }] },
+      { id: "a", value: [{ "(": true }, 6, { x: 0, value: 2 }, { "/": true }] },
       { id: "imp/0", value: [3] },
     ];
 
@@ -296,7 +296,7 @@ describe("calculator - imports and arrays", () => {
       3,
       { "]": true },
       3,
-      { ")": "*" },
+      { "*": true },
     ];
     const result: Value[] = [6, 9];
 
@@ -312,7 +312,7 @@ describe("calculator - imports and arrays", () => {
       { "]": true },
       3,
       2,
-      { ")": "*" },
+      { "*": true },
     ];
     const result: Value[] = [12, 18];
 
@@ -330,7 +330,7 @@ describe("calculator - imports and arrays", () => {
       3,
       4,
       { "]": true },
-      { ")": "*" },
+      { "*": true },
     ];
     const result: Value[] = [3, 6, 4, 8];
 
@@ -528,12 +528,12 @@ describe("calculator pick function", () => {
 
 describe("calculator logical operators", () => {
   it("evaluates equals function to true", () => {
-    const computation: Computation = [{ "(": true }, 1, 1, { ")": "=" }];
+    const computation: Computation = [{ "(": true }, 1, 1, { "=": true }];
     const result: Value[] = [true];
     return test(computation, result);
   });
   it("evaluates equals function to false", () => {
-    const computation: Computation = [{ "(": true }, 1, 2, { ")": "=" }];
+    const computation: Computation = [{ "(": true }, 1, 2, { "=": true }];
     const result: Value[] = [false];
     return test(computation, result);
   });
@@ -545,7 +545,7 @@ describe("calculator logical operators", () => {
       2,
       { "]": true },
       2,
-      { ")": "=" },
+      { "=": true },
     ];
     const result: Value[] = [false, true];
     return test(computation, result);

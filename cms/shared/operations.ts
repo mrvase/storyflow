@@ -1,22 +1,21 @@
 import {
   DocumentConfigItem,
-  FieldType,
   Space,
   DBFolder,
   TokenStream,
+  FunctionName,
+  GetFunctionData,
+  FunctionData,
 } from "@storyflow/backend/types";
 
 type GetKeyFromValue<Record extends { [key: string]: any }, Value> = keyof {
   [K in keyof Record as Value extends Record[K] ? K : never]: any;
 };
 
+/*
 const operations = {
   computation: "1",
-  /*
-  fetcher: "2",
-  "filter-list": "3",
-  filter: "4",
-  */
+  transform: "2",
   property: "5",
   "document-config": "6",
   "add-folder": "7",
@@ -27,11 +26,7 @@ const operations = {
 
 type OperationRecord = {
   computation: ComputationOp;
-  /*
-  fetcher: FetcherOp;
-  "filter-list": FilterListOp;
-  filter: FilterOp;
-  */
+  transform: TransformOp;
   property: PropertyOp;
   "document-config": DocumentConfigOp;
   "add-folder": AddFolderOp;
@@ -46,10 +41,6 @@ const fields = {
   slug: "4",
 } satisfies Record<FieldType, `${number}`>;
 
-/**
- *
- */
-
 const splitter = ":" as const;
 
 export type Target<
@@ -59,55 +50,78 @@ export type Target<
 > = `${(typeof fields)[F] | "0"}${typeof splitter}${
   | (typeof operations)[O]
   | "0"}${typeof splitter}${L}`;
+*/
 
-export interface DocumentOp<T> {
-  target: Target<keyof typeof fields, keyof typeof operations, string>;
-  mode?: string;
-  ops: T[];
-}
+/**
+ *
+ */
 
-export type AnyOp = DocumentOp<any>;
+export type StdOperation<
+  T =
+    | SpliceAction<any>
+    | ToggleAction<string, any>
+    | AddFolderAction
+    | DeleteFolderAction
+> = [target: string, ops: T[], ...mode: string[]];
 
-export type InferAction<T extends DocumentOp<any>> = T extends DocumentOp<
+export type InferAction<T extends StdOperation<any>> = T extends StdOperation<
   infer Action
 >
   ? Action
   : never;
 
-export type Splice<T> = {
+export type SpliceAction<T> = {
   index: number;
   remove?: number;
   insert?: T[];
 };
 
-export type Toggle<Name = string, T = string> = {
+export type ToggleAction<Name = string, Value = string> = {
   name: Name;
-  value: T;
+  value: Value;
+};
+
+export const isSpliceAction = (
+  action: unknown
+): action is SpliceAction<any> => {
+  return typeof action === "object" && action !== null && "index" in action;
+};
+
+export const isToggleAction = (
+  action: unknown
+): action is ToggleAction<any, any> => {
+  return typeof action === "object" && action !== null && "name" in action;
 };
 
 /**
  * OPERATION TYPES
  */
-export type ComputationOp = DocumentOp<Splice<TokenStream[number]>>;
+export type PropertyAction = ToggleAction<string, any>;
 
-export type AddFolderOp = DocumentOp<DBFolder>;
-export type DeleteFolderOp = DocumentOp<string>;
+export type StreamAction = SpliceAction<TokenStream[number]>;
+export type TransformAction<T extends FunctionName = FunctionName> =
+  ToggleAction<T, FunctionData | null>;
+export type FieldOperation = StdOperation<StreamAction | TransformAction>;
 
-export type FolderSpacesOp = DocumentOp<Splice<Space>>;
-export type FolderOp = PropertyOp | FolderSpacesOp;
+export type AddFolderAction = { add: DBFolder };
+export type DeleteFolderAction = { remove: string };
+export type FolderListOperation = StdOperation<
+  AddFolderAction | DeleteFolderAction
+>;
 
-export type SpaceItemsOp = DocumentOp<Splice<string>>;
-export type SpaceOp = PropertyOp | SpaceItemsOp;
+export type FolderSpacesAction = SpliceAction<Space>;
+export type FolderOperation = StdOperation<PropertyAction | FolderSpacesAction>;
+
+export type SpaceItemsAction = SpliceAction<string>;
+export type SpaceOperation = StdOperation<PropertyAction | SpaceItemsAction>;
+
+export type DocumentConfigAction = SpliceAction<DocumentConfigItem>;
+
+export type DocumentOperation = StdOperation<
+  DocumentConfigAction | PropertyAction
+>;
 
 /*
-export type FetcherOp = DocumentOp<Toggle<"folder", string>>;
-export type FilterListOp = DocumentOp<Splice<Filter>>;
-export type FilterOp = DocumentOp<Toggle<"template" | "operation", string>>;
-*/
-
-export type PropertyOp = DocumentOp<Toggle<string, any>>;
-export type DocumentConfigOp = DocumentOp<Splice<DocumentConfigItem>>;
-
 export const targetTools = {
   stringify<
     F extends keyof typeof fields,
@@ -163,3 +177,4 @@ export const targetTools = {
     return targetTools.parse(operation.target).operation === input;
   },
 };
+*/

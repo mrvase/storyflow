@@ -1,12 +1,12 @@
 import React from "react";
 import { ServerPackage } from "@storyflow/state";
-import { AnyOp } from "shared/operations";
 import { useSingular } from "./useSingular";
 import { QueueListenerParam } from "@storyflow/state/collab/Queue";
-import type { createDocumentCollaboration } from "./collaboration";
+import type { createCollaboration } from "./collaboration";
+import { StdOperation } from "shared/operations";
 
-export function createCollaborativeState<T, Operation extends AnyOp>(
-  collab: ReturnType<typeof createDocumentCollaboration>,
+export function createCollaborativeState<T, Operation extends StdOperation>(
+  collab: ReturnType<typeof createCollaboration>,
   stateInitializer: (
     initialState: () => T
   ) => [state: T, setState: (value: T) => void],

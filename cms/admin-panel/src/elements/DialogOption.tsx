@@ -29,6 +29,13 @@ export function DialogOption({
   } = input;
 
   const [selected, setSelected] = React.useState(defaultValue ?? null);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    if (defaultChecked && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [defaultChecked]);
 
   return (
     <label className="relative flex flex-col p-5 w-full select-none">
@@ -37,6 +44,7 @@ export function DialogOption({
         name="group"
         defaultChecked={defaultChecked}
         className="peer w-0 h-0 opacity-0"
+        onFocus={() => requestAnimationFrame(() => inputRef.current?.focus())}
       />
       <div className="absolute ring-1 ring-gray-700 peer-checked:bg-gray-750 inset-0 -z-10 rounded" />
       <div className="flex items-center font-medium">
@@ -69,6 +77,7 @@ export function DialogOption({
             </>
           ) : (
             <input
+              ref={inputRef}
               type="text"
               name="value"
               className="ring-button bg-transparent rounded h-8 flex items-center px-2.5 outline-none w-full"

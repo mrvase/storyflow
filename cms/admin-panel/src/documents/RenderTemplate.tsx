@@ -1,23 +1,40 @@
 import React from "react";
 import { DropShadow, Sortable, useSortableItem } from "@storyflow/dnd";
-import { createTemplateFieldId, getRawFieldId } from "@storyflow/backend/ids";
 import {
-  SyntaxTreeRecord,
+  createTemplateFieldId,
+  getDocumentId,
+  getRawFieldId,
+} from "@storyflow/backend/ids";
+import {
   DBDocument,
   DocumentConfigItem,
   DocumentId,
+  FieldId,
   HeadingConfig,
   SyntaxTree,
 } from "@storyflow/backend/types";
 import { getTranslateDragEffect } from "../utils/dragEffects";
-import { targetTools, DocumentConfigOp, AnyOp } from "shared/operations";
 import { RenderField } from "../fields/RenderField";
-import { useDocumentMutate } from "./collab/DocumentCollabContext";
+import {
+  useDocumentCollab,
+  useDocumentMutate,
+} from "./collab/DocumentCollabContext";
 import { ServerPackage } from "@storyflow/state";
 import { getVersionKey } from "./DocumentPage";
 import { GetDocument } from "./GetDocument";
 import { ExtendTemplatePath } from "./TemplatePathContext";
 import { TopFieldIndexProvider } from "./FieldIndexContext";
+import {
+  DocumentOperation,
+  FieldOperation,
+  StdOperation,
+} from "shared/operations";
+import { useClient } from "../client";
+import { useDocumentIdGenerator } from "../id-generator";
+import { getDefaultValuesFromTemplateAsync } from "./template-fields";
+import { createTokenStreamTransformer } from "shared/computation-tools";
+import { splitTransformsAndRoot } from "@storyflow/backend/transform";
+import { createTokenStream } from "shared/parse-token-stream";
 
 export function RenderTemplate({
   id,
@@ -31,19 +48,24 @@ export function RenderTemplate({
   owner: DocumentId;
   config: DBDocument["config"];
   versions?: DBDocument["versions"];
-  histories: Record<string, ServerPackage<AnyOp>[]>;
+  histories: Record<string, ServerPackage<StdOperation>[]>;
   index: number | null;
 }) {
   const isMain = id === owner;
 
   const { push } = isMain
-    ? useDocumentMutate<DocumentConfigOp>(owner, owner)
+    ? useDocumentMutate<DocumentOperation>(owner, owner)
     : { push: () => {} };
+
+  const collab = useDocumentCollab();
+
+  const client = useClient();
+  const generateDocumentId = useDocumentIdGenerator();
 
   const onChange = React.useCallback(
     (actions: any) => {
       if (!isMain) return;
-      const ops = [] as DocumentConfigOp["ops"];
+      const ops = [] as DocumentOperation[1];
       for (let action of actions) {
         const { type, index } = action;
 
@@ -55,6 +77,65 @@ export function RenderTemplate({
             index,
             insert: [templateItem],
           });
+          getDefaultValuesFromTemplateAsync(owner, templateItem.template, {
+            client,
+            generateDocumentId,
+          }).then((defaultValues) => {
+            Object.entries(defaultValues).forEach((entry) => {
+              const [fieldId, tree] = entry as [FieldId, SyntaxTree];
+              /* only care about native fields */
+              if (getDocumentId(fieldId) !== owner) return;
+              /*
+              Continue only if it does not exist already
+              (that is, if not deleted and now added without a save in between)
+              */
+              if (versions && fieldId in versions) return;
+              const [transforms, root] = splitTransformsAndRoot(tree);
+              const transformActions = transforms.map((transform) => {
+                return {
+                  name: transform.type,
+                  value: transform.data ?? true,
+                };
+              });
+              const stream = createTokenStream(root);
+              const tokenActions =
+                stream.length === 0
+                  ? []
+                  : [
+                      {
+                        index: 0,
+                        insert: createTokenStream(root),
+                      },
+                    ];
+              if (transformActions.length > 0 || tokenActions.length > 0) {
+                /*
+                  TODO: Overvejelse: Jeg kan godt tilføje og slette og tilføje.
+                  Har betydning ift. fx url, hvor default children pushes igen.
+                  Skal muligvis lave en mulighed for, at splice action overskriver alt.
+                  I så fald kan jeg tjekke, om den har været initialized.
+                  Hvis ikke, så starter jeg den på version = 0 og pusher med det samme.
+                  Da det sker sync, ved jeg, at det push registreres som om,
+                  at det ikke har set andre actions endnu.
+
+                  Men hvad sker der, når den kører gennem transform?
+                  */
+
+                collab
+                  .getOrAddQueue(owner, getRawFieldId(fieldId), {
+                    transform: createTokenStreamTransformer(fieldId, {}),
+                    mergeableNoop: ["", []],
+                  })
+                  .initialize(0, [])
+                  .push([
+                    "",
+                    [
+                      ...(transformActions.length > 0 ? transformActions : []),
+                      ...(tokenActions.length > 0 ? tokenActions : []),
+                    ],
+                  ]);
+              }
+            });
+          });
         }
 
         if (type === "delete") {
@@ -65,15 +146,9 @@ export function RenderTemplate({
           });
         }
       }
-      push({
-        target: targetTools.stringify({
-          operation: "document-config",
-          location: "",
-        }),
-        ops,
-      });
+      push(["", ops]);
     },
-    [config, push]
+    [config, push, client, generateDocumentId, collab, owner]
   );
 
   React.useEffect(() => {
@@ -122,8 +197,8 @@ export function RenderTemplate({
       );
     } else if ("template" in fieldConfig && !("id" in fieldConfig)) {
       return (
-        <TopFieldIndexProvider index={index}>
-          <GetDocument id={fieldConfig.template} key={fieldConfig.template}>
+        <TopFieldIndexProvider index={index} key={fieldConfig.template}>
+          <GetDocument id={fieldConfig.template}>
             {(article) => (
               <RenderTemplate
                 key={getVersionKey(versions)} // for rerendering
@@ -144,16 +219,18 @@ export function RenderTemplate({
         : createTemplateFieldId(owner, fieldConfig.id);
 
       return (
-        <TopFieldIndexProvider index={index}>
+        <TopFieldIndexProvider index={index} key={fieldId}>
           <RenderField
-            key={fieldId}
             id={fieldId}
             fieldConfig={{
               ...fieldConfig,
               id: fieldId,
             }}
             version={versions?.[getRawFieldId(fieldId)] ?? 0}
-            history={histories[getRawFieldId(fieldId)] ?? []}
+            history={
+              (histories[getRawFieldId(fieldId)] ??
+                []) as ServerPackage<FieldOperation>[]
+            }
             index={index}
             dragHandleProps={dragHandleProps}
           />

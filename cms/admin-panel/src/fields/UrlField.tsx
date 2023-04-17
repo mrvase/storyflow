@@ -16,29 +16,23 @@ import {
   getDocumentId,
   getRawFieldId,
 } from "@storyflow/backend/ids";
-import { createQueueCache } from "../state/collaboration";
 import {
   useDocumentCollab,
   useDocumentMutate,
 } from "../documents/collab/DocumentCollabContext";
-import { targetTools, ComputationOp } from "shared/operations";
-import { useGlobalState } from "../state/state";
-import { useSingular } from "../state/useSingular";
-import { calculateFn } from "./default/calculateFn";
 import { HomeIcon, LinkIcon, StarIcon } from "@heroicons/react/24/outline";
 import { useAppPageContext } from "../folders/AppPageContext";
 import { Link } from "@storyflow/router";
-import { useArticle, useDocumentList } from "../documents";
+import { useDocument, useDocumentList } from "../documents";
 import { getDocumentLabel } from "../documents/useDocumentLabel";
-import { getConfig } from "shared/initialValues";
-import { getNextState } from "shared/computation-tools";
 import cl from "clsx";
 import { useDocumentPageContext } from "../documents/DocumentPageContext";
 import { calculate, calculateFromRecord } from "@storyflow/backend/calculate";
 import { DEFAULT_FIELDS, isDefaultField } from "@storyflow/backend/fields";
 import { useDocumentIdGenerator } from "../id-generator";
-import { createTokenStream, parseTokenStream } from "shared/parse-token-stream";
 import { usePanel, useRoute } from "../panel-router/Routes";
+import { FieldOperation } from "shared/operations";
+import { useDefaultState } from "./default/useDefaultState";
 
 export const toSlug = (value: string) =>
   value
@@ -60,7 +54,7 @@ const getUrlStringFromValue = (value: ValueArray | SyntaxTree) => {
 };
 
 const useRelatedPages = (articleId: DocumentId, initialUrl: string) => {
-  const { article } = useArticle(articleId);
+  const { article } = useDocument(articleId);
   const { data: list } = useDocumentList(article?.folder);
 
   const getUrl = (article: DBDocument) => {
@@ -74,57 +68,46 @@ const useRelatedPages = (articleId: DocumentId, initialUrl: string) => {
 
   let slugs = initialUrl.split("/").slice(0, -1);
 
-  if (slugs[0] !== "") {
-    slugs.unshift("");
-  }
-
   const parents = slugs.map((_, i, arr) => {
-    const path = arr.slice(1, i + 1).join("/");
+    const path = `/${arr.slice(1, i + 1).join("/")}`;
     return list?.articles.find((el) => getUrl(el) === path);
   });
 
   const children =
     list?.articles.filter((el) => {
       // "|| null" excludes the front page from being included among its on children
-      return (
-        (getUrl(el) || null)?.split("/")?.slice(0, -1)?.join("/") === initialUrl
-      );
+      const url = getUrl(el);
+      if (url === "/") return false;
+      return (url.split("/")?.slice(0, -1)?.join("/") || "/") === initialUrl;
     }) ?? [];
 
   return [parents, children] as [DBDocument[], DBDocument[]];
 };
 
 export default function UrlField({ id, version, history }: FieldProps) {
-  if (id === "") {
-    return (
-      <div className="text-gray-400 leading-6 pt-1 pb-5">Intet indhold</div>
-    );
-  }
-
   const documentId = getDocumentId(id) as DocumentId;
-
   const { record } = useDocumentPageContext();
-
-  const initialValue = React.useMemo(
-    () => record[id] ?? getConfig("url").defaultValue,
-    []
-  );
-
   const client = useClient();
+  const collab = useDocumentCollab();
 
-  const [tree, setTree] = useGlobalState<SyntaxTree>(
-    `${id}#tree`,
-    () => initialValue
-  );
+  const [isFocused, setIsFocused] = React.useState(false);
 
-  const [output, setOutput] = useGlobalState<[string]>(
-    id,
-    () => calculateFn(id, initialValue, { record, client }) as [string]
-  );
+  const ctx = useAppPageContext();
+  const generateDocumentId = useDocumentIdGenerator();
 
-  const url = getUrlStringFromValue(output);
+  React.useLayoutEffect(() => {
+    collab
+      .getOrAddQueue<FieldOperation>(getDocumentId(id), getRawFieldId(id), {
+        transform: (a) => a,
+      })
+      .initialize(version, history ?? []);
+  }, [client]);
 
-  const actions = useDocumentMutate<ComputationOp>(
+  const { value } = useDefaultState(id);
+
+  const url = getUrlStringFromValue(value);
+
+  const actions = useDocumentMutate<FieldOperation>(
     documentId,
     getRawFieldId(id)
   );
@@ -134,54 +117,42 @@ export default function UrlField({ id, version, history }: FieldProps) {
 
   const handleChange = (value: string) => {
     if (value === "") {
-      actions.push({
-        target: targetTools.stringify({
-          field: "url",
-          operation: "computation",
-          location: "",
-        }),
-        ops: [
+      actions.push([
+        "",
+        [
           {
-            index: 1,
+            index: 3,
             insert: [{ ",": true }, ""],
             remove: slug.length + 1,
           },
         ],
-      });
+      ]);
       return;
     }
     if (value === "*") {
-      actions.push({
-        target: targetTools.stringify({
-          field: "url",
-          operation: "computation",
-          location: "",
-        }),
-        ops: [
+      actions.push([
+        "",
+        [
           {
-            index: 2,
+            index: 4,
             insert: [{ x: 0, value: "*" }],
             remove: slug.length,
           },
         ],
-      });
+      ]);
       return;
     }
     const newSlug = toSlug(value);
-    actions.push({
-      target: targetTools.stringify({
-        field: "url",
-        operation: "computation",
-        location: "",
-      }),
-      ops: [
+    actions.push([
+      "",
+      [
         {
-          index: 2,
+          index: 4,
           insert: [newSlug],
           remove: slug.length,
         },
       ],
-    });
+    ]);
   };
 
   const [values, setValues] = useGlobalContext(getDocumentId(id), {
@@ -195,12 +166,6 @@ export default function UrlField({ id, version, history }: FieldProps) {
     getUrlStringFromValue(calculateFromRecord(id, record))
   );
 
-  const [isFocused, setIsFocused] = React.useState(false);
-
-  const ctx = useAppPageContext();
-
-  const generateDocumentId = useDocumentIdGenerator();
-
   React.useEffect(() => {
     if (isFocused) {
       return addImport.subscribe(async ({ id: externalId, imports }) => {
@@ -213,59 +178,32 @@ export default function UrlField({ id, version, history }: FieldProps) {
           field: externalId as FieldId,
           inline: true,
         };
-        actions.push({
-          target: targetTools.stringify({
-            field: "url",
-            operation: "computation",
-            location: "",
-          }),
-          ops: [
+        actions.push([
+          "",
+          [
             {
               index: 0,
               insert: [parentField, { ",": true }],
               remove: 2,
             },
           ],
-        });
+        ]);
       });
     }
   }, [isFocused]);
-
-  const singular = useSingular(id);
-
-  const collab = useDocumentCollab();
-
-  React.useLayoutEffect(() => {
-    const queue = collab
-      .getOrAddQueue(getDocumentId(id), getRawFieldId(id), {
-        transform: (a) => a,
-      })
-      .initialize(version, history ?? []);
-
-    const cache = createQueueCache(createTokenStream(initialValue));
-
-    return queue.register(({ forEach }) => {
-      singular(() => {
-        const result = cache(forEach, (prev, { operation }) => {
-          return getNextState(prev, operation);
-        });
-
-        const tree = parseTokenStream(result, getConfig("url").transform);
-
-        setTree(() => tree);
-
-        setOutput(() => calculateFn(id, tree, { record, client }) as [string]);
-      });
-    });
-  }, [client]);
 
   const [, navigate] = usePanel();
   const route = useRoute();
 
   const replacePage = (id: string) =>
-    navigate(`${route.split("/").slice(0, -1).join("/")}/d${id}`, {
-      navigate: false,
-    });
+    navigate(
+      `${route.split("/").slice(0, -1).join("/")}/d${parseInt(id, 16).toString(
+        16
+      )}`,
+      {
+        navigate: false,
+      }
+    );
 
   let parentSlugs = parentUrl.split("/");
   if (parentSlugs[0] !== "") {
@@ -275,22 +213,6 @@ export default function UrlField({ id, version, history }: FieldProps) {
   return (
     <div className="pb-2.5">
       <div className="outline-none rounded flex items-center px-3 mb-2.5 bg-gray-800 ring-button">
-        {/*parents[0] ? (
-            <Link
-              to={replacePage(parents[0]?._id ?? "")}
-              className={cl(
-                "cursor-default rounded-full truncate text-sm shrink-0 transition-opacity",
-                "p-1 -ml-1 mr-4",
-                parents[0]._id !== getDocumentId(id)
-                  ? "opacity-50 hover:opacity-100"
-                  : "opacity-25"
-              )}
-            >
-              <HomeIcon className="w-4 h-4" />
-            </Link>
-          ) : (
-            <div className="w-9 h-4" />
-          )*/}
         <Link
           to={replacePage(parents[0]?._id ?? "")}
           className="mr-5 text-gray-400 hover:text-gray-100 transition-colors"

@@ -82,7 +82,7 @@ export function ParagraphStylePrompt({ prompt }: { prompt: string }) {
 
   return (
     <div className="p-2.5">
-      <div className="font-medium opacity-50 mb-1 ml-1">Formater afsnit</div>
+      <div className="font-medium text-gray-400 mb-1 ml-1">Formater afsnit</div>
       {filtered.map((option) => (
         <Option key={option.value} value={option.value} onEnter={formatHeading}>
           {option.label}

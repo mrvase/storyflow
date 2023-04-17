@@ -6,16 +6,13 @@ import {
   PlusIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
-import {
-  createTemplateFieldId,
-  getTemplateDocumentId,
-} from "@storyflow/backend/ids";
+import { createTemplateFieldId } from "@storyflow/backend/ids";
 import { DocumentId, FolderId, SpaceId } from "@storyflow/backend/types";
 import React from "react";
 import {
-  fetchArticle,
+  fetchDocument,
   useOptimisticDocumentList,
-  useArticleListMutation,
+  useDocumentListMutation,
 } from "../../documents";
 import { getDocumentLabel } from "../../documents/useDocumentLabel";
 import {
@@ -183,7 +180,7 @@ function ExportButton() {
 
   const handleExport = async () => {
     if (!articles || !folder?.template) return;
-    const templateArticle = await fetchArticle(folder.template, client);
+    const templateArticle = await fetchDocument(folder.template, client);
     if (!templateArticle) return;
     const fields = await getTemplateFieldsAsync(templateArticle.config, client);
     const ids = fields.map((el) => el.id);
@@ -220,7 +217,7 @@ function ExportButton() {
 function AddArticleButton({ folder }: { folder: FolderId }) {
   const template = useCurrentFolder()?.template;
 
-  const mutateArticles = useArticleListMutation();
+  const mutateArticles = useDocumentListMutation();
   const generateDocumentId = useDocumentIdGenerator();
   const [, navigate] = usePanel();
   const route = useRoute();

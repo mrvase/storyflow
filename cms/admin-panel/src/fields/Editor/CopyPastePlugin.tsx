@@ -38,13 +38,13 @@ import { store } from "../../state/state";
 import { useClient } from "../../client";
 import { tokens } from "@storyflow/backend/tokens";
 import { useDocumentCollab } from "../../documents/collab/DocumentCollabContext";
-import { ComputationOp, targetTools } from "shared/operations";
 import { tools } from "shared/editor-tools";
 import {
   $isTokenStreamNode,
   TokenStreamNode,
 } from "./decorators/TokenStreamNode";
 import { $replaceWithBlocks } from "./insertComputation";
+import { FieldOperation } from "shared/operations";
 
 const EVENT_LATENCY = 50;
 let clipboardEventTimeout: null | number = null;
@@ -269,25 +269,16 @@ export function CopyPastePlugin() {
                 // initialize states for record entries
                 Object.entries(record).forEach(([fieldId, value]) => {
                   collab
-                    .mutate<ComputationOp>(documentId, getRawFieldId(id))
-                    .push({
-                      target: targetTools.stringify({
-                        field: "default", // should only be nested fields
-                        operation: "computation",
-                        location: fieldId,
-                      }),
-                      ops: [
+                    .mutate<FieldOperation>(documentId, getRawFieldId(id))
+                    .push([
+                      fieldId,
+                      [
                         {
                           index: 0,
                           insert: createTokenStream(value),
                         },
                       ],
-                    });
-                  /*
-                  store.use(fieldId, () =>
-                    calculateFn(fieldId, value, { client, record })
-                  );
-                  */
+                    ]);
                 });
 
                 const stream = createTokenStream(entry);

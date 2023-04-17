@@ -1,6 +1,7 @@
 import {
+  FunctionData,
   FunctionName,
-  functions,
+  FunctionSymbol,
   HasSelect,
   NestedField,
   operators,
@@ -12,8 +13,15 @@ import {
   WithSyntaxError,
 } from "@storyflow/backend/types";
 import { tokens } from "@storyflow/backend/tokens";
-import { isSymbol } from "@storyflow/backend/symbols";
-import { insertRootInTransform, retrieveRoot } from "./initialValues";
+import {
+  isFunctionSymbol,
+  isOperator,
+  isSymbol,
+} from "@storyflow/backend/symbols";
+import {
+  insertRootInTransforms,
+  splitTransformsAndRoot,
+} from "@storyflow/backend/transform";
 
 function isObject(value: any): value is Record<string, any> {
   return value !== null && typeof value === "object";
@@ -53,7 +61,7 @@ const isMerge = (
 
 export function parseTokenStream(
   stream: TokenStream,
-  transform?: Transform
+  transforms?: Transform[]
 ): SyntaxTree<WithSyntaxError> {
   let root: SyntaxNode<WithSyntaxError> & { type: "root" } = {
     children: [],
@@ -115,6 +123,33 @@ export function parseTokenStream(
       parents.set(node, current);
       mergePush(node);
       current = node;
+    } else if (isFunctionSymbol(token)) {
+      // we first return to the level introduced by the opening bracket
+      // (see comment above)
+      current = returnToNullParent(current, parents);
+
+      if (prevIsComma) {
+        current.children.push({ error: "," });
+      }
+
+      const [type, data] = Object.entries(token)[0] as [
+        FunctionName,
+        FunctionData
+      ];
+
+      current.type = type;
+      if (data !== true) {
+        current.data = data;
+      }
+
+      // and then return to the parent that the bracket group was originally pushed to
+      const parent = parents.get(current);
+      if (!parent) {
+        // TODO: Should be function name??
+        current.children.push({ error: ")" });
+      } else {
+        current = parent;
+      }
     } else if (isSymbol(token, ")") || isSymbol(token, "]")) {
       // we first return to the level introduced by the opening bracket
       // (see comment above)
@@ -126,6 +161,7 @@ export function parseTokenStream(
       }
 
       if ((token as any)[")"] && typeof (token as any)[")"] !== "boolean") {
+        // operator
         current.type = (token as any)[")"];
       } else if ((token as any)["]"]) {
         current.type = "array";
@@ -225,9 +261,7 @@ export function parseTokenStream(
         const node: SyntaxNode<WithSyntaxError> = {
           children: [rest],
           type: "select",
-          data: {
-            select,
-          },
+          data: select,
         };
         parents.set(node, current);
         mergePush(node);
@@ -270,8 +304,8 @@ export function parseTokenStream(
     }
   }
 
-  if (transform) {
-    return insertRootInTransform(root, transform);
+  if (transforms) {
+    return insertRootInTransforms(root, transforms);
   }
 
   return root;
@@ -280,7 +314,7 @@ export function parseTokenStream(
 export function createTokenStream(
   tree: SyntaxTree<WithSyntaxError>
 ): TokenStream {
-  tree = retrieveRoot(tree);
+  tree = splitTransformsAndRoot(tree)[1];
 
   const flatten = (
     value: SyntaxNode<WithSyntaxError>,
@@ -290,7 +324,7 @@ export function createTokenStream(
 
     let symbol: TokenStreamSymbol | undefined;
 
-    if (operators.includes(value.type as any)) {
+    if (isOperator(value.type)) {
       symbol = { _: value.type as (typeof operators)[number] };
     }
 
@@ -352,14 +386,14 @@ export function createTokenStream(
 
     const isRootAtTop = parent === null && value.type === "root";
 
-    if (operators.includes(value.type as any)) {
+    if (isOperator(value.type)) {
       // do nothing - handled above
     } else if (isRootAtTop) {
       // do nothing
     } else if (value.type === "merge") {
       // do nothing
     } else if (value.type === "select") {
-      (flattened[0] as HasSelect<NestedField>).select = value.data!.select;
+      (flattened[0] as HasSelect<NestedField>).select = value.data;
     } else {
       let openingBracket: TokenStreamSymbol = { "(": true };
       let closingBracket: TokenStreamSymbol = { ")": true };
@@ -368,11 +402,7 @@ export function createTokenStream(
         openingBracket = { "[": true };
         closingBracket = { "]": true };
       } else if (value.type !== null) {
-        closingBracket = { ")": value.type as (typeof functions)[number] };
-        if (value.type === "sortlimit") {
-          (closingBracket as any).l = value.data!.l;
-          (closingBracket as any).s = value.data!.s;
-        }
+        closingBracket = { [value.type]: value.data ?? true } as FunctionSymbol;
       }
 
       flattened.unshift(openingBracket);

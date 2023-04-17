@@ -10,7 +10,7 @@ import { useClientConfig } from "../../client-config";
 import { useDocumentIdGenerator } from "../../id-generator";
 import { createComponent } from "../Editor/createComponent";
 import { useFieldId } from "../FieldIdContext";
-import { markMatchingString } from "../query/helpers";
+import { markMatchingString } from "./helpers";
 import { Option } from "./Option";
 
 export function ElementPrompt({
@@ -72,7 +72,7 @@ export function ElementPrompt({
 
   return (
     <div className="p-2.5">
-      <div className="font-medium opacity-50 mb-1 ml-1">Vælg element</div>
+      <div className="font-medium text-gray-400 mb-1 ml-1">Vælg element</div>
       {filtered.map((el) => (
         <Option
           key={`${el.libraryName}:${el.name}`}

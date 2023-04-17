@@ -1,6 +1,5 @@
 import { NoList } from "@storyflow/dnd";
 import React from "react";
-import { ComputationOp } from "shared/operations";
 import { FieldConfig, FieldId, FieldType } from "@storyflow/backend/types";
 import { DefaultFieldRoot } from "./default/DefaultFieldRoot";
 import { FieldContainer } from "./FieldContainer";
@@ -8,24 +7,20 @@ import UrlField from "./UrlField";
 import { ServerPackage } from "@storyflow/state";
 import { FieldIdContext } from "./FieldIdContext";
 import { FieldRestrictionsContext } from "./FieldIdContext";
+import { FieldOperation } from "shared/operations";
 
-const Components: { [K in FieldType]: React.FC<FieldProps> } = {
+const Components: { [K in FieldType | "default"]: React.FC<FieldProps> } = {
   default: DefaultFieldRoot,
   url: UrlField,
-  slug: DefaultFieldRoot,
-};
-
-const getComponent = <T extends FieldType>(type: T): React.FC<FieldProps> => {
-  return Components[type];
 };
 
 export type FieldProps = {
   id: FieldId;
   version: number;
-  history: ServerPackage<ComputationOp>[];
+  history: ServerPackage<FieldOperation>[];
 };
 
-export function RenderField<T extends FieldType>({
+export function RenderField({
   id,
   fieldConfig,
   history,
@@ -34,13 +29,13 @@ export function RenderField<T extends FieldType>({
   dragHandleProps,
 }: {
   id: FieldId;
-  fieldConfig: FieldConfig<T>;
+  fieldConfig: FieldConfig;
   index: number;
   version: number;
-  history: ServerPackage<ComputationOp>[];
+  history: ServerPackage<FieldOperation>[];
   dragHandleProps?: any;
 }) {
-  const Component = getComponent(fieldConfig.type);
+  const Component = Components[fieldConfig.type ?? "default"];
 
   return (
     <FieldIdContext.Provider value={id}>

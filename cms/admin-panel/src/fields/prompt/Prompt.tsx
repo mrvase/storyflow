@@ -37,6 +37,7 @@ import { HoldActions } from "./useRestorableSelection";
 import { $exitPromptNode, $getPromptNode } from "./utils";
 import { TokenPrompt } from "./TokenPrompt";
 import { ReferencePrompt } from "./ReferencePrompt";
+import { TemplatePrompt } from "./TemplatePrompt";
 
 const panes = [
   {
@@ -270,11 +271,11 @@ export function Prompt({
             <div
               key={index}
               className={cl(
-                "flex-center gap-2 rounded cursor-default py-2 px-3 transition-opacity",
+                "flex-center gap-2 rounded cursor-default py-2 px-3 transition-opacity font-medium",
                 "grow shrink basis-0",
                 currentPane === pane.id
                   ? "bg-gray-800"
-                  : "opacity-50 hover:opacity-100"
+                  : "opacity-75 hover:opacity-100"
               )}
               onMouseDown={(ev) => {
                 ev.preventDefault();
@@ -303,6 +304,7 @@ export function Prompt({
                 {restrictTo === "children" && (
                   <ParagraphStylePrompt prompt={prompt} />
                 )}
+                {restrictTo === "data" && <TemplatePrompt prompt={prompt} />}
                 <TokenPrompt
                   prompt={prompt}
                   replacePromptWithStream={replacePromptWithStream}

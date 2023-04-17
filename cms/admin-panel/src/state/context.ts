@@ -1,3 +1,4 @@
+import { DocumentId, NestedDocumentId } from "@storyflow/backend/types";
 import { batch, State, Store } from "@storyflow/state";
 import React from "react";
 
@@ -9,24 +10,36 @@ export function getContextKey(documentId: string, key: string) {
 
 export function useGlobalContext<
   T extends Record<string, any> = Record<string, any>
->(documentId: string, valuesArg: T | string): [T, (value: Partial<T>) => void] {
+>(
+  documentId: DocumentId | NestedDocumentId,
+  values: T | string
+): [T, (value: Partial<T>) => void] {
   const sync = React.useMemo(() => {
-    const isString = typeof valuesArg === "string";
-    const values = isString ? { [valuesArg]: "" } : valuesArg;
-    const syncs = batch(() =>
-      Object.entries(values).map(([key, value]) => {
-        return context.use(
+    const syncs = batch(() => {
+      if (typeof values === "string") {
+        return [
+          context.use<T[keyof T] | undefined>(getContextKey(documentId, values))
+            .sync,
+        ];
+      }
+      return Object.entries(values).map(([key, value]) => {
+        return context.use<T[keyof T]>(
           getContextKey(documentId, key),
-          isString ? undefined! : () => value
+          () => value
         ).sync;
-      })
-    );
+      });
+    });
+
+    const keys = (
+      typeof values === "string" ? [values] : Object.keys(values)
+    ) as (keyof T)[];
 
     const getValues = () => {
-      return Object.keys(values).reduce((a, c, i) => {
-        a[c] = syncs[i][1]();
+      return keys.reduce((a, c, i) => {
+        const value = syncs[i][1]();
+        if (value !== undefined) a[c] = value;
         return a;
-      }, {} as Record<string, any>) as T;
+      }, {} as Partial<T>);
     };
 
     let memorized = getValues();
@@ -44,7 +57,6 @@ export function useGlobalContext<
 
     const subscribe = (callback: () => void) => {
       const unsubscribers = Object.values(syncs).map(([subscribe]) => {
-        /*@ts-ignore*/
         return subscribe(callback);
       });
       return () => {

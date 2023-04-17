@@ -1,7 +1,6 @@
 import React from "react";
 import { FieldProps } from "../RenderField";
-import { ComputationOp } from "shared/operations";
-import { createComputationTransformer } from "shared/computation-tools";
+import { createTokenStreamTransformer } from "shared/computation-tools";
 import { useDocumentPageContext } from "../../documents/DocumentPageContext";
 import { getDocumentId, getRawFieldId } from "@storyflow/backend/ids";
 import { useDocumentCollab } from "../../documents/collab/DocumentCollabContext";
@@ -9,6 +8,7 @@ import { DefaultField } from "./DefaultField";
 import { PreloadFieldState } from "./PreloadFieldState";
 import { useAttributesContext } from "../Attributes";
 import { ExtendPath } from "../Path";
+import { FieldOperation } from "shared/operations";
 
 export function DefaultFieldRoot({ id, version, history }: FieldProps) {
   /*
@@ -27,9 +27,9 @@ export function DefaultFieldRoot({ id, version, history }: FieldProps) {
   React.useLayoutEffect(() => {
     /* MUST be useLayoutEffect to run before children useEffects that use the queue */
     collab
-      .getOrAddQueue<ComputationOp>(getDocumentId(id), getRawFieldId(id), {
-        transform: createComputationTransformer(id, record),
-        mergeableNoop: { target: "0:0:", ops: [] },
+      .getOrAddQueue<FieldOperation>(getDocumentId(id), getRawFieldId(id), {
+        transform: createTokenStreamTransformer(id, record),
+        mergeableNoop: ["", []],
       })
       .initialize(version, history ?? []);
   }, []);

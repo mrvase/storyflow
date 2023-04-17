@@ -20,13 +20,14 @@ import { useFieldId } from "../../FieldIdContext";
 import { useFieldConfig } from "../../../documents/collab/hooks";
 import { Menu } from "@headlessui/react";
 import { MenuTransition } from "../../../elements/transitions/MenuTransition";
-import { useArticle, useOptimisticDocumentList } from "../../../documents";
+import { useDocument, useOptimisticDocumentList } from "../../../documents";
 import { useFieldTemplate } from "../../default/useFieldTemplate";
 import { calculateFn } from "../../default/calculateFn";
 import { useGlobalState } from "../../../state/state";
 import { useDocumentPageContext } from "../../../documents/DocumentPageContext";
 import {
   createTemplateFieldId,
+  getDocumentId,
   isNestedDocumentId,
 } from "@storyflow/backend/ids";
 import { useClient } from "../../../client";
@@ -57,7 +58,7 @@ function Decorator({
     // TODO make reactive
     docs = [{ id: value.id, record: {} }];
   } else {
-    const { article } = useArticle(value.id);
+    const { article } = useDocument(value.id);
     docs = [{ id: value.id, record: article?.record ?? {} }];
   }
 
@@ -171,7 +172,11 @@ export function ValueDisplay({
 
   if (initialValue) {
     [output] = useGlobalState(id, () =>
-      calculateFn(id, initialValue, { record, client })
+      calculateFn(initialValue, {
+        record,
+        client,
+        documentId: getDocumentId(id),
+      })
     );
   } else {
     [output] = useGlobalState<ValueArray>(id);

@@ -21,7 +21,7 @@ const expectEquivalence = (client: EditorComputation, db: Computation) => {
 
 describe("editor computation - operations", () => {
   it("handles simple operation", () => {
-    const db: Computation = [{ "(": true }, 5, 2, { ")": "*" }];
+    const db: Computation = [{ "(": true }, 5, 2, { "*": true }];
     expect(encodeEditorComputation(db)).toMatchObject([5, { _: "*" }, 2]);
     expect(fullTransform(db)).toMatchObject(db);
   });
@@ -34,9 +34,9 @@ describe("editor computation - operations", () => {
       { "(": true },
       2,
       2,
-      { ")": "*" },
-      { ")": "*" },
-      { ")": "*" },
+      { "*": true },
+      { "*": true },
+      { "*": true },
     ];
     const client: EditorComputation = [
       2,
@@ -54,7 +54,7 @@ describe("editor computation - operations", () => {
       2,
       2,
       2,
-      { ")": "*" },
+      { "*": true },
     ]);
   });
   it("handles nested addition", () => {
@@ -66,9 +66,9 @@ describe("editor computation - operations", () => {
       { "(": true },
       2,
       2,
-      { ")": "+" },
-      { ")": "+" },
-      { ")": "+" },
+      { "+": true },
+      { "+": true },
+      { "+": true },
     ];
     const client: EditorComputation = [
       2,
@@ -86,7 +86,7 @@ describe("editor computation - operations", () => {
       2,
       2,
       2,
-      { ")": "+" },
+      { "+": true },
     ]);
   });
   it("handles nested multiplication and addition", () => {
@@ -102,11 +102,11 @@ describe("editor computation - operations", () => {
       { "(": true },
       2,
       2,
-      { ")": "*" },
-      { ")": "+" },
-      { ")": "*" },
-      { ")": "+" },
-      { ")": "*" },
+      { "*": true },
+      { "+": true },
+      { "*": true },
+      { "+": true },
+      { "*": true },
     ];
     const client: EditorComputation = [
       2,
@@ -133,7 +133,7 @@ describe("editor computation - parentheses", () => {
   it("saves unecessary parentheses", () => {
     expectEquivalence(
       [{ "(": true }, 3, { _: "+" }, 2, { ")": true }],
-      [{ "(": true }, { "(": true }, 3, 2, { ")": "+" }, { ")": true }]
+      [{ "(": true }, { "(": true }, 3, 2, { "+": true }, { ")": true }]
     );
     expectEquivalence(
       [{ "(": true }, 2, { _: "*" }, 4, { ")": true }, { _: "/" }, 2],
@@ -143,10 +143,10 @@ describe("editor computation - parentheses", () => {
         { "(": true },
         2,
         4,
-        { ")": "*" },
+        { "*": true },
         { ")": true },
         2,
-        { ")": "/" },
+        { "/": true },
       ]
     );
   });
@@ -157,8 +157,8 @@ describe("editor computation - parentheses", () => {
       { "(": true },
       3,
       2,
-      { ")": "+" },
-      { ")": "*" },
+      { "+": true },
+      { "*": true },
     ];
     const client: EditorComputation = [
       5,
@@ -192,11 +192,11 @@ describe("editor computation - parentheses", () => {
         { "(": true },
         2,
         4,
-        { ")": "*" },
-        { ")": "+" },
+        { "*": true },
+        { "+": true },
         { ")": true },
         2,
-        { ")": "/" },
+        { "/": true },
       ]
     );
   });
@@ -214,8 +214,8 @@ describe("editor computation - objects", () => {
         args: {},
       },
       { x: 0 },
-      { ")": "+" },
-      { ")": "*" },
+      { "+": true },
+      { "*": true },
     ];
     const client: EditorComputation = [
       5,
@@ -241,7 +241,7 @@ describe("editor computation - arrays", () => {
     expectEquivalence(client, db);
   });
   it("can handle arrays with operations", () => {
-    const db: Computation = [5, 1, { "(": true }, 0, 2, { ")": "+" }];
+    const db: Computation = [5, 1, { "(": true }, 0, 2, { "+": true }];
     const client: EditorComputation = [
       5,
       { ",": true },
@@ -310,7 +310,7 @@ describe("editor computation - auto-merging around imports", () => {
       { "(": true },
       2,
       3,
-      { ")": "*" },
+      { "*": true },
     ];
     expectEquivalence(client, db);
   });
@@ -379,7 +379,7 @@ describe("editor computation - auto-merging around imports", () => {
       { "(": true },
       2,
       3,
-      { ")": "*" },
+      { "*": true },
       { ")": true },
       "sådan",
       { id: "", fref: "" as FieldId, args: {} },
@@ -421,7 +421,7 @@ describe("editor computation - auto-merging around imports", () => {
 describe("editor computation - equivalence with OPERATOR syntax errors", () => {
   it("bijectively transforms operator lacking its left side 1", () => {
     const client: EditorComputation = [{ _: "*" }, 2];
-    const db: Computation = [{ "(": true }, null as any, 2, { ")": "*" }];
+    const db: Computation = [{ "(": true }, null as any, 2, { "*": true }];
     expectEquivalence(client, db);
   });
   it("bijectively transforms operator lacking its left side 2", () => {
@@ -431,13 +431,13 @@ describe("editor computation - equivalence with OPERATOR syntax errors", () => {
       null as any,
       null as any,
       2,
-      { ")": "*" },
+      { "*": true },
     ];
     expectEquivalence(client, db);
   });
   it("bijectively transforms operator lacking its right side", () => {
     const client: EditorComputation = [2, { _: "*" }];
-    const db: Computation = [{ "(": true }, 2, null as any, { ")": "*" }];
+    const db: Computation = [{ "(": true }, 2, null as any, { "*": true }];
     expectEquivalence(client, db);
   });
   it("bijectively transforms operator lacking its right side", () => {
@@ -447,7 +447,7 @@ describe("editor computation - equivalence with OPERATOR syntax errors", () => {
       2,
       null as any,
       null as any,
-      { ")": "*" },
+      { "*": true },
     ];
     expectEquivalence(client, db);
   });
@@ -459,8 +459,8 @@ describe("editor computation - equivalence with OPERATOR syntax errors", () => {
       { "(": true },
       null as any,
       2,
-      { ")": "*" },
-      { ")": "+" },
+      { "*": true },
+      { "+": true },
     ];
     expectEquivalence(client, db);
   });
@@ -471,9 +471,9 @@ describe("editor computation - equivalence with OPERATOR syntax errors", () => {
       { "(": true },
       2,
       null as any,
-      { ")": "*" },
+      { "*": true },
       null,
-      { ")": "+" },
+      { "+": true },
     ];
     expectEquivalence(client, db);
   });

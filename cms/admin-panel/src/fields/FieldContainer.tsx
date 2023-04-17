@@ -382,7 +382,7 @@ function Label({ id }: { id: FieldId }) {
   return (
     <div
       className={cl(
-        "flex items-center gap-1 bg-gray-850 px-1.5 -ml-1.5 font-medium",
+        "flex items-center gap-1 px-1.5 -ml-1.5 font-medium",
         isNative ? "text-gray-400" : "text-teal-600/90 dark:text-teal-400/90",
         isLink ? "cursor-alias" : "cursor-default",
         selectedPath.length && "hover:underline"

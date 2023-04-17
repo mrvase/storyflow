@@ -2,7 +2,6 @@ import React from "react";
 import { useGlobalState } from "../../state/state";
 import {
   FieldId,
-  FieldType,
   SyntaxTree,
   ValueArray,
   TokenStream,
@@ -11,25 +10,23 @@ import {
 import { getDocumentId, getRawFieldId } from "@storyflow/backend/ids";
 import { useFieldId } from "../FieldIdContext";
 import { useDocumentPageContext } from "../../documents/DocumentPageContext";
-import { targetTools, ComputationOp } from "shared/operations";
 import { createTokenStream, parseTokenStream } from "shared/parse-token-stream";
 import { useClient } from "../../client";
 import { useDocumentCollab } from "../../documents/collab/DocumentCollabContext";
 import { useFieldConfig } from "../../documents/collab/hooks";
 import { useSingular } from "../../state/useSingular";
 import { calculateFn } from "./calculateFn";
-import { getConfig } from "shared/initialValues";
-import { getNextState } from "shared/computation-tools";
+import { splitTransformsAndRoot } from "@storyflow/backend/transform";
+import { applyFieldOperation } from "shared/computation-tools";
 import { createQueueCache } from "../../state/collaboration";
 import { getDefaultField } from "@storyflow/backend/fields";
+import { FieldOperation } from "shared/operations";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
 
-export function useDefaultState(id: FieldId) {
+export function useDefaultStateCore(id: FieldId) {
   const rootId = useFieldId();
   const { record } = useDocumentPageContext();
   const client = useClient();
-
-  let fieldType: FieldType = "default";
-  let transform: Transform | undefined = undefined;
 
   if (id === rootId) {
     let [config] = useFieldConfig(rootId);
@@ -38,22 +35,13 @@ export function useDefaultState(id: FieldId) {
       const defaultFieldConfig = getDefaultField(rootId);
       config = {
         id: rootId,
-        type: defaultFieldConfig?.type ?? "default",
+        type: defaultFieldConfig?.type,
         label: defaultFieldConfig?.label ?? "",
       };
     }
-    fieldType = config.type ?? "default";
-
-    transform = React.useMemo(
-      () => config!.transform ?? getConfig(fieldType).transform,
-      [config]
-    );
   }
 
-  const initialValue = React.useMemo(
-    () => record[id] ?? getConfig(fieldType).defaultValue,
-    []
-  );
+  const initialValue = record[id] ?? DEFAULT_SYNTAX_TREE;
 
   const [tree, setTree] = useGlobalState<SyntaxTree>(
     `${id}#tree`,
@@ -61,60 +49,71 @@ export function useDefaultState(id: FieldId) {
   );
 
   const [value, setValue] = useGlobalState<ValueArray>(id, () =>
-    calculateFn(rootId, initialValue, { record, client })
+    calculateFn(initialValue, {
+      record,
+      client,
+      documentId: getDocumentId(rootId),
+    })
   );
 
   const setState = React.useCallback(
-    (func: () => TokenStream, updatedTransform?: Transform) => {
-      const tree = parseTokenStream(func(), updatedTransform ?? transform);
+    (stream: TokenStream, transforms: Transform[]) => {
+      const tree = parseTokenStream(stream, transforms);
       setTree(() => tree);
-      setValue(() => calculateFn(rootId, tree, { client, record }));
+      setValue(() =>
+        calculateFn(tree, {
+          client,
+          record,
+          documentId: getDocumentId(rootId),
+        })
+      );
     },
-    [transform]
+    []
   );
 
-  const setTransform = React.useCallback(
-    (transform: Transform | undefined) => {
-      setState(() => createTokenStream(tree!), transform);
-    },
-    [setState, tree]
-  );
+  return { initialValue, tree, value, setState };
+}
 
-  const target = targetTools.stringify({
-    field: fieldType,
-    operation: "computation",
-    location: id === rootId ? "" : id,
-  });
+export function useDefaultState(id: FieldId) {
+  const rootId = useFieldId();
+
+  const { initialValue, tree, value, setState } = useDefaultStateCore(id);
 
   const collab = useDocumentCollab();
-  const actions = React.useMemo(
-    () =>
-      collab.boundMutate<ComputationOp>(
-        getDocumentId(rootId),
-        getRawFieldId(rootId)
-      ),
-    [collab]
-  );
 
-  const singular = useSingular(`${rootId}${target}`);
+  const target = id === rootId ? "" : id;
+  const singular = useSingular(id);
 
   React.useEffect(() => {
-    const cache = createQueueCache(createTokenStream(initialValue));
+    // we assume it has been initialized in a useLayoutEffect in the component or its parent.
+    // we do not initialize it here, because this hook is also for nested fields that use their
+    // parent's queue.
+    const queue = collab.getQueue<FieldOperation>(
+      getDocumentId(rootId),
+      getRawFieldId(rootId)
+    )!;
 
-    return actions.register(({ forEach }) => {
+    const [transforms, root] = splitTransformsAndRoot(initialValue);
+
+    const cache = createQueueCache({
+      transforms,
+      stream: createTokenStream(root),
+    });
+
+    return queue.register(({ forEach }) => {
       singular(() => {
         let update = false;
 
         const result = cache(forEach, (prev, { operation }) => {
-          if (operation.target === target) {
-            prev = getNextState(prev, operation);
+          if (operation[0] === target) {
+            prev = applyFieldOperation(prev, operation);
             update = true;
           }
           return prev;
         });
 
         if (update) {
-          setState(() => result);
+          setState(result.stream, result.transforms);
         }
       });
     });
@@ -122,5 +121,5 @@ export function useDefaultState(id: FieldId) {
 
   const isPrimitive = value[0] === tree.children[0];
 
-  return { target, initialValue, tree, value, setTransform, isPrimitive };
+  return { target, initialValue, tree, value, isPrimitive };
 }
