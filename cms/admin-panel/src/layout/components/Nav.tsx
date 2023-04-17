@@ -121,7 +121,8 @@ export default function Nav() {
               <DropShadow>{(item) => <div>{item}</div>}</DropShadow>
             </Sortable>
           </div>
-          <div className="flex flex-col gap-1 mt-auto">
+          <div className="w-full grow" onClick={() => setIsOpen((ps) => !ps)} />
+          <div className="flex flex-col gap-1">
             <div
               className={cl(
                 "text-xs ml-1 font-bold text-gray-500 mb-1 transition-[opacity,height]",
@@ -154,6 +155,7 @@ export default function Nav() {
                   setIsOpen((ps) => !ps);
                 }}
                 icon={MenuIcon}
+                className="[.menu-closed_&]:opacity-80 [.menu-closed:hover_&]:opacity-80"
               />
               <NavButton
                 onClick={() => setDarkMode((ps) => !ps)}
