@@ -10,10 +10,13 @@ import {
   SyntaxTree,
   ValueArray,
   ClientSyntaxTree,
+  NestedDocumentId,
 } from "@storyflow/backend/types";
 import {
+  computeFieldId,
   createTemplateFieldId,
   getDocumentId,
+  getIdFromString,
   getParentDocumentId,
   getRawFieldId,
 } from "@storyflow/backend/ids";
@@ -170,10 +173,52 @@ export const calculateFn = (
           client,
           importId.folder.id
         ); // fetcherStore.get(importId.folder.id, string, client);
-        promise.then((result) => state.set(() => result.articles));
+        promise.then((result) =>
+          state.set(() => {
+            // might be aborted, so we need a fallback
+            return result?.articles ?? [];
+          })
+        );
       }
 
       return state.value?.map(({ _id }) => ({ id: _id })) ?? [];
+    }
+
+    if (typeof importId === "object" && "loop" in importId) {
+      const dataFieldId = computeFieldId(
+        getDocumentId(importId.loop),
+        getIdFromString("data")
+      );
+      const rawFieldId = getRawFieldId(importId.loop);
+
+      /*
+      const state = store.use<ValueArray | ClientSyntaxTree>(importId.loop);
+      if (!state.initialized()) {
+        state.set(() =>
+          calculateFn(initialValue, {
+            record,
+            client,
+            documentId,
+          })
+        );
+      }
+      */
+      const initialValue: SyntaxTree = {
+        type: "select",
+        children: [
+          {
+            id: "ffffffffffffffffffffffff" as NestedDocumentId,
+            field: dataFieldId,
+          },
+        ],
+        data: rawFieldId,
+      };
+
+      return calculateFn(initialValue, {
+        record,
+        client,
+        documentId,
+      });
     }
 
     if (typeof importId === "object" && "ctx" in importId) {

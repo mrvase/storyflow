@@ -95,7 +95,7 @@ export type NestedEntity =
   | NestedCreator;
 
 export type ContextToken = {
-  ctx: string; // server side like url
+  ctx: string; // server side ctx, e.g. url
 };
 
 export type StateToken = {
@@ -104,6 +104,7 @@ export type StateToken = {
 
 export type LoopToken = {
   loop: FieldId; // client side ctx
+  values?: ValueArray;
 };
 
 export type FileToken = {

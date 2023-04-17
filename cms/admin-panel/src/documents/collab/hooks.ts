@@ -4,6 +4,7 @@ import {
   DocumentId,
   FieldConfig,
   FieldId,
+  PartialFieldConfig,
   TemplateRef,
 } from "@storyflow/backend/types";
 import { useDocumentCollab, useDocumentMutate } from "./DocumentCollabContext";
@@ -177,40 +178,39 @@ export function useFieldConfig(
   // removing the first element which is just the current document
   const reversedParentPath = path.slice(1).reverse();
 
-  const useReactiveConfig = (fieldId: FieldId) => {
-    let [config] = configs.useKey(documentId, undefined, (value) => {
-      if (!value) return;
-      return getFieldConfig(value, fieldId);
-    });
-    return config;
-  };
-
-  const useNonReactiveConfig = (fieldId: FieldId) => {
+  const useConfig = (fieldId: FieldId, options: { reactive?: boolean }) => {
     const { article: template } = useDocument(
       getDocumentId(fieldId) as DocumentId
     );
-    return getFieldConfig(template?.config ?? [], fieldId);
+    let config: PartialFieldConfig | undefined;
+    if (options.reactive) {
+      [config] = configs.useKey(documentId, undefined, (value) => {
+        if (!value) return;
+        return getFieldConfig(value, fieldId);
+      });
+    }
+    return config ?? getFieldConfig(template?.config ?? [], fieldId);
   };
 
   let config: FieldConfig;
   if (path.length === 1) {
-    config = useReactiveConfig(fieldId) as FieldConfig;
+    config = useConfig(fieldId, { reactive: true }) as FieldConfig;
   } else {
     // the template
     const templateFieldId = revertTemplateFieldId(fieldId); // documentId === reversedParentPath[0];
-    config = useNonReactiveConfig(templateFieldId) as FieldConfig;
+    config = useConfig(templateFieldId, { reactive: false }) as FieldConfig;
 
     // removing the first element (the original) which is handled above
     reversedParentPath.slice(1).forEach((templateId) => {
       const id = replaceDocumentId(fieldId, templateId);
-      let overwritingConfig = useNonReactiveConfig(id);
+      let overwritingConfig = useConfig(id, { reactive: false });
       config = React.useMemo(
         () => ({ ...(config ?? {}), ...(overwritingConfig ?? {}) }),
         [config, overwritingConfig]
       );
     });
 
-    let reactiveConfig = useReactiveConfig(fieldId);
+    let reactiveConfig = useConfig(fieldId, { reactive: true });
     config = React.useMemo(
       () => ({ ...(config ?? {}), ...(reactiveConfig ?? {}) }),
       [config, reactiveConfig]

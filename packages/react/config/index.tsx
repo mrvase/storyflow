@@ -72,6 +72,9 @@ const defaultLibrary = {
         [Outlet]
       </cms.div>
     ),
+    Loop: ({ children }: any) => {
+      return <>{children}</>;
+    },
     Link: ({ href, label }: { href?: string; label?: String }) => {
       return <cms.a href={`/${href ?? ""}`}>{label}</cms.a>;
     },

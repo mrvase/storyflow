@@ -14,6 +14,8 @@ import {
   SyntaxTree,
   ValueArray,
   ClientSyntaxTree,
+  NestedDocumentId,
+  NestedField,
 } from "@storyflow/backend/types";
 import { extendPath } from "@storyflow/backend/extendPath";
 import Content from "../layout/components/Content";
@@ -27,6 +29,7 @@ import {
   computeFieldId,
   getDocumentId,
   getIdFromString,
+  getRawDocumentId,
   getRawFieldId,
 } from "@storyflow/backend/ids";
 import { ComponentConfig, LibraryConfig } from "@storyflow/frontend/types";
@@ -428,8 +431,10 @@ function FieldOverlay({ id }: { id: FieldId }) {
     <EditorFocusProvider>
       <div
         className={cl(
-          "absolute max-h-[calc(100%-1.25rem)] bg-gray-850 w-96 rounded-md bottom-2.5 right-2.5 overflow-y-auto no-scrollbar",
-          !currentId && "opacity-0 pointer-events-none"
+          "absolute max-h-[calc(100%-1.25rem)] min-h-[5.25rem] bg-gray-850 shadow-lg shadow-black/20 w-[calc(100%-1.25rem)] rounded-md bottom-2.5 left-2.5 overflow-y-auto no-scrollbar transition-[transform,opacity] ease-out duration-200 origin-bottom",
+          !currentId
+            ? "opacity-0 pointer-events-none scale-[0.98]"
+            : "opacity-100 scale-100"
         )}
       >
         <div className={cl("relative grow shrink basis-0 p-2.5")}>
@@ -444,7 +449,7 @@ function FieldOverlay({ id }: { id: FieldId }) {
   );
 }
 
-export type ComponentRecord = Record<string, ValueArray>;
+export type ValueRecord = Record<string, ValueArray | ClientSyntaxTree>;
 
 const getRecordSnapshot = (
   entry: FieldId,
@@ -458,7 +463,7 @@ const getRecordSnapshot = (
     libraries: LibraryConfig[];
   }
 ) => {
-  const finalRecord: ComponentRecord = {};
+  const finalRecord: ValueRecord = {};
 
   const recursivelyGetRecordFromComputation = (fieldId: FieldId) => {
     const state = store.use<ValueArray | ClientSyntaxTree>(fieldId);
@@ -503,48 +508,51 @@ const getRecordSnapshot = (
         if (Array.isArray(element)) {
           // this should propably just flat it infinitely out
           return Object.assign(acc, getChildren(element));
-        } else if (!tokens.isNestedElement(element)) {
+        } else if (tokens.isNestedElement(element)) {
+          const components = libraries
+            .reduce(
+              (acc: ComponentConfig[], library) =>
+                acc.concat(
+                  Object.values(library.components).map((el) => ({
+                    ...el,
+                    name: extendPath(library.name, el.name, ":"),
+                  }))
+                ),
+              []
+            )
+            .flat(1);
+
+          const propConfigArray = components.find(
+            (el) => el.name === element.element
+          )?.props;
+
+          const propKeys =
+            propConfigArray?.reduce((acc: string[], el) => {
+              if (el.type === "group") {
+                acc.push(
+                  ...el.props.map((child) => `${el.name}#${child.name}`)
+                );
+                return acc;
+              }
+              acc.push(el.name);
+              return acc;
+            }, []) ?? [];
+
+          propKeys.push("key");
+
+          const props = propKeys.reduce((acc, key) => {
+            return Object.assign(
+              acc,
+              recursivelyGetRecordFromComputation(
+                computeFieldId(element.id, getIdFromString(key))
+              )
+            );
+          }, {});
+
+          return Object.assign(acc, props);
+        } else {
           return acc;
         }
-        const components = libraries
-          .reduce(
-            (acc: ComponentConfig[], library) =>
-              acc.concat(
-                Object.values(library.components).map((el) => ({
-                  ...el,
-                  name: extendPath(library.name, el.name, ":"),
-                }))
-              ),
-            []
-          )
-          .flat(1);
-
-        const propConfigArray = components.find(
-          (el) => el.name === element.element
-        )?.props;
-
-        const propKeys =
-          propConfigArray?.reduce((acc: string[], el) => {
-            if (el.type === "group") {
-              acc.push(...el.props.map((child) => `${el.name}#${child.name}`));
-              return acc;
-            }
-            acc.push(el.name);
-            return acc;
-          }, []) ?? [];
-
-        propKeys.push("key");
-
-        const props = propKeys.reduce((acc, key) => {
-          return Object.assign(
-            acc,
-            recursivelyGetRecordFromComputation(
-              computeFieldId(element.id, getIdFromString(key))
-            )
-          );
-        }, {});
-
-        return Object.assign(acc, props);
       }, {});
     };
 
@@ -577,22 +585,19 @@ function PropagateStatePlugin({
   const { libraries } = useClientConfig();
 
   // state initialized in ComponentField
-  const [tree, setTree] = useGlobalState<ComponentRecord>(
-    `${id}/record`,
-    () => {
-      return getRecordSnapshot(id, {
-        record,
-        client,
-        libraries,
-      });
-    }
-  );
+  const [tree, setTree] = useGlobalState<ValueRecord>(`${id}/record`, () => {
+    return getRecordSnapshot(id, {
+      record,
+      client,
+      libraries,
+    });
+  });
 
   let oldValue = React.useRef({ ...tree });
 
   React.useEffect(() => {
     if (rendered) {
-      const record = store.use<ComponentRecord>(`${id}/record`).value;
+      const record = store.use<ValueRecord>(`${id}/record`).value;
       if (record) {
         dispatchers.initialize.dispatch({
           id,

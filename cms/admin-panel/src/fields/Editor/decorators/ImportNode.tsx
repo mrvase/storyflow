@@ -23,7 +23,7 @@ const useState = (
   if (select) {
     const label1 = useLabel(id);
     const label2 = useLabel(revertTemplateFieldId(select));
-    return ["", [`[${label1} · ${label2}]`]];
+    return ["", [`${label1} · ${label2 || "?"}`]];
   }
 
   if (!id) return ["", []];
@@ -56,12 +56,16 @@ function Decorator({
   return (
     <span
       className={cl(
-        "rounded selection:bg-transparent relative",
+        "rounded selection:bg-transparent relative ring-1 ring-inset",
         isColumn
-          ? "bg-sky-100 dark:bg-sky-400/20 text-sky-700/90 dark:text-sky-100/90"
+          ? "bg-sky-100 dark:bg-sky-400/20 text-sky-700/90 dark:text-sky-100/90 text-sm py-0.5 px-1.5 font-medium"
           : "bg-teal-100 dark:bg-teal-400/20 text-teal-700/90 dark:text-teal-100/90",
         // "after:absolute after:w-full after:left-0 after:-bottom-0.5 after:border-b-2 after:border-b-white/20",
-        isSelected ? "ring-1 ring-amber-300" : "dark:ring-gray-600",
+        isSelected
+          ? "ring-white"
+          : isColumn
+          ? "ring-sky-400/20"
+          : "ring-transparent",
         isPseudoSelected && caretClasses
       )}
       onMouseDown={() => {

@@ -95,7 +95,6 @@ export function Attributes({
           label: el.label,
         };
       });
-      console.log("HERE", entity, props);
       return props;
     }
     return [];
@@ -154,32 +153,36 @@ function PropPreview({
 
   const colors = {
     gray: {
-      400: "text-gray-400",
-      500: "text-gray-500",
-      600: "text-gray-600",
+      textA400: "text-gray-400",
+      textA500: "text-gray-500",
+      textB500: "text-gray-500",
+      textB600: "text-gray-600",
       bg: "bg-gray-750",
       ring: "ring-gray-750",
     },
     pink: {
-      400: "text-pink-100",
-      500: "text-pink-200",
-      600: "text-pink-300",
+      textA400: "text-pink-100",
+      textA500: "text-pink-200",
+      textB500: "text-pink-200",
+      textB600: "text-pink-300",
       bg: "bg-pink-700",
       ring: "ring-pink-700",
     },
     red: {
-      400: "text-red-200/80",
-      500: "text-red-200/60",
-      600: "text-red-200/40",
-      bg: "bg-red-200/10",
-      ring: "ring-red-200/20",
+      textA400: "text-red-200/80",
+      textA500: "text-red-300/60",
+      textB500: "text-red-200/80",
+      textB600: "text-red-300/40",
+      bg: "bg-red-400/20",
+      ring: "ring-red-400/20",
     },
     yellow: {
-      400: "text-yellow-200/80",
-      500: "text-yellow-200/60",
-      600: "text-yellow-200/40",
-      bg: "bg-yellow-200/10",
-      ring: "ring-yellow-200/20",
+      textA400: "text-yellow-100/80",
+      textA500: "text-yellow-200/50",
+      textB500: "text-yellow-100/80",
+      textB600: "text-yellow-200/40",
+      bg: "bg-yellow-300/10",
+      ring: "ring-yellow-300/20",
     },
   }[color ?? "gray"];
 
@@ -188,23 +191,26 @@ function PropPreview({
       className={cl(
         "rounded-full flex items-center px-2 py-0.5 text-xs transition-colors ring-inset",
         colors.ring,
-        selected
-          ? cl(colors[400], colors.bg, "ring-1")
-          : cl(colors[500], "hover:ring-1")
+        selected ? cl(colors.bg, "ring-0") : cl("hover:ring-1")
       )}
       onMouseDown={(ev) => {
         select(!selected);
         ev.stopPropagation();
       }}
     >
-      <span className="whitespace-nowrap font-bold">
+      <span
+        className={cl(
+          "whitespace-nowrap font-semibold",
+          selected ? cl(colors["textA400"]) : cl(colors["textA500"])
+        )}
+      >
         {prop.label}
-        {preview ? <>&nbsp;&nbsp;</> : ""}
+        {preview ? <>&nbsp;&nbsp;&nbsp;</> : ""}
       </span>
       <span
         className={cl(
-          selected ? colors[500] : colors[600],
-          "max-w-[80px] font-medium truncate"
+          selected ? colors["textB500"] : colors["textB600"],
+          "max-w-[80px] font-normal truncate"
         )}
       >
         {preview}
