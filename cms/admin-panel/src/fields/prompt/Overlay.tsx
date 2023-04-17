@@ -236,7 +236,7 @@ export function Overlay({ children }: { children?: React.ReactNode }) {
   return (
     <div
       className={cl(
-        "absolute w-full top-0 -left-1.5 z-10 gradient-border rounded shadow-lg shadow-black/20 text-sm max-w-2xl",
+        "absolute w-full top-0 -left-1.5 z-10 gradient-border rounded shadow-lg shadow-black/20 text-sm max-w-2xl text-white",
         "flex flex-col divide-y divide-white/5",
         position !== null
           ? "opacity-100 transition-opacity duration-300"

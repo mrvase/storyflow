@@ -251,6 +251,7 @@ export const functions = [
   "select",
   "root",
   "merge",
+  "template",
   "fetch",
 ] as const;
 
@@ -289,6 +290,7 @@ export type FunctionSymbol =
   | { url: true }
   | { root: true }
   | { merge: true }
+  | { template: RawDocumentId }
   | { select: RawFieldId }
   | { fetch: [limit: number, ...sortings: Sorting[]] };
 
@@ -317,7 +319,8 @@ export type RestrictTo =
   | "color"
   | "image"
   | "video"
-  | "children";
+  | "children"
+  | "data";
 
 export type FieldConfig = {
   type?: "url";

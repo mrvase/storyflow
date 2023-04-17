@@ -4,6 +4,7 @@ import {
   FieldConfig,
   FieldId,
   NestedDocument,
+  NestedDocumentId,
   NestedElement,
   NestedField,
   NestedFolder,
@@ -21,11 +22,32 @@ import { useDocumentPageContext } from "../../documents/DocumentPageContext";
 import { tokens } from "@storyflow/backend/tokens";
 import { getChildrenDocuments } from "shared/computation-tools";
 import { useDefaultState } from "./useDefaultState";
+import { splitTransformsAndRoot } from "@storyflow/backend/transform";
+import { useLoopTemplate } from "./LoopTemplateContext";
 
 const noTemplate: FieldConfig[] = [];
 
-export function PreloadFieldState({ id }: { id: FieldId }) {
+export function PreloadFieldState({
+  id,
+  createTemplateContext,
+}: {
+  id: FieldId;
+  createTemplateContext?: NestedDocumentId;
+}) {
   const { tree } = useDefaultState(id);
+
+  if (createTemplateContext) {
+    const template = React.useMemo(() => {
+      return splitTransformsAndRoot(tree)[0].find(
+        (el) => el.type === "template"
+      )?.data as string | undefined;
+    }, [tree]);
+
+    const [, setTemplate] = useLoopTemplate(createTemplateContext, template);
+    React.useEffect(() => {
+      if (template) setTemplate(`000000000000${template}`);
+    }, [template]);
+  }
 
   const children = React.useMemo(() => {
     return getChildrenDocuments(tree);
@@ -48,6 +70,8 @@ function PreloadNestedState({
   const id = useFieldId();
 
   let ids: FieldId[] = [];
+
+  let createTemplateContext = false;
 
   if (tokens.isNestedFolder(entity)) {
     const template = useFieldTemplate(id) ?? noTemplate;
@@ -99,6 +123,10 @@ function PreloadNestedState({
         [keyId] as FieldId[]
       );
     }, [props, record]);
+
+    if (entity.element === "Loop") {
+      createTemplateContext = true;
+    }
   } else if (tokens.isNestedDocument(entity)) {
     const template = useFieldTemplate(id) ?? noTemplate;
 
@@ -112,7 +140,15 @@ function PreloadNestedState({
   return (
     <>
       {ids.map((id) => (
-        <PreloadFieldState key={id} id={id} />
+        <PreloadFieldState
+          key={id}
+          id={id}
+          createTemplateContext={
+            createTemplateContext && id.endsWith(getIdFromString("data"))
+              ? (entity.id as NestedDocumentId)
+              : undefined
+          }
+        />
       ))}
     </>
   );

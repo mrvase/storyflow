@@ -20,7 +20,7 @@ import { mergeRegister } from "../../editor/utils/mergeRegister";
 import { Overlay } from "../prompt/Overlay";
 import { Option } from "../prompt/Option";
 import { useMathMode } from "../Editor/useMathMode";
-import { Bars2Icon } from "@heroicons/react/24/outline";
+import { Bars2Icon, VariableIcon } from "@heroicons/react/24/outline";
 import {
   FieldOperation,
   StreamAction,
@@ -73,8 +73,6 @@ export function DefaultField({
 
   const { target, initialValue, value, isPrimitive, tree } =
     useDefaultState(id);
-
-  console.log("TREE", tree);
 
   const transforms = React.useMemo(() => {
     return splitTransformsAndRoot(tree)[0];
@@ -218,6 +216,11 @@ export function DefaultField({
           <PushOnBlurPlugin push={push} hasLocalPush={hasLocalPush} />
           <OverlayWrapper />
           <BottomSelectionArea />
+          <div className="absolute right-0 top-0">
+            {transforms.length ? (
+              <VariableIcon className="w-4 h-4 my-1 opacity-50" />
+            ) : null}
+          </div>
         </div>
       </Editor>
     </>
@@ -272,7 +275,7 @@ function OverlayWrapper() {
   return (
     <Overlay>
       <div className="p-2.5">
-        <div className="font-medium opacity-50 mb-1 ml-1">Tilstand</div>
+        <div className="font-medium text-gray-400 mb-1 ml-1">Tilstand</div>
         <Option
           value={null}
           onEnter={() => {

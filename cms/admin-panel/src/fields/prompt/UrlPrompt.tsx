@@ -120,7 +120,7 @@ function AppUrls({
 
   return (
     <div className="p-2.5">
-      <div className="font-medium opacity-50 mb-1 ml-1">{app.label}</div>
+      <div className="font-medium text-gray-400 mb-1 ml-1">{app.label}</div>
       {options.map(
         ({ id, label, secondaryText, Icon, onEnter, onEnterLabel }) => (
           <Option

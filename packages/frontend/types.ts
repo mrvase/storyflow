@@ -32,6 +32,7 @@ type PropTypes = {
   number: number;
   boolean: boolean;
   children: (string | number | Element)[];
+  data: any[];
 };
 
 export type Option =

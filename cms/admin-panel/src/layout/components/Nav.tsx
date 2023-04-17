@@ -155,7 +155,7 @@ export default function Nav() {
                   setIsOpen((ps) => !ps);
                 }}
                 icon={MenuIcon}
-                className="[.menu-closed_&]:opacity-80 [.menu-closed:hover_&]:opacity-80"
+                className="important [.menu-closed_&.important]:opacity-80 [.menu-closed:hover_&.important]:opacity-80"
               />
               <NavButton
                 onClick={() => setDarkMode((ps) => !ps)}
@@ -243,7 +243,7 @@ function NavButton({
   return (
     <button
       className={cl(
-        "w-full h-7 px-1.5 rounded flex gap-2.5 items-center [.menu-closed_&]:opacity-25 [.menu-closed:hover_&]:opacity-50 opacity-75 hover:opacity-100 [.menu-closed:hover_&]:hover:opacity-100 transition-opacity text-sm",
+        "w-full h-7 px-1.5 rounded flex gap-2.5 items-center [.menu-closed_&]:opacity-40 [.menu-closed:hover_&]:opacity-75 opacity-75 hover:opacity-100 [.menu-closed:hover_&]:hover:opacity-100 transition-opacity text-sm",
         className
       )}
       onClick={onClick}
@@ -273,27 +273,31 @@ const EditingIcon = ({
     stroke="currentColor"
     className={className || "w-6 h-6"}
   >
+    <defs>
+      <mask id="Mask">
+        <rect x="0" y="0" width="24" height="24" fill="white" />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={1.5}
+          d="M3 5 L19 21"
+          stroke="black"
+        />
+      </mask>
+    </defs>
     <path
       strokeLinecap="round"
       strokeLinejoin="round"
       d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125"
+      mask={off ? "url(#Mask)" : undefined}
     />
     {off && (
-      <>
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M2 2 L22 22"
-        />
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          stroke="rgb(12, 17, 23)"
-          d="M2.58 5.42 L18.58 21.42"
-        />
-      </>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.5}
+        d="M1.5 1.5 L22.5 22.5"
+      />
     )}
   </svg>
 );
