@@ -271,23 +271,6 @@ export const fields = createRoute({
         versions[id as RawFieldId] = fieldVersion + pkgs.length;
       });
 
-      /*
-      // TODO
-      // Skal tjekke ovenfor, om configs har fået ændret transforms.
-      // Så laver jeg de felter til tokenStream og tilføjer dem til allUpdates uden initialTransform.
-      // Herunder får de så tilføjet den nye transform, hvis den er der.
-
-      updatedTransforms.forEach((id) => {
-        if (id in allUpdates) return;
-        allUpdates[id] = {
-          initialTransform: undefined,
-          stream: createTokenStream(
-            computationRecord[id] ?? DEFAULT_SYNTAX_TREE
-          ),
-        };
-      });
-      */
-
       Object.assign(computationRecord, allUpdates);
 
       // trim to not include removed nested fields
@@ -301,6 +284,10 @@ export const fields = createRoute({
       );
 
       // TODO delete native fields from computationRecord that are not in documentConfig.
+      // AND delete template fields whose template is not in documentConfig.
+      // BUT! template fields can be nested and therefore hidden!!
+      // - possible solution: Include ids of nested template fields in request.
+      // I should also delete them from the "versions" and "updated" objects.
 
       let graph = getGraph(computationRecord);
 

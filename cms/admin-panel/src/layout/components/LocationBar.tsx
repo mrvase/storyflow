@@ -91,14 +91,14 @@ export function LocationBar({
             />
           ))}
         </div>
-        <button
+        {/*<button
           className={cl(
             "shrink-0 ml-auto flex items-center justify-center h-full px-2",
             "opacity-50 hover:opacity-100 transition-opacity"
           )}
         >
           <BookmarkIcon className="w-4 h-4" />
-        </button>
+        </button>*/}
         <button
           className={cl(
             "shrink-0 flex items-center justify-center h-full px-2",

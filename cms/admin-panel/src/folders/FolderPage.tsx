@@ -46,8 +46,6 @@ export default function FolderPage({
 
   const [dialogIsOpen, setDialogIsOpen] = React.useState<null | string>(null);
 
-  const [isEditing] = [true]; //useLocalStorage<boolean>("editing-articles", false);
-
   const parentDomains = React.useContext(FolderDomainsContext);
 
   const collab = useFolderCollab();
@@ -82,49 +80,47 @@ export default function FolderPage({
               />
             }
             toolbar={
-              isEditing ? (
-                <Content.Toolbar>
-                  <FolderTemplateButton
-                    template={folder?.template}
-                    openDialog={() => setDialogIsOpen("add-template")}
-                  />
-                  <Content.ToolbarButton
-                    data-focus-remain="true"
-                    onClick={() => {
-                      collab.mutate("folders", folder._id).push([
-                        "",
-                        [
-                          {
-                            index: 0,
-                            insert: [
-                              {
-                                id: createKey(),
-                                type: "folders",
-                                items: [],
-                              },
-                            ],
-                          },
-                        ],
-                      ]);
-                    }}
-                    icon={PlusIcon}
-                  >
-                    Tilføj space
-                  </Content.ToolbarButton>
-                  {folder && (
-                    <>
-                      <DomainsButton
-                        parentDomains={parentDomains ?? undefined}
-                        domains={folder.domains}
-                        mutate={(domains) => mutateProp("domains", domains)}
-                      />
-                      <div className="text-xs text-gray-600 flex-center h-6 ring-1 ring-inset ring-gray-700 px-2 rounded cursor-default">
-                        ID: {folder._id.replace(/^0+/, "")}
-                      </div>
-                    </>
-                  )}
-                </Content.Toolbar>
-              ) : null
+              <Content.Toolbar>
+                <FolderTemplateButton
+                  template={folder?.template}
+                  openDialog={() => setDialogIsOpen("add-template")}
+                />
+                <Content.ToolbarButton
+                  data-focus-remain="true"
+                  onClick={() => {
+                    collab.mutate("folders", folder._id).push([
+                      "",
+                      [
+                        {
+                          index: 0,
+                          insert: [
+                            {
+                              id: createKey(),
+                              type: "folders",
+                              items: [],
+                            },
+                          ],
+                        },
+                      ],
+                    ]);
+                  }}
+                  icon={PlusIcon}
+                >
+                  Tilføj space
+                </Content.ToolbarButton>
+                {folder && (
+                  <>
+                    <DomainsButton
+                      parentDomains={parentDomains ?? undefined}
+                      domains={folder.domains}
+                      mutate={(domains) => mutateProp("domains", domains)}
+                    />
+                    <div className="text-xs text-gray-600 flex-center h-6 ring-1 ring-inset ring-gray-700 px-2 rounded cursor-default">
+                      ID: {folder._id.replace(/^0+/, "")}
+                    </div>
+                  </>
+                )}
+              </Content.Toolbar>
             }
           >
             {folder && (
@@ -243,7 +239,9 @@ export function FolderTemplateButton({
         label={`Rediger skabelon "${label}"`}
         onClick={() => {
           if (template) {
-            navigate(`${route}/t${template}`, { navigate: true });
+            navigate(`${route}/t${parseInt(template, 16).toString(16)}`, {
+              navigate: true,
+            });
             return;
           }
         }}

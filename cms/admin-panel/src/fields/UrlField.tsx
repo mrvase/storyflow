@@ -68,21 +68,17 @@ const useRelatedPages = (articleId: DocumentId, initialUrl: string) => {
 
   let slugs = initialUrl.split("/").slice(0, -1);
 
-  if (slugs[0] !== "") {
-    slugs.unshift("");
-  }
-
   const parents = slugs.map((_, i, arr) => {
-    const path = arr.slice(1, i + 1).join("/");
+    const path = `/${arr.slice(1, i + 1).join("/")}`;
     return list?.articles.find((el) => getUrl(el) === path);
   });
 
   const children =
     list?.articles.filter((el) => {
       // "|| null" excludes the front page from being included among its on children
-      return (
-        (getUrl(el) || null)?.split("/")?.slice(0, -1)?.join("/") === initialUrl
-      );
+      const url = getUrl(el);
+      if (url === "/") return false;
+      return (url.split("/")?.slice(0, -1)?.join("/") || "/") === initialUrl;
     }) ?? [];
 
   return [parents, children] as [DBDocument[], DBDocument[]];
@@ -125,7 +121,7 @@ export default function UrlField({ id, version, history }: FieldProps) {
         "",
         [
           {
-            index: 1,
+            index: 3,
             insert: [{ ",": true }, ""],
             remove: slug.length + 1,
           },
@@ -138,7 +134,7 @@ export default function UrlField({ id, version, history }: FieldProps) {
         "",
         [
           {
-            index: 2,
+            index: 4,
             insert: [{ x: 0, value: "*" }],
             remove: slug.length,
           },
@@ -151,7 +147,7 @@ export default function UrlField({ id, version, history }: FieldProps) {
       "",
       [
         {
-          index: 2,
+          index: 4,
           insert: [newSlug],
           remove: slug.length,
         },
@@ -200,9 +196,14 @@ export default function UrlField({ id, version, history }: FieldProps) {
   const route = useRoute();
 
   const replacePage = (id: string) =>
-    navigate(`${route.split("/").slice(0, -1).join("/")}/d${id}`, {
-      navigate: false,
-    });
+    navigate(
+      `${route.split("/").slice(0, -1).join("/")}/d${parseInt(id, 16).toString(
+        16
+      )}`,
+      {
+        navigate: false,
+      }
+    );
 
   let parentSlugs = parentUrl.split("/");
   if (parentSlugs[0] !== "") {

@@ -1,20 +1,9 @@
 /*
-User input -> TokenStream
-TokenStream -> SyntaxTree
-SyntaxTree -> SyntaxStream
-SyntaxStream -> SyntaxTree
-SyntaxTree -> ValueArray
-SyntaxStream -> ValueArray
-SyntaxTree -> TokenStream
-SyntaxTree -> RenderTree
-
-
 User input --> Token Stream
                  <-[eq]->
         SyntaxTree<WithSyntaxError>
           <-[eq]->      --[ss]->
     SyntaxStream --[ss]-> ValueArray --> RenderTree
-
 */
 
 declare const brand: unique symbol;
@@ -298,9 +287,9 @@ export type FunctionSymbol =
   | { filter: true }
   | { slug: true }
   | { url: true }
-  | { select: RawFieldId }
   | { root: true }
   | { merge: true }
+  | { select: RawFieldId }
   | { fetch: [limit: number, ...sortings: Sorting[]] };
 
 type Assert<T extends true> = T;

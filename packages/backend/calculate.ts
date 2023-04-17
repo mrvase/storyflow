@@ -206,33 +206,31 @@ function compute(
           let strings = values.map((el) =>
             ["number", "string"].includes(typeof el) ? `${el}` : ""
           );
-          return strings
-            .map((string, index) => {
-              if (string === "") {
-                return "";
-              }
-              const matches = Array.from(
-                string.matchAll(type === "url" ? /[^\w\/\*\-]/g : /[^\w\-]/g)
-              );
+          const string = strings.reduce((acc, string, index) => {
+            if (string === "" || (acc === "/" && string === "/")) {
+              return acc;
+            }
 
-              let offset = 0;
+            const matches = Array.from(
+              string.matchAll(type === "url" ? /[^\w\/\*\-]/g : /[^\w\-]/g)
+            );
 
-              matches.forEach((el) => {
-                const match = el[0];
-                const anchor = el.index! + offset;
-                const focus = anchor + match.length;
-                const replacement =
-                  slugCharacters.find(([char]) => char === match)?.[1] ?? "";
-                string =
-                  string.slice(0, anchor) + replacement + string.slice(focus);
-                offset += replacement.length - match.length;
-              });
+            let offset = 0;
 
-              return `${string.toLowerCase()}${
-                type === "url" && index !== strings.length - 1 ? "/" : ""
-              }`;
-            })
-            .join("");
+            matches.forEach((el) => {
+              const match = el[0];
+              const anchor = el.index! + offset;
+              const focus = anchor + match.length;
+              const replacement =
+                slugCharacters.find(([char]) => char === match)?.[1] ?? "";
+              string =
+                string.slice(0, anchor) + replacement + string.slice(focus);
+              offset += replacement.length - match.length;
+            });
+
+            return `${acc}${string.toLowerCase()}`;
+          }, "");
+          return string;
         }),
       ];
     case "in":

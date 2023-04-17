@@ -2,7 +2,6 @@ import { useLocalStorage } from "../../state/useLocalStorage";
 import Nav from "./Nav";
 import Sidebar from "./Sidebar";
 import { Panels } from "./Panels";
-import TabBar from "./TabBar";
 
 export function Layout() {
   const [sidebarIsOpen] = useLocalStorage<boolean>("sidebar-is-open", false);
@@ -12,21 +11,21 @@ export function Layout() {
     <div className="flex h-screen bg-gray-100 dark:bg-gray-950">
       <Nav />
       <div
-        className="flex flex-col h-screen grow-0 shrink-0 transition-[width] ease-out"
+        className="flex flex-col h-screen grow-0 shrink-0 transition-[width] ease-out mx-2"
         style={{
           width: `calc(${[
             "100%",
-            navIsOpen && "12rem",
-            sidebarIsOpen && "14rem",
+            "1rem",
+            navIsOpen ? "12rem" : "2.25rem",
+            sidebarIsOpen && "12rem",
           ]
             .filter(Boolean)
             .join(" - ")})`,
         }}
       >
-        <div className="w-[calc(100%-16px)] mx-2 grow overflow-hidden">
+        <div className="w-full grow overflow-hidden">
           <Panels />
         </div>
-        <TabBar />
       </div>
       <Sidebar />
     </div>

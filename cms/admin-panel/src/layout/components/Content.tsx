@@ -103,23 +103,6 @@ function Content({
   );
 }
 
-function SettingsButton() {
-  const [isOpen, setIsOpen] = useLocalStorage<boolean>("toolbar-open", true);
-
-  return (
-    <>
-      {!isOpen && (
-        <button
-          className="mt-0.5 ml-4 opacity-25 hover:opacity-100 transition-opacity"
-          onClick={() => setIsOpen(true)}
-        >
-          <CogIcon className="w-5 h-5" />
-        </button>
-      )}
-    </>
-  );
-}
-
 function ToolbarWrapper({
   toolbar,
   isFocused,

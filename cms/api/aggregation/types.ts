@@ -69,7 +69,11 @@ export type Operators<DocumentType extends Record<string, any>> = {
   ne: <T, U extends Exclude<any, T>>(arg1: T, arg2: U) => boolean;
   first: <T extends any[]>(
     arr: T
-  ) => T extends [infer First, ...any] ? First : never;
+  ) => T extends [infer First, ...any]
+    ? First
+    : T extends any[]
+    ? T[number]
+    : never;
   last: <T extends any[]>(
     arr: T
   ) => T extends [...any, infer Last] ? Last : T[number];

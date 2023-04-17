@@ -83,41 +83,56 @@ export function RenderTemplate({
           }).then((defaultValues) => {
             Object.entries(defaultValues).forEach((entry) => {
               const [fieldId, tree] = entry as [FieldId, SyntaxTree];
-              if (getDocumentId(fieldId) === owner) {
-                const [transforms, root] = splitTransformsAndRoot(tree);
-                const transformActions = transforms.map((transform) => {
-                  return {
-                    name: transform.type,
-                    value: transform.data ?? true,
-                  };
-                });
-                const stream = createTokenStream(root);
-                const tokenActions =
-                  stream.length === 0
-                    ? []
-                    : [
-                        {
-                          index: 0,
-                          insert: createTokenStream(root),
-                        },
-                      ];
-                if (transformActions.length > 0 || tokenActions.length > 0) {
-                  collab
-                    .getOrAddQueue(owner, getRawFieldId(fieldId), {
-                      transform: createTokenStreamTransformer(fieldId, {}),
-                      mergeableNoop: ["", []],
-                    })
-                    .initialize(0, [])
-                    .push([
-                      "",
-                      [
-                        ...(transformActions.length > 0
-                          ? transformActions
-                          : []),
-                        ...(tokenActions.length > 0 ? tokenActions : []),
-                      ],
-                    ]);
-                }
+              /* only care about native fields */
+              if (getDocumentId(fieldId) !== owner) return;
+              /*
+              Continue only if it does not exist already
+              (that is, if not deleted and now added without a save in between)
+              */
+              if (versions && fieldId in versions) return;
+              const [transforms, root] = splitTransformsAndRoot(tree);
+              const transformActions = transforms.map((transform) => {
+                return {
+                  name: transform.type,
+                  value: transform.data ?? true,
+                };
+              });
+              const stream = createTokenStream(root);
+              const tokenActions =
+                stream.length === 0
+                  ? []
+                  : [
+                      {
+                        index: 0,
+                        insert: createTokenStream(root),
+                      },
+                    ];
+              if (transformActions.length > 0 || tokenActions.length > 0) {
+                /*
+                  TODO: Overvejelse: Jeg kan godt tilføje og slette og tilføje.
+                  Har betydning ift. fx url, hvor default children pushes igen.
+                  Skal muligvis lave en mulighed for, at splice action overskriver alt.
+                  I så fald kan jeg tjekke, om den har været initialized.
+                  Hvis ikke, så starter jeg den på version = 0 og pusher med det samme.
+                  Da det sker sync, ved jeg, at det push registreres som om,
+                  at det ikke har set andre actions endnu.
+
+                  Men hvad sker der, når den kører gennem transform?
+                  */
+
+                collab
+                  .getOrAddQueue(owner, getRawFieldId(fieldId), {
+                    transform: createTokenStreamTransformer(fieldId, {}),
+                    mergeableNoop: ["", []],
+                  })
+                  .initialize(0, [])
+                  .push([
+                    "",
+                    [
+                      ...(transformActions.length > 0 ? transformActions : []),
+                      ...(tokenActions.length > 0 ? tokenActions : []),
+                    ],
+                  ]);
               }
             });
           });
@@ -133,7 +148,7 @@ export function RenderTemplate({
       }
       push(["", ops]);
     },
-    [config, push, client, generateDocumentId, collab]
+    [config, push, client, generateDocumentId, collab, owner]
   );
 
   React.useEffect(() => {

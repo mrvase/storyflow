@@ -82,6 +82,7 @@ export function AddArticleDialog({
                         field: parentUrl.id,
                         inline: true,
                       },
+                      "/",
                       slug,
                     ],
                   },

@@ -78,7 +78,7 @@ export const DEFAULT_FIELDS = {
           type: "url",
         },
       ],
-      children: ["", ""],
+      children: ["", "/", ""],
     },
   },
   slug: {

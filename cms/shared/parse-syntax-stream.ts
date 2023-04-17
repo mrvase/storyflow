@@ -165,6 +165,8 @@ export function parseSyntaxStream(
     } else if (isSymbol(token, ")") && token[")"] === false) {
       current.children.push({ error: ")" });
     } else if (isFunctionSymbol(token)) {
+      current = returnToNullParent(current, parents);
+
       const [type, data] = Object.entries(token)[0] as [
         FunctionName,
         FunctionData
@@ -178,12 +180,8 @@ export function parseSyntaxStream(
         hasNestedRoot = true;
       }
 
-      // it is conceivable that I should return to null first,
-      // then set the type and then return to the parent, like
-      // in the case of ")" and "]".
-      // Here I end up at the parent, because I have just set
-      // the type to non-null.
-      current = returnToNullParent(current, parents);
+      const parent = parents.get(current)!;
+      current = parent;
     } else if (isOperatorSymbol(token)) {
       current = returnToNullParent(current, parents);
 
@@ -264,6 +262,8 @@ export function parseSyntaxStream(
   } else {
     root.type = "root";
   }
+
+  console.log("ROOT", root);
 
   return root;
 }

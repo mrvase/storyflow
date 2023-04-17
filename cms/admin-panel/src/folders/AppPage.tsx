@@ -48,7 +48,7 @@ export default function AppPage({ children }: { children?: React.ReactNode }) {
     if (!articles) return [];
 
     const getUrlLength = (url: string) => {
-      return url ? url.split("/").length : 0;
+      return url === "/" ? 0 : url.split("/").length - 1;
     };
 
     const articlesWithLengths = articles
@@ -136,8 +136,6 @@ export default function AppPage({ children }: { children?: React.ReactNode }) {
 
   const parentDomains = React.useContext(FolderDomainsContext);
 
-  const [isEditing] = [true]; //useLocalStorage<boolean>("editing-articles", false);
-
   return (
     <AppPageContext.Provider value={ctx}>
       <FolderDomainsProvider domains={folder?.domains ?? []}>
@@ -154,22 +152,20 @@ export default function AppPage({ children }: { children?: React.ReactNode }) {
               />
             }
             toolbar={
-              isEditing ? (
-                <Content.Toolbar>
-                  {folder && (
-                    <>
-                      <DomainsButton
-                        parentDomains={parentDomains ?? undefined}
-                        domains={folder.domains}
-                        mutate={(domains) => mutateProp("domains", domains)}
-                      />
-                      <div className="text-xs text-gray-600 flex-center h-6 ring-1 ring-inset ring-gray-700 px-2 rounded cursor-default">
-                        ID: {folder._id.replace(/^0+/, "")}
-                      </div>
-                    </>
-                  )}
-                </Content.Toolbar>
-              ) : null
+              <Content.Toolbar>
+                {folder && (
+                  <>
+                    <DomainsButton
+                      parentDomains={parentDomains ?? undefined}
+                      domains={folder.domains}
+                      mutate={(domains) => mutateProp("domains", domains)}
+                    />
+                    <div className="text-xs text-gray-600 flex-center h-6 ring-1 ring-inset ring-gray-700 px-2 rounded cursor-default">
+                      ID: {folder._id.replace(/^0+/, "")}
+                    </div>
+                  </>
+                )}
+              </Content.Toolbar>
             }
             buttons={
               <div

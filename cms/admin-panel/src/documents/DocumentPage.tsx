@@ -43,7 +43,7 @@ import {
 } from "./FieldToolbar";
 import { SWRClient } from "../client";
 import { ExtendTemplatePath } from "./TemplatePathContext";
-import { usePanel, useRoute } from "../panel-router/Routes";
+import { useRoute } from "../panel-router/Routes";
 import { parseSegment } from "../layout/components/routes";
 import { Menu } from "../layout/components/Menu";
 import { DocumentOperation } from "shared/operations";
@@ -96,8 +96,6 @@ export const DocumentContent = ({
 }) => {
   const isModified = useIsModified(id, initialIsModified, version);
 
-  const [isEditing] = [true]; //useLocalStorage<boolean>("editing-articles", false);
-
   return (
     <Content
       icon={variant === "template" ? DocumentDuplicateIcon : DocumentIcon}
@@ -117,7 +115,7 @@ export const DocumentContent = ({
           {folder && <SaveButton id={id} folder={folder} />}
         </div>
       }
-      toolbar={isEditing ? toolbar : undefined}
+      toolbar={toolbar}
     >
       {children}
     </Content>
@@ -186,7 +184,6 @@ function Toolbar({ id }: { id: DocumentId }) {
               item={() => ({
                 id: generateFieldId(id),
                 label: "",
-                type: "default",
               })}
             />
             <Menu
