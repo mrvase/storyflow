@@ -56,6 +56,9 @@ export function useFolders() {
 
       forEach(({ operation }) => {
         operation[1].forEach((action) => {
+          if (typeof action === "object" && !("add" in action)) {
+            newArray.push(action as any);
+          }
           if ("add" in action) {
             newArray.push(action.add);
           }

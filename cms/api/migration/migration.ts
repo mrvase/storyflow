@@ -5,43 +5,66 @@ import { z } from "zod";
 import {
   DBDocumentRaw,
   DBSyntaxStreamBlock,
+  DocumentConfigItem,
   FunctionName,
   RawFieldId,
 } from "@storyflow/backend/types";
 import { WithId } from "mongodb";
+import { getRawFieldId, unwrapObjectId } from "@storyflow/backend/ids";
+import { client } from "../collab-utils/redis-client";
+import { ServerPackage } from "@storyflow/state";
 
 const transformField = (field: DBSyntaxStreamBlock): DBSyntaxStreamBlock => {
-  return {
-    k: field.k,
-    v: field.v.map((token) => {
-      if (token !== null && typeof token === "object") {
-        if (")" in token && typeof token[")"] === "string") {
-          const f = token[")"] as FunctionName | "sortlimit";
-          if (f === "sortlimit" || f === "fetch") {
-            return { fetch: [(token as any).l] as [number] };
-          }
-          if (f === "select") {
-            return { select: (token as any).s } as { select: RawFieldId };
-          }
-          return { [f]: true } as { [key in FunctionName]: any };
+  const value = field.v.map((token) => {
+    if (token !== null && typeof token === "object") {
+      if (")" in token && typeof token[")"] === "string") {
+        const f = token[")"] as FunctionName | "sortlimit";
+        if (f === "sortlimit" || f === "fetch") {
+          return { fetch: [(token as any).l] as [number] };
         }
-        if ("{" in token) {
-          return { "(": true } as { "(": true };
+        if (f === "select") {
+          return { select: (token as any).s } as { select: RawFieldId };
         }
-        if ("}" in token) {
-          return { merge: true } as { merge: true };
-        }
-        return token;
+        return { [f]: true } as { [key in FunctionName]: any };
+      }
+      if ("{" in token) {
+        return { "(": true } as { "(": true };
+      }
+      if ("}" in token) {
+        return { merge: true } as { merge: true };
       }
       return token;
-    }),
+    }
+    return token;
+  });
+
+  if (getRawFieldId(unwrapObjectId(field.k)) === "000005000000") {
+    value.splice(3, 0, "/");
+  }
+
+  return {
+    k: field.k,
+    v: value,
   };
+};
+
+const transformConfig = (field: DocumentConfigItem) => {
+  if ("id" in field) {
+    if ("type" in field && (field.type as any) === "default") {
+      delete field.type;
+    }
+    if ("transform" in field) {
+      delete field.transform;
+    }
+  }
+  return field;
 };
 
 const transform = (
   doc: WithId<Omit<DBDocumentRaw, "_id">>
 ): WithId<Omit<DBDocumentRaw, "_id">> => {
   const fields = doc.fields.map(transformField);
+  const config = doc.config.map(transformConfig);
 
   return {
     ...doc,
@@ -52,28 +75,66 @@ const transform = (
         : {}),
     },
     fields,
+    config,
   };
+};
+
+const copyCollection = async <T = any>(
+  collection: string,
+  options: {
+    fromDb: string;
+    toDb: string;
+    transform: (doc: WithId<Omit<T, "_id">>) => WithId<Omit<T, "_id">>;
+  }
+) => {
+  const db1 = (await clientPromise).db(options.fromDb);
+  const db2 = (await clientPromise).db(options.toDb);
+
+  let docs = await db1.collection<Omit<T, "_id">>(collection).find().toArray();
+
+  if (options.transform) {
+    docs = docs.map(options.transform);
+  }
+
+  await db2.collection(collection).deleteMany({});
+  await db2.collection(collection).insertMany(docs);
+
+  console.log("MIGRATED DOCUMENTS:", docs.length);
 };
 
 export const migration = createRoute({
   migrate: createProcedure({
     async query() {
       if (process.env.NODE_ENV === "development") {
-        const db1 = (await clientPromise).db("kfs2-hyz7");
-        const db2 = (await clientPromise).db(
-          `kfs-${Math.random().toString(36).slice(2, 6)}`
-        );
+        /*
+        copyCollection("documents", { fromDb: "kfs2-hyz7", toDb: "kfs-hyz7", transform });
+        */
 
-        const docs = await db1
-          .collection<Omit<DBDocumentRaw, "_id">>("documents")
-          .find()
-          .toArray();
+        /*
+        const result = (await client.lrange(
+          `kfs2:folders`,
+          0,
+          -1
+        )) as ServerPackage<any>[];
 
-        await db2.collection("documents").insertMany(docs.map(transform));
-
-        return success({
-          headers: {},
+        const array = result.map((el): ServerPackage<any> => {
+          return [
+            el[0],
+            el[1],
+            el[2],
+            el[3].map((el) => {
+              return [el.target.split(":").slice(-1)[0], el.ops];
+            }),
+          ];
         });
+
+        const pipeline = client.pipeline();
+        pipeline.del("kfs:folders");
+        pipeline.rpush(`kfs:folders`, ...array.map((el) => JSON.stringify(el)));
+        await (pipeline as any).exec();
+        */
+
+        return success("true");
       } else {
         return error({
           message: "This function can only be run in development.",
