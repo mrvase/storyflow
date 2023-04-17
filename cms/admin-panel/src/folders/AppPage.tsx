@@ -28,7 +28,7 @@ import { useFolderCollab } from "./collab/FolderCollabContext";
 import { AppSpace } from "./spaces/AppSpace";
 import { getFieldRecord, getGraph } from "shared/computation-tools";
 import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
-import { calculateFromRecord } from "@storyflow/backend/calculate";
+import { calculateRootFieldFromRecord } from "@storyflow/backend/calculate";
 import { AppPageContext } from "./AppPageContext";
 import { usePanel, useRoute } from "../panel-router/Routes";
 import { parseSegment } from "../layout/components/routes";
@@ -55,7 +55,7 @@ export default function AppPage({ children }: { children?: React.ReactNode }) {
       .map((el) => {
         const urlId = createTemplateFieldId(el._id, DEFAULT_FIELDS.url.id);
         const url =
-          (calculateFromRecord(urlId, el.record)?.[0] as string) ?? "";
+          (calculateRootFieldFromRecord(urlId, el.record)?.[0] as string) ?? "";
         return {
           ...el,
           url,
@@ -99,7 +99,9 @@ export default function AppPage({ children }: { children?: React.ReactNode }) {
     setDialogIsOpen("add-article");
     setParentUrl({
       id: urlId,
-      url: (calculateFromRecord(urlId, parent.record)?.[0] as string) ?? "",
+      url:
+        (calculateRootFieldFromRecord(urlId, parent.record)?.[0] as string) ??
+        "",
       record: getFieldRecord(parent.record, urlId, getGraph(parent.record)),
     });
   };

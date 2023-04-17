@@ -10,12 +10,13 @@ import { cookieOptions } from "../cookie-options";
 import { error, success } from "@storyflow/result";
 import {
   calculate,
-  calculateFromRecord,
+  calculateRootFieldFromRecord,
   FolderFetch,
   StateGetter,
 } from "@storyflow/backend/calculate";
 import type {} from "@storyflow/frontend/types";
 import {
+  ClientSyntaxTree,
   DBDocument,
   DBDocumentRaw,
   DocumentId,
@@ -115,7 +116,7 @@ const createElementRecordGetter = (
       imports: new Map(), // do not include imports in record
     });
 
-    let record: Record<FieldId, ValueArray> = {};
+    let record: Record<FieldId, ValueArray | ClientSyntaxTree> = {};
 
     let fetchRequests: FolderFetch[] = [];
     let fetched = new Set<NestedFolder>();
@@ -174,7 +175,7 @@ const createElementRecordGetter = (
               `values.${getRawFieldId(key as FieldId)}`,
               calculate(value, getState),
             ])
-            .filter(([, value]) => value.length > 0)
+            .filter(([, value]) => !Array.isArray(value) || value.length > 0)
             .map(([key, value]) => [key, { $elemMatch: { $in: value } }])
         );
         fetchFilters.set(el.folder, filters);
@@ -242,7 +243,7 @@ const createElementRecordGetter = (
     const entry = record[fieldId];
     delete record[fieldId];
 
-    if (!entry || entry.length === 0) {
+    if (!entry || (Array.isArray(entry) && entry.length === 0)) {
       return null;
     }
 
@@ -321,7 +322,7 @@ export const public_ = createRoute({
         ),
       ]);
 
-      const titleArray = calculateFromRecord(
+      const titleArray = calculateRootFieldFromRecord(
         createTemplateFieldId(doc._id, DEFAULT_FIELDS.label.id),
         doc.record
       );
@@ -493,6 +494,10 @@ export const public_ = createRoute({
                   createTemplateFieldId(_id, DEFAULT_FIELDS.params.id)
                 )
               )?.entry ?? [];
+
+            if (!Array.isArray(slugs)) {
+              throw new Error("Slugs cannot rely on client state");
+            }
 
             if (slugs.every((el): el is string => typeof el === "string")) {
               return slugs.map(toUrl);

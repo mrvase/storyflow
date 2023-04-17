@@ -10,6 +10,7 @@ import {
   FieldId,
   NestedDocument,
   ValueArray,
+  ClientSyntaxTree,
 } from "@storyflow/backend/types";
 import {
   ChevronDownIcon,
@@ -168,7 +169,7 @@ export function ValueDisplay({
 }) {
   const client = useClient();
 
-  let output: undefined | ValueArray;
+  let output: undefined | ValueArray | ClientSyntaxTree;
 
   if (initialValue) {
     [output] = useGlobalState(id, () =>

@@ -29,7 +29,7 @@ import Loader from "../../elements/Loader";
 import { useDeleteForm } from "./useDeleteForm";
 import { DEFAULT_FIELDS, isDefaultField } from "@storyflow/backend/fields";
 import { useDocumentIdGenerator } from "../../id-generator";
-import { calculateFromRecord } from "@storyflow/backend/calculate";
+import { calculateRootFieldFromRecord } from "@storyflow/backend/calculate";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
 import { usePanel, useRoute } from "../../panel-router/Routes";
 import { useTemplate } from "../../fields/default/useFieldTemplate";
@@ -76,7 +76,7 @@ export function DocumentListSpace({
           },
           ...template.map((field) => ({
             value: getPreview(
-              calculateFromRecord(
+              calculateRootFieldFromRecord(
                 createTemplateFieldId(el._id, field.id),
                 el.record
               )
@@ -187,7 +187,7 @@ function ExportButton() {
     const header = fields.map((el) => el.label);
     const rows = articles.map((el) =>
       ids.map((id) =>
-        JSON.stringify(calculateFromRecord(id, el.record)?.[0] ?? "")
+        JSON.stringify(calculateRootFieldFromRecord(id, el.record)?.[0] ?? "")
       )
     );
     let csvContent =

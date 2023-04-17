@@ -13,6 +13,7 @@ import {
   SyntaxTreeRecord,
   SyntaxTree,
   ValueArray,
+  ClientSyntaxTree,
 } from "@storyflow/backend/types";
 import { extendPath } from "@storyflow/backend/extendPath";
 import Content from "../layout/components/Content";
@@ -460,7 +461,7 @@ const getRecordSnapshot = (
   const finalRecord: ComponentRecord = {};
 
   const recursivelyGetRecordFromComputation = (fieldId: FieldId) => {
-    const state = store.use<ValueArray>(fieldId);
+    const state = store.use<ValueArray | ClientSyntaxTree>(fieldId);
 
     if (!state.initialized()) {
       const initialValue = record[fieldId] ?? DEFAULT_SYNTAX_TREE;
@@ -475,8 +476,30 @@ const getRecordSnapshot = (
 
     const value = state.value!;
 
-    const getChildren = (value: ValueArray): {} => {
-      return value.reduce((acc, element) => {
+    const getChildren = (value: ValueArray | ClientSyntaxTree): {} => {
+      let array: ValueArray = [];
+
+      if (!Array.isArray(value)) {
+        const traverseNode = (node: ClientSyntaxTree) => {
+          node.children.forEach((el) => {
+            if (Array.isArray(el)) {
+              el.forEach((token) => {
+                if (tokens.isNestedElement(token)) {
+                  array.push(token);
+                }
+              });
+            } else {
+              traverseNode(el);
+            }
+          });
+        };
+
+        traverseNode(value);
+      } else {
+        array = value;
+      }
+
+      return array.reduce((acc, element) => {
         if (Array.isArray(element)) {
           // this should propably just flat it infinitely out
           return Object.assign(acc, getChildren(element));

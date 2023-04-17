@@ -27,7 +27,10 @@ import { useDocument, useDocumentList } from "../documents";
 import { getDocumentLabel } from "../documents/useDocumentLabel";
 import cl from "clsx";
 import { useDocumentPageContext } from "../documents/DocumentPageContext";
-import { calculate, calculateFromRecord } from "@storyflow/backend/calculate";
+import {
+  calculate,
+  calculateRootFieldFromRecord,
+} from "@storyflow/backend/calculate";
 import { DEFAULT_FIELDS, isDefaultField } from "@storyflow/backend/fields";
 import { useDocumentIdGenerator } from "../id-generator";
 import { usePanel, useRoute } from "../panel-router/Routes";
@@ -49,7 +52,10 @@ const getUrlStringFromValue = (value: ValueArray | SyntaxTree) => {
   };
 
   return getString(
-    Array.isArray(value) ? value : calculate(value, () => undefined)
+    Array.isArray(value)
+      ? value
+      : calculate(value, () => undefined, { ignoreClientState: true })
+    // it should not be possible to have client state here anyway
   );
 };
 
@@ -59,7 +65,7 @@ const useRelatedPages = (articleId: DocumentId, initialUrl: string) => {
 
   const getUrl = (article: DBDocument) => {
     return (
-      (calculateFromRecord(
+      (calculateRootFieldFromRecord(
         createTemplateFieldId(article._id, DEFAULT_FIELDS.url.id),
         article.record
       )[0] as string) ?? ""
@@ -163,7 +169,7 @@ export default function UrlField({ id, version, history }: FieldProps) {
 
   const [parents, children] = useRelatedPages(
     documentId,
-    getUrlStringFromValue(calculateFromRecord(id, record))
+    getUrlStringFromValue(calculateRootFieldFromRecord(id, record))
   );
 
   React.useEffect(() => {

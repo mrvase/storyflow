@@ -6,6 +6,7 @@ import {
   ValueArray,
   TokenStream,
   Transform,
+  ClientSyntaxTree,
 } from "@storyflow/backend/types";
 import { getDocumentId, getRawFieldId } from "@storyflow/backend/ids";
 import { useFieldId } from "../FieldIdContext";
@@ -48,12 +49,14 @@ export function useDefaultStateCore(id: FieldId) {
     () => initialValue
   );
 
-  const [value, setValue] = useGlobalState<ValueArray>(id, () =>
-    calculateFn(initialValue, {
-      record,
-      client,
-      documentId: getDocumentId(rootId),
-    })
+  const [value, setValue] = useGlobalState<ValueArray | ClientSyntaxTree>(
+    id,
+    () =>
+      calculateFn(initialValue, {
+        record,
+        client,
+        documentId: getDocumentId(rootId),
+      })
   );
 
   const setState = React.useCallback(
@@ -119,7 +122,7 @@ export function useDefaultState(id: FieldId) {
     });
   }, []);
 
-  const isPrimitive = value[0] === tree.children[0];
+  const isPrimitive = Array.isArray(value) && value[0] === tree.children[0];
 
   return { target, initialValue, tree, value, isPrimitive };
 }

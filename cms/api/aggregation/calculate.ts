@@ -679,7 +679,8 @@ export const calculate = (
                                           return $.cond(
                                             // skip tokens
                                             $.in(firstKey, [
-                                              "input",
+                                              "state",
+                                              "loop",
                                               "ctx",
                                               "src",
                                               "color",

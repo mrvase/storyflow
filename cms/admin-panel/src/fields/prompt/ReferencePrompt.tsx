@@ -19,7 +19,7 @@ import { useFieldId } from "../FieldIdContext";
 import { useDocumentIdGenerator } from "../../id-generator";
 import { markMatchingString } from "./helpers";
 import { SWRClient } from "../../client";
-import { calculateFromRecord } from "@storyflow/backend/calculate";
+import { calculateRootFieldFromRecord } from "@storyflow/backend/calculate";
 import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
 import Loader from "../../elements/Loader";
 import { useFieldConfig } from "../../documents/collab/hooks";
@@ -225,7 +225,7 @@ function DocumentPrompt({
           templateId: folders.find((f) => f._id === el.folder)?.template,
         },
         label:
-          (calculateFromRecord(
+          (calculateRootFieldFromRecord(
             createTemplateFieldId(el._id, DEFAULT_FIELDS.label.id),
             el.record
           )?.[0] as string) ?? "",

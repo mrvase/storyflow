@@ -13,7 +13,6 @@ import {
   NestedDocument,
   GetFunctionData,
   Sorting,
-  ClientSyntaxTree,
 } from "./types";
 import { isSyntaxTree } from "./syntax-tree";
 
@@ -330,42 +329,30 @@ export type StateGetter = {
     | undefined;
   (id: Importers, options: { tree: boolean; external?: boolean }):
     | SyntaxTree
-    | ClientSyntaxTree
     | ValueArray
     | undefined;
   (id: Importers, options: { tree?: undefined; external?: boolean }):
-    | ClientSyntaxTree
     | ValueArray
     | undefined;
 };
 
 type Context = {
-  args?: (ValueArray | ClientSyntaxTree | undefined)[];
+  args?: (ValueArray | undefined)[];
   select?: boolean;
 };
 
-const resolveChildren = (
+const resolveChildren = <T extends ValueArray | SyntaxTree<any>>(
   children: SyntaxTree<any>["children"],
   getState: StateGetter,
-  calculateNode: (
-    node: SyntaxTree<any>,
-    context?: Context
-  ) => ValueArray[] | ClientSyntaxTree,
-  context: Context = {},
-  ignoreClientState?: boolean
+  calculateNode: (node: SyntaxTree<any>, context?: Context) => T[],
+  context: Context = {}
 ) => {
-  let acc: (ValueArray | ClientSyntaxTree)[] = [];
-  let isClientState = false;
+  let acc: T[] = [];
 
   children.forEach((child) => {
     if (isSyntaxTree(child)) {
       // håndterer noget i paranteser
-      const result = calculateNode(child);
-      if (Array.isArray(result)) {
-        acc.push(...result);
-      } else {
-        acc.push(result);
-      }
+      acc.push(...calculateNode(child));
     } else if (tokens.isNestedField(child)) {
       const args =
         "id" in child
@@ -378,9 +365,7 @@ const resolveChildren = (
             })
           : []; // not the case when resulting from select
 
-      const hasArgs = args.some(
-        (el) => el !== undefined && (!Array.isArray(el) || el.length > 0)
-      );
+      const hasArgs = args.some((el) => el !== undefined && el.length > 0);
 
       const state = getState(child.field, {
         tree: hasArgs,
@@ -389,34 +374,26 @@ const resolveChildren = (
 
       if (state) {
         if (hasArgs) {
-          const result = calculateNode(state as SyntaxTree, {
-            args,
-          });
-          if (Array.isArray(result)) {
-            acc.push(...result);
-          } else {
-            acc.push(result);
-          }
+          acc.push(
+            ...calculateNode(state as SyntaxTree, {
+              args,
+            })
+          );
         } else if ((state as ValueArray).length > 0) {
-          acc.push(state as ValueArray);
+          acc.push(state as T);
         }
-      }
-    } else if (tokens.isStateToken(child) || tokens.isLoopToken(child)) {
-      if (!ignoreClientState) {
-        isClientState = true;
-        acc.push([child]);
       }
     } else if (tokens.isContextToken(child)) {
       const state = getState(child, { external: false });
       if (state) {
-        acc.push(state);
+        acc.push(state as T);
       }
     } else if (tokens.isParameter(child)) {
       const arg = context.args && context.args[child.x];
       if (arg) {
-        acc.push(Array.isArray(arg) ? [arg] : arg);
+        acc.push([arg] as T);
       } else if (typeof child.value !== "undefined") {
-        acc.push([child.value]);
+        acc.push([child.value] as T);
       }
     } else if (tokens.isLineBreak(child)) {
       // do nothing
@@ -426,55 +403,28 @@ const resolveChildren = (
     ) {
       // do nothing
     } else {
-      acc.push([child]);
+      acc.push([child] as T);
     }
   });
 
-  return { children: acc, isClientState };
+  return acc;
 };
 
-export function calculate(
-  node: SyntaxTree,
-  getState: StateGetter,
-  options: { ignoreClientState: true }
-): ValueArray;
-export function calculate(
-  node: SyntaxTree,
-  getState: StateGetter,
-  options?: { ignoreClientState?: false }
-): ValueArray | ClientSyntaxTree;
-export function calculate(
-  node: SyntaxTree,
-  getState: StateGetter,
-  options?: { ignoreClientState?: boolean }
-): ValueArray | ClientSyntaxTree {
+export function calculate(node: SyntaxTree, getState: StateGetter): ValueArray {
   const calculateNode = (
     node: SyntaxTree,
     context: {
-      args?: (ValueArray | ClientSyntaxTree | undefined)[];
+      args?: (ValueArray | undefined)[];
     } = {}
-  ): ValueArray[] | ClientSyntaxTree => {
-    let { children, isClientState } = resolveChildren(
+  ): ValueArray[] => {
+    let values = resolveChildren(
       node.children,
       getState,
       calculateNode,
-      context,
-      options?.ignoreClientState
+      context
     );
 
     // run function
-
-    /*
-      Hvis den indeholder ClientSyntaxTree, returner
-    */
-    if (isClientState || children.some((el) => !Array.isArray(el))) {
-      return {
-        ...node,
-        children,
-      } as ClientSyntaxTree;
-    }
-
-    let values = children as ValueArray[];
 
     if (node.type === "fetch") {
       const [limit, ...sort] = node.data as GetFunctionData<"fetch">;
@@ -524,13 +474,7 @@ export function calculate(
               });
 
               if (state) {
-                /*
-                TODO
-                It is only possible right now to have a NestedField inside a select function.
-                This refers to a field that has documents or folders as children.
-                These can depend on client state. To handle this, we have to do something special.
-                */
-                acc.push([state as ValueArray]);
+                acc.push([state]); // [[[state]]]
               }
             }
             return acc;
@@ -559,11 +503,7 @@ export function calculate(
 
   const value = calculateNode(node);
 
-  if (Array.isArray(value)) {
-    return value.reduce((acc, cur) => [...acc, ...cur], []);
-  }
-
-  return value;
+  return value.reduce((acc, cur) => [...acc, ...cur], []);
 }
 
 /*
@@ -694,10 +634,7 @@ export function calculateWithFetchRefs(
 }
 */
 
-export function calculateRootFieldFromRecord(
-  id: FieldId,
-  record: SyntaxTreeRecord
-) {
+export function calculateFromRecord(id: FieldId, record: SyntaxTreeRecord) {
   const getter: StateGetter = (id, { external, tree }): any => {
     if (typeof id === "object") {
       return [];
@@ -705,18 +642,12 @@ export function calculateRootFieldFromRecord(
     const value = record[id];
     if (!value) return;
     if (tree) return value;
-    return calculate(value, getter, { ignoreClientState: true });
+    return calculate(value, getter);
   };
 
   const tree = record[id];
 
   if (!tree) return [];
 
-  const result = calculate(tree, getter, { ignoreClientState: true });
-  if (!Array.isArray(result)) {
-    throw new Error(
-      "It should not be possible to have client state in root field"
-    );
-  }
-  return result;
+  return calculate(tree, getter);
 }

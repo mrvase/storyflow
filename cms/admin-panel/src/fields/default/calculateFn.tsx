@@ -9,6 +9,7 @@ import {
   SyntaxTreeRecord,
   SyntaxTree,
   ValueArray,
+  ClientSyntaxTree,
 } from "@storyflow/backend/types";
 import {
   createTemplateFieldId,
@@ -121,7 +122,7 @@ export const calculateFn = (
     client: Client;
     record?: SyntaxTreeRecord;
   }
-): ValueArray => {
+): ValueArray | ClientSyntaxTree => {
   const getter: StateGetter = (importId, { tree, external }): any => {
     if (typeof importId === "object" && "folder" in importId) {
       // we want it to react to updates in the template so that new fields are found
@@ -135,7 +136,7 @@ export const calculateFn = (
       const filters = Object.fromEntries(
         template.map((id) => {
           const fieldId = createTemplateFieldId(importId.folder.id, id);
-          const state = store.use<ValueArray>(fieldId, () =>
+          const state = store.use<ValueArray | ClientSyntaxTree>(fieldId, () =>
             calculateFn(record[id as FieldId] ?? DEFAULT_SYNTAX_TREE, {
               record,
               client,

@@ -16,7 +16,7 @@ import { useGlobalState } from "../../state/state";
 import { $getComputation, $getIndexFromPoint } from "../Editor/transforms";
 import { Option } from "./Option";
 import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
-import { calculateFromRecord } from "@storyflow/backend/calculate";
+import { calculateRootFieldFromRecord } from "@storyflow/backend/calculate";
 import { useFieldId } from "../FieldIdContext";
 import { useDocumentIdGenerator } from "../../id-generator";
 import { tokens } from "@storyflow/backend/tokens";
@@ -100,7 +100,7 @@ function AppUrls({
 
   const options = (list ?? []).reduce((acc, el) => {
     const url =
-      (calculateFromRecord(
+      (calculateRootFieldFromRecord(
         createTemplateFieldId(el._id, DEFAULT_FIELDS.url.id),
         el.record
       )?.[0] as string) ?? "";

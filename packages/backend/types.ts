@@ -94,12 +94,16 @@ export type NestedEntity =
   | NestedDocument
   | NestedCreator;
 
-export type InputToken = {
-  input: string;
+export type ContextToken = {
+  ctx: string; // server side like url
 };
 
-export type ContextToken = {
-  ctx: string;
+export type StateToken = {
+  state: FieldId; // client side ctx
+};
+
+export type LoopToken = {
+  loop: FieldId; // client side ctx
 };
 
 export type FileToken = {
@@ -114,7 +118,13 @@ export type CustomToken = {
   name: string;
 };
 
-export type Token = CustomToken | ContextToken | FileToken | ColorToken;
+export type Token =
+  | CustomToken
+  | ContextToken
+  | FileToken
+  | ColorToken
+  | StateToken
+  | LoopToken;
 
 export type LineBreak = { n: true };
 export type Parameter = { x: number; value?: PrimitiveValue };
@@ -191,6 +201,13 @@ export type Transform = {
 };
 
 export type SyntaxTreeRecord = { [key: FieldId]: SyntaxTree<WithSyntaxError> };
+
+export type ClientSyntaxTree = {
+  type: Operator | FunctionName | "array" | null;
+  children: (ClientSyntaxTree | ValueArray)[];
+  data?: any;
+  open?: true;
+};
 
 /**
  * SYNTAX STREAM

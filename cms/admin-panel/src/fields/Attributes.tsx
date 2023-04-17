@@ -19,6 +19,7 @@ import { useContextWithError } from "../utils/contextError";
 import { useSelectedNestedEntity } from "./Path";
 import { flattenProps } from "../utils/flattenProps";
 import { useFieldTemplate } from "./default/useFieldTemplate";
+import { getPreview } from "./default/getPreview";
 
 const AttributesContext = React.createContext<
   [FieldId | null, React.Dispatch<FieldId | null>] | null
@@ -141,7 +142,7 @@ function PropPreview({
   const { record } = useDocumentPageContext();
   const initialValue = record[prop.id] ?? DEFAULT_SYNTAX_TREE;
 
-  const [output] = useGlobalState<ValueArray>(prop.id, () =>
+  const [output] = useGlobalState(prop.id, () =>
     calculateFn(initialValue, {
       record,
       client,
@@ -149,9 +150,7 @@ function PropPreview({
     })
   );
 
-  const preview = ["number", "string"].includes(typeof output[0])
-    ? (output[0] as string)
-    : "";
+  const preview = getPreview(output);
 
   const colors = {
     gray: {

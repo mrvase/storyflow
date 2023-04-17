@@ -10,6 +10,8 @@ import {
   ContextToken,
   Token,
   NestedCreator,
+  LoopToken,
+  StateToken,
 } from "./types";
 
 function isObject(value: any): value is Record<string, any> {
@@ -72,12 +74,22 @@ function isContextToken(value: any): value is ContextToken {
   return isObject(value) && "ctx" in value;
 }
 
+function isStateToken(value: any): value is StateToken {
+  return isObject(value) && "state" in value;
+}
+
+function isLoopToken(value: any): value is LoopToken {
+  return isObject(value) && "loop" in value;
+}
+
 function isToken(value: any): value is Token {
   return (
     isFileToken(value) ||
     isColorToken(value) ||
     isCustomToken(value) ||
-    isContextToken(value)
+    isContextToken(value) ||
+    isStateToken(value) ||
+    isLoopToken(value)
   );
 }
 
@@ -101,5 +113,7 @@ export const tokens = {
   isColorToken,
   isCustomToken,
   isContextToken,
+  isStateToken,
+  isLoopToken,
   isToken,
 };

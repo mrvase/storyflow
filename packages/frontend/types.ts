@@ -231,6 +231,12 @@ export type ValueArray = (
   | ValueArray
 )[];
 
+export type ClientSyntaxTree = {
+  type: string;
+  children: (ValueArray | ClientSyntaxTree)[];
+  data?: any;
+};
+
 export type RenderElement =
   | NestedElement
   | { $text: (string | number | NestedElement)[] }
