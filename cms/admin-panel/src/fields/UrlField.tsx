@@ -59,15 +59,15 @@ const getUrlStringFromValue = (value: ValueArray | SyntaxTree) => {
   );
 };
 
-const useRelatedPages = (articleId: DocumentId, initialUrl: string) => {
-  const { article } = useDocument(articleId);
-  const { data: list } = useDocumentList(article?.folder);
+const useRelatedPages = (documentId: DocumentId, initialUrl: string) => {
+  const { doc } = useDocument(documentId);
+  const { data: list } = useDocumentList(doc?.folder);
 
-  const getUrl = (article: DBDocument) => {
+  const getUrl = (doc: DBDocument) => {
     return (
       (calculateRootFieldFromRecord(
-        createTemplateFieldId(article._id, DEFAULT_FIELDS.url.id),
-        article.record
+        createTemplateFieldId(doc._id, DEFAULT_FIELDS.url.id),
+        doc.record
       )[0] as string) ?? ""
     );
   };
@@ -76,11 +76,11 @@ const useRelatedPages = (articleId: DocumentId, initialUrl: string) => {
 
   const parents = slugs.map((_, i, arr) => {
     const path = `/${arr.slice(1, i + 1).join("/")}`;
-    return list?.articles.find((el) => getUrl(el) === path);
+    return list?.documents.find((el) => getUrl(el) === path);
   });
 
   const children =
-    list?.articles.filter((el) => {
+    list?.documents.filter((el) => {
       // "|| null" excludes the front page from being included among its on children
       const url = getUrl(el);
       if (url === "/") return false;
@@ -107,9 +107,9 @@ export default function UrlField({ id, version, history }: FieldProps) {
         transform: (a) => a,
       })
       .initialize(version, history ?? []);
-  }, [client]);
+  }, [collab, version]);
 
-  const { value } = useDefaultState(id);
+  const { value } = useDefaultState(id, version);
 
   const url = getUrlStringFromValue(value);
 
@@ -322,7 +322,7 @@ export default function UrlField({ id, version, history }: FieldProps) {
             <button
               className="group text-sm flex-center gap-2"
               onClick={() =>
-                ctx.addArticleWithUrl({
+                ctx.addDocumentWithUrl({
                   _id: documentId,
                   record,
                 })

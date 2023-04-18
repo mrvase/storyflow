@@ -165,17 +165,17 @@ function LocationBarItem({
   if (type === "field") {
     label = useLabel(data.id);
   } else if (type === "folder" || type === "app") {
-    const { articles, error } = useOptimisticDocumentList(data.id);
+    const { documents, error } = useOptimisticDocumentList(data.id);
     label = useFolder(data.id)?.label ?? "";
 
-    if (!articles && !error) {
+    if (!documents && !error) {
       loading = true;
     }
   } else if (type === "document" || type === "template") {
-    let { article, error } = useDocument(data.id);
-    label = useDocumentLabel(article) ?? "";
+    let { doc, error } = useDocument(data.id);
+    label = useDocumentLabel(doc) ?? "";
 
-    if (!article && !error) {
+    if (!doc && !error) {
       loading = true;
     }
   }

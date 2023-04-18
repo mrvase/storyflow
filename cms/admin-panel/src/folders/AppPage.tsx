@@ -8,7 +8,7 @@ import { useOptimisticDocumentList } from "../documents";
 import { createTemplateFieldId } from "@storyflow/backend/ids";
 import { EditableLabel } from "../elements/EditableLabel";
 import cl from "clsx";
-import { AddArticleDialog } from "./AddArticleDialog";
+import { AddDocumentDialog } from "./AddDocumentDialog";
 import {
   DBDocument,
   FieldId,
@@ -42,16 +42,16 @@ export default function AppPage({ children }: { children?: React.ReactNode }) {
   const [{ path }] = usePanel();
   const isSelected = path === route;
 
-  const { articles } = useOptimisticDocumentList(folder?._id);
+  const { documents } = useOptimisticDocumentList(folder?._id);
 
-  const orderedArticles = React.useMemo(() => {
-    if (!articles) return [];
+  const orderedDocuments = React.useMemo(() => {
+    if (!documents) return [];
 
     const getUrlLength = (url: string) => {
       return url === "/" ? 0 : url.split("/").length - 1;
     };
 
-    const articlesWithLengths = articles
+    const documentsWithLengths = documents
       .map((el) => {
         const urlId = createTemplateFieldId(el._id, DEFAULT_FIELDS.url.id);
         const url =
@@ -73,19 +73,19 @@ export default function AppPage({ children }: { children?: React.ReactNode }) {
       urlId: FieldId;
     })[] = [];
 
-    articlesWithLengths.forEach((article) => {
+    documentsWithLengths.forEach((doc) => {
       const parentIndex = ordered.findIndex(
-        (el) => el.url === article.url.split("/").slice(0, -1).join("/")
+        (el) => el.url === doc.url.split("/").slice(0, -1).join("/")
       );
       if (parentIndex >= 0) {
-        ordered.splice(parentIndex + 1, 0, article);
+        ordered.splice(parentIndex + 1, 0, doc);
       } else {
-        ordered.push(article);
+        ordered.push(doc);
       }
     });
 
     return ordered;
-  }, [articles]);
+  }, [documents]);
 
   const [dialogIsOpen, setDialogIsOpen] = React.useState<null | string>(null);
   const [parentUrl, setParentUrl] = React.useState<null | {
@@ -94,9 +94,9 @@ export default function AppPage({ children }: { children?: React.ReactNode }) {
     url: string;
   }>(null);
 
-  const addArticleWithUrl = (parent: Pick<DBDocument, "_id" | "record">) => {
+  const addDocumentWithUrl = (parent: Pick<DBDocument, "_id" | "record">) => {
     const urlId = createTemplateFieldId(parent._id, DEFAULT_FIELDS.url.id);
-    setDialogIsOpen("add-article");
+    setDialogIsOpen("add-document");
     setParentUrl({
       id: urlId,
       url:
@@ -108,14 +108,14 @@ export default function AppPage({ children }: { children?: React.ReactNode }) {
 
   const ctx = React.useMemo(
     () => ({
-      addArticleWithUrl,
-      urls: orderedArticles.map((el) => ({
+      addDocumentWithUrl,
+      urls: orderedDocuments.map((el) => ({
         id: el.urlId,
         value: el.url,
         indent: el.indent,
       })),
     }),
-    [orderedArticles]
+    [orderedDocuments]
   );
 
   const collab = useFolderCollab();
@@ -187,8 +187,8 @@ export default function AppPage({ children }: { children?: React.ReactNode }) {
             }
           >
             {folder && (
-              <AddArticleDialog
-                isOpen={dialogIsOpen === "add-article"}
+              <AddDocumentDialog
+                isOpen={dialogIsOpen === "add-document"}
                 close={() => {
                   setDialogIsOpen(null);
                   setParentUrl(null);

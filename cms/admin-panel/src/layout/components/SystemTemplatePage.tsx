@@ -14,9 +14,9 @@ export function SystemTemplatePage() {
   const folder = useTemplateFolder();
   const { form, handleDelete } = useDeleteForm({ folderId: folder._id });
 
-  const { articles } = useOptimisticDocumentList(folder._id);
+  const { documents } = useOptimisticDocumentList(folder._id);
 
-  const rows = (articles ?? []).map((el) => ({
+  const rows = (documents ?? []).map((el) => ({
     id: el._id,
     columns: [
       {
@@ -33,7 +33,7 @@ export function SystemTemplatePage() {
           id={"system-template" as SpaceId}
           buttons={<Space.Button icon={TrashIcon} onClick={handleDelete} />}
         >
-          {!articles && (
+          {!documents && (
             <Space
               id={"system-template" as SpaceId}
               label="Data"
@@ -49,7 +49,7 @@ export function SystemTemplatePage() {
             onSubmit={(ev) => ev.preventDefault()}
             className={cl(
               "transition-opacity duration-300",
-              !articles ? "opacity-0" : "opacity-100"
+              !documents ? "opacity-0" : "opacity-100"
             )}
           >
             <Table labels={["Navn"]} rows={rows} />

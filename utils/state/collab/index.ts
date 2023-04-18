@@ -1,11 +1,12 @@
 export { onInterval } from "./interval";
 export { createQueueMap, syncQueueMap } from "./QueueMap";
-export { createQueue, createQueueTracker } from "./Queue";
+export { createQueue, createQueueTracker, queueForEach } from "./Queue";
 
 export type { QueueMap } from "./QueueMap";
 export type {
   Queue,
   QueueListener,
+  QueueListenerParam,
   QueueTransformStrategy,
   QueueTracker,
 } from "./Queue";

@@ -22,7 +22,7 @@ export function AddFolderDialog({
   folderId: string;
   spaceId: string;
 }) {
-  const mutateArticles = useDocumentListMutation();
+  const mutateDocuments = useDocumentListMutation();
   const generateFolderId = useFolderIdGenerator();
   const generateDocumentId = useDocumentIdGenerator();
 
@@ -53,7 +53,7 @@ export function AddFolderDialog({
         ],
       ]);
       if (frontId) {
-        mutateArticles({
+        mutateDocuments({
           folder: id,
           actions: [
             {
@@ -85,7 +85,7 @@ export function AddFolderDialog({
       spaceId,
       generateDocumentId,
       generateFolderId,
-      mutateArticles,
+      mutateDocuments,
       close,
     ]
   );

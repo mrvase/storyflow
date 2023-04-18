@@ -74,7 +74,7 @@ export function FieldToolbar() {
   const { push } = useDocumentMutate<DocumentOperation>(documentId, documentId);
 
   const templateFolder = useTemplateFolder()?._id;
-  const { articles: templates } = useOptimisticDocumentList(templateFolder);
+  const { documents: templates } = useOptimisticDocumentList(templateFolder);
 
   const templateOptions = React.useMemo(
     () =>
@@ -141,8 +141,8 @@ export function FieldToolbar() {
 }
 
 function FieldLabel({ id, label }: { id: FieldId; label: string }) {
-  const articleId = getDocumentId(id);
-  const { push } = useDocumentMutate<DocumentOperation>(articleId, articleId);
+  const documentId = getDocumentId(id);
+  const { push } = useDocumentMutate<DocumentOperation>(documentId, documentId);
 
   const onChange = (value: string) => {
     push([

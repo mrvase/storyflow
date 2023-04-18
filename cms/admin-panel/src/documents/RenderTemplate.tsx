@@ -199,12 +199,12 @@ export function RenderTemplate({
       return (
         <TopFieldIndexProvider index={index} key={fieldConfig.template}>
           <GetDocument id={fieldConfig.template}>
-            {(article) => (
+            {(doc) => (
               <RenderTemplate
                 key={getVersionKey(versions)} // for rerendering
-                id={article._id}
+                id={doc._id}
                 owner={owner}
-                config={article.config}
+                config={doc.config}
                 histories={histories}
                 versions={versions}
                 index={index}

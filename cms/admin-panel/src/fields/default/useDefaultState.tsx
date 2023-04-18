@@ -77,7 +77,7 @@ export function useDefaultStateCore(id: FieldId) {
   return { initialValue, tree, value, setState };
 }
 
-export function useDefaultState(id: FieldId) {
+export function useDefaultState(id: FieldId, version: number) {
   const rootId = useFieldId();
 
   const { initialValue, tree, value, setState } = useDefaultStateCore(id);
@@ -103,11 +103,22 @@ export function useDefaultState(id: FieldId) {
       stream: createTokenStream(root),
     });
 
-    return queue.register(({ forEach }) => {
+    return queue.register((params) => {
       singular(() => {
+        if (params.stale) {
+          // ??
+        }
+        if (version !== params.version) {
+          console.warn("Invalid version", {
+            instance: version,
+            queue: params.version,
+          });
+          return;
+        }
+
         let update = false;
 
-        const result = cache(forEach, (prev, { operation }) => {
+        const result = cache(params.forEach, (prev, { operation }) => {
           if (operation[0] === target) {
             prev = applyFieldOperation(prev, operation);
             update = true;
@@ -120,7 +131,7 @@ export function useDefaultState(id: FieldId) {
         }
       });
     });
-  }, []);
+  }, [collab, version]);
 
   const isPrimitive = Array.isArray(value) && value[0] === tree.children[0];
 

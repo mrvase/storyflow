@@ -21,7 +21,7 @@ export type QueueListenerParam<Operation extends DefaultOperation> = {
   trackedForEach: QueueForEach<Operation>;
   version: number | null;
   origin: "push" | "pull" | "initial";
-  primary: boolean;
+  stale: boolean;
 };
 
 export type QueueListener<Operation extends DefaultOperation> = (
@@ -131,6 +131,7 @@ export function createQueue<Operation extends DefaultOperation>(
     queue: [] as Operation[],
     version: 0 as number,
     initialized: false,
+    stale: false,
   };
 
   const getIndex = () => state.version + state.shared.length;
@@ -143,6 +144,7 @@ export function createQueue<Operation extends DefaultOperation>(
     initialVersion: number,
     initialHistory: ServerPackage<Operation>[]
   ) {
+    console.log("INITIALIZE", initialVersion, initialHistory);
     if (!state.initialized || initialVersion > state.version) {
       const initialShared = filterServerPackages(
         initialVersion,
@@ -153,6 +155,7 @@ export function createQueue<Operation extends DefaultOperation>(
       state.queue = [];
       state.version = initialVersion;
       state.initialized = true;
+      state.stale = false;
     }
     return queue;
   }
@@ -187,6 +190,10 @@ export function createQueue<Operation extends DefaultOperation>(
   ) {
     if (!state.initialized) {
       throw new Error("Queue has not been initialized");
+    }
+    if (state.stale) {
+      console.error("Queue is stale");
+      return false;
     }
 
     let operations: Operation[] = [];
@@ -250,25 +257,52 @@ export function createQueue<Operation extends DefaultOperation>(
     };
   }
 
-  function run(listener: QueueListener<Operation>) {
-    const tracker = listeners.get(listener)!;
+  function run(
+    listener: QueueListener<Operation>,
+    origin?: "push" | "pull" | "initial",
+    tracker_?: QueueTracker<Operation>
+  ) {
+    const tracker = tracker_ ?? listeners.get(listener)!;
     listener({
-      forEach: forEach,
+      forEach,
       trackedForEach: tracker ? tracker.trackForEach(forEach) : forEach,
       version: state.version,
-      origin: "pull",
-      primary: listeners.size === 0,
+      origin: origin ?? "pull",
+      stale: state.stale,
     });
     return queue;
   }
 
+  const getPackageId = (pkg: ServerPackage<Operation> | undefined) => {
+    if (!pkg) return null;
+    const unwrapped = unwrapServerPackage(pkg);
+    return `${unwrapped.key}:${unwrapped.clientId}:${unwrapped.index}`;
+  };
+
   function _pull(packages: ServerPackage<Operation>[]) {
     const sharedLength = state.shared.length;
+    const firstPackageId = getPackageId(state.shared[0]);
 
     debug("PULL", key, packages.length, sharedLength);
 
+    /*
+    we force a version change
+    */
+    if (firstPackageId && firstPackageId !== getPackageId(packages[0])) {
+      console.warn("SETTING TO STALE", {
+        firstPackageId,
+        shared: state.shared,
+        packages,
+        firstPackage: [...(state.shared[0] ?? [])],
+      });
+      state.stale = true;
+      _triggerListeners({ origin: "pull" });
+      return;
+    }
+
     if (packages.length === sharedLength && sharedLength > 0) {
-      // no changes
+      // No changes - but should at least have the new posted package.
+      // So we do nothing until the next pull.
       return;
     }
 
@@ -333,7 +367,7 @@ export function createQueue<Operation extends DefaultOperation>(
     debug("SYNC - POSTED:", key, state.posted.length);
     debug("SYNC - QUEUE:", key, state.queue.length);
 
-    if (state.posted.length > 0 || !state.initialized) {
+    if (state.posted.length > 0 || !state.initialized || state.stale) {
       // is already posting
       return;
     }
@@ -364,16 +398,7 @@ export function createQueue<Operation extends DefaultOperation>(
     origin: "push" | "pull" | "initial";
   }) {
     batch(() => {
-      let index = 0;
-      listeners.forEach((tracker, listener) => {
-        listener({
-          forEach,
-          trackedForEach: tracker.trackForEach(forEach),
-          version: state.version,
-          origin,
-          primary: !index++,
-        });
-      });
+      listeners.forEach((tracker, listener) => run(listener, origin, tracker));
     });
   }
 
@@ -388,8 +413,17 @@ export function createQueue<Operation extends DefaultOperation>(
   function forEach(
     ...[callback, options = {}]: Parameters<QueueForEach<Operation>>
   ) {
-    /** BREAKABLE forEach loop */
-
+    queueForEach(state, callback, {
+      ...options,
+      clientId,
+      key,
+      index: getIndex(),
+    });
+  }
+  /*
+  function forEach(
+    ...[callback, options = {}]: Parameters<QueueForEach<Operation>>
+  ) {
     const _forEach = <T>(
       arr: T[],
       callback: (value: T, index: number) => any
@@ -471,6 +505,7 @@ export function createQueue<Operation extends DefaultOperation>(
       if (queueForEach()) return;
     }
   }
+  */
 
   const queue = {
     key,
@@ -486,4 +521,89 @@ export function createQueue<Operation extends DefaultOperation>(
   };
 
   return queue;
+}
+
+export function queueForEach<Operation extends DefaultOperation>(
+  state:
+    | ServerPackage<Operation>[]
+    | {
+        shared: ServerPackage<Operation>[];
+        posted: Operation[];
+        queue: Operation[];
+      },
+  callback: (element: WithMetaData<Operation>, index: number) => true | void,
+  options: {
+    clientId: string | number | null;
+    key: string;
+    index: number;
+    reverse?: boolean;
+  }
+) {
+  const { reverse, ...rest } = options;
+  const defaultMetadata = { ...rest, serverPackageIndex: null };
+
+  /** BREAKABLE forEach loop */
+
+  const reversibleForEach = <T>(
+    arr: T[],
+    callback: (value: T, index: number) => any
+  ) => {
+    let i = options.reverse ? arr.length - 1 : 0;
+    let increment = () => (options.reverse ? i-- : i++);
+    let condition = () => (options.reverse ? i >= 0 : i < arr.length);
+    let done: true | undefined;
+    while (condition()) {
+      if (callback(arr[i], options.reverse ? arr.length - 1 - i : i)) {
+        done = true;
+        break;
+      }
+      increment();
+    }
+    return done;
+  };
+
+  let i = 0;
+
+  const callForEach = (
+    array: Operation[],
+    metadata: {
+      clientId: string | number | null;
+      key: string;
+      index: number;
+      serverPackageIndex: number | null;
+    } = defaultMetadata
+  ) => {
+    return reversibleForEach(array, (operation, operationIndex) => {
+      callback(
+        {
+          operation,
+          operationIndex,
+          ...metadata,
+        },
+        i++
+      );
+    });
+  };
+
+  const sharedForEach = (shared: ServerPackage<Operation>[]) => {
+    return reversibleForEach(shared, (pkg, serverPackageIndex) => {
+      const { operations, ...rest } = unwrapServerPackage(pkg);
+      return callForEach(operations, {
+        ...rest,
+        serverPackageIndex,
+      });
+    });
+  };
+
+  if (Array.isArray(state)) {
+    sharedForEach(state);
+  } else if (options.reverse) {
+    if (callForEach(state.queue)) return;
+    if (callForEach(state.posted)) return;
+    if (sharedForEach(state.shared)) return;
+  } else {
+    if (sharedForEach(state.shared)) return;
+    if (callForEach(state.posted)) return;
+    if (callForEach(state.queue)) return;
+  }
 }

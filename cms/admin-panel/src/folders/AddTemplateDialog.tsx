@@ -23,7 +23,7 @@ export function AddTemplateDialog({
   folderId: string;
   currentTemplate?: string;
 }) {
-  const mutateArticles = useDocumentListMutation();
+  const mutateDocuments = useDocumentListMutation();
   const generateTemplateId = useTemplateIdGenerator();
   const [, navigate] = usePanel();
   const route = useRoute();
@@ -47,7 +47,7 @@ export function AddTemplateDialog({
         ],
       ]);
       if (type === "new") {
-        mutateArticles({
+        mutateDocuments({
           folder: templateFolder,
           actions: [
             {
@@ -66,13 +66,13 @@ export function AddTemplateDialog({
       collab,
       folderId,
       generateTemplateId,
-      mutateArticles,
+      mutateDocuments,
       templateFolder,
       close,
     ]
   );
 
-  const { articles: templates } = useOptimisticDocumentList(templateFolder);
+  const { documents: templates } = useOptimisticDocumentList(templateFolder);
 
   const templateOptions = (templates ?? []).map((el) => ({
     value: el._id,

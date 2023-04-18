@@ -9,6 +9,7 @@ import { PreloadFieldState } from "./PreloadFieldState";
 import { useAttributesContext } from "../Attributes";
 import { ExtendPath } from "../Path";
 import { FieldOperation } from "shared/operations";
+import { VersionProvider } from "./VersionContext";
 
 export function DefaultFieldRoot({ id, version, history }: FieldProps) {
   /*
@@ -32,17 +33,17 @@ export function DefaultFieldRoot({ id, version, history }: FieldProps) {
         mergeableNoop: ["", []],
       })
       .initialize(version, history ?? []);
-  }, []);
+  }, [collab, version]);
 
   const [currentProp] = useAttributesContext();
   const currentId = currentProp ?? id;
 
   return (
-    <>
+    <VersionProvider version={version}>
       <PreloadFieldState id={id} />
       <ExtendPath id={currentId} type="field">
         <DefaultField key={currentId} id={currentId} showPromptButton />
       </ExtendPath>
-    </>
+    </VersionProvider>
   );
 }

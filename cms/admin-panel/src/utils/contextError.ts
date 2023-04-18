@@ -5,6 +5,6 @@ export const useContextWithError = <T>(
   name: string
 ) => {
   const ctx = React.useContext(context);
-  if (ctx === null) throw new Error(`Cannot find ${name}Context.Provider`);
+  if (ctx === null) throw new Error(`Cannot find ${name}.Provider`);
   return ctx;
 };

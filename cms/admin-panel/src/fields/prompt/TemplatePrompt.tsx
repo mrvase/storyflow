@@ -27,7 +27,7 @@ export function TemplatePrompt({ prompt }: { prompt: string }) {
     getRawFieldId(fieldId)
   );
 
-  const { articles: templates = [] } =
+  const { documents: templates = [] } =
     useOptimisticDocumentList(TEMPLATE_FOLDER);
 
   const path = usePath();

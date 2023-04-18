@@ -249,7 +249,7 @@ export const documents = createRoute({
                       values: { $literal: insert.values },
                       updated: { $literal: insert.updated },
                       fields: { $literal: insert.fields },
-                      versions: { $literal: {} },
+                      versions: { $literal: { config: 0 } },
                     },
                   },
                   ...createStages([]),
@@ -318,14 +318,14 @@ export const documents = createRoute({
         .limit(limit)
         .toArray();
 
-      const articles = result.map(parseDocument);
+      const documents = result.map(parseDocument);
 
       const historiesRecord: Record<
         DocumentId,
         Record<string, ServerPackage<any>[]>
       > = Object.fromEntries(
         await Promise.all(
-          articles.map(async ({ _id }) => {
+          documents.map(async ({ _id }) => {
             const pkgs = (await client.lrange(
               `${slug}:${_id}`,
               0,
@@ -337,7 +337,7 @@ export const documents = createRoute({
       );
 
       return success({
-        articles,
+        documents: documents,
         historiesRecord,
       });
     },

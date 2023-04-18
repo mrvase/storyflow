@@ -50,7 +50,7 @@ export function DocumentListSpace({
 }) {
   const { form, handleDelete } = useDeleteForm({ folderId });
 
-  const { articles } = useOptimisticDocumentList(folderId);
+  const { documents } = useOptimisticDocumentList(folderId);
 
   const folder = useFolder(folderId);
   const template = (useTemplate(folder.template) ?? [])
@@ -64,7 +64,7 @@ export function DocumentListSpace({
 
   const rows = React.useMemo(
     () =>
-      (articles ?? []).map((el) => ({
+      (documents ?? []).map((el) => ({
         id: el._id,
         columns: [
           {
@@ -84,7 +84,7 @@ export function DocumentListSpace({
           })),
         ],
       })),
-    [articles, template]
+    [documents, template]
   );
 
   return (
@@ -94,7 +94,7 @@ export function DocumentListSpace({
         label={
           <>
             Data
-            <AddArticleButton folder={folderId} />
+            <AddDocumentButton folder={folderId} />
           </>
         }
         buttons={
@@ -107,7 +107,7 @@ export function DocumentListSpace({
           </>
         }
       >
-        {!articles && (
+        {!documents && (
           <div className="ml-9">
             <Loader size="md" />
           </div>
@@ -117,7 +117,7 @@ export function DocumentListSpace({
           onSubmit={(ev) => ev.preventDefault()}
           className={cl(
             "transition-opacity duration-300",
-            !articles ? "opacity-0" : "opacity-100"
+            !documents ? "opacity-0" : "opacity-100"
           )}
         >
           <Table labels={labels} rows={rows} />
@@ -174,18 +174,21 @@ function ImportButton() {
 function ExportButton() {
   const folder = useCurrentFolder();
 
-  const { articles } = useOptimisticDocumentList(folder?._id);
+  const { documents } = useOptimisticDocumentList(folder?._id);
 
   const client = useClient();
 
   const handleExport = async () => {
-    if (!articles || !folder?.template) return;
-    const templateArticle = await fetchDocument(folder.template, client);
-    if (!templateArticle) return;
-    const fields = await getTemplateFieldsAsync(templateArticle.config, client);
+    if (!documents || !folder?.template) return;
+    const templateDocument = await fetchDocument(folder.template, client);
+    if (!templateDocument) return;
+    const fields = await getTemplateFieldsAsync(
+      templateDocument.config,
+      client
+    );
     const ids = fields.map((el) => el.id);
     const header = fields.map((el) => el.label);
-    const rows = articles.map((el) =>
+    const rows = documents.map((el) =>
       ids.map((id) =>
         JSON.stringify(calculateRootFieldFromRecord(id, el.record)?.[0] ?? "")
       )
@@ -214,16 +217,16 @@ function ExportButton() {
   );
 }
 
-function AddArticleButton({ folder }: { folder: FolderId }) {
+function AddDocumentButton({ folder }: { folder: FolderId }) {
   const template = useCurrentFolder()?.template;
 
-  const mutateArticles = useDocumentListMutation();
+  const mutateDocuments = useDocumentListMutation();
   const generateDocumentId = useDocumentIdGenerator();
   const [, navigate] = usePanel();
   const route = useRoute();
   const client = useClient();
 
-  const addArticle = async () => {
+  const addDocument = async () => {
     try {
       const id = generateDocumentId();
       const record = template
@@ -238,7 +241,7 @@ function AddArticleButton({ folder }: { folder: FolderId }) {
         children: [new Date()],
       };
 
-      mutateArticles({
+      mutateDocuments({
         folder,
         actions: [
           {
@@ -259,7 +262,7 @@ function AddArticleButton({ folder }: { folder: FolderId }) {
         "rounded-full px-2 py-0.5 text-xs ring-button text-gray-400 ml-3 flex-center gap-1"
         // "opacity-0 group-hover/space:opacity-100 transition-opacity"
       )}
-      onClick={addArticle}
+      onClick={addDocument}
     >
       <PlusIcon className="w-3 h-3" /> Tilføj
     </button>

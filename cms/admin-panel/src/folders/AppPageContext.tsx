@@ -2,7 +2,7 @@ import React from "react";
 import { DBDocument, FieldId } from "@storyflow/backend/types";
 
 export const AppPageContext = React.createContext<{
-  addArticleWithUrl: (parent: Pick<DBDocument, "_id" | "record">) => void;
+  addDocumentWithUrl: (parent: Pick<DBDocument, "_id" | "record">) => void;
   urls: { id: FieldId; value: string; indent: number }[];
 } | null>(null);
 

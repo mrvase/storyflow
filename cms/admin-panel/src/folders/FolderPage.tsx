@@ -211,8 +211,8 @@ export function FolderTemplateButton({
   const route = useRoute();
   const [{ path }, navigate] = usePanel();
 
-  const { article } = useDocument(template);
-  const label = useDocumentLabel(article);
+  const { doc } = useDocument(template);
+  const label = useDocumentLabel(doc);
 
   if (!template) {
     return (

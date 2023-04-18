@@ -25,95 +25,6 @@ import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
 
 type FetcherResult = { _id: DocumentId; record: SyntaxTreeRecord }[];
 
-/*
-function createPromise<T>() {
-  let props: {
-    resolve: (value: T | PromiseLike<T>) => void;
-    reject: (reason?: any) => void;
-  } = {} as any;
-  const promise = new Promise((res, rej) => {
-    props.resolve = res;
-    props.reject = rej;
-  }) as Promise<T> & typeof props;
-  Object.assign(promise, props);
-  return promise;
-}
-
-function createThrottledFetch<T>(fetcher: (url: string) => Promise<T>) {
-  let promise: ReturnType<typeof createPromise<T>> | null = null;
-  let result: T | null = null;
-  let timeout: ReturnType<typeof setTimeout> | null = null;
-  let currentFetch: string | null = null;
-  let url: string | null = null;
-
-  const runFetch = async () => {
-    if (!url || !promise) return;
-    let fetchId = Math.random().toString(16).slice(2);
-    currentFetch = fetchId;
-    const newResult = await fetcher(url);
-    if (currentFetch === fetchId) {
-      promise.resolve(newResult);
-      result = newResult;
-      promise = null;
-    }
-  };
-
-  const runDelayedFetch = () => {
-    if (timeout) {
-      clearTimeout(timeout);
-    }
-    timeout = setTimeout(() => {
-      runFetch();
-      timeout = null;
-    }, 250);
-  };
-
-  return {
-    fetch(newUrl: string) {
-      if (url === newUrl && (result || promise))
-        return promise ?? (result as Promise<T>);
-      if (!promise) {
-        promise = createPromise();
-      }
-      url = newUrl;
-      runDelayedFetch();
-      return promise as Promise<T>;
-    },
-  };
-}
-
-function createFetcherStore() {
-  const results = new Map<
-    NestedDocumentId,
-    ReturnType<typeof createThrottledFetch<FetcherResult>>
-  >();
-
-  return {
-    async get(
-      id: NestedDocumentId,
-      url: string,
-      client: Client
-    ): Promise<FetcherResult> {
-      let result = results.get(id);
-      if (!result) {
-        result = createThrottledFetch<FetcherResult>(async (url) => {
-          const params = JSON.parse(url) as Omit<FolderFetch, "folder"> & {
-            folder: FolderId;
-            filters: Record<RawFieldId, ValueArray>;
-          };
-          const result = (await fetchDocumentList(params, client)) ?? [];
-          return result.articles;
-        });
-        results.set(id, result);
-      }
-      return await result.fetch(url);
-    },
-  };
-}
-
-const fetcherStore = createFetcherStore();
-*/
-
 export const calculateFn = (
   value: SyntaxTree,
   {
@@ -176,7 +87,7 @@ export const calculateFn = (
         promise.then((result) =>
           state.set(() => {
             // might be aborted, so we need a fallback
-            return result?.articles ?? [];
+            return result?.documents ?? [];
           })
         );
       }
@@ -248,12 +159,12 @@ export const calculateFn = (
     }
 
     const asyncFn = fetchDocumentSync(getDocumentId(importId), client).then(
-      (article) => {
+      (doc) => {
         // returning undefined makes sure that the field is not initialized,
         // so that if the field is initialized elsewhere, this field will react to it.
         // (e.g. a not yet saved article)
-        if (!article) return undefined;
-        const value = article.record[importId as FieldId];
+        if (!doc) return undefined;
+        const value = doc.record[importId as FieldId];
         if (!value) return undefined;
 
         // TODO when returning tree, I should somehow give access to this record as well.
@@ -262,7 +173,7 @@ export const calculateFn = (
           tree
             ? value
             : calculateFn(value, {
-                record: article.record,
+                record: doc.record,
                 client,
                 documentId: getDocumentId(importId),
               });
@@ -278,50 +189,3 @@ export const calculateFn = (
   const result = calculate(value, getter);
   return result;
 };
-
-/*
-export const fetchFn = (path: string, fetcher: Fetcher, client: Client) => {
-  const isFetcherFetchable = (
-    fetcher: Fetcher
-  ): fetcher is Fetcher & {
-    filters: {
-      field: Exclude<Filter["field"], "">;
-      operation: Exclude<Filter["operation"], "">;
-      value: Computation;
-    }[];
-  } => {
-    return (
-      fetcher.filters.length > 0 &&
-      fetcher.filters.every(
-        (el: Filter) =>
-          el.value.length > 0 &&
-          ![el.field, el.operation].some((el: any) =>
-            ["", null, undefined].includes(el)
-          )
-      )
-    );
-  };
-
-  const reactiveFetcher: Fetcher = {
-    ...fetcher,
-    filters: fetcher.filters.map((filter, index) => ({
-      ...filter,
-      value:
-        store.use<Value[]>(extendPath(path, `${index}`, "/")).value ??
-        filter.value,
-    })),
-  };
-
-  console.log("FETCHER", fetcher, reactiveFetcher);
-
-  if (isFetcherFetchable(reactiveFetcher)) {
-    return client.articles.getListFromFilters
-      .query(reactiveFetcher)
-      .then((res) => {
-        return unwrap(res, []);
-      });
-  } else {
-    return [];
-  }
-};
-*/

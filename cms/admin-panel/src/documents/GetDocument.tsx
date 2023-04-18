@@ -7,9 +7,9 @@ export const GetDocument = ({
   children,
 }: {
   id: DocumentId;
-  children: (article: TemplateDocument) => React.ReactNode;
+  children: (doc: TemplateDocument) => React.ReactNode;
 }) => {
-  let { article } = useDocument(id);
-  if (!article) return null;
-  return <>{children(article)}</>;
+  let { doc } = useDocument(id);
+  if (!doc) return null;
+  return <>{children(doc)}</>;
 };

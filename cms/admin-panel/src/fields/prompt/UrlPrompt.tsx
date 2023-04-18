@@ -85,7 +85,7 @@ function AppUrls({
   const documentId = getDocumentId(id) as DocumentId;
   const generateDocumentId = useDocumentIdGenerator();
 
-  const { articles: list } = useOptimisticDocumentList(app._id);
+  const { documents: list } = useOptimisticDocumentList(app._id);
 
   const onEnter = React.useCallback(
     (id: DocumentId) => {
