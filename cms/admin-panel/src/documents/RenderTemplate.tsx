@@ -89,7 +89,7 @@ export function RenderTemplate({
               Continue only if it does not exist already
               (that is, if not deleted and now added without a save in between)
               */
-              if (versions && fieldId in versions) return;
+              if (versions && getRawFieldId(fieldId) in versions) return;
               const [transforms, root] = splitTransformsAndRoot(tree);
               const transformActions = transforms.map((transform) => {
                 return {

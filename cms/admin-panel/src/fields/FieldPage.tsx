@@ -52,6 +52,7 @@ import { useRoute } from "../panel-router/Routes";
 import { parseSegment } from "../layout/components/routes";
 import { splitStreamByBlocks } from "./Editor/transforms";
 import { FieldOperation } from "shared/operations";
+import { VersionProvider } from "./default/VersionContext";
 
 const useBuilderRendered = ({
   listeners,
@@ -360,56 +361,60 @@ export function FieldPage({ children }: { children?: React.ReactNode }) {
     templateFieldId
   );
 
+  const { versions } = useDocumentPageContext();
+
   return (
     <FieldIdContext.Provider value={id}>
-      <AttributesProvider>
-        <SelectedPathProvider
-          id={id}
-          onChange={(path) => {
-            // dispatch
-          }}
-        >
-          <SyncBuilderPath listeners={listeners} id={id} />
-          <ElementActions id={id} listeners={listeners} push={push} />
-          <Content className="relative h-full">
-            <PropagateStatePlugin
-              id={id}
-              rendered={rendered}
-              dispatchers={dispatchers}
-            />
-            <PanelGroup direction="horizontal" autoSaveId="panels">
-              <Panel collapsible>
-                <div className="relative h-full bg-gray-200">
-                  <div
-                    className={cl(
-                      "h-full transition-opacity duration-300",
-                      rendered ? "opacity-100" : "opacity-0"
-                    )}
-                  >
-                    <BuilderIframe
-                      {...iframeProps}
-                      heightListener={listeners.updateFrameHeight.subscribe}
-                    />
-                  </div>
-                  <FieldOverlay id={id} />
-                </div>
-              </Panel>
-              <PanelResizeHandle
-                className={cl(
-                  "group relative bg-white/10 opacity-50 hover:opacity-100 transition-opacity",
-                  "w-1"
-                )}
+      <VersionProvider version={versions?.[getRawFieldId(id)] ?? 0}>
+        <AttributesProvider>
+          <SelectedPathProvider
+            id={id}
+            onChange={(path) => {
+              // dispatch
+            }}
+          >
+            <SyncBuilderPath listeners={listeners} id={id} />
+            <ElementActions id={id} listeners={listeners} push={push} />
+            <Content className="relative h-full">
+              <PropagateStatePlugin
+                id={id}
+                rendered={rendered}
+                dispatchers={dispatchers}
               />
-              <Panel collapsible>
-                <div className="p-2.5 h-full overflow-y-auto overflow-x-hidden no-scrollbar">
-                  <FieldPanel id={id} />
-                </div>
-              </Panel>
-            </PanelGroup>
-          </Content>
-          {children}
-        </SelectedPathProvider>
-      </AttributesProvider>
+              <PanelGroup direction="horizontal" autoSaveId="panels">
+                <Panel collapsible>
+                  <div className="relative h-full bg-gray-200">
+                    <div
+                      className={cl(
+                        "h-full transition-opacity duration-300",
+                        rendered ? "opacity-100" : "opacity-0"
+                      )}
+                    >
+                      <BuilderIframe
+                        {...iframeProps}
+                        heightListener={listeners.updateFrameHeight.subscribe}
+                      />
+                    </div>
+                    <FieldOverlay id={id} />
+                  </div>
+                </Panel>
+                <PanelResizeHandle
+                  className={cl(
+                    "group relative bg-white/10 opacity-50 hover:opacity-100 transition-opacity",
+                    "w-1"
+                  )}
+                />
+                <Panel collapsible>
+                  <div className="p-2.5 h-full overflow-y-auto overflow-x-hidden no-scrollbar">
+                    <FieldPanel id={id} />
+                  </div>
+                </Panel>
+              </PanelGroup>
+            </Content>
+            {children}
+          </SelectedPathProvider>
+        </AttributesProvider>
+      </VersionProvider>
     </FieldIdContext.Provider>
   );
 }

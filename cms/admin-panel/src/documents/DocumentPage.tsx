@@ -241,21 +241,7 @@ export function DocumentPage({ children }: { children?: React.ReactNode }) {
   return (
     <>
       {!error && doc && (
-        <Page
-          // key={getVersionKey(doc.versions)}
-          // ^ needed to re-render useDocumentConfig to create new queue instance
-          // TODO: Handle new queue instance in a reactive effect instead.
-          // solution. Make queue forEach a pure function that I can use in
-          // createCollaborativeState to initialize state the basis of initial history.
-          // then I do not need the queue instance at render time, and I can move the
-          // initialization to an effect that reacts to version change and re-initializes.
-          // To check version change, I should see if the latest seen index of the first
-          // server package exceeds the version of the document. Then the first package
-          // has not been created up against the current document.
-          type={segment.type}
-          doc={doc}
-          histories={histories}
-        >
+        <Page type={segment.type} doc={doc} histories={histories}>
           {children}
         </Page>
       )}
@@ -298,6 +284,7 @@ const Page = ({
     () => ({
       id,
       record: doc.record,
+      versions: doc.versions,
     }),
     [id, doc.record]
   );

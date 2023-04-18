@@ -144,7 +144,6 @@ export function createQueue<Operation extends DefaultOperation>(
     initialVersion: number,
     initialHistory: ServerPackage<Operation>[]
   ) {
-    console.log("INITIALIZE", initialVersion, initialHistory);
     if (!state.initialized || initialVersion > state.version) {
       const initialShared = filterServerPackages(
         initialVersion,

@@ -380,7 +380,7 @@ export interface DBDocumentRaw {
   folder: DBId<FolderId>;
   config: DocumentConfig;
   label?: string;
-  versions?: Record<"config" | RawFieldId, number>;
+  versions: Record<"config" | RawFieldId, number>;
   /* compute */
   ids: DBId<NestedDocumentId>[];
   cached: ValueArray[];
@@ -398,7 +398,7 @@ export interface DBDocument {
   record: SyntaxTreeRecord;
   // values: ValueRecord;
   label?: string;
-  versions?: Record<"config" | RawFieldId, number>;
+  versions: Record<"config" | RawFieldId, number>;
 }
 
 export type FolderSpace = {

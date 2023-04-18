@@ -1,9 +1,14 @@
 import React from "react";
-import { DocumentId, SyntaxTreeRecord } from "@storyflow/backend/types";
+import {
+  DocumentId,
+  RawFieldId,
+  SyntaxTreeRecord,
+} from "@storyflow/backend/types";
 
 export const DocumentPageContext = React.createContext<{
   id: DocumentId;
   record: SyntaxTreeRecord;
+  versions: Record<"config" | RawFieldId, number>;
 } | null>(null);
 
 export const useDocumentPageContext = () => {

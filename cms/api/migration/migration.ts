@@ -11,8 +11,6 @@ import {
 } from "@storyflow/backend/types";
 import { WithId } from "mongodb";
 import { getRawFieldId, unwrapObjectId } from "@storyflow/backend/ids";
-import { client } from "../collab-utils/redis-client";
-import { ServerPackage } from "@storyflow/state";
 
 const transformField = (field: DBSyntaxStreamBlock): DBSyntaxStreamBlock => {
   const value = field.v.map((token) => {
