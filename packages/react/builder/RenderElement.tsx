@@ -77,20 +77,22 @@ const calculateProp = (
   loopCtx: LoopIndexRecord
 ) => {
   const type = config.type;
-  const value: ValueArray[number] = (() => {
-    if (!Array.isArray(prop)) {
-      console.log("$$$ TEST", prop);
+  const array: ValueArray = (() => {
+    const isStateful = !Array.isArray(prop);
+
+    if (isStateful) {
       return calculateClient(prop, (token) => {
         if ("loop" in token) {
           const elementId = token.loop.slice(0, 12);
-          console.log("$$$", loopCtx, token, elementId);
           return (token as any).values[loopCtx[elementId]];
         }
       });
-    } else {
-      return prop[0];
     }
+    return prop;
   })();
+
+  const value = array[0];
+
   if (value !== null && typeof value === "object" && "name" in value) {
     const option = Array.isArray(config.options)
       ? config.options.find(
@@ -124,7 +126,7 @@ const calculateProp = (
   } else if (type === "string") {
     return String(value || "");
   } else if (type === "children") {
-    const children = Array.isArray(value) ? value : [value];
+    const children = Array.isArray(value) ? value : array;
     return (
       <ExtendPath id={id}>
         <RenderChildren value={children} />

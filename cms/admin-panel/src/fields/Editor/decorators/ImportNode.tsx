@@ -92,8 +92,8 @@ function Decorator({
       {label && isSelected && (
         <span
           className={cl(
-            "relative text-gray-600 dark:text-teal-400 truncate select-none",
-            preview && "ml-1 mr-2"
+            "relative text-gray-600 dark:text-teal-400 truncate select-none py-0.5 text-sm font-medium",
+            preview && "mx-2"
           )}
         >
           {label}

@@ -174,7 +174,7 @@ function PropPreview({
       textB500: "text-red-200/80",
       textB600: "text-red-300/40",
       bg: "bg-red-400/20",
-      ring: "ring-red-400/20",
+      ring: "ring-red-400/30",
     },
     yellow: {
       textA400: "text-yellow-100/80",
@@ -182,7 +182,7 @@ function PropPreview({
       textB500: "text-yellow-100/80",
       textB600: "text-yellow-200/40",
       bg: "bg-yellow-300/10",
-      ring: "ring-yellow-300/20",
+      ring: "ring-yellow-300/30",
     },
   }[color ?? "gray"];
 

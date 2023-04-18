@@ -16,7 +16,7 @@ const valueAsString = (value: any, placeholders: boolean) => {
   }
   if (typeof value === "object") {
     if (!placeholders) return "";
-    return "type" in value ? `{ ${value.type} }` : "{Dokument}";
+    return "type" in value ? `{ ${value.type} }` : "Dokument";
   }
   return `${value}`;
 };

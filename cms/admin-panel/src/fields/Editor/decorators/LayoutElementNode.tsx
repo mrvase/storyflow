@@ -118,6 +118,7 @@ function Decorator({
             </div>
             <div className="ml-auto">
               <button
+                tabIndex={-1}
                 className="w-5 h-5 flex-center rounded-full bg-gray-800 hover:bg-gray-700 transition-colors"
                 onClick={() => {
                   setPath(() => [...selectedPath, ...path, value.id]);
