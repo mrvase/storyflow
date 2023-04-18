@@ -237,7 +237,7 @@ export function fetchDocumentSync(
 }
 
 const TEMPLATES = [
-  ...Object.values(DEFAULT_FIELDS).map((field) => {
+  ...Object.values(DEFAULT_FIELDS).map((field): DBDocument => {
     let { initialValue, ...fieldConfig } = field as typeof field & {
       initialValue?: any;
     };
@@ -253,6 +253,7 @@ const TEMPLATES = [
       label: field.label,
       config: [fieldConfig],
       record,
+      versions: { config: 0 },
     };
   }),
   ...Object.values(DEFAULT_TEMPLATES),

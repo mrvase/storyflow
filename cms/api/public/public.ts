@@ -203,6 +203,8 @@ const createElementRecordGetter = (
         return fetchResults.get(folder);
       } else if (typeof importer === "object" && "ctx" in importer) {
         return context[importer.ctx] ?? [];
+      } else if (typeof importer === "object" && "loop" in importer) {
+        return [];
       } else {
         if (importer in docRecord) {
           return calculate(docRecord[importer], getState);
