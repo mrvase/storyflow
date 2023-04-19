@@ -5,6 +5,7 @@ import {
   DocumentIcon,
   FolderIcon,
   PlusIcon,
+  Square2StackIcon,
   WindowIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
@@ -112,7 +113,7 @@ export function LocationBar({
             });
           }}
         >
-          <PlusIcon className="w-4 h-4" />
+          <Square2StackIcon className="w-4 h-4" />
         </button>
         <button
           className={cl(
@@ -224,7 +225,7 @@ function LocationBarItem({
           ? "bg-yellow-100 dark:bg-yellow-300 text-black"
           */
           isCurrent
-          ? "bg-white dark:bg-gray-850"
+          ? "bg-white dark:bg-gray-850 font-medium"
           : "bg-button ring-button text-button"
       )}
       // onMouseEnter={onMouseEnter}

@@ -1,23 +1,12 @@
 import * as React from "react";
 import { ExtendPath, usePath, useSelectedPath } from "./contexts";
-import RenderElement, {
-  IndexContext,
-  LoopContext,
-  SpreadContext,
-} from "./RenderElement";
-import { log } from "./RenderBuilder";
-import {
-  ClientSyntaxTree,
-  Component,
-  ValueArray,
-} from "@storyflow/frontend/types";
+import RenderElement from "./RenderElement";
+import { Component, ValueArray } from "@storyflow/frontend/types";
 import { createRenderArray } from "@storyflow/frontend/render";
-// import { createRenderArray } from "../config/createRenderArray";
 import { ParseRichText } from "../src/ParseRichText";
 import { getLibraries, getLibraryConfigs } from "../config";
 import { getConfigByType } from "../config/getConfigByType";
 import { EditorProvider } from "./editor";
-import { calculateClient } from "../utils/clientCalculate";
 
 const getDefaultComponent = (type: string) => {
   // we use this only to get the default render components
@@ -32,8 +21,6 @@ const getDefaultComponent = (type: string) => {
 };
 
 export default function RenderChildren({ value }: { value: ValueArray }) {
-  const loop = React.useContext(LoopContext);
-
   const renderArray = React.useMemo(() => {
     /*
     let array: ValueArray = [];

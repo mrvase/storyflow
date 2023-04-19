@@ -7,7 +7,7 @@ export const HeaderItem = createComponent(
     return (
       <CMSElement>
         <Link
-          href={`/${href ?? ""}`}
+          href={href || "/"}
           className="whitespace-nowrap text-base font-medium text-gray-500 hover:text-gray-900"
         >
           {label || "Ingen label"}

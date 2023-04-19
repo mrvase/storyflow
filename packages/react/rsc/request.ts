@@ -22,7 +22,8 @@ const getTime = () => {
 
 type Options = { key: string; namespaces: string[] };
 
-export const request = async (url: string, options: Options) => {
+export const request = async (url_: string, options: Options) => {
+  const url = url_.startsWith("/") ? url_ : `/${url_}`;
   const fetchUrl = `${domain}/api/public/get?${getNamespacesQuery(
     options.namespaces
   )}&query[url]=${url}`;

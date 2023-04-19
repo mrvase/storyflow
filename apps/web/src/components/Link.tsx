@@ -6,7 +6,7 @@ export const Link = createComponent(
   ({ href, label }) => {
     return (
       <CMSElement>
-        <NextLink href={href ? `/${href}` : "/"} className="text-blue-500">
+        <NextLink href={href || "/"} className="text-blue-500">
           {label}
         </NextLink>
       </CMSElement>

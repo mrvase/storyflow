@@ -8,7 +8,7 @@ export const HeaderPopoverItem = createComponent(
     return (
       <CMSElement>
         <Link
-          href={`/${href ?? ""}`}
+          href={href || "/"}
           className="-m-3 flex items-start rounded-lg p-3 hover:bg-gray-50"
         >
           <ChartBarIcon

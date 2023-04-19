@@ -22,6 +22,7 @@ import {
   DocumentId,
   FieldId,
   NestedDocument,
+  NestedDocumentId,
   NestedFolder,
   RawFieldId,
   SyntaxTreeRecord,
@@ -32,9 +33,11 @@ import { ObjectId } from "mongodb";
 import { parseDocument } from "../routes/documents";
 import { getFieldRecord, getGraph } from "shared/computation-tools";
 import {
+  computeFieldId,
   createRawTemplateFieldId,
   createTemplateFieldId,
   getDocumentId,
+  getIdFromString,
   getRawDocumentId,
   getRawFieldId,
 } from "@storyflow/backend/ids";
@@ -139,7 +142,7 @@ const createElementRecordGetter = (
 
           const filters = fetchFilters.get(el.folder) ?? {};
 
-          console.log("FILTERS FILTERS FILTERS", filters);
+          console.log("FILTERS FILTERS FILTERS");
 
           const client = await clientPromise;
           const result = await client
@@ -168,14 +171,15 @@ const createElementRecordGetter = (
       const oldFetches = [...fetchRequests];
 
       fetches.forEach((el) => {
+        const filterEntries = Object.entries(docRecord)
+          .filter(([key]) => key.startsWith(getRawDocumentId(el.folder.id)))
+          .map(([key, value]) => [
+            `values.${getRawFieldId(key as FieldId)}`,
+            calculate(value, getState),
+          ]);
         const filters = Object.fromEntries(
-          Object.entries(docRecord)
-            .filter(([key]) => key.startsWith(getRawDocumentId(el.folder.id)))
-            .map(([key, value]) => [
-              `values.${getRawFieldId(key as FieldId)}`,
-              calculate(value, getState),
-            ])
-            .filter(([, value]) => !Array.isArray(value) || value.length > 0)
+          filterEntries
+            .filter(([, value]) => Array.isArray(value) && value.length > 0)
             .map(([key, value]) => [key, { $elemMatch: { $in: value } }])
         );
         fetchFilters.set(el.folder, filters);
@@ -204,7 +208,24 @@ const createElementRecordGetter = (
       } else if (typeof importer === "object" && "ctx" in importer) {
         return context[importer.ctx] ?? [];
       } else if (typeof importer === "object" && "loop" in importer) {
-        return [];
+        const dataFieldId = computeFieldId(
+          getDocumentId(importer.loop),
+          getIdFromString("data")
+        );
+        const rawFieldId = getRawFieldId(importer.loop);
+        return calculate(
+          {
+            type: "select",
+            children: [
+              {
+                id: "ffffffffffffffffffffffff" as NestedDocumentId,
+                field: dataFieldId,
+              },
+            ],
+            data: rawFieldId,
+          },
+          getState
+        );
       } else {
         if (importer in docRecord) {
           return calculate(docRecord[importer], getState);
@@ -231,10 +252,7 @@ const createElementRecordGetter = (
       const newFetches = fetchRequests.filter((el) => !oldFetches.includes(el));
 
       if (newFetches.length > 0) {
-        console.log(
-          "NEW FETCHES NEW FETCHES NEW FETCHES NEW FETCHES",
-          util.inspect({ newFetches }, { colors: true, depth: null })
-        );
+        console.log("NEW FETCHES NEW FETCHES NEW FETCHES NEW FETCHES");
         await resolveFetches(newFetches);
         calculateAsync();
       }
@@ -337,57 +355,11 @@ export const public_ = createRoute({
         },
       };
 
-      console.log("RESULT", result);
+      console.log("RESULT");
 
       return success(result);
     },
   }),
-  /*
-  search: createProcedure({
-    middleware(ctx) {
-      return ctx.use(corsFactory("allow-all"), authorization);
-    },
-    schema() {
-      return z.string();
-    },
-    async mutation(query, { dbName }) {
-      const client = await clientPromise;
-      const articles = await client
-        .db(dbName)
-        .collection("documents")
-        .aggregate([
-          {
-            $search: {
-              index: dbName,
-              text: {
-                query,
-                path: `values.${createRawTemplateFieldId(
-                  DEFAULT_FIELDS.page.id
-                )}`,
-              },
-              highlight: {
-                path: `values.${createRawTemplateFieldId(
-                  DEFAULT_FIELDS.page.id
-                )}`,
-              },
-            },
-          },
-          {
-            $project: {
-              _id: 0,
-              value: `$values.${createRawTemplateFieldId(
-                DEFAULT_FIELDS.page.id
-              )}`,
-              score: { $meta: "searchScore" },
-              highlight: { $meta: "searchHighlights" },
-            },
-          },
-        ])
-        .toArray();
-      return success(articles as DBDocument[]);
-    },
-  }),
-  */
   getPaths: createProcedure({
     middleware(ctx) {
       return ctx.use(corsFactory("allow-all"), authorization);
@@ -479,9 +451,7 @@ export const public_ = createRoute({
                   data: [100],
                 },
               ],
-              data: {
-                select: createRawTemplateFieldId(DEFAULT_FIELDS.slug.id),
-              },
+              data: createRawTemplateFieldId(DEFAULT_FIELDS.slug.id),
             };
 
             const getElementRecord = createElementRecordGetter(
@@ -519,4 +489,50 @@ export const public_ = createRoute({
       return success([...ordinaryUrls.map((el) => el.url), ...staticUrls]);
     },
   }),
+  /*
+  search: createProcedure({
+    middleware(ctx) {
+      return ctx.use(corsFactory("allow-all"), authorization);
+    },
+    schema() {
+      return z.string();
+    },
+    async mutation(query, { dbName }) {
+      const client = await clientPromise;
+      const articles = await client
+        .db(dbName)
+        .collection("documents")
+        .aggregate([
+          {
+            $search: {
+              index: dbName,
+              text: {
+                query,
+                path: `values.${createRawTemplateFieldId(
+                  DEFAULT_FIELDS.page.id
+                )}`,
+              },
+              highlight: {
+                path: `values.${createRawTemplateFieldId(
+                  DEFAULT_FIELDS.page.id
+                )}`,
+              },
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              value: `$values.${createRawTemplateFieldId(
+                DEFAULT_FIELDS.page.id
+              )}`,
+              score: { $meta: "searchScore" },
+              highlight: { $meta: "searchHighlights" },
+            },
+          },
+        ])
+        .toArray();
+      return success(articles as DBDocument[]);
+    },
+  }),
+  */
 });

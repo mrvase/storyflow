@@ -77,6 +77,7 @@ const calculateProp = (
   loopCtx: LoopIndexRecord
 ) => {
   const type = config.type;
+
   const array: ValueArray = (() => {
     const isStateful = !Array.isArray(prop);
 

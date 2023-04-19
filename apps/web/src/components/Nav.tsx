@@ -6,7 +6,7 @@ export const NavItem = createComponent(
   ({ label, href }) => {
     return (
       <CMSElement>
-        <Link href={href ?? "/"} className="rounded text-sm font-bold">
+        <Link href={href || "/"} className="rounded text-sm font-bold">
           {label || "Ingen label"}
         </Link>
       </CMSElement>

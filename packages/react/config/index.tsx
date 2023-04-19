@@ -76,7 +76,7 @@ const defaultLibrary = {
       return <>{children}</>;
     },
     Link: ({ href, label }: { href?: string; label?: String }) => {
-      return <cms.a href={`/${href ?? ""}`}>{label}</cms.a>;
+      return <cms.a href={href || "/"}>{label}</cms.a>;
     },
   },
 };

@@ -289,8 +289,6 @@ export function calculateClient(
   const calculateNode = (node: ClientSyntaxTree): ValueArray[] => {
     let values = resolveClientChildren(node.children, getState, calculateNode);
 
-    console.log("$$$ VALUES", values);
-
     if (node.type === "fetch") {
       // find out what to do here!
       values = [];
