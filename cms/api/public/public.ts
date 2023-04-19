@@ -41,7 +41,6 @@ import {
   getRawDocumentId,
   getRawFieldId,
 } from "@storyflow/backend/ids";
-import util from "util";
 
 const sessionStorage = createSessionStorage({
   cookie: cookieOptions,

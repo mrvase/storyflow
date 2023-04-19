@@ -227,8 +227,6 @@ const RenderElement = ({
     const rawDocumentId = id.slice(12, 24);
     const dataId = `${rawDocumentId}${getIdFromString("data")}`;
 
-    console.log("LOOPING OVER", record[dataId]);
-
     return (
       <>
         {record[dataId].map((_, newIndex) => {
