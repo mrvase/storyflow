@@ -479,11 +479,9 @@ export const public_ = createRoute({
         )
       ).flat(1);
 
-      /*
       console.log("ORDINARY URLS", ordinaryUrls);
       console.log("DYNAMIC URLS", dynamicUrls);
       console.log("STATIC URLS", staticUrls);
-      */
 
       return success([...ordinaryUrls.map((el) => el.url), ...staticUrls]);
     },
