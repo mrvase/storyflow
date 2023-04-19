@@ -151,7 +151,7 @@ function TemplateFieldPromptOptions({
           },
           label: markMatchingString(el.label, prompt),
         })),
-    [fields]
+    [fields, prompt]
   );
 
   return (

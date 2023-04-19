@@ -17,14 +17,13 @@ import {
 import type {} from "@storyflow/frontend/types";
 import {
   ClientSyntaxTree,
-  DBDocument,
   DBDocumentRaw,
-  DocumentId,
   FieldId,
   NestedDocument,
   NestedDocumentId,
   NestedFolder,
   RawFieldId,
+  SyntaxTree,
   SyntaxTreeRecord,
   ValueArray,
 } from "@storyflow/backend/types";
@@ -41,6 +40,7 @@ import {
   getRawDocumentId,
   getRawFieldId,
 } from "@storyflow/backend/ids";
+import util from "node:util";
 
 const sessionStorage = createSessionStorage({
   cookie: cookieOptions,
@@ -127,7 +127,7 @@ const createElementRecordGetter = (
       Record<RawFieldId, ValueArray>[]
     >();
     let fetchResults = new Map<NestedFolder, NestedDocument[]>();
-    let documents = new Map<DocumentId, DBDocument>();
+    let fetchedFields = new Map<FieldId, SyntaxTree>();
 
     const resolveFetches = async (fetches: FolderFetch[]) => {
       await calculateFilters(fetches);
@@ -158,7 +158,11 @@ const createElementRecordGetter = (
 
           articles.forEach((el) => {
             list.push({ id: el._id });
-            documents.set(el._id, el);
+            Object.entries(el.record).forEach(([key, value]) => {
+              if (!fetchedFields.has(key as FieldId)) {
+                fetchedFields.set(key as FieldId, value);
+              }
+            });
           });
 
           fetchResults.set(el.folder, list);
@@ -229,9 +233,7 @@ const createElementRecordGetter = (
         if (importer in docRecord) {
           return calculate(docRecord[importer], getState);
         }
-        const documentId = getDocumentId(importer);
-        const fetchedDoc = documents.get(documentId as DocumentId);
-        const value = fetchedDoc?.record[importer];
+        const value = fetchedFields.get(importer);
         if (value) {
           return calculate(value, getState);
         }
@@ -354,7 +356,7 @@ export const public_ = createRoute({
         },
       };
 
-      console.log("RESULT");
+      console.log("RESULT", util.inspect(result, { depth: null }));
 
       return success(result);
     },

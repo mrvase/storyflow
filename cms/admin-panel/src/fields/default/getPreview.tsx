@@ -1,3 +1,4 @@
+import { tokens } from "@storyflow/backend/tokens";
 import { ClientSyntaxTree, ValueArray } from "@storyflow/backend/types";
 
 const valueAsString = (value: any, placeholders: boolean) => {
@@ -9,14 +10,21 @@ const valueAsString = (value: any, placeholders: boolean) => {
   }
   if (Array.isArray(value)) {
     if (!placeholders) return "";
-    return "type" in value ? `{ ${value.type} }` : "[Liste]";
+    return "[Liste]";
   }
   if (value === null) {
     return "";
   }
   if (typeof value === "object") {
     if (!placeholders) return "";
-    return "type" in value ? `{ ${value.type} }` : "Dokument";
+    if (tokens.isFileToken(value)) {
+      return `[Fil]`;
+    }
+    if (tokens.isNestedElement(value)) {
+      return `${value.element.split(":").slice(-1)[0]}`;
+    }
+    if (tokens.isNestedDocument(value)) return "[Dokument]";
+    return "[Objekt]";
   }
   return `${value}`;
 };
@@ -30,9 +38,9 @@ export const getPreview = (value: ValueArray | ClientSyntaxTree) => {
     return "";
   }
   if (value.length === 1) {
-    return valueAsString(value[0], false);
+    return valueAsString(value[0], true);
   }
 
   // return `[${output.length} elementer]`;
-  return `[${value.map((el) => valueAsString(el, true)).join(", ")}]`;
+  return `${value.map((el) => valueAsString(el, true)).join(", ")}`;
 };

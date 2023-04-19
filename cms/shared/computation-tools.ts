@@ -82,7 +82,7 @@ export const getPickedDocumentIds = (fref: FieldId, pool: SyntaxTreeRecord) => {
           const child = token.children[0] as NestedField;
           const secondaryDrefs = getPickedDocumentIds(child.field, pool);
           secondaryDrefs.forEach((dref) => {
-            const id = computeFieldId(dref, token.data!.select);
+            const id = computeFieldId(dref, token.data!);
             drefs.push(...getPickedDocumentIds(id, pool));
           });
         } else {
@@ -114,9 +114,9 @@ export const getImportIds = (value: SyntaxTree, pool: SyntaxTreeRecord) => {
           const child = token.children[0] as NestedField;
           imports.push(child.field);
           const drefs = getPickedDocumentIds(child.field, pool);
-          drefs.forEach((dref) =>
-            imports.push(computeFieldId(dref, token.data!.select))
-          );
+          drefs.forEach((dref) => {
+            imports.push(computeFieldId(dref, token.data!));
+          });
         } else {
           traverseNode(token);
         }

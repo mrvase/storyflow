@@ -45,8 +45,10 @@ export function ElementPrompt({
     .flat(1);
 
   if (defaultOptions.length > 0) {
-    options = options.filter((el) =>
-      defaultOptions.includes(`${el.libraryName}:${el.name}`)
+    options = options.filter(
+      (el) =>
+        el.libraryName === "" ||
+        defaultOptions.includes(`${el.libraryName}:${el.name}`)
     );
   } else {
     options = options.filter((el) => !el.hidden);

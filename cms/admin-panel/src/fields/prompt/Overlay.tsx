@@ -191,6 +191,8 @@ export function Overlay({ children }: { children?: React.ReactNode }) {
     );
   }, [editor, isHolded]);
 
+  const promptIsOpen = type === "prompt";
+
   React.useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       const keys = ["/", "@"];
@@ -199,6 +201,7 @@ export function Overlay({ children }: { children?: React.ReactNode }) {
       }
 
       if (keys.includes(event.key) && !event.defaultPrevented) {
+        event.stopPropagation();
         event.preventDefault();
         editor.update(() => {
           const selection = $getSelection();
@@ -221,17 +224,18 @@ export function Overlay({ children }: { children?: React.ReactNode }) {
         });
       }
     }
-    if (!isOpen) {
-      return editor.registerRootListener((next, prev) => {
-        if (prev) {
-          prev.removeEventListener("keydown", onKeyDown);
-        }
-        if (next) {
-          next.addEventListener("keydown", onKeyDown);
-        }
-      });
-    }
-  }, [editor, isOpen, restrictTo]);
+
+    if (promptIsOpen || !isFocused) return;
+
+    return editor.registerRootListener((next, prev) => {
+      if (prev) {
+        prev.removeEventListener("keydown", onKeyDown);
+      }
+      if (next) {
+        next.addEventListener("keydown", onKeyDown);
+      }
+    });
+  }, [editor, promptIsOpen, isFocused, restrictTo]);
 
   return (
     <div

@@ -71,7 +71,7 @@ const normalizeProp = (
     return value.color;
   }
 
-  if (["image", "video"].includes(type) && prop.length > 0) {
+  if (["image", "video"].includes(type)) {
     return (
       transforms.file?.(value as FileToken | undefined) ??
       (value as FileToken | undefined)?.src ??
@@ -157,6 +157,7 @@ const RenderChildren = ({
                     if (typeof el === "object") {
                       return (
                         <RenderElement
+                          key={`${arrayIndex}-${childIndex}-${textElementIndex}`}
                           id={el.id}
                           type={el.element}
                           record={record}

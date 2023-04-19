@@ -92,6 +92,7 @@ function AppUrls({
       const nestedField: NestedField = {
         id: generateDocumentId(documentId),
         field: createTemplateFieldId(id, DEFAULT_FIELDS.url.id),
+        inline: true,
       };
       replacePromptWithStream([nestedField]);
     },
@@ -104,7 +105,7 @@ function AppUrls({
         createTemplateFieldId(el._id, DEFAULT_FIELDS.url.id),
         el.record
       )?.[0] as string) ?? "";
-    if (url.startsWith(prompt.toLowerCase())) {
+    if (url.slice(1).startsWith(prompt.toLowerCase())) {
       acc.push({
         id: el._id,
         label: markMatchingString(url || "[forside]", prompt),

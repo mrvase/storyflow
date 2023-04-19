@@ -76,7 +76,7 @@ export function TemplateHeader({
         <div
           key={columnId}
           className={cl(
-            "group grow shrink basis-0 flex items-center gap-1 px-2"
+            "group grow shrink basis-0 flex items-center gap-1 px-2 overflow-hidden"
           )}
         >
           <span

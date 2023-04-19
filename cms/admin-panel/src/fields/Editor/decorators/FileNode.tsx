@@ -66,6 +66,13 @@ export default class ChildNode extends TokenStreamNode<typeof type, TokenType> {
     super(type, token, key);
   }
 
+  createDOM(): HTMLElement {
+    const element = document.createElement("div");
+    element.setAttribute(`data-lexical-${this.__type}`, "true");
+    element.setAttribute(`style`, "min-height: 42px;");
+    return element;
+  }
+
   exportJSON(): SerializedTokenStreamNode<typeof type, TokenType> {
     return super.exportJSON();
   }

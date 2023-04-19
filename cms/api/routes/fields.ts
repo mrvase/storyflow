@@ -25,11 +25,7 @@ import {
   ServerPackage,
   unwrapServerPackage,
 } from "@storyflow/state";
-import {
-  getFieldConfig,
-  getFieldConfigArray,
-  setFieldConfig,
-} from "shared/getFieldConfig";
+import { setFieldConfig } from "shared/getFieldConfig";
 import {
   createTokenStreamTransformer,
   extractRootRecord,
@@ -405,7 +401,7 @@ export const fields = createRoute({
               const nestedField = node.children[0] as NestedField;
               const drefs = getPickedDocumentIds(nestedField.field, fullRecord);
               drefs.forEach((dref) => {
-                const newFieldId = computeFieldId(dref, node.data!.select);
+                const newFieldId = computeFieldId(dref, node.data!);
                 if (!externalFieldIds.includes(newFieldId)) {
                   newExternalFieldIds.push(newFieldId);
                 }
