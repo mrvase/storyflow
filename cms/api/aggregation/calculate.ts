@@ -50,6 +50,7 @@ type Accummulator = {
   nested: string[];
   function: DBSyntaxStream;
   updated: boolean;
+  debug?: any;
 };
 
 const calculateCombinations = (
@@ -80,7 +81,8 @@ const compute = (
   acc: Accummulator
 ) =>
   $.switch()
-    .case($.eq(operator, "root"), () => acc.value)
+    .case($.in(operator, ["root", "template"]), () => acc.value)
+    .case($.in(operator, ["fetch"]), () => [])
     .case($.in(operator, [")", "]"]), () =>
       $.define()
         .let({
@@ -649,7 +651,7 @@ export const calculate = (
                                     .case(
                                       $.eq(
                                         $.type((curObj as any).id),
-                                        "string"
+                                        "objectId"
                                       ),
                                       () => append($, acc, cur)
                                     )
@@ -679,7 +681,8 @@ export const calculate = (
                                           return $.cond(
                                             // skip tokens
                                             $.in(firstKey, [
-                                              "input",
+                                              "state",
+                                              "loop",
                                               "ctx",
                                               "src",
                                               "color",
@@ -697,6 +700,12 @@ export const calculate = (
                                                   )
                                                 ),
                                                 stack: $.pop(acc.stack),
+                                                /*
+                                                debug: $.concatArrays(
+                                                  acc.debug,
+                                                  [acc]
+                                                ),
+                                                */
                                               });
                                             }
                                           );
@@ -734,6 +743,7 @@ export const calculate = (
           nested: [],
           function: [],
           updated: false,
+          // debug: [],
         } as Accummulator
       ),
     })
@@ -747,5 +757,6 @@ export const calculate = (
       function: result.function,
       nested: result.nested,
       updated: result.updated,
+      // debug: result.debug,
     }));
 };

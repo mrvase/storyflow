@@ -376,7 +376,7 @@ export function createSpliceTransformer<Operation extends StdOperation>(
       result.push(
         createServerPackage({
           ...rest,
-          index: packageIndex,
+          index,
           clientId,
           operations,
         }) as any

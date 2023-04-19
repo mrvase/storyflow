@@ -13,6 +13,9 @@ import {
   NestedDocument,
   GetFunctionData,
   Sorting,
+  ClientSyntaxTree,
+  StateToken,
+  LoopToken,
 } from "./types";
 import { isSyntaxTree } from "./syntax-tree";
 
@@ -71,7 +74,7 @@ export type FolderFetch = {
   sort?: Sorting[];
 };
 
-type Importers = FieldId | FolderFetch | ContextToken;
+type Importer = FieldId | FolderFetch | ContextToken | LoopToken;
 
 const slugCharacters = [
   [" ", "-"],
@@ -115,7 +118,7 @@ const number = (a: unknown, alt: number = 0): number => {
 };
 
 function compute(
-  type: Operator | FunctionName | "merge",
+  type: Operator | FunctionName,
   value: ValueArray[]
 ): ValueArray[] {
   switch (type) {
@@ -324,35 +327,47 @@ function compute(
 }
 
 export type StateGetter = {
-  (id: Importers, options: { tree: true; external?: boolean }):
+  (id: Importer, options: { tree: true; external?: boolean }):
     | SyntaxTree
     | undefined;
-  (id: Importers, options: { tree: boolean; external?: boolean }):
+  (id: Importer, options: { tree: boolean; external?: boolean }):
     | SyntaxTree
+    | ClientSyntaxTree
     | ValueArray
     | undefined;
-  (id: Importers, options: { tree?: undefined; external?: boolean }):
+  (id: Importer, options: { tree?: undefined; external?: boolean }):
+    | ClientSyntaxTree
     | ValueArray
     | undefined;
 };
 
 type Context = {
-  args?: (ValueArray | undefined)[];
+  args?: (ValueArray | ClientSyntaxTree | undefined)[];
   select?: boolean;
 };
 
-const resolveChildren = <T extends ValueArray | SyntaxTree<any>>(
+const resolveChildren = (
   children: SyntaxTree<any>["children"],
   getState: StateGetter,
-  calculateNode: (node: SyntaxTree<any>, context?: Context) => T[],
-  context: Context = {}
+  calculateNode: (
+    node: SyntaxTree<any>,
+    context?: Context
+  ) => ValueArray[] | ClientSyntaxTree,
+  context: Context = {},
+  ignoreClientState?: boolean
 ) => {
-  let acc: T[] = [];
+  let acc: (ValueArray | ClientSyntaxTree)[] = [];
+  let isClientState = false;
 
   children.forEach((child) => {
     if (isSyntaxTree(child)) {
       // håndterer noget i paranteser
-      acc.push(...calculateNode(child));
+      const result = calculateNode(child);
+      if (Array.isArray(result)) {
+        acc.push(...result);
+      } else {
+        acc.push(result);
+      }
     } else if (tokens.isNestedField(child)) {
       const args =
         "id" in child
@@ -365,7 +380,9 @@ const resolveChildren = <T extends ValueArray | SyntaxTree<any>>(
             })
           : []; // not the case when resulting from select
 
-      const hasArgs = args.some((el) => el !== undefined && el.length > 0);
+      const hasArgs = args.some(
+        (el) => el !== undefined && (!Array.isArray(el) || el.length > 0)
+      );
 
       const state = getState(child.field, {
         tree: hasArgs,
@@ -374,26 +391,45 @@ const resolveChildren = <T extends ValueArray | SyntaxTree<any>>(
 
       if (state) {
         if (hasArgs) {
-          acc.push(
-            ...calculateNode(state as SyntaxTree, {
-              args,
-            })
-          );
+          const result = calculateNode(state as SyntaxTree, {
+            args,
+          });
+          if (Array.isArray(result)) {
+            acc.push(...result);
+          } else {
+            acc.push(result);
+          }
         } else if ((state as ValueArray).length > 0) {
-          acc.push(state as T);
+          acc.push(state as ValueArray);
         }
+      }
+    } else if (tokens.isLoopToken(child)) {
+      if (!ignoreClientState) {
+        isClientState = true;
+        const state = getState(child, { external: false });
+        acc.push([
+          {
+            ...child,
+            values: (state ?? []) as ValueArray,
+          },
+        ]);
+      }
+    } else if (tokens.isStateToken(child)) {
+      if (!ignoreClientState) {
+        isClientState = true;
+        acc.push([child]);
       }
     } else if (tokens.isContextToken(child)) {
       const state = getState(child, { external: false });
       if (state) {
-        acc.push(state as T);
+        acc.push(state);
       }
     } else if (tokens.isParameter(child)) {
       const arg = context.args && context.args[child.x];
       if (arg) {
-        acc.push([arg] as T);
+        acc.push(Array.isArray(arg) ? [arg] : arg);
       } else if (typeof child.value !== "undefined") {
-        acc.push([child.value] as T);
+        acc.push([child.value]);
       }
     } else if (tokens.isLineBreak(child)) {
       // do nothing
@@ -403,28 +439,55 @@ const resolveChildren = <T extends ValueArray | SyntaxTree<any>>(
     ) {
       // do nothing
     } else {
-      acc.push([child] as T);
+      acc.push([child]);
     }
   });
 
-  return acc;
+  return { children: acc, isClientState };
 };
 
-export function calculate(node: SyntaxTree, getState: StateGetter): ValueArray {
+export function calculate(
+  node: SyntaxTree,
+  getState: StateGetter,
+  options: { ignoreClientState: true }
+): ValueArray;
+export function calculate(
+  node: SyntaxTree,
+  getState: StateGetter,
+  options?: { ignoreClientState?: false }
+): ValueArray | ClientSyntaxTree;
+export function calculate(
+  node: SyntaxTree,
+  getState: StateGetter,
+  options?: { ignoreClientState?: boolean }
+): ValueArray | ClientSyntaxTree {
   const calculateNode = (
     node: SyntaxTree,
     context: {
-      args?: (ValueArray | undefined)[];
+      args?: (ValueArray | ClientSyntaxTree | undefined)[];
     } = {}
-  ): ValueArray[] => {
-    let values = resolveChildren(
+  ): ValueArray[] | ClientSyntaxTree => {
+    let { children, isClientState } = resolveChildren(
       node.children,
       getState,
       calculateNode,
-      context
+      context,
+      options?.ignoreClientState
     );
 
     // run function
+
+    /*
+      Hvis den indeholder ClientSyntaxTree, returner
+    */
+    if (isClientState || children.some((el) => !Array.isArray(el))) {
+      return {
+        ...node,
+        children,
+      } as ClientSyntaxTree;
+    }
+
+    let values = children as ValueArray[];
 
     if (node.type === "fetch") {
       const [limit, ...sort] = node.data as GetFunctionData<"fetch">;
@@ -460,9 +523,7 @@ export function calculate(node: SyntaxTree, getState: StateGetter): ValueArray {
       });
 
       values = [docs.slice(0, limit)];
-    }
-
-    if (node.type === "select") {
+    } else if (node.type === "select") {
       const select = node.data as GetFunctionData<"select">;
 
       values = [
@@ -474,7 +535,13 @@ export function calculate(node: SyntaxTree, getState: StateGetter): ValueArray {
               });
 
               if (state) {
-                acc.push([state]); // [[[state]]]
+                /*
+                TODO
+                It is only possible right now to have a NestedField inside a select function.
+                This refers to a field that has documents or folders as children.
+                These can depend on client state. To handle this, we have to do something special.
+                */
+                acc.push([state as ValueArray]);
               }
             }
             return acc;
@@ -503,124 +570,93 @@ export function calculate(node: SyntaxTree, getState: StateGetter): ValueArray {
 
   const value = calculateNode(node);
 
-  return value.reduce((acc, cur) => [...acc, ...cur], []);
+  if (Array.isArray(value)) {
+    return value.reduce((acc, cur) => [...acc, ...cur], []);
+  }
+
+  return value;
 }
 
-/*
-export function calculateWithFetchRefs(
-  node: SyntaxTree,
-  getState: StateGetter,
-  delayFetch: (obj: FetchObject) => FetchRef
-): ValueArray | SyntaxTree<WithSyntaxError | FetchRef> | FetchRef {
-  const calculateNode = (
-    node: SyntaxTree<WithSyntaxError | FetchRef>,
-    context: {
-      args?: (ValueArray | undefined)[];
-      select?: boolean;
-    } = {}
-  ): (ValueArray | SyntaxTree<WithSyntaxError | FetchRef> | FetchRef)[] => {
-    let values = resolveChildren(
-      node.children,
-      getState,
-      calculateNode,
-      context
+export function calculateRootFieldFromRecord(
+  id: FieldId,
+  record: SyntaxTreeRecord
+) {
+  const getter: StateGetter = (id, { external, tree }): any => {
+    if (typeof id === "object") {
+      return [];
+    }
+    const value = record[id];
+    if (!value) return;
+    if (tree) return value;
+    return calculate(value, getter, { ignoreClientState: true });
+  };
+
+  const tree = record[id];
+
+  if (!tree) return [];
+
+  const result = calculate(tree, getter, { ignoreClientState: true });
+  if (!Array.isArray(result)) {
+    throw new Error(
+      "It should not be possible to have client state in root field"
     );
+  }
+  return result;
+}
 
-    if (node.type === "sortlimit") {
-      const fetches: FetchObject[] = [];
-      const folders: NestedFolder[] = [];
+const resolveClientChildren = (
+  children: ClientSyntaxTree["children"],
+  getState: (token: StateToken | LoopToken) => ValueArray[number],
+  calculateNode: (node: ClientSyntaxTree) => ValueArray[]
+) => {
+  let acc: ValueArray[] = [];
 
-      let isClientTree = false;
-
-      let children = values
-        .flat(1)
-        .reduce(
-          (acc: SyntaxTree<WithSyntaxError | FetchRef>["children"], el) => {
-            if (isSyntaxTree(el)) {
-              acc.push(el);
-              if ("fetches" in el) {
-                fetches.push(...el.fetches!);
-                delete el.fetches;
-              } else {
-                isClientTree = true;
-              }
-            } else if (isFetchRef(el)) {
-              acc.push(el);
-              isClientTree = true;
-            } else if (tokens.isNestedFolder(el)) {
-              folders.push(el);
-              acc.push(el);
-            } else if (tokens.isNestedDocument(el)) {
-              acc.push(el);
-            }
-            return acc;
-          },
-          []
-        );
-
-      return [
-        {
-          type: "sortlimit",
-          children,
-          payload: node.payload,
-          fetches: [
-            ...(node.fetches ?? []),
-            {
-              sort: node.payload!.sort as SortSpec,
-              limit: node.payload!.limit as number,
-              folders,
-            },
-          ],
-        },
-      ];
+  children.forEach((child) => {
+    if (isSyntaxTree(child)) {
+      // håndterer noget i paranteser
+      const result = calculateNode(child);
+      if (Array.isArray(result)) {
+        acc.push(...result);
+      } else {
+        acc.push(result);
+      }
+    } else if (tokens.isStateToken(child) || tokens.isLoopToken(child)) {
+      const state = getState(child);
+      acc.push([state]);
+    } else {
+      acc.push([child]);
     }
+  });
 
-    if (node.type === "select") {
-      const fetches: FetchObject[] = [];
+  return acc;
+};
 
-      values = values.flat(1).reduce((acc: ValueArray[], el) => {
-        if (isSyntaxTree(el) && "fetches" in el) {
-          el.fetches?.map((el) => {
-            if (!("select" in el)) {
-              el.select = node.payload!.select;
-            }
-            fetches.push(el);
-          });
-          delete el.fetches;
-        } else if (tokens.isNestedDocument(el)) {
-          const state = getState(`${el.id.slice(12, 24)}${select}` as FieldId, {
-            external: true,
-          });
+export function calculateClient(
+  node: ClientSyntaxTree,
+  getState: (token: StateToken | LoopToken) => ValueArray[number]
+): ValueArray {
+  const calculateNode = (node: ClientSyntaxTree): ValueArray[] => {
+    let values = resolveClientChildren(node.children, getState, calculateNode);
 
-          if (state) {
-            acc.push(state);
-          }
-        }
-        return acc;
-      }, []);
-    }
-
-    const isResolved = (v: typeof values): v is ValueArray[] => {
-      return v.every((el) => Array.isArray(el));
-    };
-
-    if (!isResolved(values)) {
-      return [
-        {
-          type: node.type,
-          children: values,
-        },
-      ];
-    }
-
-    if (node.type === null) {
+    if (node.type === "fetch") {
+      // find out what to do here!
+      values = [];
+    } else if (node.type === "select") {
+      // and here
+      values = [];
+    } else if (node.type === "root") {
+      // do nothing
+    } else if (node.type === null) {
       // brackets
       values = [spreadImplicitArrays(values)];
-    } else if (node.type === ("array" as any)) {
+    } else if (node.type === "array") {
       values = [[spreadImplicitArrays(values)]];
     } else {
       values = compute(
-        node.type as Exclude<typeof node.type, "select" | "array" | null>,
+        node.type as Exclude<
+          typeof node.type,
+          "select" | "fetch" | "array" | "root" | null
+        >,
         values
       );
     }
@@ -631,23 +667,4 @@ export function calculateWithFetchRefs(
   const value = calculateNode(node);
 
   return value.reduce((acc, cur) => [...acc, ...cur], []);
-}
-*/
-
-export function calculateFromRecord(id: FieldId, record: SyntaxTreeRecord) {
-  const getter: StateGetter = (id, { external, tree }): any => {
-    if (typeof id === "object") {
-      return [];
-    }
-    const value = record[id];
-    if (!value) return;
-    if (tree) return value;
-    return calculate(value, getter);
-  };
-
-  const tree = record[id];
-
-  if (!tree) return [];
-
-  return calculate(tree, getter);
 }

@@ -31,10 +31,11 @@
 }
 
 .text-button {
-  @apply text-gray-800 dark:text-white text-opacity-90 dark:text-opacity-80 hover:text-opacity-100 dark:hover:text-opacity-100;
+  @apply text-gray-800 dark:text-white text-opacity-90 dark:text-opacity-80 hover:text-opacity-100 dark:hover:text-opacity-100 font-medium;
 }
 
-button {
+button,
+a {
   @apply outline-2 outline-offset-2 focus-visible:outline focus-visible:outline-teal-600;
 }
 

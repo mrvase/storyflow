@@ -1,5 +1,6 @@
 import * as React from "react";
 import {
+  ClientSyntaxTree,
   PropConfig,
   PropConfigArray,
   ValueArray,
@@ -19,11 +20,37 @@ import {
 import { getLibraries, getLibraryConfigs } from "../config";
 import { extendPath } from "../utils/extendPath";
 import RenderChildren from "./RenderChildren";
-import { getIdFromString } from "../utils/getIdsFromString";
+import { getIdFromString } from "../utils/getIdFromString";
 import { NoEditor } from "./editor";
+import { calculateClient } from "../utils/clientCalculate";
 
+type LoopIndexRecord = Record<string, number>;
+
+export const LoopContext = React.createContext<LoopIndexRecord>({});
 export const IndexContext = React.createContext(0);
 export const SpreadContext = React.createContext(false);
+
+const initialLoop = {};
+
+function LoopProvider({
+  id,
+  index,
+  children,
+}: {
+  id: string;
+  index: number;
+  children: React.ReactNode;
+}) {
+  const current = React.useContext(LoopContext) ?? initialLoop;
+
+  return (
+    <LoopContext.Provider
+      value={React.useMemo(() => ({ ...current, [id]: index }), [current])}
+    >
+      {children}
+    </LoopContext.Provider>
+  );
+}
 
 const slug =
   typeof window !== "undefined"
@@ -46,11 +73,27 @@ const getImageObject = (name: string) => {
 const calculateProp = (
   id: string,
   config: PropConfig,
-  prop: any,
-  index: number
+  prop: ValueArray | ClientSyntaxTree,
+  loopCtx: LoopIndexRecord
 ) => {
   const type = config.type;
-  const value = prop[index % prop.length];
+
+  const array: ValueArray = (() => {
+    const isStateful = !Array.isArray(prop);
+
+    if (isStateful) {
+      return calculateClient(prop, (token) => {
+        if ("loop" in token) {
+          const elementId = token.loop.slice(0, 12);
+          return (token as any).values[loopCtx[elementId]];
+        }
+      });
+    }
+    return prop;
+  })();
+
+  const value = array[0];
+
   if (value !== null && typeof value === "object" && "name" in value) {
     const option = Array.isArray(config.options)
       ? config.options.find(
@@ -63,8 +106,9 @@ const calculateProp = (
   if (value !== null && typeof value === "object" && "color" in value) {
     return value.color;
   }
-  if (["image", "video"].includes(type) && prop.length > 0) {
-    const src = value?.src ?? "";
+  if (["image", "video"].includes(type)) {
+    const src =
+      typeof value === "object" ? (value as { src: string })?.src ?? "" : "";
     if (
       !src.match(/\.(png|jpg|jpeg|gif)$/) &&
       !src.match(/\.(mp4|mov|wmv|avi)$/)
@@ -83,13 +127,14 @@ const calculateProp = (
   } else if (type === "string") {
     return String(value || "");
   } else if (type === "children") {
+    const children = Array.isArray(value) ? value : array;
     return (
       <ExtendPath id={id}>
-        <RenderChildren value={prop} />
+        <RenderChildren value={children} />
       </ExtendPath>
     );
   }
-  return prop[index % prop.length];
+  return value;
 };
 
 export default function RenderElement({
@@ -126,11 +171,8 @@ export default function RenderElement({
           acc.push([id, useValue(id) ?? []]);
         }
         return acc;
-      }, [] as [string, ValueArray][])
+      }, [] as [string, ValueArray | ClientSyntaxTree][])
     );
-
-  const keyId = `${elementId.slice(12, 24)}${getIdFromString("key")}`;
-  const key = useValue(keyId) ?? [];
 
   React.useEffect(() => {
     const activeEl = document.activeElement as HTMLElement;
@@ -166,28 +208,32 @@ export default function RenderElement({
     };
   }, []);
 
-  if (key.length <= 1) {
+  if (type === "Loop") {
+    const rawDocumentId = elementId.slice(12, 24);
+    const dataId = `${rawDocumentId}${getIdFromString("data")}`;
     return (
-      <RenderElementWithProps
-        elementId={elementId}
-        config={config}
-        props={uncomputedProps}
-      />
+      <SpreadContext.Provider value={true}>
+        {(uncomputedProps[dataId] as ValueArray).map((_, index) => {
+          return (
+            <LoopProvider key={index} id={rawDocumentId} index={index}>
+              <RenderElementWithProps
+                elementId={elementId}
+                config={config}
+                props={uncomputedProps}
+              />
+            </LoopProvider>
+          );
+        })}
+      </SpreadContext.Provider>
     );
   }
 
   return (
-    <SpreadContext.Provider value={true}>
-      {key.map((_, index) => (
-        <IndexContext.Provider key={index} value={index}>
-          <RenderElementWithProps
-            elementId={elementId}
-            config={config}
-            props={uncomputedProps}
-          />
-        </IndexContext.Provider>
-      ))}
-    </SpreadContext.Provider>
+    <RenderElementWithProps
+      elementId={elementId}
+      config={config}
+      props={uncomputedProps}
+    />
   );
 }
 
@@ -197,10 +243,11 @@ function RenderElementWithProps({
   config,
 }: {
   elementId: string;
-  props: any;
+  props: Record<string, ValueArray | ClientSyntaxTree>;
   config: ExtendedComponentConfig;
 }) {
-  const index = React.useContext(IndexContext);
+  const loopCtx = React.useContext(LoopContext);
+  // const index = React.useContext(IndexContext);
 
   const calculatePropsFromConfig = (props: PropConfigArray, group?: string) => {
     return Object.fromEntries(
@@ -211,7 +258,7 @@ function RenderElementWithProps({
           config.name,
           config.type === "group"
             ? calculatePropsFromConfig(config.props, config.name)
-            : calculateProp(id, config, uncomputedProps?.[id] ?? [], index) ??
+            : calculateProp(id, config, uncomputedProps?.[id] ?? [], loopCtx) ??
               [],
         ];
       })
@@ -221,7 +268,7 @@ function RenderElementWithProps({
   const props = React.useMemo(() => {
     const props = calculatePropsFromConfig(config.props);
     return props;
-  }, [uncomputedProps, index]);
+  }, [uncomputedProps, loopCtx]);
 
   log("PROPS PROPS", props);
 

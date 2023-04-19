@@ -14,7 +14,8 @@ import {
 import { ParseRichText } from "../src/ParseRichText";
 import { extendPath } from "../utils/extendPath";
 import { getDefaultComponent } from "../utils/getDefaultComponent";
-import { getIdFromString } from "../utils/getIdsFromString";
+import { getIdFromString } from "../utils/getIdFromString";
+import { calculateClient } from "../utils/clientCalculate";
 
 const getImageObject = (name: string, url: string) => {
   const src = `${url}/${name}`;
@@ -32,14 +33,29 @@ const getImageObject = (name: string, url: string) => {
 const normalizeProp = (
   config: PropConfig,
   prop: ValueArray,
-  index: number,
+  loopCtx: Record<string, any>,
   transforms: {
     children: (value: ValueArray | undefined) => React.ReactElement;
     file?: (value: FileToken | undefined) => any;
   }
 ) => {
   const type = config.type;
-  const value = prop[index % prop.length] as ValueArray[number] | undefined;
+
+  const array: ValueArray = (() => {
+    const isStateful = !Array.isArray(prop);
+
+    if (isStateful) {
+      return calculateClient(prop, (token) => {
+        if ("loop" in token) {
+          const elementId = token.loop.slice(0, 12);
+          return (token as any).values[loopCtx[elementId]];
+        }
+      });
+    }
+    return prop;
+  })();
+
+  const value = array[0];
 
   if (value !== null && typeof value === "object" && "name" in value) {
     const option = Array.isArray(config.options)
@@ -68,7 +84,8 @@ const normalizeProp = (
   } else if (type === "string") {
     return String(value || "");
   } else if (type === "children") {
-    return transforms.children(prop);
+    const children = Array.isArray(value) ? value : array;
+    return transforms.children(children);
   }
 
   return value;
@@ -77,34 +94,37 @@ const normalizeProp = (
 const RenderChildren = ({
   value,
   record,
-  index,
-  spread,
-  children,
+  ctx,
 }: {
   value: ValueArray;
   record: Record<string, ValueArray>;
-  index: number;
-  spread: boolean;
-  children?: React.ReactNode;
+  ctx: {
+    index: number;
+    spread: boolean;
+    loop: Record<string, number>;
+    children?: React.ReactNode;
+  };
 }) => {
   const libraries = getLibraries();
   const configs = getLibraryConfigs();
 
+  /*
   let array: ValueArray = [];
-  if (spread) {
-    const valueAtIndex = value[index];
+  if (ctx.spread) {
+    const valueAtIndex = value[ctx.index];
     array = Array.isArray(valueAtIndex) ? valueAtIndex : [valueAtIndex];
   } else if (value.length === 1 && Array.isArray(value[0])) {
     array = value[0];
   } else {
     array = value;
   }
+  */
 
   const getDisplayType = (type: string) => {
     return Boolean(getConfigByType(type, configs)?.inline);
   };
 
-  const renderArray = createRenderArray(array, getDisplayType);
+  const renderArray = createRenderArray(value, getDisplayType);
 
   return (
     <>
@@ -114,7 +134,9 @@ const RenderChildren = ({
         acc.push(
           ...renderChildren.map((block, childIndex) => {
             if ("element" in block && block.element === "Outlet") {
-              return <React.Fragment key="Outlet">{children}</React.Fragment>;
+              return (
+                <React.Fragment key="Outlet">{ctx.children}</React.Fragment>
+              );
             }
             if ("$heading" in block) {
               const type = `H${block.$heading[0]}`;
@@ -138,9 +160,10 @@ const RenderChildren = ({
                           id={el.id}
                           type={el.element}
                           record={record}
-                          index={0}
-                          spread={spread}
-                          children={children}
+                          ctx={{
+                            ...ctx,
+                            index: 0,
+                          }}
                         />
                       );
                     }
@@ -160,9 +183,10 @@ const RenderChildren = ({
                 id={block.id}
                 type={block.element}
                 record={record}
-                index={0}
-                spread={spread}
-                children={children}
+                ctx={{
+                  ...ctx,
+                  index: 0,
+                }}
               />
             );
           })
@@ -178,24 +202,20 @@ const RenderElement = ({
   id,
   record,
   type,
-  index,
-  children,
-  spread,
+  ctx,
 }: {
   id: string;
   record: Record<string, ValueArray>;
   type: string;
-  index: number;
-  children?: React.ReactNode;
-  spread: boolean;
+  ctx: {
+    index: number;
+    spread: boolean;
+    loop: Record<string, number>;
+    children?: React.ReactNode;
+  };
 }) => {
   let config = getConfigByType(type, getLibraryConfigs(), getLibraries());
   if (!config) return null;
-
-  const keyId = `${id.slice(12, 24)}${getIdFromString("key")}`;
-
-  const key = record?.[keyId]?.length ? record[keyId] : [];
-  console.log("KEY", key);
 
   let props = {
     config,
@@ -203,47 +223,53 @@ const RenderElement = ({
     elementId: id,
   };
 
-  if (key.length <= 1) {
+  if (type === "Loop") {
+    const rawDocumentId = id.slice(12, 24);
+    const dataId = `${rawDocumentId}${getIdFromString("data")}`;
+
+    console.log("LOOPING OVER", record[dataId]);
+
     return (
-      <RenderElementWithProps
-        index={index}
-        {...props}
-        renderChildren={(value: ValueArray | undefined) => {
+      <>
+        {record[dataId].map((_, newIndex) => {
+          const loopCtx = {
+            ...ctx.loop,
+            [rawDocumentId]: newIndex,
+          };
           return (
-            <RenderChildren
-              value={value ?? []}
-              record={record}
-              index={index}
-              children={children}
-              spread={spread}
+            <RenderElementWithProps
+              key={newIndex}
+              loopCtx={loopCtx}
+              {...props}
+              renderChildren={(value: ValueArray | undefined) => {
+                return (
+                  <RenderChildren
+                    value={value ?? []}
+                    record={record}
+                    ctx={{
+                      ...ctx,
+                      spread: true,
+                      index: newIndex,
+                      loop: loopCtx,
+                    }}
+                  />
+                );
+              }}
             />
           );
-        }}
-      />
+        })}
+      </>
     );
   }
 
   return (
-    <>
-      {key.map((_, newIndex) => (
-        <RenderElementWithProps
-          key={index}
-          index={newIndex}
-          {...props}
-          renderChildren={(value: ValueArray | undefined) => {
-            return (
-              <RenderChildren
-                value={value ?? []}
-                record={record}
-                index={newIndex}
-                children={children}
-                spread={true}
-              />
-            );
-          }}
-        />
-      ))}
-    </>
+    <RenderElementWithProps
+      loopCtx={ctx.loop}
+      {...props}
+      renderChildren={(value: ValueArray | undefined) => {
+        return <RenderChildren value={value ?? []} record={record} ctx={ctx} />;
+      }}
+    />
   );
 };
 
@@ -260,13 +286,13 @@ const fileTransform = (value: FileToken | undefined) => {
 function RenderElementWithProps({
   elementId,
   record,
-  index,
+  loopCtx,
   config,
   renderChildren,
 }: {
   elementId: string;
   record: Record<string, ValueArray>;
-  index: number;
+  loopCtx: Record<string, number>;
   config: ExtendedComponentConfig;
   renderChildren: (value: ValueArray | undefined) => React.ReactElement;
 }) {
@@ -287,7 +313,7 @@ function RenderElementWithProps({
 
         return [
           config.name,
-          normalizeProp(config, record[id] ?? [], index, transforms),
+          normalizeProp(config, record[id] ?? [], loopCtx, transforms),
         ];
       })
     );
@@ -313,9 +339,12 @@ export const RenderPage = ({
     <RenderChildren
       value={data.entry}
       record={data.record}
-      index={0}
-      children={undefined}
-      spread={false}
+      ctx={{
+        index: 0,
+        spread: false,
+        loop: {},
+        children: undefined,
+      }}
     />
   ) : null;
 
@@ -336,9 +365,12 @@ export const RenderLayout = ({
     <RenderChildren
       value={data.entry}
       record={data.record}
-      index={0}
-      children={children}
-      spread={false}
+      ctx={{
+        index: 0,
+        spread: false,
+        loop: {},
+        children,
+      }}
     />
   ) : (
     <>{children}</>

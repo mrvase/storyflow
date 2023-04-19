@@ -14,6 +14,7 @@ import FunctionNode from "./FunctionNode";
 import CustomTokenNode from "./CustomTokenNode";
 import CreatorNode from "./CreatorNode";
 import PromptNode from "./PromptNode";
+import LoopNode from "./LoopNode";
 
 export default [
   LayoutElementNode,
@@ -32,4 +33,5 @@ export default [
   FileNode,
   ColorNode,
   CommaNode,
+  LoopNode,
 ];

@@ -47,28 +47,6 @@ export const getImports = (
   return importRecord;
 };
 
-/*
-export function addNestedObjectIds(value: Value[]): DBValue[];
-export function addNestedObjectIds(value: Computation): DBComputation;
-export function addNestedObjectIds(
-  value: Computation | Value[]
-): DBComputation | DBValue[] {
-  return value.map((el) => {
-    if (el === null || typeof el !== "object") return el;
-    if (Array.isArray(el)) {
-      return addNestedObjectIds(el);
-    }
-    if (!("id" in el)) return el;
-    return {
-      ...el,
-      id: new ObjectId(el.id),
-      ...("field" in el && { field: new ObjectId(el.field) }),
-      ...("folder" in el && { folder: new ObjectId(el.folder) }),
-    };
-  });
-}
-*/
-
 export function getSortedValues(
   record: SyntaxTreeRecord,
   graph: ComputationGraph

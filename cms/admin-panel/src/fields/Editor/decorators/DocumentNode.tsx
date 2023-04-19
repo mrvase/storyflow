@@ -10,6 +10,7 @@ import {
   FieldId,
   NestedDocument,
   ValueArray,
+  ClientSyntaxTree,
 } from "@storyflow/backend/types";
 import {
   ChevronDownIcon,
@@ -58,8 +59,8 @@ function Decorator({
     // TODO make reactive
     docs = [{ id: value.id, record: {} }];
   } else {
-    const { article } = useDocument(value.id);
-    docs = [{ id: value.id, record: article?.record ?? {} }];
+    const { doc } = useDocument(value.id);
+    docs = [{ id: value.id, record: doc?.record ?? {} }];
   }
 
   const color = isNestedDocumentId(value.id)
@@ -168,7 +169,7 @@ export function ValueDisplay({
 }) {
   const client = useClient();
 
-  let output: undefined | ValueArray;
+  let output: undefined | ValueArray | ClientSyntaxTree;
 
   if (initialValue) {
     [output] = useGlobalState(id, () =>
@@ -195,7 +196,7 @@ function TemplateSelect({
   setTemplateId: (value: DocumentId) => void;
 }) {
   const id = TEMPLATE_FOLDER;
-  const { articles } = useOptimisticDocumentList(id);
+  const { documents } = useOptimisticDocumentList(id);
 
   return (
     <Menu as="div" className="relative">
@@ -213,7 +214,7 @@ function TemplateSelect({
               <Menu.Item>
                 {({ active }) => (
                   <>
-                    {(articles ?? []).map((el) => (
+                    {(documents ?? []).map((el) => (
                       <button
                         key={el._id}
                         className={cl(

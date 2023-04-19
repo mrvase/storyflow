@@ -32,8 +32,9 @@ export const cms = new Proxy({} as CMSComponentType, {
     if (!(prop in target)) {
       target[prop as "div"] = React.forwardRef<any, React.ComponentProps<any>>(
         (props, ref) => {
+          const builderCtx = useRenderContextServer?.();
           const { as, children, contentEditable, ...rest } =
-            useRenderContextServer?.()?.(props) ?? props;
+            builderCtx?.(props) ?? props;
           const Tag = prop === "element" ? as : prop;
           if (contentEditable) {
             return (
@@ -46,7 +47,11 @@ export const cms = new Proxy({} as CMSComponentType, {
             );
           }
           return (
-            <Tag key="ineditable" ref={ref} {...rest}>
+            <Tag
+              key={builderCtx ? "ineditable" : undefined}
+              ref={ref}
+              {...rest}
+            >
               {children}
             </Tag>
           );

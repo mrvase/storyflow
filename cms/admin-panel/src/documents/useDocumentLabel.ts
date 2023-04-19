@@ -2,20 +2,20 @@ import { TemplateDocument, Value, ValueArray } from "@storyflow/backend/types";
 import { useGlobalState } from "../state/state";
 import { computeFieldId, createTemplateFieldId } from "@storyflow/backend/ids";
 import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
-import { calculateFromRecord } from "@storyflow/backend/calculate";
+import { calculateRootFieldFromRecord } from "@storyflow/backend/calculate";
 
 export const fallbackLabel = "[Ingen titel]";
 
 export const getDocumentLabel = (doc: TemplateDocument | undefined) => {
   if (!doc) return undefined;
   /* TODO should be calculated */
-  const defaultLabelValue = calculateFromRecord(
+  const defaultLabelValue = calculateRootFieldFromRecord(
     createTemplateFieldId(doc._id, DEFAULT_FIELDS.label.id),
     doc.record
   )[0] as string | undefined;
   const defaultLabel =
     typeof defaultLabelValue === "string" ? defaultLabelValue.trim() : null;
-  const creationDateString = calculateFromRecord(
+  const creationDateString = calculateRootFieldFromRecord(
     createTemplateFieldId(doc._id, DEFAULT_FIELDS.creation_date.id),
     doc.record
   )[0] as string | undefined;

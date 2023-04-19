@@ -327,60 +327,6 @@ const createCalculationStage = (
         ),
       },
     },
-    /*
-    {
-      $set: {
-        revalidate: $.cond(
-          $.isArray(
-            $doc.values[createRawTemplateFieldId(DEFAULT_FIELDS.url.id)]
-          ),
-          () => ({
-            page: Date.now(),
-            layout: $.cond(
-              $.gt(
-                $.size(
-                  $.setIntersection(
-                    $.concatArrays(
-                      queryArrayProp($doc.updates).k,
-                      queryArrayProp($doc.derivatives).k
-                    ),
-                    $.reduce(
-                      $.reverseArray($doc.fields),
-                      (acc, cur) =>
-                        $.cond(
-                          $.or(
-                            $.eq(
-                              cur.k,
-                              $.toObjectId(
-                                $.concat([
-                                  $doc.idString,
-                                  createRawTemplateFieldId(
-                                    DEFAULT_FIELDS.layout.id
-                                  ),
-                                ])
-                              )
-                            ),
-                            $.in(cur.k, acc)
-                          ),
-                          () => $.setUnion(acc, (cur as any).imports),
-                          () => acc
-                        ),
-                      [] as DBId<FieldId>[]
-                    )
-                  )
-                ),
-                0
-              ),
-              () => Date.now(),
-              () => 0
-            ),
-            fetchers: [],
-          }),
-          () => "$$REMOVE"
-        ),
-      },
-    },
-    */
     {
       $unset: [
         "idString",

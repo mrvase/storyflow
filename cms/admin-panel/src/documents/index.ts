@@ -89,7 +89,7 @@ export async function fetchDocumentList(
   const result = unwrap(
     await client.documents.getList.query(params, {
       cachePreload: (result, preload) => {
-        result.articles.forEach((doc) => {
+        result.documents.forEach((doc) => {
           preload(["get", doc._id], () => {
             return {
               doc,
@@ -128,7 +128,7 @@ export function useDocumentList(
       inactive: typeof arg === "undefined",
       immutable: true,
       cachePreload: (result, preload) => {
-        result.articles.forEach((doc) => {
+        result.documents.forEach((doc) => {
           preload(["get", doc._id], () => {
             return {
               doc,
@@ -166,7 +166,7 @@ export function useOptimisticDocumentList(folderId: FolderId | undefined) {
     });
   }, []);
 
-  const articles = React.useMemo(() => {
+  const documents = React.useMemo(() => {
     if (!data || !folderId) return undefined;
     const actions = operations
       .filter(({ folder }) => folder === folderId)
@@ -174,10 +174,10 @@ export function useOptimisticDocumentList(folderId: FolderId | undefined) {
         (acc, { actions }) => [...acc, ...actions],
         [] as DocumentListMutation[]
       );
-    return optimisticUpdate(data.articles, folderId, actions);
+    return optimisticUpdate(data.documents, folderId, actions);
   }, [folderId, data, operations]);
 
-  return { articles, error };
+  return { documents, error };
 }
 
 const getDocumentFromOperations = (
@@ -185,15 +185,15 @@ const getDocumentFromOperations = (
   operations: DocumentListOperation[]
 ) => {
   if (!documentId) return;
-  let article: DBDocument | undefined;
+  let doc: DBDocument | undefined;
   operations.forEach(({ actions, folder }) => {
     actions.forEach((action) => {
       if (action.type === "insert" && action.id === documentId) {
-        article = getDocumentFromInsert(folder, action)!;
+        doc = getDocumentFromInsert(folder, action)!;
       }
     });
   });
-  return article;
+  return doc;
 };
 
 export async function fetchDocument(
@@ -237,7 +237,7 @@ export function fetchDocumentSync(
 }
 
 const TEMPLATES = [
-  ...Object.values(DEFAULT_FIELDS).map((field) => {
+  ...Object.values(DEFAULT_FIELDS).map((field): DBDocument => {
     let { initialValue, ...fieldConfig } = field as typeof field & {
       initialValue?: any;
     };
@@ -253,6 +253,7 @@ const TEMPLATES = [
       label: field.label,
       config: [fieldConfig],
       record,
+      versions: { config: 0 },
     };
   }),
   ...Object.values(DEFAULT_TEMPLATES),
@@ -264,7 +265,7 @@ export function useDocument(documentId: DocumentId | undefined) {
   if (defaultTemplate) {
     return React.useMemo(
       () => ({
-        article: defaultTemplate as DBDocument,
+        doc: defaultTemplate as DBDocument,
         histories: {},
         mutate: () => {},
         error: undefined,
@@ -294,7 +295,7 @@ export function useDocument(documentId: DocumentId | undefined) {
     }
   }, [initialDocument, data]);
 
-  const article = React.useMemo(() => {
+  const doc = React.useMemo(() => {
     if (!documentId) return undefined;
     if (data?.doc) {
       return data.doc;
@@ -303,7 +304,7 @@ export function useDocument(documentId: DocumentId | undefined) {
   }, [documentId, data, initialDocument]);
 
   return {
-    article,
+    doc,
     histories: data?.histories ?? {},
     mutate,
     error: initialDocument ? undefined : error,
@@ -331,15 +332,15 @@ export const useDocumentListMutation = () => {
             return ps;
           }
 
-          const articles = optimisticUpdate(
-            ps.articles,
+          const documents = optimisticUpdate(
+            ps.documents,
             folder as FolderId,
             actions
           );
 
           return {
             ...ps,
-            articles,
+            documents,
           };
         });
       });
@@ -358,12 +359,12 @@ export const useSaveDocument = (folder: FolderId) => {
         if (!result) {
           return ps;
         }
-        const index = ps.articles.findIndex((el) => el._id === id);
-        const newDocuments = [...ps.articles];
+        const index = ps.documents.findIndex((el) => el._id === id);
+        const newDocuments = [...ps.documents];
         newDocuments[index] = { ...newDocuments[index], ...result };
         return {
           ...ps,
-          articles: newDocuments,
+          documents: newDocuments,
         };
       });
       mutate(["documents/get", id], (ps, result) => {

@@ -17,7 +17,7 @@ import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
 import { insertRootInTransforms } from "@storyflow/backend/transform";
 import { usePanel, useRoute } from "../panel-router/Routes";
 
-export function AddArticleDialog({
+export function AddDocumentDialog({
   isOpen,
   close,
   folder,
@@ -36,7 +36,7 @@ export function AddArticleDialog({
   };
   type: "app" | "folder";
 }) {
-  const mutateArticles = useDocumentListMutation();
+  const mutateDocuments = useDocumentListMutation();
   const generateDocumentId = useDocumentIdGenerator();
   const [, navigate] = usePanel();
   const route = useRoute();
@@ -95,7 +95,7 @@ export function AddArticleDialog({
               };
             }
 
-            mutateArticles({
+            mutateDocuments({
               folder,
               actions: [
                 {
@@ -113,20 +113,22 @@ export function AddArticleDialog({
         }}
       >
         <div className="text-sm font-medium mb-1">Navn</div>
-        <input
-          type="text"
-          name="label"
-          value={label}
-          onChange={(ev) => {
-            const newLabel = ev.target.value;
-            setLabel(newLabel);
-            if (toSlug(label) === slug) {
-              setSlug(toSlug(newLabel));
-            }
-          }}
-          className="bg-white/5 rounded py-2 px-2.5 outline-none w-full"
-          autoComplete="off"
-        />
+        <FocusOnEnter>
+          <input
+            type="text"
+            name="label"
+            value={label}
+            onChange={(ev) => {
+              const newLabel = ev.target.value;
+              setLabel(newLabel);
+              if (toSlug(label) === slug) {
+                setSlug(toSlug(newLabel));
+              }
+            }}
+            className="bg-white/5 rounded py-2 px-2.5 outline-none w-full"
+            autoComplete="off"
+          />
+        </FocusOnEnter>
         <div className="text-sm font-medium mt-2 mb-1">URL</div>
         <input
           type="text"
@@ -156,4 +158,16 @@ export function AddArticleDialog({
       </form>
     </Dialog>
   );
+}
+
+function FocusOnEnter({ children }: { children: React.ReactElement }) {
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, []);
+
+  return React.cloneElement(children, { ref: inputRef });
 }

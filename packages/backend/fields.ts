@@ -153,6 +153,7 @@ export const generateTemplateFromDefaultFields = (
       template: getTemplateDocumentId(field.id),
     })),
     record,
+    versions: { config: 0 },
   };
 };
 

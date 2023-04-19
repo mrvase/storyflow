@@ -404,8 +404,10 @@ export const createOperators = () => {
       return {
         $cond: {
           if: { $lte: [{ $size: array }, 1] },
-          then: [],
-          else: { $slice: [array, 0, { $subtract: [{ $size: array }, 1] }] },
+          then: { $literal: [] },
+          else: {
+            $slice: [array, 0, { $subtract: [{ $size: array }, 1] }],
+          },
         },
       } as unknown as typeof array;
     },

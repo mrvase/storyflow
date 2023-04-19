@@ -8,7 +8,7 @@ export const HeaderPopoverCTA = createComponent(
     return (
       <cms.div className="flow-root">
         <Link
-          href={`/${href ?? ""}`}
+          href={href || "/"}
           className="-m-3 flex items-center rounded-md p-3 text-base font-medium text-gray-900 hover:bg-gray-100"
         >
           <PlayIcon

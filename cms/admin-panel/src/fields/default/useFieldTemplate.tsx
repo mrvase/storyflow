@@ -8,19 +8,19 @@ import { useDocument } from "../../documents";
 // TODO - make sure all templates are fetched and then make this sync!
 
 export const useTemplate = (templateId: DocumentId | undefined) => {
-  const { article } = useDocument(templateId);
+  const { doc } = useDocument(templateId);
 
   const [template, setTemplate] = React.useState<FieldConfig[]>();
 
   const client = useClient();
 
   React.useLayoutEffect(() => {
-    if (!article) return;
+    if (!doc) return;
     (async () => {
-      const fields = await getTemplateFieldsAsync(article.config, client);
+      const fields = await getTemplateFieldsAsync(doc.config, client);
       setTemplate(fields);
     })();
-  }, [article]);
+  }, [doc]);
 
   return template;
 };

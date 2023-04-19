@@ -27,6 +27,7 @@ import {
   isSpliceAction,
 } from "shared/operations";
 import { splitTransformsAndRoot } from "@storyflow/backend/transform";
+import { useFieldVersion } from "./VersionContext";
 
 type TextOps = [{ index: number; insert: [string]; remove?: 0 }];
 
@@ -69,10 +70,13 @@ export function DefaultField({
   showPromptButton?: boolean;
 }) {
   const rootId = useFieldId();
+  const version = useFieldVersion();
   const [config] = useFieldConfig(rootId);
 
-  const { target, initialValue, value, isPrimitive, tree } =
-    useDefaultState(id);
+  const { target, initialValue, value, isPrimitive, tree } = useDefaultState(
+    id,
+    version
+  );
 
   const transforms = React.useMemo(() => {
     return splitTransformsAndRoot(tree)[0];
@@ -192,6 +196,7 @@ export function DefaultField({
         <TemplateHeader transforms={transforms} id={id} />
       )}
       <Editor
+        key={version}
         target={target}
         push={pushWithBatching}
         register={actions.register}

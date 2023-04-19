@@ -4,6 +4,7 @@ import {
   DocumentId,
   FieldConfig,
   FieldId,
+  PartialFieldConfig,
   TemplateRef,
 } from "@storyflow/backend/types";
 import { useDocumentCollab, useDocumentMutate } from "./DocumentCollabContext";
@@ -65,19 +66,9 @@ export const useDocumentConfig = (
 
   let { mutate } = useDocument(templateId);
 
-  const refreshed = React.useRef(false);
-
-  let refreshOnVersionChange = React.useCallback(() => {
-    if (!refreshed.current) {
-      // TODO
-      // this exists to mutate doc when queue registers that a document
-      // has been saved, but the current client still uses an earlier document.
-      // However, right now it only check up against the version of the
-      // current client. CIRCULAR! IT DOES NOT MAKE SENSE!
-      refreshed.current = true;
-      mutate();
-    }
-  }, []); // does not need dependency since it is unmounted on version change
+  let refreshOnStale = React.useCallback(() => {
+    mutate();
+  }, [mutate]);
 
   const collab = useDocumentCollab();
 
@@ -154,7 +145,7 @@ export const useDocumentConfig = (
       key: templateId,
     },
     {
-      onInvalidVersion: refreshOnVersionChange,
+      onStale: refreshOnStale,
     }
   );
 
@@ -177,62 +168,42 @@ export function useFieldConfig(
   // removing the first element which is just the current document
   const reversedParentPath = path.slice(1).reverse();
 
-  const useReactiveConfig = (fieldId: FieldId) => {
-    let [config] = configs.useKey(documentId, undefined, (value) => {
-      if (!value) return;
-      return getFieldConfig(value, fieldId);
-    });
-    return config;
-  };
-
-  const useNonReactiveConfig = (fieldId: FieldId) => {
-    const { article: template } = useDocument(
-      getDocumentId(fieldId) as DocumentId
-    );
-    return getFieldConfig(template?.config ?? [], fieldId);
+  const useConfig = (fieldId: FieldId, options: { reactive?: boolean }) => {
+    const { doc: template } = useDocument(getDocumentId(fieldId) as DocumentId);
+    let config: PartialFieldConfig | undefined;
+    if (options.reactive) {
+      [config] = configs.useKey(documentId, undefined, (value) => {
+        if (!value) return;
+        return getFieldConfig(value, fieldId);
+      });
+    }
+    return config ?? getFieldConfig(template?.config ?? [], fieldId);
   };
 
   let config: FieldConfig;
   if (path.length === 1) {
-    config = useReactiveConfig(fieldId) as FieldConfig;
+    config = useConfig(fieldId, { reactive: true }) as FieldConfig;
   } else {
     // the template
     const templateFieldId = revertTemplateFieldId(fieldId); // documentId === reversedParentPath[0];
-    config = useNonReactiveConfig(templateFieldId) as FieldConfig;
+    config = useConfig(templateFieldId, { reactive: false }) as FieldConfig;
 
     // removing the first element (the original) which is handled above
     reversedParentPath.slice(1).forEach((templateId) => {
       const id = replaceDocumentId(fieldId, templateId);
-      let overwritingConfig = useNonReactiveConfig(id);
+      let overwritingConfig = useConfig(id, { reactive: false });
       config = React.useMemo(
         () => ({ ...(config ?? {}), ...(overwritingConfig ?? {}) }),
         [config, overwritingConfig]
       );
     });
 
-    let reactiveConfig = useReactiveConfig(fieldId);
+    let reactiveConfig = useConfig(fieldId, { reactive: true });
     config = React.useMemo(
       () => ({ ...(config ?? {}), ...(reactiveConfig ?? {}) }),
       [config, reactiveConfig]
     );
   }
-
-  /*
-  let config: FieldConfig | undefined;
-  if (isNative) {
-    [config] = configs.useKey(documentId, undefined, (value) => {
-      if (!value) return;
-      return getFieldConfig(value, fieldId);
-    });
-  } else {
-    // should not update reactively
-    const id = revertTemplateFieldId(fieldId);
-    const { article: template } = useDocument(templateDocumentId);
-    config = template?.config?.find(
-      (el): el is FieldConfig => "id" in el && el.id === id
-    );
-  }
-  */
 
   const { push } = useDocumentMutate<DocumentOperation>(documentId, documentId);
 
@@ -268,34 +239,3 @@ export function useLabel(fieldId: FieldId) {
 
   return config?.label ?? "";
 }
-
-/*
-export function useLabel(
-  fieldId: FieldId | RawFieldId,
-  overwritingTemplate?: DocumentId
-) {
-  const originalFieldId = revertTemplateFieldId(fieldId, overwritingTemplate);
-  const documentId = getDocumentId(originalFieldId);
-
-  const [config] = configs.useKey(documentId);
-
-  const label = React.useMemo(() => {
-    if (!config) {
-      return undefined;
-    }
-    return getFieldConfig(config, originalFieldId)?.label;
-  }, [config]);
-
-  const templateId = getDocumentId(originalFieldId) as DocumentId;
-  const { article } = useDocument(templateId);
-
-  const initialLabel = React.useMemo(() => {
-    if (!article) {
-      return undefined;
-    }
-    return getFieldConfig(article.config, originalFieldId)?.label;
-  }, [article]);
-
-  return label ?? initialLabel ?? "";
-}
-*/

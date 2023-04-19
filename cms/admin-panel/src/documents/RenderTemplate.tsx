@@ -89,7 +89,7 @@ export function RenderTemplate({
               Continue only if it does not exist already
               (that is, if not deleted and now added without a save in between)
               */
-              if (versions && fieldId in versions) return;
+              if (versions && getRawFieldId(fieldId) in versions) return;
               const [transforms, root] = splitTransformsAndRoot(tree);
               const transformActions = transforms.map((transform) => {
                 return {
@@ -199,12 +199,12 @@ export function RenderTemplate({
       return (
         <TopFieldIndexProvider index={index} key={fieldConfig.template}>
           <GetDocument id={fieldConfig.template}>
-            {(article) => (
+            {(doc) => (
               <RenderTemplate
                 key={getVersionKey(versions)} // for rerendering
-                id={article._id}
+                id={doc._id}
                 owner={owner}
-                config={article.config}
+                config={doc.config}
                 histories={histories}
                 versions={versions}
                 index={index}

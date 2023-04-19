@@ -3,7 +3,7 @@ import { dispatchers, listeners } from "./events";
 import { RenderContext } from "../src/RenderContext";
 import { useCMSElement } from "./useCMSElement";
 import { getSiblings } from "./focus";
-import { Path, ValueArray } from "@storyflow/frontend/types";
+import { ClientSyntaxTree, ValueArray } from "@storyflow/frontend/types";
 import ReactDOM from "react-dom";
 import { useCSS } from "./useCSS";
 import RenderChildren from "./RenderChildren";
@@ -23,13 +23,13 @@ const createState = () => {
       id: null as string | null,
       key: generateKey(),
     },
-    map: new Map<string, ValueArray>(),
+    map: new Map<string, ValueArray | ClientSyntaxTree>(),
     update: 0,
   };
 
   const update = (
-    map: Map<string, ValueArray>,
-    updates: Record<string, ValueArray>
+    map: Map<string, ValueArray | ClientSyntaxTree>,
+    updates: Record<string, ValueArray | ClientSyntaxTree>
   ) => {
     const batch = new Set<() => void>();
 
@@ -59,7 +59,6 @@ const createState = () => {
       };
       state.update++;
       rootSubscriber?.();
-      updateSubscriber?.();
     });
 
     listeners.update.subscribe((updates) => {
@@ -67,13 +66,11 @@ const createState = () => {
       const batch = update(state.map, updates);
       state.update++;
       batch.forEach((listener) => listener());
-      updateSubscriber?.();
     });
   }
 
   const subscribers = new Map<string, Set<() => void>>();
   let rootSubscriber: (() => void) | null = null;
-  let updateSubscriber: (() => void) | null = null;
 
   const addSubscriber = (key: string, subscriber: () => void) => {
     let set = subscribers.get(key);
@@ -105,29 +102,12 @@ const createState = () => {
     ];
   };
 
-  const syncUpdate = (): [
-    (listener: () => void) => () => void,
-    () => number,
-    () => number
-  ] => {
-    return [
-      (listener) => {
-        updateSubscriber = listener;
-        return () => {
-          updateSubscriber = null;
-        };
-      },
-      () => state.update,
-      () => state.update,
-    ];
-  };
-
   const sync = (
     key: string
   ): [
     (listener: () => void) => () => void,
-    () => ValueArray,
-    () => ValueArray
+    () => ValueArray | ClientSyntaxTree,
+    () => ValueArray | ClientSyntaxTree
   ] => {
     return [
       (listener) => {
@@ -143,12 +123,12 @@ const createState = () => {
 
   const get = (key: string) => state.map.get(key);
 
-  return { get, syncUpdate, syncRoot, sync };
+  return { get, syncRoot, sync };
 };
 
 const state = createState();
 
-const { syncRoot, syncUpdate, sync } = state;
+const { syncRoot, sync } = state;
 export const { get: getState } = state;
 
 export function useFullValue() {
@@ -274,7 +254,8 @@ function ReadFrameHeight() {
 const RenderRoot = ({ id }: { id: string }) => {
   const value = useValue(id);
   log("VALUE", id, value);
-  return <RenderChildren value={value} />;
+  /* should in principle always be value array */
+  return <RenderChildren value={value as ValueArray} />;
 };
 
 const Frame = ({ children }: { children: React.ReactNode }) => {

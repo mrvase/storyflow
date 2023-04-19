@@ -27,7 +27,7 @@ export function TemplatePrompt({ prompt }: { prompt: string }) {
     getRawFieldId(fieldId)
   );
 
-  const { articles: templates = [] } =
+  const { documents: templates = [] } =
     useOptimisticDocumentList(TEMPLATE_FOLDER);
 
   const path = usePath();
@@ -68,6 +68,7 @@ export function TemplatePrompt({ prompt }: { prompt: string }) {
       <div className="font-medium text-gray-400 mb-1 ml-1">Skabeloner</div>
       {options.map(({ value, label }) => (
         <Option
+          key={value}
           value={value}
           onEnter={onEnter}
           onEnterLabel={"Anvend"}

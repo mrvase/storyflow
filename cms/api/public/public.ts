@@ -10,17 +10,19 @@ import { cookieOptions } from "../cookie-options";
 import { error, success } from "@storyflow/result";
 import {
   calculate,
-  calculateFromRecord,
+  calculateRootFieldFromRecord,
   FolderFetch,
   StateGetter,
 } from "@storyflow/backend/calculate";
 import type {} from "@storyflow/frontend/types";
 import {
+  ClientSyntaxTree,
   DBDocument,
   DBDocumentRaw,
   DocumentId,
   FieldId,
   NestedDocument,
+  NestedDocumentId,
   NestedFolder,
   RawFieldId,
   SyntaxTreeRecord,
@@ -31,9 +33,11 @@ import { ObjectId } from "mongodb";
 import { parseDocument } from "../routes/documents";
 import { getFieldRecord, getGraph } from "shared/computation-tools";
 import {
+  computeFieldId,
   createRawTemplateFieldId,
   createTemplateFieldId,
   getDocumentId,
+  getIdFromString,
   getRawDocumentId,
   getRawFieldId,
 } from "@storyflow/backend/ids";
@@ -115,7 +119,7 @@ const createElementRecordGetter = (
       imports: new Map(), // do not include imports in record
     });
 
-    let record: Record<FieldId, ValueArray> = {};
+    let record: Record<FieldId, ValueArray | ClientSyntaxTree> = {};
 
     let fetchRequests: FolderFetch[] = [];
     let fetched = new Set<NestedFolder>();
@@ -138,7 +142,7 @@ const createElementRecordGetter = (
 
           const filters = fetchFilters.get(el.folder) ?? {};
 
-          console.log("FILTERS FILTERS FILTERS", filters);
+          console.log("FILTERS FILTERS FILTERS");
 
           const client = await clientPromise;
           const result = await client
@@ -167,14 +171,15 @@ const createElementRecordGetter = (
       const oldFetches = [...fetchRequests];
 
       fetches.forEach((el) => {
+        const filterEntries = Object.entries(docRecord)
+          .filter(([key]) => key.startsWith(getRawDocumentId(el.folder.id)))
+          .map(([key, value]) => [
+            `values.${getRawFieldId(key as FieldId)}`,
+            calculate(value, getState),
+          ]);
         const filters = Object.fromEntries(
-          Object.entries(docRecord)
-            .filter(([key]) => key.startsWith(getRawDocumentId(el.folder.id)))
-            .map(([key, value]) => [
-              `values.${getRawFieldId(key as FieldId)}`,
-              calculate(value, getState),
-            ])
-            .filter(([, value]) => value.length > 0)
+          filterEntries
+            .filter(([, value]) => Array.isArray(value) && value.length > 0)
             .map(([key, value]) => [key, { $elemMatch: { $in: value } }])
         );
         fetchFilters.set(el.folder, filters);
@@ -202,6 +207,25 @@ const createElementRecordGetter = (
         return fetchResults.get(folder);
       } else if (typeof importer === "object" && "ctx" in importer) {
         return context[importer.ctx] ?? [];
+      } else if (typeof importer === "object" && "loop" in importer) {
+        const dataFieldId = computeFieldId(
+          getDocumentId(importer.loop),
+          getIdFromString("data")
+        );
+        const rawFieldId = getRawFieldId(importer.loop);
+        return calculate(
+          {
+            type: "select",
+            children: [
+              {
+                id: "ffffffffffffffffffffffff" as NestedDocumentId,
+                field: dataFieldId,
+              },
+            ],
+            data: rawFieldId,
+          },
+          getState
+        );
       } else {
         if (importer in docRecord) {
           return calculate(docRecord[importer], getState);
@@ -228,10 +252,7 @@ const createElementRecordGetter = (
       const newFetches = fetchRequests.filter((el) => !oldFetches.includes(el));
 
       if (newFetches.length > 0) {
-        console.log(
-          "NEW FETCHES NEW FETCHES NEW FETCHES NEW FETCHES",
-          util.inspect({ newFetches }, { colors: true, depth: null })
-        );
+        console.log("NEW FETCHES NEW FETCHES NEW FETCHES NEW FETCHES");
         await resolveFetches(newFetches);
         calculateAsync();
       }
@@ -242,7 +263,7 @@ const createElementRecordGetter = (
     const entry = record[fieldId];
     delete record[fieldId];
 
-    if (!entry || entry.length === 0) {
+    if (!entry || (Array.isArray(entry) && entry.length === 0)) {
       return null;
     }
 
@@ -321,7 +342,7 @@ export const public_ = createRoute({
         ),
       ]);
 
-      const titleArray = calculateFromRecord(
+      const titleArray = calculateRootFieldFromRecord(
         createTemplateFieldId(doc._id, DEFAULT_FIELDS.label.id),
         doc.record
       );
@@ -334,57 +355,11 @@ export const public_ = createRoute({
         },
       };
 
-      console.log("RESULT", result);
+      console.log("RESULT");
 
       return success(result);
     },
   }),
-  /*
-  search: createProcedure({
-    middleware(ctx) {
-      return ctx.use(corsFactory("allow-all"), authorization);
-    },
-    schema() {
-      return z.string();
-    },
-    async mutation(query, { dbName }) {
-      const client = await clientPromise;
-      const articles = await client
-        .db(dbName)
-        .collection("documents")
-        .aggregate([
-          {
-            $search: {
-              index: dbName,
-              text: {
-                query,
-                path: `values.${createRawTemplateFieldId(
-                  DEFAULT_FIELDS.page.id
-                )}`,
-              },
-              highlight: {
-                path: `values.${createRawTemplateFieldId(
-                  DEFAULT_FIELDS.page.id
-                )}`,
-              },
-            },
-          },
-          {
-            $project: {
-              _id: 0,
-              value: `$values.${createRawTemplateFieldId(
-                DEFAULT_FIELDS.page.id
-              )}`,
-              score: { $meta: "searchScore" },
-              highlight: { $meta: "searchHighlights" },
-            },
-          },
-        ])
-        .toArray();
-      return success(articles as DBDocument[]);
-    },
-  }),
-  */
   getPaths: createProcedure({
     middleware(ctx) {
       return ctx.use(corsFactory("allow-all"), authorization);
@@ -476,9 +451,7 @@ export const public_ = createRoute({
                   data: [100],
                 },
               ],
-              data: {
-                select: createRawTemplateFieldId(DEFAULT_FIELDS.slug.id),
-              },
+              data: createRawTemplateFieldId(DEFAULT_FIELDS.slug.id),
             };
 
             const getElementRecord = createElementRecordGetter(
@@ -493,6 +466,10 @@ export const public_ = createRoute({
                   createTemplateFieldId(_id, DEFAULT_FIELDS.params.id)
                 )
               )?.entry ?? [];
+
+            if (!Array.isArray(slugs)) {
+              throw new Error("Slugs cannot rely on client state");
+            }
 
             if (slugs.every((el): el is string => typeof el === "string")) {
               return slugs.map(toUrl);
@@ -512,4 +489,50 @@ export const public_ = createRoute({
       return success([...ordinaryUrls.map((el) => el.url), ...staticUrls]);
     },
   }),
+  /*
+  search: createProcedure({
+    middleware(ctx) {
+      return ctx.use(corsFactory("allow-all"), authorization);
+    },
+    schema() {
+      return z.string();
+    },
+    async mutation(query, { dbName }) {
+      const client = await clientPromise;
+      const articles = await client
+        .db(dbName)
+        .collection("documents")
+        .aggregate([
+          {
+            $search: {
+              index: dbName,
+              text: {
+                query,
+                path: `values.${createRawTemplateFieldId(
+                  DEFAULT_FIELDS.page.id
+                )}`,
+              },
+              highlight: {
+                path: `values.${createRawTemplateFieldId(
+                  DEFAULT_FIELDS.page.id
+                )}`,
+              },
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              value: `$values.${createRawTemplateFieldId(
+                DEFAULT_FIELDS.page.id
+              )}`,
+              score: { $meta: "searchScore" },
+              highlight: { $meta: "searchHighlights" },
+            },
+          },
+        ])
+        .toArray();
+      return success(articles as DBDocument[]);
+    },
+  }),
+  */
 });

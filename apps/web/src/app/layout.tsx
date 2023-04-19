@@ -25,7 +25,6 @@ export default async function Layout({
   if (url === "") {
     return (
       <html>
-        <head />
         <body>{content}</body>
       </html>
     );

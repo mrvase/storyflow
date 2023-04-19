@@ -69,7 +69,7 @@ export default function Nav() {
         className={cl(
           "group h-screen flex flex-col shrink-0 grow-0 overflow-hidden transition-[width] ease-out",
           isOpen ? "w-48" : "w-9 menu-closed",
-          "text-gray-600 dark:text-white"
+          "text-gray-600 dark:text-white font-medium"
         )}
       >
         <div className="h-full flex flex-col pl-2 py-4 w-48">

@@ -24,6 +24,7 @@ import { getChildrenDocuments } from "shared/computation-tools";
 import { useDefaultState } from "./useDefaultState";
 import { splitTransformsAndRoot } from "@storyflow/backend/transform";
 import { useLoopTemplate } from "./LoopTemplateContext";
+import { useFieldVersion } from "./VersionContext";
 
 const noTemplate: FieldConfig[] = [];
 
@@ -34,7 +35,8 @@ export function PreloadFieldState({
   id: FieldId;
   createTemplateContext?: NestedDocumentId;
 }) {
-  const { tree } = useDefaultState(id);
+  const version = useFieldVersion();
+  const { tree } = useDefaultState(id, version);
 
   if (createTemplateContext) {
     const template = React.useMemo(() => {

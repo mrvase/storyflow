@@ -34,16 +34,16 @@
     "eslint": "^7.32.0",
     "eslint-config-custom": "workspace:*",
     "mongodb": "^4.13.0",
-    "next": "^13.1.1",
+    "next": "^13.3.0",
     "nodemailer": "^6.9.0",
     "tsconfig": "workspace:*",
-    "typescript": "^4.9.4",
+    "typescript": "^5.0.4",
     "vite": "^4.0.4",
     "vitest": "^0.28.4"
   },
   "peerDependencies": {
     "mongodb": "^4.13.0",
-    "next": "^13.1.1",
+    "next": "^13.3.0",
     "nodemailer": "^6.9.0"
   }
 }

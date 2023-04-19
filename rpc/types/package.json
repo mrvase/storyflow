@@ -8,7 +8,7 @@
   "devDependencies": {
     "@storyflow/result": "workspace:*",
     "tsconfig": "workspace:*",
-    "typescript": "^4.9.4"
+    "typescript": "^5.0.4"
   },
   "peerDependencies": {
     "@storyflow/result": "workspace:*"

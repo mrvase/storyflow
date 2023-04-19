@@ -13,6 +13,9 @@ import {
   SyntaxTreeRecord,
   SyntaxTree,
   ValueArray,
+  ClientSyntaxTree,
+  NestedDocumentId,
+  NestedField,
 } from "@storyflow/backend/types";
 import { extendPath } from "@storyflow/backend/extendPath";
 import Content from "../layout/components/Content";
@@ -26,6 +29,7 @@ import {
   computeFieldId,
   getDocumentId,
   getIdFromString,
+  getRawDocumentId,
   getRawFieldId,
 } from "@storyflow/backend/ids";
 import { ComponentConfig, LibraryConfig } from "@storyflow/frontend/types";
@@ -48,6 +52,7 @@ import { useRoute } from "../panel-router/Routes";
 import { parseSegment } from "../layout/components/routes";
 import { splitStreamByBlocks } from "./Editor/transforms";
 import { FieldOperation } from "shared/operations";
+import { VersionProvider } from "./default/VersionContext";
 
 const useBuilderRendered = ({
   listeners,
@@ -356,56 +361,60 @@ export function FieldPage({ children }: { children?: React.ReactNode }) {
     templateFieldId
   );
 
+  const { versions } = useDocumentPageContext();
+
   return (
     <FieldIdContext.Provider value={id}>
-      <AttributesProvider>
-        <SelectedPathProvider
-          id={id}
-          onChange={(path) => {
-            // dispatch
-          }}
-        >
-          <SyncBuilderPath listeners={listeners} id={id} />
-          <ElementActions id={id} listeners={listeners} push={push} />
-          <Content className="relative h-full">
-            <PropagateStatePlugin
-              id={id}
-              rendered={rendered}
-              dispatchers={dispatchers}
-            />
-            <PanelGroup direction="horizontal" autoSaveId="panels">
-              <Panel collapsible>
-                <div className="relative h-full bg-gray-200">
-                  <div
-                    className={cl(
-                      "h-full transition-opacity duration-300",
-                      rendered ? "opacity-100" : "opacity-0"
-                    )}
-                  >
-                    <BuilderIframe
-                      {...iframeProps}
-                      heightListener={listeners.updateFrameHeight.subscribe}
-                    />
-                  </div>
-                  <FieldOverlay id={id} />
-                </div>
-              </Panel>
-              <PanelResizeHandle
-                className={cl(
-                  "group relative bg-white/10 opacity-50 hover:opacity-100 transition-opacity",
-                  "w-1"
-                )}
+      <VersionProvider version={versions?.[getRawFieldId(id)] ?? 0}>
+        <AttributesProvider>
+          <SelectedPathProvider
+            id={id}
+            onChange={(path) => {
+              // dispatch
+            }}
+          >
+            <SyncBuilderPath listeners={listeners} id={id} />
+            <ElementActions id={id} listeners={listeners} push={push} />
+            <Content className="relative h-full">
+              <PropagateStatePlugin
+                id={id}
+                rendered={rendered}
+                dispatchers={dispatchers}
               />
-              <Panel collapsible>
-                <div className="p-2.5 h-full overflow-y-auto overflow-x-hidden no-scrollbar">
-                  <FieldPanel id={id} />
-                </div>
-              </Panel>
-            </PanelGroup>
-          </Content>
-          {children}
-        </SelectedPathProvider>
-      </AttributesProvider>
+              <PanelGroup direction="horizontal" autoSaveId="panels">
+                <Panel collapsible>
+                  <div className="relative h-full bg-gray-200">
+                    <div
+                      className={cl(
+                        "h-full transition-opacity duration-300",
+                        rendered ? "opacity-100" : "opacity-0"
+                      )}
+                    >
+                      <BuilderIframe
+                        {...iframeProps}
+                        heightListener={listeners.updateFrameHeight.subscribe}
+                      />
+                    </div>
+                    <FieldOverlay id={id} />
+                  </div>
+                </Panel>
+                <PanelResizeHandle
+                  className={cl(
+                    "group relative bg-white/10 opacity-50 hover:opacity-100 transition-opacity",
+                    "w-1"
+                  )}
+                />
+                <Panel collapsible>
+                  <div className="p-2.5 h-full overflow-y-auto overflow-x-hidden no-scrollbar">
+                    <FieldPanel id={id} />
+                  </div>
+                </Panel>
+              </PanelGroup>
+            </Content>
+            {children}
+          </SelectedPathProvider>
+        </AttributesProvider>
+      </VersionProvider>
     </FieldIdContext.Provider>
   );
 }
@@ -427,8 +436,10 @@ function FieldOverlay({ id }: { id: FieldId }) {
     <EditorFocusProvider>
       <div
         className={cl(
-          "absolute max-h-[calc(100%-1.25rem)] bg-gray-850 w-96 rounded-md bottom-2.5 right-2.5 overflow-y-auto no-scrollbar",
-          !currentId && "opacity-0 pointer-events-none"
+          "absolute max-h-[calc(100%-1.25rem)] min-h-[5.25rem] bg-gray-850 shadow-lg shadow-black/20 w-[calc(100%-1.25rem)] rounded-md bottom-2.5 left-2.5 overflow-y-auto no-scrollbar transition-[transform,opacity] ease-out duration-200 origin-bottom",
+          !currentId
+            ? "opacity-0 pointer-events-none scale-[0.98]"
+            : "opacity-100 scale-100"
         )}
       >
         <div className={cl("relative grow shrink basis-0 p-2.5")}>
@@ -443,7 +454,7 @@ function FieldOverlay({ id }: { id: FieldId }) {
   );
 }
 
-export type ComponentRecord = Record<string, ValueArray>;
+export type ValueRecord = Record<string, ValueArray | ClientSyntaxTree>;
 
 const getRecordSnapshot = (
   entry: FieldId,
@@ -457,10 +468,10 @@ const getRecordSnapshot = (
     libraries: LibraryConfig[];
   }
 ) => {
-  const finalRecord: ComponentRecord = {};
+  const finalRecord: ValueRecord = {};
 
   const recursivelyGetRecordFromComputation = (fieldId: FieldId) => {
-    const state = store.use<ValueArray>(fieldId);
+    const state = store.use<ValueArray | ClientSyntaxTree>(fieldId);
 
     if (!state.initialized()) {
       const initialValue = record[fieldId] ?? DEFAULT_SYNTAX_TREE;
@@ -475,53 +486,78 @@ const getRecordSnapshot = (
 
     const value = state.value!;
 
-    const getChildren = (value: ValueArray): {} => {
-      return value.reduce((acc, element) => {
+    const getChildren = (value: ValueArray | ClientSyntaxTree): {} => {
+      let array: ValueArray = [];
+
+      if (!Array.isArray(value)) {
+        const traverseNode = (node: ClientSyntaxTree) => {
+          node.children.forEach((el) => {
+            if (Array.isArray(el)) {
+              el.forEach((token) => {
+                if (tokens.isNestedElement(token)) {
+                  array.push(token);
+                }
+              });
+            } else {
+              traverseNode(el);
+            }
+          });
+        };
+
+        traverseNode(value);
+      } else {
+        array = value;
+      }
+
+      return array.reduce((acc, element) => {
         if (Array.isArray(element)) {
           // this should propably just flat it infinitely out
           return Object.assign(acc, getChildren(element));
-        } else if (!tokens.isNestedElement(element)) {
+        } else if (tokens.isNestedElement(element)) {
+          const components = libraries
+            .reduce(
+              (acc: ComponentConfig[], library) =>
+                acc.concat(
+                  Object.values(library.components).map((el) => ({
+                    ...el,
+                    name: extendPath(library.name, el.name, ":"),
+                  }))
+                ),
+              []
+            )
+            .flat(1);
+
+          const propConfigArray = components.find(
+            (el) => el.name === element.element
+          )?.props;
+
+          const propKeys =
+            propConfigArray?.reduce((acc: string[], el) => {
+              if (el.type === "group") {
+                acc.push(
+                  ...el.props.map((child) => `${el.name}#${child.name}`)
+                );
+                return acc;
+              }
+              acc.push(el.name);
+              return acc;
+            }, []) ?? [];
+
+          propKeys.push("key");
+
+          const props = propKeys.reduce((acc, key) => {
+            return Object.assign(
+              acc,
+              recursivelyGetRecordFromComputation(
+                computeFieldId(element.id, getIdFromString(key))
+              )
+            );
+          }, {});
+
+          return Object.assign(acc, props);
+        } else {
           return acc;
         }
-        const components = libraries
-          .reduce(
-            (acc: ComponentConfig[], library) =>
-              acc.concat(
-                Object.values(library.components).map((el) => ({
-                  ...el,
-                  name: extendPath(library.name, el.name, ":"),
-                }))
-              ),
-            []
-          )
-          .flat(1);
-
-        const propConfigArray = components.find(
-          (el) => el.name === element.element
-        )?.props;
-
-        const propKeys =
-          propConfigArray?.reduce((acc: string[], el) => {
-            if (el.type === "group") {
-              acc.push(...el.props.map((child) => `${el.name}#${child.name}`));
-              return acc;
-            }
-            acc.push(el.name);
-            return acc;
-          }, []) ?? [];
-
-        propKeys.push("key");
-
-        const props = propKeys.reduce((acc, key) => {
-          return Object.assign(
-            acc,
-            recursivelyGetRecordFromComputation(
-              computeFieldId(element.id, getIdFromString(key))
-            )
-          );
-        }, {});
-
-        return Object.assign(acc, props);
       }, {});
     };
 
@@ -554,22 +590,19 @@ function PropagateStatePlugin({
   const { libraries } = useClientConfig();
 
   // state initialized in ComponentField
-  const [tree, setTree] = useGlobalState<ComponentRecord>(
-    `${id}/record`,
-    () => {
-      return getRecordSnapshot(id, {
-        record,
-        client,
-        libraries,
-      });
-    }
-  );
+  const [tree, setTree] = useGlobalState<ValueRecord>(`${id}/record`, () => {
+    return getRecordSnapshot(id, {
+      record,
+      client,
+      libraries,
+    });
+  });
 
   let oldValue = React.useRef({ ...tree });
 
   React.useEffect(() => {
     if (rendered) {
-      const record = store.use<ComponentRecord>(`${id}/record`).value;
+      const record = store.use<ValueRecord>(`${id}/record`).value;
       if (record) {
         dispatchers.initialize.dispatch({
           id,

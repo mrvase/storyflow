@@ -263,8 +263,6 @@ export function parseSyntaxStream(
     root.type = "root";
   }
 
-  console.log("ROOT", root);
-
   return root;
 }
 

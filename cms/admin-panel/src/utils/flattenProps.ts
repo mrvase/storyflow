@@ -22,7 +22,7 @@ export function flattenProps(
                 getIdFromString(extendPath(el.name, nested.name, "#"))
               ),
               ...nested,
-              label: `(${el.label}) ${nested.label}`,
+              label: `${el.label} · ${nested.label}`,
             })),
           ]
         : [

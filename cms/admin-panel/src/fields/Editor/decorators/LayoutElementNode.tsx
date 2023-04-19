@@ -9,6 +9,8 @@ import {
 } from "@storyflow/backend/types";
 import { getConfigFromType, useClientConfig } from "../../../client-config";
 import {
+  ArrowPathIcon,
+  ArrowPathRoundedSquareIcon,
   ChevronUpDownIcon,
   CodeBracketSquareIcon,
   CubeIcon,
@@ -75,7 +77,7 @@ function Decorator({
 
   const Icon =
     value.element === "Loop"
-      ? CodeBracketSquareIcon
+      ? ArrowPathRoundedSquareIcon
       : value.element === "Outlet"
       ? WindowIcon
       : CubeIcon;
@@ -107,7 +109,7 @@ function Decorator({
             <InterSelectionArea nodeKey={nodeKey} />
             <Icon className="w-4 h-4 mr-5 shrink-0" />
             {config?.label ?? value.element}
-            <div className="overflow-x-auto no-scrollbar mx-2">
+            <div className="overflow-x-auto no-scrollbar mx-3">
               <Attributes
                 entity={value}
                 hideAsDefault={!isTopLevel}
@@ -116,6 +118,7 @@ function Decorator({
             </div>
             <div className="ml-auto">
               <button
+                tabIndex={-1}
                 className="w-5 h-5 flex-center rounded-full bg-gray-800 hover:bg-gray-700 transition-colors"
                 onClick={() => {
                   setPath(() => [...selectedPath, ...path, value.id]);

@@ -147,9 +147,9 @@ export const getTemplateFieldsAsync = async (
           return [el];
         } else if ("template" in el && !templates.has(el.template)) {
           templates.add(el.template);
-          const article = await fetchDocument(el.template, client);
-          if (!article) return [];
-          return await getFields(article.config);
+          const doc = await fetchDocument(el.template, client);
+          if (!doc) return [];
+          return await getFields(doc.config);
         }
         return [];
       })

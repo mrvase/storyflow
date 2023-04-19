@@ -218,6 +218,14 @@ export type CustomToken = {
   name: string;
 };
 
+export type StateToken = {
+  state: string;
+};
+
+export type LoopToken = {
+  loop: string;
+};
+
 export type ValueArray = (
   | string
   | number
@@ -228,8 +236,16 @@ export type ValueArray = (
   | FileToken
   | ColorToken
   | CustomToken
+  | StateToken
+  | LoopToken
   | ValueArray
 )[];
+
+export type ClientSyntaxTree = {
+  type: string;
+  children: (ValueArray | ClientSyntaxTree)[];
+  data?: any;
+};
 
 export type RenderElement =
   | NestedElement

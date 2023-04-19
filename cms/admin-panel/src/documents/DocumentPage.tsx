@@ -205,7 +205,7 @@ function Toolbar({ id }: { id: DocumentId }) {
 
 export function TemplateMenu({ id }: { id?: DocumentId }) {
   const templateFolder = useTemplateFolder()?._id;
-  const { articles: templates } = useOptimisticDocumentList(templateFolder);
+  const { documents: templates } = useOptimisticDocumentList(templateFolder);
 
   return (
     <Menu
@@ -232,70 +232,61 @@ export function TemplateMenu({ id }: { id?: DocumentId }) {
 export function DocumentPage({ children }: { children?: React.ReactNode }) {
   const route = useRoute();
   const segment = parseSegment<"document" | "template">(route);
-  let { article, histories, error } = useDocument(segment.id);
+  let { doc, histories, error } = useDocument(segment.id);
+
+  React.useEffect(() => {
+    console.log("DOC DOC DOC", doc);
+  }, [doc]);
 
   return (
     <>
-      {!error && article && (
-        <Page
-          key={getVersionKey(article.versions)}
-          // ^ needed to re-render useDocumentConfig to create new queue instance
-          // TODO: Handle new queue instance in a reactive effect instead.
-          // solution. Make queue forEach a pure function that I can use in
-          // createCollaborativeState to initialize state the basis of initial history.
-          // then I do not need the queue instance at render time, and I can move the
-          // initialization to an effect that reacts to version change and re-initializes.
-          // To check version change, I should see if the latest seen index of the first
-          // server package exceeds the version of the document. Then the first package
-          // has not been created up against the current document.
-          type={segment.type}
-          article={article}
-          histories={histories}
-        >
+      {!error && doc && (
+        <Page type={segment.type} doc={doc} histories={histories}>
           {children}
         </Page>
       )}
-      {!error && !article && <div className=""></div>}
+      {!error && !doc && <div className=""></div>}
     </>
   );
 }
 
 const Page = ({
   type,
-  article,
+  doc,
   histories,
   children,
 }: {
   type: "template" | "document";
-  article: DBDocument;
+  doc: DBDocument;
   histories: Record<string, ServerPackage<DocumentOperation>[]>;
   children: React.ReactNode;
 }) => {
-  const id = article._id;
+  const id = doc._id;
 
   const config = useDocumentConfig(id, {
-    config: article.config,
+    config: doc.config,
     history: histories[id] ?? [],
-    version: article.versions?.config ?? 0,
+    version: doc.versions?.config ?? 0,
   });
 
-  const folder = useFolder(article.folder);
+  const folder = useFolder(doc.folder);
   const isApp = folder?.type === "app";
 
   const templateId = folder?.template;
 
-  const owner = article;
+  const owner = doc;
 
-  const label = useDocumentLabel(article);
+  const label = useDocumentLabel(doc);
 
   const isModified = Object.keys(histories ?? {}).length > 0;
 
   const ctx = React.useMemo(
     () => ({
       id,
-      record: article.record,
+      record: doc.record,
+      versions: doc.versions,
     }),
-    [id, article.record]
+    [id, doc.record]
   );
 
   return (
@@ -303,26 +294,26 @@ const Page = ({
       <DocumentPageContext.Provider value={ctx}>
         <FocusOrchestrator>
           <DocumentContent
-            version={getVersionKey(article.versions)}
+            version={getVersionKey(doc.versions)}
             id={id}
             variant={type === "template" ? "template" : undefined}
-            folder={article?.folder}
+            folder={doc?.folder}
             label={label ?? "Ingen label"}
             isModified={isModified}
             toolbar={<Toolbar id={id} />}
           >
             <div className="pb-96 flex flex-col -mt-6">
               {isApp && !templateId && config.length === 0 && (
-                <TemplateSelect documentId={article._id} />
+                <TemplateSelect documentId={doc._id} />
               )}
               <ExtendTemplatePath template={owner._id}>
                 {templateId && (
                   <GetDocument id={templateId}>
-                    {(article) => (
+                    {(doc) => (
                       <RenderTemplate
                         key={getVersionKey(owner.versions)} // for rerendering
-                        id={article._id}
-                        config={article.config}
+                        id={doc._id}
+                        config={doc.config}
                         owner={owner._id}
                         versions={owner.versions}
                         histories={histories}
@@ -361,6 +352,7 @@ function TemplateSelect({ documentId }: { documentId: DocumentId }) {
         DEFAULT_TEMPLATES.redirectPage,
       ].map(({ label, _id }) => (
         <button
+          key={_id}
           className="rounded bg-button ring-button p-5 text-center"
           onClick={() => {
             push([
@@ -384,7 +376,7 @@ function TemplateSelect({ documentId }: { documentId: DocumentId }) {
 function SaveButton({ id, folder }: { id: DocumentId; folder: FolderId }) {
   const collab = useDocumentCollab();
   const [isLoading, setIsLoading] = React.useState(false);
-  const saveArticle = useSaveDocument(folder);
+  const saveDocument = useSaveDocument(folder);
 
   const { mutate: mutateUpdatedUrls } =
     SWRClient.documents.getUpdatedUrls.useQuery(
@@ -436,7 +428,7 @@ function SaveButton({ id, folder }: { id: DocumentId; folder: FolderId }) {
           if (isLoading) return;
           setIsLoading(true);
           await collab.sync(true);
-          const result = await saveArticle({ id, searchable });
+          const result = await saveDocument({ id, searchable });
           mutateUpdatedUrls();
           setIsLoading(false);
         }}

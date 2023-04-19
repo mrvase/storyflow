@@ -1,10 +1,8 @@
 import * as React from "react";
 import { ExtendPath, usePath, useSelectedPath } from "./contexts";
-import RenderElement, { IndexContext, SpreadContext } from "./RenderElement";
-import { log } from "./RenderBuilder";
+import RenderElement from "./RenderElement";
 import { Component, ValueArray } from "@storyflow/frontend/types";
 import { createRenderArray } from "@storyflow/frontend/render";
-// import { createRenderArray } from "../config/createRenderArray";
 import { ParseRichText } from "../src/ParseRichText";
 import { getLibraries, getLibraryConfigs } from "../config";
 import { getConfigByType } from "../config/getConfigByType";
@@ -23,10 +21,8 @@ const getDefaultComponent = (type: string) => {
 };
 
 export default function RenderChildren({ value }: { value: ValueArray }) {
-  const index = React.useContext(IndexContext);
-  const spread = React.useContext(SpreadContext);
-
   const renderArray = React.useMemo(() => {
+    /*
     let array: ValueArray = [];
     if (spread) {
       const valueAtIndex = value[index];
@@ -36,12 +32,13 @@ export default function RenderChildren({ value }: { value: ValueArray }) {
     } else {
       array = value;
     }
-    const configs = getLibraryConfigs();
     if (!value) return [];
-    return createRenderArray(array, (type: string) =>
+    */
+    const configs = getLibraryConfigs();
+    return createRenderArray(value, (type: string) =>
       Boolean(getConfigByType(type, configs)?.inline)
     );
-  }, [value, index]);
+  }, [value]);
 
   const createElement = ({ id, element }: { id: string; element: string }) => {
     return (

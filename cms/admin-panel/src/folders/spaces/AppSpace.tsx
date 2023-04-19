@@ -24,16 +24,16 @@ export function AppSpace({
 }) {
   const { form, handleDelete } = useDeleteForm({ folderId });
 
-  const { articles } = useOptimisticDocumentList(folderId);
+  const { documents } = useOptimisticDocumentList(folderId);
 
-  const { urls, addArticleWithUrl } = useAppPageContext();
+  const { urls, addDocumentWithUrl } = useAppPageContext();
 
   const rows = React.useMemo(
     () =>
-      articles
+      documents
         ? urls.map((el) => {
             const id = getDocumentId(el.id);
-            const doc = articles.find((a) => a._id === id)!;
+            const doc = documents.find((a) => a._id === id)!;
 
             return {
               id,
@@ -45,7 +45,7 @@ export function AppSpace({
                       className="ml-auto rounded px-2 py-0.5 text-sm text-gray-800 dark:text-white text-opacity-50 hover:text-opacity-100 dark:text-opacity-50 dark:hover:text-opacity-100 ring-button flex items-center gap-2 whitespace-nowrap"
                       onClick={(ev) => {
                         ev.stopPropagation();
-                        addArticleWithUrl(doc);
+                        addDocumentWithUrl(doc);
                       }}
                     >
                       <PlusIcon className="w-3 h-3" /> Tilføj underside
@@ -58,7 +58,7 @@ export function AppSpace({
             };
           })
         : [],
-    [articles, urls]
+    [documents, urls]
   );
 
   return (
@@ -67,7 +67,7 @@ export function AppSpace({
       label="Sider"
       buttons={<Space.Button icon={TrashIcon} onClick={handleDelete} />}
     >
-      {!articles && (
+      {!documents && (
         <div className="ml-9">
           <Loader size="md" />
         </div>
@@ -77,7 +77,7 @@ export function AppSpace({
         onSubmit={(ev) => ev.preventDefault()}
         className={cl(
           "transition-opacity duration-300",
-          !articles ? "opacity-0" : "opacity-100"
+          !documents ? "opacity-0" : "opacity-100"
         )}
       >
         <Table rows={rows} />

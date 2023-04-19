@@ -27,7 +27,10 @@ import { useDocument, useDocumentList } from "../documents";
 import { getDocumentLabel } from "../documents/useDocumentLabel";
 import cl from "clsx";
 import { useDocumentPageContext } from "../documents/DocumentPageContext";
-import { calculate, calculateFromRecord } from "@storyflow/backend/calculate";
+import {
+  calculate,
+  calculateRootFieldFromRecord,
+} from "@storyflow/backend/calculate";
 import { DEFAULT_FIELDS, isDefaultField } from "@storyflow/backend/fields";
 import { useDocumentIdGenerator } from "../id-generator";
 import { usePanel, useRoute } from "../panel-router/Routes";
@@ -49,19 +52,22 @@ const getUrlStringFromValue = (value: ValueArray | SyntaxTree) => {
   };
 
   return getString(
-    Array.isArray(value) ? value : calculate(value, () => undefined)
+    Array.isArray(value)
+      ? value
+      : calculate(value, () => undefined, { ignoreClientState: true })
+    // it should not be possible to have client state here anyway
   );
 };
 
-const useRelatedPages = (articleId: DocumentId, initialUrl: string) => {
-  const { article } = useDocument(articleId);
-  const { data: list } = useDocumentList(article?.folder);
+const useRelatedPages = (documentId: DocumentId, initialUrl: string) => {
+  const { doc } = useDocument(documentId);
+  const { data: list } = useDocumentList(doc?.folder);
 
-  const getUrl = (article: DBDocument) => {
+  const getUrl = (doc: DBDocument) => {
     return (
-      (calculateFromRecord(
-        createTemplateFieldId(article._id, DEFAULT_FIELDS.url.id),
-        article.record
+      (calculateRootFieldFromRecord(
+        createTemplateFieldId(doc._id, DEFAULT_FIELDS.url.id),
+        doc.record
       )[0] as string) ?? ""
     );
   };
@@ -70,11 +76,11 @@ const useRelatedPages = (articleId: DocumentId, initialUrl: string) => {
 
   const parents = slugs.map((_, i, arr) => {
     const path = `/${arr.slice(1, i + 1).join("/")}`;
-    return list?.articles.find((el) => getUrl(el) === path);
+    return list?.documents.find((el) => getUrl(el) === path);
   });
 
   const children =
-    list?.articles.filter((el) => {
+    list?.documents.filter((el) => {
       // "|| null" excludes the front page from being included among its on children
       const url = getUrl(el);
       if (url === "/") return false;
@@ -101,9 +107,9 @@ export default function UrlField({ id, version, history }: FieldProps) {
         transform: (a) => a,
       })
       .initialize(version, history ?? []);
-  }, [client]);
+  }, [collab, version]);
 
-  const { value } = useDefaultState(id);
+  const { value } = useDefaultState(id, version);
 
   const url = getUrlStringFromValue(value);
 
@@ -163,7 +169,7 @@ export default function UrlField({ id, version, history }: FieldProps) {
 
   const [parents, children] = useRelatedPages(
     documentId,
-    getUrlStringFromValue(calculateFromRecord(id, record))
+    getUrlStringFromValue(calculateRootFieldFromRecord(id, record))
   );
 
   React.useEffect(() => {
@@ -316,7 +322,7 @@ export default function UrlField({ id, version, history }: FieldProps) {
             <button
               className="group text-sm flex-center gap-2"
               onClick={() =>
-                ctx.addArticleWithUrl({
+                ctx.addDocumentWithUrl({
                   _id: documentId,
                   record,
                 })

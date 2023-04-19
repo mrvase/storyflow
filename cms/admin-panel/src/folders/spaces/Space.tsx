@@ -40,12 +40,7 @@ function Space({
           <DragIcon className="w-4 h-4 mr-5" />
         </div>
         <h2 className="text-gray-300 flex-center font-medium">{label}</h2>
-        <div
-          className={cl(
-            "ml-auto flex gap-2",
-            "opacity-50 group-hover/space:opacity-100 transition-opacity"
-          )}
-        >
+        <div className={cl("ml-auto flex gap-2", "transition-opacity")}>
           {buttons}
         </div>
       </div>

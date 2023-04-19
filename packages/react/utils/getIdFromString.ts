@@ -48,7 +48,7 @@ export const getIdFromString = (string: string): string => {
   numbers.reverse();
 
   const result = numbers.splice(0, 2);
-  result[1] ??= 0;
+  if (typeof result[1] !== "number") result[1] = 0;
 
   numbers.forEach((el, i) => {
     if (i % 2) {
