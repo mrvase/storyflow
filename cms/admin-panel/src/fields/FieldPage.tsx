@@ -24,11 +24,13 @@ import { useClientConfig } from "../client-config";
 import { createComponent } from "./Editor/createComponent";
 import { useDocumentMutate } from "../documents/collab/DocumentCollabContext";
 import { useDocumentPageContext } from "../documents/DocumentPageContext";
+import { fetchDocumentSync } from "../documents";
 import { Client, useClient } from "../client";
 import {
   computeFieldId,
   getDocumentId,
   getIdFromString,
+  getParentDocumentId,
   getRawDocumentId,
   getRawFieldId,
 } from "@storyflow/backend/ids";
@@ -470,23 +472,57 @@ const getRecordSnapshot = (
 ) => {
   const finalRecord: ValueRecord = {};
 
-  const recursivelyGetRecordFromComputation = (fieldId: FieldId) => {
-    const state = store.use<ValueArray | ClientSyntaxTree>(fieldId);
+  const documentId = getDocumentId(entry) as DocumentId;
 
-    if (!state.initialized()) {
-      const initialValue = record[fieldId] ?? DEFAULT_SYNTAX_TREE;
-      state.set(() =>
-        calculateFn(initialValue, {
-          record,
-          client,
-          documentId: getDocumentId(entry),
-        })
-      );
+  const recursivelyGetRecordFromComputation = (
+    fieldId: FieldId,
+    propDocumentId: DocumentId
+  ) => {
+    // calculating prop and its children
+
+    const prop = store.use<ValueArray | ClientSyntaxTree>(fieldId);
+
+    if (!prop.initialized()) {
+      let initialValue = record[fieldId];
+
+      if (!initialValue && propDocumentId !== documentId) {
+        fetchDocumentSync(propDocumentId, client).then((doc) => {
+          if (!doc) return undefined;
+          const value = doc.record[fieldId];
+          if (!value) return undefined;
+          prop.set(() => {
+            return calculateFn(value, {
+              record: doc.record,
+              client,
+              documentId: propDocumentId,
+            });
+          });
+        });
+        if (!prop.initialized()) {
+          // if not sync, we need to set it to empty array
+          prop.set(() => []);
+        }
+      } else {
+        prop.set(() =>
+          calculateFn(initialValue ?? DEFAULT_SYNTAX_TREE, {
+            record,
+            client,
+            documentId,
+          })
+        );
+      }
     }
 
-    const value = state.value!;
+    const value = prop.value!;
 
-    const getChildren = (value: ValueArray | ClientSyntaxTree): {} => {
+    const children = getChildren(value);
+
+    Object.assign(finalRecord, {
+      [fieldId]: value,
+      ...children,
+    });
+
+    function getChildren(value: ValueArray | ClientSyntaxTree): {} {
       let array: ValueArray = [];
 
       if (!Array.isArray(value)) {
@@ -549,7 +585,8 @@ const getRecordSnapshot = (
             return Object.assign(
               acc,
               recursivelyGetRecordFromComputation(
-                computeFieldId(element.id, getIdFromString(key))
+                computeFieldId(element.id, getIdFromString(key)),
+                getParentDocumentId(element.id)
               )
             );
           }, {});
@@ -559,17 +596,10 @@ const getRecordSnapshot = (
           return acc;
         }
       }, {});
-    };
-
-    const children = getChildren(value);
-
-    Object.assign(finalRecord, {
-      [fieldId]: value,
-      ...children,
-    });
+    }
   };
 
-  recursivelyGetRecordFromComputation(entry);
+  recursivelyGetRecordFromComputation(entry, documentId);
 
   return finalRecord;
 };

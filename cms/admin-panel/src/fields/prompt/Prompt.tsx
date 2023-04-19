@@ -102,6 +102,11 @@ export function Prompt({
         const p = $createParagraphNode();
         p.append($createTextNode("/"));
         $replaceWithBlocks([p]);
+      } else if (node.getTextContent() === "\uFEFF\uFEFF@") {
+        node.select(0, 3);
+        const p = $createParagraphNode();
+        p.append($createTextNode("@"));
+        $replaceWithBlocks([p]);
       }
     });
   }, [editor, libraries]);

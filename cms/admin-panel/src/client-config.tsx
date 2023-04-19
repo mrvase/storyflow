@@ -155,7 +155,7 @@ export function ClientConfigProvider({
                   "http://localhost:3002/api/config",
                 "https://www.paaskelejr.dk/api/config":
                   "http://localhost:3003/api/config",
-                "https://semper-magasin.vercel.app/api/config":
+                "https://www.sempermagasin.dk/api/config":
                   "http://localhost:3003/api/config",
               }[configUrl] ?? configUrl;
           }
