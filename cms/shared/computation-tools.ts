@@ -12,6 +12,7 @@ import {
   NestedElement,
   NestedFolder,
   Transform,
+  ClientSyntaxTree,
 } from "@storyflow/backend/types";
 import { FieldOperation, isSpliceAction, isToggleAction } from "./operations";
 import { tools } from "./editor-tools";
@@ -244,7 +245,7 @@ export type ComputationGraph = {
   children: Map<FieldId, FieldId[]>;
 };
 
-export const getChildrenDocuments = (value: SyntaxTree) => {
+export const getChildrenDocuments = (value: SyntaxTree | ClientSyntaxTree) => {
   const children = new Set<
     NestedField | NestedElement | NestedFolder | NestedDocument
   >();

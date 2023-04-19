@@ -21,6 +21,7 @@ import {
   FieldId,
   NestedDocument,
   NestedDocumentId,
+  NestedElement,
   NestedFolder,
   RawFieldId,
   SyntaxTree,
@@ -30,7 +31,12 @@ import {
 import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
 import { ObjectId } from "mongodb";
 import { parseDocument } from "../routes/documents";
-import { getFieldRecord, getGraph } from "shared/computation-tools";
+import {
+  getChildrenDocuments,
+  getFieldRecord,
+  getGraph,
+  getSyntaxTreeEntries,
+} from "shared/computation-tools";
 import {
   computeFieldId,
   createRawTemplateFieldId,
@@ -39,8 +45,10 @@ import {
   getIdFromString,
   getRawDocumentId,
   getRawFieldId,
+  isFieldOfDocument,
 } from "@storyflow/backend/ids";
 import util from "node:util";
+import { tokens } from "@storyflow/backend/tokens";
 
 const sessionStorage = createSessionStorage({
   cookie: cookieOptions,
@@ -110,13 +118,15 @@ const createElementRecordGetter = (
   dbName: string,
   context: Record<string, ValueArray>
 ) => {
-  const graph = getGraph(docRecord);
+  const superRecord = { ...docRecord };
 
   return async (fieldId: FieldId) => {
+    /*
     const nestedFields = getFieldRecord(docRecord, fieldId, {
       children: graph.children,
       imports: new Map(), // do not include imports in record
     });
+    */
 
     let record: Record<FieldId, ValueArray | ClientSyntaxTree> = {};
 
@@ -127,7 +137,6 @@ const createElementRecordGetter = (
       Record<RawFieldId, ValueArray>[]
     >();
     let fetchResults = new Map<NestedFolder, NestedDocument[]>();
-    let fetchedFields = new Map<FieldId, SyntaxTree>();
 
     const resolveFetches = async (fetches: FolderFetch[]) => {
       await calculateFilters(fetches);
@@ -159,8 +168,8 @@ const createElementRecordGetter = (
           articles.forEach((el) => {
             list.push({ id: el._id });
             Object.entries(el.record).forEach(([key, value]) => {
-              if (!fetchedFields.has(key as FieldId)) {
-                fetchedFields.set(key as FieldId, value);
+              if (!(key in superRecord)) {
+                superRecord[key as FieldId] = value;
               }
             });
           });
@@ -230,25 +239,52 @@ const createElementRecordGetter = (
           getState
         );
       } else {
-        if (importer in docRecord) {
-          return calculate(docRecord[importer], getState);
-        }
-        const value = fetchedFields.get(importer);
-        if (value) {
-          return calculate(value, getState);
+        if (importer in superRecord) {
+          return calculate(superRecord[importer], getState);
         }
         return [];
       }
     };
 
     const calculateAsync = async () => {
+      const entry = docRecord[fieldId];
+
       const oldFetches = [...fetchRequests];
 
-      record = Object.fromEntries(
-        Object.entries(nestedFields).map(([key, tree]) => {
-          return [key as FieldId, calculate(tree, getState)];
-        })
-      );
+      const superEntries = getSyntaxTreeEntries(superRecord);
+      const relevantEntries = [] as typeof superEntries;
+
+      relevantEntries.push([fieldId, entry]);
+
+      const newRecord: Record<FieldId, ValueArray | ClientSyntaxTree> = {};
+
+      const addNestedElementProps = (tree: ValueArray | ClientSyntaxTree) => {
+        const children = (
+          Array.isArray(tree) ? tree : getChildrenDocuments(tree)
+        ).filter((el): el is NestedElement => tokens.isNestedElement(el));
+
+        children.forEach((doc) => {
+          superEntries.forEach((entry) => {
+            if (
+              isFieldOfDocument(entry[0], doc.id) &&
+              !relevantEntries.some(([key]) => key === entry[0])
+            ) {
+              relevantEntries.push(entry);
+            }
+          });
+        });
+      };
+
+      let i = 0;
+      while (i < relevantEntries.length) {
+        const [key, tree] = relevantEntries[i];
+        const result = calculate(tree, getState);
+        addNestedElementProps(result);
+        newRecord[key] = result;
+        i++;
+      }
+
+      record = newRecord;
 
       const newFetches = fetchRequests.filter((el) => !oldFetches.includes(el));
 
