@@ -235,7 +235,7 @@ function RefreshButton({
     <>
       {number > 0 && (
         <span
-          title={(data ?? []).map((el) => `/${el}`).join(", ")}
+          title={(data ?? []).join(", ")}
           className="text-xs opacity-50 ml-5 cursor-default hover:underline"
         >
           {number} {number === 1 ? "side" : "sider"} ændret

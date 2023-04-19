@@ -457,6 +457,14 @@ export const documents = createRoute({
       const articles = await db
         .collection<DBDocumentRaw>("documents")
         .find({
+          ...(namespace
+            ? { folder: new ObjectId(namespace) }
+            : {
+                [`values.${createRawTemplateFieldId(DEFAULT_FIELDS.url.id)}`]: {
+                  $exists: true,
+                },
+              }),
+          /*
           $or: [
             {
               folder,
@@ -481,15 +489,31 @@ export const documents = createRoute({
                 { $gt: lastBuildCounter },
             },
           ],
+          */
         })
         .toArray();
 
-      const urls = articles.map(
-        (el) =>
-          el.values[
-            createRawTemplateFieldId(DEFAULT_FIELDS.url.id)
-          ][0] as string
-      );
+      const fields = [
+        DEFAULT_FIELDS.layout.id,
+        DEFAULT_FIELDS.url.id,
+        DEFAULT_FIELDS.page.id,
+        DEFAULT_FIELDS.label.id,
+      ].map((el) => createRawTemplateFieldId(el));
+
+      const layoutUpdates = articles
+        .filter((el) => el.updated[fields[0]] > lastBuildCounter)
+        .map((el) => el.values[fields[1]][0] as string);
+
+      const urls = articles.reduce((acc: string[], el) => {
+        const url = el.values[fields[1]][0] as string;
+        const shouldUpdate =
+          fields.some((field) => el.updated[field] > lastBuildCounter) ||
+          layoutUpdates.some((el) => url.startsWith(el));
+        if (shouldUpdate) {
+          acc.push(url);
+        }
+        return acc;
+      }, []);
 
       console.log("REVALIDATE", urls);
 
