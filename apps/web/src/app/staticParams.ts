@@ -3,7 +3,7 @@ import { options } from "./options";
 
 export const staticParams = async (depth: number) => {
   const paths = (await requestPaths(options)).filter(
-    (el) => el !== "" && el.split("/").length - 1 === depth
+    (el) => el !== "/" && el.split("/").length - 1 === depth
   );
 
   return paths.map((url) => {
