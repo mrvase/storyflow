@@ -14,7 +14,7 @@ import {
 import { ParseRichText } from "../src/ParseRichText";
 import { extendPath } from "../utils/extendPath";
 import { getDefaultComponent } from "../utils/getDefaultComponent";
-import { getIdFromString } from "../utils/getIdsFromString";
+import { getIdFromString } from "../utils/getIdFromString";
 import { calculateClient } from "../utils/clientCalculate";
 
 const getImageObject = (name: string, url: string) => {

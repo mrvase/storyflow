@@ -20,7 +20,7 @@ import {
 import { getLibraries, getLibraryConfigs } from "../config";
 import { extendPath } from "../utils/extendPath";
 import RenderChildren from "./RenderChildren";
-import { getIdFromString } from "../utils/getIdsFromString";
+import { getIdFromString } from "../utils/getIdFromString";
 import { NoEditor } from "./editor";
 import { calculateClient } from "../utils/clientCalculate";
 
