@@ -1,5 +1,5 @@
 import React from "react";
-import { FieldProps } from "../RenderField";
+import type { FieldProps } from "../RenderField";
 import { createTokenStreamTransformer } from "shared/computation-tools";
 import { useDocumentPageContext } from "../../documents/DocumentPageContext";
 import { getDocumentId, getRawFieldId } from "@storyflow/backend/ids";

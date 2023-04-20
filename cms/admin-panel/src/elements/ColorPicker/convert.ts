@@ -6,7 +6,7 @@ import {
   HsvaColor,
   HsvColor,
 } from "./types";
-import { round } from "./utils";
+import { equalColorObjects, round } from "./utils";
 
 const angleUnits: Record<string, number> = {
   grad: 360 / 400,
@@ -214,4 +214,11 @@ export const hslaToHsl = ({ h, s, l }: HslaColor): HslColor => ({ h, s, l });
 export const hsvaToHsv = (hsva: HsvaColor): HsvColor => {
   const { h, s, v } = roundHsva(hsva);
   return { h, s, v };
+};
+
+export const equalHex = (first: string, second: string): boolean => {
+  if (first.toLowerCase() === second.toLowerCase()) return true;
+
+  // To compare colors like `#FFF` and `ffffff` we convert them into RGB objects
+  return equalColorObjects(hexToRgba(first), hexToRgba(second));
 };

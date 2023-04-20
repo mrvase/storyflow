@@ -31,7 +31,7 @@ import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
 import { calculateRootFieldFromRecord } from "@storyflow/backend/calculate";
 import { AppPageContext } from "./AppPageContext";
 import { usePanel, useRoute } from "../panel-router/Routes";
-import { parseSegment } from "../layout/components/routes";
+import { parseSegment } from "../layout/components/parseSegment";
 import { FocusOrchestrator } from "../utils/useIsFocused";
 
 export default function AppPage({ children }: { children?: React.ReactNode }) {

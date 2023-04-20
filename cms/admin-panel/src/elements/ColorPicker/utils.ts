@@ -1,5 +1,4 @@
 import React from "react";
-import { hexToRgba } from "./convert";
 import { HsvaColor, RgbaColor } from "./types";
 
 export const clamp = (number: number, min = 0, max = 1): number => {
@@ -41,11 +40,4 @@ export const equalColorObjects = (
   }
 
   return true;
-};
-
-export const equalHex = (first: string, second: string): boolean => {
-  if (first.toLowerCase() === second.toLowerCase()) return true;
-
-  // To compare colors like `#FFF` and `ffffff` we convert them into RGB objects
-  return equalColorObjects(hexToRgba(first), hexToRgba(second));
 };

@@ -1,5 +1,5 @@
 import React from "react";
-import { FieldProps } from "./RenderField";
+import type { FieldProps } from "./RenderField";
 import { useGlobalContext } from "../state/context";
 import { addContext, addImport } from "../custom-events";
 import { useClient } from "../client";

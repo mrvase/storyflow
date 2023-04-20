@@ -51,7 +51,7 @@ import { DefaultField } from "./default/DefaultField";
 import { FieldIdContext } from "./FieldIdContext";
 import { EditorFocusProvider } from "../editor/react/useIsFocused";
 import { useRoute } from "../panel-router/Routes";
-import { parseSegment } from "../layout/components/routes";
+import { parseSegment } from "../layout/components/parseSegment";
 import { splitStreamByBlocks } from "./Editor/transforms";
 import { FieldOperation } from "shared/operations";
 import { VersionProvider } from "./default/VersionContext";

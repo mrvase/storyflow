@@ -1,7 +1,7 @@
 import React from "react";
-import { hexToHsva, hsvaToHex } from "./convert";
+import { hexToHsva, hsvaToHex, equalHex } from "./convert";
 import { HsvaColor } from "./types";
-import { equalColorObjects, equalHex, useEventCallback } from "./utils";
+import { equalColorObjects, useEventCallback } from "./utils";
 
 export function useColorManipulation(
   color: string,

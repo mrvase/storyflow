@@ -20,7 +20,6 @@ import {
   useDocumentMutate,
 } from "./collab/DocumentCollabContext";
 import { ServerPackage } from "@storyflow/state";
-import { getVersionKey } from "./DocumentPage";
 import { GetDocument } from "./GetDocument";
 import { ExtendTemplatePath } from "./TemplatePathContext";
 import { TopFieldIndexProvider } from "./FieldIndexContext";
@@ -201,7 +200,7 @@ export function RenderTemplate({
           <GetDocument id={fieldConfig.template}>
             {(doc) => (
               <RenderTemplate
-                key={getVersionKey(versions)} // for rerendering
+                // key={getVersionKey(versions)} // for rerendering
                 id={doc._id}
                 owner={owner}
                 config={doc.config}

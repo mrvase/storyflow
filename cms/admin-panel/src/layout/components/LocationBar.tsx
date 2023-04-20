@@ -15,7 +15,7 @@ import { PanelData } from "../../panel-router/types";
 import { usePanel } from "../../panel-router/Routes";
 import { usePanelActions } from "../../panel-router/PanelRouter";
 import { useDragItem } from "@storyflow/dnd";
-import { parseSegment } from "./routes";
+import { parseSegment } from "./parseSegment";
 import { useOptimisticDocumentList, useDocument } from "../../documents";
 import { useLabel } from "../../documents/collab/hooks";
 import { useDocumentLabel } from "../../documents/useDocumentLabel";

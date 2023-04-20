@@ -44,11 +44,11 @@ import {
 import { SWRClient } from "../client";
 import { ExtendTemplatePath } from "./TemplatePathContext";
 import { useRoute } from "../panel-router/Routes";
-import { parseSegment } from "../layout/components/routes";
+import { parseSegment } from "../layout/components/parseSegment";
 import { Menu } from "../layout/components/Menu";
 import { DocumentOperation } from "shared/operations";
 
-export const getVersionKey = (versions?: Record<RawFieldId, number>) => {
+const getVersionKey = (versions?: Record<RawFieldId, number>) => {
   if (!versions) return -1;
   const values = Object.values(versions);
   if (!values.length) return -1;
@@ -311,7 +311,7 @@ const Page = ({
                   <GetDocument id={templateId}>
                     {(doc) => (
                       <RenderTemplate
-                        key={getVersionKey(owner.versions)} // for rerendering
+                        // key={getVersionKey(owner.versions)} // for rerendering
                         id={doc._id}
                         config={doc.config}
                         owner={owner._id}
@@ -324,7 +324,7 @@ const Page = ({
                 )}
               </ExtendTemplatePath>
               <RenderTemplate
-                key={getVersionKey(owner.versions)} // for rerendering
+                // key={getVersionKey(owner.versions)} // for rerendering
                 id={owner._id}
                 config={config}
                 owner={owner._id}

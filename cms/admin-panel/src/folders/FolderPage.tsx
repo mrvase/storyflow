@@ -28,7 +28,7 @@ import { FolderContext } from "./FolderPageContext";
 import { useFieldFocus } from "../field-focus";
 import { addNestedFolder } from "../custom-events";
 import { usePanel, useRoute } from "../panel-router/Routes";
-import { parseSegment } from "../layout/components/routes";
+import { parseSegment } from "../layout/components/parseSegment";
 import { Menu } from "../layout/components/Menu";
 import { FocusOrchestrator } from "../utils/useIsFocused";
 
