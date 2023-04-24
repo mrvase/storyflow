@@ -1,12 +1,12 @@
-import { extendPath } from "@storyflow/backend/extendPath";
 import { computeFieldId, getIdFromString } from "@storyflow/backend/ids";
-import { FieldId, NestedDocumentId } from "@storyflow/backend/types";
+import { NestedDocumentId } from "@storyflow/backend/types";
 import {
   PropConfig,
   PropConfigArray,
   PropGroup,
   RegularOptions,
 } from "@storyflow/frontend/types";
+import { extendPath } from "./extendPath";
 
 export function flattenProps<T = PropConfig<RegularOptions>>(
   props: PropConfigArray<RegularOptions>,

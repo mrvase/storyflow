@@ -6,7 +6,6 @@ import {
   PlusIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
-import { extendPath } from "@storyflow/backend/extendPath";
 import { DEFAULT_FIELDS, DEFAULT_TEMPLATES } from "@storyflow/backend/fields";
 import { getTemplateDocumentId } from "@storyflow/backend/ids";
 import {
@@ -47,6 +46,7 @@ import { useRoute } from "../panel-router/Routes";
 import { parseSegment } from "../layout/components/parseSegment";
 import { Menu } from "../layout/components/Menu";
 import { DocumentOperation } from "shared/operations";
+import { extendPath } from "../utils/extendPath";
 
 const getVersionKey = (versions?: Record<RawFieldId, number>) => {
   if (!versions) return -1;

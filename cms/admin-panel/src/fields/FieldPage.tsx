@@ -14,10 +14,7 @@ import {
   SyntaxTree,
   ValueArray,
   ClientSyntaxTree,
-  NestedDocumentId,
-  NestedField,
 } from "@storyflow/backend/types";
-import { extendPath } from "@storyflow/backend/extendPath";
 import Content from "../layout/components/Content";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { useClientConfig } from "../client-config";
@@ -31,7 +28,6 @@ import {
   getDocumentId,
   getIdFromString,
   getParentDocumentId,
-  getRawDocumentId,
   getRawFieldId,
 } from "@storyflow/backend/ids";
 import { ComponentConfig, LibraryConfig } from "@storyflow/frontend/types";
@@ -55,6 +51,7 @@ import { parseSegment } from "../layout/components/parseSegment";
 import { splitStreamByBlocks } from "./Editor/transforms";
 import { FieldOperation } from "shared/operations";
 import { VersionProvider } from "./default/VersionContext";
+import { extendPath } from "../utils/extendPath";
 
 const useBuilderRendered = ({
   listeners,

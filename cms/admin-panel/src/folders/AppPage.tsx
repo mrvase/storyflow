@@ -253,7 +253,7 @@ function RefreshButton({
             if (revalidateUrl && data?.length) {
               setIsLoading(true);
               const result = await fetch(revalidateUrl, {
-                body: JSON.stringify(data.map((el) => `/${el}`)),
+                body: JSON.stringify(data),
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
               }).then((res) => res.json());

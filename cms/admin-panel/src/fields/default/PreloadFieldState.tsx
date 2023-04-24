@@ -11,7 +11,6 @@ import {
   NestedFolder,
   RawDocumentId,
 } from "@storyflow/backend/types";
-import { extendPath } from "@storyflow/backend/extendPath";
 import { getConfigFromType, useClientConfig } from "../../client-config";
 import { useTemplate } from "./useFieldTemplate";
 import {
@@ -27,6 +26,7 @@ import { useDefaultState } from "./useDefaultState";
 import { splitTransformsAndRoot } from "@storyflow/backend/transform";
 import { useLoopTemplate } from "./LoopTemplateContext";
 import { useFieldVersion } from "./VersionContext";
+import { extendPath } from "../../utils/extendPath";
 
 const noTemplate: FieldConfig[] = [];
 

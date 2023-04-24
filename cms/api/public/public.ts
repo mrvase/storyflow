@@ -20,11 +20,9 @@ import {
   DBDocumentRaw,
   FieldId,
   NestedDocument,
-  NestedDocumentId,
   NestedElement,
   NestedFolder,
   RawFieldId,
-  SyntaxTree,
   SyntaxTreeRecord,
   ValueArray,
 } from "@storyflow/backend/types";
@@ -33,16 +31,11 @@ import { ObjectId } from "mongodb";
 import { parseDocument } from "../routes/documents";
 import {
   getChildrenDocuments,
-  getFieldRecord,
-  getGraph,
   getSyntaxTreeEntries,
 } from "shared/computation-tools";
 import {
-  computeFieldId,
   createRawTemplateFieldId,
   createTemplateFieldId,
-  getDocumentId,
-  getIdFromString,
   getRawDocumentId,
   getRawFieldId,
   isFieldOfDocument,
@@ -114,7 +107,7 @@ const authorization = async (ctx: MiddlewareContext) => {
   };
 };
 
-const createElementRecordGetter = (
+const createFieldRecordGetter = (
   docRecord: SyntaxTreeRecord,
   dbName: string,
   context: Record<string, ValueArray>
@@ -348,15 +341,13 @@ export const public_ = createRoute({
           .map((el, index) => [`param${index}`, [el]])
       );
 
-      const getElementRecord = createElementRecordGetter(doc.record, dbName, {
+      const getFieldRecord = createFieldRecordGetter(doc.record, dbName, {
         ...params,
       });
 
       const [pageRecord, layoutRecord] = await Promise.all([
-        getElementRecord(
-          createTemplateFieldId(doc._id, DEFAULT_FIELDS.page.id)
-        ),
-        getElementRecord(
+        getFieldRecord(createTemplateFieldId(doc._id, DEFAULT_FIELDS.page.id)),
+        getFieldRecord(
           createTemplateFieldId(doc._id, DEFAULT_FIELDS.layout.id)
         ),
       ]);
@@ -453,9 +444,7 @@ export const public_ = createRoute({
             );
             const tree = record[fieldId];
 
-            const toUrl = (slug: string) => {
-              return `${url.slice(0, -1)}${slug}`;
-            };
+            const toUrl = (slug: string) => `${url.slice(0, -1)}${slug}`;
 
             if (
               tree.children.every((el): el is string => typeof el === "string")
@@ -476,15 +465,11 @@ export const public_ = createRoute({
               data: createRawTemplateFieldId(DEFAULT_FIELDS.slug.id),
             };
 
-            const getElementRecord = createElementRecordGetter(
-              record,
-              dbName,
-              {}
-            );
+            const getFieldRecord = createFieldRecordGetter(record, dbName, {});
 
             const slugs =
               (
-                await getElementRecord(
+                await getFieldRecord(
                   createTemplateFieldId(_id, DEFAULT_FIELDS.params.id)
                 )
               )?.entry ?? [];

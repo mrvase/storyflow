@@ -69,6 +69,7 @@ function Decorator({
               selectClick.current = true;
             }
           }}
+          /*
           onClick={() => {
             if (
               isSelected &&
@@ -80,6 +81,7 @@ function Decorator({
             }
             selectClick.current = false;
           }}
+          */
         >
           <div className="flex w-full py-1 text-sm selection:bg-transparent">
             <div className="w-11 flex-center shrink-0">
