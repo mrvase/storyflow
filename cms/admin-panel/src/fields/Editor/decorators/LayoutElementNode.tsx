@@ -6,6 +6,7 @@ import {
   FieldId,
   NestedDocumentId,
   NestedElement,
+  SyntaxTree,
 } from "@storyflow/backend/types";
 import { getConfigFromType, useClientConfig } from "../../../client-config";
 import {
@@ -14,6 +15,7 @@ import {
   ChevronUpDownIcon,
   CodeBracketSquareIcon,
   CubeIcon,
+  EllipsisHorizontalIcon,
   WindowIcon,
 } from "@heroicons/react/24/outline";
 import {
@@ -32,13 +34,25 @@ import {
 } from "../../Attributes";
 import { ExtendPath, usePath, useSelectedPath } from "../../Path";
 import { PropConfig, RegularOptions } from "@storyflow/frontend/types";
-import { flattenProps } from "../../../utils/flattenProps";
+import { flattenPropsWithIds } from "../../../utils/flattenProps";
 import { DefaultField } from "../../default/DefaultField";
-import { computeFieldId, getIdFromString } from "@storyflow/backend/ids";
+import { getIdFromString } from "@storyflow/backend/ids";
 import { useEditorContext } from "../../../editor/react/EditorProvider";
 import $createRangeSelection from "../../../editor/createRangeSelection";
+import { useGlobalState } from "../../../state/state";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
+import { tokens } from "@storyflow/backend/tokens";
+import { traverseSyntaxTree } from "shared/computation-tools";
 
-const TopLevelContext = React.createContext(true);
+const LevelContext = React.createContext(0);
+
+const LevelProvider = ({ children }: { children?: React.ReactNode }) => {
+  return (
+    <LevelContext.Provider value={React.useContext(LevelContext) + 1}>
+      {children}
+    </LevelContext.Provider>
+  );
+};
 
 function Decorator({
   value,
@@ -47,7 +61,7 @@ function Decorator({
   value: NestedElement;
   nodeKey: string;
 }) {
-  const isTopLevel = React.useContext(TopLevelContext);
+  const isDeep = React.useContext(LevelContext) > 0;
 
   const isFocused = useIsFocused();
 
@@ -60,20 +74,7 @@ function Decorator({
   const { libraries } = useClientConfig();
   const config = getConfigFromType(value.element, libraries);
 
-  const libraryLabel = libraries.find(
-    (el) => el.name === value.element.split(":")[0]
-  )?.label;
-
-  let props = flattenProps(value.id, config?.props ?? []);
-
-  if (props.length) {
-    props.push({
-      name: "key",
-      id: computeFieldId(value.id, getIdFromString("key")),
-      label: "Generer liste",
-      type: "string",
-    });
-  }
+  let props = flattenPropsWithIds(value.id, config?.props ?? []);
 
   const Icon =
     value.element === "Loop"
@@ -81,6 +82,10 @@ function Decorator({
       : value.element === "Outlet"
       ? WindowIcon
       : CubeIcon;
+
+  const firstIsChildren = props[0]?.type === "children";
+
+  const hide = isDeep && firstIsChildren;
 
   return (
     <AttributesProvider>
@@ -112,14 +117,14 @@ function Decorator({
             <div className="overflow-x-auto no-scrollbar mx-3">
               <Attributes
                 entity={value}
-                hideAsDefault={!isTopLevel}
+                hideAsDefault={hide}
                 color={value.element.indexOf(":") > 0 ? "yellow" : "red"}
               />
             </div>
             <div className="ml-auto">
               <button
                 tabIndex={-1}
-                className="w-5 h-5 flex-center rounded-full bg-gray-800 hover:bg-gray-700 transition-colors"
+                className="w-5 h-5 flex-center rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 transition-colors"
                 onClick={() => {
                   setPath(() => [...selectedPath, ...path, value.id]);
                 }}
@@ -128,7 +133,11 @@ function Decorator({
               </button>
             </div>
           </div>
-          <PrimaryProp documentId={value.id} props={props} />
+          <PrimaryProp
+            documentId={value.id}
+            props={props}
+            isLoop={value.element === "Loop"}
+          />
         </FocusContainer>
       </EditorFocusProvider>
     </AttributesProvider>
@@ -199,7 +208,7 @@ function FocusContainer({
         "relative cursor-default",
         "rounded",
         ring,
-        isFocused ? "bg-gray-800" : "bg-gray-850",
+        "bg-white dark:bg-gray-850", // isFocused ? "bg-gray-50 dark:bg-gray-800" :
         "transition-[background-color,box-shadow]"
       )}
     >
@@ -208,35 +217,82 @@ function FocusContainer({
   );
 }
 
+function useParentPropConfig() {
+  const [{ selectedPath }] = useSelectedPath();
+  const path = usePath();
+  const fullPath = React.useMemo(
+    () => [...selectedPath, ...path],
+    [selectedPath, path]
+  );
+  const parentFieldId = fullPath[fullPath.length - 3];
+  const documentId = fullPath[fullPath.length - 2] as NestedDocumentId;
+  const fieldId = fullPath[fullPath.length - 1];
+  let element: string | undefined;
+  traverseSyntaxTree(
+    useGlobalState<SyntaxTree>(`${parentFieldId}#tree`)[0] ??
+      DEFAULT_SYNTAX_TREE,
+    (item) => {
+      if (tokens.isNestedElement(item) && item.id === documentId) {
+        element = item.element;
+      }
+    }
+  );
+  const { libraries } = useClientConfig();
+  const config = element ? getConfigFromType(element, libraries) : undefined;
+  if (!config) return;
+  return flattenPropsWithIds(documentId, config.props).find(
+    (el) => el.id === fieldId
+  );
+}
+
 function PrimaryProp({
   documentId,
   props,
+  isLoop,
 }: {
   documentId: NestedDocumentId;
   props: (PropConfig<RegularOptions> & { id: FieldId })[];
+  isLoop?: boolean;
 }) {
   const [propId] = useAttributesContext();
 
   const config = props.find((el) => el.id === propId);
 
+  const parentPropConfig = useParentPropConfig();
+
   if (!config) {
-    return null;
+    return props.length ? (
+      <div className="text-gray-400 pl-11 -mt-2 pb-1 pointer-events-none">
+        <EllipsisHorizontalIcon className="w-4 h-4" />
+      </div>
+    ) : null;
+  }
+
+  let options: RegularOptions | undefined =
+    "options" in config ? config.options : undefined;
+
+  if (isLoop) {
+    options = parentPropConfig?.options;
   }
 
   return (
     <ExtendPath id={documentId} type="document">
       <ExtendPath id={config.id} type="field">
-        <TopLevelContext.Provider key={config.id} value={false}>
+        <LevelProvider key={config.id}>
           <FieldRestrictionsContext.Provider value={config.type}>
-            <FieldOptionsContext.Provider
-              value={"options" in config ? config.options ?? null : null}
-            >
+            <FieldOptionsContext.Provider value={options ?? null}>
               <div className="cursor-auto pl-[2.875rem] pr-2.5">
-                <DefaultField id={config.id} showPromptButton />
+                <DefaultField
+                  id={config.id}
+                  showPromptButton
+                  showTemplateHeader={config.id.endsWith(
+                    getIdFromString("data")
+                  )}
+                />
               </div>
             </FieldOptionsContext.Provider>
           </FieldRestrictionsContext.Provider>
-        </TopLevelContext.Provider>
+        </LevelProvider>
       </ExtendPath>
     </ExtendPath>
   );

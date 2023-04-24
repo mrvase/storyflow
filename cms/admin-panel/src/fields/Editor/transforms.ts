@@ -59,7 +59,6 @@ import { $createFileNode } from "./decorators/FileNode";
 import { $createColorNode } from "./decorators/ColorNode";
 import { $createCommaNode } from "./decorators/CommaNode";
 import { $createBracketNode } from "./decorators/BracketNode";
-import { $createLoopNode } from "./decorators/LoopNode";
 
 export const isInlineElement = (
   libraries: LibraryConfig[],
@@ -457,9 +456,6 @@ export const $createInlinesFromStream = (
       acc.push(node);
     } else if (tokens.isColorToken(el)) {
       const node = $createColorNode(el);
-      acc.push(node);
-    } else if (tokens.isLoopToken(el)) {
-      const node = $createLoopNode(el);
       acc.push(node);
     } else if (tokens.isCustomToken(el)) {
       const node = $createCustomTokenNode(el);

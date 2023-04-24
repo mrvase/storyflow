@@ -7,6 +7,7 @@ import {
   TokenStream,
   Transform,
   ClientSyntaxTree,
+  RawDocumentId,
 } from "@storyflow/backend/types";
 import { getDocumentId, getRawFieldId } from "@storyflow/backend/ids";
 import { useFieldId } from "../FieldIdContext";
@@ -135,5 +136,24 @@ export function useDefaultState(id: FieldId, version: number) {
 
   const isPrimitive = Array.isArray(value) && value[0] === tree.children[0];
 
-  return { target, initialValue, tree, value, isPrimitive };
+  const transforms = React.useMemo(() => {
+    return splitTransformsAndRoot(tree)[0];
+  }, [tree]);
+
+  const templateId =
+    id === rootId
+      ? useFieldConfig(rootId)[0]?.template
+      : (transforms.find((el) => el.type === "template")?.data as
+          | RawDocumentId
+          | undefined);
+
+  return {
+    target,
+    initialValue,
+    tree,
+    value,
+    isPrimitive,
+    transforms,
+    templateId,
+  };
 }

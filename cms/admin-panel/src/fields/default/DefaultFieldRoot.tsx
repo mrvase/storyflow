@@ -1,5 +1,4 @@
 import React from "react";
-import type { FieldProps } from "../RenderField";
 import { createTokenStreamTransformer } from "shared/computation-tools";
 import { useDocumentPageContext } from "../../documents/DocumentPageContext";
 import { getDocumentId, getRawFieldId } from "@storyflow/backend/ids";
@@ -10,6 +9,7 @@ import { useAttributesContext } from "../Attributes";
 import { ExtendPath } from "../Path";
 import { FieldOperation } from "shared/operations";
 import { VersionProvider } from "./VersionContext";
+import { FieldProps } from "../types";
 
 export function DefaultFieldRoot({ id, version, history }: FieldProps) {
   /*

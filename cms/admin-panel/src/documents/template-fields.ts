@@ -12,6 +12,7 @@ import {
 import {
   createTemplateFieldId,
   getDocumentId,
+  getIdFromString,
   getRawDocumentId,
   isNestedDocumentId,
   replaceDocumentId,
@@ -32,6 +33,14 @@ export const copyRecord = (
 ) => {
   const newNestedIds = new Map<RawDocumentId, NestedDocumentId>();
 
+  const getNewNestedId = (oldRaw: RawDocumentId) => {
+    const existing = newNestedIds.get(oldRaw);
+    if (existing) return existing;
+    const newId = options.generateNestedDocumentId();
+    newNestedIds.set(oldRaw, newId);
+    return newId;
+  };
+
   const getNewKey = (key: FieldId) => {
     if (getDocumentId(key) !== options.oldDocumentId) return key;
     return options.generateTemplateFieldId!(key);
@@ -41,6 +50,7 @@ export const copyRecord = (
     getSyntaxTreeEntries(originalRecord).map(([key, value]) => {
       // fix template field ids
       let newKey = key;
+
       if (
         options.generateTemplateFieldId &&
         getDocumentId(key) === options.oldDocumentId
@@ -53,16 +63,18 @@ export const copyRecord = (
           ...node,
           children: node.children.map((token) => {
             if (isSyntaxTree(token)) {
-              return modifyNode(token);
+              const newToken = { ...token };
+              if (newToken.type === "loop") {
+                newToken.data = getRawDocumentId(getNewNestedId(token.data!));
+                console.log("FOUND LOOP", token, newToken);
+              }
+              return modifyNode(newToken);
             } else if (
               tokens.isNestedEntity(token) &&
               isNestedDocumentId(token.id)
             ) {
-              const newNestedId = options.generateNestedDocumentId();
-
-              newNestedIds.set(getRawDocumentId(token.id), newNestedId);
+              const newNestedId = getNewNestedId(getRawDocumentId(token.id));
               const newToken = { ...token };
-
               newToken.id = newNestedId;
 
               // replace references to the old template fields with references to the new ones
@@ -72,6 +84,16 @@ export const copyRecord = (
                 getDocumentId(newToken.field) === options.oldDocumentId
               ) {
                 newToken.field = getNewKey(newToken.field);
+              } else if (
+                "field" in newToken &&
+                newToken.field.endsWith(getIdFromString("data"))
+              ) {
+                newToken.field = replaceDocumentId(
+                  newToken.field,
+                  getNewNestedId(
+                    getRawDocumentId(getDocumentId(newToken.field))
+                  )
+                );
               }
 
               return newToken;

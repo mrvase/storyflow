@@ -1,6 +1,6 @@
 import React from "react";
 import cl from "clsx";
-import { FieldId, TokenStream } from "@storyflow/backend/types";
+import { FieldId, RawDocumentId, TokenStream } from "@storyflow/backend/types";
 import { getDocumentId, getRawFieldId } from "@storyflow/backend/ids";
 import { useFieldId } from "../FieldIdContext";
 import { createTokenStream } from "shared/parse-token-stream";
@@ -28,6 +28,7 @@ import {
 } from "shared/operations";
 import { splitTransformsAndRoot } from "@storyflow/backend/transform";
 import { useFieldVersion } from "./VersionContext";
+import { FieldTemplateIdContext } from "./FieldTemplateContext";
 
 type TextOps = [{ index: number; insert: [string]; remove?: 0 }];
 
@@ -65,22 +66,17 @@ const isAdjacent = (
 export function DefaultField({
   id,
   showPromptButton,
+  showTemplateHeader,
 }: {
   id: FieldId;
   showPromptButton?: boolean;
+  showTemplateHeader?: boolean;
 }) {
   const rootId = useFieldId();
   const version = useFieldVersion();
-  const [config] = useFieldConfig(rootId);
 
-  const { target, initialValue, value, isPrimitive, tree } = useDefaultState(
-    id,
-    version
-  );
-
-  const transforms = React.useMemo(() => {
-    return splitTransformsAndRoot(tree)[0];
-  }, [tree]);
+  const { target, initialValue, value, isPrimitive, templateId, transforms } =
+    useDefaultState(id, version);
 
   const initialEditorValue = createTokenStream(initialValue);
 
@@ -191,9 +187,13 @@ export function DefaultField({
   );
 
   return (
-    <>
-      {id === rootId && config?.template && (
-        <TemplateHeader transforms={transforms} id={id} />
+    <FieldTemplateIdContext.Provider value={templateId ?? null}>
+      {(templateId || showTemplateHeader) && (
+        <TemplateHeader
+          transforms={transforms}
+          id={id}
+          isNested={id !== rootId}
+        />
       )}
       <Editor
         key={version}
@@ -228,7 +228,7 @@ export function DefaultField({
           </div>
         </div>
       </Editor>
-    </>
+    </FieldTemplateIdContext.Provider>
   );
 }
 

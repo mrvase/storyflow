@@ -123,7 +123,8 @@ function FocusContainer({
   const [isOpen] = useLocalStorage<boolean>("toolbar-open", true);
 
   if (isEditorFocused) {
-    ring = isOpen ? " dark:ring-yellow-200/60" : " dark:ring-gray-600";
+    ring = "ring-transparent";
+    // ring = isOpen ? " dark:ring-yellow-200/60" : " dark:ring-gray-600";
   } else if (isFieldFocused) {
     ring = "ring-yellow-200/40";
   } else {

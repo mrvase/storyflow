@@ -82,12 +82,16 @@ const calculateProp = (
     const isStateful = !Array.isArray(prop);
 
     if (isStateful) {
-      return calculateClient(prop, (token) => {
-        if ("loop" in token) {
-          const elementId = token.loop.slice(0, 12);
-          return (token as any).values[loopCtx[elementId]];
-        }
-      });
+      return calculateClient(
+        prop,
+        (token) => {
+          if ("state" in token) {
+            return 0;
+          }
+          return 0;
+        },
+        (id) => loopCtx[id]
+      );
     }
     return prop;
   })();

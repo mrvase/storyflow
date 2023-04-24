@@ -68,7 +68,7 @@ export function LocationBar({
   return (
     <div
       className={cl(
-        "h-11 shrink-0 grow-0 overflow-x-auto text-gray-600 dark:text-white",
+        "h-11 shrink-0 grow-0 overflow-x-auto dark:text-white",
         "bg-white dark:bg-gray-850"
         // isFocused ? "bg-white dark:bg-gray-850" : "bg-white dark:bg-gray-900"
       )}

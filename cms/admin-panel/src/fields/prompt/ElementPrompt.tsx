@@ -26,7 +26,7 @@ export function ElementPrompt({
   const documentId = getDocumentId(id) as DocumentId;
   const generateDocumentId = useDocumentIdGenerator();
 
-  const defaultOptions = React.useMemo(() => {
+  const elementOptions = React.useMemo(() => {
     return (optionsFromProps as PropOption[]).filter(
       (el): el is string => typeof el === "string"
     );
@@ -44,12 +44,12 @@ export function ElementPrompt({
     )
     .flat(1);
 
-  if (defaultOptions.length > 0) {
-    options = options.filter(
-      (el) =>
-        el.libraryName === "" ||
-        defaultOptions.includes(`${el.libraryName}:${el.name}`)
+  if (elementOptions.length > 0) {
+    const defaultOptions = options.filter((el) => el.libraryName === "");
+    options = options.filter((el) =>
+      elementOptions.includes(`${el.libraryName}:${el.name}`)
     );
+    options.push(...defaultOptions);
   } else {
     options = options.filter((el) => !el.hidden);
   }

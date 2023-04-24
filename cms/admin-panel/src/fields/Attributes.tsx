@@ -17,9 +17,10 @@ import { useDocumentPageContext } from "../documents/DocumentPageContext";
 import { calculateFn } from "./default/calculateFn";
 import { useContextWithError } from "../utils/contextError";
 import { useSelectedNestedEntity } from "./Path";
-import { flattenProps } from "../utils/flattenProps";
-import { useFieldTemplate } from "./default/useFieldTemplate";
+import { flattenPropsWithIds } from "../utils/flattenProps";
+import { useTemplate } from "./default/useFieldTemplate";
 import { getPreview } from "./default/getPreview";
+import { useFieldTemplateId } from "./default/FieldTemplateContext";
 
 const AttributesContext = React.createContext<
   [FieldId | null, React.Dispatch<FieldId | null>] | null
@@ -59,8 +60,8 @@ export function Attributes({
   const [currentProp, setCurrentProp] = useAttributesContext();
   const { libraries } = useClientConfig();
 
-  const fieldId = useFieldId();
-  const template = useFieldTemplate(fieldId) ?? noTemplate;
+  let templateId = useFieldTemplateId();
+  const template = useTemplate(templateId) ?? noTemplate;
 
   if (!entity) {
     // const [{ selectedDocument }] = useSelectedPath();
@@ -72,7 +73,10 @@ export function Attributes({
       const config = getConfigFromType(entity.element, libraries);
 
       let result: { id: FieldId; label: React.ReactNode; type?: string }[] =
-        flattenProps(entity!.id as NestedDocumentId, config?.props ?? []);
+        flattenPropsWithIds(
+          entity!.id as NestedDocumentId,
+          config?.props ?? []
+        );
       if (hideChildrenProps) {
         result = result.filter((el) => el.type !== "children");
       }

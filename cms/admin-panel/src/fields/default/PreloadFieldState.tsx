@@ -1,6 +1,7 @@
 import React from "react";
 import { useGlobalState } from "../../state/state";
 import {
+  DocumentId,
   FieldConfig,
   FieldId,
   NestedDocument,
@@ -8,10 +9,11 @@ import {
   NestedElement,
   NestedField,
   NestedFolder,
+  RawDocumentId,
 } from "@storyflow/backend/types";
 import { extendPath } from "@storyflow/backend/extendPath";
 import { getConfigFromType, useClientConfig } from "../../client-config";
-import { useFieldTemplate } from "./useFieldTemplate";
+import { useTemplate } from "./useFieldTemplate";
 import {
   computeFieldId,
   createTemplateFieldId,
@@ -36,7 +38,7 @@ export function PreloadFieldState({
   createTemplateContext?: NestedDocumentId;
 }) {
   const version = useFieldVersion();
-  const { tree } = useDefaultState(id, version);
+  const { tree, templateId } = useDefaultState(id, version);
 
   if (createTemplateContext) {
     const template = React.useMemo(() => {
@@ -58,7 +60,11 @@ export function PreloadFieldState({
   return (
     <>
       {children.map((child) => (
-        <PreloadNestedState key={child.id} entity={child} />
+        <PreloadNestedState
+          key={child.id}
+          entity={child}
+          templateId={templateId}
+        />
       ))}
     </>
   );
@@ -66,8 +72,10 @@ export function PreloadFieldState({
 
 function PreloadNestedState({
   entity,
+  templateId,
 }: {
   entity: NestedFolder | NestedField | NestedElement | NestedDocument;
+  templateId?: DocumentId | RawDocumentId | null | undefined;
 }) {
   const id = useFieldId();
 
@@ -76,7 +84,7 @@ function PreloadNestedState({
   let createTemplateContext = false;
 
   if (tokens.isNestedFolder(entity)) {
-    const template = useFieldTemplate(id) ?? noTemplate;
+    const template = useTemplate(templateId) ?? noTemplate;
 
     ids = template.map((el) => {
       return createTemplateFieldId(entity.id, el.id);
@@ -130,7 +138,7 @@ function PreloadNestedState({
       createTemplateContext = true;
     }
   } else if (tokens.isNestedDocument(entity)) {
-    const template = useFieldTemplate(id) ?? noTemplate;
+    const template = useTemplate(templateId) ?? noTemplate;
 
     ids = React.useMemo(() => {
       return template.map((el) => {

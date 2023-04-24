@@ -10,6 +10,7 @@ import {
   RawFieldId,
   ValueArray,
   Sorting,
+  RawDocumentId,
 } from "@storyflow/backend/types";
 import { pushAndRetry } from "../utils/retryOnError";
 import {
@@ -18,7 +19,10 @@ import {
   getDefaultValue,
 } from "@storyflow/backend/fields";
 import { TEMPLATE_FOLDER } from "@storyflow/backend/constants";
-import { getTemplateDocumentId } from "@storyflow/backend/ids";
+import {
+  getTemplateDocumentId,
+  normalizeDocumentId,
+} from "@storyflow/backend/ids";
 
 type DocumentListMutation =
   | {
@@ -67,13 +71,13 @@ const optimisticUpdate = (
 
   actions.forEach((action) => {
     if (action.type === "insert") {
-      inserts.push(getDocumentFromInsert(folder, action)!);
+      inserts.unshift(getDocumentFromInsert(folder, action)!);
     } else {
       removes.push(action.id);
     }
   });
 
-  return [...documents, ...inserts].filter((el) => !removes.includes(el._id));
+  return [...inserts, ...documents].filter((el) => !removes.includes(el._id));
 };
 
 export async function fetchDocumentList(
@@ -259,7 +263,12 @@ const TEMPLATES = [
   ...Object.values(DEFAULT_TEMPLATES),
 ];
 
-export function useDocument(documentId: DocumentId | undefined) {
+export function useDocument(
+  documentId_: RawDocumentId | DocumentId | undefined
+) {
+  const documentId = documentId_
+    ? normalizeDocumentId(documentId_)
+    : documentId_;
   const defaultTemplate = TEMPLATES.find((el) => el._id === documentId);
 
   if (defaultTemplate) {
@@ -274,13 +283,16 @@ export function useDocument(documentId: DocumentId | undefined) {
     );
   }
 
-  const [initialDocument, setInitialDocument] = React.useState(() => {
+  const getInitialDocument = () => {
     const operations: DocumentListOperation[] = [];
     queue.forEach(({ operation }) => {
       operations.push(operation);
     });
     return getDocumentFromOperations(documentId, operations);
-  });
+  };
+
+  const [initialDocument, setInitialDocument] =
+    React.useState(getInitialDocument);
 
   const { data, error, mutate } = SWRClient.documents.get.useQuery(
     documentId as string,

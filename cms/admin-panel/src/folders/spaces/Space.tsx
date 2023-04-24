@@ -30,7 +30,7 @@ function Space({
         isFocused
           ? "ring-yellow-200/60"
           : isOpen
-          ? "ring-transparent hover:ring-gray-700/50"
+          ? "ring-transparent hover:ring-gray-100 dark:hover:ring-gray-700/50"
           : "ring-transparent"
       )}
       {...(isOpen ? handlers : {})}
@@ -39,7 +39,9 @@ function Space({
         <div className="cursor-grab opacity-25 hover:opacity-100 transition-opacity">
           <DragIcon className="w-4 h-4 mr-5" />
         </div>
-        <h2 className="text-gray-300 flex-center font-medium">{label}</h2>
+        <h2 className="text-gray-600 dark:text-gray-300 flex-center font-medium">
+          {label}
+        </h2>
         <div className={cl("ml-auto flex gap-2", "transition-opacity")}>
           {buttons}
         </div>

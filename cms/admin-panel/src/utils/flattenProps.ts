@@ -4,34 +4,39 @@ import { FieldId, NestedDocumentId } from "@storyflow/backend/types";
 import {
   PropConfig,
   PropConfigArray,
+  PropGroup,
   RegularOptions,
 } from "@storyflow/frontend/types";
 
-export function flattenProps(
+export function flattenProps<T = PropConfig<RegularOptions>>(
+  props: PropConfigArray<RegularOptions>,
+  transform: (
+    el: PropConfig<RegularOptions>,
+    group: PropGroup<RegularOptions> | undefined
+  ) => T = (el) => el as T
+): T[] {
+  return props.reduce(
+    (acc: T[], el) =>
+      el.type === "group"
+        ? [...acc, ...el.props.map((nested) => transform(nested, el))]
+        : [...acc, transform(el, undefined)],
+    []
+  );
+}
+
+export function flattenPropsWithIds(
   id: NestedDocumentId,
   props: PropConfigArray<RegularOptions>
 ) {
-  return props.reduce(
-    (acc: (PropConfig<RegularOptions> & { id: FieldId })[], el) =>
-      el.type === "group"
-        ? [
-            ...acc,
-            ...el.props.map((nested) => ({
-              id: computeFieldId(
-                id,
-                getIdFromString(extendPath(el.name, nested.name, "#"))
-              ),
-              ...nested,
-              label: `${el.label} · ${nested.label}`,
-            })),
-          ]
-        : [
-            ...acc,
-            {
-              id: computeFieldId(id, getIdFromString(el.name)),
-              ...(el as PropConfig<RegularOptions>),
-            },
-          ],
-    []
-  );
+  return flattenProps(props, (el, group) => ({
+    id: group
+      ? computeFieldId(
+          id,
+          getIdFromString(extendPath(group.name, el.name, "#"))
+        )
+      : computeFieldId(id, getIdFromString(el.name)),
+    ...el,
+    // smaller spaces on purpose
+    label: group ? `${group.label} · ${el.label}` : el.label,
+  }));
 }

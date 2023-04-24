@@ -2,27 +2,17 @@ import React from "react";
 import { LexicalNode, NodeKey } from "lexical";
 import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
-import { caretClasses } from "./caret";
 import {
   SyntaxTree,
   SyntaxTreeRecord,
-  DocumentId,
-  FieldId,
   NestedDocument,
   ValueArray,
   ClientSyntaxTree,
+  FieldId,
 } from "@storyflow/backend/types";
-import {
-  ChevronDownIcon,
-  DocumentIcon,
-  LinkIcon,
-} from "@heroicons/react/24/outline";
+import { DocumentIcon, LinkIcon } from "@heroicons/react/24/outline";
 import { useFieldId } from "../../FieldIdContext";
-import { useFieldConfig } from "../../../documents/collab/hooks";
-import { Menu } from "@headlessui/react";
-import { MenuTransition } from "../../../elements/transitions/MenuTransition";
-import { useDocument, useOptimisticDocumentList } from "../../../documents";
-import { useFieldTemplate } from "../../default/useFieldTemplate";
+import { useDocument } from "../../../documents";
 import { calculateFn } from "../../default/calculateFn";
 import { useGlobalState } from "../../../state/state";
 import { useDocumentPageContext } from "../../../documents/DocumentPageContext";
@@ -33,8 +23,9 @@ import {
 } from "@storyflow/backend/ids";
 import { useClient } from "../../../client";
 import { getPreview } from "../../default/getPreview";
-import { TEMPLATE_FOLDER } from "@storyflow/backend/constants";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
+import { useFieldTemplateId } from "../../default/FieldTemplateContext";
+import { useTemplate } from "../../default/useFieldTemplate";
 
 function Decorator({
   value,
@@ -45,13 +36,15 @@ function Decorator({
 }) {
   // const [, setPath] = useBuilderPath();
 
-  const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
+  const { isSelected, select } = useIsSelected(nodeKey);
 
   const selectClick = React.useRef(false);
 
   const id = useFieldId();
-  const [config, setConfig] = useFieldConfig(id);
-  const template = useFieldTemplate(id);
+
+  let templateId = useFieldTemplateId();
+  const template = useTemplate(templateId);
+
   const hasTemplate = Boolean(template);
 
   let docs: (NestedDocument & { record: SyntaxTreeRecord })[] = [];
@@ -78,8 +71,6 @@ function Decorator({
       );
 
   const Icon = isNestedDocumentId(value.id) ? DocumentIcon : LinkIcon;
-
-  const parentFieldId = useFieldId();
 
   const { record: documentRecord } = useDocumentPageContext();
 
@@ -127,9 +118,7 @@ function Decorator({
         {docs.map(({ id: docId, record }) => (
           <div key={docId} className="flex w-full py-1">
             {!hasTemplate ? (
-              <TemplateSelect
-                setTemplateId={(value) => setConfig("template", value)}
-              />
+              <>Ingen skabelon valgt</>
             ) : (
               <>
                 <div className="w-8 flex-center">
@@ -187,55 +176,6 @@ export function ValueDisplay({
     <div className="grow shrink basis-0 px-2 truncate">
       {getPreview(output || [])}
     </div>
-  );
-}
-
-function TemplateSelect({
-  setTemplateId,
-}: {
-  setTemplateId: (value: DocumentId) => void;
-}) {
-  const id = TEMPLATE_FOLDER;
-  const { documents } = useOptimisticDocumentList(id);
-
-  return (
-    <Menu as="div" className="relative">
-      {({ open }) => (
-        <>
-          <Menu.Button
-            as="button"
-            className="group h-full px-2 hover:bg-white/5 flex-center gap-1 rounded cursor-default transition-colors"
-          >
-            [Vælg skabelon]
-            <ChevronDownIcon className="w-3 h-3 opacity-0 group-hover:opacity-75 transition-opacity" />
-          </Menu.Button>
-          <MenuTransition show={open} className="absolute z-10">
-            <Menu.Items className="w-40 bg-white dark:bg-gray-800 mt-1 rounded shadow flex flex-col outline-none overflow-hidden">
-              <Menu.Item>
-                {({ active }) => (
-                  <>
-                    {(documents ?? []).map((el) => (
-                      <button
-                        key={el._id}
-                        className={cl(
-                          "py-1 px-2 hover:bg-white/5 outline-none text-left",
-                          active && "bg-white/5"
-                        )}
-                        onClick={() => {
-                          setTemplateId(el._id);
-                        }}
-                      >
-                        {el._id}
-                      </button>
-                    ))}
-                  </>
-                )}
-              </Menu.Item>
-            </Menu.Items>
-          </MenuTransition>
-        </>
-      )}
-    </Menu>
   );
 }
 

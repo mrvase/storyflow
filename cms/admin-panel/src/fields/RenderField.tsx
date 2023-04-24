@@ -8,16 +8,11 @@ import { ServerPackage } from "@storyflow/state";
 import { FieldIdContext } from "./FieldIdContext";
 import { FieldRestrictionsContext } from "./FieldIdContext";
 import { FieldOperation } from "shared/operations";
+import { FieldProps } from "./types";
 
 const Components: { [K in FieldType | "default"]: React.FC<FieldProps> } = {
   default: DefaultFieldRoot,
   url: UrlField,
-};
-
-export type FieldProps = {
-  id: FieldId;
-  version: number;
-  history: ServerPackage<FieldOperation>[];
 };
 
 export function RenderField({

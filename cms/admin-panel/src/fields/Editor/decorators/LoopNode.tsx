@@ -4,10 +4,10 @@ import cl from "clsx";
 import { useIsSelected } from "./useIsSelected";
 import { caretClasses } from "./caret";
 import { useLabel } from "../../../documents/collab/hooks";
-import { LoopToken } from "@storyflow/backend/types";
 import { revertTemplateFieldId } from "@storyflow/backend/ids";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 
+/*
 function Decorator({ nodeKey, value }: { nodeKey: string; value: LoopToken }) {
   // const [, setPath] = useBuilderPath();
 
@@ -80,3 +80,4 @@ export function $createLoopNode(value: TokenType): ChildNode {
 export function $isLoopNode(node: LexicalNode): boolean {
   return node instanceof ChildNode;
 }
+*/

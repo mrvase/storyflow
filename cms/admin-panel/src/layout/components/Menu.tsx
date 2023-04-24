@@ -48,43 +48,64 @@ function Menu<T extends { label: string; disabled?: boolean }>({
           >
             {selectedArray?.map((el) => el.label).join(", ") || label}
           </HeadlessMenu.Button>
-          <MenuTransition
-            show={open}
-            className={cl("absolute z-10", align === "right" && "right-0")}
-          >
-            <HeadlessMenu.Items
-              static
-              className="bg-button mt-1 rounded shadow flex flex-col outline-none overflow-hidden w-52 ring-1 ring-gray-600"
-              data-focus-remain="true"
-            >
-              {selected && onClear && (
-                <MenuItem onClick={onClear} label="Fjern" />
-              )}
-              {"children" in props
-                ? props.children
-                : props.options.map((el) => (
-                    <MenuItem
-                      key={el.label}
-                      disabled={el.disabled}
-                      selected={
-                        props.multi
-                          ? selectedArray?.some((s) => s === el)
-                          : undefined
-                      }
-                      onClick={(ev) => {
-                        if (props.multi || el.disabled) ev.preventDefault();
-                        if (!el.disabled) props.onSelect(el);
-                      }}
-                      label={el.label}
-                    />
-                  ))}
-            </HeadlessMenu.Items>
-          </MenuTransition>
+          <MenuItems open={open} align={align}>
+            {selected && onClear && (
+              <MenuItem onClick={onClear} label="Fjern" />
+            )}
+            {"children" in props
+              ? props.children
+              : props.options.map((el) => (
+                  <MenuItem
+                    key={el.label}
+                    disabled={el.disabled}
+                    selected={
+                      props.multi
+                        ? selectedArray?.some((s) => s === el)
+                        : undefined
+                    }
+                    onClick={(ev) => {
+                      if (props.multi || el.disabled) ev.preventDefault();
+                      if (!el.disabled) props.onSelect(el);
+                    }}
+                    label={el.label}
+                  />
+                ))}
+          </MenuItems>
         </div>
       )}
     </HeadlessMenu>
   );
 }
+
+const MenuItems = ({
+  open,
+  align,
+  children,
+  marginTop,
+}: {
+  open: boolean;
+  align?: "left" | "right";
+  children: React.ReactNode;
+  marginTop?: `mt-${number}`;
+}) => {
+  return (
+    <MenuTransition
+      show={open}
+      className={cl("absolute z-10", align === "right" && "right-0")}
+    >
+      <HeadlessMenu.Items
+        static
+        className={cl(
+          "bg-button rounded shadow flex flex-col outline-none overflow-hidden w-52 ring-1 ring-gray-600",
+          marginTop ?? "mt-1"
+        )}
+        data-focus-remain="true"
+      >
+        {children}
+      </HeadlessMenu.Items>
+    </MenuTransition>
+  );
+};
 
 const MenuItem = React.forwardRef<
   HTMLButtonElement,
@@ -127,5 +148,6 @@ const MenuItem = React.forwardRef<
 });
 
 Menu.Item = MenuItem;
+Menu.Items = MenuItems;
 
 export { Menu };

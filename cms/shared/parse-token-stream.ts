@@ -5,6 +5,7 @@ import {
   HasSelect,
   NestedField,
   operators,
+  RawDocumentId,
   SyntaxNode,
   SyntaxTree,
   TokenStream,
@@ -258,11 +259,20 @@ export function parseTokenStream(
     } else if (tokens.isNestedField(token)) {
       if ("select" in token) {
         let { select, ...rest } = token;
-        const node: SyntaxNode<WithSyntaxError> = {
+        let loop: RawDocumentId | undefined;
+        if ("loop" in token) ({ loop, ...rest } = rest);
+        let node: SyntaxNode<WithSyntaxError> = {
           children: [rest],
           type: "select",
           data: select,
         };
+        if (loop) {
+          node = {
+            children: [node],
+            type: "loop",
+            data: loop,
+          };
+        }
         parents.set(node, current);
         mergePush(node);
       } else {
@@ -394,6 +404,8 @@ export function createTokenStream(
       // do nothing
     } else if (value.type === "select") {
       (flattened[0] as HasSelect<NestedField>).select = value.data;
+    } else if (value.type === "loop") {
+      (flattened[0] as HasSelect<NestedField>).loop = value.data;
     } else {
       let openingBracket: TokenStreamSymbol = { "(": true };
       let closingBracket: TokenStreamSymbol = { ")": true };

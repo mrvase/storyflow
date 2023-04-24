@@ -51,7 +51,7 @@ export function VisitedLinks({ data: { path, index } }: { data: PanelData }) {
     replacePanelPath(pathname, { path, index: 0 });
 
   return (
-    <div className="h-7 bg-gray-850 text-xs px-2 flex gap-3">
+    <div className="h-7 bg-white dark:bg-gray-850 text-xs px-2 flex gap-3">
       {visited.map((el) => (
         <Link
           to={getHref(el.path)}
@@ -59,8 +59,8 @@ export function VisitedLinks({ data: { path, index } }: { data: PanelData }) {
           className={cl(
             "h-7 flex items-center transition-colors",
             el.type === "t"
-              ? "text-teal-700 hover:text-teal-400"
-              : "text-gray-600 hover:text-gray-200"
+              ? "text-teal-500 hover:text-teal-700 dark:text-teal-700 dark:hover:text-teal-400"
+              : "text-gray-400 hover:text-gray-600 dark:text-gray-600 dark:hover:text-gray-200"
           )}
         >
           {el.label}
