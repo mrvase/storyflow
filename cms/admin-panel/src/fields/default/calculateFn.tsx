@@ -95,43 +95,6 @@ export const calculateFn = (
       return state.value?.map(({ _id }) => ({ id: _id })) ?? [];
     }
 
-    if (typeof importId === "object" && "loop" in importId) {
-      const dataFieldId = computeFieldId(
-        getDocumentId(importId.loop),
-        getIdFromString("data")
-      );
-      const rawFieldId = getRawFieldId(importId.loop);
-
-      /*
-      const state = store.use<ValueArray | ClientSyntaxTree>(importId.loop);
-      if (!state.initialized()) {
-        state.set(() =>
-          calculateFn(initialValue, {
-            record,
-            client,
-            documentId,
-          })
-        );
-      }
-      */
-      const initialValue: SyntaxTree = {
-        type: "select",
-        children: [
-          {
-            id: "ffffffffffffffffffffffff" as NestedDocumentId,
-            field: dataFieldId,
-          },
-        ],
-        data: rawFieldId,
-      };
-
-      return calculateFn(initialValue, {
-        record,
-        client,
-        documentId,
-      });
-    }
-
     if (typeof importId === "object" && "ctx" in importId) {
       const value = context.use<ValueArray>(
         getContextKey(documentId, importId.ctx)
@@ -143,7 +106,7 @@ export const calculateFn = (
 
     const value = record[importId];
 
-    if (value || !external) {
+    if (value || !external || importId.endsWith(getIdFromString("data"))) {
       const fn = value
         ? () =>
             tree

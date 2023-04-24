@@ -5,14 +5,18 @@ import {
   NestedFolder,
   NestedDocument,
   FieldId,
-  LoopToken,
   NestedDocumentId,
   FieldConfig,
+  NestedField,
+  HasSelect,
 } from "@storyflow/backend/types";
 import {
+  computeFieldId,
+  createRawTemplateFieldId,
   createTemplateFieldId,
   getDocumentId,
   getIdFromString,
+  getRawDocumentId,
   getRawFieldId,
 } from "@storyflow/backend/ids";
 import {
@@ -67,6 +71,8 @@ function TemplateFieldPrompt({
   prompt: string;
   replacePromptWithStream: (stream: TokenStream) => void;
 }) {
+  const fieldId = useFieldId();
+  const documentId = getDocumentId(fieldId) as DocumentId;
   const [{ selectedPath }] = useSelectedPath();
   const path = usePath();
   const fullPath = React.useMemo(
@@ -93,14 +99,24 @@ function TemplateFieldPrompt({
       []
     );
 
+  const generateDocumentId = useDocumentIdGenerator();
+
   const onEnter = React.useCallback(
     ({ element, field }: { element: NestedDocumentId; field: FieldId }) => {
-      const token: LoopToken = {
-        loop: createTemplateFieldId(element, field),
+      const nestedField: HasSelect<NestedField> = {
+        id: generateDocumentId(documentId),
+        field: computeFieldId(element, getIdFromString("data")),
+        select: createRawTemplateFieldId(field),
+        loop: getRawDocumentId(element),
       };
-      replacePromptWithStream([token]);
+      replacePromptWithStream([nestedField]);
+      /*
+      if (templateId && !fieldConfig?.template) {
+        setFieldConfig("template", templateId);
+      }
+      */
     },
-    [replacePromptWithStream]
+    [replacePromptWithStream, generateDocumentId]
   );
 
   if (getRawFieldId(path.slice(-1)[0] as FieldId) === getIdFromString("data")) {
@@ -200,7 +216,7 @@ function FolderPrompt({
         setFieldConfig("template", templateId);
       }
     },
-    [replacePromptWithStream, fieldConfig, setFieldConfig]
+    [replacePromptWithStream, fieldConfig, setFieldConfig, generateDocumentId]
   );
 
   const options = folders

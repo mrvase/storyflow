@@ -157,7 +157,7 @@ const createElementRecordGetter = (
             .db(dbName)
             .collection<DBDocumentRaw>("documents")
             .find({ folder: new ObjectId(el.folder.folder), ...filters })
-            .sort({ _id: 1 })
+            .sort({ _id: -1 })
             .limit(el.limit)
             .toArray();
 
@@ -219,25 +219,6 @@ const createElementRecordGetter = (
         return fetchResults.get(folder);
       } else if (typeof importer === "object" && "ctx" in importer) {
         return context[importer.ctx] ?? [];
-      } else if (typeof importer === "object" && "loop" in importer) {
-        const dataFieldId = computeFieldId(
-          getDocumentId(importer.loop),
-          getIdFromString("data")
-        );
-        const rawFieldId = getRawFieldId(importer.loop);
-        return calculate(
-          {
-            type: "select",
-            children: [
-              {
-                id: "ffffffffffffffffffffffff" as NestedDocumentId,
-                field: dataFieldId,
-              },
-            ],
-            data: rawFieldId,
-          },
-          getState
-        );
       } else {
         if (importer in superRecord) {
           return calculate(superRecord[importer], getState);
@@ -392,7 +373,10 @@ export const public_ = createRoute({
         },
       };
 
-      // console.log("RESULT", util.inspect(result, { depth: null }));
+      console.log(
+        "RESULT",
+        util.inspect(result, { depth: null, colors: true })
+      );
 
       return success(result);
     },

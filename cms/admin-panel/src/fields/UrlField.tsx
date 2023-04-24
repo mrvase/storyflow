@@ -1,5 +1,4 @@
 import React from "react";
-import type { FieldProps } from "./RenderField";
 import { useGlobalContext } from "../state/context";
 import { addContext, addImport } from "../custom-events";
 import { useClient } from "../client";
@@ -36,6 +35,7 @@ import { useDocumentIdGenerator } from "../id-generator";
 import { usePanel, useRoute } from "../panel-router/Routes";
 import { FieldOperation } from "shared/operations";
 import { useDefaultState } from "./default/useDefaultState";
+import { FieldProps } from "./types";
 
 export const toSlug = (value: string) =>
   value
@@ -218,28 +218,28 @@ export default function UrlField({ id, version, history }: FieldProps) {
 
   return (
     <div className="pb-2.5">
-      <div className="outline-none rounded flex items-center px-3 mb-2.5 bg-gray-800 ring-button">
+      <div className="outline-none rounded flex items-center px-3 mb-2.5 bg-gray-50 dark:bg-gray-800 ring-button">
         <Link
           to={replacePage(parents[0]?._id ?? "")}
-          className="mr-5 text-gray-400 hover:text-gray-100 transition-colors"
+          className="mr-5 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100 transition-colors"
           data-focus-ignore="true"
         >
           <HomeIcon className="w-4 h-4" />
         </Link>
         <Link
           to={replacePage(parents[0]?._id ?? "")}
-          className="text-gray-400 hover:text-gray-100 transition-colors"
+          className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100 transition-colors"
           data-focus-ignore="true"
         >
           www.kfs.dk
         </Link>
-        <div className="px-2 text-gray-300 dark:text-gray-600 text-sm">/</div>
+        <div className="px-2 text-gray-400 dark:text-gray-600 text-sm">/</div>
         {parentSlugs.slice(1).map((el, index) => (
           <React.Fragment key={parents[index + 1]?._id}>
             <Link
               to={replacePage(parents[index + 1]?._id ?? "")}
               className={cl(
-                "truncate text-gray-400 hover:text-gray-100 transition-colors shrink-0"
+                "truncate text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100 transition-colors shrink-0"
               )}
               data-focus-ignore="true"
             >
@@ -247,7 +247,7 @@ export default function UrlField({ id, version, history }: FieldProps) {
             </Link>
             <div
               className={cl(
-                "cursor-default px-2 text-gray-300 dark:text-gray-600 text-sm transition-opacity",
+                "cursor-default px-2 text-gray-400 dark:text-gray-600 text-sm transition-opacity",
                 index + 1 === parentSlugs.length - 1 &&
                   slug === "" &&
                   "opacity-0"
@@ -259,7 +259,7 @@ export default function UrlField({ id, version, history }: FieldProps) {
         ))}
         {slug === "*" && (
           <button
-            className="px-1.5 h-5 bg-fuchsia-200 dark:bg-gray-700 rounded shrink-0 flex-center mr-1.5 cursor-alias"
+            className="px-1.5 h-5 bg-gray-200 dark:bg-gray-700 rounded shrink-0 flex-center mr-1.5 cursor-alias"
             onMouseDown={(ev) => {
               ev.preventDefault();
               ev.stopPropagation();
@@ -311,7 +311,7 @@ export default function UrlField({ id, version, history }: FieldProps) {
                 <SubPageLine first={index === 0} />
                 <span
                   className={cl(
-                    "opacity-75 group-hover:opacity-100 transition-opacity relative overflow-hidden bg-gray-800 px-1.5 py-0.5 rounded"
+                    "opacity-75 group-hover:opacity-100 transition-opacity relative overflow-hidden bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded"
                     // "after:absolute after:bottom-0 after:left-0 after:right-0 after:border-b-2 after:border-green-300/50"
                   )}
                 >
@@ -330,7 +330,7 @@ export default function UrlField({ id, version, history }: FieldProps) {
               data-focus-ignore="true"
             >
               <SubPageLine first={children.length === 0} />
-              <span className="text-gray-400 group-hover:text-gray-100 transition-colors py-0.5">
+              <span className="text-gray-600 group-hover:text-gray-800 dark:text-gray-400 dark:group-hover:text-gray-100 transition-colors py-0.5">
                 Tilføj underside
               </span>
             </button>

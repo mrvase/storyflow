@@ -150,7 +150,7 @@ export default function AppPage({ children }: { children?: React.ReactNode }) {
                 onChange={(value) => {
                   mutateProp("label", value);
                 }}
-                className={cl("text-yellow-300")}
+                className={cl("text-yellow-400 dark:text-yellow-300")}
               />
             }
             toolbar={

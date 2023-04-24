@@ -259,7 +259,7 @@ function AddDocumentButton({ folder }: { folder: FolderId }) {
   return (
     <button
       className={cl(
-        "rounded-full px-2 py-0.5 text-xs ring-button text-gray-400 ml-3 flex-center gap-1"
+        "rounded-full px-2 py-0.5 text-xs ring-button text-gray-600 dark:text-gray-400 ml-3 flex-center gap-1"
         // "opacity-0 group-hover/space:opacity-100 transition-opacity"
       )}
       onClick={addDocument}

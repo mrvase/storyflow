@@ -1,5 +1,12 @@
 import cl from "clsx";
-import { FieldId, GetFunctionData, Transform } from "@storyflow/backend/types";
+import {
+  DocumentId,
+  FieldConfig,
+  FieldId,
+  GetFunctionData,
+  RawDocumentId,
+  Transform,
+} from "@storyflow/backend/types";
 import {
   ChevronDownIcon,
   ChevronUpIcon,
@@ -10,30 +17,39 @@ import { addImport } from "../../custom-events";
 import {
   createRawTemplateFieldId,
   getDocumentId,
+  getRawDocumentId,
   getRawFieldId,
 } from "@storyflow/backend/ids";
-import { useFieldTemplate } from "./useFieldTemplate";
+import { useTemplate } from "./useFieldTemplate";
 import { useFieldFocus } from "../../field-focus";
 import { Checkbox } from "../../elements/Checkbox";
 import { Range } from "../../elements/Range";
-import { Menu } from "@headlessui/react";
-import { MenuTransition } from "../../elements/transitions/MenuTransition";
+import { Menu as HeadlessMenu } from "@headlessui/react";
 import { useDocumentMutate } from "../../documents/collab/DocumentCollabContext";
 import { FieldOperation } from "shared/operations";
+import { useFieldId } from "../FieldIdContext";
+import { Menu } from "../../layout/components/Menu";
+import { useTemplateFolder } from "../../folders/FoldersContext";
+import React from "react";
+import { useOptimisticDocumentList } from "../../documents";
+import { useFieldTemplateId } from "./FieldTemplateContext";
 
 export function TemplateHeader({
   id,
   transforms,
+  isNested,
 }: {
   id: FieldId;
   transforms: Transform[];
+  isNested?: boolean;
 }) {
   const [focused] = useFieldFocus();
-  const isLink = focused && focused !== id;
+  const isLink = !isNested && focused && focused !== id;
 
-  const template = useFieldTemplate(id);
+  let templateId = useFieldTemplateId();
+  const template = useTemplate(templateId);
 
-  if (!template) return null;
+  if (!template && !isNested) return null;
 
   return (
     <div
@@ -44,13 +60,13 @@ export function TemplateHeader({
         "ring-1 ring-gray-200 dark:ring-gray-700"
       )}
     >
-      <Menu>
+      <HeadlessMenu>
         {({ open }) => (
           <div className="relative">
-            <Menu.Button
+            <HeadlessMenu.Button
               as="button"
               className={cl(
-                "w-8 h-full flex-center transition-opacity",
+                "h-full flex-center transition-opacity px-2 gap-2",
                 open ? "opacity-100" : "opacity-50 hover:opacity-100"
               )}
             >
@@ -59,19 +75,15 @@ export function TemplateHeader({
               ) : (
                 <ChevronDownIcon className="w-4 h-4" />
               )}
-            </Menu.Button>
-            <MenuTransition show={open} className="absolute z-10 mt-2">
-              <Menu.Items
-                static
-                className="bg-button mt-1 rounded shadow flex flex-col outline-none overflow-hidden w-52 ring-1 ring-gray-600"
-                data-focus-remain="true"
-              >
-                <TransformMenu id={id} transforms={transforms} />
-              </Menu.Items>
-            </MenuTransition>
+              {!template && "Vælg skabelon"}
+            </HeadlessMenu.Button>
+            <Menu.Items align="left" open={open} marginTop="mt-2">
+              <TransformMenu id={id} transforms={transforms} />
+              {isNested && <TemplateMenu id={id} transforms={transforms} />}
+            </Menu.Items>
           </div>
         )}
-      </Menu>
+      </HeadlessMenu>
       {(template ?? []).map(({ id: columnId, label }) => (
         <div
           key={columnId}
@@ -113,21 +125,25 @@ function TransformMenu({
   id: FieldId;
   transforms: Transform[];
 }) {
-  const fetchTransform = transforms.find((el) => el.type === "fetch");
+  const rootId = useFieldId();
+
+  const current = transforms.find((el) => el.type === "fetch");
 
   const { push } = useDocumentMutate<FieldOperation>(
-    getDocumentId(id),
-    getRawFieldId(id)
+    getDocumentId(rootId),
+    getRawFieldId(rootId)
   );
+
+  const target = id === rootId ? "" : id;
 
   return (
     <div className="p-2 flex flex-col gap-2">
       <div className="text-xs">
         <Checkbox
-          value={fetchTransform !== undefined}
+          value={current !== undefined}
           setValue={(value) => {
             push([
-              "",
+              target,
               [
                 {
                   name: "fetch",
@@ -140,17 +156,17 @@ function TransformMenu({
           small
         />
       </div>
-      {fetchTransform !== undefined && (
+      {current !== undefined && (
         <>
           <div className="flex items-center gap-1.5 text-xs">
             <ScissorsIcon className="w-3 h-3" /> Begræns antal
           </div>
           <div className="py-1 pl-[1.175rem]">
             <Range
-              value={(fetchTransform.data as GetFunctionData<"fetch">)[0]}
+              value={(current.data as GetFunctionData<"fetch">)[0]}
               setValue={(limit) => {
                 push([
-                  "",
+                  target,
                   [
                     {
                       name: "fetch",
@@ -164,5 +180,77 @@ function TransformMenu({
         </>
       )}
     </div>
+  );
+}
+
+function TemplateMenu({
+  id,
+  transforms,
+}: {
+  id: FieldId;
+  transforms: Transform[];
+}) {
+  const rootId = useFieldId();
+
+  const { push } = useDocumentMutate<FieldOperation>(
+    getDocumentId(rootId),
+    getRawFieldId(rootId)
+  );
+
+  const target = id === rootId ? "" : id;
+
+  const templateFolder = useTemplateFolder()?._id;
+  const { documents: templates } = useOptimisticDocumentList(templateFolder);
+
+  const options = React.useMemo(
+    () =>
+      (templates ?? []).map((el) => ({
+        id: el._id,
+        label: el.label ?? el._id,
+      })),
+    [templates]
+  );
+
+  const current = transforms.find((el) => el.type === "template")?.data as
+    | RawDocumentId
+    | undefined;
+
+  return (
+    <>
+      {current && (
+        <Menu.Item
+          onClick={() => {
+            push([
+              target,
+              [
+                {
+                  name: "template",
+                  value: null,
+                },
+              ],
+            ]);
+          }}
+          label="Fjern"
+        />
+      )}
+      {options.map((el) => (
+        <Menu.Item
+          key={el.label}
+          // selected={current === getRawDocumentId(el.id)}
+          onClick={(ev) => {
+            push([
+              target,
+              [
+                {
+                  name: "template",
+                  value: getRawDocumentId(el.id),
+                },
+              ],
+            ]);
+          }}
+          label={el.label}
+        />
+      ))}
+    </>
   );
 }

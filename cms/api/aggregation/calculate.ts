@@ -81,7 +81,7 @@ const compute = (
   acc: Accummulator
 ) =>
   $.switch()
-    .case($.in(operator, ["root", "template"]), () => acc.value)
+    .case($.in(operator, ["root", "template", "loop"]), () => acc.value)
     .case($.in(operator, ["fetch"]), () => [])
     .case($.in(operator, [")", "]"]), () =>
       $.define()
@@ -682,7 +682,6 @@ export const calculate = (
                                             // skip tokens
                                             $.in(firstKey, [
                                               "state",
-                                              "loop",
                                               "ctx",
                                               "src",
                                               "color",

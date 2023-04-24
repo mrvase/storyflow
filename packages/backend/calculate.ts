@@ -15,7 +15,6 @@ import {
   Sorting,
   ClientSyntaxTree,
   StateToken,
-  LoopToken,
 } from "./types";
 import { isSyntaxTree } from "./syntax-tree";
 
@@ -74,7 +73,7 @@ export type FolderFetch = {
   sort?: Sorting[];
 };
 
-type Importer = FieldId | FolderFetch | ContextToken | LoopToken;
+type Importer = FieldId | FolderFetch | ContextToken;
 
 const slugCharacters = [
   [" ", "-"],
@@ -403,17 +402,6 @@ const resolveChildren = (
           acc.push(state as ValueArray);
         }
       }
-    } else if (tokens.isLoopToken(child)) {
-      if (!ignoreClientState) {
-        isClientState = true;
-        const state = getState(child, { external: false });
-        acc.push([
-          {
-            ...child,
-            values: (state ?? []) as ValueArray,
-          },
-        ]);
-      }
     } else if (tokens.isStateToken(child)) {
       if (!ignoreClientState) {
         isClientState = true;
@@ -475,12 +463,18 @@ export function calculate(
       options?.ignoreClientState
     );
 
+    const clientFunctions = ["loop"];
+
     // run function
 
     /*
       Hvis den indeholder ClientSyntaxTree, returner
     */
-    if (isClientState || children.some((el) => !Array.isArray(el))) {
+    if (
+      isClientState ||
+      children.some((el) => !Array.isArray(el)) ||
+      (node.type && clientFunctions.includes(node.type))
+    ) {
       return {
         ...node,
         children,
@@ -606,7 +600,7 @@ export function calculateRootFieldFromRecord(
 
 const resolveClientChildren = (
   children: ClientSyntaxTree["children"],
-  getState: (token: StateToken | LoopToken) => ValueArray[number],
+  getState: (token: StateToken) => ValueArray[number],
   calculateNode: (node: ClientSyntaxTree) => ValueArray[]
 ) => {
   let acc: ValueArray[] = [];
@@ -620,7 +614,7 @@ const resolveClientChildren = (
       } else {
         acc.push(result);
       }
-    } else if (tokens.isStateToken(child) || tokens.isLoopToken(child)) {
+    } else if (tokens.isStateToken(child)) {
       const state = getState(child);
       acc.push([state]);
     } else {
@@ -633,7 +627,7 @@ const resolveClientChildren = (
 
 export function calculateClient(
   node: ClientSyntaxTree,
-  getState: (token: StateToken | LoopToken) => ValueArray[number]
+  getState: (token: StateToken) => ValueArray[number]
 ): ValueArray {
   const calculateNode = (node: ClientSyntaxTree): ValueArray[] => {
     let values = resolveClientChildren(node.children, getState, calculateNode);

@@ -9,12 +9,12 @@ import {
   NestedFolder,
 } from "@storyflow/backend/types";
 import { FolderIcon } from "@heroicons/react/24/outline";
-import { useFieldId } from "../../FieldIdContext";
-import { useFieldTemplate } from "../../default/useFieldTemplate";
+import { useTemplate } from "../../default/useFieldTemplate";
 import { useFolder } from "../../../folders/collab/hooks";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 import { usePath, useSelectedPath } from "../../Path";
 import { Attributes, AttributesProvider } from "../../Attributes";
+import { useFieldTemplateId } from "../../default/FieldTemplateContext";
 
 function Decorator({
   value,
@@ -26,12 +26,13 @@ function Decorator({
   const [{ selectedPath }, setPath] = useSelectedPath();
   const path = usePath();
 
-  const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
+  const { isSelected, select } = useIsSelected(nodeKey);
 
   const selectClick = React.useRef(false);
 
-  const id = useFieldId();
-  const template = useFieldTemplate(id);
+  let templateId = useFieldTemplateId();
+  const template = useTemplate(templateId);
+
   const hasTemplate = Boolean(template);
 
   const color = cl(

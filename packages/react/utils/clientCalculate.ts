@@ -252,7 +252,7 @@ const isObject = <T>(el: T): el is T & object =>
 
 const resolveClientChildren = (
   children: ClientSyntaxTree["children"],
-  getState: (token: { state: string } | { loop: string }) => ValueArray[number],
+  getState: (token: { state: string }) => ValueArray[number],
   calculateNode: (node: ClientSyntaxTree) => ValueArray[]
 ) => {
   let acc: ValueArray[] = [];
@@ -268,7 +268,7 @@ const resolveClientChildren = (
     } else {
       acc.push(
         child.map((token) => {
-          if (isObject(token) && ("state" in token || "loop" in token)) {
+          if (isObject(token) && "state" in token) {
             const state = getState(token);
             return state;
           } else {
@@ -284,7 +284,8 @@ const resolveClientChildren = (
 
 export function calculateClient(
   node: ClientSyntaxTree,
-  getState: (token: { state: string } | { loop: string }) => ValueArray[number]
+  getState: (token: { state: string }) => ValueArray[number],
+  getIndex: (doc: string) => number
 ): ValueArray {
   const calculateNode = (node: ClientSyntaxTree): ValueArray[] => {
     let values = resolveClientChildren(node.children, getState, calculateNode);
@@ -292,6 +293,10 @@ export function calculateClient(
     if (node.type === "fetch") {
       // find out what to do here!
       values = [];
+    } else if (node.type === "loop") {
+      // and here
+      const index = getIndex(node.data);
+      values = [[values.reduce((acc, cur) => [...acc, ...cur], [])[index]]];
     } else if (node.type === "select") {
       // and here
       values = [];

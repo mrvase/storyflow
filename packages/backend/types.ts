@@ -49,6 +49,7 @@ export type HasSelect<T> = T extends {
 }
   ? T & {
       select?: RawFieldId;
+      loop?: RawDocumentId;
     }
   : T;
 
@@ -102,10 +103,12 @@ export type StateToken = {
   state: FieldId; // client side ctx
 };
 
+/*
 export type LoopToken = {
   loop: FieldId; // client side ctx
   values?: ValueArray;
 };
+*/
 
 export type FileToken = {
   src: string;
@@ -124,8 +127,8 @@ export type Token =
   | ContextToken
   | FileToken
   | ColorToken
-  | StateToken
-  | LoopToken;
+  | StateToken;
+//  | LoopToken;
 
 export type LineBreak = { n: true };
 export type Parameter = { x: number; value?: PrimitiveValue };
@@ -267,6 +270,7 @@ export const functions = [
   "slug",
   "url",
   "select",
+  "loop",
   "root",
   "merge",
   "template",
@@ -310,6 +314,7 @@ export type FunctionSymbol =
   | { merge: true }
   | { template: RawDocumentId }
   | { select: RawFieldId }
+  | { loop: RawDocumentId }
   | { fetch: [limit: number, ...sortings: Sorting[]] };
 
 type Assert<T extends true> = T;

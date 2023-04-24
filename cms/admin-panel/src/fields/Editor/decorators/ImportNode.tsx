@@ -17,18 +17,20 @@ import { revertTemplateFieldId } from "@storyflow/backend/ids";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 
 const useState = (
-  id: FieldId,
-  select?: RawFieldId
+  field: HasSelect<NestedField>
 ): [label: string, value: ValueArray | undefined] => {
-  if (select) {
-    const label1 = useLabel(id);
-    const label2 = useLabel(revertTemplateFieldId(select));
+  if (field.select && field.loop) {
+    const label2 = useLabel(revertTemplateFieldId(field.select));
+    return ["", [label2 || "?"]];
+  }
+  if (field.select) {
+    const label1 = useLabel(field.field);
+    const label2 = useLabel(revertTemplateFieldId(field.select));
     return ["", [`${label1} · ${label2 || "?"}`]];
   }
 
-  if (!id) return ["", []];
-  const value = useGlobalState<ValueArray>(id)[0];
-  const label = useLabel(id);
+  const value = useGlobalState<ValueArray>(field.field)[0];
+  const label = useLabel(field.field);
   return [label, value];
 };
 
@@ -46,8 +48,9 @@ function Decorator({
   const parameters = ["x", "y", "z"];
 
   const isColumn = Boolean(fieldImport.select);
+  const isLoop = Boolean(fieldImport.loop);
 
-  const [label, value] = useState(fieldImport.field, fieldImport.select);
+  const [label, value] = useState(fieldImport);
 
   const preview = getPreview(value ?? []);
 
@@ -57,12 +60,16 @@ function Decorator({
     <span
       className={cl(
         "rounded selection:bg-transparent relative ring-1 ring-inset",
-        isColumn
+        isLoop
+          ? "bg-red-100 dark:bg-red-400/20 text-red-700/90 dark:text-red-100/90 text-sm py-0.5 px-1.5 font-medium"
+          : isColumn
           ? "bg-sky-100 dark:bg-sky-400/20 text-sky-700/90 dark:text-sky-100/90 text-sm py-0.5 px-1.5 font-medium"
           : "bg-teal-100 dark:bg-teal-400/20 text-teal-700/90 dark:text-teal-100/90",
         // "after:absolute after:w-full after:left-0 after:-bottom-0.5 after:border-b-2 after:border-b-white/20",
         isSelected
           ? "ring-white"
+          : isLoop
+          ? "ring-red-400/20"
           : isColumn
           ? "ring-sky-400/20"
           : "ring-transparent",
