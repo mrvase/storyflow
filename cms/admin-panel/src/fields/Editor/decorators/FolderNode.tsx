@@ -7,14 +7,21 @@ import {
   SyntaxTreeRecord,
   NestedDocument,
   NestedFolder,
+  NestedDocumentId,
 } from "@storyflow/backend/types";
 import { FolderIcon } from "@heroicons/react/24/outline";
 import { useTemplate } from "../../default/useFieldTemplate";
 import { useFolder } from "../../../folders/collab/hooks";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
-import { usePath, useSelectedPath } from "../../Path";
-import { Attributes, AttributesProvider } from "../../Attributes";
+import { ExtendPath, usePath, useSelectedPath } from "../../Path";
+import {
+  Attributes,
+  AttributesProvider,
+  useAttributesContext,
+} from "../../Attributes";
 import { useFieldTemplateId } from "../../default/FieldTemplateContext";
+import { DefaultField } from "../../default/DefaultField";
+import { EditorFocusProvider } from "../../../editor/react/useIsFocused";
 
 function Decorator({
   value,
@@ -48,41 +55,42 @@ function Decorator({
 
   return (
     <AttributesProvider>
-      <div
-        className={cl(
-          "relative",
-          "rounded text-sm selection:bg-transparent",
-          isSelected && "ring-1 ring-white",
-          color
-        )}
-        onMouseDown={() => {
-          if (!isSelected) {
-            select();
-            selectClick.current = true;
-          }
-        }}
-        onClick={() => {
-          if (
-            isSelected &&
-            hasTemplate &&
-            !selectClick.current &&
-            "id" in value
-          ) {
-            setPath(() => [...selectedPath, ...path, value.id]);
-          }
-          selectClick.current = false;
-        }}
-      >
-        <div className="flex w-full py-1">
-          <div className="w-8 flex-center">
-            <FolderIcon className="w-4 h-4" />
+      <EditorFocusProvider>
+        <div
+          className={cl(
+            "relative",
+            "rounded",
+            isSelected && "ring-1 ring-white",
+            color
+          )}
+          onMouseDown={() => {
+            if (!isSelected) {
+              select();
+              selectClick.current = true;
+            }
+          }}
+          onClick={() => {
+            if (
+              isSelected &&
+              hasTemplate &&
+              !selectClick.current &&
+              "id" in value
+            ) {
+              setPath(() => [...selectedPath, ...path, value.id]);
+            }
+            selectClick.current = false;
+          }}
+        >
+          <div className="flex w-full py-1 text-sm selection:bg-transparent">
+            <div className="w-11 flex-center shrink-0">
+              <FolderIcon className="w-4 h-4" />
+            </div>
+            <div className="px-2 shrink-0">{folder.label}</div>
+            <div className="pl-2">
+              <Attributes entity={value} hideAsDefault color="red" />
+            </div>
           </div>
-          <div className="px-2 ">{folder.label}</div>
-          <div className="pl-2">
-            <Attributes entity={value} hideAsDefault color="red" />
-          </div>
-        </div>
-        {/*docs.length === 0 && (
+          {/*docs.length === 0 && (
           <div className="w-full px-2 py-0.5 select-none">
             [Ingen resultater · Klik for at indstille]
           </div>
@@ -106,8 +114,28 @@ function Decorator({
             })}
           </div>
         ))*/}
-      </div>
+          <NestedDefaultField documentId={value.id} />
+        </div>
+      </EditorFocusProvider>
     </AttributesProvider>
+  );
+}
+
+function NestedDefaultField({ documentId }: { documentId: NestedDocumentId }) {
+  const [propId] = useAttributesContext();
+
+  if (!propId) {
+    return null;
+  }
+
+  return (
+    <ExtendPath id={documentId} type="document">
+      <ExtendPath id={propId} type="field">
+        <div className="cursor-auto mt-1.5 pl-[2.875rem] pr-2.5">
+          <DefaultField id={propId} showPromptButton />
+        </div>
+      </ExtendPath>
+    </ExtendPath>
   );
 }
 

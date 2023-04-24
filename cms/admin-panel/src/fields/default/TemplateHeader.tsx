@@ -66,7 +66,7 @@ export function TemplateHeader({
             <HeadlessMenu.Button
               as="button"
               className={cl(
-                "h-full flex-center transition-opacity px-2 gap-2",
+                "h-full flex-center transition-opacity px-3.5 gap-2",
                 open ? "opacity-100" : "opacity-50 hover:opacity-100"
               )}
             >

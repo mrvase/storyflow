@@ -49,6 +49,7 @@ import {
 } from "@storyflow/backend/ids";
 import util from "node:util";
 import { tokens } from "@storyflow/backend/tokens";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
 
 const sessionStorage = createSessionStorage({
   cookie: cookieOptions,
@@ -228,7 +229,7 @@ const createElementRecordGetter = (
     };
 
     const calculateAsync = async () => {
-      const entry = docRecord[fieldId];
+      const entry = docRecord[fieldId] ?? DEFAULT_SYNTAX_TREE;
 
       const oldFetches = [...fetchRequests];
 

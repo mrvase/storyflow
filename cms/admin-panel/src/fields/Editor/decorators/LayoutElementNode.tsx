@@ -133,11 +133,12 @@ function Decorator({
               </button>
             </div>
           </div>
-          <PrimaryProp
-            documentId={value.id}
-            props={props}
-            isLoop={value.element === "Loop"}
-          />
+          <FieldSpecification props={props} isLoop={value.element === "Loop"}>
+            <NestedDefaultField
+              documentId={value.id}
+              ellipsis={props.length > 0}
+            />
+          </FieldSpecification>
         </FocusContainer>
       </EditorFocusProvider>
     </AttributesProvider>
@@ -245,28 +246,23 @@ function useParentPropConfig() {
   );
 }
 
-function PrimaryProp({
-  documentId,
+function FieldSpecification({
   props,
   isLoop,
+  children,
 }: {
-  documentId: NestedDocumentId;
   props: (PropConfig<RegularOptions> & { id: FieldId })[];
-  isLoop?: boolean;
+  isLoop: boolean;
+  children: React.ReactNode;
 }) {
   const [propId] = useAttributesContext();
-
-  const config = props.find((el) => el.id === propId);
-
   const parentPropConfig = useParentPropConfig();
 
-  if (!config) {
-    return props.length ? (
-      <div className="text-gray-400 pl-11 -mt-2 pb-1 pointer-events-none">
-        <EllipsisHorizontalIcon className="w-4 h-4" />
-      </div>
-    ) : null;
+  if (!propId) {
+    return <>{children}</>;
   }
+
+  const config = props.find((el) => el.id === propId)!;
 
   let options: RegularOptions | undefined =
     "options" in config ? config.options : undefined;
@@ -276,23 +272,43 @@ function PrimaryProp({
   }
 
   return (
+    <LevelProvider key={propId}>
+      <FieldRestrictionsContext.Provider value={config.type}>
+        <FieldOptionsContext.Provider value={options ?? null}>
+          {children}
+        </FieldOptionsContext.Provider>
+      </FieldRestrictionsContext.Provider>
+    </LevelProvider>
+  );
+}
+
+function NestedDefaultField({
+  documentId,
+  ellipsis,
+}: {
+  documentId: NestedDocumentId;
+  ellipsis?: boolean;
+}) {
+  const [propId] = useAttributesContext();
+
+  if (!propId) {
+    return ellipsis ? (
+      <div className="text-gray-400 pl-11 -mt-2 pb-1 pointer-events-none">
+        <EllipsisHorizontalIcon className="w-4 h-4" />
+      </div>
+    ) : null;
+  }
+
+  return (
     <ExtendPath id={documentId} type="document">
-      <ExtendPath id={config.id} type="field">
-        <LevelProvider key={config.id}>
-          <FieldRestrictionsContext.Provider value={config.type}>
-            <FieldOptionsContext.Provider value={options ?? null}>
-              <div className="cursor-auto pl-[2.875rem] pr-2.5">
-                <DefaultField
-                  id={config.id}
-                  showPromptButton
-                  showTemplateHeader={config.id.endsWith(
-                    getIdFromString("data")
-                  )}
-                />
-              </div>
-            </FieldOptionsContext.Provider>
-          </FieldRestrictionsContext.Provider>
-        </LevelProvider>
+      <ExtendPath id={propId} type="field">
+        <div className="cursor-auto pl-[2.875rem] pr-2.5">
+          <DefaultField
+            id={propId}
+            showPromptButton
+            showTemplateHeader={propId.endsWith(getIdFromString("data"))}
+          />
+        </div>
       </ExtendPath>
     </ExtendPath>
   );
