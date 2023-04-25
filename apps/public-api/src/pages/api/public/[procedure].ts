@@ -1,1 +1,1 @@
-export { handler as default } from "api/public";
+export { handler as default } from "@storyflow/api";

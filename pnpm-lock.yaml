@@ -18,6 +18,7 @@ importers:
       '@sfrpc/client': workspace:*
       '@sfrpc/server': workspace:*
       '@sfrpc/types': workspace:*
+      '@storyflow/api': workspace:*
       '@storyflow/auth': workspace:*
       '@storyflow/react': workspace:*
       '@storyflow/result': workspace:*
@@ -26,7 +27,6 @@ importers:
       '@types/qs': ^6.9.7
       '@types/react': ^18.0.22
       '@types/react-dom': ^18.0.7
-      api: workspace:*
       eslint: 7.32.0
       eslint-config-custom: workspace:*
       mongodb: ^4.13.0
@@ -40,11 +40,11 @@ importers:
     dependencies:
       '@sfrpc/client': link:../../rpc/client
       '@sfrpc/server': link:../../rpc/server
+      '@storyflow/api': link:../../frontend/api
       '@storyflow/auth': link:../../utils/auth
       '@storyflow/react': link:../../frontend/react
       '@storyflow/result': link:../../utils/result
       '@storyflow/session': link:../../utils/session
-      api: link:../../cms/api
       mongodb: 4.13.0
       next: 13.3.0_pjwopsidmaokadturxaafygjp4
       react: 18.2.0
@@ -292,6 +292,51 @@ importers:
       '@storyflow/db-core': link:../../packages/db-core
       eslint: 7.32.0
       eslint-config-custom: link:../../setup/eslint-config-custom
+      tsconfig: link:../../setup/tsconfig
+      typescript: 5.0.4
+      vite: 4.0.4
+      vitest: 0.28.4
+
+  frontend/api:
+    specifiers:
+      '@sfrpc/server': workspace:*
+      '@sfrpc/types': workspace:*
+      '@storyflow/db-core': workspace:*
+      '@storyflow/fields-core': workspace:*
+      '@storyflow/result': workspace:*
+      '@storyflow/session': workspace:*
+      '@storyflow/shared': workspace:*
+      '@types/bcryptjs': ^2.4.2
+      bcryptjs: ^2.4.3
+      eslint: ^7.32.0
+      eslint-config-custom: workspace:*
+      mongodb: ^4.13.0
+      next: ^13.3.0
+      operations: workspace:*
+      qs: ^6.11.0
+      tsconfig: workspace:*
+      typescript: ^5.0.4
+      vite: ^4.0.4
+      vitest: ^0.28.4
+      zod: ^3.20.2
+    dependencies:
+      '@sfrpc/server': link:../../rpc/server
+      '@storyflow/db-core': link:../../packages/db-core
+      '@storyflow/fields-core': link:../../packages/fields-core
+      '@storyflow/result': link:../../utils/result
+      '@storyflow/session': link:../../utils/session
+      '@storyflow/shared': link:../../packages/shared
+      bcryptjs: 2.4.3
+      operations: link:../../cms/operations
+      qs: 6.11.0
+      zod: 3.20.2
+    devDependencies:
+      '@sfrpc/types': link:../../rpc/types
+      '@types/bcryptjs': 2.4.2
+      eslint: 7.32.0
+      eslint-config-custom: link:../../setup/eslint-config-custom
+      mongodb: 4.13.0
+      next: 13.3.0
       tsconfig: link:../../setup/tsconfig
       typescript: 5.0.4
       vite: 4.0.4

@@ -2,7 +2,7 @@ import type { SyntaxTreeRecord } from "@storyflow/fields-core/types";
 import type { DocumentId, RawFieldId } from "@storyflow/shared/types";
 import { computeFieldId } from "@storyflow/fields-core/ids";
 import { parseSyntaxStream } from "./parse-syntax-stream";
-import type { DBDocumentRaw, DBId } from "./types";
+import type { DBDocument, DBDocumentRaw, DBId } from "./types";
 
 export const unwrapObjectId = <T>(id: DBId<T>): T => {
   if (typeof id === "string") return id;
@@ -23,4 +23,15 @@ export const getSyntaxTreeRecord = (
     }
   });
   return fields;
+};
+
+export const parseDocument = (raw: DBDocumentRaw): DBDocument => {
+  const { _id, folder, ids, cached, fields, ...rest } = raw;
+  const id = unwrapObjectId(raw._id);
+  return {
+    _id: id,
+    folder: unwrapObjectId(raw.folder),
+    record: getSyntaxTreeRecord(id, raw),
+    ...rest,
+  };
 };

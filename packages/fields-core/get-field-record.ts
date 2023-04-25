@@ -99,16 +99,14 @@ export const createFieldRecordGetter = (
       const oldFetches = [...fetchRequests];
 
       fetches.forEach((el) => {
-        const filterEntries = Object.entries(docRecord)
-          .filter(([key]) => key.startsWith(getRawDocumentId(el.folder.id)))
-          .map(([key, value]) => [
-            `values.${getRawFieldId(key as FieldId)}`,
-            calculate(value, getState),
-          ]);
         const filters = Object.fromEntries(
-          filterEntries
+          Object.entries(docRecord)
+            .filter(([key]) => key.startsWith(getRawDocumentId(el.folder.id)))
+            .map(([key, value]) => [
+              getRawFieldId(key as FieldId),
+              calculate(value, getState),
+            ])
             .filter(([, value]) => Array.isArray(value) && value.length > 0)
-            .map(([key, value]) => [key, { $elemMatch: { $in: value } }])
         );
         fetchFilters.set(el.folder, filters);
       });

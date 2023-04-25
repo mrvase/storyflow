@@ -20,7 +20,7 @@ import type {
   SyntaxTree,
   NestedField,
 } from "@storyflow/fields-core/types";
-import { getSyntaxTreeRecord } from "@storyflow/db-core/convert";
+import { getSyntaxTreeRecord, parseDocument } from "@storyflow/db-core/convert";
 import type { TokenStream } from "operations/types";
 import { ObjectId } from "mongodb";
 import clientPromise from "../mongo/mongoClient";
@@ -67,7 +67,6 @@ import {
   isNestedDocumentId,
   isTemplateField,
 } from "@storyflow/fields-core/ids";
-import { parseDocument } from "./documents";
 import { deduplicate, getImports, getSortedValues } from "./helpers";
 import { createSyntaxStream } from "@storyflow/db-core/parse-syntax-stream";
 import {

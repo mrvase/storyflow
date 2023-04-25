@@ -1,21 +1,22 @@
 import { createProcedure, createRoute, MiddlewareContext } from "@sfrpc/server";
 import bcrypt from "bcryptjs";
-import clientPromise from "../mongo/mongoClient";
+import clientPromise from "./mongoClient";
 import { z } from "zod";
 
-import { cors as corsFactory } from "../middleware/cors";
+import { cors as corsFactory } from "./cors";
 
 import { createSessionStorage } from "@storyflow/session";
-import { cookieOptions } from "../cookie-options";
+import { cookieOptions } from "./cookie-options";
 import { error, success } from "@storyflow/result";
 import { createFieldRecordGetter } from "@storyflow/fields-core/get-field-record";
 import { calculateRootFieldFromRecord } from "@storyflow/fields-core/calculate-server";
 import type {} from "@storyflow/shared/types";
 import type { RawFieldId, ValueArray } from "@storyflow/shared/types";
 import type { DBDocumentRaw } from "@storyflow/db-core/types";
+import { parseDocument } from "@storyflow/db-core/convert";
+import { getPaths } from "@storyflow/db-core/paths";
 import { DEFAULT_FIELDS } from "@storyflow/fields-core/default-fields";
 import { ObjectId } from "mongodb";
-import { parseDocument } from "../routes/documents";
 import {
   createRawTemplateFieldId,
   createTemplateFieldId,
@@ -92,14 +93,23 @@ const createFetcher =
     folder: FolderId;
     filters: Record<RawFieldId, ValueArray>;
     limit: number;
+    sort?: string[];
   }) => {
+    const filters = Object.fromEntries(
+      Object.entries(fetchObject.filters ?? {})
+        .filter(([, value]) => Array.isArray(value) && value.length > 0)
+        .map(([key, value]) => {
+          return [`values.${key}`, { $elemMatch: { $in: value } }];
+        })
+    );
+
     const client = await clientPromise;
     const result = await client
       .db(dbName)
       .collection<DBDocumentRaw>("documents")
       .find({
         folder: new ObjectId(fetchObject.folder),
-        ...fetchObject.filters,
+        ...filters,
       })
       .sort({ _id: -1 })
       .limit(fetchObject.limit)
@@ -237,93 +247,9 @@ export const public_ = createRoute({
         })
         .toArray();
 
-      const urls = articles
-        .map((el) => {
-          const doc = parseDocument(el);
-          return {
-            _id: doc._id,
-            url: el.values[
-              createRawTemplateFieldId(DEFAULT_FIELDS.url.id)
-            ][0] as string,
-            record: doc.record,
-          };
-        })
-        .sort((a, b) => {
-          if (a.url.length < b.url.length) {
-            return -1;
-          }
-          if (a.url.length > b.url.length) {
-            return 1;
-          }
-          return 0;
-        });
+      const paths = getPaths(articles, createFetcher(dbName));
 
-      const dynamicUrls = urls.filter((el) => el.url.indexOf("*") > 0);
-      const ordinaryUrls = urls.filter((el) => el.url.indexOf("*") < 0);
-
-      const staticUrls = (
-        await Promise.all(
-          dynamicUrls.map(async ({ _id, url, record }) => {
-            const fieldId = createTemplateFieldId(
-              _id,
-              DEFAULT_FIELDS.params.id
-            );
-            const tree = record[fieldId];
-
-            const toUrl = (slug: string) => `${url.slice(0, -1)}${slug}`;
-
-            if (
-              tree.children.every((el): el is string => typeof el === "string")
-            ) {
-              return tree.children.map(toUrl);
-            }
-
-            // wrap in select
-            record[fieldId] = {
-              type: "select",
-              children: [
-                {
-                  type: "fetch",
-                  children: [record[fieldId]],
-                  data: [100],
-                },
-              ],
-              data: createRawTemplateFieldId(DEFAULT_FIELDS.slug.id),
-            };
-
-            const getFieldRecord = createFieldRecordGetter(
-              record,
-              {},
-              createFetcher(dbName)
-            );
-
-            const slugs =
-              (
-                await getFieldRecord(
-                  createTemplateFieldId(_id, DEFAULT_FIELDS.params.id)
-                )
-              )?.entry ?? [];
-
-            if (!Array.isArray(slugs)) {
-              throw new Error("Slugs cannot rely on client state");
-            }
-
-            if (slugs.every((el): el is string => typeof el === "string")) {
-              return slugs.map(toUrl);
-            }
-
-            return [];
-          })
-        )
-      ).flat(1);
-
-      /*
-      console.log("ORDINARY URLS", ordinaryUrls);
-      console.log("DYNAMIC URLS", dynamicUrls);
-      console.log("STATIC URLS", staticUrls);
-      */
-
-      return success([...ordinaryUrls.map((el) => el.url), ...staticUrls]);
+      return success(paths);
     },
   }),
   /*
