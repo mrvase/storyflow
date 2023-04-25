@@ -4,7 +4,12 @@
   "private": true,
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "frontend/*",
+    "cms/*",
+    "setup/*",
+    "rpc/*",
+    "utils/*"
   ],
   "scripts": {
     "build": "turbo run build",

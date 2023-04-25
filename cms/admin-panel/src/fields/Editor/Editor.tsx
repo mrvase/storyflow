@@ -3,7 +3,7 @@ import { DecoratorPlugin } from "./DecoratorPlugin";
 import { EditorProvider } from "../../editor/react/EditorProvider";
 import React from "react";
 import { $initializeEditor } from "./transforms";
-import { TokenStream } from "@storyflow/backend/types";
+import { TokenStream } from "operations/types";
 import { Reconciler } from "./reconciler/Reconciler";
 import {
   EditorFocusPlugin,
@@ -17,7 +17,7 @@ import { useFieldId } from "../FieldIdContext";
 import { HeadingNode } from "../../editor/react/HeadingNode";
 import nodes from "./decorators/nodes";
 import { CopyPastePlugin } from "./CopyPastePlugin";
-import { FieldOperation } from "shared/operations";
+import { FieldOperation } from "operations/actions";
 
 const editorConfig = {
   namespace: "EDITOR",

@@ -1,14 +1,13 @@
 import React from "react";
-import {
-  DocumentConfig,
-  DocumentId,
-  FieldConfig,
-  FieldId,
+import { DocumentId, FieldId } from "@storyflow/shared/types";
+import type { FieldConfig } from "@storyflow/fields-core/types";
+import type {
   PartialFieldConfig,
   TemplateRef,
-} from "@storyflow/backend/types";
+  DocumentConfig,
+} from "@storyflow/db-core/types";
 import { useDocumentCollab, useDocumentMutate } from "./DocumentCollabContext";
-import { getFieldConfig, setFieldConfig } from "shared/getFieldConfig";
+import { getFieldConfig, setFieldConfig } from "operations/getFieldConfig";
 import { createPurger, createStaticStore } from "../../state/StaticStore";
 import { useDocument } from "..";
 import {
@@ -17,7 +16,7 @@ import {
   isTemplateField,
   replaceDocumentId,
   revertTemplateFieldId,
-} from "@storyflow/backend/ids";
+} from "@storyflow/fields-core/ids";
 import { ServerPackage } from "@storyflow/state";
 import { createCollaborativeState } from "../../state/createCollaborativeState";
 import { QueueListenerParam } from "@storyflow/state/collab/Queue";
@@ -26,7 +25,7 @@ import {
   DocumentOperation,
   isSpliceAction,
   isToggleAction,
-} from "shared/operations";
+} from "operations/actions";
 
 /*
 export const labels = createStaticStore<

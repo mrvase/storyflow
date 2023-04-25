@@ -2,13 +2,12 @@ import React from "react";
 import { LexicalNode, NodeKey } from "lexical";
 import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
-import { caretClasses } from "./caret";
 import {
-  SyntaxTreeRecord,
   NestedDocument,
   NestedFolder,
   NestedDocumentId,
-} from "@storyflow/backend/types";
+} from "@storyflow/shared/types";
+import { SyntaxTreeRecord } from "@storyflow/fields-core/types";
 import { FolderIcon } from "@heroicons/react/24/outline";
 import { useTemplate } from "../../default/useFieldTemplate";
 import { useFolder } from "../../../folders/collab/hooks";

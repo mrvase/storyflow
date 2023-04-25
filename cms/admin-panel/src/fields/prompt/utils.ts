@@ -1,4 +1,4 @@
-import { LibraryConfig } from "@storyflow/frontend/types";
+import { LibraryConfig } from "@storyflow/shared/types";
 import { $getSelection, $isRangeSelection } from "lexical";
 import PromptNode, { $isPromptNode } from "../Editor/decorators/PromptNode";
 import { $replaceWithBlocks } from "../Editor/insertComputation";

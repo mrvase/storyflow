@@ -1,17 +1,19 @@
 import cl from "clsx";
 import React from "react";
 import {
-  FieldConfig,
   FieldId,
   NestedDocumentId,
   NestedEntity,
-  ValueArray,
-} from "@storyflow/backend/types";
+} from "@storyflow/shared/types";
+import { FieldConfig } from "@storyflow/fields-core/types";
 import { useFieldId } from "./FieldIdContext";
 import { getConfigFromType, useClientConfig } from "../client-config";
-import { createTemplateFieldId, getDocumentId } from "@storyflow/backend/ids";
+import {
+  createTemplateFieldId,
+  getDocumentId,
+} from "@storyflow/fields-core/ids";
 import { useGlobalState } from "../state/state";
-import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
 import { useClient } from "../client";
 import { useDocumentPageContext } from "../documents/DocumentPageContext";
 import { calculateFn } from "./default/calculateFn";

@@ -3,26 +3,26 @@ import { createQueue } from "@storyflow/state";
 import React from "react";
 import { Client, SWRClient, cache } from "../client";
 import {
-  SyntaxTreeRecord,
-  DBDocument,
   DocumentId,
   FolderId,
   RawFieldId,
   ValueArray,
-  Sorting,
   RawDocumentId,
-} from "@storyflow/backend/types";
+} from "@storyflow/shared/types";
+import { SyntaxTreeRecord, Sorting } from "@storyflow/fields-core/types";
+import { DBDocument } from "@storyflow/db-core/types";
 import { pushAndRetry } from "../utils/retryOnError";
 import {
   DEFAULT_FIELDS,
-  DEFAULT_TEMPLATES,
+  generateTemplateId,
   getDefaultValue,
-} from "@storyflow/backend/fields";
-import { TEMPLATE_FOLDER } from "@storyflow/backend/constants";
+} from "@storyflow/fields-core/default-fields";
+import { TEMPLATE_FOLDER } from "@storyflow/fields-core/constants";
 import {
   getTemplateDocumentId,
   normalizeDocumentId,
-} from "@storyflow/backend/ids";
+} from "@storyflow/fields-core/ids";
+import { DefaultFieldConfig } from "@storyflow/fields-core/types";
 
 type DocumentListMutation =
   | {
@@ -239,6 +239,46 @@ export function fetchDocumentSync(
   const result = client.documents.get.query(id).then((res) => unwrap(res)?.doc);
   return result;
 }
+
+const generateTemplateFromDefaultFields = (
+  label: string,
+  fields: DefaultFieldConfig[]
+): DBDocument => {
+  const record: SyntaxTreeRecord = {};
+
+  fields.forEach((field) => {
+    if (field.initialValue) record[field.id] = getDefaultValue(field);
+  });
+
+  return {
+    _id: generateTemplateId(),
+    folder: TEMPLATE_FOLDER,
+    label,
+    config: fields.map((field) => ({
+      template: getTemplateDocumentId(field.id),
+    })),
+    record,
+    versions: { config: 0 },
+  };
+};
+
+export const DEFAULT_TEMPLATES = {
+  staticPage: generateTemplateFromDefaultFields("Statisk side", [
+    DEFAULT_FIELDS.url,
+    DEFAULT_FIELDS.layout,
+    DEFAULT_FIELDS.page,
+  ]),
+  dynamicPage: generateTemplateFromDefaultFields("Dynamisk side", [
+    DEFAULT_FIELDS.url,
+    DEFAULT_FIELDS.params,
+    DEFAULT_FIELDS.layout,
+    DEFAULT_FIELDS.page,
+  ]),
+  redirectPage: generateTemplateFromDefaultFields("Viderestilling", [
+    DEFAULT_FIELDS.url,
+    DEFAULT_FIELDS.redirect,
+  ]),
+};
 
 const TEMPLATES = [
   ...Object.values(DEFAULT_FIELDS).map((field): DBDocument => {

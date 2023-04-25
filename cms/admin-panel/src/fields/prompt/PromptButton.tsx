@@ -16,7 +16,7 @@ import {
   $getComputation,
   $getIndexesFromSelection,
 } from "../Editor/transforms";
-import { tools } from "shared/editor-tools";
+import { tools } from "operations/editor-tools";
 import { $createPromptNode } from "../Editor/decorators/PromptNode";
 import { $replaceWithBlocks } from "../Editor/insertComputation";
 import { $exitPromptNode, $getPromptNode } from "./utils";

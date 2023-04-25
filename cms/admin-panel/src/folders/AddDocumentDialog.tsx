@@ -2,19 +2,15 @@ import React from "react";
 import Dialog from "../elements/Dialog";
 import { useDocumentListMutation } from "../documents";
 import { getDefaultValuesFromTemplateAsync } from "../documents/template-fields";
-import { createTemplateFieldId } from "@storyflow/backend/ids";
-import {
-  DocumentId,
-  FieldId,
-  FolderId,
-  SyntaxTreeRecord,
-} from "@storyflow/backend/types";
+import { createTemplateFieldId } from "@storyflow/fields-core/ids";
+import { DocumentId, FieldId, FolderId } from "@storyflow/shared/types";
+import { SyntaxTreeRecord } from "@storyflow/fields-core/types";
 import { useClient } from "../client";
 import { toSlug } from "../fields/UrlField";
 import { useDocumentIdGenerator } from "../id-generator";
-import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
-import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
-import { insertRootInTransforms } from "@storyflow/backend/transform";
+import { DEFAULT_FIELDS } from "@storyflow/fields-core/default-fields";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
+import { insertRootInTransforms } from "@storyflow/fields-core/transform";
 import { usePanel, useRoute } from "../panel-router/Routes";
 
 export function AddDocumentDialog({

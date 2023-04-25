@@ -1,7 +1,8 @@
 import { createProcedure, createRoute } from "@sfrpc/server";
 import { error, success, unwrap } from "@storyflow/result";
 import { z } from "zod";
-import { DBFolder, DBFolderRaw, RawDocumentId } from "@storyflow/backend/types";
+import { RawDocumentId } from "@storyflow/shared/types";
+import { DBFolder, DBFolderRaw } from "@storyflow/db-core/types";
 import clientPromise from "../mongo/mongoClient";
 import { globals } from "../middleware/globals";
 import {
@@ -17,7 +18,7 @@ import {
   sortHistories,
 } from "../collab-utils/redis-client";
 import { ServerPackage } from "@storyflow/state";
-import { unwrapObjectId } from "@storyflow/backend/ids";
+import { unwrapObjectId } from "@storyflow/db-core/convert";
 
 export const removeObjectId = <T extends { _id: any }>({
   _id,

@@ -1,6 +1,6 @@
 import cl from "clsx";
 import { SwatchIcon } from "@heroicons/react/24/outline";
-import { ColorToken } from "@storyflow/backend/types";
+import { ColorToken } from "@storyflow/shared/types";
 import { LexicalNode, NodeKey } from "lexical";
 import React from "react";
 import { getColorName } from "../../../data/colors";

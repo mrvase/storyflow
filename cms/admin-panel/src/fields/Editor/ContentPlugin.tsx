@@ -11,14 +11,15 @@ import {
   addNestedDocument,
   addNestedFolder,
 } from "../../custom-events";
-import { DocumentId, TokenStream } from "@storyflow/backend/types";
+import { DocumentId } from "@storyflow/shared/types";
+import { TokenStream } from "operations/types";
 import { useClientConfig } from "../../client-config";
 import { useFieldConfig } from "../../documents/collab/hooks";
 import { useFieldId } from "../FieldIdContext";
 import { createComponent } from "./createComponent";
 import { replaceWithComputation } from "./insertComputation";
 import { useDocumentIdGenerator } from "../../id-generator";
-import { getDocumentId } from "@storyflow/backend/ids";
+import { getDocumentId } from "@storyflow/fields-core/ids";
 import { useIsFocused } from "../../editor/react/useIsFocused";
 
 export function ContentPlugin() {

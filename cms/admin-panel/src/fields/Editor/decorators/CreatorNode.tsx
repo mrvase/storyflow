@@ -2,7 +2,8 @@ import React from "react";
 import { LexicalNode, NodeKey } from "lexical";
 import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
-import { FieldId, NestedCreator } from "@storyflow/backend/types";
+import { FieldId } from "@storyflow/shared/types";
+import { NestedCreator } from "@storyflow/fields-core/types";
 import { DefaultField } from "../../default/DefaultField";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 

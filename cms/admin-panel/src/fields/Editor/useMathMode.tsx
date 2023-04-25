@@ -1,8 +1,8 @@
 import * as React from "react";
 import { useEditorContext } from "../../editor/react/EditorProvider";
-import { TokenStream } from "@storyflow/backend/types";
+import { TokenStream } from "operations/types";
 import { useClientConfig } from "../../client-config";
-import { operators } from "@storyflow/backend/types";
+import { operators } from "@storyflow/shared/types";
 import { replaceWithComputation } from "./insertComputation";
 
 export function useMathMode(defaultValue: boolean = false) {

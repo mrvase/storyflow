@@ -15,7 +15,6 @@
     "@storyflow/auth": "workspace:*",
     "@storyflow/react": "workspace:*",
     "@storyflow/result": "workspace:*",
-    "@storyflow/server": "workspace:*",
     "@storyflow/session": "workspace:*",
     "api": "workspace:*",
     "mongodb": "^4.13.0",

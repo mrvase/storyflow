@@ -1,18 +1,17 @@
-import { DocumentId, TokenStream } from "@storyflow/backend/types";
+import { DocumentId } from "@storyflow/shared/types";
 import {
   getDocumentId,
   getRawDocumentId,
   getRawFieldId,
-} from "@storyflow/backend/ids";
+} from "@storyflow/fields-core/ids";
 import { DocumentDuplicateIcon } from "@heroicons/react/24/outline";
 import React from "react";
 import { Option } from "./Option";
 import { useFieldId } from "../FieldIdContext";
 import { markMatchingString } from "./helpers";
-import { useFieldConfig } from "../../documents/collab/hooks";
 import { useOptimisticDocumentList } from "../../documents";
-import { TEMPLATE_FOLDER } from "@storyflow/backend/constants";
-import { FieldOperation } from "shared/operations";
+import { TEMPLATE_FOLDER } from "@storyflow/fields-core/constants";
+import { FieldOperation } from "operations/actions";
 import { useDocumentMutate } from "../../documents/collab/DocumentCollabContext";
 import { usePath } from "../Path";
 import { useClientConfig } from "../../client-config";

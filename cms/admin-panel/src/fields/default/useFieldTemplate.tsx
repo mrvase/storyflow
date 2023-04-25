@@ -1,10 +1,7 @@
 import React from "react";
 import { getTemplateFieldsAsync } from "../../documents/template-fields";
-import {
-  DocumentId,
-  FieldConfig,
-  RawDocumentId,
-} from "@storyflow/backend/types";
+import { DocumentId, RawDocumentId } from "@storyflow/shared/types";
+import { FieldConfig } from "@storyflow/fields-core/types";
 import { useClient } from "../../client";
 import { useDocument } from "../../documents";
 

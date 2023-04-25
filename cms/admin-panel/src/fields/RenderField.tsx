@@ -1,16 +1,17 @@
 import { NoList } from "@storyflow/dnd";
 import React from "react";
-import { FieldConfig, FieldId, FieldType } from "@storyflow/backend/types";
+import { FieldId } from "@storyflow/shared/types";
+import { FieldConfig, FieldUI } from "@storyflow/fields-core/types";
 import { DefaultFieldRoot } from "./default/DefaultFieldRoot";
 import { FieldContainer } from "./FieldContainer";
 import UrlField from "./UrlField";
 import { ServerPackage } from "@storyflow/state";
 import { FieldIdContext } from "./FieldIdContext";
 import { FieldRestrictionsContext } from "./FieldIdContext";
-import { FieldOperation } from "shared/operations";
+import { FieldOperation } from "operations/actions";
 import { FieldProps } from "./types";
 
-const Components: { [K in FieldType | "default"]: React.FC<FieldProps> } = {
+const Components: { [K in FieldUI | "default"]: React.FC<FieldProps> } = {
   default: DefaultFieldRoot,
   url: UrlField,
 };
@@ -30,11 +31,11 @@ export function RenderField({
   history: ServerPackage<FieldOperation>[];
   dragHandleProps?: any;
 }) {
-  const Component = Components[fieldConfig.type ?? "default"];
+  const Component = Components[fieldConfig.ui ?? "default"];
 
   return (
     <FieldIdContext.Provider value={id}>
-      <FieldRestrictionsContext.Provider value={fieldConfig.restrictTo ?? null}>
+      <FieldRestrictionsContext.Provider value={fieldConfig.type2 ?? null}>
         <FieldContainer
           index={index}
           fieldConfig={fieldConfig}

@@ -5,7 +5,7 @@ import {
   CheckIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
-import { TokenStream } from "@storyflow/backend/types";
+import { TokenStream } from "operations/types";
 import { useOption } from "./OptionsContext";
 import React from "react";
 import { parseDateFromString } from "../../data/dates";

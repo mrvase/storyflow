@@ -1,6 +1,6 @@
-import { TokenStream } from "@storyflow/backend/types";
-import { tools } from "shared/editor-tools";
-import { FieldOperation, InferAction } from "shared/operations";
+import { TokenStream } from "operations/types";
+import { tools } from "operations/editor-tools";
+import { FieldOperation, InferAction } from "operations/actions";
 
 type Action = InferAction<FieldOperation>;
 

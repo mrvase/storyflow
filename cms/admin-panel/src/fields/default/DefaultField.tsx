@@ -1,18 +1,18 @@
 import React from "react";
 import cl from "clsx";
-import { FieldId, RawDocumentId, TokenStream } from "@storyflow/backend/types";
-import { getDocumentId, getRawFieldId } from "@storyflow/backend/ids";
+import { FieldId } from "@storyflow/shared/types";
+import { TokenStream } from "operations/types";
+import { getDocumentId, getRawFieldId } from "@storyflow/fields-core/ids";
 import { useFieldId } from "../FieldIdContext";
-import { createTokenStream } from "shared/parse-token-stream";
+import { createTokenStream } from "operations/parse-token-stream";
 import { useDocumentCollab } from "../../documents/collab/DocumentCollabContext";
-import { useFieldConfig } from "../../documents/collab/hooks";
 import { ContentEditable } from "../../editor/react/ContentEditable";
 import Editor from "../Editor/Editor";
 import { getPreview } from "./getPreview";
 import { Placeholder } from "./Placeholder";
 import { PromptButton } from "../prompt/PromptButton";
 import { TemplateHeader } from "./TemplateHeader";
-import { tools } from "shared/editor-tools";
+import { tools } from "operations/editor-tools";
 import { useDefaultState } from "./useDefaultState";
 import { useEditorContext } from "../../editor/react/EditorProvider";
 import { $getRoot, BLUR_COMMAND, COMMAND_PRIORITY_EDITOR } from "lexical";
@@ -25,8 +25,7 @@ import {
   FieldOperation,
   StreamAction,
   isSpliceAction,
-} from "shared/operations";
-import { splitTransformsAndRoot } from "@storyflow/backend/transform";
+} from "operations/actions";
 import { useFieldVersion } from "./VersionContext";
 import { FieldTemplateIdContext } from "./FieldTemplateContext";
 

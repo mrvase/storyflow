@@ -5,17 +5,13 @@ import {
   ComputerDesktopIcon,
 } from "@heroicons/react/24/outline";
 import { useOptimisticDocumentList } from "../documents";
-import { createTemplateFieldId } from "@storyflow/backend/ids";
+import { createTemplateFieldId } from "@storyflow/fields-core/ids";
 import { EditableLabel } from "../elements/EditableLabel";
 import cl from "clsx";
 import { AddDocumentDialog } from "./AddDocumentDialog";
-import {
-  DBDocument,
-  FieldId,
-  DBFolder,
-  SpaceId,
-  SyntaxTreeRecord,
-} from "@storyflow/backend/types";
+import { FieldId } from "@storyflow/shared/types";
+import { DBDocument, DBFolder, SpaceId } from "@storyflow/db-core/types";
+import { SyntaxTreeRecord } from "@storyflow/fields-core/types";
 import { SWRClient, useClient } from "../client";
 import { useClientConfig } from "../client-config";
 import { DomainsButton } from "./FolderPage";
@@ -26,9 +22,9 @@ import {
 import { useFolder } from "./collab/hooks";
 import { useFolderCollab } from "./collab/FolderCollabContext";
 import { AppSpace } from "./spaces/AppSpace";
-import { getFieldRecord, getGraph } from "shared/computation-tools";
-import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
-import { calculateRootFieldFromRecord } from "@storyflow/backend/calculate";
+import { getFieldRecord, getGraph } from "@storyflow/fields-core/graph";
+import { DEFAULT_FIELDS } from "@storyflow/fields-core/default-fields";
+import { calculateRootFieldFromRecord } from "@storyflow/fields-core/calculate-server";
 import { AppPageContext } from "./AppPageContext";
 import { usePanel, useRoute } from "../panel-router/Routes";
 import { parseSegment } from "../layout/components/parseSegment";

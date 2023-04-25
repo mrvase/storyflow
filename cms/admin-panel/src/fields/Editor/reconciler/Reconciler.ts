@@ -14,12 +14,12 @@ import {
   useEditorContext,
 } from "../../../editor/react/EditorProvider";
 import { getComputationDiff } from "./getComputationDiff";
-import { tools } from "shared/editor-tools";
-import { applyFieldOperation } from "shared/computation-tools";
-import { FieldOperation, InferAction } from "shared/operations";
+import { tools } from "operations/editor-tools";
+import { applyFieldOperation } from "operations/computation-tools";
+import { FieldOperation, InferAction } from "operations/actions";
 import { createQueueCache } from "../../../state/collaboration";
-import { TokenStream } from "@storyflow/backend/types";
-import { LibraryConfig } from "@storyflow/frontend/types";
+import { TokenStream } from "operations/types";
+import { LibraryConfig } from "@storyflow/shared/types";
 import {
   $createBlocksFromStream,
   $getComputation,

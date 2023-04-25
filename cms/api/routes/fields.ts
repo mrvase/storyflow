@@ -2,21 +2,26 @@ import { createProcedure, createRoute } from "@sfrpc/server";
 import { error, success } from "@storyflow/result";
 import { z } from "zod";
 import {
-  DBDocument,
   DocumentId,
   FieldId,
-  DBDocumentRaw,
   RawDocumentId,
   RawFieldId,
+  ValueArray,
+} from "@storyflow/shared/types";
+import {
+  DBDocument,
+  DBDocumentRaw,
   DBId,
+  TemplateRef,
+} from "@storyflow/db-core/types";
+import {
   SyntaxTreeRecord,
-  TokenStream,
-  Transform,
+  FieldTransform,
   SyntaxTree,
   NestedField,
-  ValueArray,
-  TemplateRef,
-} from "@storyflow/backend/types";
+} from "@storyflow/fields-core/types";
+import { getSyntaxTreeRecord } from "@storyflow/db-core/convert";
+import { TokenStream } from "operations/types";
 import { ObjectId } from "mongodb";
 import clientPromise from "../mongo/mongoClient";
 import { globals } from "../middleware/globals";
@@ -25,20 +30,19 @@ import {
   ServerPackage,
   unwrapServerPackage,
 } from "@storyflow/state";
-import { setFieldConfig } from "shared/getFieldConfig";
-import {
-  createTokenStreamTransformer,
-  extractRootRecord,
-  getSyntaxTreeRecord,
-  getFieldRecord,
-  getGraph,
-} from "shared/computation-tools";
-import { isSyntaxTree } from "@storyflow/backend/syntax-tree";
-import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
+import { setFieldConfig } from "operations/getFieldConfig";
 import {
   applyFieldOperation,
+  createTokenStreamTransformer,
+} from "operations/computation-tools";
+import { isSyntaxTree } from "@storyflow/fields-core/syntax-tree";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
+import {
+  extractRootRecord,
+  getFieldRecord,
+  getGraph,
   getPickedDocumentIds,
-} from "shared/computation-tools";
+} from "@storyflow/fields-core/graph";
 import { createStages, Update } from "../aggregation/stages";
 import util from "util";
 import {
@@ -62,18 +66,21 @@ import {
   isFieldOfDocument,
   isNestedDocumentId,
   isTemplateField,
-} from "@storyflow/backend/ids";
+} from "@storyflow/fields-core/ids";
 import { parseDocument } from "./documents";
 import { deduplicate, getImports, getSortedValues } from "./helpers";
-import { createSyntaxStream } from "shared/parse-syntax-stream";
-import { createTokenStream, parseTokenStream } from "shared/parse-token-stream";
+import { createSyntaxStream } from "@storyflow/db-core/parse-syntax-stream";
+import {
+  createTokenStream,
+  parseTokenStream,
+} from "operations/parse-token-stream";
 import {
   DocumentOperation,
   FieldOperation,
   isSpliceAction,
   isToggleAction,
-} from "shared/operations";
-import { splitTransformsAndRoot } from "@storyflow/backend/transform";
+} from "operations/actions";
+import { splitTransformsAndRoot } from "@storyflow/fields-core/transform";
 
 export const fields = createRoute({
   sync: createProcedure({
@@ -613,7 +620,7 @@ const transformField = (
 
   const updates: Record<
     FieldId,
-    { stream: TokenStream; transforms: Transform[] }
+    { stream: TokenStream; transforms: FieldTransform[] }
   > = {};
 
   transformer(pkgs).forEach((pkg) => {

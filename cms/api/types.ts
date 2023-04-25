@@ -8,3 +8,10 @@ export type User = {
   name: string;
   organizations: Organization[];
 };
+
+export type Settings = {
+  domains: {
+    id: string;
+    configUrl: string;
+  }[];
+};

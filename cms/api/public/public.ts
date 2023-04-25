@@ -8,41 +8,20 @@ import { cors as corsFactory } from "../middleware/cors";
 import { createSessionStorage } from "@storyflow/session";
 import { cookieOptions } from "../cookie-options";
 import { error, success } from "@storyflow/result";
-import {
-  calculate,
-  calculateRootFieldFromRecord,
-  FolderFetch,
-  StateGetter,
-} from "@storyflow/backend/calculate";
-import type {} from "@storyflow/frontend/types";
-import {
-  ClientSyntaxTree,
-  DBDocumentRaw,
-  FieldId,
-  NestedDocument,
-  NestedElement,
-  NestedFolder,
-  RawFieldId,
-  SyntaxTreeRecord,
-  ValueArray,
-} from "@storyflow/backend/types";
-import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
+import { createFieldRecordGetter } from "@storyflow/fields-core/get-field-record";
+import { calculateRootFieldFromRecord } from "@storyflow/fields-core/calculate-server";
+import type {} from "@storyflow/shared/types";
+import { RawFieldId, ValueArray } from "@storyflow/shared/types";
+import { DBDocumentRaw } from "@storyflow/db-core/types";
+import { DEFAULT_FIELDS } from "@storyflow/fields-core/default-fields";
 import { ObjectId } from "mongodb";
 import { parseDocument } from "../routes/documents";
 import {
-  getChildrenDocuments,
-  getSyntaxTreeEntries,
-} from "shared/computation-tools";
-import {
   createRawTemplateFieldId,
   createTemplateFieldId,
-  getRawDocumentId,
-  getRawFieldId,
-  isFieldOfDocument,
-} from "@storyflow/backend/ids";
+} from "@storyflow/fields-core/ids";
 import util from "node:util";
-import { tokens } from "@storyflow/backend/tokens";
-import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
+import { FolderId } from "@storyflow/shared/types";
 
 const sessionStorage = createSessionStorage({
   cookie: cookieOptions,
@@ -107,184 +86,27 @@ const authorization = async (ctx: MiddlewareContext) => {
   };
 };
 
-const createFieldRecordGetter = (
-  docRecord: SyntaxTreeRecord,
-  dbName: string,
-  context: Record<string, ValueArray>
-) => {
-  const superRecord = { ...docRecord };
+const createFetcher =
+  (dbName: string) =>
+  async (fetchObject: {
+    folder: FolderId;
+    filters: Record<RawFieldId, ValueArray>;
+    limit: number;
+  }) => {
+    const client = await clientPromise;
+    const result = await client
+      .db(dbName)
+      .collection<DBDocumentRaw>("documents")
+      .find({
+        folder: new ObjectId(fetchObject.folder),
+        ...fetchObject.filters,
+      })
+      .sort({ _id: -1 })
+      .limit(fetchObject.limit)
+      .toArray();
 
-  return async (fieldId: FieldId) => {
-    /*
-    const nestedFields = getFieldRecord(docRecord, fieldId, {
-      children: graph.children,
-      imports: new Map(), // do not include imports in record
-    });
-    */
-
-    let record: Record<FieldId, ValueArray | ClientSyntaxTree> = {};
-
-    let fetchRequests: FolderFetch[] = [];
-    let fetched = new Set<NestedFolder>();
-    let fetchFilters = new Map<
-      NestedFolder,
-      Record<RawFieldId, ValueArray>[]
-    >();
-    let fetchResults = new Map<NestedFolder, NestedDocument[]>();
-
-    const resolveFetches = async (fetches: FolderFetch[]) => {
-      await calculateFilters(fetches);
-
-      return await Promise.all(
-        fetches.map(async (el) => {
-          // we rely on the fact the the NestedFolder is only really present in one field (although it is referenced multiple times)
-          // so we can use its object reference
-          if (fetched.has(el.folder)) return;
-          fetched.add(el.folder);
-
-          const filters = fetchFilters.get(el.folder) ?? {};
-
-          console.log("FILTERS FILTERS FILTERS");
-
-          const client = await clientPromise;
-          const result = await client
-            .db(dbName)
-            .collection<DBDocumentRaw>("documents")
-            .find({ folder: new ObjectId(el.folder.folder), ...filters })
-            .sort({ _id: -1 })
-            .limit(el.limit)
-            .toArray();
-
-          const articles = result.map(parseDocument);
-
-          let list: NestedDocument[] = [];
-
-          articles.forEach((el) => {
-            list.push({ id: el._id });
-            Object.entries(el.record).forEach(([key, value]) => {
-              if (!(key in superRecord)) {
-                superRecord[key as FieldId] = value;
-              }
-            });
-          });
-
-          fetchResults.set(el.folder, list);
-        })
-      );
-    };
-
-    const calculateFilters = async (fetches: FolderFetch[]) => {
-      const oldFetches = [...fetchRequests];
-
-      fetches.forEach((el) => {
-        const filterEntries = Object.entries(docRecord)
-          .filter(([key]) => key.startsWith(getRawDocumentId(el.folder.id)))
-          .map(([key, value]) => [
-            `values.${getRawFieldId(key as FieldId)}`,
-            calculate(value, getState),
-          ]);
-        const filters = Object.fromEntries(
-          filterEntries
-            .filter(([, value]) => Array.isArray(value) && value.length > 0)
-            .map(([key, value]) => [key, { $elemMatch: { $in: value } }])
-        );
-        fetchFilters.set(el.folder, filters);
-      });
-
-      const newFetches = fetchRequests.filter((el) => !oldFetches.includes(el));
-
-      /*
-      repeat if there are new fetches.
-      */
-
-      if (newFetches.length > 0) {
-        await resolveFetches(newFetches);
-        await calculateFilters(fetches);
-      }
-    };
-
-    const getState: StateGetter = (importer, { tree, external }): any => {
-      if (typeof importer === "object" && "folder" in importer) {
-        const { folder, limit, sort } = importer;
-        if (!fetchResults.has(folder)) {
-          fetchRequests.push({ folder, limit, ...(sort && { sort }) });
-          return [];
-        }
-        return fetchResults.get(folder);
-      } else if (typeof importer === "object" && "ctx" in importer) {
-        return context[importer.ctx] ?? [];
-      } else {
-        if (importer in superRecord) {
-          return calculate(superRecord[importer], getState);
-        }
-        return [];
-      }
-    };
-
-    const calculateAsync = async () => {
-      const entry = docRecord[fieldId] ?? DEFAULT_SYNTAX_TREE;
-
-      const oldFetches = [...fetchRequests];
-
-      const superEntries = getSyntaxTreeEntries(superRecord);
-      const relevantEntries = [] as typeof superEntries;
-
-      relevantEntries.push([fieldId, entry]);
-
-      const newRecord: Record<FieldId, ValueArray | ClientSyntaxTree> = {};
-
-      const addNestedElementProps = (tree: ValueArray | ClientSyntaxTree) => {
-        const children = (
-          Array.isArray(tree) ? tree : getChildrenDocuments(tree)
-        ).filter((el): el is NestedElement => tokens.isNestedElement(el));
-
-        children.forEach((doc) => {
-          superEntries.forEach((entry) => {
-            if (
-              isFieldOfDocument(entry[0], doc.id) &&
-              !relevantEntries.some(([key]) => key === entry[0])
-            ) {
-              relevantEntries.push(entry);
-            }
-          });
-        });
-      };
-
-      let i = 0;
-      while (i < relevantEntries.length) {
-        const [key, tree] = relevantEntries[i];
-        const result = calculate(tree, getState);
-        addNestedElementProps(result);
-        newRecord[key] = result;
-        i++;
-      }
-
-      record = newRecord;
-
-      const newFetches = fetchRequests.filter((el) => !oldFetches.includes(el));
-
-      if (newFetches.length > 0) {
-        console.log("NEW FETCHES NEW FETCHES NEW FETCHES NEW FETCHES");
-        await resolveFetches(newFetches);
-        calculateAsync();
-      }
-    };
-
-    await calculateAsync();
-
-    const entry = record[fieldId];
-    delete record[fieldId];
-
-    if (!entry || (Array.isArray(entry) && entry.length === 0)) {
-      return null;
-    }
-
-    return {
-      entry,
-      record,
-    };
+    return result.map(parseDocument);
   };
-};
 
 export const public_ = createRoute({
   get: createProcedure({
@@ -341,9 +163,13 @@ export const public_ = createRoute({
           .map((el, index) => [`param${index}`, [el]])
       );
 
-      const getFieldRecord = createFieldRecordGetter(doc.record, dbName, {
-        ...params,
-      });
+      const getFieldRecord = createFieldRecordGetter(
+        doc.record,
+        {
+          ...params,
+        },
+        createFetcher(dbName)
+      );
 
       const [pageRecord, layoutRecord] = await Promise.all([
         getFieldRecord(createTemplateFieldId(doc._id, DEFAULT_FIELDS.page.id)),
@@ -465,7 +291,11 @@ export const public_ = createRoute({
               data: createRawTemplateFieldId(DEFAULT_FIELDS.slug.id),
             };
 
-            const getFieldRecord = createFieldRecordGetter(record, dbName, {});
+            const getFieldRecord = createFieldRecordGetter(
+              record,
+              {},
+              createFetcher(dbName)
+            );
 
             const slugs =
               (

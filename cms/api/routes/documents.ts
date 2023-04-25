@@ -1,22 +1,14 @@
 import { createProcedure, createRoute } from "@sfrpc/server";
 import { error, success } from "@storyflow/result";
 import { z } from "zod";
-import {
-  DBDocument,
-  DocumentId,
-  FieldId,
-  DBDocumentRaw,
-  SyntaxTreeRecord,
-} from "@storyflow/backend/types";
+import { DBDocument, DBDocumentRaw } from "@storyflow/db-core/types";
+import { DocumentId, FieldId } from "@storyflow/shared/types";
+import { SyntaxTreeRecord } from "@storyflow/fields-core/types";
 import { ObjectId } from "mongodb";
 import clientPromise from "../mongo/mongoClient";
 import { globals } from "../middleware/globals";
 import { ServerPackage } from "@storyflow/state";
-import {
-  extractRootRecord,
-  getSyntaxTreeRecord,
-  getGraph,
-} from "shared/computation-tools";
+import { extractRootRecord, getGraph } from "@storyflow/fields-core/graph";
 import { createStages } from "../aggregation/stages";
 import {
   client,
@@ -30,9 +22,12 @@ import {
   getRawFieldId,
   isFieldOfDocument,
   isNestedDocumentId,
+} from "@storyflow/fields-core/ids";
+import {
   unwrapObjectId,
-} from "@storyflow/backend/ids";
-import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
+  getSyntaxTreeRecord,
+} from "@storyflow/db-core/convert";
+import { DEFAULT_FIELDS } from "@storyflow/fields-core/default-fields";
 import { deduplicate, getImports, getSortedValues } from "./helpers";
 
 export const parseDocument = (raw: DBDocumentRaw): DBDocument => {

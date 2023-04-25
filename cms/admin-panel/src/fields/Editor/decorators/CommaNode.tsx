@@ -4,7 +4,6 @@ import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
 import { caretClasses } from "./caret";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
-import { Operator } from "@storyflow/backend/types";
 
 function Decorator({ nodeKey }: { value: { ",": true }; nodeKey: string }) {
   const { isSelected, select, isPseudoSelected } = useIsSelected(nodeKey);

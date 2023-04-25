@@ -1,13 +1,13 @@
 import React from "react";
-import { createTokenStreamTransformer } from "shared/computation-tools";
+import { createTokenStreamTransformer } from "operations/computation-tools";
 import { useDocumentPageContext } from "../../documents/DocumentPageContext";
-import { getDocumentId, getRawFieldId } from "@storyflow/backend/ids";
+import { getDocumentId, getRawFieldId } from "@storyflow/fields-core/ids";
 import { useDocumentCollab } from "../../documents/collab/DocumentCollabContext";
 import { DefaultField } from "./DefaultField";
 import { PreloadFieldState } from "./PreloadFieldState";
 import { useAttributesContext } from "../Attributes";
 import { ExtendPath } from "../Path";
-import { FieldOperation } from "shared/operations";
+import { FieldOperation } from "operations/actions";
 import { VersionProvider } from "./VersionContext";
 import { FieldProps } from "../types";
 

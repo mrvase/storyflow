@@ -1,5 +1,5 @@
 import cl from "clsx";
-import { TokenStream } from "@storyflow/backend/types";
+import { TokenStream } from "operations/types";
 import React from "react";
 import {
   getFileExtension,

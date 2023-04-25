@@ -3,19 +3,19 @@ import {
   FieldId,
   FunctionName,
   Operator,
-  NestedElement,
   RawFieldId,
-  NestedField,
-  Parameter,
-  DBDocumentRaw,
   NestedDocument,
+  NestedDocumentId,
+} from "@storyflow/shared/types";
+import {
+  DBDocumentRaw,
   DBId,
   DBValueArray,
   HasDBId,
   DBSyntaxStreamBlock,
   DBSyntaxStream,
-  NestedDocumentId,
-} from "@storyflow/backend/types";
+} from "@storyflow/db-core/types";
+import { NestedField, Parameter } from "@storyflow/fields-core/types";
 import { queryArrayProp } from "./queryArrayProp";
 
 /*

@@ -9,7 +9,7 @@ import { DialogOption } from "../elements/DialogOption";
 import { DocumentDuplicateIcon, PlusIcon } from "@heroicons/react/24/outline";
 import { useTemplateFolder } from "./FoldersContext";
 import { useTemplateIdGenerator } from "../id-generator";
-import { DocumentId } from "@storyflow/backend/types";
+import { DocumentId } from "@storyflow/shared/types";
 import { usePanel, useRoute } from "../panel-router/Routes";
 
 export function AddTemplateDialog({

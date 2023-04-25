@@ -2,12 +2,11 @@ import {
   FieldId,
   NestedDocumentId,
   NestedEntity,
-  NestedField,
-  SyntaxTree,
-} from "@storyflow/backend/types";
-import { createEventsFromIframeToCMS } from "@storyflow/frontend/events";
+} from "@storyflow/shared/types";
+import { NestedField, SyntaxTree } from "@storyflow/fields-core/types";
+import { createEventsFromIframeToCMS } from "@storyflow/shared/events";
 import React from "react";
-import { getChildrenDocuments } from "shared/computation-tools";
+import { getChildrenDocuments } from "@storyflow/fields-core/graph";
 import { useGlobalState } from "../state/state";
 import { useContextWithError } from "../utils/contextError";
 import { useFieldId } from "./FieldIdContext";

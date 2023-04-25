@@ -2,28 +2,27 @@ import React from "react";
 import { useGlobalState } from "../../state/state";
 import {
   DocumentId,
-  FieldConfig,
   FieldId,
   NestedDocument,
   NestedDocumentId,
   NestedElement,
-  NestedField,
   NestedFolder,
   RawDocumentId,
-} from "@storyflow/backend/types";
+} from "@storyflow/shared/types";
+import { FieldConfig, NestedField } from "@storyflow/fields-core/types";
 import { getConfigFromType, useClientConfig } from "../../client-config";
 import { useTemplate } from "./useFieldTemplate";
 import {
   computeFieldId,
   createTemplateFieldId,
   getIdFromString,
-} from "@storyflow/backend/ids";
+} from "@storyflow/fields-core/ids";
 import { useFieldId } from "../FieldIdContext";
 import { useDocumentPageContext } from "../../documents/DocumentPageContext";
-import { tokens } from "@storyflow/backend/tokens";
-import { getChildrenDocuments } from "shared/computation-tools";
+import { tokens } from "@storyflow/fields-core/tokens";
+import { getChildrenDocuments } from "@storyflow/fields-core/graph";
 import { useDefaultState } from "./useDefaultState";
-import { splitTransformsAndRoot } from "@storyflow/backend/transform";
+import { splitTransformsAndRoot } from "@storyflow/fields-core/transform";
 import { useLoopTemplate } from "./LoopTemplateContext";
 import { useFieldVersion } from "./VersionContext";
 import { extendPath } from "../../utils/extendPath";

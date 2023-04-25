@@ -1,16 +1,15 @@
 import { error, success } from "@storyflow/result";
 import { createProcedure, createRoute } from "@sfrpc/server";
 import clientPromise from "../mongo/mongoClient";
-import { z } from "zod";
+import { FunctionName, RawFieldId } from "@storyflow/shared/types";
 import {
   DBDocumentRaw,
   DBSyntaxStreamBlock,
   DocumentConfigItem,
-  FunctionName,
-  RawFieldId,
-} from "@storyflow/backend/types";
+} from "@storyflow/db-core/types";
 import { WithId } from "mongodb";
-import { getRawFieldId, unwrapObjectId } from "@storyflow/backend/ids";
+import { getRawFieldId } from "@storyflow/fields-core/ids";
+import { unwrapObjectId } from "@storyflow/db-core/convert";
 
 const transformField = (field: DBSyntaxStreamBlock): DBSyntaxStreamBlock => {
   const value = field.v.map((token) => {

@@ -1,6 +1,6 @@
-import { FieldId } from "@storyflow/backend/types";
+import { FieldId } from "@storyflow/shared/types";
 import { ServerPackage } from "@storyflow/state";
-import { FieldOperation } from "shared/operations";
+import { FieldOperation } from "operations/actions";
 
 // was placed in RenderField but led to circular dependency
 export type FieldProps = {

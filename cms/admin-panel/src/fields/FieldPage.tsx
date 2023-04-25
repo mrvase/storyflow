@@ -1,20 +1,19 @@
 import {
   createEventsFromCMSToIframe,
   createEventsFromIframeToCMS,
-} from "@storyflow/frontend/events";
+} from "@storyflow/shared/events";
 import cl from "clsx";
 import React from "react";
 import { calculateFn } from "./default/calculateFn";
-import { tools } from "shared/editor-tools";
+import { tools } from "operations/editor-tools";
 import { store, useGlobalState } from "../state/state";
 import {
   DocumentId,
   FieldId,
-  SyntaxTreeRecord,
-  SyntaxTree,
   ValueArray,
   ClientSyntaxTree,
-} from "@storyflow/backend/types";
+} from "@storyflow/shared/types";
+import { SyntaxTreeRecord, SyntaxTree } from "@storyflow/fields-core/types";
 import Content from "../layout/components/Content";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { useClientConfig } from "../client-config";
@@ -29,12 +28,12 @@ import {
   getIdFromString,
   getParentDocumentId,
   getRawFieldId,
-} from "@storyflow/backend/ids";
-import { ComponentConfig, LibraryConfig } from "@storyflow/frontend/types";
+} from "@storyflow/fields-core/ids";
+import { ComponentConfig, LibraryConfig } from "@storyflow/shared/types";
 import { useDocumentIdGenerator } from "../id-generator";
-import { tokens } from "@storyflow/backend/tokens";
-import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
-import { createTokenStream } from "shared/parse-token-stream";
+import { tokens } from "@storyflow/fields-core/tokens";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
+import { createTokenStream } from "operations/parse-token-stream";
 import {
   Attributes,
   AttributesProvider,
@@ -49,7 +48,7 @@ import { EditorFocusProvider } from "../editor/react/useIsFocused";
 import { useRoute } from "../panel-router/Routes";
 import { parseSegment } from "../layout/components/parseSegment";
 import { splitStreamByBlocks } from "./Editor/transforms";
-import { FieldOperation } from "shared/operations";
+import { FieldOperation } from "operations/actions";
 import { VersionProvider } from "./default/VersionContext";
 import { extendPath } from "../utils/extendPath";
 

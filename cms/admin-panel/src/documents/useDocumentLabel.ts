@@ -1,12 +1,13 @@
-import { TemplateDocument, Value, ValueArray } from "@storyflow/backend/types";
+import type { ValueArray } from "@storyflow/shared/types";
+import type { DBDocument } from "@storyflow/db-core/types";
 import { useGlobalState } from "../state/state";
-import { computeFieldId, createTemplateFieldId } from "@storyflow/backend/ids";
-import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
-import { calculateRootFieldFromRecord } from "@storyflow/backend/calculate";
+import { createTemplateFieldId } from "@storyflow/fields-core/ids";
+import { DEFAULT_FIELDS } from "@storyflow/fields-core/default-fields";
+import { calculateRootFieldFromRecord } from "@storyflow/fields-core/calculate-server";
 
 export const fallbackLabel = "[Ingen titel]";
 
-export const getDocumentLabel = (doc: TemplateDocument | undefined) => {
+export const getDocumentLabel = (doc: DBDocument | undefined) => {
   if (!doc) return undefined;
   /* TODO should be calculated */
   const defaultLabelValue = calculateRootFieldFromRecord(
@@ -29,7 +30,7 @@ export const getDocumentLabel = (doc: TemplateDocument | undefined) => {
   );
 };
 
-export const useDocumentLabel = <T extends TemplateDocument | undefined>(
+export const useDocumentLabel = <T extends DBDocument | undefined>(
   doc: T
 ): T extends undefined ? undefined : string => {
   const defaultLabel = getDocumentLabel(doc);

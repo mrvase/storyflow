@@ -4,7 +4,7 @@ import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
 import { caretClasses } from "./caret";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
-import { Operator } from "@storyflow/backend/types";
+import { Operator } from "@storyflow/shared/types";
 
 function Decorator({
   value,

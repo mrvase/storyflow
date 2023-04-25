@@ -7,10 +7,10 @@ import {
 import { createComponent } from "../Editor/createComponent";
 import { getInfoFromType, useClientConfig } from "../../client-config";
 import { useDocumentMutate } from "../../documents/collab/DocumentCollabContext";
-import { getDocumentId, getRawFieldId } from "@storyflow/backend/ids";
-import { DocumentId, FieldId } from "@storyflow/backend/types";
+import { getDocumentId, getRawFieldId } from "@storyflow/fields-core/ids";
+import { DocumentId, FieldId } from "@storyflow/shared/types";
 import { useDocumentIdGenerator } from "../../id-generator";
-import { FieldOperation } from "shared/operations";
+import { FieldOperation } from "operations/actions";
 
 function Button(props: any) {
   return null;

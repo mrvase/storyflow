@@ -4,7 +4,7 @@ import {
   DocumentId,
   FolderId,
   NestedDocumentId,
-} from "@storyflow/backend/types";
+} from "@storyflow/shared/types";
 import { useUrlInfo } from "./users";
 import { z } from "zod";
 import {
@@ -13,7 +13,7 @@ import {
   createDocumentId,
   USER_DOCUMENT_OFFSET,
   USER_TEMPLATE_OFFSET,
-} from "@storyflow/backend/ids";
+} from "@storyflow/fields-core/ids";
 
 /*
 [organisation]:ids {

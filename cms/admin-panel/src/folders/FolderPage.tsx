@@ -10,7 +10,8 @@ import {
 } from "@heroicons/react/24/outline";
 import { EditableLabel } from "../elements/EditableLabel";
 import cl from "clsx";
-import { DBFolder, DocumentId, SpaceId } from "@storyflow/backend/types";
+import { DocumentId } from "@storyflow/shared/types";
+import { DBFolder, SpaceId } from "@storyflow/db-core/types";
 import { SWRClient } from "../client";
 import {
   FolderDomainsContext,

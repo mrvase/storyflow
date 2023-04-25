@@ -3,13 +3,12 @@ import { LexicalNode, NodeKey } from "lexical";
 import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
 import {
-  SyntaxTree,
-  SyntaxTreeRecord,
   NestedDocument,
   ValueArray,
   ClientSyntaxTree,
   FieldId,
-} from "@storyflow/backend/types";
+} from "@storyflow/shared/types";
+import { SyntaxTree, SyntaxTreeRecord } from "@storyflow/fields-core/types";
 import { DocumentIcon, LinkIcon } from "@heroicons/react/24/outline";
 import { useFieldId } from "../../FieldIdContext";
 import { useDocument } from "../../../documents";
@@ -20,7 +19,7 @@ import {
   createTemplateFieldId,
   getDocumentId,
   isNestedDocumentId,
-} from "@storyflow/backend/ids";
+} from "@storyflow/fields-core/ids";
 import { useClient } from "../../../client";
 import { getPreview } from "../../default/getPreview";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";

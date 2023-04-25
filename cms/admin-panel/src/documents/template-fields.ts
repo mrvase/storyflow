@@ -1,14 +1,16 @@
 import { Client } from "../client";
-import {
-  SyntaxTreeRecord,
-  DocumentConfig,
+import type {
   DocumentId,
-  FieldConfig,
   FieldId,
   NestedDocumentId,
   RawDocumentId,
+} from "@storyflow/shared/types";
+import type {
+  SyntaxTreeRecord,
+  FieldConfig,
   SyntaxTree,
-} from "@storyflow/backend/types";
+} from "@storyflow/fields-core/types";
+import type { DocumentConfig } from "@storyflow/db-core/types";
 import {
   createTemplateFieldId,
   getDocumentId,
@@ -16,11 +18,13 @@ import {
   getRawDocumentId,
   isNestedDocumentId,
   replaceDocumentId,
-} from "@storyflow/backend/ids";
+} from "@storyflow/fields-core/ids";
 import { fetchDocument } from "./index";
-import { getSyntaxTreeEntries } from "shared/computation-tools";
-import { isSyntaxTree } from "@storyflow/backend/syntax-tree";
-import { tokens } from "@storyflow/backend/tokens";
+import {
+  isSyntaxTree,
+  getSyntaxTreeEntries,
+} from "@storyflow/fields-core/syntax-tree";
+import { tokens } from "@storyflow/fields-core/tokens";
 
 export const copyRecord = (
   originalRecord: SyntaxTreeRecord,

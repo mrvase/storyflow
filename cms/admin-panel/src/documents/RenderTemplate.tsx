@@ -4,15 +4,14 @@ import {
   createTemplateFieldId,
   getDocumentId,
   getRawFieldId,
-} from "@storyflow/backend/ids";
-import {
-  DBDocument,
+} from "@storyflow/fields-core/ids";
+import type { DocumentId, FieldId } from "@storyflow/shared/types";
+import type {
   DocumentConfigItem,
-  DocumentId,
-  FieldId,
   HeadingConfig,
-  SyntaxTree,
-} from "@storyflow/backend/types";
+  DBDocument,
+} from "@storyflow/db-core/types";
+import { SyntaxTree } from "@storyflow/fields-core/types";
 import { getTranslateDragEffect } from "../utils/dragEffects";
 import { RenderField } from "../fields/RenderField";
 import {
@@ -27,13 +26,13 @@ import {
   DocumentOperation,
   FieldOperation,
   StdOperation,
-} from "shared/operations";
+} from "operations/actions";
 import { useClient } from "../client";
 import { useDocumentIdGenerator } from "../id-generator";
 import { getDefaultValuesFromTemplateAsync } from "./template-fields";
-import { createTokenStreamTransformer } from "shared/computation-tools";
-import { splitTransformsAndRoot } from "@storyflow/backend/transform";
-import { createTokenStream } from "shared/parse-token-stream";
+import { createTokenStreamTransformer } from "operations/computation-tools";
+import { splitTransformsAndRoot } from "@storyflow/fields-core/transform";
+import { createTokenStream } from "operations/parse-token-stream";
 
 export function RenderTemplate({
   id,

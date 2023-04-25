@@ -1,10 +1,4 @@
-import {
-  $createTextNode,
-  $isDecoratorNode,
-  $isTextNode,
-  DecoratorNode,
-  LexicalEditor,
-} from "lexical";
+import { DecoratorNode, LexicalEditor } from "lexical";
 import { TextNode } from "lexical";
 import React from "react";
 

@@ -1,6 +1,6 @@
 import { Redis } from "@upstash/redis";
 import { ServerPackage } from "@storyflow/state";
-import { DocumentId, RawDocumentId } from "@storyflow/backend/types";
+import { DocumentId, RawDocumentId } from "@storyflow/shared/types";
 
 export const client = new Redis({
   url: "https://eu1-renewed-albacore-38555.upstash.io",

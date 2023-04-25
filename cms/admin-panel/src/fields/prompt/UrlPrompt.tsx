@@ -1,25 +1,25 @@
+import { DocumentId, ValueArray } from "@storyflow/shared/types";
+import { DBFolder } from "@storyflow/db-core/types";
+import { NestedField } from "@storyflow/fields-core/types";
+import { TokenStream } from "operations/types";
 import {
-  DocumentId,
-  TokenStream,
-  NestedField,
-  ValueArray,
-  DBFolder,
-} from "@storyflow/backend/types";
-import { createTemplateFieldId, getDocumentId } from "@storyflow/backend/ids";
+  createTemplateFieldId,
+  getDocumentId,
+} from "@storyflow/fields-core/ids";
 import { LinkIcon } from "@heroicons/react/24/outline";
 import { $getRoot, $getSelection, $isRangeSelection } from "lexical";
 import React from "react";
 import { useEditorContext } from "../../editor/react/EditorProvider";
 import { useAppFolders } from "../../folders/collab/hooks";
-import { tools } from "shared/editor-tools";
+import { tools } from "operations/editor-tools";
 import { useGlobalState } from "../../state/state";
 import { $getComputation, $getIndexFromPoint } from "../Editor/transforms";
 import { Option } from "./Option";
-import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
-import { calculateRootFieldFromRecord } from "@storyflow/backend/calculate";
+import { DEFAULT_FIELDS } from "@storyflow/fields-core/default-fields";
+import { calculateRootFieldFromRecord } from "@storyflow/fields-core/calculate-server";
 import { useFieldId } from "../FieldIdContext";
 import { useDocumentIdGenerator } from "../../id-generator";
-import { tokens } from "@storyflow/backend/tokens";
+import { tokens } from "@storyflow/fields-core/tokens";
 import { useOptimisticDocumentList } from "../../documents";
 import { markMatchingString } from "./helpers";
 

@@ -1,5 +1,5 @@
 import React from "react";
-import type { DocumentId, RawDocumentId } from "@storyflow/backend/types";
+import type { DocumentId, RawDocumentId } from "@storyflow/shared/types";
 
 export const FieldTemplateIdContext = React.createContext<
   DocumentId | RawDocumentId | null

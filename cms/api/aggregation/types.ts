@@ -1,4 +1,5 @@
-import { DBId, FieldId } from "@storyflow/backend/types";
+import { FieldId } from "@storyflow/shared/types";
+import { DBId } from "@storyflow/db-core/types";
 
 export type DefineObject<U extends { [key: string]: any }> = {
   let: <P extends { [key: string]: any }>(

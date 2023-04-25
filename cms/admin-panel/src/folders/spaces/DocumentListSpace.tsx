@@ -6,8 +6,9 @@ import {
   PlusIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
-import { createTemplateFieldId } from "@storyflow/backend/ids";
-import { DocumentId, FolderId, SpaceId } from "@storyflow/backend/types";
+import { createTemplateFieldId } from "@storyflow/fields-core/ids";
+import { DocumentId, FolderId } from "@storyflow/shared/types";
+import { SpaceId } from "@storyflow/db-core/types";
 import React from "react";
 import {
   fetchDocument,
@@ -27,10 +28,13 @@ import { useCurrentFolder } from "../FolderPageContext";
 import Space from "./Space";
 import Loader from "../../elements/Loader";
 import { useDeleteForm } from "./useDeleteForm";
-import { DEFAULT_FIELDS, isDefaultField } from "@storyflow/backend/fields";
+import {
+  DEFAULT_FIELDS,
+  isDefaultField,
+} from "@storyflow/fields-core/default-fields";
 import { useDocumentIdGenerator } from "../../id-generator";
-import { calculateRootFieldFromRecord } from "@storyflow/backend/calculate";
-import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
+import { calculateRootFieldFromRecord } from "@storyflow/fields-core/calculate-server";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
 import { usePanel, useRoute } from "../../panel-router/Routes";
 import { useTemplate } from "../../fields/default/useFieldTemplate";
 import { useFolder } from "../collab/hooks";

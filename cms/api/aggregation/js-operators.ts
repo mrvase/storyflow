@@ -1,4 +1,5 @@
-import { DBId, FieldId } from "@storyflow/backend/types";
+import { FieldId } from "@storyflow/shared/types";
+import { DBId } from "@storyflow/db-core/types";
 import { Operators, SwitchObject } from "./types";
 
 export const operators: Operators<any> = {

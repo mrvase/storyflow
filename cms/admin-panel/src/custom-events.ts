@@ -3,7 +3,7 @@ import {
   FieldId,
   FolderId,
   RawFieldId,
-} from "@storyflow/backend/types";
+} from "@storyflow/shared/types";
 
 export const addImport = createEvent<{
   id: FieldId;

@@ -1,4 +1,4 @@
-import { DocumentId } from "@storyflow/backend/types";
+import { DocumentId } from "@storyflow/shared/types";
 import React from "react";
 
 const TemplatePathContext = React.createContext<DocumentId[]>([]);

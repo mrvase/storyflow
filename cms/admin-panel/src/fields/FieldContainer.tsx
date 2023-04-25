@@ -12,17 +12,17 @@ import React from "react";
 import { useFieldFocus } from "../field-focus";
 import { addImport } from "../custom-events";
 import { useLabel } from "../documents/collab/hooks";
-import {
-  FieldConfig,
-  FieldId,
-  NestedDocumentId,
-} from "@storyflow/backend/types";
+import { FieldId, NestedDocumentId } from "@storyflow/shared/types";
+import { FieldConfig } from "@storyflow/fields-core/types";
 import { getTranslateDragEffect } from "../utils/dragEffects";
 import useIsFocused from "../utils/useIsFocused";
 import { useIsFocused as useIsEditorFocused } from "../editor/react/useIsFocused";
-import { getDefaultField, isDefaultField } from "@storyflow/backend/fields";
+import {
+  getDefaultField,
+  isDefaultField,
+} from "@storyflow/fields-core/default-fields";
 import { getConfigFromType, useClientConfig } from "../client-config";
-import { isTemplateField } from "@storyflow/backend/ids";
+import { isTemplateField } from "@storyflow/fields-core/ids";
 import { FieldToolbarPortal } from "../documents/FieldToolbar";
 import { EditorFocusProvider } from "../editor/react/useIsFocused";
 import { Attributes, AttributesProvider } from "./Attributes";
@@ -250,14 +250,17 @@ function LabelBar({
 export function PathMap() {
   const [{ selectedPath }] = useSelectedPath();
 
-  const selectedElements = selectedPath.reduce((a, c, i) => {
-    if (i % 2 === 0) {
-      a.push([c, undefined] as unknown as [FieldId, NestedDocumentId]);
-    } else {
-      a[a.length - 1][1] = c as NestedDocumentId;
-    }
-    return a;
-  }, [] as [FieldId, NestedDocumentId][]);
+  const selectedElements = selectedPath.reduce(
+    (a: [FieldId, NestedDocumentId][], c, i) => {
+      if (i % 2 === 0) {
+        a.push([c, undefined] as unknown as [FieldId, NestedDocumentId]);
+      } else {
+        a[a.length - 1][1] = c as NestedDocumentId;
+      }
+      return a;
+    },
+    []
+  );
 
   return (
     <>

@@ -1,6 +1,5 @@
-import cl from "clsx";
-import { DragDropContext, Sortable, useSortableItem } from "@storyflow/dnd";
-import { Link, Router } from "@storyflow/router";
+import { DragDropContext } from "@storyflow/dnd";
+import { Router } from "@storyflow/router";
 import { SWRConfig } from "swr";
 import { provider, QueryContextProvider } from "./client";
 import { ClientConfigProvider } from "./client-config";

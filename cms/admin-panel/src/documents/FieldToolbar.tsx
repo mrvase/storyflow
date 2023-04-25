@@ -7,7 +7,8 @@ import {
   TrashIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
-import { DocumentId, FieldId, RestrictTo } from "@storyflow/backend/types";
+import { DocumentId, FieldId } from "@storyflow/shared/types";
+import { FieldType2 } from "@storyflow/fields-core/types";
 import React from "react";
 import ReactDOM from "react-dom";
 import { useOptimisticDocumentList } from ".";
@@ -17,10 +18,10 @@ import { useDocumentMutate } from "./collab/DocumentCollabContext";
 import { useFieldConfig } from "./collab/hooks";
 import { useContextWithError } from "../utils/contextError";
 import { useFieldId } from "../fields/FieldIdContext";
-import { getDocumentId } from "@storyflow/backend/ids";
+import { getDocumentId } from "@storyflow/fields-core/ids";
 import { Menu } from "../layout/components/Menu";
 import { useTopFieldIndex } from "./FieldIndexContext";
-import { DocumentOperation } from "shared/operations";
+import { DocumentOperation } from "operations/actions";
 
 const FieldToolbarPortalContext = React.createContext<
   [HTMLDivElement | null, React.Dispatch<HTMLDivElement | null>] | null
@@ -105,15 +106,15 @@ export function FieldToolbar() {
         }
         options={templateOptions}
       />
-      <Menu<{ id: RestrictTo; label: string }>
+      <Menu<{ id: FieldType2; label: string }>
         as={Content.ToolbarButton}
         icon={FunnelIcon}
         label="Begræns til"
-        onSelect={(el) => setConfig("restrictTo", el.id)}
-        onClear={() => setConfig("restrictTo", undefined)}
+        onSelect={(el) => setConfig("type2", el.id)}
+        onClear={() => setConfig("type2", undefined)}
         selected={
-          config?.restrictTo
-            ? restrictToOptions.find((el) => el.id === config.restrictTo)
+          config?.type2
+            ? restrictToOptions.find((el) => el.id === config.type2)
             : undefined
         }
         options={restrictToOptions}

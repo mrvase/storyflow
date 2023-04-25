@@ -1,11 +1,11 @@
-import { computeFieldId, getIdFromString } from "@storyflow/backend/ids";
-import { NestedDocumentId } from "@storyflow/backend/types";
+import { computeFieldId, getIdFromString } from "@storyflow/fields-core/ids";
+import { NestedDocumentId } from "@storyflow/shared/types";
 import {
   PropConfig,
   PropConfigArray,
   PropGroup,
   RegularOptions,
-} from "@storyflow/frontend/types";
+} from "@storyflow/shared/types";
 import { extendPath } from "./extendPath";
 
 export function flattenProps<T = PropConfig<RegularOptions>>(

@@ -13,7 +13,7 @@ import {
   QueueTransformStrategy,
   QueueInvertStrategy,
 } from "@storyflow/state";
-import { StdOperation } from "shared/operations";
+import { StdOperation } from "operations/actions";
 import { clone } from "../utils/clone";
 import { useSubject } from "./useSubject";
 
