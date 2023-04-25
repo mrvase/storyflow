@@ -1,7 +1,7 @@
 import { createProcedure, createRoute } from "@sfrpc/server";
 import { error, success } from "@storyflow/result";
 import { z } from "zod";
-import clientPromise from "../mongo/mongoClient";
+import { clientPromise } from "../mongo/mongoClient";
 import { globals } from "../middleware/globals";
 
 export const ids = createRoute({

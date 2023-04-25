@@ -10,8 +10,7 @@ import type {
   ValueArray,
 } from "@storyflow/shared/types";
 import type { SyntaxTreeRecord } from "@storyflow/fields-core/types";
-import { ObjectId } from "mongodb";
-import clientPromise from "../mongo/mongoClient";
+import { clientPromise } from "../mongo/mongoClient";
 import { globals } from "../middleware/globals";
 import { ServerPackage } from "@storyflow/state";
 import { extractRootRecord, getGraph } from "@storyflow/fields-core/graph";
@@ -32,6 +31,7 @@ import {
 import { unwrapObjectId, parseDocument } from "@storyflow/db-core/convert";
 import { DEFAULT_FIELDS } from "@storyflow/fields-core/default-fields";
 import { getPaths } from "@storyflow/db-core/paths";
+import { createObjectId } from "@storyflow/db-core/mongo";
 import { deduplicate, getImports, getSortedValues } from "./helpers";
 
 const createFetcher =
@@ -55,7 +55,7 @@ const createFetcher =
       .db(dbName)
       .collection<DBDocumentRaw>("documents")
       .find({
-        folder: new ObjectId(fetchObject.folder),
+        folder: createObjectId(fetchObject.folder),
         ...filters,
       })
       .sort({ _id: -1 })
@@ -107,8 +107,6 @@ export const documents = createRoute({
       ) => {
         let computationRecord = extractRootRecord(documentId, record);
 
-        console.log("RECORD", record, computationRecord);
-
         let graph = getGraph(computationRecord);
 
         const externalFieldIds = deduplicate(
@@ -136,15 +134,11 @@ export const documents = createRoute({
           returnValuesForDocument: documentId,
         });
 
-        console.log("RESULT", fullRecord, result);
-
         const timestamp = Date.now();
 
         const keys = Object.keys(fullRecord).filter((el): el is FieldId =>
           el.startsWith(getRawDocumentId(documentId))
         );
-
-        console.log("KEYS", Object.keys(fullRecord), documentId, keys);
 
         return Object.assign(result, {
           updated: Object.fromEntries(
@@ -187,8 +181,8 @@ export const documents = createRoute({
             actions.reduce((acc, action) => {
               if (action.type === "insert") {
                 const doc: DBDocumentRaw = {
-                  _id: new ObjectId(action.id),
-                  folder: new ObjectId(folder),
+                  _id: createObjectId(action.id),
+                  folder: createObjectId(folder),
                   versions: { config: 0 },
                   config: [],
                   ...(action.label && { label: action.label }),
@@ -237,10 +231,6 @@ export const documents = createRoute({
         console.log("ERROR", err);
       }
 
-      /*
-      
-      */
-
       /* TODO: mongo 5.1
       db
         .aggregate([
@@ -282,7 +272,7 @@ export const documents = createRoute({
         ...(removes.length
           ? [
               db.collection<DBDocumentRaw>("documents").deleteMany({
-                _id: { $in: removes.map((el) => new ObjectId(el)) },
+                _id: { $in: removes.map((el) => createObjectId(el)) },
               }),
             ]
           : []),
@@ -374,19 +364,6 @@ export const documents = createRoute({
           .toArray()) ?? []
       ).map((el) => parseDocument(el));
 
-      /*
-      const frontIndex = articles.findIndex((el) => el.label === "__front__");
-
-      if (frontIndex < 0) {
-        return success({
-          front: null,
-          articles,
-        });
-      }
-
-      const [front] = articles.splice(frontIndex, 1);
-      */
-
       return success(articles);
     },
   }),
@@ -403,7 +380,7 @@ export const documents = createRoute({
 
       const documentRaw = await db
         .collection<DBDocumentRaw>("documents")
-        .findOne({ _id: new ObjectId(id) });
+        .findOne({ _id: createObjectId(id) });
 
       if (!documentRaw) {
         return error({ message: "No article found" });
@@ -447,58 +424,16 @@ export const documents = createRoute({
             })
         )?.counter ?? 0;
 
-      const folder = new ObjectId(namespace);
-
-      /*
-      ...(namespace
-        ? { folder: new ObjectId(namespace) }
-        : {
-            [`values.${createRawTemplateFieldId(DEFAULT_FIELDS.url.id)}`]: {
-              $exists: true,
-            },
-          }),
-      /*
-      [`values.${URL_ID}`]: namespace
-        ? { $regex: `^${namespace}` }
-        : { $exists: true },
-      */
-
       const docs = await db
         .collection<DBDocumentRaw>("documents")
         .find({
           ...(namespace
-            ? { folder: new ObjectId(namespace) }
+            ? { folder: createObjectId(namespace) }
             : {
                 [`values.${createRawTemplateFieldId(DEFAULT_FIELDS.url.id)}`]: {
                   $exists: true,
                 },
               }),
-          /*
-          $or: [
-            {
-              folder,
-              [`updated.${createRawTemplateFieldId(DEFAULT_FIELDS.url.id)}`]: {
-                $gt: lastBuildCounter,
-              },
-            },
-            {
-              folder,
-              [`updated.${createRawTemplateFieldId(DEFAULT_FIELDS.label.id)}`]:
-                { $gt: lastBuildCounter },
-            },
-            {
-              folder,
-              [`updated.${createRawTemplateFieldId(DEFAULT_FIELDS.page.id)}`]: {
-                $gt: lastBuildCounter,
-              },
-            },
-            {
-              folder,
-              [`updated.${createRawTemplateFieldId(DEFAULT_FIELDS.layout.id)}`]:
-                { $gt: lastBuildCounter },
-            },
-          ],
-          */
         })
         .toArray();
 

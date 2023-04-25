@@ -1,6 +1,7 @@
 import { Metadata } from "next";
 import { request } from "@storyflow/react/rsc";
 import { options } from "./options";
+import { getPage } from "./api";
 
 export const metadata: Metadata = {
   title: {
@@ -29,7 +30,7 @@ export const metadata: Metadata = {
 
 export async function generateMetadata({ params }: { params: any }) {
   const url = Object.values(params).join("/");
-  const data = await request(url, options);
+  const data = await getPage(url); // request(url, options);
 
   return { title: data?.head?.title };
 }

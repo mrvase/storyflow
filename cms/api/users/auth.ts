@@ -6,7 +6,7 @@ import {
   VerifyFunction,
 } from "@storyflow/auth";
 import { createSessionStorage } from "@storyflow/session";
-import clientPromise from "../mongo/mongoClient";
+import { clientPromise } from "../mongo/mongoClient";
 
 const verify: VerifyFunction<User> = async ({
   email,

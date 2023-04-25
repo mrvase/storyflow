@@ -1,6 +1,6 @@
 import { createProcedure, createRoute, MiddlewareContext } from "@sfrpc/server";
 import bcrypt from "bcryptjs";
-import clientPromise from "./mongoClient";
+import { clientPromise } from "./mongoClient";
 import { z } from "zod";
 
 import { cors as corsFactory } from "./cors";
@@ -16,19 +16,25 @@ import type { DBDocumentRaw } from "@storyflow/db-core/types";
 import { parseDocument } from "@storyflow/db-core/convert";
 import { getPaths } from "@storyflow/db-core/paths";
 import { DEFAULT_FIELDS } from "@storyflow/fields-core/default-fields";
-import { ObjectId } from "mongodb";
 import {
   createRawTemplateFieldId,
   createTemplateFieldId,
 } from "@storyflow/fields-core/ids";
 import util from "node:util";
 import type { FolderId } from "@storyflow/shared/types";
+import { createObjectId } from "@storyflow/db-core/mongo";
 
 const sessionStorage = createSessionStorage({
   cookie: cookieOptions,
 });
 
 const authorization = async (ctx: MiddlewareContext) => {
+  if ((ctx as any).dbName) {
+    return {
+      slug: (ctx as any).dbName.split("-")[0],
+      dbName: (ctx as any).dbName,
+    };
+  }
   const session = await sessionStorage.get(ctx.req.headers["cookie"]);
 
   let user: { slug: string; db: string } | null =
@@ -108,7 +114,7 @@ const createFetcher =
       .db(dbName)
       .collection<DBDocumentRaw>("documents")
       .find({
-        folder: new ObjectId(fetchObject.folder),
+        folder: createObjectId(fetchObject.folder),
         ...filters,
       })
       .sort({ _id: -1 })
@@ -121,7 +127,10 @@ const createFetcher =
 export const public_ = createRoute({
   get: createProcedure({
     middleware(ctx) {
-      return ctx.use(corsFactory("allow-all"), authorization);
+      return ctx.use(
+        // corsFactory("allow-all"),
+        authorization
+      );
     },
     schema() {
       return z.object({
@@ -146,8 +155,8 @@ export const public_ = createRoute({
           ...(namespaces &&
             namespaces.length > 0 && {
               folder: {
-                $in: namespaces.map(
-                  (el) => new ObjectId(`${el}`.padStart(24, "0"))
+                $in: namespaces.map((el) =>
+                  createObjectId(`${el}`.padStart(24, "0"))
                 ),
               },
             }),
@@ -213,14 +222,17 @@ export const public_ = createRoute({
   }),
   getPaths: createProcedure({
     middleware(ctx) {
-      return ctx.use(corsFactory("allow-all"), authorization);
+      return ctx.use(
+        // corsFactory("allow-all"),
+        authorization
+      );
     },
     schema() {
       return z.object({
         namespaces: z.array(z.union([z.string(), z.number()])).optional(),
       });
     },
-    async query({ namespaces }, { dbName, slug }) {
+    async query({ namespaces }, { dbName }) {
       console.log("REQUESTING PATHS");
 
       const client = await clientPromise;
@@ -231,8 +243,8 @@ export const public_ = createRoute({
           ...(namespaces
             ? {
                 folder: {
-                  $in: namespaces.map(
-                    (n) => new ObjectId(`${n}`.padStart(24, "0"))
+                  $in: namespaces.map((n) =>
+                    createObjectId(`${n}`.padStart(24, "0"))
                   ),
                 },
               }

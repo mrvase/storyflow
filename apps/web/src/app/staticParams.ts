@@ -1,12 +1,15 @@
 import { requestPaths } from "@storyflow/react/rsc";
 import { options } from "./options";
+import { getPaths } from "./api";
 
 export const staticParams = async (depth: number) => {
-  const paths = (await requestPaths(options)).filter(
+  const paths = await getPaths(); // requestPaths(options)
+
+  const filteredPaths = paths.filter(
     (el) => el !== "/" && el.split("/").length - 1 === depth
   );
 
-  return paths.map((url) => {
+  return filteredPaths.map((url) => {
     return Object.fromEntries(
       url
         .split("/")

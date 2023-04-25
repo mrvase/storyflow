@@ -14,6 +14,7 @@
     "@heroicons/react": "^2.0.11",
     "@sfrpc/client": "workspace:*",
     "@sfrpc/server": "workspace:*",
+    "@storyflow/api": "workspace:*",
     "@storyflow/auth": "workspace:*",
     "@storyflow/react": "workspace:*",
     "@storyflow/result": "workspace:*",

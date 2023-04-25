@@ -10,7 +10,6 @@ import { createSpliceTransformer } from "./splice-transform";
 import { createTokenStream } from "./parse-token-stream";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
 
-// applyFieldOperation
 export const applyFieldOperation = (
   state: { stream: TokenStream; transforms: FieldTransform[] },
   operation: FieldOperation

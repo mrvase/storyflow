@@ -1,5 +1,6 @@
 import { createRenderArray } from "@storyflow/client/render";
 import {
+  ClientSyntaxTree,
   FileToken,
   PropConfig,
   PropConfigArray,
@@ -32,7 +33,7 @@ const getImageObject = (name: string, url: string) => {
 
 const normalizeProp = (
   config: PropConfig,
-  prop: ValueArray,
+  prop: ValueArray | ClientSyntaxTree,
   loopCtx: Record<string, number>,
   transforms: {
     children: (value: ValueArray | undefined) => React.ReactElement;
@@ -101,7 +102,7 @@ const RenderChildren = ({
   ctx,
 }: {
   value: ValueArray;
-  record: Record<string, ValueArray>;
+  record: Record<string, ValueArray | ClientSyntaxTree>;
   ctx: {
     index: number;
     spread: boolean;
@@ -210,7 +211,7 @@ const RenderElement = ({
   ctx,
 }: {
   id: string;
-  record: Record<string, ValueArray>;
+  record: Record<string, ValueArray | ClientSyntaxTree>;
   type: string;
   ctx: {
     index: number;
@@ -234,7 +235,7 @@ const RenderElement = ({
 
     return (
       <>
-        {record[dataId].map((_, newIndex) => {
+        {(record[dataId] as ValueArray).map((_, newIndex) => {
           const loopCtx = {
             ...ctx.loop,
             [rawDocumentId]: newIndex,
@@ -294,7 +295,7 @@ function RenderElementWithProps({
   renderChildren,
 }: {
   elementId: string;
-  record: Record<string, ValueArray>;
+  record: Record<string, ValueArray | ClientSyntaxTree>;
   loopCtx: Record<string, number>;
   config: ExtendedComponentConfig;
   renderChildren: (value: ValueArray | undefined) => React.ReactElement;
@@ -332,15 +333,15 @@ export const RenderPage = ({
 }: {
   data:
     | {
-        entry: ValueArray;
-        record: Record<string, ValueArray>;
+        entry: ValueArray | ClientSyntaxTree;
+        record: Record<string, ValueArray | ClientSyntaxTree>;
       }
     | null
     | undefined;
 }) =>
   data ? (
     <RenderChildren
-      value={data.entry}
+      value={data.entry as ValueArray}
       record={data.record}
       ctx={{
         index: 0,
@@ -357,8 +358,8 @@ export const RenderLayout = ({
 }: {
   data:
     | {
-        entry: ValueArray;
-        record: Record<string, ValueArray>;
+        entry: ValueArray | ClientSyntaxTree;
+        record: Record<string, ValueArray | ClientSyntaxTree>;
       }
     | null
     | undefined;
@@ -366,7 +367,7 @@ export const RenderLayout = ({
 }) => {
   return data ? (
     <RenderChildren
-      value={data.entry}
+      value={data.entry as ValueArray}
       record={data.record}
       ctx={{
         index: 0,

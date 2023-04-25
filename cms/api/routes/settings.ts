@@ -2,7 +2,7 @@ import { createProcedure, createRoute } from "@sfrpc/server";
 import { error, success } from "@storyflow/result";
 import { z } from "zod";
 import { globals } from "../middleware/globals";
-import clientPromise from "../mongo/mongoClient";
+import { clientPromise } from "../mongo/mongoClient";
 import { authenticator } from "../users/auth";
 import { modifyOrganization } from "../users/users";
 import bcrypt from "bcryptjs";

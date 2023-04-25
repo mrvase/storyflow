@@ -3,7 +3,7 @@ import { error, success } from "@storyflow/result";
 import { z } from "zod";
 import type { RawDocumentId } from "@storyflow/shared/types";
 import type { DBFolder, DBFolderRaw } from "@storyflow/db-core/types";
-import clientPromise from "../mongo/mongoClient";
+import { clientPromise } from "../mongo/mongoClient";
 import { globals } from "../middleware/globals";
 import {
   ZodDocumentOp,

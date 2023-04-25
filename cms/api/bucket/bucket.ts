@@ -2,7 +2,7 @@ import { error, isError, success } from "@storyflow/result";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { createProcedure, createRoute } from "@sfrpc/server";
-import clientPromise from "../mongo/mongoClient";
+import { clientPromise } from "../mongo/mongoClient";
 import { globals } from "../middleware/globals";
 import { z } from "zod";
 

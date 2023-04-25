@@ -6,7 +6,6 @@ import type {
   DBSyntaxStreamBlock,
   DBSyntaxStream,
 } from "@storyflow/db-core/types";
-import { ObjectId } from "mongodb";
 import {
   FieldGraph,
   getFieldRecord,
@@ -17,6 +16,7 @@ import { getDocumentId, getRawFieldId } from "@storyflow/fields-core/ids";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
 import { createSyntaxStream } from "@storyflow/db-core/parse-syntax-stream";
 import { tokens } from "@storyflow/fields-core/tokens";
+import { createObjectId } from "@storyflow/db-core/mongo";
 
 export const deduplicate = <T>(arr: T[]): T[] => Array.from(new Set(arr));
 
@@ -31,7 +31,6 @@ export const getImports = (
     if (article) {
       const record = article.record;
       const value = record[id];
-      console.log("IMPORTED VALUE", id, value);
       if (value) {
         Object.assign(
           importRecord,
@@ -112,7 +111,7 @@ export function getSortedValues(
   };
 
   getSyntaxTreeEntries(record).map(([fieldId, value]) => {
-    const stream = createSyntaxStream(value, (id) => new ObjectId(id));
+    const stream = createSyntaxStream(value, (id) => createObjectId(id));
     if (
       isPrimitive(stream) &&
       getDocumentId(fieldId) === options.returnValuesForDocument
@@ -120,7 +119,7 @@ export function getSortedValues(
       values[getRawFieldId(fieldId)] = stream;
     } else {
       computeWithDepth.push({
-        k: new ObjectId(fieldId),
+        k: createObjectId(fieldId),
         v: stream,
         depth: getDepth(fieldId),
       });

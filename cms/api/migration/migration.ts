@@ -1,13 +1,12 @@
 import { error, success } from "@storyflow/result";
 import { createProcedure, createRoute } from "@sfrpc/server";
-import clientPromise from "../mongo/mongoClient";
+import { clientPromise } from "../mongo/mongoClient";
 import type { FunctionName, RawFieldId } from "@storyflow/shared/types";
 import type {
   DBDocumentRaw,
   DBSyntaxStreamBlock,
   DocumentConfigItem,
 } from "@storyflow/db-core/types";
-import type { WithId } from "mongodb";
 import { getRawFieldId } from "@storyflow/fields-core/ids";
 import { unwrapObjectId } from "@storyflow/db-core/convert";
 
@@ -57,9 +56,7 @@ const transformConfig = (field: DocumentConfigItem) => {
   return field;
 };
 
-const transform = (
-  doc: WithId<Omit<DBDocumentRaw, "_id">>
-): WithId<Omit<DBDocumentRaw, "_id">> => {
+const transform = (doc: DBDocumentRaw): DBDocumentRaw => {
   const fields = doc.fields.map(transformField);
   const config = doc.config.map(transformConfig);
 
@@ -76,21 +73,21 @@ const transform = (
   };
 };
 
-const copyCollection = async <T = any>(
+const copyCollection = async <T extends object = any>(
   collection: string,
   options: {
     fromDb: string;
     toDb: string;
-    transform: (doc: WithId<Omit<T, "_id">>) => WithId<Omit<T, "_id">>;
+    transform: (doc: T) => T;
   }
 ) => {
   const db1 = (await clientPromise).db(options.fromDb);
   const db2 = (await clientPromise).db(options.toDb);
 
-  let docs = await db1.collection<Omit<T, "_id">>(collection).find().toArray();
+  let docs = (await db1.collection(collection).find().toArray()) as T[];
 
   if (options.transform) {
-    docs = docs.map(options.transform);
+    docs = docs.map((doc) => options.transform(doc as T));
   }
 
   await db2.collection(collection).deleteMany({});

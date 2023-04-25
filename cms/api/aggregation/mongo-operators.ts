@@ -1,7 +1,7 @@
 import type { FieldId } from "@storyflow/shared/types";
 import type { DBId } from "@storyflow/db-core/types";
 import type { Operators, SwitchObject } from "./types";
-import { ObjectId } from "mongodb";
+import { isObjectId } from "@storyflow/db-core/mongo";
 
 const createProxy = (value: string): any => {
   return new Proxy({ $$ref: `$$${value}` } as Record<string, any>, {
@@ -506,7 +506,7 @@ const stringifyProxies = (value: any) => {
       if (value instanceof Date) {
         return value;
       }
-      if (value instanceof ObjectId) {
+      if (isObjectId(value)) {
         return value;
       }
       return Object.fromEntries(

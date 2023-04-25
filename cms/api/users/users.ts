@@ -3,13 +3,13 @@ import { z } from "zod";
 import type {} from "@sfrpc/types";
 import { authenticator, authorizer } from "./auth";
 import { error, isError, success, unwrap } from "@storyflow/result";
-import clientPromise from "../mongo/mongoClient";
+import { clientPromise } from "../mongo/mongoClient";
 import type { Organization, User } from "../types";
 import { DEFAULT_FIELDS } from "@storyflow/fields-core/default-fields";
 import type { DBFolderRaw } from "@storyflow/db-core/types";
 import { ROOT_FOLDER, TEMPLATE_FOLDER } from "@storyflow/fields-core/constants";
-import { ObjectId } from "mongodb";
 import { createRawTemplateFieldId } from "@storyflow/fields-core/ids";
+import { createObjectId } from "@storyflow/db-core/mongo";
 
 const user = async ({ req, client }: MiddlewareContext) => {
   const user = await authorizer.authorize(req);
@@ -82,13 +82,13 @@ export const users = createRoute({
           .collection<DBFolderRaw>("folders")
           .insertMany([
             {
-              _id: new ObjectId(ROOT_FOLDER),
+              _id: createObjectId(ROOT_FOLDER),
               label: "Hjem",
               type: "data",
               spaces: [],
             },
             {
-              _id: new ObjectId(TEMPLATE_FOLDER),
+              _id: createObjectId(TEMPLATE_FOLDER),
               label: "Skabeloner",
               type: "data",
               spaces: [],

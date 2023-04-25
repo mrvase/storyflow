@@ -20,10 +20,13 @@ import type {
   SyntaxTree,
   NestedField,
 } from "@storyflow/fields-core/types";
-import { getSyntaxTreeRecord, parseDocument } from "@storyflow/db-core/convert";
+import {
+  getSyntaxTreeRecord,
+  parseDocument,
+  unwrapObjectId,
+} from "@storyflow/db-core/convert";
 import type { TokenStream } from "operations/types";
-import { ObjectId } from "mongodb";
-import clientPromise from "../mongo/mongoClient";
+import { clientPromise } from "../mongo/mongoClient";
 import { globals } from "../middleware/globals";
 import {
   filterServerPackages,
@@ -80,6 +83,7 @@ import {
   isToggleAction,
 } from "operations/actions";
 import { splitTransformsAndRoot } from "@storyflow/fields-core/transform";
+import { createObjectId } from "@storyflow/db-core/mongo";
 
 export const fields = createRoute({
   sync: createProcedure({
@@ -165,14 +169,13 @@ export const fields = createRoute({
     },
     async mutation(input, { dbName, slug }) {
       const documentId = input.id as DocumentId;
-      const searchable = input.searchable;
 
       const db = (await clientPromise).db(dbName);
 
       const [article, histories] = await Promise.all([
         db
           .collection<DBDocumentRaw>("documents")
-          .findOne({ _id: new ObjectId(documentId) }),
+          .findOne({ _id: createObjectId(documentId) }),
         (
           client.lrange(`${slug}:${documentId}`, 0, -1) as Promise<
             ServerPackage<any>[]
@@ -180,18 +183,11 @@ export const fields = createRoute({
         ).then((res) => sortHistories(res)),
       ]);
 
-      /*
-      console.log(
-        "history",
-        util.inspect(histories, { depth: null, colors: true })
-      );
-      */
-
       if (!article) {
         return error({ message: "No article found" });
       }
 
-      let documentConfig = article.config;
+      let config = article.config;
 
       /*
       IMPORTANT ASSUMPTION 1
@@ -209,71 +205,30 @@ export const fields = createRoute({
         }
       );
 
-      console.log(
-        "root record",
-        util.inspect(computationRecord, { depth: null, colors: true })
-      );
-
-      const updatedFieldsIds: Set<FieldId> = new Set();
-
       const versions = article.versions ?? { config: 0 };
 
-      const updatedTransforms: Set<FieldId> = new Set();
+      const pkgs = filterServerPackages(
+        versions.config ?? 0,
+        histories[documentId] ?? []
+      );
 
-      if (documentId in histories) {
-        const history = histories[documentId] ?? [];
-        const templateVersion = article.versions?.config ?? 0;
-        const pkgs = filterServerPackages(templateVersion, history);
+      config = updateDocumentConfig(config, pkgs);
+      versions.config += pkgs.length;
 
-        if (pkgs.length) {
-          /*
-          const configsBefore = getFieldConfigArray(documentConfig).map(
-            (el) => ({ ...el })
-          );
-          */
-          documentConfig = transformDocumentConfig(documentConfig, pkgs);
-          /*
-          getFieldConfigArray(documentConfig)
-            .map((el) => ({ ...el }))
-            .forEach((el) => {
-              const index = configsBefore.findIndex(({ id }) => id === el.id);
-              if (
-                index < 0 ||
-                configsBefore[index].transform !== el.transform
-              ) {
-                updatedTransforms.add(el.id);
-              }
-            });
-          */
-          versions.config = templateVersion + pkgs.length;
-        }
-      }
+      const { record: updatedRecord, versions: updatedVersions } =
+        updateFieldRecord(
+          {
+            _id: documentId,
+            versions: article.versions,
+            record: computationRecord,
+          },
+          histories
+        );
 
-      const allUpdates: Record<FieldId, SyntaxTree> = {};
+      const updatedFieldsIds = new Set(Object.keys(updatedRecord) as FieldId[]);
 
-      (
-        Object.entries(histories) as [
-          DocumentId | RawFieldId,
-          ServerPackage<any>[]
-        ][]
-      ).forEach(([id, history]) => {
-        if (id === documentId) return;
-
-        const fieldId = computeFieldId(documentId, id as RawFieldId);
-
-        const fieldVersion = article.versions?.[id as RawFieldId] ?? 0;
-        const pkgs = filterServerPackages(fieldVersion, history);
-
-        if (!pkgs.length) return;
-
-        const newUpdates = transformField(fieldId, computationRecord, pkgs);
-        Object.assign(allUpdates, newUpdates);
-
-        updatedFieldsIds.add(fieldId);
-        versions[id as RawFieldId] = fieldVersion + pkgs.length;
-      });
-
-      Object.assign(computationRecord, allUpdates);
+      Object.assign(computationRecord, updatedRecord);
+      Object.assign(versions, updatedVersions);
 
       // trim to not include removed nested fields
       computationRecord = extractRootRecord(documentId, computationRecord, {
@@ -345,7 +300,7 @@ export const fields = createRoute({
         .collection<DBDocumentRaw>("documents")
         .find({
           _id: {
-            $in: externalDocumentIds.map((el) => new ObjectId(el)),
+            $in: externalDocumentIds.map((el) => createObjectId(el)),
           },
         })
         .toArray();
@@ -481,15 +436,14 @@ export const fields = createRoute({
           .filter((el) => isFieldOfDocument(el, doc._id))
           .forEach((id) => {
             if (!isTemplateField(id)) return;
-            const value = createSyntaxStream(
-              doc.record[id],
-              (id) => new ObjectId(id)
+            const value = createSyntaxStream(doc.record[id], (id) =>
+              createObjectId(id)
             );
             const _imports = getFieldBlocksWithDepths(id, doc.record).filter(
               (el) => el.k.toHexString() !== id
             );
             derivatives.push({
-              k: new ObjectId(id),
+              k: createObjectId(id),
               v: value,
               depth: 0,
               result: doc.values[getRawFieldId(id)],
@@ -518,7 +472,7 @@ export const fields = createRoute({
       updatedFieldsIds.forEach((id) => {
         updated[`updated.${getRawFieldId(id)}`] = timestamp;
         if (!(id in values) && !isTemplateField(id)) {
-          cached.push(new ObjectId(id));
+          cached.push(createObjectId(id));
         }
       });
 
@@ -527,7 +481,7 @@ export const fields = createRoute({
           $set: {
             values: { $literal: values }, // uses $literal to do hard replace (otherwise: merges old with new values)
             fields: { $literal: fields },
-            config: { $literal: documentConfig },
+            config: { $literal: config },
             versions: { $literal: versions },
             cached: cached as any,
             ...updated,
@@ -538,7 +492,7 @@ export const fields = createRoute({
 
       const result1 = await db
         .collection<DBDocumentRaw>("documents")
-        .findOneAndUpdate({ _id: new ObjectId(documentId) }, stages, {
+        .findOneAndUpdate({ _id: createObjectId(documentId) }, stages, {
           returnDocument: "after",
           writeConcern: { w: "majority" },
         });
@@ -555,11 +509,10 @@ export const fields = createRoute({
         // create updates
 
         const updates: Update[] = Array.from(updatedFieldsIds, (id) => {
-          const value = createSyntaxStream(
-            record[id],
-            (id) => new ObjectId(id)
+          const value = createSyntaxStream(record[id], (id) =>
+            createObjectId(id)
           );
-          const objectId = new ObjectId(id);
+          const objectId = createObjectId(id);
           const _imports = getFieldBlocksWithDepths(id, record).filter(
             (el) => el.k.toHexString() !== id
           );
@@ -592,7 +545,7 @@ export const fields = createRoute({
         await db.collection<DBDocumentRaw>("documents").updateMany(
           {
             "fields.k": { $in: updates.map((el) => el.k) },
-            _id: { $ne: new ObjectId(documentId) },
+            _id: { $ne: createObjectId(documentId) },
           },
           stages,
           {
@@ -609,6 +562,40 @@ export const fields = createRoute({
     },
   }),
 });
+
+const updateFieldRecord = (
+  article: Pick<DBDocument, "_id" | "record" | "versions">,
+  histories: Record<DocumentId | RawFieldId, ServerPackage<any>[]>
+) => {
+  const updatedRecord: SyntaxTreeRecord = {};
+  const updatedVersions: Record<RawFieldId, number> = {};
+
+  (
+    Object.entries(histories) as [
+      DocumentId | RawFieldId,
+      ServerPackage<any>[]
+    ][]
+  ).forEach(([id, history]) => {
+    if (id === article._id) return;
+
+    const fieldId = computeFieldId(article._id, id as RawFieldId);
+
+    const fieldVersion = article.versions?.[id as RawFieldId] ?? 0;
+    const pkgs = filterServerPackages(fieldVersion, history);
+
+    if (!pkgs.length) return;
+
+    const newUpdates = transformField(fieldId, article.record, pkgs);
+    Object.assign(updatedRecord, newUpdates);
+
+    updatedVersions[id as RawFieldId] = fieldVersion + pkgs.length;
+  });
+
+  return {
+    record: updatedRecord,
+    versions: updatedVersions,
+  };
+};
 
 const transformField = (
   fieldId: FieldId,
@@ -652,7 +639,7 @@ const transformField = (
   );
 };
 
-const transformDocumentConfig = (
+const updateDocumentConfig = (
   config: DBDocument["config"],
   history: ServerPackage<DocumentOperation>[]
 ) => {

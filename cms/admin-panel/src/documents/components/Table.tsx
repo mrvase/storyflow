@@ -23,7 +23,7 @@ export default function Table({
     >
       {labels && (
         <thead>
-          <tr className="font-medium text-gray-300">
+          <tr className="font-medium text-gray-600 dark:text-gray-300">
             <td className="w-9"></td>
             {labels.map((label) => (
               <td
