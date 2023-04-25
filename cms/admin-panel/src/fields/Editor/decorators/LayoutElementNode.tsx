@@ -6,14 +6,12 @@ import {
   FieldId,
   NestedDocumentId,
   NestedElement,
-  SyntaxTree,
-} from "@storyflow/backend/types";
+} from "@storyflow/shared/types";
+import type { SyntaxTree } from "@storyflow/fields-core/types";
 import { getConfigFromType, useClientConfig } from "../../../client-config";
 import {
-  ArrowPathIcon,
   ArrowPathRoundedSquareIcon,
   ChevronUpDownIcon,
-  CodeBracketSquareIcon,
   CubeIcon,
   EllipsisHorizontalIcon,
   WindowIcon,
@@ -33,16 +31,16 @@ import {
   useAttributesContext,
 } from "../../Attributes";
 import { ExtendPath, usePath, useSelectedPath } from "../../Path";
-import { PropConfig, RegularOptions } from "@storyflow/frontend/types";
+import type { PropConfig, RegularOptions } from "@storyflow/shared/types";
 import { flattenPropsWithIds } from "../../../utils/flattenProps";
 import { DefaultField } from "../../default/DefaultField";
-import { getIdFromString } from "@storyflow/backend/ids";
+import { getIdFromString } from "@storyflow/fields-core/ids";
 import { useEditorContext } from "../../../editor/react/EditorProvider";
 import $createRangeSelection from "../../../editor/createRangeSelection";
 import { useGlobalState } from "../../../state/state";
-import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
-import { tokens } from "@storyflow/backend/tokens";
-import { traverseSyntaxTree } from "shared/computation-tools";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
+import { tokens } from "@storyflow/fields-core/tokens";
+import { traverseSyntaxTree } from "@storyflow/fields-core/syntax-tree";
 
 const LevelContext = React.createContext(0);
 

@@ -1,5 +1,5 @@
 import React from "react";
-import { Draggable, Identifier, List, Rect } from "../types";
+import type { Draggable, Identifier, List, Rect } from "../types";
 import useRegister from "./useRegister";
 
 type Item = any;

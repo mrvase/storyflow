@@ -3,7 +3,7 @@ import type {
   ClientConfig,
   ComponentConfig,
   LibraryConfig,
-} from "@storyflow/frontend/types";
+} from "@storyflow/shared/types";
 import { SWRClient } from "./client";
 import { useFolderDomains } from "./folders/FolderDomainsContext";
 

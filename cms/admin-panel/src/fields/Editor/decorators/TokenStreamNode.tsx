@@ -7,14 +7,9 @@ import {
   SerializedLexicalNode,
   Spread,
 } from "lexical";
-import {
-  NestedEntity,
-  NestedField,
-  Parameter,
-  Token,
-  TokenStream,
-  TokenStreamSymbol,
-} from "@storyflow/backend/types";
+import type { NestedEntity, Token } from "@storyflow/shared/types";
+import type { NestedField, Parameter } from "@storyflow/fields-core/types";
+import type { TokenStream, TokenStreamSymbol } from "operations/types";
 
 export type SerializedTokenStreamNode<
   Type extends string,

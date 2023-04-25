@@ -6,14 +6,10 @@ import { caretClasses } from "./caret";
 import { useLabel } from "../../../documents/collab/hooks";
 import { useGlobalState } from "../../../state/state";
 import { getPreview } from "../../default/getPreview";
-import {
-  FieldId,
-  HasSelect,
-  NestedField,
-  RawFieldId,
-  ValueArray,
-} from "@storyflow/backend/types";
-import { revertTemplateFieldId } from "@storyflow/backend/ids";
+import type { ValueArray } from "@storyflow/shared/types";
+import type { NestedField } from "@storyflow/fields-core/types";
+import type { HasSelect } from "operations/types";
+import { revertTemplateFieldId } from "@storyflow/fields-core/ids";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 
 const useState = (

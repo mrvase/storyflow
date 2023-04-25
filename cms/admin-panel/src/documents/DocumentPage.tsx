@@ -6,23 +6,22 @@ import {
   PlusIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
-import { DEFAULT_FIELDS, DEFAULT_TEMPLATES } from "@storyflow/backend/fields";
-import { getTemplateDocumentId } from "@storyflow/backend/ids";
-import {
-  DBDocument,
-  DocumentId,
-  FolderId,
-  RawFieldId,
-  SearchableProps,
-} from "@storyflow/backend/types";
+import { DEFAULT_FIELDS } from "@storyflow/fields-core/default-fields";
+import { getTemplateDocumentId } from "@storyflow/fields-core/ids";
+import type { DocumentId, FolderId, RawFieldId } from "@storyflow/shared/types";
+import type { DBDocument } from "@storyflow/db-core/types";
 import { NoList, useDragItem } from "@storyflow/dnd";
-import { PropConfigArray } from "@storyflow/frontend/types";
 import { ServerPackage } from "@storyflow/state";
 import cl from "clsx";
 import React from "react";
-import { useDocument, useOptimisticDocumentList, useSaveDocument } from ".";
+import {
+  DEFAULT_TEMPLATES,
+  useDocument,
+  useOptimisticDocumentList,
+  useSaveDocument,
+} from ".";
 import { useDocumentLabel } from "./useDocumentLabel";
-import { getComponentType, useClientConfig } from "../client-config";
+import { useClientConfig } from "../client-config";
 import { useTemplateFolder } from "../folders/FoldersContext";
 import Content from "../layout/components/Content";
 import {
@@ -45,8 +44,7 @@ import { ExtendTemplatePath } from "./TemplatePathContext";
 import { useRoute } from "../panel-router/Routes";
 import { parseSegment } from "../layout/components/parseSegment";
 import { Menu } from "../layout/components/Menu";
-import { DocumentOperation } from "shared/operations";
-import { extendPath } from "../utils/extendPath";
+import { DocumentOperation } from "operations/actions";
 
 const getVersionKey = (versions?: Record<RawFieldId, number>) => {
   if (!versions) return -1;
@@ -390,6 +388,7 @@ function SaveButton({ id, folder }: { id: DocumentId; folder: FolderId }) {
 
   const { libraries } = useClientConfig();
 
+  /*
   const searchable: SearchableProps = React.useMemo(() => {
     const searchableProps: SearchableProps = {};
     for (const lib of libraries) {
@@ -414,6 +413,7 @@ function SaveButton({ id, folder }: { id: DocumentId; folder: FolderId }) {
     }
     return searchableProps;
   }, [libraries]);
+  */
 
   return (
     <div className="relative ml-5">
@@ -428,7 +428,7 @@ function SaveButton({ id, folder }: { id: DocumentId; folder: FolderId }) {
           if (isLoading) return;
           setIsLoading(true);
           await collab.sync(true);
-          const result = await saveDocument({ id, searchable });
+          const result = await saveDocument({ id, searchable: {} });
           mutateUpdatedUrls();
           setIsLoading(false);
         }}

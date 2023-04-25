@@ -1,4 +1,4 @@
-import { DocumentId, FolderId } from "@storyflow/backend/types";
+import type { DocumentId, FolderId } from "@storyflow/shared/types";
 import React from "react";
 import { useDocumentListMutation } from "../../documents";
 

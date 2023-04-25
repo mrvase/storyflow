@@ -4,7 +4,7 @@ import { useSingular } from "./useSingular";
 import { queueForEach } from "@storyflow/state/collab";
 import type { QueueListenerParam } from "@storyflow/state/collab";
 import type { createCollaboration } from "./collaboration";
-import { StdOperation } from "shared/operations";
+import { StdOperation } from "operations/actions";
 
 export function createCollaborativeState<T, Operation extends StdOperation>(
   collab: ReturnType<typeof createCollaboration>,

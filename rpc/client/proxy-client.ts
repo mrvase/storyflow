@@ -1,6 +1,6 @@
 import { error, isError, isSuccess, success, unwrap } from "@storyflow/result";
 import type { API } from "@sfrpc/types";
-import { APIToClient, QueryOptions, SharedOptions } from "./types";
+import type { APIToClient, QueryOptions, SharedOptions } from "./types";
 import { dedupedFetch } from "./dedupedFetch";
 import { externalKey, getContext, queryKey } from "./utils";
 

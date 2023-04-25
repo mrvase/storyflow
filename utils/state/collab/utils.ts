@@ -1,4 +1,4 @@
-import { DefaultOperation, ServerPackage, WithMetaData } from "./types";
+import type { DefaultOperation, ServerPackage, WithMetaData } from "./types";
 
 export const createPromise = <T>() => {
   let props: {

@@ -1,9 +1,6 @@
 import React from "react";
-import {
-  DocumentId,
-  RawFieldId,
-  SyntaxTreeRecord,
-} from "@storyflow/backend/types";
+import type { DocumentId, RawFieldId } from "@storyflow/shared/types";
+import type { SyntaxTreeRecord } from "@storyflow/fields-core/types";
 
 export const DocumentPageContext = React.createContext<{
   id: DocumentId;

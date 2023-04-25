@@ -9,7 +9,7 @@ importers:
       turbo: latest
     devDependencies:
       eslint-config-custom: link:setup/eslint-config-custom
-      prettier: 2.8.7
+      prettier: 2.8.8
       turbo: 1.9.3
 
   apps/public-api:
@@ -18,16 +18,15 @@ importers:
       '@sfrpc/client': workspace:*
       '@sfrpc/server': workspace:*
       '@sfrpc/types': workspace:*
+      '@storyflow/api': workspace:*
       '@storyflow/auth': workspace:*
       '@storyflow/react': workspace:*
       '@storyflow/result': workspace:*
-      '@storyflow/server': workspace:*
       '@storyflow/session': workspace:*
       '@types/node': ^17.0.45
       '@types/qs': ^6.9.7
       '@types/react': ^18.0.22
       '@types/react-dom': ^18.0.7
-      api: workspace:*
       eslint: 7.32.0
       eslint-config-custom: workspace:*
       mongodb: ^4.13.0
@@ -41,12 +40,11 @@ importers:
     dependencies:
       '@sfrpc/client': link:../../rpc/client
       '@sfrpc/server': link:../../rpc/server
+      '@storyflow/api': link:../../frontend/api
       '@storyflow/auth': link:../../utils/auth
-      '@storyflow/react': link:../../packages/react
+      '@storyflow/react': link:../../frontend/react
       '@storyflow/result': link:../../utils/result
-      '@storyflow/server': link:../../packages/server
       '@storyflow/session': link:../../utils/session
-      api: link:../../cms/api
       mongodb: 4.13.0
       next: 13.3.0_pjwopsidmaokadturxaafygjp4
       react: 18.2.0
@@ -76,7 +74,6 @@ importers:
       '@storyflow/auth': workspace:*
       '@storyflow/react': workspace:*
       '@storyflow/result': workspace:*
-      '@storyflow/server': workspace:*
       '@storyflow/session': workspace:*
       '@tailwindcss/container-queries': ^0.1.1
       '@types/node': ^17.0.45
@@ -108,9 +105,8 @@ importers:
       '@sfrpc/client': link:../../rpc/client
       '@sfrpc/server': link:../../rpc/server
       '@storyflow/auth': link:../../utils/auth
-      '@storyflow/react': link:../../packages/react
+      '@storyflow/react': link:../../frontend/react
       '@storyflow/result': link:../../utils/result
-      '@storyflow/server': link:../../packages/server
       '@storyflow/session': link:../../utils/session
       '@vitejs/plugin-react': 3.0.1_vite@4.0.4
       admin-panel: link:../../cms/admin-panel
@@ -148,11 +144,12 @@ importers:
       '@lexical/utils': ^0.9.1
       '@sfrpc/client': workspace:*
       '@sfrpc/types': workspace:*
-      '@storyflow/backend': workspace:*
+      '@storyflow/db-core': workspace:*
       '@storyflow/dnd': workspace:*
-      '@storyflow/frontend': workspace:*
+      '@storyflow/fields-core': workspace:*
       '@storyflow/result': workspace:*
       '@storyflow/router': workspace:*
+      '@storyflow/shared': workspace:*
       '@storyflow/state': workspace:*
       '@tailwindcss/container-queries': ^0.1.1
       '@types/react': ^18.0.17
@@ -162,13 +159,13 @@ importers:
       eslint: ^7.32.0
       eslint-config-custom: workspace:*
       lexical: ^0.9.1
+      operations: workspace:*
       qs: ^6.11.0
       react: ^18.2.0
       react-colorful: ^5.6.1
       react-dom: ^18.2.0
       react-error-boundary: ^3.1.4
       react-resizable-panels: ^0.0.29
-      shared: workspace:*
       swr: ^2.0.1
       tailwindcss: ^3.2.4
       tsconfig: workspace:*
@@ -182,23 +179,24 @@ importers:
       '@lexical/selection': 0.9.1_lexical@0.9.1
       '@lexical/utils': 0.9.1_lexical@0.9.1
       '@sfrpc/client': link:../../rpc/client
-      '@storyflow/backend': link:../../packages/backend
       '@storyflow/dnd': link:../../utils/dnd
-      '@storyflow/frontend': link:../../packages/frontend
+      '@storyflow/fields-core': link:../../packages/fields-core
       '@storyflow/result': link:../../utils/result
       '@storyflow/router': link:../../utils/router
+      '@storyflow/shared': link:../../packages/shared
       '@storyflow/state': link:../../utils/state
       clsx: 1.2.1
       lexical: 0.9.1
+      operations: link:../operations
       qs: 6.11.0
       react-colorful: 5.6.1_biqbaboplfbrettd7655fr4n2y
       react-error-boundary: 3.1.4_react@18.2.0
       react-resizable-panels: 0.0.29_biqbaboplfbrettd7655fr4n2y
-      shared: link:../shared
       swr: 2.0.1_react@18.2.0
       zod: 3.20.2
     devDependencies:
       '@sfrpc/types': link:../../rpc/types
+      '@storyflow/db-core': link:../../packages/db-core
       '@tailwindcss/container-queries': 0.1.1_tailwindcss@3.2.4
       '@types/react': 18.0.27
       '@types/react-dom': 18.0.10
@@ -220,11 +218,11 @@ importers:
       '@sfrpc/server': workspace:*
       '@sfrpc/types': workspace:*
       '@storyflow/auth': workspace:*
-      '@storyflow/backend': workspace:*
-      '@storyflow/frontend': workspace:*
+      '@storyflow/db-core': workspace:*
+      '@storyflow/fields-core': workspace:*
       '@storyflow/result': workspace:*
-      '@storyflow/server': workspace:*
       '@storyflow/session': workspace:*
+      '@storyflow/shared': workspace:*
       '@storyflow/state': workspace:*
       '@types/bcryptjs': ^2.4.2
       '@types/nodemailer': ^6.4.7
@@ -236,8 +234,8 @@ importers:
       next: ^13.3.0
       nodemailer: ^6.9.0
       openai: ^3.2.1
+      operations: workspace:*
       qs: ^6.11.0
-      shared: workspace:*
       tsconfig: workspace:*
       typescript: ^5.0.4
       vite: ^4.0.4
@@ -248,20 +246,20 @@ importers:
       '@aws-sdk/s3-request-presigner': 3.315.0
       '@sfrpc/server': link:../../rpc/server
       '@storyflow/auth': link:../../utils/auth
-      '@storyflow/backend': link:../../packages/backend
+      '@storyflow/db-core': link:../../packages/db-core
+      '@storyflow/fields-core': link:../../packages/fields-core
       '@storyflow/result': link:../../utils/result
-      '@storyflow/server': link:../../packages/server
       '@storyflow/session': link:../../utils/session
+      '@storyflow/shared': link:../../packages/shared
       '@storyflow/state': link:../../utils/state
       '@upstash/redis': 1.19.3
       bcryptjs: 2.4.3
       openai: 3.2.1
+      operations: link:../operations
       qs: 6.11.0
-      shared: link:../shared
       zod: 3.20.2
     devDependencies:
       '@sfrpc/types': link:../../rpc/types
-      '@storyflow/frontend': link:../../packages/frontend
       '@types/bcryptjs': 2.4.2
       '@types/nodemailer': 6.4.7
       eslint: 7.32.0
@@ -274,9 +272,11 @@ importers:
       vite: 4.0.4
       vitest: 0.28.4
 
-  cms/shared:
+  cms/operations:
     specifiers:
-      '@storyflow/backend': workspace:*
+      '@storyflow/db-core': workspace:*
+      '@storyflow/fields-core': workspace:*
+      '@storyflow/shared': workspace:*
       '@storyflow/state': workspace:*
       eslint: ^7.32.0
       eslint-config-custom: workspace:*
@@ -285,9 +285,11 @@ importers:
       vite: ^4.0.4
       vitest: ^0.28.4
     dependencies:
-      '@storyflow/backend': link:../../packages/backend
+      '@storyflow/fields-core': link:../../packages/fields-core
+      '@storyflow/shared': link:../../packages/shared
       '@storyflow/state': link:../../utils/state
     devDependencies:
+      '@storyflow/db-core': link:../../packages/db-core
       eslint: 7.32.0
       eslint-config-custom: link:../../setup/eslint-config-custom
       tsconfig: link:../../setup/tsconfig
@@ -295,64 +297,73 @@ importers:
       vite: 4.0.4
       vitest: 0.28.4
 
-  packages/backend:
+  frontend/api:
     specifiers:
-      '@rollup/plugin-typescript': ^11.0.0
-      '@storyflow/frontend': workspace:*
-      '@types/node': ^17.0.45
-      esbuild: ^0.17.5
+      '@sfrpc/server': workspace:*
+      '@sfrpc/types': workspace:*
+      '@storyflow/db-core': workspace:*
+      '@storyflow/fields-core': workspace:*
+      '@storyflow/result': workspace:*
+      '@storyflow/session': workspace:*
+      '@storyflow/shared': workspace:*
+      '@types/bcryptjs': ^2.4.2
+      bcryptjs: ^2.4.3
       eslint: ^7.32.0
       eslint-config-custom: workspace:*
-      rollup: ^3.12.0
-      rollup-plugin-dts: ^5.1.1
-      rollup-plugin-esbuild: ^5.0.0
+      mongodb: ^4.13.0
+      next: ^13.3.0
+      operations: workspace:*
+      qs: ^6.11.0
       tsconfig: workspace:*
       typescript: ^5.0.4
       vite: ^4.0.4
       vitest: ^0.28.4
+      zod: ^3.20.2
+    dependencies:
+      '@sfrpc/server': link:../../rpc/server
+      '@storyflow/db-core': link:../../packages/db-core
+      '@storyflow/fields-core': link:../../packages/fields-core
+      '@storyflow/result': link:../../utils/result
+      '@storyflow/session': link:../../utils/session
+      '@storyflow/shared': link:../../packages/shared
+      bcryptjs: 2.4.3
+      operations: link:../../cms/operations
+      qs: 6.11.0
+      zod: 3.20.2
     devDependencies:
-      '@rollup/plugin-typescript': 11.0.0_rhbu26wk3iihq3gameuune3b5i
-      '@storyflow/frontend': link:../frontend
-      '@types/node': 17.0.45
-      esbuild: 0.17.5
+      '@sfrpc/types': link:../../rpc/types
+      '@types/bcryptjs': 2.4.2
       eslint: 7.32.0
       eslint-config-custom: link:../../setup/eslint-config-custom
-      rollup: 3.12.0
-      rollup-plugin-dts: 5.1.1_rhbu26wk3iihq3gameuune3b5i
-      rollup-plugin-esbuild: 5.0.0_xh5ziip2kh75funlguo4husgu4
+      mongodb: 4.13.0
+      next: 13.3.0
       tsconfig: link:../../setup/tsconfig
       typescript: 5.0.4
-      vite: 4.0.4_@types+node@17.0.45
+      vite: 4.0.4
       vitest: 0.28.4
 
-  packages/frontend:
+  frontend/client:
     specifiers:
-      '@rollup/plugin-typescript': ^11.0.0
-      esbuild: ^0.17.5
+      '@storyflow/shared': workspace:*
       eslint: ^7.32.0
       eslint-config-custom: workspace:*
-      rollup: ^3.12.0
-      rollup-plugin-dts: ^5.1.1
-      rollup-plugin-esbuild: ^5.0.0
       tsconfig: workspace:*
       typescript: ^5.0.4
+    dependencies:
+      '@storyflow/shared': link:../../packages/shared
     devDependencies:
-      '@rollup/plugin-typescript': 11.0.0_rhbu26wk3iihq3gameuune3b5i
-      esbuild: 0.17.5
       eslint: 7.32.0
       eslint-config-custom: link:../../setup/eslint-config-custom
-      rollup: 3.12.0
-      rollup-plugin-dts: 5.1.1_rhbu26wk3iihq3gameuune3b5i
-      rollup-plugin-esbuild: 5.0.0_xh5ziip2kh75funlguo4husgu4
       tsconfig: link:../../setup/tsconfig
       typescript: 5.0.4
 
-  packages/react:
+  frontend/react:
     specifiers:
       '@lexical/selection': ^0.9.1
       '@lexical/utils': ^0.9.1
       '@rollup/plugin-typescript': ^11.0.0
-      '@storyflow/frontend': workspace:*
+      '@storyflow/client': workspace:*
+      '@storyflow/shared': workspace:*
       '@types/node': ^17.0.45
       '@types/react': ^18.0.17
       '@types/react-dom': ^18.0.6
@@ -371,7 +382,8 @@ importers:
     dependencies:
       '@lexical/selection': 0.9.1_lexical@0.9.1
       '@lexical/utils': 0.9.1_lexical@0.9.1
-      '@storyflow/frontend': link:../frontend
+      '@storyflow/client': link:../client
+      '@storyflow/shared': link:../../packages/shared
       lexical: 0.9.1
     devDependencies:
       '@rollup/plugin-typescript': 11.0.0_hm3e7jbgokhfzu3nbd2gjzq6oe
@@ -390,34 +402,61 @@ importers:
       tslib: 2.5.0
       typescript: 5.0.4
 
-  packages/server:
+  packages/db-core:
     specifiers:
-      '@rollup/plugin-typescript': ^11.0.0
-      '@storyflow/backend': workspace:*
-      '@storyflow/frontend': workspace:*
-      esbuild: ^0.17.5
+      '@storyflow/fields-core': workspace:*
+      '@storyflow/shared': workspace:*
       eslint: ^7.32.0
       eslint-config-custom: workspace:*
-      mongodb: ^4.13.0
-      rollup: ^3.12.0
-      rollup-plugin-dts: ^5.1.1
-      rollup-plugin-esbuild: ^5.0.0
       tsconfig: workspace:*
       typescript: ^5.0.4
+      vite: ^4.0.4
+      vitest: ^0.28.4
     dependencies:
-      '@storyflow/backend': link:../backend
-      '@storyflow/frontend': link:../frontend
+      '@storyflow/fields-core': link:../fields-core
+      '@storyflow/shared': link:../shared
     devDependencies:
-      '@rollup/plugin-typescript': 11.0.0_rhbu26wk3iihq3gameuune3b5i
-      esbuild: 0.17.5
       eslint: 7.32.0
       eslint-config-custom: link:../../setup/eslint-config-custom
-      mongodb: 4.13.0
-      rollup: 3.12.0
-      rollup-plugin-dts: 5.1.1_rhbu26wk3iihq3gameuune3b5i
-      rollup-plugin-esbuild: 5.0.0_xh5ziip2kh75funlguo4husgu4
       tsconfig: link:../../setup/tsconfig
       typescript: 5.0.4
+      vite: 4.0.4
+      vitest: 0.28.4
+
+  packages/fields-core:
+    specifiers:
+      '@storyflow/shared': workspace:*
+      eslint: ^7.32.0
+      eslint-config-custom: workspace:*
+      tsconfig: workspace:*
+      typescript: ^5.0.4
+      vite: ^4.0.4
+      vitest: ^0.28.4
+    dependencies:
+      '@storyflow/shared': link:../shared
+    devDependencies:
+      eslint: 7.32.0
+      eslint-config-custom: link:../../setup/eslint-config-custom
+      tsconfig: link:../../setup/tsconfig
+      typescript: 5.0.4
+      vite: 4.0.4
+      vitest: 0.28.4
+
+  packages/shared:
+    specifiers:
+      eslint: ^7.32.0
+      eslint-config-custom: workspace:*
+      tsconfig: workspace:*
+      typescript: ^5.0.4
+      vite: ^4.0.4
+      vitest: ^0.28.4
+    devDependencies:
+      eslint: 7.32.0
+      eslint-config-custom: link:../../setup/eslint-config-custom
+      tsconfig: link:../../setup/tsconfig
+      typescript: 5.0.4
+      vite: 4.0.4
+      vitest: 0.28.4
 
   rpc/client:
     specifiers:
@@ -3085,25 +3124,6 @@ packages:
       typescript: 5.0.4
     dev: true
 
-  /@rollup/plugin-typescript/11.0.0_rhbu26wk3iihq3gameuune3b5i:
-    resolution: {integrity: sha512-goPyCWBiimk1iJgSTgsehFD5OOFHiAknrRJjqFCudcW8JtWiBlK284Xnn4flqMqg6YAjVG/EE+3aVzrL5qNSzQ==}
-    engines: {node: '>=14.0.0'}
-    peerDependencies:
-      rollup: ^2.14.0||^3.0.0
-      tslib: '*'
-      typescript: '>=3.7.0'
-    peerDependenciesMeta:
-      rollup:
-        optional: true
-      tslib:
-        optional: true
-    dependencies:
-      '@rollup/pluginutils': 5.0.2_rollup@3.12.0
-      resolve: 1.22.1
-      rollup: 3.12.0
-      typescript: 5.0.4
-    dev: true
-
   /@rollup/pluginutils/5.0.2_rollup@3.12.0:
     resolution: {integrity: sha512-pTd9rIsP92h+B6wWwFbW8RkZv4hiR/xKsqre4SIuAOaOEQRxi0lqLke9k2/7WegC85GgUs9pjmOjCUi3In4vwA==}
     engines: {node: '>=14.0.0'}
@@ -5403,8 +5423,8 @@ packages:
     resolution: {integrity: sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==}
     engines: {node: '>= 0.8.0'}
 
-  /prettier/2.8.7:
-    resolution: {integrity: sha512-yPngTo3aXUUmyuTjeTUT75txrf+aMh9FiD7q9ZE/i6r0bPb22g4FsE6Y338PQX1bmfy08i9QQCB7/rcUAVntfw==}
+  /prettier/2.8.8:
+    resolution: {integrity: sha512-tdN8qQGvNjw4CHbY+XXk0JgCXn9QiF21a55rBe5LJAU+kDyC4WQn4+awm2Xfk2lQMk5fKup9XgzTZtGkjBdP9Q==}
     engines: {node: '>=10.13.0'}
     hasBin: true
     dev: true

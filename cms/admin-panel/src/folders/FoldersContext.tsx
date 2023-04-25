@@ -1,5 +1,5 @@
-import { DBFolder } from "@storyflow/backend/types";
-import { TEMPLATE_FOLDER } from "@storyflow/backend/constants";
+import type { DBFolder } from "@storyflow/db-core/types";
+import { TEMPLATE_FOLDER } from "@storyflow/fields-core/constants";
 import { ServerPackage } from "@storyflow/state";
 import React from "react";
 import { SWRClient } from "../client";

@@ -1,23 +1,22 @@
-import {
+import type { DocumentId, FieldId } from "@storyflow/shared/types";
+import type { SyntaxTreeRecord } from "@storyflow/fields-core/types";
+import type {
   DBDocument,
-  DocumentId,
-  FieldId,
   DBValueRecord,
-  SyntaxTreeRecord,
   DBSyntaxStreamBlock,
   DBSyntaxStream,
-} from "@storyflow/backend/types";
+} from "@storyflow/db-core/types";
 import { ObjectId } from "mongodb";
 import {
-  ComputationGraph,
-  getSyntaxTreeEntries,
+  FieldGraph,
   getFieldRecord,
   getGraph,
-} from "shared/computation-tools";
-import { getDocumentId, getRawFieldId } from "@storyflow/backend/ids";
-import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
-import { createSyntaxStream } from "shared/parse-syntax-stream";
-import { tokens } from "@storyflow/backend/tokens";
+} from "@storyflow/fields-core/graph";
+import { getSyntaxTreeEntries } from "@storyflow/fields-core/syntax-tree";
+import { getDocumentId, getRawFieldId } from "@storyflow/fields-core/ids";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
+import { createSyntaxStream } from "@storyflow/db-core/parse-syntax-stream";
+import { tokens } from "@storyflow/fields-core/tokens";
 
 export const deduplicate = <T>(arr: T[]): T[] => Array.from(new Set(arr));
 
@@ -49,25 +48,25 @@ export const getImports = (
 
 export function getSortedValues(
   record: SyntaxTreeRecord,
-  graph: ComputationGraph
+  graph: FieldGraph
 ): { fields: DBSyntaxStreamBlock[] };
 export function getSortedValues(
   record: SyntaxTreeRecord,
-  graph: ComputationGraph,
+  graph: FieldGraph,
   options: {
     keepDepths: true;
   }
 ): { fields: (DBSyntaxStreamBlock & { depth: number })[] };
 export function getSortedValues(
   record: SyntaxTreeRecord,
-  graph: ComputationGraph,
+  graph: FieldGraph,
   options: {
     returnValuesForDocument: DocumentId;
   }
 ): { values: DBValueRecord; fields: DBSyntaxStreamBlock[] };
 export function getSortedValues(
   record: SyntaxTreeRecord,
-  graph: ComputationGraph,
+  graph: FieldGraph,
   options: {
     returnValuesForDocument?: DocumentId;
     keepDepths?: boolean;

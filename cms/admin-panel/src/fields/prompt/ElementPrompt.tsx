@@ -1,10 +1,11 @@
 import { CubeIcon } from "@heroicons/react/24/outline";
-import { getDocumentId } from "@storyflow/backend/ids";
-import { DocumentId, TokenStream } from "@storyflow/backend/types";
-import {
+import { getDocumentId } from "@storyflow/fields-core/ids";
+import type { DocumentId } from "@storyflow/shared/types";
+import type { TokenStream } from "operations/types";
+import type {
   RegularOptions,
   Option as PropOption,
-} from "@storyflow/frontend/types";
+} from "@storyflow/shared/types";
 import React from "react";
 import { useClientConfig } from "../../client-config";
 import { useDocumentIdGenerator } from "../../id-generator";

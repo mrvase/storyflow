@@ -1,7 +1,6 @@
-import { useClient, useQueryContext } from "./client";
 import { hexColorToRgb } from "./data/colors";
 import useSWR from "swr";
-import { TEMPLATE_FOLDER } from "@storyflow/backend/constants";
+import { TEMPLATE_FOLDER } from "@storyflow/fields-core/constants";
 import { useOptimisticDocumentList } from "./documents";
 
 export function Preload() {

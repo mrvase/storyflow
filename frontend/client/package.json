@@ -1,0 +1,18 @@
+{
+  "name": "@storyflow/client",
+  "version": "0.1.0",
+  "license": "MIT",
+  "scripts": {
+    "lint": "eslint *.ts*",
+    "build:package": "rollup --config rollup.config.ts --configPlugin typescript"
+  },
+  "dependencies": {
+    "@storyflow/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "eslint": "^7.32.0",
+    "eslint-config-custom": "workspace:*",
+    "tsconfig": "workspace:*",
+    "typescript": "^5.0.4"
+  }
+}

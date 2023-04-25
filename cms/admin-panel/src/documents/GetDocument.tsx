@@ -1,5 +1,6 @@
 import React from "react";
-import { DocumentId, TemplateDocument } from "@storyflow/backend/types";
+import type { DocumentId } from "@storyflow/shared/types";
+import type { DBDocument } from "@storyflow/db-core/types";
 import { useDocument } from ".";
 
 export const GetDocument = ({
@@ -7,7 +8,7 @@ export const GetDocument = ({
   children,
 }: {
   id: DocumentId;
-  children: (doc: TemplateDocument) => React.ReactNode;
+  children: (doc: DBDocument) => React.ReactNode;
 }) => {
   let { doc } = useDocument(id);
   if (!doc) return null;

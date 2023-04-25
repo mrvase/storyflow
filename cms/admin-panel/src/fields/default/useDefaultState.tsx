@@ -2,34 +2,36 @@ import React from "react";
 import { useGlobalState } from "../../state/state";
 import {
   FieldId,
-  SyntaxTree,
   ValueArray,
-  TokenStream,
-  Transform,
   ClientSyntaxTree,
   RawDocumentId,
-} from "@storyflow/backend/types";
-import { getDocumentId, getRawFieldId } from "@storyflow/backend/ids";
+} from "@storyflow/shared/types";
+import type { SyntaxTree, FieldTransform } from "@storyflow/fields-core/types";
+import type { TokenStream } from "operations/types";
+import { getDocumentId, getRawFieldId } from "@storyflow/fields-core/ids";
 import { useFieldId } from "../FieldIdContext";
 import { useDocumentPageContext } from "../../documents/DocumentPageContext";
-import { createTokenStream, parseTokenStream } from "shared/parse-token-stream";
+import {
+  createTokenStream,
+  parseTokenStream,
+} from "operations/parse-token-stream";
 import { useClient } from "../../client";
 import { useDocumentCollab } from "../../documents/collab/DocumentCollabContext";
 import { useFieldConfig } from "../../documents/collab/hooks";
 import { useSingular } from "../../state/useSingular";
 import { calculateFn } from "./calculateFn";
-import { splitTransformsAndRoot } from "@storyflow/backend/transform";
-import { applyFieldOperation } from "shared/computation-tools";
+import { splitTransformsAndRoot } from "@storyflow/fields-core/transform";
+import { applyFieldOperation } from "operations/computation-tools";
 import { createQueueCache } from "../../state/collaboration";
-import { getDefaultField } from "@storyflow/backend/fields";
-import { FieldOperation } from "shared/operations";
-import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
+import { FieldOperation } from "operations/actions";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
 
 export function useDefaultStateCore(id: FieldId) {
   const rootId = useFieldId();
   const { record } = useDocumentPageContext();
   const client = useClient();
 
+  /*
   if (id === rootId) {
     let [config] = useFieldConfig(rootId);
     if (!config) {
@@ -37,11 +39,13 @@ export function useDefaultStateCore(id: FieldId) {
       const defaultFieldConfig = getDefaultField(rootId);
       config = {
         id: rootId,
-        type: defaultFieldConfig?.type,
+        ui: defaultFieldConfig?.ui,
+        type2: defaultFieldConfig?.type2,
         label: defaultFieldConfig?.label ?? "",
       };
     }
   }
+  */
 
   const initialValue = record[id] ?? DEFAULT_SYNTAX_TREE;
 
@@ -61,7 +65,7 @@ export function useDefaultStateCore(id: FieldId) {
   );
 
   const setState = React.useCallback(
-    (stream: TokenStream, transforms: Transform[]) => {
+    (stream: TokenStream, transforms: FieldTransform[]) => {
       const tree = parseTokenStream(stream, transforms);
       setTree(() => tree);
       setValue(() =>

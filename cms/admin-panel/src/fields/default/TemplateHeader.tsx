@@ -1,12 +1,9 @@
 import cl from "clsx";
-import {
-  DocumentId,
-  FieldConfig,
-  FieldId,
+import type { FieldId, RawDocumentId } from "@storyflow/shared/types";
+import type {
   GetFunctionData,
-  RawDocumentId,
-  Transform,
-} from "@storyflow/backend/types";
+  FieldTransform,
+} from "@storyflow/fields-core/types";
 import {
   ChevronDownIcon,
   ChevronUpIcon,
@@ -19,14 +16,14 @@ import {
   getDocumentId,
   getRawDocumentId,
   getRawFieldId,
-} from "@storyflow/backend/ids";
+} from "@storyflow/fields-core/ids";
 import { useTemplate } from "./useFieldTemplate";
 import { useFieldFocus } from "../../field-focus";
 import { Checkbox } from "../../elements/Checkbox";
 import { Range } from "../../elements/Range";
 import { Menu as HeadlessMenu } from "@headlessui/react";
 import { useDocumentMutate } from "../../documents/collab/DocumentCollabContext";
-import { FieldOperation } from "shared/operations";
+import { FieldOperation } from "operations/actions";
 import { useFieldId } from "../FieldIdContext";
 import { Menu } from "../../layout/components/Menu";
 import { useTemplateFolder } from "../../folders/FoldersContext";
@@ -40,7 +37,7 @@ export function TemplateHeader({
   isNested,
 }: {
   id: FieldId;
-  transforms: Transform[];
+  transforms: FieldTransform[];
   isNested?: boolean;
 }) {
   const [focused] = useFieldFocus();
@@ -123,7 +120,7 @@ function TransformMenu({
   transforms,
 }: {
   id: FieldId;
-  transforms: Transform[];
+  transforms: FieldTransform[];
 }) {
   const rootId = useFieldId();
 
@@ -188,7 +185,7 @@ function TemplateMenu({
   transforms,
 }: {
   id: FieldId;
-  transforms: Transform[];
+  transforms: FieldTransform[];
 }) {
   const rootId = useFieldId();
 

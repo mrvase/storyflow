@@ -78,7 +78,7 @@ const verify: VerifyFunction<User> = async ({
 
 import { createTransport } from "nodemailer";
 import { cookieOptions } from "../cookie-options";
-import { User } from "../types";
+import type { User } from "../types";
 
 const options = {
   server: {

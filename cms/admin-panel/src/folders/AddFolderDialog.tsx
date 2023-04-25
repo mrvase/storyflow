@@ -1,15 +1,16 @@
 import React from "react";
 import Dialog from "../elements/Dialog";
-import { DBFolder, DocumentId } from "@storyflow/backend/types";
+import type { DBFolder } from "@storyflow/db-core/types";
+import type { DocumentId } from "@storyflow/shared/types";
 import { useFolderCollab } from "./collab/FolderCollabContext";
 import { useDocumentListMutation } from "../documents";
-import { createTemplateFieldId } from "@storyflow/backend/ids";
+import { createTemplateFieldId } from "@storyflow/fields-core/ids";
 import { ComputerDesktopIcon, FolderIcon } from "@heroicons/react/24/outline";
 import { DialogOption } from "../elements/DialogOption";
 import { useDocumentIdGenerator, useFolderIdGenerator } from "../id-generator";
-import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
-import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
-import { insertRootInTransforms } from "@storyflow/backend/transform";
+import { DEFAULT_FIELDS } from "@storyflow/fields-core/default-fields";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
+import { insertRootInTransforms } from "@storyflow/fields-core/transform";
 
 export function AddFolderDialog({
   isOpen,

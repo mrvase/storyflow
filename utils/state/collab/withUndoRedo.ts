@@ -1,5 +1,5 @@
 import { Queue } from "./Queue";
-import { DefaultOperation, WithMetaData } from "./types";
+import type { DefaultOperation, WithMetaData } from "./types";
 
 export type WithUndoRedo<Q extends Queue<any>> = Q & {
   undo: (state: any) => void;

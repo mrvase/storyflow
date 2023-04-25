@@ -2,7 +2,6 @@ import cl from "clsx";
 import { PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 import React from "react";
 import { SWRClient, useClient } from "../../client";
-import { Settings } from "@storyflow/backend/types";
 import { Spinner } from "../../elements/Spinner";
 import { isSuccess, unwrap } from "@storyflow/result";
 import { useUrlInfo } from "../../users";
@@ -26,7 +25,7 @@ export function SettingsDialog({ close }: { close: () => void }) {
   const client = useClient();
 
   const [urls, setUrls] = React.useState<
-    (Settings["domains"][number] & { new?: boolean })[]
+    ({ id: string; configUrl: string } & { new?: boolean })[]
   >(data?.domains ?? []);
   React.useEffect(() => setUrls(data?.domains ?? []), [data]);
 

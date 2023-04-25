@@ -1,27 +1,30 @@
 import { store } from "../../state/state";
-import { calculate, StateGetter } from "@storyflow/backend/calculate";
+import {
+  calculate,
+  StateGetter,
+} from "@storyflow/fields-core/calculate-server";
 import { context, getContextKey } from "../../state/context";
 import { fetchDocumentList, fetchDocumentSync } from "../../documents";
 import {
   FieldId,
   RawFieldId,
   DocumentId,
-  SyntaxTreeRecord,
-  SyntaxTree,
   ValueArray,
   ClientSyntaxTree,
-  NestedDocumentId,
-} from "@storyflow/backend/types";
+} from "@storyflow/shared/types";
+import type {
+  SyntaxTreeRecord,
+  SyntaxTree,
+} from "@storyflow/fields-core/types";
 import {
-  computeFieldId,
   createTemplateFieldId,
   getDocumentId,
   getIdFromString,
   getParentDocumentId,
   getRawFieldId,
-} from "@storyflow/backend/ids";
+} from "@storyflow/fields-core/ids";
 import { Client } from "../../client";
-import { DEFAULT_SYNTAX_TREE } from "@storyflow/backend/constants";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
 
 type FetcherResult = { _id: DocumentId; record: SyntaxTreeRecord }[];
 

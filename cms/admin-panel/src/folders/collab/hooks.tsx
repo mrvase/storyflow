@@ -1,5 +1,6 @@
 import React from "react";
-import { DBFolder, FolderId, Space, SpaceId } from "@storyflow/backend/types";
+import type { FolderId } from "@storyflow/shared/types";
+import type { DBFolder, Space, SpaceId } from "@storyflow/db-core/types";
 import { createStaticStore } from "../../state/StaticStore";
 import { useInitialFolders } from "../FoldersContext";
 import { createReactSubject } from "../../state/useSubject";
@@ -12,7 +13,7 @@ import {
   SpaceOperation,
   isSpliceAction,
   isToggleAction,
-} from "shared/operations";
+} from "operations/actions";
 
 const useFoldersSubject = createReactSubject<DBFolder[]>();
 

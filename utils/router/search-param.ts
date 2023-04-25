@@ -1,6 +1,6 @@
 import React from "react";
 import { useLocation, useNavigator } from "./Router";
-import { Path, NavigateOptions } from "./types";
+import type { Path, NavigateOptions } from "./types";
 import { createKey } from "./utils";
 
 type ParamSetter = (

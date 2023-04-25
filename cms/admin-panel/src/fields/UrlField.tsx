@@ -2,19 +2,14 @@ import React from "react";
 import { useGlobalContext } from "../state/context";
 import { addContext, addImport } from "../custom-events";
 import { useClient } from "../client";
-import {
-  DBDocument,
-  DocumentId,
-  FieldId,
-  SyntaxTree,
-  ValueArray,
-  NestedField,
-} from "@storyflow/backend/types";
+import type { DocumentId, FieldId, ValueArray } from "@storyflow/shared/types";
+import type { DBDocument } from "@storyflow/db-core/types";
+import type { SyntaxTree, NestedField } from "@storyflow/fields-core/types";
 import {
   createTemplateFieldId,
   getDocumentId,
   getRawFieldId,
-} from "@storyflow/backend/ids";
+} from "@storyflow/fields-core/ids";
 import {
   useDocumentCollab,
   useDocumentMutate,
@@ -29,13 +24,16 @@ import { useDocumentPageContext } from "../documents/DocumentPageContext";
 import {
   calculate,
   calculateRootFieldFromRecord,
-} from "@storyflow/backend/calculate";
-import { DEFAULT_FIELDS, isDefaultField } from "@storyflow/backend/fields";
+} from "@storyflow/fields-core/calculate-server";
+import {
+  DEFAULT_FIELDS,
+  isDefaultField,
+} from "@storyflow/fields-core/default-fields";
 import { useDocumentIdGenerator } from "../id-generator";
 import { usePanel, useRoute } from "../panel-router/Routes";
-import { FieldOperation } from "shared/operations";
+import { FieldOperation } from "operations/actions";
 import { useDefaultState } from "./default/useDefaultState";
-import { FieldProps } from "./types";
+import type { FieldProps } from "./types";
 
 export const toSlug = (value: string) =>
   value

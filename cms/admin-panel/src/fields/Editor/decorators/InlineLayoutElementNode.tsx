@@ -3,10 +3,10 @@ import { LexicalNode, NodeKey } from "lexical";
 import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
 import { caretClasses } from "./caret";
-import { NestedElement, ValueArray } from "@storyflow/backend/types";
+import type { NestedElement, ValueArray } from "@storyflow/shared/types";
 import { getConfigFromType, useClientConfig } from "../../../client-config";
 import { useGlobalState } from "../../../state/state";
-import { computeFieldId, getIdFromString } from "@storyflow/backend/ids";
+import { computeFieldId, getIdFromString } from "@storyflow/fields-core/ids";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 import { usePath, useSelectedPath } from "../../Path";
 

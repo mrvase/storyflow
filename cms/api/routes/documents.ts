@@ -1,22 +1,20 @@
 import { createProcedure, createRoute } from "@sfrpc/server";
 import { error, success } from "@storyflow/result";
 import { z } from "zod";
-import {
-  DBDocument,
+import type { DBDocument, DBDocumentRaw } from "@storyflow/db-core/types";
+import type {
   DocumentId,
   FieldId,
-  DBDocumentRaw,
-  SyntaxTreeRecord,
-} from "@storyflow/backend/types";
+  FolderId,
+  RawFieldId,
+  ValueArray,
+} from "@storyflow/shared/types";
+import type { SyntaxTreeRecord } from "@storyflow/fields-core/types";
 import { ObjectId } from "mongodb";
 import clientPromise from "../mongo/mongoClient";
 import { globals } from "../middleware/globals";
 import { ServerPackage } from "@storyflow/state";
-import {
-  extractRootRecord,
-  getSyntaxTreeRecord,
-  getGraph,
-} from "shared/computation-tools";
+import { extractRootRecord, getGraph } from "@storyflow/fields-core/graph";
 import { createStages } from "../aggregation/stages";
 import {
   client,
@@ -30,21 +28,42 @@ import {
   getRawFieldId,
   isFieldOfDocument,
   isNestedDocumentId,
-  unwrapObjectId,
-} from "@storyflow/backend/ids";
-import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
+} from "@storyflow/fields-core/ids";
+import { unwrapObjectId, parseDocument } from "@storyflow/db-core/convert";
+import { DEFAULT_FIELDS } from "@storyflow/fields-core/default-fields";
+import { getPaths } from "@storyflow/db-core/paths";
 import { deduplicate, getImports, getSortedValues } from "./helpers";
 
-export const parseDocument = (raw: DBDocumentRaw): DBDocument => {
-  const { _id, folder, ids, cached, fields, ...rest } = raw;
-  const id = unwrapObjectId(raw._id);
-  return {
-    _id: id,
-    folder: unwrapObjectId(raw.folder),
-    record: getSyntaxTreeRecord(id, raw),
-    ...rest,
+const createFetcher =
+  (dbName: string) =>
+  async (fetchObject: {
+    folder: FolderId;
+    filters: Record<RawFieldId, ValueArray>;
+    limit: number;
+    sort?: string[];
+  }) => {
+    const filters = Object.fromEntries(
+      Object.entries(fetchObject.filters ?? {})
+        .filter(([, value]) => Array.isArray(value) && value.length > 0)
+        .map(([key, value]) => {
+          return [`values.${key}`, { $elemMatch: { $in: value } }];
+        })
+    );
+
+    const client = await clientPromise;
+    const result = await client
+      .db(dbName)
+      .collection<DBDocumentRaw>("documents")
+      .find({
+        folder: new ObjectId(fetchObject.folder),
+        ...filters,
+      })
+      .sort({ _id: -1 })
+      .limit(fetchObject.limit)
+      .toArray();
+
+    return result.map(parseDocument);
   };
-};
 
 export const documents = createRoute({
   sync: createProcedure({
@@ -299,26 +318,16 @@ export const documents = createRoute({
         folder: z.string(),
         sort: z.array(z.string()).optional(),
         limit: z.number(),
-        filters: z.record(z.string(), z.any()).optional(),
+        filters: z.record(z.string(), z.array(z.any())).optional(),
       });
     },
-    async query({ folder, filters: filtersProp, limit }, { slug, dbName }) {
-      const db = (await clientPromise).db(dbName);
-
-      const filters = Object.fromEntries(
-        Object.entries(filtersProp ?? {}).map(([key, value]) => {
-          return [`values.${key}`, value];
-        })
-      );
-
-      const result = await db
-        .collection<DBDocumentRaw>("documents")
-        .find({ folder: new ObjectId(folder), ...filters })
-        .sort({ _id: -1 })
-        .limit(limit)
-        .toArray();
-
-      const documents = result.map(parseDocument);
+    async query({ folder, filters, limit, sort }, { slug, dbName }) {
+      const documents = await createFetcher(dbName!)({
+        folder: folder as FolderId,
+        filters: filters as Record<FieldId, ValueArray>,
+        limit,
+        sort,
+      });
 
       const historiesRecord: Record<
         DocumentId,
@@ -454,7 +463,7 @@ export const documents = createRoute({
         : { $exists: true },
       */
 
-      const articles = await db
+      const docs = await db
         .collection<DBDocumentRaw>("documents")
         .find({
           ...(namespace
@@ -500,22 +509,24 @@ export const documents = createRoute({
         DEFAULT_FIELDS.label.id,
       ].map((el) => createRawTemplateFieldId(el));
 
-      const layoutUpdates = articles
+      const layoutUpdates = docs
         .filter((el) => el.updated[fields[0]] > lastBuildCounter)
         .map((el) => el.values[fields[1]][0] as string);
 
-      const urls = articles.reduce((acc: string[], el) => {
+      const docsFiltered = docs.reduce((acc: DBDocumentRaw[], el) => {
         const url = el.values[fields[1]][0] as string;
         const shouldUpdate =
           fields.some((field) => el.updated[field] > lastBuildCounter) ||
           layoutUpdates.some((el) => url.startsWith(el));
         if (shouldUpdate) {
-          acc.push(url);
+          acc.push(el);
         }
         return acc;
       }, []);
 
-      console.log("REVALIDATE", urls);
+      const paths = await getPaths(docsFiltered, createFetcher(dbName!));
+
+      console.log("REVALIDATE", paths);
 
       // const paths = urls.map((el) => `/${el.replace("://", "").split("/")[1]}`);
 
@@ -528,7 +539,7 @@ export const documents = createRoute({
       });
       */
 
-      return success(urls);
+      return success(paths);
 
       // check update timestamp
     },

@@ -1,13 +1,12 @@
-import { Narrow, Operators } from "./types";
-import {
+import type { Operators } from "./types";
+import type {
   DBDocumentRaw,
   DBId,
   DBSyntaxStream,
   DBSyntaxStreamBlock,
   DBValueArray,
-  FieldId,
-  Value,
-} from "@storyflow/backend/types";
+} from "@storyflow/db-core/types";
+import type { FieldId, Value } from "@storyflow/shared/types";
 import { calculate } from "./calculate";
 import { createOperators } from "./mongo-operators";
 import { queryArrayProp } from "./queryArrayProp";

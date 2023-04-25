@@ -1,7 +1,8 @@
 import cl from "clsx";
 import { DropShadow, Sortable } from "@storyflow/dnd";
-import { FolderId, FolderSpace, SpaceId } from "@storyflow/backend/types";
-import { DragResultAction } from "@storyflow/dnd/types";
+import type { FolderId } from "@storyflow/shared/types";
+import type { SpaceId, FolderSpace } from "@storyflow/db-core/types";
+import type { DragResultAction } from "@storyflow/dnd/types";
 import { FolderItem } from "./Folder";
 import { useFolders, useSpace } from "../collab/hooks";
 import { useFolderCollab } from "../collab/FolderCollabContext";
@@ -15,7 +16,7 @@ import {
 import React from "react";
 import { AddFolderDialog } from "../AddFolderDialog";
 import { Menu } from "../../layout/components/Menu";
-import { SpaceItemsAction } from "shared/operations";
+import { SpaceItemsAction } from "operations/actions";
 
 export function FolderGridSpace({
   spaceId,

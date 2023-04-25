@@ -3,7 +3,7 @@ import { LexicalNode, NodeKey } from "lexical";
 import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
 import { caretClasses } from "./caret";
-import { FunctionName, FunctionSymbol } from "@storyflow/backend/types";
+import type { FunctionSymbol } from "@storyflow/fields-core/types";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 
 function Decorator({

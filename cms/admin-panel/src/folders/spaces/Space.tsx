@@ -1,4 +1,4 @@
-import { SpaceId } from "@storyflow/backend/types";
+import type { SpaceId } from "@storyflow/db-core/types";
 import cl from "clsx";
 import React from "react";
 import { useLocalStorage } from "../../state/useLocalStorage";

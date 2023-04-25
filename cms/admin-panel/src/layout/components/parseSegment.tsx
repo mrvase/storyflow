@@ -1,5 +1,5 @@
-import { DocumentId, FieldId, FolderId } from "@storyflow/backend/types";
-import { ROOT_FOLDER } from "@storyflow/backend/constants";
+import type { DocumentId, FieldId, FolderId } from "@storyflow/shared/types";
+import { ROOT_FOLDER } from "@storyflow/fields-core/constants";
 
 type SegmentType =
   | {

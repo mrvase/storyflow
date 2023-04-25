@@ -1,4 +1,4 @@
-import { Location, Action, Listener, History } from "./types";
+import type { Location, Action, Listener, History } from "./types";
 import { parsePath, createPath, createKey } from "./utils";
 
 const PopStateEventType = "popstate";

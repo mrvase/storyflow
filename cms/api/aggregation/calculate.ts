@@ -1,21 +1,21 @@
-import { Narrow, Operators } from "./types";
-import {
+import type { Narrow, Operators } from "./types";
+import type {
   FieldId,
   FunctionName,
   Operator,
-  NestedElement,
   RawFieldId,
-  NestedField,
-  Parameter,
-  DBDocumentRaw,
   NestedDocument,
+  NestedDocumentId,
+} from "@storyflow/shared/types";
+import type {
+  DBDocumentRaw,
   DBId,
   DBValueArray,
   HasDBId,
   DBSyntaxStreamBlock,
   DBSyntaxStream,
-  NestedDocumentId,
-} from "@storyflow/backend/types";
+} from "@storyflow/db-core/types";
+import type { NestedField, Parameter } from "@storyflow/fields-core/types";
 import { queryArrayProp } from "./queryArrayProp";
 
 /*

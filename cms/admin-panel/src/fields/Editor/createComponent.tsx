@@ -1,5 +1,5 @@
-import { NestedDocumentId, NestedElement } from "@storyflow/backend/types";
-import { ComponentConfig, LibraryConfig } from "@storyflow/frontend/types";
+import type { NestedDocumentId, NestedElement } from "@storyflow/shared/types";
+import type { ComponentConfig, LibraryConfig } from "@storyflow/shared/types";
 import { getComponentType, getConfigFromType } from "../../client-config";
 
 export const createComponent = (

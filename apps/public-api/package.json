@@ -12,12 +12,11 @@
   "dependencies": {
     "@sfrpc/client": "workspace:*",
     "@sfrpc/server": "workspace:*",
+    "@storyflow/api": "workspace:*",
     "@storyflow/auth": "workspace:*",
     "@storyflow/react": "workspace:*",
     "@storyflow/result": "workspace:*",
-    "@storyflow/server": "workspace:*",
     "@storyflow/session": "workspace:*",
-    "api": "workspace:*",
     "mongodb": "^4.13.0",
     "next": "^13.3.0",
     "react": "18.2.0",

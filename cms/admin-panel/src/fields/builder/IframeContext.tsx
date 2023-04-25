@@ -1,7 +1,7 @@
 import {
   createEventsFromCMSToIframe,
   createEventsFromIframeToCMS,
-} from "@storyflow/frontend/events";
+} from "@storyflow/shared/events";
 import React from "react";
 import { createKey } from "../../utils/createKey";
 

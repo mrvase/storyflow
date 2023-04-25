@@ -24,27 +24,29 @@ import {
   getDocumentId,
   getRawDocumentId,
   getRawFieldId,
-} from "@storyflow/backend/ids";
-import {
-  DocumentId,
-  FieldId,
+} from "@storyflow/fields-core/ids";
+import type { DocumentId, FieldId } from "@storyflow/shared/types";
+import type {
   SyntaxTree,
   SyntaxTreeRecord,
-  TokenStream,
-} from "@storyflow/backend/types";
+} from "@storyflow/fields-core/types";
+import type { TokenStream } from "operations/types";
 import { useDocumentIdGenerator } from "../../id-generator";
-import { createTokenStream, parseTokenStream } from "shared/parse-token-stream";
+import {
+  createTokenStream,
+  parseTokenStream,
+} from "operations/parse-token-stream";
 import { store } from "../../state/state";
 import { useClient } from "../../client";
-import { tokens } from "@storyflow/backend/tokens";
+import { tokens } from "@storyflow/fields-core/tokens";
 import { useDocumentCollab } from "../../documents/collab/DocumentCollabContext";
-import { tools } from "shared/editor-tools";
+import { tools } from "operations/editor-tools";
 import {
   $isTokenStreamNode,
   TokenStreamNode,
 } from "./decorators/TokenStreamNode";
 import { $replaceWithBlocks } from "./insertComputation";
-import { FieldOperation } from "shared/operations";
+import { FieldOperation } from "operations/actions";
 
 const EVENT_LATENCY = 50;
 let clipboardEventTimeout: null | number = null;

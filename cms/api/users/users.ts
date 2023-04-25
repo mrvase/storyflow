@@ -4,12 +4,12 @@ import type {} from "@sfrpc/types";
 import { authenticator, authorizer } from "./auth";
 import { error, isError, success, unwrap } from "@storyflow/result";
 import clientPromise from "../mongo/mongoClient";
-import { Organization, User } from "../types";
-import { DEFAULT_FIELDS } from "@storyflow/backend/fields";
-import { DBFolderRaw } from "@storyflow/backend/types";
-import { ROOT_FOLDER, TEMPLATE_FOLDER } from "@storyflow/backend/constants";
+import type { Organization, User } from "../types";
+import { DEFAULT_FIELDS } from "@storyflow/fields-core/default-fields";
+import type { DBFolderRaw } from "@storyflow/db-core/types";
+import { ROOT_FOLDER, TEMPLATE_FOLDER } from "@storyflow/fields-core/constants";
 import { ObjectId } from "mongodb";
-import { createRawTemplateFieldId } from "@storyflow/backend/ids";
+import { createRawTemplateFieldId } from "@storyflow/fields-core/ids";
 
 const user = async ({ req, client }: MiddlewareContext) => {
   const user = await authorizer.authorize(req);

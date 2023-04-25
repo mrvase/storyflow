@@ -1,6 +1,6 @@
 import React from "react";
 import { DndContext } from "../context/DragDropContext";
-import { OnChange } from "../types";
+import type { OnChange } from "../types";
 import { createKey } from "../utils";
 
 export const useDragArea = ({

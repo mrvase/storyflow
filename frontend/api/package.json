@@ -1,0 +1,40 @@
+{
+  "name": "@storyflow/api",
+  "private": true,
+  "version": "0.0.0",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "license": "MIT",
+  "scripts": {
+    "lint": "eslint *.ts*",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@sfrpc/server": "workspace:*",
+    "@storyflow/db-core": "workspace:*",
+    "@storyflow/fields-core": "workspace:*",
+    "@storyflow/result": "workspace:*",
+    "@storyflow/session": "workspace:*",
+    "@storyflow/shared": "workspace:*",
+    "bcryptjs": "^2.4.3",
+    "operations": "workspace:*",
+    "qs": "^6.11.0",
+    "zod": "^3.20.2"
+  },
+  "devDependencies": {
+    "@sfrpc/types": "workspace:*",
+    "@types/bcryptjs": "^2.4.2",
+    "eslint": "^7.32.0",
+    "eslint-config-custom": "workspace:*",
+    "mongodb": "^4.13.0",
+    "next": "^13.3.0",
+    "tsconfig": "workspace:*",
+    "typescript": "^5.0.4",
+    "vite": "^4.0.4",
+    "vitest": "^0.28.4"
+  },
+  "peerDependencies": {
+    "mongodb": "^4.13.0",
+    "next": "^13.3.0"
+  }
+}

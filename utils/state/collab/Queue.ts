@@ -1,6 +1,6 @@
 import { batch } from "../state/State";
 import { createChangeDebugger } from "./debug";
-import { DefaultOperation, ServerPackage, WithMetaData } from "./types";
+import type { DefaultOperation, ServerPackage, WithMetaData } from "./types";
 import {
   createServerPackage,
   filterServerPackages,
