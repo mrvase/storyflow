@@ -1,4 +1,4 @@
-import { DBFolder } from "@storyflow/db-core/types";
+import type { DBFolder } from "@storyflow/db-core/types";
 import { unwrap } from "@storyflow/result";
 import { Client, cache } from "../client";
 

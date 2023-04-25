@@ -6,7 +6,7 @@ import { caretClasses } from "./caret";
 import { useGlobalContext } from "../../../state/context";
 import { useDocumentPageContext } from "../../../documents/DocumentPageContext";
 import { getPreview } from "../../default/getPreview";
-import { ContextToken, ValueArray } from "@storyflow/shared/types";
+import type { ContextToken, ValueArray } from "@storyflow/shared/types";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 
 const useState = (ctx: string): ValueArray | undefined => {

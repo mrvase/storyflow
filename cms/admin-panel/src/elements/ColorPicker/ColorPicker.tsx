@@ -3,7 +3,7 @@ import cl from "clsx";
 import { Interaction, Interactive } from "./Interactive";
 import { Pointer } from "./Pointer";
 import { hsvaToHex, hsvaToHslString } from "./convert";
-import { HsvaColor } from "./types";
+import type { HsvaColor } from "./types";
 import { clamp, round } from "./utils";
 import { useColorManipulation } from "./useColorManipulation";
 

@@ -6,8 +6,8 @@ import {
   FieldId,
   NestedDocumentId,
 } from "@storyflow/shared/types";
-import { FieldConfig, NestedField } from "@storyflow/fields-core/types";
-import { TokenStream, HasSelect } from "operations/types";
+import type { FieldConfig, NestedField } from "@storyflow/fields-core/types";
+import type { TokenStream, HasSelect } from "operations/types";
 import {
   computeFieldId,
   createRawTemplateFieldId,

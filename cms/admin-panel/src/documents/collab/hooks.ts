@@ -1,5 +1,5 @@
 import React from "react";
-import { DocumentId, FieldId } from "@storyflow/shared/types";
+import type { DocumentId, FieldId } from "@storyflow/shared/types";
 import type { FieldConfig } from "@storyflow/fields-core/types";
 import type {
   PartialFieldConfig,

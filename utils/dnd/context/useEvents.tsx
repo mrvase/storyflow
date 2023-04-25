@@ -1,6 +1,6 @@
 import React from "react";
 import { flushSync } from "react-dom";
-import { Identifier, Item, Rect } from "../types";
+import type { Identifier, Item, Rect } from "../types";
 import {
   DragContextSetters,
   DragContextState,

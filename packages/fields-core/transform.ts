@@ -1,5 +1,5 @@
 import { isSyntaxTree } from "./syntax-tree";
-import { SyntaxTree, FieldTransform } from "./types";
+import type { SyntaxTree, FieldTransform } from "./types";
 
 export const splitTransformsAndRoot = (
   tree: SyntaxTree

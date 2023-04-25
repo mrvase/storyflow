@@ -25,9 +25,9 @@ import {
   matchNonEscapedCharacter,
   splitByNonEscapedCharacter,
 } from "operations/matchNonEscapedCharacter";
-import { NestedElement } from "@storyflow/shared/types";
-import { TokenStream } from "operations/types";
-import { LibraryConfig } from "@storyflow/shared/types";
+import type { NestedElement } from "@storyflow/shared/types";
+import type { TokenStream } from "operations/types";
+import type { LibraryConfig } from "@storyflow/shared/types";
 import { getConfigFromType } from "../../client-config";
 import { tokens } from "@storyflow/fields-core/tokens";
 import { isSymbol } from "operations/is-symbol";

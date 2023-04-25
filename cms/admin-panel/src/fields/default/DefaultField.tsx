@@ -1,7 +1,7 @@
 import React from "react";
 import cl from "clsx";
-import { FieldId } from "@storyflow/shared/types";
-import { TokenStream } from "operations/types";
+import type { FieldId } from "@storyflow/shared/types";
+import type { TokenStream } from "operations/types";
 import { getDocumentId, getRawFieldId } from "@storyflow/fields-core/ids";
 import { useFieldId } from "../FieldIdContext";
 import { createTokenStream } from "operations/parse-token-stream";

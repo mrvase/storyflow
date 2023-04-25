@@ -11,8 +11,8 @@ import { error, success } from "@storyflow/result";
 import { createFieldRecordGetter } from "@storyflow/fields-core/get-field-record";
 import { calculateRootFieldFromRecord } from "@storyflow/fields-core/calculate-server";
 import type {} from "@storyflow/shared/types";
-import { RawFieldId, ValueArray } from "@storyflow/shared/types";
-import { DBDocumentRaw } from "@storyflow/db-core/types";
+import type { RawFieldId, ValueArray } from "@storyflow/shared/types";
+import type { DBDocumentRaw } from "@storyflow/db-core/types";
 import { DEFAULT_FIELDS } from "@storyflow/fields-core/default-fields";
 import { ObjectId } from "mongodb";
 import { parseDocument } from "../routes/documents";
@@ -21,7 +21,7 @@ import {
   createTemplateFieldId,
 } from "@storyflow/fields-core/ids";
 import util from "node:util";
-import { FolderId } from "@storyflow/shared/types";
+import type { FolderId } from "@storyflow/shared/types";
 
 const sessionStorage = createSessionStorage({
   cookie: cookieOptions,

@@ -1,4 +1,4 @@
-import { DocumentId, NestedDocumentId } from "@storyflow/shared/types";
+import type { DocumentId, NestedDocumentId } from "@storyflow/shared/types";
 import { batch, State, Store } from "@storyflow/state";
 import React from "react";
 

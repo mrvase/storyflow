@@ -8,7 +8,10 @@ import {
   ClientSyntaxTree,
   FieldId,
 } from "@storyflow/shared/types";
-import { SyntaxTree, SyntaxTreeRecord } from "@storyflow/fields-core/types";
+import type {
+  SyntaxTree,
+  SyntaxTreeRecord,
+} from "@storyflow/fields-core/types";
 import { DocumentIcon, LinkIcon } from "@heroicons/react/24/outline";
 import { useFieldId } from "../../FieldIdContext";
 import { useDocument } from "../../../documents";

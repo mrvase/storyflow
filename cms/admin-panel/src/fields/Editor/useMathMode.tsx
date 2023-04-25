@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useEditorContext } from "../../editor/react/EditorProvider";
-import { TokenStream } from "operations/types";
+import type { TokenStream } from "operations/types";
 import { useClientConfig } from "../../client-config";
 import { operators } from "@storyflow/shared/types";
 import { replaceWithComputation } from "./insertComputation";

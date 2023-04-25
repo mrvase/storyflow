@@ -1,6 +1,6 @@
 import * as React from "react";
 import { dispatchers } from "./events";
-import { Path } from "@storyflow/shared/types";
+import type { Path } from "@storyflow/shared/types";
 
 /**
  * BUILDER SELECTION CONTEXT

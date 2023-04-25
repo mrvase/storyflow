@@ -1,4 +1,4 @@
-import { Path, To } from "./types";
+import type { Path, To } from "./types";
 
 export function createKey() {
   return Math.random().toString(36).substring(2, 10);

@@ -1,6 +1,6 @@
-import { FieldId } from "@storyflow/shared/types";
-import { DBId } from "@storyflow/db-core/types";
-import { Operators, SwitchObject } from "./types";
+import type { FieldId } from "@storyflow/shared/types";
+import type { DBId } from "@storyflow/db-core/types";
+import type { Operators, SwitchObject } from "./types";
 
 export const operators: Operators<any> = {
   useDocument: (callback) => callback(undefined),

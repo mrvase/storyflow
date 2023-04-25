@@ -2,7 +2,7 @@ import { useNavigate, useLocation } from "@storyflow/router";
 import React from "react";
 import { useContextWithError } from "../utils/contextError";
 import { usePanelActions } from "./PanelRouter";
-import { PanelData, RouteConfig } from "./types";
+import type { PanelData, RouteConfig } from "./types";
 import { replacePanelPath } from "./utils";
 
 /*

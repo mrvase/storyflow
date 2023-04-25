@@ -1,6 +1,6 @@
 import React from "react";
 import { hexToHsva, hsvaToHex, equalHex } from "./convert";
-import { HsvaColor } from "./types";
+import type { HsvaColor } from "./types";
 import { equalColorObjects, useEventCallback } from "./utils";
 
 export function useColorManipulation(

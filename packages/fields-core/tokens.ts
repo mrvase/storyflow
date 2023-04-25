@@ -9,7 +9,7 @@ import {
   Token,
   StateToken,
 } from "@storyflow/shared/types";
-import { Parameter, NestedField, NestedCreator } from "./types";
+import type { Parameter, NestedField, NestedCreator } from "./types";
 
 function isObject(value: any): value is Record<string, any> {
   return value !== null && typeof value === "object";

@@ -1,7 +1,7 @@
 import React from "react";
 import { useNavigate } from "./Router";
 import { useLocation } from "./Router";
-import { To } from "./types";
+import type { To } from "./types";
 import { createPath, resolveTo } from "./utils";
 
 export interface LinkProps

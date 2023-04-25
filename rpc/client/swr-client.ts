@@ -4,7 +4,11 @@ import type { API } from "@sfrpc/types";
 import type { SWRHook } from "swr";
 import type { FullConfiguration, ScopedMutator } from "swr/_internal";
 import { dedupedFetch } from "./dedupedFetch";
-import { APIToSWRClient, UseMutationOptions, UseQueryOptions } from "./types";
+import type {
+  APIToSWRClient,
+  UseMutationOptions,
+  UseQueryOptions,
+} from "./types";
 import { externalKey, getContext, queryKey } from "./utils";
 import { mutation, proxyErrorMessage } from "./proxy-client";
 

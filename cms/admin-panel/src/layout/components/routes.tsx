@@ -1,4 +1,4 @@
-import { RouteConfig } from "../../panel-router/types";
+import type { RouteConfig } from "../../panel-router/types";
 import { SystemFolderPage } from "./SystemFolderPage";
 import { SystemTemplatePage } from "./SystemTemplatePage";
 import FolderPage from "../../folders/FolderPage";

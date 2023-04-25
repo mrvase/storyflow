@@ -8,8 +8,8 @@ import {
 } from "@heroicons/react/24/outline";
 import { DEFAULT_FIELDS } from "@storyflow/fields-core/default-fields";
 import { getTemplateDocumentId } from "@storyflow/fields-core/ids";
-import { DocumentId, FolderId, RawFieldId } from "@storyflow/shared/types";
-import { DBDocument } from "@storyflow/db-core/types";
+import type { DocumentId, FolderId, RawFieldId } from "@storyflow/shared/types";
+import type { DBDocument } from "@storyflow/db-core/types";
 import { NoList, useDragItem } from "@storyflow/dnd";
 import { ServerPackage } from "@storyflow/state";
 import cl from "clsx";

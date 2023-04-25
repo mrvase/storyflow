@@ -1,4 +1,4 @@
-import { Metadata } from "./types";
+import type { Metadata } from "./types";
 
 type Props = Record<string, string>;
 type Tag = [string, Props, string?];

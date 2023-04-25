@@ -1,7 +1,7 @@
 import { isError, Result, unwrap } from "@storyflow/result";
 import { createChangeDebugger } from "./debug";
 import { Queue } from "./Queue";
-import { DefaultOperation, ServerPackage } from "./types";
+import type { DefaultOperation, ServerPackage } from "./types";
 import { createPromise, unwrapServerPackage } from "./utils";
 
 export interface QueueMap<

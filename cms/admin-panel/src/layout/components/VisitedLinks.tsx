@@ -1,6 +1,6 @@
 import React from "react";
 import cl from "clsx";
-import { PanelData } from "../../panel-router/types";
+import type { PanelData } from "../../panel-router/types";
 import { fetchDocument } from "../../documents";
 import { useClient } from "../../client";
 import { getDocumentLabel } from "../../documents/useDocumentLabel";

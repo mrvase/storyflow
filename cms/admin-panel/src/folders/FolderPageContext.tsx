@@ -1,5 +1,5 @@
 import React from "react";
-import { DBFolder } from "@storyflow/db-core/types";
+import type { DBFolder } from "@storyflow/db-core/types";
 import { useContextWithError } from "../utils/contextError";
 
 export const FolderContext = React.createContext<DBFolder | undefined | null>(

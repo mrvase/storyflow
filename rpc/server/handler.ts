@@ -1,7 +1,7 @@
 import qs from "qs";
 import { error, isError, success } from "@storyflow/result";
-import { API, QueryObject } from "@sfrpc/types";
-import { DefaultRequest, DefaultResponse } from "./types";
+import type { API, QueryObject } from "@sfrpc/types";
+import type { DefaultRequest, DefaultResponse } from "./types";
 
 const isPrimitive = (obj: any) => {
   return (

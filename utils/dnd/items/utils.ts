@@ -1,5 +1,5 @@
 import { DnDContextType } from "../context/DragDropContext";
-import { CanReceive, Identifier, Item } from "../types";
+import type { CanReceive, Identifier, Item } from "../types";
 
 export type DragState = {
   mode: "move" | "link" | null;

@@ -1,4 +1,7 @@
-import { FunctionSymbol, StreamEntity } from "@storyflow/fields-core/types";
+import type {
+  FunctionSymbol,
+  StreamEntity,
+} from "@storyflow/fields-core/types";
 import {
   DocumentId,
   FieldId,

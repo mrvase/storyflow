@@ -8,7 +8,7 @@ import {
   Reducers,
   useReducerWithReturnValue,
 } from "../utils/useReducer";
-import { PanelData, Panels } from "./types";
+import type { PanelData, Panels } from "./types";
 import { getPanelsFromUrl, getUrlFromPanels } from "./utils";
 
 export const PanelsContext = React.createContext<Panels | null>(null);

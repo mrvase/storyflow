@@ -1,8 +1,8 @@
 import cl from "clsx";
 import { DropShadow, Sortable } from "@storyflow/dnd";
-import { FolderId } from "@storyflow/shared/types";
-import { SpaceId, FolderSpace } from "@storyflow/db-core/types";
-import { DragResultAction } from "@storyflow/dnd/types";
+import type { FolderId } from "@storyflow/shared/types";
+import type { SpaceId, FolderSpace } from "@storyflow/db-core/types";
+import type { DragResultAction } from "@storyflow/dnd/types";
 import { FolderItem } from "./Folder";
 import { useFolders, useSpace } from "../collab/hooks";
 import { useFolderCollab } from "../collab/FolderCollabContext";

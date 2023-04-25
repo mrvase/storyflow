@@ -7,7 +7,7 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { mergeRegister } from "../../editor/utils/mergeRegister";
-import { TokenStream } from "operations/types";
+import type { TokenStream } from "operations/types";
 import cl from "clsx";
 import {
   $createParagraphNode,

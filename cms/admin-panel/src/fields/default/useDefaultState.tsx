@@ -6,8 +6,8 @@ import {
   ClientSyntaxTree,
   RawDocumentId,
 } from "@storyflow/shared/types";
-import { SyntaxTree, FieldTransform } from "@storyflow/fields-core/types";
-import { TokenStream } from "operations/types";
+import type { SyntaxTree, FieldTransform } from "@storyflow/fields-core/types";
+import type { TokenStream } from "operations/types";
 import { getDocumentId, getRawFieldId } from "@storyflow/fields-core/ids";
 import { useFieldId } from "../FieldIdContext";
 import { useDocumentPageContext } from "../../documents/DocumentPageContext";

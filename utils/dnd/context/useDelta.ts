@@ -1,5 +1,5 @@
 import React from "react";
-import { Identifier, Rect } from "../types";
+import type { Identifier, Rect } from "../types";
 import { DragContextState, DraggableWithRect } from "./useDragState";
 
 export type Delta = [number, number];

@@ -1,4 +1,4 @@
-import { TokenStream } from "operations/types";
+import type { TokenStream } from "operations/types";
 import { tools } from "operations/editor-tools";
 import { FieldOperation, InferAction } from "operations/actions";
 

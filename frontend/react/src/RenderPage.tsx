@@ -1,6 +1,6 @@
 import * as React from "react";
-import { Component, NestedElement } from "@storyflow/shared/types";
-import { RenderArray } from "@storyflow/client/types";
+import type { Component, NestedElement } from "@storyflow/shared/types";
+import type { RenderArray } from "@storyflow/client/types";
 import { getLibraries } from "../config";
 import { ParseRichText } from "./ParseRichText";
 

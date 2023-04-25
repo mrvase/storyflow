@@ -1,6 +1,9 @@
 import cl from "clsx";
-import { FieldId, RawDocumentId } from "@storyflow/shared/types";
-import { GetFunctionData, FieldTransform } from "@storyflow/fields-core/types";
+import type { FieldId, RawDocumentId } from "@storyflow/shared/types";
+import type {
+  GetFunctionData,
+  FieldTransform,
+} from "@storyflow/fields-core/types";
 import {
   ChevronDownIcon,
   ChevronUpIcon,

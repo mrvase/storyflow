@@ -6,7 +6,7 @@ import clientPromise from "../mongo/mongoClient";
 import { authenticator } from "../users/auth";
 import { modifyOrganization } from "../users/users";
 import bcrypt from "bcryptjs";
-import { Settings } from "../types";
+import type { Settings } from "../types";
 
 export const settings = createRoute({
   get: createProcedure({

@@ -1,7 +1,7 @@
 import * as React from "react";
 import { ExtendPath, usePath, useSelectedPath } from "./contexts";
 import RenderElement from "./RenderElement";
-import { Component, ValueArray } from "@storyflow/shared/types";
+import type { Component, ValueArray } from "@storyflow/shared/types";
 import { createRenderArray } from "@storyflow/client/render";
 import { ParseRichText } from "../src/ParseRichText";
 import { getLibraries, getLibraryConfigs } from "../config";

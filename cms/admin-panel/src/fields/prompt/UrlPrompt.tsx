@@ -1,7 +1,7 @@
-import { DocumentId, ValueArray } from "@storyflow/shared/types";
-import { DBFolder } from "@storyflow/db-core/types";
-import { NestedField } from "@storyflow/fields-core/types";
-import { TokenStream } from "operations/types";
+import type { DocumentId, ValueArray } from "@storyflow/shared/types";
+import type { DBFolder } from "@storyflow/db-core/types";
+import type { NestedField } from "@storyflow/fields-core/types";
+import type { TokenStream } from "operations/types";
 import {
   createTemplateFieldId,
   getDocumentId,

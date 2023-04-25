@@ -7,8 +7,8 @@ import {
   TrashIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
-import { DocumentId, FieldId } from "@storyflow/shared/types";
-import { FieldType2 } from "@storyflow/fields-core/types";
+import type { DocumentId, FieldId } from "@storyflow/shared/types";
+import type { FieldType2 } from "@storyflow/fields-core/types";
 import React from "react";
 import ReactDOM from "react-dom";
 import { useOptimisticDocumentList } from ".";

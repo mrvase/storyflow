@@ -8,8 +8,8 @@ import Space from "./Space";
 import { useAppPageContext } from "../AppPageContext";
 import Loader from "../../elements/Loader";
 import { useDeleteForm } from "./useDeleteForm";
-import { FolderId } from "@storyflow/shared/types";
-import { SpaceId } from "@storyflow/db-core/types";
+import type { FolderId } from "@storyflow/shared/types";
+import type { SpaceId } from "@storyflow/db-core/types";
 import React from "react";
 
 export function AppSpace({

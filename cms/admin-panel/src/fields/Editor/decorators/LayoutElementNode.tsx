@@ -7,7 +7,7 @@ import {
   NestedDocumentId,
   NestedElement,
 } from "@storyflow/shared/types";
-import { SyntaxTree } from "@storyflow/fields-core/types";
+import type { SyntaxTree } from "@storyflow/fields-core/types";
 import { getConfigFromType, useClientConfig } from "../../../client-config";
 import {
   ArrowPathRoundedSquareIcon,
@@ -31,7 +31,7 @@ import {
   useAttributesContext,
 } from "../../Attributes";
 import { ExtendPath, usePath, useSelectedPath } from "../../Path";
-import { PropConfig, RegularOptions } from "@storyflow/shared/types";
+import type { PropConfig, RegularOptions } from "@storyflow/shared/types";
 import { flattenPropsWithIds } from "../../../utils/flattenProps";
 import { DefaultField } from "../../default/DefaultField";
 import { getIdFromString } from "@storyflow/fields-core/ids";

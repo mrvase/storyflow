@@ -1,7 +1,7 @@
-import { FieldId } from "@storyflow/shared/types";
-import { DBId } from "@storyflow/db-core/types";
+import type { FieldId } from "@storyflow/shared/types";
+import type { DBId } from "@storyflow/db-core/types";
+import type { Operators, SwitchObject } from "./types";
 import { ObjectId } from "mongodb";
-import { Operators, SwitchObject } from "./types";
 
 const createProxy = (value: string): any => {
   return new Proxy({ $$ref: `$$${value}` } as Record<string, any>, {

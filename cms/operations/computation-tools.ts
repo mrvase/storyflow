@@ -1,6 +1,9 @@
-import { FieldId } from "@storyflow/shared/types";
-import { SyntaxTreeRecord, FieldTransform } from "@storyflow/fields-core/types";
-import { TokenStream } from "./types";
+import type { FieldId } from "@storyflow/shared/types";
+import type {
+  SyntaxTreeRecord,
+  FieldTransform,
+} from "@storyflow/fields-core/types";
+import type { TokenStream } from "./types";
 import { FieldOperation, isSpliceAction, isToggleAction } from "./actions";
 import { tools } from "./editor-tools";
 import { createSpliceTransformer } from "./splice-transform";

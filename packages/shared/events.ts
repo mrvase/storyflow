@@ -1,4 +1,4 @@
-import { Path } from "./types";
+import type { Path } from "./types";
 
 export const createEventsFromIframeToCMS = () => {
   let state = {

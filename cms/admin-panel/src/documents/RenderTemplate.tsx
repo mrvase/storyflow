@@ -11,7 +11,7 @@ import type {
   HeadingConfig,
   DBDocument,
 } from "@storyflow/db-core/types";
-import { SyntaxTree } from "@storyflow/fields-core/types";
+import type { SyntaxTree } from "@storyflow/fields-core/types";
 import { getTranslateDragEffect } from "../utils/dragEffects";
 import { RenderField } from "../fields/RenderField";
 import {

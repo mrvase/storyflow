@@ -25,9 +25,12 @@ import {
   getRawDocumentId,
   getRawFieldId,
 } from "@storyflow/fields-core/ids";
-import { DocumentId, FieldId } from "@storyflow/shared/types";
-import { SyntaxTree, SyntaxTreeRecord } from "@storyflow/fields-core/types";
-import { TokenStream } from "operations/types";
+import type { DocumentId, FieldId } from "@storyflow/shared/types";
+import type {
+  SyntaxTree,
+  SyntaxTreeRecord,
+} from "@storyflow/fields-core/types";
+import type { TokenStream } from "operations/types";
 import { useDocumentIdGenerator } from "../../id-generator";
 import {
   createTokenStream,

@@ -1,5 +1,5 @@
-import { Narrow, Operators } from "./types";
-import {
+import type { Narrow, Operators } from "./types";
+import type {
   FieldId,
   FunctionName,
   Operator,
@@ -7,7 +7,7 @@ import {
   NestedDocument,
   NestedDocumentId,
 } from "@storyflow/shared/types";
-import {
+import type {
   DBDocumentRaw,
   DBId,
   DBValueArray,
@@ -15,7 +15,7 @@ import {
   DBSyntaxStreamBlock,
   DBSyntaxStream,
 } from "@storyflow/db-core/types";
-import { NestedField, Parameter } from "@storyflow/fields-core/types";
+import type { NestedField, Parameter } from "@storyflow/fields-core/types";
 import { queryArrayProp } from "./queryArrayProp";
 
 /*

@@ -1,4 +1,4 @@
-import { FunctionName, Operator, ValueArray } from "./types";
+import type { FunctionName, Operator, ValueArray } from "./types";
 
 const slugCharacters = [
   [" ", "-"],

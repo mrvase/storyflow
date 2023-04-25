@@ -13,7 +13,10 @@ import {
   ValueArray,
   ClientSyntaxTree,
 } from "@storyflow/shared/types";
-import { SyntaxTreeRecord, SyntaxTree } from "@storyflow/fields-core/types";
+import type {
+  SyntaxTreeRecord,
+  SyntaxTree,
+} from "@storyflow/fields-core/types";
 import Content from "../layout/components/Content";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { useClientConfig } from "../client-config";
@@ -29,7 +32,7 @@ import {
   getParentDocumentId,
   getRawFieldId,
 } from "@storyflow/fields-core/ids";
-import { ComponentConfig, LibraryConfig } from "@storyflow/shared/types";
+import type { ComponentConfig, LibraryConfig } from "@storyflow/shared/types";
 import { useDocumentIdGenerator } from "../id-generator";
 import { tokens } from "@storyflow/fields-core/tokens";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";

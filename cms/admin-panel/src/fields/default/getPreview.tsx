@@ -1,5 +1,5 @@
 import { tokens } from "@storyflow/fields-core/tokens";
-import { ClientSyntaxTree, ValueArray } from "@storyflow/shared/types";
+import type { ClientSyntaxTree, ValueArray } from "@storyflow/shared/types";
 
 const valueAsString = (value: any, placeholders: boolean) => {
   if (typeof value === "boolean") {

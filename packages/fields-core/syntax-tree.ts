@@ -1,5 +1,5 @@
-import { FieldId } from "@storyflow/shared/types";
-import { SyntaxNode, SyntaxTree, SyntaxTreeRecord } from "./types";
+import type { FieldId } from "@storyflow/shared/types";
+import type { SyntaxNode, SyntaxTree, SyntaxTreeRecord } from "./types";
 
 export const isSyntaxTree = (tree: any): tree is SyntaxTree => {
   return (

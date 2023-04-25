@@ -1,5 +1,5 @@
 import { functions, Operator, operators } from "@storyflow/shared/types";
-import { FunctionSymbol, OperatorSymbol } from "./types";
+import type { FunctionSymbol, OperatorSymbol } from "./types";
 
 export function isOperator(value: unknown): value is Operator {
   return operators.includes(value as "+");

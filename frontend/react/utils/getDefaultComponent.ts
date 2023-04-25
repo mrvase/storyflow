@@ -1,4 +1,4 @@
-import { Component, Library } from "@storyflow/shared/types";
+import type { Component, Library } from "@storyflow/shared/types";
 
 export const getDefaultComponent = (type: string, libraries: Library[]) => {
   // we use this only to get the default render components

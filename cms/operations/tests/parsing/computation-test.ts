@@ -3,14 +3,18 @@ import {
   calculate as calculate_,
   StateGetter,
 } from "@storyflow/fields-core/calculate-server";
-import { NestedDocumentId, FieldId, ValueArray } from "@storyflow/shared/types";
-import {
+import type {
+  NestedDocumentId,
+  FieldId,
+  ValueArray,
+} from "@storyflow/shared/types";
+import type {
   SyntaxTree,
   WithSyntaxError,
   NestedField,
 } from "@storyflow/fields-core/types";
-import { TokenStream } from "../../types";
-import { SyntaxStream } from "@storyflow/db-core/types";
+import type { TokenStream } from "../../types";
+import type { SyntaxStream } from "@storyflow/db-core/types";
 import { parseTokenStream, createTokenStream } from "../../parse-token-stream";
 import {
   createSyntaxStream,

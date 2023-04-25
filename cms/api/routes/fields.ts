@@ -1,27 +1,27 @@
 import { createProcedure, createRoute } from "@sfrpc/server";
 import { error, success } from "@storyflow/result";
 import { z } from "zod";
-import {
+import type {
   DocumentId,
   FieldId,
   RawDocumentId,
   RawFieldId,
   ValueArray,
 } from "@storyflow/shared/types";
-import {
+import type {
   DBDocument,
   DBDocumentRaw,
   DBId,
   TemplateRef,
 } from "@storyflow/db-core/types";
-import {
+import type {
   SyntaxTreeRecord,
   FieldTransform,
   SyntaxTree,
   NestedField,
 } from "@storyflow/fields-core/types";
 import { getSyntaxTreeRecord } from "@storyflow/db-core/convert";
-import { TokenStream } from "operations/types";
+import type { TokenStream } from "operations/types";
 import { ObjectId } from "mongodb";
 import clientPromise from "../mongo/mongoClient";
 import { globals } from "../middleware/globals";

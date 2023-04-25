@@ -9,8 +9,8 @@ import {
   ValueArray,
   RawDocumentId,
 } from "@storyflow/shared/types";
-import { SyntaxTreeRecord, Sorting } from "@storyflow/fields-core/types";
-import { DBDocument } from "@storyflow/db-core/types";
+import type { SyntaxTreeRecord, Sorting } from "@storyflow/fields-core/types";
+import type { DBDocument } from "@storyflow/db-core/types";
 import { pushAndRetry } from "../utils/retryOnError";
 import {
   DEFAULT_FIELDS,
@@ -22,7 +22,7 @@ import {
   getTemplateDocumentId,
   normalizeDocumentId,
 } from "@storyflow/fields-core/ids";
-import { DefaultFieldConfig } from "@storyflow/fields-core/types";
+import type { DefaultFieldConfig } from "@storyflow/fields-core/types";
 
 type DocumentListMutation =
   | {

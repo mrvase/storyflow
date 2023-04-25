@@ -7,8 +7,8 @@ import {
   TrashIcon,
 } from "@heroicons/react/24/outline";
 import { createTemplateFieldId } from "@storyflow/fields-core/ids";
-import { DocumentId, FolderId } from "@storyflow/shared/types";
-import { SpaceId } from "@storyflow/db-core/types";
+import type { DocumentId, FolderId } from "@storyflow/shared/types";
+import type { SpaceId } from "@storyflow/db-core/types";
 import React from "react";
 import {
   fetchDocument,

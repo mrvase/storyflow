@@ -1,7 +1,10 @@
 import { getRawFieldId } from "@storyflow/fields-core/ids";
-import { FieldConfig } from "@storyflow/fields-core/types";
-import { FieldId } from "@storyflow/shared/types";
-import { DocumentConfig, PartialFieldConfig } from "@storyflow/db-core/types";
+import type { FieldConfig } from "@storyflow/fields-core/types";
+import type { FieldId } from "@storyflow/shared/types";
+import type {
+  DocumentConfig,
+  PartialFieldConfig,
+} from "@storyflow/db-core/types";
 
 const compareTemplateFieldId = (id1: FieldId, id2: FieldId) => {
   return getRawFieldId(id1) === getRawFieldId(id2);

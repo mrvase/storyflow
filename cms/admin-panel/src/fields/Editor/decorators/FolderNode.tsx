@@ -7,7 +7,7 @@ import {
   NestedFolder,
   NestedDocumentId,
 } from "@storyflow/shared/types";
-import { SyntaxTreeRecord } from "@storyflow/fields-core/types";
+import type { SyntaxTreeRecord } from "@storyflow/fields-core/types";
 import { FolderIcon } from "@heroicons/react/24/outline";
 import { useTemplate } from "../../default/useFieldTemplate";
 import { useFolder } from "../../../folders/collab/hooks";

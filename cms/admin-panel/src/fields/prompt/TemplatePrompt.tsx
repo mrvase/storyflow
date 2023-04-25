@@ -1,4 +1,4 @@
-import { DocumentId } from "@storyflow/shared/types";
+import type { DocumentId } from "@storyflow/shared/types";
 import {
   getDocumentId,
   getRawDocumentId,

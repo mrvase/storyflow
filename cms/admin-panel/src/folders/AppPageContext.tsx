@@ -1,6 +1,6 @@
 import React from "react";
-import { FieldId } from "@storyflow/shared/types";
-import { DBDocument } from "@storyflow/db-core/types";
+import type { FieldId } from "@storyflow/shared/types";
+import type { DBDocument } from "@storyflow/db-core/types";
 
 export const AppPageContext = React.createContext<{
   addDocumentWithUrl: (parent: Pick<DBDocument, "_id" | "record">) => void;

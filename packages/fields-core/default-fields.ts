@@ -6,8 +6,8 @@ import {
   SYSTEM_TEMPLATE_OFFSET,
 } from "./ids";
 import { insertRootInTransforms } from "./transform";
-import { FieldId } from "@storyflow/shared/types";
-import { DefaultFieldConfig, FieldConfig } from "./types";
+import type { FieldId } from "@storyflow/shared/types";
+import type { DefaultFieldConfig, FieldConfig } from "./types";
 
 let index = 0;
 

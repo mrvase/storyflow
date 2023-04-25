@@ -1,6 +1,6 @@
-import { FunctionName, Operator } from "@storyflow/shared/types";
-import { TokenStreamSymbol } from "./types";
-import { FunctionSymbol } from "@storyflow/fields-core/types";
+import type { FunctionName, Operator } from "@storyflow/shared/types";
+import type { TokenStreamSymbol } from "./types";
+import type { FunctionSymbol } from "@storyflow/fields-core/types";
 import { isOperator } from "@storyflow/fields-core/symbols";
 
 type KeysOfUnion<T> = T extends T ? keyof T : never;

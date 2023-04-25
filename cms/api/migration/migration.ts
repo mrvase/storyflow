@@ -1,13 +1,13 @@
 import { error, success } from "@storyflow/result";
 import { createProcedure, createRoute } from "@sfrpc/server";
 import clientPromise from "../mongo/mongoClient";
-import { FunctionName, RawFieldId } from "@storyflow/shared/types";
-import {
+import type { FunctionName, RawFieldId } from "@storyflow/shared/types";
+import type {
   DBDocumentRaw,
   DBSyntaxStreamBlock,
   DocumentConfigItem,
 } from "@storyflow/db-core/types";
-import { WithId } from "mongodb";
+import type { WithId } from "mongodb";
 import { getRawFieldId } from "@storyflow/fields-core/ids";
 import { unwrapObjectId } from "@storyflow/db-core/convert";
 

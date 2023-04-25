@@ -1,4 +1,4 @@
-import { ValueArray } from "@storyflow/shared/types";
+import type { ValueArray } from "@storyflow/shared/types";
 import type { RenderArray, RenderElement } from "./types";
 
 export const isRenderable = (

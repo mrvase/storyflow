@@ -10,7 +10,7 @@ import { DEFAULT_SYNTAX_TREE } from "./constants";
 import { computeFieldId, isNestedDocumentId, isFieldOfDocument } from "./ids";
 import { isSyntaxTree, getSyntaxTreeEntries } from "./syntax-tree";
 import { tokens } from "./tokens";
-import { SyntaxTreeRecord, SyntaxTree, NestedField } from "./types";
+import type { SyntaxTreeRecord, SyntaxTree, NestedField } from "./types";
 
 export const getPickedDocumentIds = (fref: FieldId, pool: SyntaxTreeRecord) => {
   /*

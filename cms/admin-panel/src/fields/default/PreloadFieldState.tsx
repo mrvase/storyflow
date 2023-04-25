@@ -9,7 +9,7 @@ import {
   NestedFolder,
   RawDocumentId,
 } from "@storyflow/shared/types";
-import { FieldConfig, NestedField } from "@storyflow/fields-core/types";
+import type { FieldConfig, NestedField } from "@storyflow/fields-core/types";
 import { getConfigFromType, useClientConfig } from "../../client-config";
 import { useTemplate } from "./useFieldTemplate";
 import {

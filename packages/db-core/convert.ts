@@ -1,8 +1,8 @@
-import { SyntaxTreeRecord } from "@storyflow/fields-core/types";
-import { DocumentId, RawFieldId } from "@storyflow/shared/types";
+import type { SyntaxTreeRecord } from "@storyflow/fields-core/types";
+import type { DocumentId, RawFieldId } from "@storyflow/shared/types";
 import { computeFieldId } from "@storyflow/fields-core/ids";
 import { parseSyntaxStream } from "./parse-syntax-stream";
-import { DBDocumentRaw, DBId } from "./types";
+import type { DBDocumentRaw, DBId } from "./types";
 
 export const unwrapObjectId = <T>(id: DBId<T>): T => {
   if (typeof id === "string") return id;

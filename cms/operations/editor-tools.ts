@@ -1,4 +1,4 @@
-import { TokenStream } from "./types";
+import type { TokenStream } from "./types";
 import { tokens } from "@storyflow/fields-core/tokens";
 import { matchNonEscapedCharacter } from "./matchNonEscapedCharacter";
 

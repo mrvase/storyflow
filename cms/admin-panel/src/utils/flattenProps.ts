@@ -1,5 +1,5 @@
 import { computeFieldId, getIdFromString } from "@storyflow/fields-core/ids";
-import { NestedDocumentId } from "@storyflow/shared/types";
+import type { NestedDocumentId } from "@storyflow/shared/types";
 import {
   PropConfig,
   PropConfigArray,

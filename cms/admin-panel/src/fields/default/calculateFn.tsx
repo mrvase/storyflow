@@ -12,7 +12,10 @@ import {
   ValueArray,
   ClientSyntaxTree,
 } from "@storyflow/shared/types";
-import { SyntaxTreeRecord, SyntaxTree } from "@storyflow/fields-core/types";
+import type {
+  SyntaxTreeRecord,
+  SyntaxTree,
+} from "@storyflow/fields-core/types";
 import {
   createTemplateFieldId,
   getDocumentId,

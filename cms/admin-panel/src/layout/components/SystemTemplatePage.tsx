@@ -8,7 +8,7 @@ import { useDeleteForm } from "../../folders/spaces/useDeleteForm";
 import Table from "../../documents/components/Table";
 import { useOptimisticDocumentList } from "../../documents";
 import Loader from "../../elements/Loader";
-import { SpaceId } from "@storyflow/db-core/types";
+import type { SpaceId } from "@storyflow/db-core/types";
 
 export function SystemTemplatePage() {
   const folder = useTemplateFolder();

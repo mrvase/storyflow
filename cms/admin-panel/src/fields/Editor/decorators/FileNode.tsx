@@ -1,5 +1,5 @@
 import cl from "clsx";
-import { FileToken } from "@storyflow/shared/types";
+import type { FileToken } from "@storyflow/shared/types";
 import { LexicalNode, NodeKey } from "lexical";
 import React from "react";
 import { useFileLabel } from "../../../data/files";

@@ -3,7 +3,7 @@ import { DecoratorPlugin } from "./DecoratorPlugin";
 import { EditorProvider } from "../../editor/react/EditorProvider";
 import React from "react";
 import { $initializeEditor } from "./transforms";
-import { TokenStream } from "operations/types";
+import type { TokenStream } from "operations/types";
 import { Reconciler } from "./reconciler/Reconciler";
 import {
   EditorFocusPlugin,

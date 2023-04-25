@@ -1,6 +1,6 @@
-import { DocumentId, FieldId } from "@storyflow/shared/types";
-import { SyntaxTreeRecord } from "@storyflow/fields-core/types";
-import {
+import type { DocumentId, FieldId } from "@storyflow/shared/types";
+import type { SyntaxTreeRecord } from "@storyflow/fields-core/types";
+import type {
   DBDocument,
   DBValueRecord,
   DBSyntaxStreamBlock,

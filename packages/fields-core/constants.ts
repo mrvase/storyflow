@@ -3,8 +3,8 @@ import {
   ROOT_FOLDER_NUMBER,
   TEMPLATE_FOLDER_NUMBER,
 } from "./ids";
-import { FolderId } from "@storyflow/shared/types";
-import { SyntaxTree } from "./types";
+import type { FolderId } from "@storyflow/shared/types";
+import type { SyntaxTree } from "./types";
 
 export const ROOT_FOLDER = createDocumentId(
   ROOT_FOLDER_NUMBER

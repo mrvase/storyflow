@@ -1,9 +1,9 @@
 import { createProcedure, createRoute } from "@sfrpc/server";
 import { error, success } from "@storyflow/result";
 import { z } from "zod";
-import { DBDocument, DBDocumentRaw } from "@storyflow/db-core/types";
-import { DocumentId, FieldId } from "@storyflow/shared/types";
-import { SyntaxTreeRecord } from "@storyflow/fields-core/types";
+import type { DBDocument, DBDocumentRaw } from "@storyflow/db-core/types";
+import type { DocumentId, FieldId } from "@storyflow/shared/types";
+import type { SyntaxTreeRecord } from "@storyflow/fields-core/types";
 import { ObjectId } from "mongodb";
 import clientPromise from "../mongo/mongoClient";
 import { globals } from "../middleware/globals";

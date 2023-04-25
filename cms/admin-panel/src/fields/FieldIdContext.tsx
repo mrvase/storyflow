@@ -1,8 +1,8 @@
 import React from "react";
-import { FieldId } from "@storyflow/shared/types";
-import { FieldType2 } from "@storyflow/fields-core/types";
+import type { FieldId } from "@storyflow/shared/types";
+import type { FieldType2 } from "@storyflow/fields-core/types";
 import { useContextWithError } from "../utils/contextError";
-import { RegularOptions } from "@storyflow/shared/types";
+import type { RegularOptions } from "@storyflow/shared/types";
 
 export const FieldIdContext = React.createContext<FieldId | null>(null);
 export const useFieldId = (): FieldId =>

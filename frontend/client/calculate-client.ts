@@ -1,4 +1,4 @@
-import { ClientSyntaxTree, ValueArray } from "@storyflow/shared/types";
+import type { ClientSyntaxTree, ValueArray } from "@storyflow/shared/types";
 import { spreadImplicitArrays, compute } from "@storyflow/shared/calculate";
 
 const isObject = <T>(el: T): el is T & object =>

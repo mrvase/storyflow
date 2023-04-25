@@ -1,6 +1,6 @@
 import React from "react";
-import { DocumentId } from "@storyflow/shared/types";
-import { DBDocument } from "@storyflow/db-core/types";
+import type { DocumentId } from "@storyflow/shared/types";
+import type { DBDocument } from "@storyflow/db-core/types";
 import { useDocument } from ".";
 
 export const GetDocument = ({

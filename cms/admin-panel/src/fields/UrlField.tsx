@@ -2,9 +2,9 @@ import React from "react";
 import { useGlobalContext } from "../state/context";
 import { addContext, addImport } from "../custom-events";
 import { useClient } from "../client";
-import { DocumentId, FieldId, ValueArray } from "@storyflow/shared/types";
-import { DBDocument } from "@storyflow/db-core/types";
-import { SyntaxTree, NestedField } from "@storyflow/fields-core/types";
+import type { DocumentId, FieldId, ValueArray } from "@storyflow/shared/types";
+import type { DBDocument } from "@storyflow/db-core/types";
+import type { SyntaxTree, NestedField } from "@storyflow/fields-core/types";
 import {
   createTemplateFieldId,
   getDocumentId,
@@ -33,7 +33,7 @@ import { useDocumentIdGenerator } from "../id-generator";
 import { usePanel, useRoute } from "../panel-router/Routes";
 import { FieldOperation } from "operations/actions";
 import { useDefaultState } from "./default/useDefaultState";
-import { FieldProps } from "./types";
+import type { FieldProps } from "./types";
 
 export const toSlug = (value: string) =>
   value

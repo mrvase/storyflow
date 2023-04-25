@@ -11,8 +11,8 @@ import {
   addNestedDocument,
   addNestedFolder,
 } from "../../custom-events";
-import { DocumentId } from "@storyflow/shared/types";
-import { TokenStream } from "operations/types";
+import type { DocumentId } from "@storyflow/shared/types";
+import type { TokenStream } from "operations/types";
 import { useClientConfig } from "../../client-config";
 import { useFieldConfig } from "../../documents/collab/hooks";
 import { useFieldId } from "../FieldIdContext";

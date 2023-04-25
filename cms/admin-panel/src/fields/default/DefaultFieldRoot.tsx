@@ -9,7 +9,7 @@ import { useAttributesContext } from "../Attributes";
 import { ExtendPath } from "../Path";
 import { FieldOperation } from "operations/actions";
 import { VersionProvider } from "./VersionContext";
-import { FieldProps } from "../types";
+import type { FieldProps } from "../types";
 
 export function DefaultFieldRoot({ id, version, history }: FieldProps) {
   /*

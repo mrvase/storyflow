@@ -1,4 +1,4 @@
-import { DBFolder } from "@storyflow/db-core/types";
+import type { DBFolder } from "@storyflow/db-core/types";
 import { TEMPLATE_FOLDER } from "@storyflow/fields-core/constants";
 import { ServerPackage } from "@storyflow/state";
 import React from "react";

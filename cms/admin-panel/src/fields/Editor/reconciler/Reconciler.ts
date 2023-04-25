@@ -18,8 +18,8 @@ import { tools } from "operations/editor-tools";
 import { applyFieldOperation } from "operations/computation-tools";
 import { FieldOperation, InferAction } from "operations/actions";
 import { createQueueCache } from "../../../state/collaboration";
-import { TokenStream } from "operations/types";
-import { LibraryConfig } from "@storyflow/shared/types";
+import type { TokenStream } from "operations/types";
+import type { LibraryConfig } from "@storyflow/shared/types";
 import {
   $createBlocksFromStream,
   $getComputation,

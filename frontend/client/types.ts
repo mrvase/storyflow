@@ -1,4 +1,4 @@
-import { NestedElement, ValueArray } from "@storyflow/shared/types";
+import type { NestedElement, ValueArray } from "@storyflow/shared/types";
 
 export type RenderElement =
   | NestedElement

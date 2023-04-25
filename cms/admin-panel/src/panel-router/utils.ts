@@ -1,6 +1,6 @@
 import { createKey } from "../utils/createKey";
 import { trimSlashes } from "../utils/trimSlashes";
-import { Panels } from "./types";
+import type { Panels } from "./types";
 
 export const normalizeUrl = (url: string) => {
   const [prefix, ...panelPath] = url.split(/\/~/); // splits only at first occurrence

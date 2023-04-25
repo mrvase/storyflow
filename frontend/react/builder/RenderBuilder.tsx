@@ -3,7 +3,7 @@ import { dispatchers, listeners } from "./events";
 import { RenderContext } from "../src/RenderContext";
 import { useCMSElement } from "./useCMSElement";
 import { getSiblings } from "./focus";
-import { ClientSyntaxTree, ValueArray } from "@storyflow/shared/types";
+import type { ClientSyntaxTree, ValueArray } from "@storyflow/shared/types";
 import ReactDOM from "react-dom";
 import { useCSS } from "./useCSS";
 import RenderChildren from "./RenderChildren";

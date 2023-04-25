@@ -5,7 +5,7 @@ import {
   NestedDocumentId,
   NestedEntity,
 } from "@storyflow/shared/types";
-import { FieldConfig } from "@storyflow/fields-core/types";
+import type { FieldConfig } from "@storyflow/fields-core/types";
 import { useFieldId } from "./FieldIdContext";
 import { getConfigFromType, useClientConfig } from "../client-config";
 import {

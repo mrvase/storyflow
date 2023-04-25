@@ -1,6 +1,6 @@
 import React from "react";
-import { FolderId } from "@storyflow/shared/types";
-import { DBFolder, Space, SpaceId } from "@storyflow/db-core/types";
+import type { FolderId } from "@storyflow/shared/types";
+import type { DBFolder, Space, SpaceId } from "@storyflow/db-core/types";
 import { createStaticStore } from "../../state/StaticStore";
 import { useInitialFolders } from "../FoldersContext";
 import { createReactSubject } from "../../state/useSubject";

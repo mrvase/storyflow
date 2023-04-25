@@ -1,4 +1,4 @@
-import { FetchPageResult } from "@storyflow/client/types";
+import type { FetchPageResult } from "@storyflow/client/types";
 
 const IS_DEV = process.env.NODE_ENV === "development";
 

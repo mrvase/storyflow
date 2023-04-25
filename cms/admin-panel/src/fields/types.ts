@@ -1,4 +1,4 @@
-import { FieldId } from "@storyflow/shared/types";
+import type { FieldId } from "@storyflow/shared/types";
 import { ServerPackage } from "@storyflow/state";
 import { FieldOperation } from "operations/actions";
 

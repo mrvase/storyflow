@@ -1,10 +1,10 @@
 import React from "react";
 import cl from "clsx";
-import { CustomToken } from "@storyflow/shared/types";
+import type { CustomToken } from "@storyflow/shared/types";
 import { useIsSelected } from "./useIsSelected";
 import { caretClasses } from "./caret";
 import { TagIcon } from "@heroicons/react/24/outline";
-import { Option } from "@storyflow/shared/types";
+import type { Option } from "@storyflow/shared/types";
 import { useFieldRestriction, useFieldOptions } from "../../FieldIdContext";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 import { LexicalNode, NodeKey } from "lexical";

@@ -1,4 +1,4 @@
-import { RawFieldId } from "./types";
+import type { RawFieldId } from "./types";
 
 function toHex(number: number, length: `${number}b`) {
   const no = parseInt(length, 10);

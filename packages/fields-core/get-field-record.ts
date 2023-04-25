@@ -13,7 +13,7 @@ import { FolderFetch, calculate, StateGetter } from "./calculate-server";
 import { DEFAULT_SYNTAX_TREE } from "./constants";
 import { getRawDocumentId, getRawFieldId, isFieldOfDocument } from "./ids";
 import { tokens } from "./tokens";
-import { SyntaxTreeRecord } from "./types";
+import type { SyntaxTreeRecord } from "./types";
 import { getSyntaxTreeEntries } from "./syntax-tree";
 import { getChildrenDocuments } from "./graph";
 

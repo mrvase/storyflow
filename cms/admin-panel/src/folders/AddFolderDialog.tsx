@@ -1,7 +1,7 @@
 import React from "react";
 import Dialog from "../elements/Dialog";
-import { DBFolder } from "@storyflow/db-core/types";
-import { DocumentId } from "@storyflow/shared/types";
+import type { DBFolder } from "@storyflow/db-core/types";
+import type { DocumentId } from "@storyflow/shared/types";
 import { useFolderCollab } from "./collab/FolderCollabContext";
 import { useDocumentListMutation } from "../documents";
 import { createTemplateFieldId } from "@storyflow/fields-core/ids";
