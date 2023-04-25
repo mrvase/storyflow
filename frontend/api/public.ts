@@ -201,10 +201,12 @@ export const public_ = createRoute({
         },
       };
 
+      /*
       console.log(
         "RESULT",
         util.inspect(result, { depth: null, colors: true })
       );
+      */
 
       return success(result);
     },
@@ -247,7 +249,9 @@ export const public_ = createRoute({
         })
         .toArray();
 
-      const paths = getPaths(articles, createFetcher(dbName));
+      const paths = await getPaths(articles, createFetcher(dbName));
+
+      // console.log("PATHS", paths);
 
       return success(paths);
     },
