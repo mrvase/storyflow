@@ -7,7 +7,7 @@ import type {
   DocumentConfig,
 } from "@storyflow/db-core/types";
 import { useDocumentCollab, useDocumentMutate } from "./DocumentCollabContext";
-import { getFieldConfig, setFieldConfig } from "operations/getFieldConfig";
+import { getFieldConfig, setFieldConfig } from "operations/field-config";
 import { createPurger, createStaticStore } from "../../state/StaticStore";
 import { useDocument } from "..";
 import {

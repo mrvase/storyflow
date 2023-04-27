@@ -5,7 +5,7 @@ import {
 import cl from "clsx";
 import React from "react";
 import { calculateFn } from "./default/calculateFn";
-import { tools } from "operations/editor-tools";
+import { tools } from "operations/stream-methods";
 import { store, useGlobalState } from "../state/state";
 import {
   DocumentId,

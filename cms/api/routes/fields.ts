@@ -20,11 +20,7 @@ import type {
   SyntaxTree,
   NestedField,
 } from "@storyflow/fields-core/types";
-import {
-  getSyntaxTreeRecord,
-  parseDocument,
-  unwrapObjectId,
-} from "@storyflow/db-core/convert";
+import { getSyntaxTreeRecord, parseDocument } from "@storyflow/db-core/convert";
 import type { TokenStream } from "operations/types";
 import { clientPromise } from "../mongo/mongoClient";
 import { globals } from "../middleware/globals";
@@ -33,11 +29,11 @@ import {
   ServerPackage,
   unwrapServerPackage,
 } from "@storyflow/state";
-import { setFieldConfig } from "operations/getFieldConfig";
+import { setFieldConfig } from "operations/field-config";
 import {
   applyFieldOperation,
   createTokenStreamTransformer,
-} from "operations/computation-tools";
+} from "operations/apply";
 import { isSyntaxTree } from "@storyflow/fields-core/syntax-tree";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
 import {
@@ -611,7 +607,7 @@ const transformField = (
 
   transformer(pkgs).forEach((pkg) => {
     unwrapServerPackage(pkg).operations.forEach((operation) => {
-      const [target, ops] = operation;
+      const [target] = operation;
       const id = target === "" ? fieldId : (target as FieldId);
       if (!(id in updates)) {
         const value = initialRecord[id] ?? DEFAULT_SYNTAX_TREE;

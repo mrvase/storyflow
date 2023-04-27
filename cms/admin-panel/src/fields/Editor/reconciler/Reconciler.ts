@@ -14,8 +14,8 @@ import {
   useEditorContext,
 } from "../../../editor/react/EditorProvider";
 import { getComputationDiff } from "./getComputationDiff";
-import { tools } from "operations/editor-tools";
-import { applyFieldOperation } from "operations/computation-tools";
+import { tools } from "operations/stream-methods";
+import { applyFieldOperation } from "operations/apply";
 import { FieldOperation, InferAction } from "operations/actions";
 import { createQueueCache } from "../../../state/collaboration";
 import type { TokenStream } from "operations/types";

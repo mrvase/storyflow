@@ -12,7 +12,7 @@ import { getPreview } from "./getPreview";
 import { Placeholder } from "./Placeholder";
 import { PromptButton } from "../prompt/PromptButton";
 import { TemplateHeader } from "./TemplateHeader";
-import { tools } from "operations/editor-tools";
+import { tools } from "operations/stream-methods";
 import { useDefaultState } from "./useDefaultState";
 import { useEditorContext } from "../../editor/react/EditorProvider";
 import { $getRoot, BLUR_COMMAND, COMMAND_PRIORITY_EDITOR } from "lexical";

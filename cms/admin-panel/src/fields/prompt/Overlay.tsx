@@ -11,7 +11,7 @@ import {
   LexicalNode,
 } from "lexical";
 import React from "react";
-import { tools } from "operations/editor-tools";
+import { tools } from "operations/stream-methods";
 import { useEditorContext } from "../../editor/react/EditorProvider";
 import ColorNode, { $isColorNode } from "../Editor/decorators/ColorNode";
 import PromptNode, {

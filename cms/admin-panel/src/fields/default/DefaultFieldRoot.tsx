@@ -1,5 +1,5 @@
 import React from "react";
-import { createTokenStreamTransformer } from "operations/computation-tools";
+import { createTokenStreamTransformer } from "operations/apply";
 import { useDocumentPageContext } from "../../documents/DocumentPageContext";
 import { getDocumentId, getRawFieldId } from "@storyflow/fields-core/ids";
 import { useDocumentCollab } from "../../documents/collab/DocumentCollabContext";

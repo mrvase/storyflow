@@ -40,7 +40,7 @@ import { store } from "../../state/state";
 import { useClient } from "../../client";
 import { tokens } from "@storyflow/fields-core/tokens";
 import { useDocumentCollab } from "../../documents/collab/DocumentCollabContext";
-import { tools } from "operations/editor-tools";
+import { tools } from "operations/stream-methods";
 import {
   $isTokenStreamNode,
   TokenStreamNode,
@@ -268,19 +268,22 @@ export function CopyPastePlugin() {
 
                 console.log("PAYLOAD 2", { entry, record });
 
+                const actions = collab.mutate<FieldOperation>(
+                  documentId,
+                  getRawFieldId(id)
+                );
+
                 // initialize states for record entries
                 Object.entries(record).forEach(([fieldId, value]) => {
-                  collab
-                    .mutate<FieldOperation>(documentId, getRawFieldId(id))
-                    .push([
-                      fieldId,
-                      [
-                        {
-                          index: 0,
-                          insert: createTokenStream(value),
-                        },
-                      ],
-                    ]);
+                  actions.push([
+                    fieldId,
+                    [
+                      {
+                        index: 0,
+                        insert: createTokenStream(value),
+                      },
+                    ],
+                  ]);
                 });
 
                 const stream = createTokenStream(entry);

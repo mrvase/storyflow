@@ -1,5 +1,5 @@
-import { computeFieldId } from "@storyflow/backend/ids";
-import type { DocumentId, RawFieldId } from "@storyflow/backend/types";
+import { computeFieldId } from "@storyflow/fields-core/ids";
+import type { DocumentId, RawFieldId } from "@storyflow/shared/types";
 import { describe } from "vitest";
 import { createEnvironment, root } from "./computation-test";
 

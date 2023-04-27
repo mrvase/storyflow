@@ -5,7 +5,7 @@ import type {
 } from "@storyflow/fields-core/types";
 import type { TokenStream } from "./types";
 import { FieldOperation, isSpliceAction, isToggleAction } from "./actions";
-import { tools } from "./editor-tools";
+import { tools } from "./stream-methods";
 import { createSpliceTransformer } from "./splice-transform";
 import { createTokenStream } from "./parse-token-stream";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
@@ -29,7 +29,12 @@ export const applyFieldOperation = (
         );
       } else {
         if (remove > 0) {
-          removed = tools.slice(newStream, index, index + remove);
+          const currentlyRemoved = tools.slice(
+            newStream,
+            index,
+            index + remove
+          );
+          removed.push(...currentlyRemoved);
           const slice1 = tools.slice(newStream, 0, index);
           const slice2 = tools.slice(newStream, index + remove);
           newStream = tools.concat(slice1, slice2);
@@ -74,25 +79,17 @@ export const applyFieldOperation = (
   };
 };
 
-const arrayMethods = {
-  splice: tools.slice,
-  getLength: tools.getLength,
-};
-
 export const createTokenStreamTransformer = (
   fieldId: FieldId,
   initialRecord: SyntaxTreeRecord
 ) => {
-  const getInitialValue = (operation: FieldOperation) => {
-    const target = operation[0];
-
-    if (target === "") {
-      let value = initialRecord[fieldId] ?? DEFAULT_SYNTAX_TREE;
-      return createTokenStream(value);
-    }
-
-    let value = initialRecord[target as FieldId] ?? DEFAULT_SYNTAX_TREE;
-    return createTokenStream(value);
+  const getInitialLength = (target: string) => {
+    const id = target === "" ? fieldId : (target as FieldId);
+    let value = createTokenStream(initialRecord[id] ?? DEFAULT_SYNTAX_TREE);
+    return tools.getLength(value);
   };
-  return createSpliceTransformer<FieldOperation>(getInitialValue, arrayMethods);
+  return createSpliceTransformer<FieldOperation>(
+    getInitialLength,
+    tools.getLength
+  );
 };

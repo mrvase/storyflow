@@ -20,11 +20,11 @@ import {
   LexicalEditor,
 } from "lexical";
 import { GridSelection, PointType } from "lexical/LexicalSelection";
-import { tools } from "operations/editor-tools";
+import { tools } from "operations/stream-methods";
 import {
   matchNonEscapedCharacter,
   splitByNonEscapedCharacter,
-} from "operations/matchNonEscapedCharacter";
+} from "operations/escaped-characters";
 import type { NestedElement } from "@storyflow/shared/types";
 import type { TokenStream } from "operations/types";
 import type { LibraryConfig } from "@storyflow/shared/types";

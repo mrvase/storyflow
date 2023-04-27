@@ -17,7 +17,14 @@ export function filterServerPackages<T extends DefaultOperation>(
   version: number,
   pkgs: ServerPackage<T>[]
 ) {
-  return pkgs.filter((el) => unwrapServerPackage(el).index >= version);
+  let found = false;
+  return pkgs.filter((el) => {
+    const index = unwrapServerPackage(el).index;
+    if (index === version) {
+      found = true;
+    }
+    return found && index >= version;
+  });
 }
 
 /*

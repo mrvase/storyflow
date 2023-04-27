@@ -30,7 +30,7 @@ import {
 import { useClient } from "../client";
 import { useDocumentIdGenerator } from "../id-generator";
 import { getDefaultValuesFromTemplateAsync } from "./template-fields";
-import { createTokenStreamTransformer } from "operations/computation-tools";
+import { createTokenStreamTransformer } from "operations/apply";
 import { splitTransformsAndRoot } from "@storyflow/fields-core/transform";
 import { createTokenStream } from "operations/parse-token-stream";
 

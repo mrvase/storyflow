@@ -21,7 +21,7 @@ import { useFieldConfig } from "../../documents/collab/hooks";
 import { useSingular } from "../../state/useSingular";
 import { calculateFn } from "./calculateFn";
 import { splitTransformsAndRoot } from "@storyflow/fields-core/transform";
-import { applyFieldOperation } from "operations/computation-tools";
+import { applyFieldOperation } from "operations/apply";
 import { createQueueCache } from "../../state/collaboration";
 import { FieldOperation } from "operations/actions";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";

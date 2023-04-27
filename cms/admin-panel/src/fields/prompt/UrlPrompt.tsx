@@ -11,7 +11,7 @@ import { $getRoot, $getSelection, $isRangeSelection } from "lexical";
 import React from "react";
 import { useEditorContext } from "../../editor/react/EditorProvider";
 import { useAppFolders } from "../../folders/collab/hooks";
-import { tools } from "operations/editor-tools";
+import { tools } from "operations/stream-methods";
 import { useGlobalState } from "../../state/state";
 import { $getComputation, $getIndexFromPoint } from "../Editor/transforms";
 import { Option } from "./Option";
