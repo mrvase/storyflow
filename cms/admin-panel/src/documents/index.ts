@@ -309,6 +309,7 @@ export function useDocument(
   const documentId = documentId_
     ? normalizeDocumentId(documentId_)
     : documentId_;
+
   const defaultTemplate = TEMPLATES.find((el) => el._id === documentId);
 
   if (defaultTemplate) {

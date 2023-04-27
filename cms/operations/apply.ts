@@ -79,6 +79,7 @@ export const applyFieldOperation = (
   };
 };
 
+// createDocumentTransformer
 export const createTokenStreamTransformer = (
   fieldId: FieldId,
   initialRecord: SyntaxTreeRecord
@@ -90,6 +91,6 @@ export const createTokenStreamTransformer = (
   };
   return createSpliceTransformer<FieldOperation>(
     getInitialLength,
-    tools.getLength
+    (target, value) => tools.getLength(value)
   );
 };

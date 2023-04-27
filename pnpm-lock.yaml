@@ -146,6 +146,7 @@ importers:
       '@lexical/utils': ^0.9.1
       '@sfrpc/client': workspace:*
       '@sfrpc/types': workspace:*
+      '@storyflow/collab': workspace:*
       '@storyflow/db-core': workspace:*
       '@storyflow/dnd': workspace:*
       '@storyflow/fields-core': workspace:*
@@ -182,6 +183,7 @@ importers:
       '@lexical/selection': 0.9.1_lexical@0.9.1
       '@lexical/utils': 0.9.1_lexical@0.9.1
       '@sfrpc/client': link:../../rpc/client
+      '@storyflow/collab': link:../../utils/collab
       '@storyflow/dnd': link:../../utils/dnd
       '@storyflow/fields-core': link:../../packages/fields-core
       '@storyflow/result': link:../../utils/result
@@ -280,6 +282,7 @@ importers:
 
   cms/operations:
     specifiers:
+      '@storyflow/collab': workspace:*
       '@storyflow/db-core': workspace:*
       '@storyflow/fields-core': workspace:*
       '@storyflow/shared': workspace:*
@@ -291,6 +294,7 @@ importers:
       vite: ^4.0.4
       vitest: ^0.28.4
     dependencies:
+      '@storyflow/collab': link:../../utils/collab
       '@storyflow/fields-core': link:../../packages/fields-core
       '@storyflow/shared': link:../../packages/shared
       '@storyflow/state': link:../../utils/state
@@ -556,6 +560,18 @@ importers:
       '@storyflow/session': link:../session
       '@types/crypto-js': 4.1.1
       '@types/node': 17.0.45
+      tsconfig: link:../../setup/tsconfig
+      typescript: 5.0.4
+
+  utils/collab:
+    specifiers:
+      '@storyflow/result': workspace:*
+      '@storyflow/state': workspace:*
+      tsconfig: workspace:*
+      typescript: ^5.0.4
+    devDependencies:
+      '@storyflow/result': link:../result
+      '@storyflow/state': link:../state
       tsconfig: link:../../setup/tsconfig
       typescript: 5.0.4
 

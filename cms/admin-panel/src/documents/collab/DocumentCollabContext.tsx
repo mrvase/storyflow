@@ -24,7 +24,7 @@ export function DocumentCollabProvider({
 
   React.useLayoutEffect(() => {
     return collab.syncOnInterval();
-  }, []);
+  }, [client]);
 
   return (
     <DocumentCollabContext.Provider value={collab}>

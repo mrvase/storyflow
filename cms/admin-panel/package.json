@@ -15,6 +15,7 @@
     "@lexical/selection": "^0.9.1",
     "@lexical/utils": "^0.9.1",
     "@sfrpc/client": "workspace:*",
+    "@storyflow/collab": "workspace:*",
     "@storyflow/dnd": "workspace:*",
     "@storyflow/fields-core": "workspace:*",
     "@storyflow/result": "workspace:*",

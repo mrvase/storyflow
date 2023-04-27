@@ -13,7 +13,7 @@ const createTransformer = (initialValue: TokenStream) => {
   const getInitialLength = (target: string) => initialValue.length;
   return createSpliceTransformer<FieldOperation>(
     getInitialLength,
-    tools.getLength
+    (target, value) => tools.getLength(value)
   );
 };
 

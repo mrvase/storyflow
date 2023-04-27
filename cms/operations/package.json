@@ -10,6 +10,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@storyflow/collab": "workspace:*",
     "@storyflow/shared": "workspace:*",
     "@storyflow/fields-core": "workspace:*",
     "@storyflow/state": "workspace:*"

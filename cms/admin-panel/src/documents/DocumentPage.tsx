@@ -232,10 +232,6 @@ export function DocumentPage({ children }: { children?: React.ReactNode }) {
   const segment = parseSegment<"document" | "template">(route);
   let { doc, histories, error } = useDocument(segment.id);
 
-  React.useEffect(() => {
-    console.log("DOC DOC DOC", doc);
-  }, [doc]);
-
   return (
     <>
       {!error && doc && (

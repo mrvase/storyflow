@@ -7,15 +7,18 @@ const getClientId = (pkg: ServerPackage<any>) => {
 };
 
 const updateIndex = <Operation extends StdOperation>(
+  target: string,
   index: number,
   interceptions: ServerPackage<Operation>[],
-  getLength: (value: any[]) => number
+  getLength: (target: string, value: any[]) => number
 ) => {
   let newIndex = index;
 
   interceptions.forEach((pkg) => {
     const { operations } = unwrapServerPackage(pkg);
-    operations.forEach(([, actions]) => {
+    operations.forEach(([extTarget, actions]) => {
+      if (target !== extTarget) return;
+
       let spanned = 0;
       let formerRemoved = 0;
       actions.forEach((action) => {
@@ -35,7 +38,7 @@ const updateIndex = <Operation extends StdOperation>(
           const insert =
             !action.insert && !action.remove
               ? formerRemoved
-              : getLength(action.insert ?? []);
+              : getLength(target, action.insert ?? []);
           newIndex += insert;
 
           let remove = Math.min(action.remove ?? 0, newIndex - action.index);
@@ -44,7 +47,7 @@ const updateIndex = <Operation extends StdOperation>(
           const insert =
             !action.insert && !action.remove
               ? formerRemoved
-              : getLength(action.insert ?? []);
+              : getLength(target, action.insert ?? []);
           newIndex += insert;
           spanned = 0;
         }
@@ -80,9 +83,9 @@ const createInitializingMap = <T>(initializer: (target: string) => T) => {
 };
 
 const updateActions = <Operation extends StdOperation>(
-  actions: Operation[1],
+  operation: Operation,
   interceptions: ServerPackage<Operation>[],
-  getLength: (value: any[]) => number,
+  getLength: (target: string, value: any[]) => number,
   states: {
     lastSeenState: SpliceState;
     currentState: SpliceState;
@@ -90,7 +93,7 @@ const updateActions = <Operation extends StdOperation>(
 ) => {
   let newActions = [] as Operation[1];
 
-  actions.forEach((action) => {
+  operation[1].forEach((action) => {
     if (!isSpliceAction(action)) {
       newActions.push(action as any);
       return;
@@ -127,7 +130,12 @@ const updateActions = <Operation extends StdOperation>(
 
     if (action.insert || !action.remove) {
       // now we need to make the inserts at the right spot
-      const newIndex = updateIndex(action.index, interceptions, getLength);
+      const newIndex = updateIndex(
+        operation[0],
+        action.index,
+        interceptions,
+        getLength
+      );
 
       const existing = spliceActions.find((el) => el.index === newIndex);
 
@@ -151,7 +159,7 @@ const updateActions = <Operation extends StdOperation>(
       .sort((a, b) => a.index - b.index)
       .forEach((el) => {
         el.index += offset;
-        offset += getLength(el.insert ?? []);
+        offset += getLength(operation[0], el.insert ?? []);
         offset -= el.remove ?? 0;
       });
 
@@ -162,7 +170,7 @@ const updateActions = <Operation extends StdOperation>(
 };
 
 const createPseudoStateSplicer = <Operation extends StdOperation>(
-  getLength: (value: any[]) => number
+  getLength: (target: string, value: any[]) => number
 ) => {
   /**
    * createChars produces an object reference (array with inserts and index)
@@ -178,11 +186,14 @@ const createPseudoStateSplicer = <Operation extends StdOperation>(
    */
   const cache = new Map<Required<SpliceAction<any>["insert"]>, SpliceState>();
 
-  const createChars = (action: SpliceAction<any>): SpliceChar[] => {
+  const createChars = (
+    target: string,
+    action: SpliceAction<any>
+  ): SpliceChar[] => {
     if (!action.insert) return [];
     let chars = cache.get(action.insert);
     if (chars) return chars;
-    const length = getLength(action.insert ?? []);
+    const length = getLength(target, action.insert ?? []);
     chars = Array.from({ length }, (_, index) => [action, index] as SpliceChar);
     cache.set(action.insert, chars);
     return chars;
@@ -190,13 +201,15 @@ const createPseudoStateSplicer = <Operation extends StdOperation>(
 
   /** END */
 
-  const splice = (state: SpliceState, actions: Operation[1]) => {
+  const splice = (state: SpliceState, operation: Operation) => {
     const removed: SpliceChar[] = [];
-    actions.forEach((action) => {
+    operation[1].forEach((action) => {
       if (!isSpliceAction(action)) return;
 
       const isMove = !action.insert && !action.remove;
-      let insert: SpliceChar[] = isMove ? removed : createChars(action);
+      let insert: SpliceChar[] = isMove
+        ? removed
+        : createChars(operation[0], action);
       const currentlyRemoved = state.splice(
         action.index,
         action.remove ?? 0,
@@ -211,7 +224,7 @@ const createPseudoStateSplicer = <Operation extends StdOperation>(
 
 export function createSpliceTransformer<Operation extends StdOperation>(
   getInitialLength: (target: string) => number,
-  getLength: (value: any[]) => number = (value) => value.length
+  getLength: (target: string, value: any[]) => number = (value) => value.length
 ) {
   return (timeline: ServerPackage<Operation>[]) => {
     type SpliceStateArray = [index: number, state: SpliceState][];
@@ -261,9 +274,9 @@ export function createSpliceTransformer<Operation extends StdOperation>(
 
           knownInterceptions.forEach((pkg) => {
             const { operations } = unwrapServerPackage(pkg);
-            operations.forEach(([t, actions]) => {
-              if (t === target) {
-                splice(lastSeenState, actions);
+            operations.forEach((operation) => {
+              if (operation[0] === target) {
+                splice(lastSeenState, operation);
               }
             });
           });
@@ -289,7 +302,7 @@ export function createSpliceTransformer<Operation extends StdOperation>(
           const lastSeenState = lastSeenStateMap.get(target);
 
           const newActions = updateActions(
-            operation[1],
+            operation,
             externalInterceptions,
             getLength,
             {
@@ -298,11 +311,11 @@ export function createSpliceTransformer<Operation extends StdOperation>(
             }
           );
 
-          splice(lastSeenState, operation[1]); // in the next operation, the current operation is seen
+          splice(lastSeenState, operation); // in the next operation, the current operation is seen
           operation[1] = newActions; // Operation array reference maintained
         }
 
-        splice(currentState, operation[1]);
+        splice(currentState, operation);
       });
 
       // append next state
