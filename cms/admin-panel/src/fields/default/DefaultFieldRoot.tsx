@@ -22,11 +22,12 @@ export function DefaultFieldRoot({ id, version, history }: FieldProps) {
   }
   */
 
+  /*
   const collab = useDocumentCollab();
   const { record } = useDocumentPageContext();
 
   React.useLayoutEffect(() => {
-    /* MUST be useLayoutEffect to run before children useEffects that use the queue */
+    // MUST be useLayoutEffect to run before children useEffects that use the queue
     collab
       .getOrAddQueue<FieldOperation>(getDocumentId(id), getRawFieldId(id), {
         transform: createTokenStreamTransformer(id, record),
@@ -34,6 +35,7 @@ export function DefaultFieldRoot({ id, version, history }: FieldProps) {
       })
       .initialize(version, history ?? []);
   }, [collab, version]);
+  */
 
   const [currentProp] = useAttributesContext();
   const currentId = currentProp ?? id;

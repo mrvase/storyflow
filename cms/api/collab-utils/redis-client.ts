@@ -55,8 +55,11 @@ export const sortHistories = (
 
 export const modifyValues = <T extends any, V extends Record<string, any>>(
   obj: V,
-  callback: (val: any) => T
+  callback: (val: any, key: string, index: number) => T
 ): Record<string, T> =>
   Object.fromEntries(
-    Object.entries(obj).map(([key, value]) => [key, callback(value)])
+    Object.entries(obj).map(([key, value], index) => [
+      key,
+      callback(value, key, index),
+    ])
   ) as Record<string, T>;

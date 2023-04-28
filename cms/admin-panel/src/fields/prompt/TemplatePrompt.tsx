@@ -1,4 +1,4 @@
-import type { DocumentId } from "@storyflow/shared/types";
+import type { DocumentId, FieldId } from "@storyflow/shared/types";
 import {
   getDocumentId,
   getRawDocumentId,
@@ -11,17 +11,18 @@ import { useFieldId } from "../FieldIdContext";
 import { markMatchingString } from "./helpers";
 import { useOptimisticDocumentList } from "../../documents";
 import { TEMPLATE_FOLDER } from "@storyflow/fields-core/constants";
-import { FieldOperation } from "operations/actions";
-import { useDocumentMutate } from "../../documents/collab/DocumentCollabContext";
 import { usePath } from "../Path";
 import { useClientConfig } from "../../client-config";
 import { $exitPromptNode } from "./utils";
 import { useEditorContext } from "../../editor/react/EditorProvider";
+import { FieldTransactionEntry } from "operations/actions_new";
+import { useDocumentPush } from "../../documents/collab/DocumentCollabContext";
+import { createTransaction } from "@storyflow/collab/utils";
 
 export function TemplatePrompt({ prompt }: { prompt: string }) {
   const fieldId = useFieldId();
 
-  const { push } = useDocumentMutate<FieldOperation>(
+  const push = useDocumentPush<FieldTransactionEntry>(
     getDocumentId(fieldId),
     getRawFieldId(fieldId)
   );
@@ -42,15 +43,14 @@ export function TemplatePrompt({ prompt }: { prompt: string }) {
       editor.update(() => {
         $exitPromptNode(libraries);
       });
-      push([
-        dataFieldId,
-        [
-          {
+      push(
+        createTransaction((t) =>
+          t.target(dataFieldId as FieldId).toggle({
             name: "template",
             value: id === null ? null : getRawDocumentId(id),
-          },
-        ],
-      ]);
+          })
+        )
+      );
     },
     [push, dataFieldId, libraries]
   );

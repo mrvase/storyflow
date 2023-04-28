@@ -1,12 +1,15 @@
 import React from "react";
 import type { DocumentId, FieldId } from "@storyflow/shared/types";
-import type { FieldConfig } from "@storyflow/fields-core/types";
+import type {
+  FieldConfig,
+  SyntaxTreeRecord,
+} from "@storyflow/fields-core/types";
 import type {
   PartialFieldConfig,
   TemplateRef,
   DocumentConfig,
 } from "@storyflow/db-core/types";
-import { useDocumentCollab, useDocumentMutate } from "./DocumentCollabContext";
+import { useDocumentCollab, useDocumentPush } from "./DocumentCollabContext";
 import { getFieldConfig, setFieldConfig } from "operations/field-config";
 import { createPurger, createStaticStore } from "../../state/StaticStore";
 import { useDocument } from "..";
@@ -17,35 +20,34 @@ import {
   replaceDocumentId,
   revertTemplateFieldId,
 } from "@storyflow/fields-core/ids";
-import { ServerPackage } from "@storyflow/state";
-import { createCollaborativeState } from "../../state/createCollaborativeState";
-import { QueueListenerParam } from "@storyflow/state/collab/Queue";
-import { useTemplatePath } from "../TemplatePathContext";
 import {
-  DocumentOperation,
-  isSpliceAction,
-  isToggleAction,
-} from "operations/actions";
+  createCollaborativeState,
+  initializeTimeline,
+} from "./createCollaborativeState";
+import { QueueListenerParam } from "@storyflow/collab/Queue";
+import { useTemplatePath } from "../TemplatePathContext";
+import { DocumentTransactionEntry } from "operations/actions_new";
+import { TimelineEntry } from "@storyflow/collab/types";
+import { createDocumentTransformer } from "operations/apply";
+import { isSpliceOperation, isToggleOperation } from "@storyflow/collab/utils";
 
 /*
 export const labels = createStaticStore<
   string | undefined,
   Map<string, string | undefined>
 >(() => new Map());
-*/
 
-export const configs = createStaticStore<
-  DocumentConfig,
-  Map<string, DocumentConfig>
->(() => new Map());
-
-/*
 export const labelsPurger = createPurger((templateId: string) => {
   labels.deleteMany((id) => {
     return id.startsWith(templateId);
   });
 });
 */
+
+export const configs = createStaticStore<
+  DocumentConfig,
+  Map<string, DocumentConfig>
+>(() => new Map());
 
 export const templatesPurger = createPurger((key: string) => {
   configs.deleteOne(key);
@@ -54,15 +56,12 @@ export const templatesPurger = createPurger((key: string) => {
 export const useDocumentConfig = (
   templateId: DocumentId, // template id
   data: {
+    record: SyntaxTreeRecord;
     config: DocumentConfig;
-    history?: ServerPackage<DocumentOperation>[];
-    version?: number;
+    timeline: TimelineEntry[];
+    versions: Record<string, number>;
   }
 ) => {
-  React.useEffect(() => {
-    return templatesPurger(templateId);
-  }, []);
-
   let { mutate } = useDocument(templateId);
 
   let refreshOnStale = React.useCallback(() => {
@@ -72,59 +71,62 @@ export const useDocumentConfig = (
   const collab = useDocumentCollab();
 
   const operator = React.useCallback(
-    ({ forEach }: QueueListenerParam<DocumentOperation>) => {
+    ({ forEach }: QueueListenerParam<DocumentTransactionEntry>) => {
       let newTemplate = [...data.config];
 
-      forEach(({ operation }) => {
-        const [target, ops] = operation;
-        ops.forEach((action) => {
-          if (isSpliceAction(action)) {
-            // reordering of fields
-            const { index, insert, remove } = action;
-            newTemplate.splice(index, remove ?? 0, ...(insert ?? []));
-          } else if (isToggleAction(action)) {
-            // changing properties
-            const fieldId = target as FieldId;
-            // TODO: it is now possible to set an overwriting config for template fields.
-            // if the overwriting config has not been set before, there is no property
-            // for it. So we need to create the property with an array, and add
-            // the config to the array with id, if it is not yet present. Then
-            // we can set it.
+      forEach(({ transaction }) => {
+        transaction.forEach((entry) => {
+          const target = entry[0];
+          entry[1].forEach((operation) => {
+            if (isSpliceOperation(operation)) {
+              // reordering of fields
+              const [index, remove, insert] = operation;
+              newTemplate.splice(index, remove ?? 0, ...(insert ?? []));
+            } else if (isToggleOperation(operation)) {
+              // changing properties
+              const fieldId = target as FieldId;
+              // TODO: it is now possible to set an overwriting config for template fields.
+              // if the overwriting config has not been set before, there is no property
+              // for it. So we need to create the property with an array, and add
+              // the config to the array with id, if it is not yet present. Then
+              // we can set it.
 
-            if (isTemplateField(fieldId)) {
-              console.log("UPDATE TEMPLATE FIELD", fieldId);
-              const templateId = getTemplateDocumentId(fieldId);
-              const templateConfig = newTemplate.find(
-                (config): config is TemplateRef =>
-                  "template" in config && config.template === templateId
-              );
-              if (templateConfig) {
-                if (!("config" in templateConfig)) {
-                  templateConfig.config = [];
-                }
-                let fieldConfigIndex = templateConfig.config!.findIndex(
-                  (config) => config.id === fieldId
+              const [name, value] = operation;
+
+              if (isTemplateField(fieldId)) {
+                const templateId = getTemplateDocumentId(fieldId);
+                const templateConfig = newTemplate.find(
+                  (config): config is TemplateRef =>
+                    "template" in config && config.template === templateId
                 );
-                if (fieldConfigIndex < 0) {
-                  templateConfig.config!.push({ id: fieldId });
-                  fieldConfigIndex = templateConfig.config!.length - 1;
-                }
-                if (action.name === "label" && action.value === "") {
-                  delete templateConfig.config![fieldConfigIndex][action.name];
-                } else {
-                  templateConfig.config![fieldConfigIndex] = {
-                    ...templateConfig.config![fieldConfigIndex],
-                    [action.name]: action.value,
-                  };
+                if (templateConfig) {
+                  if (!("config" in templateConfig)) {
+                    templateConfig.config = [];
+                  }
+                  let fieldConfigIndex = templateConfig.config!.findIndex(
+                    (config) => config.id === fieldId
+                  );
+                  if (fieldConfigIndex < 0) {
+                    templateConfig.config!.push({ id: fieldId });
+                    fieldConfigIndex = templateConfig.config!.length - 1;
+                  }
+                  if (name === "label" && value === "") {
+                    delete templateConfig.config![fieldConfigIndex][name];
+                  } else {
+                    templateConfig.config![fieldConfigIndex] = {
+                      ...templateConfig.config![fieldConfigIndex],
+                      [name]: value,
+                    };
+                  }
                 }
               }
-            }
 
-            newTemplate = setFieldConfig(newTemplate, fieldId, (ps) => ({
-              ...ps,
-              [action.name]: action.value,
-            }));
-          }
+              newTemplate = setFieldConfig(newTemplate, fieldId, (ps) => ({
+                ...ps,
+                [name]: value,
+              }));
+            }
+          });
         });
       });
 
@@ -133,20 +135,34 @@ export const useDocumentConfig = (
     [data.config]
   );
 
-  const state = createCollaborativeState(
+  initializeTimeline(
     collab,
-    (callback) => configs.useKey(templateId, callback),
-    operator,
     {
-      version: data.version ?? 0,
-      history: data.history ?? [],
-      document: templateId,
-      key: templateId,
+      id: templateId,
+      timeline: data.timeline,
+      versions: data.versions,
+      transform: createDocumentTransformer(data.record),
     },
     {
       onStale: refreshOnStale,
     }
   );
+
+  const state = createCollaborativeState(
+    collab,
+    (callback) => configs.useKey(templateId, callback),
+    operator,
+    {
+      timeline: data.timeline,
+      version: data.versions.config ?? 0,
+      document: templateId,
+      key: "config",
+    }
+  );
+
+  React.useEffect(() => {
+    return templatesPurger(templateId);
+  }, []);
 
   return state;
 };
@@ -204,7 +220,7 @@ export function useFieldConfig(
     );
   }
 
-  const { push } = useDocumentMutate<DocumentOperation>(documentId, documentId);
+  const push = useDocumentPush<DocumentTransactionEntry>(documentId, "config");
 
   const setter = React.useCallback(
     <Name extends keyof FieldConfig>(
@@ -217,15 +233,7 @@ export function useFieldConfig(
       // if (!isNative) return;
       const value =
         typeof payload === "function" ? payload(config?.[name]) : payload;
-      push([
-        fieldId,
-        [
-          {
-            name,
-            value,
-          },
-        ],
-      ]);
+      push([[fieldId, [[name, value as any]]]]);
     },
     [config, push]
   );

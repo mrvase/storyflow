@@ -22,7 +22,7 @@ import { useFieldFocus } from "../../field-focus";
 import { Checkbox } from "../../elements/Checkbox";
 import { Range } from "../../elements/Range";
 import { Menu as HeadlessMenu } from "@headlessui/react";
-import { useDocumentMutate } from "../../documents/collab/DocumentCollabContext";
+import { useDocumentPush } from "../../documents/collab/DocumentCollabContext";
 import { FieldOperation } from "operations/actions";
 import { useFieldId } from "../FieldIdContext";
 import { Menu } from "../../layout/components/Menu";
@@ -30,6 +30,8 @@ import { useTemplateFolder } from "../../folders/FoldersContext";
 import React from "react";
 import { useOptimisticDocumentList } from "../../documents";
 import { useFieldTemplateId } from "./FieldTemplateContext";
+import { FieldTransactionEntry } from "operations/actions_new";
+import { createTransaction } from "@storyflow/collab/utils";
 
 export function TemplateHeader({
   id,
@@ -126,12 +128,10 @@ function TransformMenu({
 
   const current = transforms.find((el) => el.type === "fetch");
 
-  const { push } = useDocumentMutate<FieldOperation>(
+  const push = useDocumentPush<FieldTransactionEntry>(
     getDocumentId(rootId),
     getRawFieldId(rootId)
   );
-
-  const target = id === rootId ? "" : id;
 
   return (
     <div className="p-2 flex flex-col gap-2">
@@ -139,15 +139,14 @@ function TransformMenu({
         <Checkbox
           value={current !== undefined}
           setValue={(value) => {
-            push([
-              target,
-              [
-                {
+            push(
+              createTransaction((t) =>
+                t.target(id).toggle({
                   name: "fetch",
-                  value: value ? ([50] as [number]) : null,
-                },
-              ],
-            ]);
+                  value: value ? [50] : null,
+                })
+              )
+            );
           }}
           label="Hent dokumenter fra mapper"
           small
@@ -162,15 +161,14 @@ function TransformMenu({
             <Range
               value={(current.data as GetFunctionData<"fetch">)[0]}
               setValue={(limit) => {
-                push([
-                  target,
-                  [
-                    {
+                push(
+                  createTransaction((t) =>
+                    t.target(id).toggle({
                       name: "fetch",
-                      value: [limit] as [number],
-                    },
-                  ],
-                ]);
+                      value: [limit],
+                    })
+                  )
+                );
               }}
             />
           </div>
@@ -189,12 +187,10 @@ function TemplateMenu({
 }) {
   const rootId = useFieldId();
 
-  const { push } = useDocumentMutate<FieldOperation>(
+  const push = useDocumentPush<FieldTransactionEntry>(
     getDocumentId(rootId),
     getRawFieldId(rootId)
   );
-
-  const target = id === rootId ? "" : id;
 
   const templateFolder = useTemplateFolder()?._id;
   const { documents: templates } = useOptimisticDocumentList(templateFolder);
@@ -217,15 +213,14 @@ function TemplateMenu({
       {current && (
         <Menu.Item
           onClick={() => {
-            push([
-              target,
-              [
-                {
+            push(
+              createTransaction((t) =>
+                t.target(id).toggle({
                   name: "template",
                   value: null,
-                },
-              ],
-            ]);
+                })
+              )
+            );
           }}
           label="Fjern"
         />
@@ -235,15 +230,14 @@ function TemplateMenu({
           key={el.label}
           // selected={current === getRawDocumentId(el.id)}
           onClick={(ev) => {
-            push([
-              target,
-              [
-                {
+            push(
+              createTransaction((t) =>
+                t.target(id).toggle({
                   name: "template",
                   value: getRawDocumentId(el.id),
-                },
-              ],
-            ]);
+                })
+              )
+            );
           }}
           label={el.label}
         />

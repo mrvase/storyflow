@@ -59,7 +59,8 @@ export function createCollaboration(
   ) => {
     let exists = timelines.get(id);
     if (!exists) {
-      exists = timelines.set(id, createTimeline(options));
+      exists = createTimeline(options);
+      timelines.set(id, exists);
     }
     return exists;
   };
@@ -78,20 +79,16 @@ export function createCollaboration(
   };
 }
 
-export function createQueueCache<T, TE extends TransactionEntry>(
-  initialValue: T
-) {
+export function createQueueCache<T>(initialValue: T, tracker?: object) {
   // if not cloned, we will mutate the initialValue
   // which will give problems with double render.
   let cached = clone(initialValue);
-  let seen = new Set();
   let index = -1;
-  return function cache(
+  return function cache<TE extends TransactionEntry>(
     forEach: Queue<TE>["forEach"],
     callback: (
       prev: T,
-      entry: Parameters<Parameters<Queue<TE>["forEach"]>[0]>[0],
-      seen: boolean
+      entry: Parameters<Parameters<Queue<TE>["forEach"]>[0]>[0]
     ) => T
   ) {
     let saved = false;
@@ -104,13 +101,18 @@ export function createQueueCache<T, TE extends TransactionEntry>(
           saved = true;
           cached = clone(current);
         }
-        seen.add(getTransactionId(entry));
       } else if (timelineIndex <= index) {
         return;
       } else {
         newIndex = Math.max(newIndex, timelineIndex);
       }
-      current = callback(current, entry, seen.has(getTransactionId(entry)));
+
+      current = callback(current, entry);
+
+      if (timelineIndex === null && tracker) {
+        // must be added after the callback has run
+        entry.trackers?.add(tracker);
+      }
     });
     if (!saved) {
       // if there has not yet been any local-only operations

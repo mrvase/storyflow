@@ -7,11 +7,10 @@ export type TimelineEntry = [
 
 export type Target = string;
 
-export type SpliceOperation<Value = any> = [
-  index: number,
-  remove: number,
-  ...inserts: Value[]
-];
+export type SpliceOperation<Value = any> =
+  | [index: number, remove: number, insert: Value[]]
+  | [index: number, remove: number]
+  | [index: number];
 
 export type ToggleOperation<
   Type extends string = string,
@@ -34,7 +33,7 @@ export type QueueEntry<TE extends TransactionEntry = TransactionEntry> = {
   user: string;
   queue: string;
   transaction: Transaction<TE>;
-  transactionIndex: number;
+  transactionIndex: number | null;
   timelineIndex: number | null;
-  tracker: object | undefined;
+  trackers: WeakSet<object> | undefined;
 };

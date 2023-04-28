@@ -16,7 +16,7 @@ import { getTranslateDragEffect } from "../utils/dragEffects";
 import { RenderField } from "../fields/RenderField";
 import {
   useDocumentCollab,
-  useDocumentMutate,
+  useDocumentPush,
 } from "./collab/DocumentCollabContext";
 import { ServerPackage } from "@storyflow/state";
 import { GetDocument } from "./GetDocument";
@@ -30,9 +30,15 @@ import {
 import { useClient } from "../client";
 import { useDocumentIdGenerator } from "../id-generator";
 import { getDefaultValuesFromTemplateAsync } from "./template-fields";
-import { createTokenStreamTransformer } from "operations/apply";
+import { createDocumentTransformer } from "operations/apply";
 import { splitTransformsAndRoot } from "@storyflow/fields-core/transform";
 import { createTokenStream } from "operations/parse-token-stream";
+import {
+  DocumentSpliceOperation,
+  DocumentTransactionEntry,
+  FieldTransactionEntry,
+} from "operations/actions_new";
+import { createTransaction } from "@storyflow/collab/utils";
 
 export function RenderTemplate({
   id,
@@ -51,9 +57,9 @@ export function RenderTemplate({
 }) {
   const isMain = id === owner;
 
-  const { push } = isMain
-    ? useDocumentMutate<DocumentOperation>(owner, owner)
-    : { push: () => {} };
+  const push = isMain
+    ? useDocumentPush<DocumentTransactionEntry>(owner, "config")
+    : () => {};
 
   const collab = useDocumentCollab();
 
@@ -63,7 +69,7 @@ export function RenderTemplate({
   const onChange = React.useCallback(
     (actions: any) => {
       if (!isMain) return;
-      const ops = [] as DocumentOperation[1];
+      const ops = [] as DocumentSpliceOperation[];
       for (let action of actions) {
         const { type, index } = action;
 
@@ -71,10 +77,7 @@ export function RenderTemplate({
           const templateItem = {
             ...action.item,
           };
-          ops.push({
-            index,
-            insert: [templateItem],
-          });
+          ops.push([index, 0, [templateItem]]);
           getDefaultValuesFromTemplateAsync(owner, templateItem.template, {
             client,
             generateDocumentId,
@@ -89,23 +92,14 @@ export function RenderTemplate({
               */
               if (versions && getRawFieldId(fieldId) in versions) return;
               const [transforms, root] = splitTransformsAndRoot(tree);
-              const transformActions = transforms.map((transform) => {
-                return {
-                  name: transform.type,
-                  value: transform.data ?? true,
-                };
+              const transformOperations = transforms.map((transform) => {
+                return { name: transform.type, value: transform.data ?? true };
               });
               const stream = createTokenStream(root);
-              const tokenActions =
-                stream.length === 0
-                  ? []
-                  : [
-                      {
-                        index: 0,
-                        insert: createTokenStream(root),
-                      },
-                    ];
-              if (transformActions.length > 0 || tokenActions.length > 0) {
+              const streamOperation = stream.length
+                ? { index: 0, insert: createTokenStream(root) }
+                : undefined;
+              if (transformOperations.length > 0 || streamOperation) {
                 /*
                   TODO: Overvejelse: Jeg kan godt tilføje og slette og tilføje.
                   Har betydning ift. fx url, hvor default children pushes igen.
@@ -119,18 +113,19 @@ export function RenderTemplate({
                   */
 
                 collab
-                  .getOrAddQueue(owner, getRawFieldId(fieldId), {
-                    transform: createTokenStreamTransformer(fieldId, {}),
-                    mergeableNoop: ["", []],
+                  .getOrAddTimeline(owner, {
+                    transform: createDocumentTransformer({}),
                   })
-                  .initialize(0, [])
-                  .push([
-                    "",
-                    [
-                      ...(transformActions.length > 0 ? transformActions : []),
-                      ...(tokenActions.length > 0 ? tokenActions : []),
-                    ],
-                  ]);
+                  .initialize([], {})
+                  .getQueue<FieldTransactionEntry>(getRawFieldId(fieldId))
+                  .push(
+                    createTransaction((t) =>
+                      t
+                        .target(fieldId)
+                        .splice(streamOperation)
+                        .toggle(...transformOperations)
+                    )
+                  );
               }
             });
           });
@@ -138,13 +133,10 @@ export function RenderTemplate({
 
         if (type === "delete") {
           if (!config[index]) return;
-          ops.push({
-            index,
-            remove: 1,
-          });
+          ops.push([index, 1]);
         }
       }
-      push(["", ops]);
+      push([["", ops]]);
     },
     [config, push, client, generateDocumentId, collab, owner]
   );

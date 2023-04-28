@@ -1,13 +1,11 @@
 import type { TokenStream } from "operations/types";
 import { tools } from "operations/stream-methods";
-import { FieldOperation, InferAction } from "operations/actions";
-
-type Action = InferAction<FieldOperation>;
+import { StreamOperation } from "operations/actions_new";
 
 export const getComputationDiff = (
   _oldValue: TokenStream,
   _newValue: TokenStream
-): Action[] | null => {
+): StreamOperation[] | null => {
   const split = (value: TokenStream) => {
     const array: TokenStream = [];
     tools.forEach(value, (el) => {
@@ -15,6 +13,7 @@ export const getComputationDiff = (
     });
     return array;
   };
+
   const oldValue = split(_oldValue);
   const newValue = split(_newValue);
   const oldLength = oldValue.length;
@@ -149,27 +148,27 @@ export const getComputationDiff = (
       match = find(removeText);
     }
 
-    const actions: Action[] = [];
+    const actions: StreamOperation[] = [];
 
     for (let match of removeMatches) {
-      actions.push({
-        index: left + match.index,
-        insert: [],
-        remove: getLength(match.value),
-      });
+      actions.push([left + match.index, getLength(match.value)]);
     }
     for (let match of insertMatches.slice().reverse()) {
-      actions.push({
-        index: left + match.index,
-        insert: [match.value],
-        remove: 0,
-      });
+      actions.push([left + match.index, 0, [match.value]]);
     }
 
     return actions;
   }
 
-  return [{ index: left, insert, remove: tools.getLength(remove) }];
+  const removeLength = tools.getLength(remove);
+
+  if (!insert.length && !removeLength) {
+    return [];
+  } else if (!insert.length) {
+    return [[left, removeLength]];
+  } else {
+    return [[left, removeLength, insert]];
+  }
 };
 
 /*

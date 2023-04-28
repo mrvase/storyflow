@@ -14,14 +14,14 @@ import ReactDOM from "react-dom";
 import { useOptimisticDocumentList } from ".";
 import { useTemplateFolder } from "../folders/FoldersContext";
 import Content from "../layout/components/Content";
-import { useDocumentMutate } from "./collab/DocumentCollabContext";
+import { useDocumentPush } from "./collab/DocumentCollabContext";
 import { useFieldConfig } from "./collab/hooks";
 import { useContextWithError } from "../utils/contextError";
 import { useFieldId } from "../fields/FieldIdContext";
 import { getDocumentId } from "@storyflow/fields-core/ids";
 import { Menu } from "../layout/components/Menu";
 import { useTopFieldIndex } from "./FieldIndexContext";
-import { DocumentOperation } from "operations/actions";
+import { DocumentTransactionEntry } from "operations/actions_new";
 
 const FieldToolbarPortalContext = React.createContext<
   [HTMLDivElement | null, React.Dispatch<HTMLDivElement | null>] | null
@@ -72,7 +72,7 @@ export function FieldToolbar() {
 
   const [config, setConfig] = useFieldConfig(fieldId);
 
-  const { push } = useDocumentMutate<DocumentOperation>(documentId, documentId);
+  const push = useDocumentPush<DocumentTransactionEntry>(documentId, "config");
 
   const templateFolder = useTemplateFolder()?._id;
   const { documents: templates } = useOptimisticDocumentList(templateFolder);
@@ -123,15 +123,7 @@ export function FieldToolbar() {
         <Content.ToolbarButton
           data-focus-remain="true"
           onClick={() => {
-            push([
-              "",
-              [
-                {
-                  index: topIndex,
-                  remove: 1,
-                },
-              ],
-            ]);
+            push([["", [[topIndex, 1]]]]);
           }}
         >
           <TrashIcon className="w-4 h-4" />
@@ -143,18 +135,10 @@ export function FieldToolbar() {
 
 function FieldLabel({ id, label }: { id: FieldId; label: string }) {
   const documentId = getDocumentId(id);
-  const { push } = useDocumentMutate<DocumentOperation>(documentId, documentId);
+  const push = useDocumentPush<DocumentTransactionEntry>(documentId, "config");
 
   const onChange = (value: string) => {
-    push([
-      id,
-      [
-        {
-          name: "label",
-          value: value,
-        },
-      ],
-    ]);
+    push([[id, [["label", value]]]]);
   };
   return <EditableLabel value={label} onChange={onChange} />;
 }

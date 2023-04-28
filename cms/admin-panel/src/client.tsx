@@ -2,6 +2,7 @@ import React from "react";
 import { APIToClient, createClient, createSWRClient } from "@sfrpc/client";
 import type { API } from "api";
 import type { BucketAPI } from "api/bucket";
+import type { CollabAPI } from "api/collab";
 import type {} from "@sfrpc/types";
 import type {} from "@storyflow/result";
 import useSWR, { useSWRConfig } from "swr";
@@ -15,7 +16,7 @@ export const provider = () => SWRCache;
 const QueryContext = React.createContext<Record<string, any>>({});
 export const useQueryContext = () => React.useContext(QueryContext);
 
-export type Client = APIToClient<API & BucketAPI>;
+export type Client = APIToClient<API & BucketAPI & CollabAPI>;
 
 const ClientContext = React.createContext<Client | null>(null);
 export const useClient = () => useContextWithError(ClientContext, "Client");
@@ -68,7 +69,7 @@ export function QueryContextProvider({
 
   const clientCtx = React.useMemo(
     () =>
-      createClient<API & BucketAPI>(url, {
+      createClient<API & BucketAPI & CollabAPI>(url, {
         context: queryCtx,
         cache,
       }),
@@ -86,7 +87,7 @@ export function QueryContextProvider({
 
 // export const client = createClient<API>();
 
-export const SWRClient = createSWRClient<API>(
+export const SWRClient = createSWRClient<API & BucketAPI & CollabAPI>(
   url,
   useSWR,
   useSWRImmutable,

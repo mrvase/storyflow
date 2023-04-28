@@ -23,6 +23,7 @@ import {
   normalizeDocumentId,
 } from "@storyflow/fields-core/ids";
 import type { DefaultFieldConfig } from "@storyflow/fields-core/types";
+import { TimelineEntry } from "@storyflow/collab/types";
 
 type DocumentListMutation =
   | {
@@ -303,6 +304,8 @@ const TEMPLATES = [
   ...Object.values(DEFAULT_TEMPLATES),
 ];
 
+const emptyTimeline: TimelineEntry[] = [];
+
 export function useDocument(
   documentId_: RawDocumentId | DocumentId | undefined
 ) {
@@ -317,6 +320,7 @@ export function useDocument(
       () => ({
         doc: defaultTemplate as DBDocument,
         histories: {},
+        timeline: [],
         mutate: () => {},
         error: undefined,
       }),
@@ -342,6 +346,13 @@ export function useDocument(
     }
   );
 
+  const { data: timeline } = SWRClient.collab.getTimeline.useQuery(
+    documentId as string,
+    {
+      inactive: !documentId,
+    }
+  );
+
   React.useEffect(() => {
     if (initialDocument !== undefined && data !== undefined) {
       setInitialDocument(undefined);
@@ -359,6 +370,7 @@ export function useDocument(
   return {
     doc,
     histories: data?.histories ?? {},
+    timeline: timeline ?? emptyTimeline,
     mutate,
     error: initialDocument ? undefined : error,
   };

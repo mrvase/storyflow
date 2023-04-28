@@ -26,7 +26,7 @@ import { useTemplateFolder } from "../folders/FoldersContext";
 import Content from "../layout/components/Content";
 import {
   useDocumentCollab,
-  useDocumentMutate,
+  useDocumentPush,
 } from "./collab/DocumentCollabContext";
 import { useFolder } from "../folders/collab/hooks";
 import { useDocumentConfig } from "./collab/hooks";
@@ -45,6 +45,8 @@ import { useRoute } from "../panel-router/Routes";
 import { parseSegment } from "../layout/components/parseSegment";
 import { Menu } from "../layout/components/Menu";
 import { DocumentOperation } from "operations/actions";
+import { TimelineEntry } from "@storyflow/collab/types";
+import { DocumentTransactionEntry } from "operations/actions_new";
 
 const getVersionKey = (versions?: Record<RawFieldId, number>) => {
   if (!versions) return -1;
@@ -230,12 +232,19 @@ export function TemplateMenu({ id }: { id?: DocumentId }) {
 export function DocumentPage({ children }: { children?: React.ReactNode }) {
   const route = useRoute();
   const segment = parseSegment<"document" | "template">(route);
-  let { doc, histories, error } = useDocument(segment.id);
+  let { doc, histories, timeline, error } = useDocument(segment.id);
+
+  console.log("TIMELINE", timeline);
 
   return (
     <>
-      {!error && doc && (
-        <Page type={segment.type} doc={doc} histories={histories}>
+      {!error && doc && timeline && (
+        <Page
+          type={segment.type}
+          doc={doc}
+          histories={histories}
+          timeline={timeline}
+        >
           {children}
         </Page>
       )}
@@ -248,19 +257,22 @@ const Page = ({
   type,
   doc,
   histories,
+  timeline,
   children,
 }: {
   type: "template" | "document";
   doc: DBDocument;
   histories: Record<string, ServerPackage<DocumentOperation>[]>;
+  timeline: TimelineEntry[];
   children: React.ReactNode;
 }) => {
   const id = doc._id;
 
   const config = useDocumentConfig(id, {
+    timeline,
+    record: doc.record,
     config: doc.config,
-    history: histories[id] ?? [],
-    version: doc.versions?.config ?? 0,
+    versions: doc.versions,
   });
 
   const folder = useFolder(doc.folder);
@@ -336,7 +348,7 @@ const Page = ({
 };
 
 function TemplateSelect({ documentId }: { documentId: DocumentId }) {
-  const { push } = useDocumentMutate<DocumentOperation>(documentId, documentId);
+  const push = useDocumentPush<DocumentTransactionEntry>(documentId, "config");
 
   return (
     <div className="py-5 px-14 grid grid-cols-3 gap-5">
@@ -349,15 +361,7 @@ function TemplateSelect({ documentId }: { documentId: DocumentId }) {
           key={_id}
           className="rounded bg-button ring-button p-5 text-center"
           onClick={() => {
-            push([
-              "",
-              [
-                {
-                  index: 0,
-                  insert: [{ template: _id }],
-                },
-              ],
-            ]);
+            push([["", [[0, 0, [{ template: _id }]]]]]);
           }}
         >
           {label}

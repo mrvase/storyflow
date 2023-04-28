@@ -15,9 +15,13 @@ import {
 } from "../../../editor/react/EditorProvider";
 import { getComputationDiff } from "./getComputationDiff";
 import { tools } from "operations/stream-methods";
-import { applyFieldOperation } from "operations/apply";
-import { FieldOperation, InferAction } from "operations/actions";
-import { createQueueCache } from "../../../state/collaboration";
+import { applyFieldOperation, applyFieldTransaction } from "operations/apply";
+import {
+  FieldOperation,
+  InferAction,
+  isSpliceAction,
+} from "operations/actions";
+import { createQueueCache } from "../../../state/collab_new";
 import type { TokenStream } from "operations/types";
 import type { LibraryConfig } from "@storyflow/shared/types";
 import {
@@ -28,6 +32,16 @@ import {
   $isSelection,
 } from "../transforms";
 import { createDiffOperations } from "./getBlocksDiff";
+import {
+  FieldTransactionEntry,
+  StreamOperation,
+  TransformOperation,
+} from "operations/actions_new";
+import { useDocumentCollab } from "../../../documents/collab/DocumentCollabContext";
+import { useFieldId } from "../../FieldIdContext";
+import { getDocumentId, getRawFieldId } from "@storyflow/fields-core/ids";
+import { usePanel } from "../../../panel-router/Routes";
+import { isSpliceOperation } from "@storyflow/collab/utils";
 
 const RECONCILIATION_TAG = "reconciliation";
 
@@ -35,48 +49,62 @@ export function Reconciler({
   target,
   initialValue,
   push,
-  register,
+  tracker,
 }: {
   initialValue: TokenStream;
-  // history: CollabHistory<TextOp | FunctionOp>;
   target: string;
-  push: (ops: FieldOperation[1]) => void;
-  register: (listener: QueueListener<FieldOperation>) => () => void;
+  push: (ops: StreamOperation[] | TransformOperation[]) => void;
+  tracker?: object;
 }) {
   const editor = useEditorContext();
 
+  const fieldId = useFieldId();
   const { libraries } = useClientConfig();
 
-  React.useEffect(() => {
-    const cache = createQueueCache({ stream: initialValue, transforms: [] });
+  const collab = useDocumentCollab();
 
-    return register(({ trackedForEach, forEach }) => {
+  const [{ index }] = usePanel();
+
+  React.useEffect(() => {
+    const queue = collab
+      .getTimeline(getDocumentId(fieldId))!
+      .getQueue<FieldTransactionEntry>(getRawFieldId(fieldId));
+
+    const cache = createQueueCache(
+      { stream: initialValue, transforms: [] },
+      tracker
+    );
+
+    return queue.register(({ forEach }) => {
       // trackedForEach only adds any unique operation a single time.
       // Since we are using the bound register, it does not provide
       // the operations pushed from this specific field.
 
-      const newOps: InferAction<FieldOperation>[] = [];
-      trackedForEach(({ operation }) => {
-        if (operation[0] === target) {
-          newOps.push(...operation[1]);
-        }
-      });
+      let newOps: StreamOperation[] = [];
 
-      if (newOps.length === 0) return;
-
-      const result = cache(forEach, (prev, { operation }) => {
-        if (operation[0] === target) {
-          prev.stream = applyFieldOperation(prev, operation).stream;
-        }
+      const result = cache(forEach, (prev, { transaction, trackers }) => {
+        transaction.map((entry) => {
+          if (entry[0] === target) {
+            prev.stream = applyFieldTransaction(prev, entry).stream;
+            if (!tracker || !trackers?.has(tracker)) {
+              newOps.push(
+                ...(entry[1] as StreamOperation[]).filter((el) =>
+                  isSpliceOperation(el)
+                )
+              );
+            }
+          }
+        });
         return prev;
       });
 
-      editor.update(
-        () => $reconcile(editor, result.stream, newOps, libraries),
-        {
-          tag: RECONCILIATION_TAG,
-        }
-      );
+      if (!newOps.length) return;
+
+      console.log("NEW OPS", newOps);
+
+      editor.update(() => $reconcile(editor, result.stream, libraries), {
+        tag: RECONCILIATION_TAG,
+      });
     });
   }, [editor, libraries]);
 
@@ -94,15 +122,15 @@ export function Reconciler({
         const prev = prevEditorState.read(() => $getComputation($getRoot()));
         const next = editorState.read(() => $getComputation($getRoot()));
 
-        const action = getComputationDiff(prev, next);
+        const operations = getComputationDiff(prev, next);
 
-        console.log("DIFF", action);
+        console.log("DIFF", operations);
 
-        if (!action) {
+        if (!operations) {
           return;
         }
 
-        push(action.map((el) => ({ ...el })));
+        push(operations.map((el) => [...el]));
       }
     );
   }, [editor, push]);
@@ -113,7 +141,6 @@ export function Reconciler({
 function $reconcile(
   editor: LexicalEditor,
   value: TokenStream,
-  actions: InferAction<FieldOperation>[],
   libraries: LibraryConfig[]
 ) {
   /** SAVE CURRENT SELECTION */
@@ -149,6 +176,8 @@ function $reconcile(
     */
 
     /** UPDATE SELECTION */
+
+    /*
     if (
       anchor !== null &&
       focus !== null &&
@@ -156,8 +185,9 @@ function $reconcile(
     ) {
       anchor = actions.reduce((acc: number, cur) => {
         if ("name" in cur) return acc;
-        if (cur.index > acc) return acc;
-        return acc + tools.getLength(cur.insert ?? []) - (cur.remove ?? 0);
+        const [index, remove, insert] = cur;
+        if (index > acc) return acc;
+        return acc + tools.getLength(insert ?? []) - (remove ?? 0);
       }, anchor);
 
       focus = anchor;
@@ -178,6 +208,7 @@ function $reconcile(
       }
     }
 
+    */
     $setSelection(null);
   } catch (err) {
     console.error(err);

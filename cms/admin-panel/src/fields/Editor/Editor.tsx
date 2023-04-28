@@ -17,7 +17,7 @@ import { useFieldId } from "../FieldIdContext";
 import { HeadingNode } from "../../editor/react/HeadingNode";
 import nodes from "./decorators/nodes";
 import { CopyPastePlugin } from "./CopyPastePlugin";
-import { FieldOperation } from "operations/actions";
+import { StreamOperation, TransformOperation } from "operations/actions_new";
 
 const editorConfig = {
   namespace: "EDITOR",
@@ -28,14 +28,14 @@ const editorConfig = {
 
 export default function Editor({
   push,
-  register,
+  tracker,
   initialValue,
   children = null,
   target,
 }: {
   target?: string;
-  push?: (ops: FieldOperation[1]) => void;
-  register?: (listener: QueueListener<FieldOperation>) => () => void;
+  push?: (ops: StreamOperation[] | TransformOperation[]) => void;
+  tracker?: object;
   initialValue: TokenStream;
   children?: React.ReactNode;
 }) {
@@ -52,11 +52,11 @@ export default function Editor({
       <CopyPastePlugin />
       <EditorFocusPlugin />
       <FieldFocusPlugin />
-      {push && register && typeof target === "string" && (
+      {push && typeof target === "string" && (
         <Reconciler
           target={target}
           push={push}
-          register={register}
+          tracker={tracker}
           initialValue={initialValue}
         />
       )}

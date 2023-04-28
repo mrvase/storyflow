@@ -1,14 +1,15 @@
 import { isError, Result, unwrap } from "@storyflow/result";
 import type { Timeline } from "./Timeline";
 import type { TimelineEntry } from "./types";
+import { clone } from "./clone_debug";
 
 export function createTimelineMap() {
   const timelines = new Map<string, Timeline>();
 
   return {
     get: (id: string) => {
-      const queue = timelines.get(id);
-      return queue as any;
+      const timeline = timelines.get(id);
+      return timeline;
     },
     set: (id: string, timeline: Timeline) => {
       timelines.set(id, timeline);
@@ -19,7 +20,7 @@ export function createTimelineMap() {
     syncEach: (
       callback: (
         pkg: TimelineEntry[],
-        state: { start: string | null; end: string | null },
+        state: { startId: string | null; length: number },
         id: string
       ) => Promise<
         | { status: "success" | "stale"; updates: TimelineEntry[] }
@@ -58,7 +59,7 @@ export async function syncTimelineMap(
   mutation: (
     input: Record<
       string,
-      { entries: TimelineEntry[]; start: string | null; end: string | null }
+      { entries: TimelineEntry[]; startId: string | null; length: number }
     >
   ) => Promise<
     Result<
@@ -73,13 +74,13 @@ export async function syncTimelineMap(
   const timelineHandlers: {
     id: string;
     entries: TimelineEntry[];
-    state: { start: string | null; end: string | null };
+    state: { startId: string | null; length: number };
     promise: ReturnType<typeof createPromise<Response>>;
   }[] = [];
 
   const callback = (
     entries: TimelineEntry[],
-    state: { start: string | null; end: string | null },
+    state: { startId: string | null; length: number },
     id: string
   ) => {
     // returns a resolvable promise object that we resolve afterwards
@@ -105,17 +106,19 @@ export async function syncTimelineMap(
       acc[id] = { entries, ...state };
     }
     return acc;
-  }, {} as Record<string, { entries: TimelineEntry[]; start: string | null; end: string | null }>);
+  }, {} as Record<string, { entries: TimelineEntry[]; startId: string | null; length: number }>);
 
   const result = await mutation(input);
 
   // resolve promises
 
+  console.log("RESULT", clone({ input, result }));
+
   timelineHandlers.forEach(({ id, promise }) => {
     if (isError(result)) {
       promise.resolve({ status: "error" });
     } else {
-      promise.resolve(unwrap(result)[id]);
+      promise.resolve(unwrap(result)[id] ?? { status: "success", updates: [] });
     }
   });
 

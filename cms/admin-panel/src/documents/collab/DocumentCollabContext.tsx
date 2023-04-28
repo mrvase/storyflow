@@ -1,8 +1,9 @@
 import React from "react";
 import { useContextWithError } from "../../utils/contextError";
 import { useClient } from "../../client";
-import { createCollaboration } from "../../state/collaboration";
-import { StdOperation } from "operations/actions";
+import { createCollaboration } from "../../state/collab_new";
+import { Queue } from "@storyflow/collab/Queue";
+import { TransactionEntry } from "@storyflow/collab/types";
 
 export const DocumentCollabContext = React.createContext<ReturnType<
   typeof createCollaboration
@@ -19,7 +20,7 @@ export function DocumentCollabProvider({
   const client = useClient();
 
   const collab = React.useMemo(() => {
-    return createCollaboration(client.fields.sync.mutation);
+    return createCollaboration(client.collab.fields.mutation);
   }, [client]);
 
   React.useLayoutEffect(() => {
@@ -33,6 +34,22 @@ export function DocumentCollabProvider({
   );
 }
 
+export function useDocumentPush<TE extends TransactionEntry>(
+  document: string,
+  key: string
+) {
+  const collab = useDocumentCollab();
+  return React.useCallback(
+    (...args: Parameters<Queue<TE>["push"]>) =>
+      collab
+        .getTimeline(document)!
+        .getQueue<TE>(key)
+        .push(...args),
+    [collab, document, key]
+  );
+}
+
+/*
 export function useDocumentMutate<T extends StdOperation<any>>(
   document: string,
   key: string
@@ -43,3 +60,4 @@ export function useDocumentMutate<T extends StdOperation<any>>(
     [collab, document, key]
   );
 }
+*/

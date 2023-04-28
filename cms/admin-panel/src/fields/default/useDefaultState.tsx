@@ -21,10 +21,10 @@ import { useFieldConfig } from "../../documents/collab/hooks";
 import { useSingular } from "../../state/useSingular";
 import { calculateFn } from "./calculateFn";
 import { splitTransformsAndRoot } from "@storyflow/fields-core/transform";
-import { applyFieldOperation } from "operations/apply";
-import { createQueueCache } from "../../state/collaboration";
-import { FieldOperation } from "operations/actions";
+import { applyFieldOperation, applyFieldTransaction } from "operations/apply";
+import { createQueueCache } from "../../state/collab_new";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
+import { FieldTransactionEntry } from "operations/actions_new";
 
 export function useDefaultStateCore(id: FieldId) {
   const rootId = useFieldId();
@@ -89,17 +89,16 @@ export function useDefaultState(id: FieldId, version: number) {
 
   const collab = useDocumentCollab();
 
-  const target = id === rootId ? "" : id;
+  const target = id;
   const singular = useSingular(id);
 
   React.useEffect(() => {
     // we assume it has been initialized in a useLayoutEffect in the component or its parent.
     // we do not initialize it here, because this hook is also for nested fields that use their
     // parent's queue.
-    const queue = collab.getQueue<FieldOperation>(
-      getDocumentId(rootId),
-      getRawFieldId(rootId)
-    )!;
+    const queue = collab
+      .getTimeline(getDocumentId(rootId))!
+      .getQueue<FieldTransactionEntry>(getRawFieldId(rootId));
 
     const [transforms, root] = splitTransformsAndRoot(initialValue);
 
@@ -110,9 +109,6 @@ export function useDefaultState(id: FieldId, version: number) {
 
     return queue.register((params) => {
       singular(() => {
-        if (params.stale) {
-          // ??
-        }
         if (version !== params.version) {
           console.warn("Invalid version", {
             instance: version,
@@ -123,11 +119,13 @@ export function useDefaultState(id: FieldId, version: number) {
 
         let update = false;
 
-        const result = cache(params.forEach, (prev, { operation }) => {
-          if (operation[0] === target) {
-            prev = applyFieldOperation(prev, operation);
-            update = true;
-          }
+        const result = cache(params.forEach, (prev, { transaction }) => {
+          transaction.map((entry) => {
+            if (entry[0] === target) {
+              prev = applyFieldTransaction(prev, entry);
+              update = true;
+            }
+          });
           return prev;
         });
 

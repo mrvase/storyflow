@@ -1,59 +1,105 @@
 import { QueueEntry, Transaction, TransactionEntry } from "./types";
 
-export type QueueListener<TE extends TransactionEntry> = (param: {
+export type QueueListenerParam<TE extends TransactionEntry> = {
   forEach: (callback: (entry: QueueEntry<TE>) => void) => void;
   version: number | null;
   stale: boolean;
-}) => void;
+};
 
-export function createQueue<TE extends TransactionEntry>(actions: {
-  getState: () => {
-    version: number;
-    stale: boolean;
+export type QueueListener<TE extends TransactionEntry> = (
+  param: QueueListenerParam<TE>
+) => void;
+
+export type PushFunction<TE extends TransactionEntry> = (
+  latest: Transaction<TE> | undefined
+) => {
+  push?: Transaction<TE>[];
+  await?: Transaction<TE>;
+};
+
+export function createQueue<TE extends TransactionEntry>(
+  actions: {
+    getState: () => {
+      version: number;
+      stale: boolean;
+    };
+    getMetadata: () => {
+      prev: number;
+      user: string;
+      queue: string;
+    };
+    get: () => QueueEntry<TE>[];
+    push: (transactions: Transaction<TE>[]) => void;
+    registerListener: (listener: () => void) => () => void;
+  },
+  trackMap: WeakMap<Transaction, WeakSet<object>>
+) {
+  let latest = {
+    transaction: undefined as Transaction<TE> | undefined,
   };
-  get: () => QueueEntry<TE>[];
-  push: (transactions: Transaction<TE>[], tracker?: object) => void;
-  registerListener: (listener: () => void) => () => void;
-}) {
-  let timeline = actions.get();
-  let latest: Transaction<TE> | undefined;
+
+  function addToTrackMap(transaction: Transaction<TE>, tracker?: object) {
+    if (!trackMap.has(transaction)) {
+      trackMap.set(transaction, new WeakSet(tracker ? [tracker] : undefined));
+    } else if (tracker) {
+      trackMap.get(transaction)?.add(tracker);
+    }
+  }
 
   const push = (
-    payload:
-      | Transaction<TE>
-      | ((latest: Transaction<TE> | undefined) => Transaction<TE>[]),
+    payload: Transaction<TE> | PushFunction<TE>,
     tracker?: object
   ) => {
     let transactions: Transaction<TE>[] = [];
 
     if (typeof payload === "function") {
-      transactions = merge(
-        payload as (latest: Transaction<TE> | undefined) => Transaction<TE>[]
-      );
+      transactions = merge(payload as PushFunction<TE>, tracker);
     } else {
       transactions = [payload];
     }
 
     if (transactions.length === 0) {
-      console.log("EMPTY PUSH");
+      // push to trigger listeners
+      actions.push(transactions);
       return false;
     }
 
-    actions.push(transactions, tracker);
+    transactions.forEach((transaction) => {
+      addToTrackMap(transaction, tracker);
+    });
+
+    actions.push(transactions);
 
     return true;
   };
 
   function merge(
-    callback: (latest: Transaction<TE> | undefined) => Transaction<TE>[]
+    callback: PushFunction<TE>,
+    tracker?: object
   ): Transaction<TE>[] {
-    const transactions = callback(latest);
-    [latest] = transactions.splice(transactions.length - 1, 1);
-    return transactions;
+    const payload = callback(latest.transaction);
+    if (payload.await) {
+      latest.transaction = payload.await;
+      addToTrackMap(payload.await, tracker);
+    } else {
+      // should not delete trackers since the operation might have been pushed.
+      latest.transaction = undefined;
+    }
+    return payload.push ?? [];
   }
 
   const forEach = (callback: (entry: QueueEntry<TE>) => void) => {
-    timeline.forEach((entry) => {
+    const queue = actions.get();
+    if (latest.transaction) {
+      queue.push({
+        ...actions.getMetadata(),
+        transaction: latest.transaction,
+        transactionIndex: null,
+        timelineIndex: null,
+        trackers: trackMap.get(latest.transaction),
+      });
+    }
+    queue.forEach((entry) => {
       callback(entry);
     });
   };
@@ -72,13 +118,11 @@ export function createQueue<TE extends TransactionEntry>(actions: {
     return actions.registerListener(runningListener);
   }
 
-  const queue = {
+  return {
     push,
     forEach,
     register,
   };
-
-  return queue;
 }
 export type Queue<TE extends TransactionEntry = TransactionEntry> = ReturnType<
   typeof createQueue<TE>

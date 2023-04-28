@@ -21,7 +21,6 @@ import Content from "../layout/components/Content";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { useClientConfig } from "../client-config";
 import { createComponent } from "./Editor/createComponent";
-import { useDocumentMutate } from "../documents/collab/DocumentCollabContext";
 import { useDocumentPageContext } from "../documents/DocumentPageContext";
 import { fetchDocumentSync } from "../documents";
 import { Client, useClient } from "../client";
@@ -51,9 +50,12 @@ import { EditorFocusProvider } from "../editor/react/useIsFocused";
 import { useRoute } from "../panel-router/Routes";
 import { parseSegment } from "../layout/components/parseSegment";
 import { splitStreamByBlocks } from "./Editor/transforms";
-import { FieldOperation } from "operations/actions";
 import { VersionProvider } from "./default/VersionContext";
 import { extendPath } from "../utils/extendPath";
+import { useDocumentPush } from "../documents/collab/DocumentCollabContext";
+import { FieldTransactionEntry } from "operations/actions_new";
+import { Transaction } from "@storyflow/collab/types";
+import { createTransaction } from "@storyflow/collab/utils";
 
 const useBuilderRendered = ({
   listeners,
@@ -84,7 +86,7 @@ const ElementActions = ({
 }: {
   id: FieldId;
   listeners: ReturnType<typeof createEventsFromIframeToCMS>;
-  push: (op: FieldOperation) => void;
+  push: (op: Transaction<FieldTransactionEntry>) => void;
 }) => {
   const [{ selectedDocument, selectedField }, setBuilderPath] =
     useSelectedPath();
@@ -130,10 +132,10 @@ const ElementActions = ({
   const { libraries } = useClientConfig();
   React.useEffect(() => {
     return listeners.createComponent.subscribe(({ path, name, library }) => {
-      push([
-        path.split(".").slice(-1)[0],
-        [
-          {
+      const target = path.split(".").slice(-1)[0] as FieldId;
+      push(
+        createTransaction((t) =>
+          t.target(target).splice({
             index: 0,
             insert: [
               createComponent(generateDocumentId(documentId), name, {
@@ -141,9 +143,9 @@ const ElementActions = ({
                 libraries,
               }),
             ],
-          },
-        ],
-      ]);
+          })
+        )
+      );
     });
   }, [libraries, generateDocumentId]);
 
@@ -167,10 +169,9 @@ const ElementActions = ({
 
       if (index < 0) return;
 
-      push([
-        parentId === id ? "" : parentId,
-        [
-          {
+      push(
+        createTransaction((t) =>
+          t.target(parentId).splice({
             index,
             insert: [
               createComponent(generateDocumentId(documentId), name, {
@@ -179,9 +180,9 @@ const ElementActions = ({
               }),
             ],
             remove: 1,
-          },
-        ],
-      ]);
+          })
+        )
+      );
     });
   }, [id, libraries, tokenStream, parentId, elementId, generateDocumentId]);
 
@@ -203,15 +204,14 @@ const ElementActions = ({
 
       if (index < 0) return;
 
-      push([
-        parentId === id ? "" : parentId,
-        [
-          {
+      push(
+        createTransaction((t) =>
+          t.target(parentId).splice({
             index,
             remove: 1,
-          },
-        ],
-      ]);
+          })
+        )
+      );
 
       setBuilderPath((ps) => ps.slice(0, -1));
     });
@@ -281,18 +281,19 @@ const ElementActions = ({
       }
       */
 
-      push([
-        parentId === id ? "" : parentId,
-        [
-          {
-            index: fromIndex,
-            remove: length,
-          },
-          {
-            index: toIndex,
-          },
-        ],
-      ]);
+      push(
+        createTransaction((t) =>
+          t.target(parentId).splice(
+            {
+              index: fromIndex,
+              remove: length,
+            },
+            {
+              index: toIndex,
+            }
+          )
+        )
+      );
     });
   }, [id, tokenStream, parentId, libraries]);
 
@@ -357,7 +358,7 @@ export function FieldPage({ children }: { children?: React.ReactNode }) {
 
   const rendered = useBuilderRendered({ listeners });
 
-  const { push } = useDocumentMutate<FieldOperation>(
+  const push = useDocumentPush<FieldTransactionEntry>(
     documentId,
     templateFieldId
   );

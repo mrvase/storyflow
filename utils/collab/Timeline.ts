@@ -2,6 +2,7 @@ import { batch } from "@storyflow/state";
 import type { TimelineEntry, Transaction, TransactionEntry } from "./types";
 import { Queue, createQueue } from "./Queue";
 import { createQueueFromTimeline, filterTimeline, getId } from "./utils";
+import { clone } from "./clone_debug";
 
 const randomUserId = Math.random().toString(36).slice(2, 10);
 
@@ -24,12 +25,13 @@ export function createTimeline(options: {
   };
 
   const queues = new Map<string, Queue>();
-  const trackers = new WeakMap<Transaction, object>();
+  const trackers = new WeakMap<Transaction, WeakSet<object>>();
 
   function initialize(
     initialServerState: TimelineEntry[],
     initialVersions: Record<string, number>
   ) {
+    console.log("INITIALIZING", initialServerState, initialVersions);
     if (
       !state.initialized ||
       absoluteVersion(initialVersions) > absoluteVersion(state.versions)
@@ -42,11 +44,13 @@ export function createTimeline(options: {
       state.versions = initialVersions;
       state.initialized = true;
       state.stale = false;
+      console.log("INITIALIZED STATE", clone(state));
     }
+    return self;
   }
 
   function post() {
-    if (!state.posted.length) return;
+    if (state.posted.length) return;
     state.posted = state.current;
     state.current = [];
   }
@@ -77,17 +81,27 @@ export function createTimeline(options: {
       }
     });
 
-    const newTimeline = filterTimeline(
-      [...state.shared, ...packages, ...state.current],
-      state.versions
-    );
+    const all = [...state.shared, ...packages, ...state.current];
+
+    console.log("---ALL", clone(all));
+
+    const newTimeline = filterTimeline(all, state.versions);
+
+    console.log("---NEW TIMELINE", clone(newTimeline));
 
     const newShared = transform(newTimeline);
 
+    console.log("---NEW SHARED", clone(newShared));
+
     const newCurrent = newShared.splice(
-      newShared.length - 1,
+      state.shared.length + packages.length,
       state.current.length
     );
+
+    console.log("---NEW ", {
+      shared: clone(newShared),
+      current: clone(newCurrent),
+    });
 
     state.shared = newShared;
     state.posted = [];
@@ -101,7 +115,7 @@ export function createTimeline(options: {
   async function sync(
     callback: (
       upload: TimelineEntry[],
-      state: { start: string | null; end: string | null }
+      state: { startId: string | null; length: number }
     ) => Promise<
       | { status: "success" | "stale"; updates: TimelineEntry[] }
       | { status: "error" }
@@ -114,28 +128,37 @@ export function createTimeline(options: {
 
     post();
 
-    const result = await callback(state.current, {
-      start: getId(state.shared[0]),
-      end: getId(state.shared[state.shared.length - 1]),
+    console.log("SYNC", clone(state));
+
+    const result = await callback(state.posted, {
+      startId: getId(state.shared[0]),
+      length: state.shared.length,
     });
 
     if (result.status === "error") {
-      console.log("RETRACT");
+      console.warn("RETRACT");
       retract();
     } else if (result.status === "stale") {
-      console.log("STALE");
+      console.warn("STALE");
       state.stale = true;
       triggerStaleListeners();
+      state.current = state.posted;
+      state.posted = [];
     } else {
       pull(result.updates);
     }
   }
 
   const getQueueEntries = (queue: string) => {
-    return createQueueFromTimeline(state.shared, [
-      ...state.posted,
-      ...state.current,
-    ]).filter((entry) => entry.queue === queue);
+    const queue1 = createQueueFromTimeline(state.shared, {
+      trackers,
+      includeTimelineIndex: true,
+    }).filter((entry) => entry.queue === queue);
+    const queue2 = createQueueFromTimeline(
+      [...state.posted, ...state.current],
+      { trackers, includeTimelineIndex: false }
+    ).filter((entry) => entry.queue === queue);
+    return [...queue1, ...queue2];
   };
 
   const listeners = new Map<string, Set<() => void>>();
@@ -153,6 +176,7 @@ export function createTimeline(options: {
   }
 
   function triggerListeners(queue: string) {
+    console.log("LISTENERS TRIGGERED", queue, listeners.get(queue)?.size);
     batch(() => {
       listeners.get(queue)?.forEach((listener) => listener());
     });
@@ -171,32 +195,40 @@ export function createTimeline(options: {
     staleListeners.forEach((listener) => listener());
   }
 
-  const getVersion = (queue: string) => {
-    return (state.versions[queue] ?? 0) + getQueueEntries(queue).length;
+  const getUpdatedVersion = (queue: string) => {
+    return (
+      (state.versions[queue] ?? 0) +
+      state.shared.filter((el) => el[2] === queue).length
+    );
   };
 
   const createActions = (queue: string) => ({
     getState() {
       return {
         stale: state.stale,
-        version: getVersion(queue),
+        version: state.versions[queue] ?? 0,
+      };
+    },
+    getMetadata() {
+      return {
+        user,
+        prev: getUpdatedVersion(queue),
+        queue,
       };
     },
     get() {
-      return getQueueEntries(queue);
+      const entries = getQueueEntries(queue);
+      return entries;
     },
-    push(transactions: Transaction[], tracker?: object) {
-      let entry = state.current[state.current.length - 1];
-      if (entry[2] !== queue) {
-        const prev = getVersion(queue);
-        entry = [prev, user, queue];
-        state.current.push(entry);
-      }
-      entry.push(...transactions);
-      if (tracker) {
-        transactions.forEach((transaction) => {
-          trackers.set(transaction, tracker);
-        });
+    push(transactions: Transaction[]) {
+      if (transactions.length) {
+        let entry = state.current[state.current.length - 1];
+        if (!entry || entry[2] !== queue) {
+          const prev = getUpdatedVersion(queue);
+          entry = [prev, user, queue];
+          state.current.push(entry);
+        }
+        entry.push(...transactions);
       }
       triggerListeners(queue);
     },
@@ -213,13 +245,13 @@ export function createTimeline(options: {
     );
   }
 
-  return {
+  const self = {
     initialize,
     sync,
     getQueue<TE extends TransactionEntry>(name: string) {
       let current = queues.get(name);
       if (!current) {
-        current = createQueue(createActions(name));
+        current = createQueue(createActions(name), trackers);
         queues.set(name, current);
       }
       return current as unknown as Queue<TE>;
@@ -227,6 +259,8 @@ export function createTimeline(options: {
     registerStaleListener,
     isInactive,
   };
+
+  return self;
 }
 
 export type Timeline = ReturnType<typeof createTimeline>;

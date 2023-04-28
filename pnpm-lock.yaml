@@ -224,6 +224,7 @@ importers:
       '@sfrpc/server': workspace:*
       '@sfrpc/types': workspace:*
       '@storyflow/auth': workspace:*
+      '@storyflow/collab': workspace:*
       '@storyflow/db-core': workspace:*
       '@storyflow/fields-core': workspace:*
       '@storyflow/result': workspace:*
@@ -253,6 +254,7 @@ importers:
       '@aws-sdk/s3-request-presigner': 3.315.0
       '@sfrpc/server': link:../../rpc/server
       '@storyflow/auth': link:../../utils/auth
+      '@storyflow/collab': link:../../utils/collab
       '@storyflow/db-core': link:../../packages/db-core
       '@storyflow/fields-core': link:../../packages/fields-core
       '@storyflow/result': link:../../utils/result

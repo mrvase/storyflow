@@ -12,7 +12,7 @@ import {
 } from "@storyflow/fields-core/ids";
 import {
   useDocumentCollab,
-  useDocumentMutate,
+  useDocumentPush,
 } from "../documents/collab/DocumentCollabContext";
 import { HomeIcon, LinkIcon, StarIcon } from "@heroicons/react/24/outline";
 import { useAppPageContext } from "../folders/AppPageContext";
@@ -34,6 +34,8 @@ import { usePanel, useRoute } from "../panel-router/Routes";
 import { FieldOperation } from "operations/actions";
 import { useDefaultState } from "./default/useDefaultState";
 import type { FieldProps } from "./types";
+import { FieldTransactionEntry } from "operations/actions_new";
+import { createTransaction } from "@storyflow/collab/utils";
 
 export const toSlug = (value: string) =>
   value
@@ -99,6 +101,7 @@ export default function UrlField({ id, version, history }: FieldProps) {
   const ctx = useAppPageContext();
   const generateDocumentId = useDocumentIdGenerator();
 
+  /*
   React.useLayoutEffect(() => {
     collab
       .getOrAddQueue<FieldOperation>(getDocumentId(id), getRawFieldId(id), {
@@ -106,12 +109,13 @@ export default function UrlField({ id, version, history }: FieldProps) {
       })
       .initialize(version, history ?? []);
   }, [collab, version]);
+  */
 
   const { value } = useDefaultState(id, version);
 
   const url = getUrlStringFromValue(value);
 
-  const actions = useDocumentMutate<FieldOperation>(
+  const push = useDocumentPush<FieldTransactionEntry>(
     documentId,
     getRawFieldId(id)
   );
@@ -121,42 +125,39 @@ export default function UrlField({ id, version, history }: FieldProps) {
 
   const handleChange = (value: string) => {
     if (value === "") {
-      actions.push([
-        "",
-        [
-          {
+      push(
+        createTransaction((t) =>
+          t.target(id).splice({
             index: 3,
             insert: [{ ",": true }, ""],
             remove: slug.length + 1,
-          },
-        ],
-      ]);
+          })
+        )
+      );
       return;
     }
     if (value === "*") {
-      actions.push([
-        "",
-        [
-          {
+      push(
+        createTransaction((t) =>
+          t.target(id).splice({
             index: 4,
             insert: [{ x: 0, value: "*" }],
             remove: slug.length,
-          },
-        ],
-      ]);
+          })
+        )
+      );
       return;
     }
     const newSlug = toSlug(value);
-    actions.push([
-      "",
-      [
-        {
+    push(
+      createTransaction((t) =>
+        t.target(id).splice({
           index: 4,
           insert: [newSlug],
           remove: slug.length,
-        },
-      ],
-    ]);
+        })
+      )
+    );
   };
 
   const [values, setValues] = useGlobalContext(getDocumentId(id), {
@@ -182,16 +183,15 @@ export default function UrlField({ id, version, history }: FieldProps) {
           field: externalId as FieldId,
           inline: true,
         };
-        actions.push([
-          "",
-          [
-            {
+        push(
+          createTransaction((t) =>
+            t.target(id).splice({
               index: 0,
               insert: [parentField, { ",": true }],
               remove: 2,
-            },
-          ],
-        ]);
+            })
+          )
+        );
       });
     }
   }, [isFocused]);

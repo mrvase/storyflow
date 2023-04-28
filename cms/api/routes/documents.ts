@@ -449,7 +449,8 @@ export const documents = createRoute({
         .map((el) => el.values[fields[1]][0] as string);
 
       const docsFiltered = docs.reduce((acc: DBDocumentRaw[], el) => {
-        const url = el.values[fields[1]][0] as string;
+        const url = el.values[fields[1]]?.[0] as string | undefined;
+        if (!url) return acc;
         const shouldUpdate =
           fields.some((field) => el.updated[field] > lastBuildCounter) ||
           layoutUpdates.some((el) => url.startsWith(el));
