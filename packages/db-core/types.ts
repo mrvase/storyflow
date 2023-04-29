@@ -14,6 +14,7 @@ import {
   Nested,
   NestedDocumentId,
   RawFieldId,
+  RawFolderId,
   Value,
   ValueArray,
 } from "@storyflow/shared/types";
@@ -154,3 +155,5 @@ export interface DBFolder {
   domains?: string[];
   versions?: Record<"config" | SpaceId, number>;
 }
+
+export type DBFolderRecord = Record<RawFolderId, DBFolder>;

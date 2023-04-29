@@ -9,7 +9,7 @@ import type {
   TemplateRef,
   DocumentConfig,
 } from "@storyflow/db-core/types";
-import { useDocumentCollab, useDocumentPush } from "./DocumentCollabContext";
+import { useCollab, usePush } from "../../collab/CollabContext";
 import { getFieldConfig, setFieldConfig } from "operations/field-config";
 import { createPurger, createStaticStore } from "../../state/StaticStore";
 import { useDocument } from "..";
@@ -21,14 +21,13 @@ import {
   revertTemplateFieldId,
 } from "@storyflow/fields-core/ids";
 import {
-  createCollaborativeState,
+  useCollaborativeState,
   initializeTimeline,
-} from "./createCollaborativeState";
+} from "../../collab/createCollaborativeState";
 import { QueueListenerParam } from "@storyflow/collab/Queue";
 import { useTemplatePath } from "../TemplatePathContext";
 import { DocumentTransactionEntry } from "operations/actions_new";
 import { TimelineEntry } from "@storyflow/collab/types";
-import { createDocumentTransformer } from "operations/apply";
 import { isSpliceOperation, isToggleOperation } from "@storyflow/collab/utils";
 
 /*
@@ -67,8 +66,6 @@ export const useDocumentConfig = (
   let refreshOnStale = React.useCallback(() => {
     mutate();
   }, [mutate]);
-
-  const collab = useDocumentCollab();
 
   const operator = React.useCallback(
     ({ forEach }: QueueListenerParam<DocumentTransactionEntry>) => {
@@ -136,27 +133,25 @@ export const useDocumentConfig = (
   );
 
   initializeTimeline(
-    collab,
+    templateId,
     {
-      id: templateId,
       timeline: data.timeline,
       versions: data.versions,
-      transform: createDocumentTransformer(data.record),
+      initialData: data.record,
     },
     {
       onStale: refreshOnStale,
     }
   );
 
-  const state = createCollaborativeState(
-    collab,
+  const state = useCollaborativeState(
     (callback) => configs.useKey(templateId, callback),
     operator,
     {
       timeline: data.timeline,
       version: data.versions.config ?? 0,
-      document: templateId,
-      key: "config",
+      timelineId: templateId,
+      queueId: "config",
     }
   );
 
@@ -220,7 +215,7 @@ export function useFieldConfig(
     );
   }
 
-  const push = useDocumentPush<DocumentTransactionEntry>(documentId, "config");
+  const push = usePush<DocumentTransactionEntry>(documentId, "config");
 
   const setter = React.useCallback(
     <Name extends keyof FieldConfig>(

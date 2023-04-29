@@ -1,7 +1,7 @@
 import cl from "clsx";
 import { Menu as HeadlessMenu } from "@headlessui/react";
 import { CheckIcon } from "@heroicons/react/24/outline";
-import { MenuTransition } from "../../elements/transitions/MenuTransition";
+import { MenuTransition } from "./transitions/MenuTransition";
 import React from "react";
 
 function Menu<T extends { label: string; disabled?: boolean }>({

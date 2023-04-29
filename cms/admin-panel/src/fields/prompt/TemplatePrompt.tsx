@@ -16,13 +16,13 @@ import { useClientConfig } from "../../client-config";
 import { $exitPromptNode } from "./utils";
 import { useEditorContext } from "../../editor/react/EditorProvider";
 import { FieldTransactionEntry } from "operations/actions_new";
-import { useDocumentPush } from "../../documents/collab/DocumentCollabContext";
+import { usePush } from "../../collab/CollabContext";
 import { createTransaction } from "@storyflow/collab/utils";
 
 export function TemplatePrompt({ prompt }: { prompt: string }) {
   const fieldId = useFieldId();
 
-  const push = useDocumentPush<FieldTransactionEntry>(
+  const push = usePush<FieldTransactionEntry>(
     getDocumentId(fieldId),
     getRawFieldId(fieldId)
   );

@@ -1,6 +1,6 @@
 import cl from "clsx";
 import React from "react";
-import { Sortable, useSortableItem } from "@storyflow/dnd";
+import { Sortable } from "@storyflow/dnd";
 import { PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { usePanels, usePanelActions } from "../../panel-router/PanelRouter";
 import { Panel } from "./Panel";

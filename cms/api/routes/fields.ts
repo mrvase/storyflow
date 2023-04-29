@@ -4,7 +4,6 @@ import { z } from "zod";
 import type {
   DocumentId,
   FieldId,
-  RawDocumentId,
   RawFieldId,
   ValueArray,
 } from "@storyflow/shared/types";
@@ -45,17 +44,9 @@ import {
 import { createStages, Update } from "../aggregation/stages";
 import util from "util";
 import {
-  ZodServerPackage,
-  ZodDocumentOp,
-  ZodToggle,
-  ZodSplice,
-} from "../collab-utils/zod";
-import {
   client,
-  getHistoriesFromIds,
   sortHistories,
   resetHistory,
-  modifyValues,
 } from "../collab-utils/redis-client";
 import {
   computeFieldId,
@@ -80,8 +71,11 @@ import {
 } from "operations/actions";
 import { splitTransformsAndRoot } from "@storyflow/fields-core/transform";
 import { createObjectId } from "@storyflow/db-core/mongo";
+import { FieldTransactionEntry } from "operations/actions_new";
+import { TimelineEntry } from "@storyflow/collab/types";
 
 export const fields = createRoute({
+  /*
   sync: createProcedure({
     middleware(ctx) {
       return ctx.use(globals);
@@ -152,6 +146,7 @@ export const fields = createRoute({
       }
     },
   }),
+  */
 
   save: createProcedure({
     middleware(ctx) {
@@ -596,7 +591,7 @@ const updateFieldRecord = (
 const transformField = (
   fieldId: FieldId,
   initialRecord: SyntaxTreeRecord,
-  pkgs: ServerPackage<FieldOperation>[]
+  pkgs: TimelineEntry[]
 ): Record<FieldId, SyntaxTree> => {
   const transformer = createTokenStreamTransformer(fieldId, initialRecord);
 
@@ -608,7 +603,7 @@ const transformField = (
   transformer(pkgs).forEach((pkg) => {
     unwrapServerPackage(pkg).operations.forEach((operation) => {
       const [target] = operation;
-      const id = target === "" ? fieldId : (target as FieldId);
+      const id = target as FieldId;
       if (!(id in updates)) {
         const value = initialRecord[id] ?? DEFAULT_SYNTAX_TREE;
         const [transforms, root] = splitTransformsAndRoot(value);

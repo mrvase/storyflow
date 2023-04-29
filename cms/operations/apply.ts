@@ -6,8 +6,8 @@ import type {
 import type { TokenStream } from "./types";
 import { FieldOperation, isSpliceAction, isToggleAction } from "./actions";
 import { tools } from "./stream-methods";
-import { createSpliceTransformer } from "./splice-transform";
-import { createSpliceTransformer as createSpliceTransformer2 } from "./splice-transform_new";
+import { createSpliceTransformer } from "./splice-transform_old";
+import { createSpliceTransformer as createSpliceTransformer2 } from "./splice-transform";
 import { createTokenStream } from "./parse-token-stream";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
 import { FieldTransactionEntry } from "./actions_new";

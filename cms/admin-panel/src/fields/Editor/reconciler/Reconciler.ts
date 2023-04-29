@@ -1,34 +1,20 @@
-import { QueueListener } from "@storyflow/state";
-import {
-  $getRoot,
-  $getSelection,
-  $isTextNode,
-  $setSelection,
-  LexicalEditor,
-} from "lexical";
+import { $getRoot, $getSelection, $setSelection, LexicalEditor } from "lexical";
 import React from "react";
 import { useClientConfig } from "../../../client-config";
-import $createRangeSelection from "../../../editor/createRangeSelection";
 import {
   INITIALIZATION_TAG,
   useEditorContext,
 } from "../../../editor/react/EditorProvider";
 import { getComputationDiff } from "./getComputationDiff";
 import { tools } from "operations/stream-methods";
-import { applyFieldOperation, applyFieldTransaction } from "operations/apply";
-import {
-  FieldOperation,
-  InferAction,
-  isSpliceAction,
-} from "operations/actions";
-import { createQueueCache } from "../../../state/collab_new";
+import { applyFieldTransaction } from "operations/apply";
+import { createQueueCache } from "../../../collab/createQueueCache";
 import type { TokenStream } from "operations/types";
 import type { LibraryConfig } from "@storyflow/shared/types";
 import {
   $createBlocksFromStream,
   $getComputation,
   $getIndexesFromSelection,
-  $getPointFromIndex,
   $isSelection,
 } from "../transforms";
 import { createDiffOperations } from "./getBlocksDiff";
@@ -37,10 +23,9 @@ import {
   StreamOperation,
   TransformOperation,
 } from "operations/actions_new";
-import { useDocumentCollab } from "../../../documents/collab/DocumentCollabContext";
+import { useCollab } from "../../../collab/CollabContext";
 import { useFieldId } from "../../FieldIdContext";
 import { getDocumentId, getRawFieldId } from "@storyflow/fields-core/ids";
-import { usePanel } from "../../../panel-router/Routes";
 import { isSpliceOperation } from "@storyflow/collab/utils";
 
 const RECONCILIATION_TAG = "reconciliation";
@@ -61,9 +46,7 @@ export function Reconciler({
   const fieldId = useFieldId();
   const { libraries } = useClientConfig();
 
-  const collab = useDocumentCollab();
-
-  const [{ index }] = usePanel();
+  const collab = useCollab();
 
   React.useEffect(() => {
     const queue = collab
@@ -99,8 +82,6 @@ export function Reconciler({
       });
 
       if (!newOps.length) return;
-
-      console.log("NEW OPS", newOps);
 
       editor.update(() => $reconcile(editor, result.stream, libraries), {
         tag: RECONCILIATION_TAG,

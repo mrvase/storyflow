@@ -1,8 +1,7 @@
 import React from "react";
 import Dialog from "../elements/Dialog";
-import type { DBFolder } from "@storyflow/db-core/types";
+import type { DBFolder, SpaceId } from "@storyflow/db-core/types";
 import type { DocumentId } from "@storyflow/shared/types";
-import { useFolderCollab } from "./collab/FolderCollabContext";
 import { useDocumentListMutation } from "../documents";
 import { createTemplateFieldId } from "@storyflow/fields-core/ids";
 import { ComputerDesktopIcon, FolderIcon } from "@heroicons/react/24/outline";
@@ -11,6 +10,12 @@ import { useDocumentIdGenerator, useFolderIdGenerator } from "../id-generator";
 import { DEFAULT_FIELDS } from "@storyflow/fields-core/default-fields";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
 import { insertRootInTransforms } from "@storyflow/fields-core/transform";
+import { usePush } from "../collab/CollabContext";
+import { createTransaction } from "@storyflow/collab/utils";
+import {
+  FolderListTransactionEntry,
+  SpaceTransactionEntry,
+} from "operations/actions_new";
 
 export function AddFolderDialog({
   isOpen,
@@ -21,13 +26,14 @@ export function AddFolderDialog({
   isOpen: boolean;
   close: () => void;
   folderId: string;
-  spaceId: string;
+  spaceId: SpaceId;
 }) {
   const mutateDocuments = useDocumentListMutation();
   const generateFolderId = useFolderIdGenerator();
   const generateDocumentId = useDocumentIdGenerator();
 
-  const collab = useFolderCollab();
+  const pushFolder = usePush<FolderListTransactionEntry>("folders", "");
+  const pushFolderContent = usePush<SpaceTransactionEntry>("folders", folderId);
 
   const onSubmit = React.useCallback(
     async (type: string, data: FormData) => {
@@ -43,16 +49,19 @@ export function AddFolderDialog({
         type: type as "app" | "data",
         spaces: [],
       };
-      collab.mutate("folders", "").push(["", [{ add: folder }]]);
-      collab.mutate("folders", `${folderId}/${spaceId}`).push([
-        "",
-        [
-          {
+      pushFolder(
+        createTransaction((t) =>
+          t.target("").toggle({ name: "add", value: folder })
+        )
+      );
+      pushFolderContent(
+        createTransaction((t) =>
+          t.target(spaceId).splice({
             index: 0,
             insert: [id],
-          },
-        ],
-      ]);
+          })
+        )
+      );
       if (frontId) {
         mutateDocuments({
           folder: id,
@@ -81,7 +90,8 @@ export function AddFolderDialog({
       close();
     },
     [
-      collab,
+      pushFolder,
+      pushFolderContent,
       folderId,
       spaceId,
       generateDocumentId,

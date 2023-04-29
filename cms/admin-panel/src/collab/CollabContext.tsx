@@ -1,7 +1,7 @@
 import React from "react";
-import { useContextWithError } from "../../utils/contextError";
-import { useClient } from "../../client";
-import { createCollaboration } from "../../state/collab_new";
+import { useContextWithError } from "../utils/contextError";
+import { useClient } from "../client";
+import { createCollaboration } from "./collaboration";
 import { Queue } from "@storyflow/collab/Queue";
 import { TransactionEntry } from "@storyflow/collab/types";
 
@@ -9,14 +9,10 @@ export const DocumentCollabContext = React.createContext<ReturnType<
   typeof createCollaboration
 > | null>(null);
 
-export const useDocumentCollab = () =>
+export const useCollab = () =>
   useContextWithError(DocumentCollabContext, "Collab");
 
-export function DocumentCollabProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export function CollabProvider({ children }: { children: React.ReactNode }) {
   const client = useClient();
 
   const collab = React.useMemo(() => {
@@ -34,11 +30,11 @@ export function DocumentCollabProvider({
   );
 }
 
-export function useDocumentPush<TE extends TransactionEntry>(
+export function usePush<TE extends TransactionEntry>(
   document: string,
   key: string
 ) {
-  const collab = useDocumentCollab();
+  const collab = useCollab();
   return React.useCallback(
     (...args: Parameters<Queue<TE>["push"]>) =>
       collab
@@ -48,16 +44,3 @@ export function useDocumentPush<TE extends TransactionEntry>(
     [collab, document, key]
   );
 }
-
-/*
-export function useDocumentMutate<T extends StdOperation<any>>(
-  document: string,
-  key: string
-) {
-  const collab = useDocumentCollab();
-  return React.useMemo(
-    () => collab.mutate<T>(document, key),
-    [collab, document, key]
-  );
-}
-*/

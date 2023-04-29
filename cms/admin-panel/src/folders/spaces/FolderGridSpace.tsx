@@ -5,18 +5,21 @@ import type { SpaceId, FolderSpace } from "@storyflow/db-core/types";
 import type { DragResultAction } from "@storyflow/dnd/types";
 import { FolderItem } from "./Folder";
 import { useFolders, useSpace } from "../collab/hooks";
-import { useFolderCollab } from "../collab/FolderCollabContext";
 import Space from "./Space";
 import {
   EllipsisHorizontalIcon,
   FolderPlusIcon,
   TrashIcon,
-  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import React from "react";
 import { AddFolderDialog } from "../AddFolderDialog";
-import { Menu } from "../../layout/components/Menu";
-import { SpaceItemsAction } from "operations/actions";
+import { Menu } from "../../elements/Menu";
+import { usePush } from "../../collab/CollabContext";
+import { createTransaction } from "@storyflow/collab/utils";
+import {
+  FolderTransactionEntry,
+  SpaceTransactionEntry,
+} from "operations/actions_new";
 
 export function FolderGridSpace({
   spaceId,
@@ -31,17 +34,9 @@ export function FolderGridSpace({
 }) {
   const [dialogIsOpen, setDialogIsOpen] = React.useState<null | string>(null);
 
-  const collab = useFolderCollab();
+  const push = usePush<FolderTransactionEntry>("folders", folderId);
   const handleDelete = () => {
-    collab.mutate("folders", folderId).push([
-      "",
-      [
-        {
-          index,
-          remove: 1,
-        },
-      ],
-    ]);
+    push(createTransaction((t) => t.target("").splice({ index, remove: 1 })));
   };
 
   return (
@@ -93,17 +88,15 @@ function FolderGrid({
 
   const folders = useFolders();
 
-  const collab = useFolderCollab();
+  const push = usePush<SpaceTransactionEntry>("folders", folderId);
 
   const folderItems = space.items
     .filter(Boolean)
     .map((id) => (folders ?? []).find((folder) => folder._id === id)!);
 
-  console.log("FOLDERS", folders, space.items, folderItems);
-
   const onChange = React.useCallback(
     (actions: DragResultAction[]) => {
-      const ops: SpaceItemsAction[] = actions.map((action) => {
+      const ops = actions.map((action) => {
         if (action.type === "add") {
           return {
             index: action.index,
@@ -116,9 +109,9 @@ function FolderGrid({
           };
         }
       });
-      collab.mutate("folders", `${folderId}/${spaceId}`).push(["", ops]);
+      push(createTransaction((t) => t.target(spaceId).splice(...ops)));
     },
-    [collab, folderId, spaceId]
+    [push, folderId, spaceId]
   );
 
   return (

@@ -10,10 +10,7 @@ import {
   getDocumentId,
   getRawFieldId,
 } from "@storyflow/fields-core/ids";
-import {
-  useDocumentCollab,
-  useDocumentPush,
-} from "../documents/collab/DocumentCollabContext";
+import { usePush } from "../collab/CollabContext";
 import { HomeIcon, LinkIcon, StarIcon } from "@heroicons/react/24/outline";
 import { useAppPageContext } from "../folders/AppPageContext";
 import { Link } from "@storyflow/router";
@@ -31,7 +28,6 @@ import {
 } from "@storyflow/fields-core/default-fields";
 import { useDocumentIdGenerator } from "../id-generator";
 import { usePanel, useRoute } from "../panel-router/Routes";
-import { FieldOperation } from "operations/actions";
 import { useDefaultState } from "./default/useDefaultState";
 import type { FieldProps } from "./types";
 import { FieldTransactionEntry } from "operations/actions_new";
@@ -76,11 +72,11 @@ const useRelatedPages = (documentId: DocumentId, initialUrl: string) => {
 
   const parents = slugs.map((_, i, arr) => {
     const path = `/${arr.slice(1, i + 1).join("/")}`;
-    return list?.documents.find((el) => getUrl(el) === path);
+    return list?.find((el) => getUrl(el) === path);
   });
 
   const children =
-    list?.documents.filter((el) => {
+    list?.filter((el) => {
       // "|| null" excludes the front page from being included among its on children
       const url = getUrl(el);
       if (url === "/") return false;
@@ -90,11 +86,9 @@ const useRelatedPages = (documentId: DocumentId, initialUrl: string) => {
   return [parents, children] as [DBDocument[], DBDocument[]];
 };
 
-export default function UrlField({ id, version, history }: FieldProps) {
+export default function UrlField({ id, version }: FieldProps) {
   const documentId = getDocumentId(id) as DocumentId;
   const { record } = useDocumentPageContext();
-  const client = useClient();
-  const collab = useDocumentCollab();
 
   const [isFocused, setIsFocused] = React.useState(false);
 
@@ -115,10 +109,7 @@ export default function UrlField({ id, version, history }: FieldProps) {
 
   const url = getUrlStringFromValue(value);
 
-  const push = useDocumentPush<FieldTransactionEntry>(
-    documentId,
-    getRawFieldId(id)
-  );
+  const push = usePush<FieldTransactionEntry>(documentId, getRawFieldId(id));
 
   const parentUrl = url.split("/").slice(0, -1).join("/");
   const slug = url.split("/").slice(-1)[0];

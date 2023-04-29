@@ -1,14 +1,10 @@
 import React from "react";
 import cl from "clsx";
 import type { FieldId } from "@storyflow/shared/types";
-import type { TokenStream } from "operations/types";
 import { getDocumentId, getRawFieldId } from "@storyflow/fields-core/ids";
 import { useFieldId } from "../FieldIdContext";
 import { createTokenStream } from "operations/parse-token-stream";
-import {
-  useDocumentCollab,
-  useDocumentPush,
-} from "../../documents/collab/DocumentCollabContext";
+import { usePush } from "../../collab/CollabContext";
 import { ContentEditable } from "../../editor/react/ContentEditable";
 import Editor from "../Editor/Editor";
 import { getPreview } from "./getPreview";
@@ -104,7 +100,7 @@ export function DefaultField({
 
   const tracker = React.useMemo(() => ({}), []);
 
-  const push = useDocumentPush<FieldTransactionEntry>(
+  const push = usePush<FieldTransactionEntry>(
     getDocumentId(rootId),
     getRawFieldId(rootId)
   );

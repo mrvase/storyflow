@@ -94,12 +94,9 @@ export async function fetchDocumentList(
   const result = unwrap(
     await client.documents.getList.query(params, {
       cachePreload: (result, preload) => {
-        result.documents.forEach((doc) => {
+        result.forEach((doc) => {
           preload(["get", doc._id], () => {
-            return {
-              doc,
-              histories: result.historiesRecord[doc._id],
-            };
+            return doc;
           });
         });
       },
@@ -133,12 +130,9 @@ export function useDocumentList(
       inactive: typeof arg === "undefined",
       immutable: true,
       cachePreload: (result, preload) => {
-        result.documents.forEach((doc) => {
+        result.forEach((doc) => {
           preload(["get", doc._id], () => {
-            return {
-              doc,
-              histories: result.historiesRecord[doc._id],
-            };
+            return doc;
           });
         });
       },
@@ -179,7 +173,7 @@ export function useOptimisticDocumentList(folderId: FolderId | undefined) {
         (acc, { actions }) => [...acc, ...actions],
         [] as DocumentListMutation[]
       );
-    return optimisticUpdate(data.documents, folderId, actions);
+    return optimisticUpdate(data, folderId, actions);
   }, [folderId, data, operations]);
 
   return { documents, error };
@@ -211,7 +205,7 @@ export async function fetchDocument(
   }
 
   const result = await client.documents.get.query(id);
-  return unwrap(result)?.doc;
+  return unwrap(result);
 }
 
 export function fetchDocumentSync(
@@ -237,7 +231,7 @@ export function fetchDocumentSync(
       },
     };
   }
-  const result = client.documents.get.query(id).then((res) => unwrap(res)?.doc);
+  const result = client.documents.get.query(id).then((res) => unwrap(res));
   return result;
 }
 
@@ -319,7 +313,6 @@ export function useDocument(
     return React.useMemo(
       () => ({
         doc: defaultTemplate as DBDocument,
-        histories: {},
         timeline: [],
         mutate: () => {},
         error: undefined,
@@ -361,15 +354,14 @@ export function useDocument(
 
   const doc = React.useMemo(() => {
     if (!documentId) return undefined;
-    if (data?.doc) {
-      return data.doc;
+    if (data) {
+      return data;
     }
     return initialDocument;
   }, [documentId, data, initialDocument]);
 
   return {
     doc,
-    histories: data?.histories ?? {},
     timeline: timeline ?? emptyTimeline,
     mutate,
     error: initialDocument ? undefined : error,
@@ -397,16 +389,9 @@ export const useDocumentListMutation = () => {
             return ps;
           }
 
-          const documents = optimisticUpdate(
-            ps.documents,
-            folder as FolderId,
-            actions
-          );
+          const documents = optimisticUpdate(ps, folder as FolderId, actions);
 
-          return {
-            ...ps,
-            documents,
-          };
+          return documents;
         });
       });
     },
@@ -424,24 +409,16 @@ export const useSaveDocument = (folder: FolderId) => {
         if (!result) {
           return ps;
         }
-        const index = ps.documents.findIndex((el) => el._id === id);
-        const newDocuments = [...ps.documents];
+        const index = ps.findIndex((el) => el._id === id);
+        const newDocuments = [...ps];
         newDocuments[index] = { ...newDocuments[index], ...result };
-        return {
-          ...ps,
-          documents: newDocuments,
-        };
+        return newDocuments;
       });
       mutate(["documents/get", id], (ps, result) => {
         if (!result) {
           return ps;
         }
-        console.log("RESULT", id, result);
-        return {
-          ...ps,
-          doc: result,
-          histories: {},
-        };
+        return result;
       });
     },
   });

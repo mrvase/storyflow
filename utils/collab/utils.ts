@@ -133,7 +133,7 @@ export const createTransaction = <
   callback: (t: EntryCreator<TE, Target>) => EntryCreator<TE, Target>
 ): Transaction<TE> => {
   const entries: Record<string, any> = [];
-  let currentTarget: string | undefined = undefined;
+  let currentTarget: string | undefined;
 
   const obj: EntryCreator<TE, Target> = {
     target<NewTarget extends string>(target: NewTarget) {
@@ -141,7 +141,7 @@ export const createTransaction = <
       return this;
     },
     splice(...ops_) {
-      if (!currentTarget) {
+      if (currentTarget === undefined) {
         throw new Error("No target specified.");
       }
       const ops = ops_.filter(
@@ -162,7 +162,7 @@ export const createTransaction = <
       return this;
     },
     toggle(...ops_) {
-      if (!currentTarget) {
+      if (currentTarget === undefined) {
         throw new Error("No target specified.");
       }
       const ops = ops_.filter(

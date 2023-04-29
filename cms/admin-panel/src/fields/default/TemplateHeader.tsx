@@ -22,10 +22,10 @@ import { useFieldFocus } from "../../field-focus";
 import { Checkbox } from "../../elements/Checkbox";
 import { Range } from "../../elements/Range";
 import { Menu as HeadlessMenu } from "@headlessui/react";
-import { useDocumentPush } from "../../documents/collab/DocumentCollabContext";
+import { usePush } from "../../collab/CollabContext";
 import { FieldOperation } from "operations/actions";
 import { useFieldId } from "../FieldIdContext";
-import { Menu } from "../../layout/components/Menu";
+import { Menu } from "../../elements/Menu";
 import { useTemplateFolder } from "../../folders/FoldersContext";
 import React from "react";
 import { useOptimisticDocumentList } from "../../documents";
@@ -128,7 +128,7 @@ function TransformMenu({
 
   const current = transforms.find((el) => el.type === "fetch");
 
-  const push = useDocumentPush<FieldTransactionEntry>(
+  const push = usePush<FieldTransactionEntry>(
     getDocumentId(rootId),
     getRawFieldId(rootId)
   );
@@ -187,7 +187,7 @@ function TemplateMenu({
 }) {
   const rootId = useFieldId();
 
-  const push = useDocumentPush<FieldTransactionEntry>(
+  const push = usePush<FieldTransactionEntry>(
     getDocumentId(rootId),
     getRawFieldId(rootId)
   );

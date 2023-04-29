@@ -52,7 +52,7 @@ import { parseSegment } from "../layout/components/parseSegment";
 import { splitStreamByBlocks } from "./Editor/transforms";
 import { VersionProvider } from "./default/VersionContext";
 import { extendPath } from "../utils/extendPath";
-import { useDocumentPush } from "../documents/collab/DocumentCollabContext";
+import { usePush } from "../collab/CollabContext";
 import { FieldTransactionEntry } from "operations/actions_new";
 import { Transaction } from "@storyflow/collab/types";
 import { createTransaction } from "@storyflow/collab/utils";
@@ -358,10 +358,7 @@ export function FieldPage({ children }: { children?: React.ReactNode }) {
 
   const rendered = useBuilderRendered({ listeners });
 
-  const push = useDocumentPush<FieldTransactionEntry>(
-    documentId,
-    templateFieldId
-  );
+  const push = usePush<FieldTransactionEntry>(documentId, templateFieldId);
 
   const { versions } = useDocumentPageContext();
 

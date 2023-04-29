@@ -16,13 +16,13 @@ import {
   parseTokenStream,
 } from "operations/parse-token-stream";
 import { useClient } from "../../client";
-import { useDocumentCollab } from "../../documents/collab/DocumentCollabContext";
+import { useCollab } from "../../collab/CollabContext";
 import { useFieldConfig } from "../../documents/collab/hooks";
 import { useSingular } from "../../state/useSingular";
 import { calculateFn } from "./calculateFn";
 import { splitTransformsAndRoot } from "@storyflow/fields-core/transform";
-import { applyFieldOperation, applyFieldTransaction } from "operations/apply";
-import { createQueueCache } from "../../state/collab_new";
+import { applyFieldTransaction } from "operations/apply";
+import { createQueueCache } from "../../collab/createQueueCache";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
 import { FieldTransactionEntry } from "operations/actions_new";
 
@@ -87,7 +87,7 @@ export function useDefaultState(id: FieldId, version: number) {
 
   const { initialValue, tree, value, setState } = useDefaultStateCore(id);
 
-  const collab = useDocumentCollab();
+  const collab = useCollab();
 
   const target = id;
   const singular = useSingular(id);

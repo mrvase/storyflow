@@ -1,53 +1,52 @@
-import {
-  createServerPackage,
-  ServerPackage,
-  unwrapServerPackage,
-} from "@storyflow/state";
 import { describe, expect, it } from "vitest";
 import { createSpliceTransformer } from "../splice-transform";
 import { tools } from "../stream-methods";
 import { FieldOperation, SpliceAction, StdOperation } from "../actions";
 import { TokenStream } from "../types";
+import { SpliceOperation, TimelineEntry } from "@storyflow/collab/types";
 
 const createTransformer = (initialValue: TokenStream) => {
   const getInitialLength = (target: string) => initialValue.length;
-  return createSpliceTransformer<FieldOperation>(
-    getInitialLength,
-    (target, value) => tools.getLength(value)
+  return createSpliceTransformer(getInitialLength, (target, value) =>
+    tools.getLength(value)
   );
 };
 
-const createPackage = (
+const createTimelineEntry = (
   index: number,
   clientId: string,
-  ...actions: SpliceAction<TokenStream[number]>[][]
-): ServerPackage<FieldOperation> => {
-  return createServerPackage({
-    key: "",
-    clientId,
+  ...transactions: SpliceOperation<TokenStream[number]>[][]
+): TimelineEntry => {
+  return [
     index,
-    operations: actions.map((ops) => ["", ops]),
-  });
+    clientId,
+    "",
+    ...transactions.map((operations) => {
+      return [["", operations] as [string, typeof operations]];
+    }),
+  ];
 };
 
 const getStringCreator =
-  (initialValue: string[]) => (packages: ServerPackage<any>[]) => {
+  (initialValue: string[]) => (packages: TimelineEntry[]) => {
     const newValue = initialValue.map((el) => el.split("")).flat(1);
     packages.forEach((pkg) => {
-      const { operations } = unwrapServerPackage(pkg);
+      const [, , , ...transactions] = pkg;
       let removed: any[] = [];
-      operations.forEach(([, ops]) => {
-        ops.forEach((el: SpliceAction<string>) => {
-          let insert = [...(el.insert ?? [])];
-          if (!el.insert && !el.remove) {
-            insert = removed;
-          }
-          const currentlyRemoved = newValue.splice(
-            el.index,
-            el.remove ?? 0,
-            ...insert.map((el) => el.split("")).flat(1)
-          );
-          removed.push(...currentlyRemoved);
+      transactions.forEach((transaction) => {
+        transaction.forEach(([, ops]) => {
+          (ops as SpliceOperation<string>[]).forEach((el) => {
+            let [index, remove, insert = []] = el;
+            if (!insert.length && !remove) {
+              insert = removed;
+            }
+            const currentlyRemoved = newValue.splice(
+              index,
+              remove ?? 0,
+              ...insert.map((el) => el.split("")).flat(1)
+            );
+            removed.push(...currentlyRemoved);
+          });
         });
       });
     });
@@ -56,15 +55,9 @@ const getStringCreator =
 
 describe("transformer", () => {
   it("should not transform packages from different clients that know of each other", () => {
-    const word1 = createPackage(0, "a", [
-      { index: 0, insert: ["hej"], remove: 0 },
-    ]);
-    const word2 = createPackage(1, "b", [
-      { index: 3, insert: [" med"], remove: 0 },
-    ]);
-    const word3 = createPackage(2, "c", [
-      { index: 7, insert: [" dig"], remove: 0 },
-    ]);
+    const word1 = createTimelineEntry(0, "a", [[0, 0, ["hej"]]]);
+    const word2 = createTimelineEntry(1, "b", [[3, 0, [" med"]]]);
+    const word3 = createTimelineEntry(2, "c", [[7, 0, [" dig"]]]);
 
     const initialValue = [""];
     const transform = createTransformer(initialValue);
@@ -76,17 +69,15 @@ describe("transformer", () => {
     expect(createString(result)).toBe("hej med dig");
   });
   it("does transform when external package is unknowingly inserted in between another client's packages", () => {
-    const word1 = createPackage(0, "a", [
-      { index: 0, insert: ["hej"], remove: 0 },
-    ]);
-    const word2 = createPackage(1, "a", [
-      { index: 3, insert: [" med"], remove: 0 },
-      { index: 7, insert: [" dig"], remove: 0 },
+    const word1 = createTimelineEntry(0, "a", [[0, 0, ["hej"]]]);
+    const word2 = createTimelineEntry(1, "a", [
+      [3, 0, [" med"]],
+      [7, 0, [" dig"]],
     ]);
 
-    const word4 = createPackage(1, "b", [
-      { index: 3, insert: [" eller"], remove: 0 },
-      { index: 9, insert: [" goddag"], remove: 0 },
+    const word4 = createTimelineEntry(1, "b", [
+      [3, 0, [" eller"]],
+      [9, 0, [" goddag"]],
     ]);
 
     const initialValue = [""];
@@ -105,17 +96,15 @@ describe("transformer", () => {
     );
   });
   it("does transform correctly with the above reversed", () => {
-    const word1 = createPackage(0, "a", [
-      { index: 0, insert: ["hej"], remove: 0 },
-    ]);
-    const word2 = createPackage(1, "a", [
-      { index: 3, insert: [" med"], remove: 0 },
-      { index: 7, insert: [" dig"], remove: 0 },
+    const word1 = createTimelineEntry(0, "a", [[0, 0, ["hej"]]]);
+    const word2 = createTimelineEntry(1, "a", [
+      [3, 0, [" med"]],
+      [7, 0, [" dig"]],
     ]);
 
-    const word4 = createPackage(1, "b", [
-      { index: 3, insert: [" eller"], remove: 0 },
-      { index: 9, insert: [" goddag"], remove: 0 },
+    const word4 = createTimelineEntry(1, "b", [
+      [3, 0, [" eller"]],
+      [9, 0, [" goddag"]],
     ]);
 
     const initialValue = [""];
@@ -128,17 +117,15 @@ describe("transformer", () => {
   });
 
   it("removes word correctly", () => {
-    const word1 = createPackage(0, "a", [
-      { index: 0, insert: ["hej"], remove: 0 },
-      { index: 3, insert: [" med"], remove: 0 },
-      { index: 7, insert: [" dig"], remove: 0 },
+    const word1 = createTimelineEntry(0, "a", [
+      [0, 0, ["hej"]],
+      [3, 0, [" med"]],
+      [7, 0, [" dig"]],
     ]);
 
-    const word2 = createPackage(1, "a", [
-      { index: 3, insert: [" også"], remove: 0 },
-    ]);
+    const word2 = createTimelineEntry(1, "a", [[3, 0, [" også"]]]);
 
-    const word3 = createPackage(1, "b", [{ index: 3, insert: [], remove: 4 }]);
+    const word3 = createTimelineEntry(1, "b", [[3, 4]]);
 
     const initialValue = [""];
     const transform = createTransformer(initialValue);
@@ -149,16 +136,14 @@ describe("transformer", () => {
   });
 
   it("removes a split word correctly", () => {
-    const word1 = createPackage(0, "a", [
-      { index: 0, insert: ["hej"], remove: 0 },
-      { index: 3, insert: [" med"], remove: 0 },
-      { index: 7, insert: [" dig"], remove: 0 },
+    const word1 = createTimelineEntry(0, "a", [
+      [0, 0, ["hej"]],
+      [3, 0, [" med"]],
+      [7, 0, [" dig"]],
     ]);
-    const word2 = createPackage(1, "a", [{ index: 4, insert: [], remove: 3 }]);
+    const word2 = createTimelineEntry(1, "a", [[4, 3]]);
 
-    const word3 = createPackage(1, "b", [
-      { index: 5, insert: ["bla"], remove: 0 },
-    ]);
+    const word3 = createTimelineEntry(1, "b", [[5, 0, ["bla"]]]);
 
     const initialValue = [""];
     const transform = createTransformer(initialValue);
@@ -166,20 +151,12 @@ describe("transformer", () => {
 
     expect(createString([word1, word3])).toBe("hej mblaed dig");
 
-    expect(
-      unwrapServerPackage(word2)
-        .operations.map(([, ops]) => ops)
-        .flat(1)
-    ).toHaveLength(1);
+    expect(word2[3][0][1]).toHaveLength(1);
 
     transform([word1, word3, word2]);
 
     // now the package is split into two
-    expect(
-      unwrapServerPackage(word2)
-        .operations.map(([, ops]) => ops)
-        .flat(1)
-    ).toHaveLength(2);
+    expect(word2[3][0][1]).toHaveLength(2);
 
     expect(createString([word1, word3, word2])).toBe("hej bla dig");
   });
@@ -189,27 +166,24 @@ describe("transformer", () => {
     const transform = createTransformer(initialValue);
     const createString = getStringCreator(initialValue);
 
-    const word1 = createPackage(0, "a", [
-      { index: 0, insert: ["hej"] },
-      { index: 3, insert: [" med"] },
-      { index: 7, insert: [" dig"] },
+    const word1 = createTimelineEntry(0, "a", [
+      [0, 0, ["hej"]],
+      [3, 0, [" med"]],
+      [7, 0, [" dig"]],
     ]);
-    const word2 = createPackage(1, "a", [
-      { index: 3, remove: 4 },
-      { index: 7, insert: [" med"], remove: 3 },
+    const word2 = createTimelineEntry(1, "a", [
+      [3, 4],
+      [7, 3, [" med"]],
     ]);
 
-    const word3 = createPackage(1, "b", [{ index: 4, remove: 1 }]);
+    const word3 = createTimelineEntry(1, "b", [[4, 1]]);
 
     expect(createString([word1, word2])).toBe("hej dig med");
     expect(createString([word1, word3])).toBe("hej ed dig");
     expect(createString(transform([word1, word2, word3]))).toBe("hej dig med");
 
-    const newWord2 = createPackage(1, "a", [
-      { index: 3, remove: 4 },
-      { index: 7 },
-    ]);
-    const newWord3 = createPackage(1, "b", [{ index: 4, remove: 1 }]);
+    const newWord2 = createTimelineEntry(1, "a", [[3, 4], [7]]);
+    const newWord3 = createTimelineEntry(1, "b", [[4, 1]]);
 
     expect(createString([word1, newWord2])).toBe("hej dig med");
     expect(createString(transform([word1, newWord2, newWord3]))).toBe(
@@ -222,18 +196,13 @@ describe("transformer", () => {
     const transform = createTransformer(initialValue);
     const createString = getStringCreator(initialValue);
 
-    const word1 = createPackage(0, "a", [
-      { index: 0, insert: ["hej"] },
-      { index: 3, insert: [" med"] },
-      { index: 7, insert: [" dig"] },
+    const word1 = createTimelineEntry(0, "a", [
+      [0, 0, ["hej"]],
+      [3, 0, [" med"]],
+      [7, 0, [" dig"]],
     ]);
-    const word2 = createPackage(1, "a", [
-      { index: 3, remove: 4 },
-      { index: 7 },
-    ]);
-    const word3 = createPackage(1, "b", [
-      { index: 5, insert: ["a"], remove: 1 },
-    ]);
+    const word2 = createTimelineEntry(1, "a", [[3, 4], [7]]);
+    const word3 = createTimelineEntry(1, "b", [[5, 1, ["a"]]]);
 
     expect(createString(transform([word1, word2, word3]))).toBe("hej dig mad");
   });
@@ -243,15 +212,13 @@ describe("transformer", () => {
     const transform = createTransformer(initialValue);
     const createString = getStringCreator(initialValue);
 
-    const word1 = createPackage(0, "a", [
-      { index: 0, insert: ["hej"] },
-      { index: 3, insert: [" med"] },
-      { index: 7, insert: [" dig"] },
+    const word1 = createTimelineEntry(0, "a", [
+      [0, 0, ["hej"]],
+      [3, 0, [" med"]],
+      [7, 0, [" dig"]],
     ]);
-    const word2 = createPackage(1, "a", [{ index: 3, remove: 4 }]);
-    const word3 = createPackage(1, "b", [
-      { index: 5, insert: ["a"], remove: 1 },
-    ]);
+    const word2 = createTimelineEntry(1, "a", [[3, 4]]);
+    const word3 = createTimelineEntry(1, "b", [[5, 1, ["a"]]]);
 
     expect(createString(transform([word1, word2, word3]))).toBe("heja dig");
   });
@@ -261,12 +228,12 @@ describe("transformer", () => {
     const transform = createTransformer(initialValue);
     const createString = getStringCreator(initialValue);
 
-    const word1 = createPackage(0, "a", [
-      { index: 0, insert: ["a"] },
-      { index: 0, remove: 1 },
-      { index: 0, insert: ["a"] },
+    const word1 = createTimelineEntry(0, "a", [
+      [0, 0, ["a"]],
+      [0, 1],
+      [0, 0, ["a"]],
     ]);
-    const word2 = createPackage(0, "a", [{ index: 0, remove: 1 }]);
+    const word2 = createTimelineEntry(0, "a", [[0, 1]]);
 
     expect(createString(transform([word1, word2]))).toBe("");
   });
@@ -282,19 +249,9 @@ describe("transformer", () => {
     const transform = createTransformer(initialValue);
     const createString = getStringCreator(initialValue);
 
-    const word3 = createPackage(
-      0,
-      "a",
-      [{ index: 0, insert: ["a"] }],
-      [{ index: 0, remove: 1 }]
-    );
-    const word4 = createPackage(0, "b", [{ index: 0, insert: ["b"] }]);
-    const word5 = createPackage(
-      0,
-      "a",
-      [{ index: 0, insert: ["a"] }],
-      [{ index: 0, remove: 1 }]
-    );
+    const word3 = createTimelineEntry(0, "a", [[0, 0, ["a"]]], [[0, 1]]);
+    const word4 = createTimelineEntry(0, "b", [[0, 0, ["b"]]]);
+    const word5 = createTimelineEntry(0, "a", [[0, 0, ["a"]]], [[0, 1]]);
 
     expect(createString(transform([word3, word4, word5]))).toBe("b");
   });
@@ -309,16 +266,9 @@ describe("transformer", () => {
     const transform = createTransformer(initialValue);
     const createString = getStringCreator(initialValue);
 
-    const word3 = createPackage(0, "a", [
-      { index: 0, insert: ["jeg heder Martin"] },
-    ]);
-    const word4 = createPackage(1, "b", [{ index: 6, insert: ["d"] }]);
-    const word5 = createPackage(
-      1,
-      "a",
-      [{ index: 3, remove: 6 }],
-      [{ index: 11 }]
-    );
+    const word3 = createTimelineEntry(0, "a", [[0, 0, ["jeg heder Martin"]]]);
+    const word4 = createTimelineEntry(1, "b", [[6, 0, ["d"]]]);
+    const word5 = createTimelineEntry(1, "a", [[3, 6]], [[11]]);
 
     expect(createString(transform([word3, word4, word5]))).toBe(
       "jegd Martin heder"

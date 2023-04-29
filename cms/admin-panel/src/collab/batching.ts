@@ -1,44 +1,13 @@
 import { isError, Result, unwrap } from "@storyflow/result";
-import type { Timeline } from "./Timeline";
-import type { TimelineEntry } from "./types";
-import { clone } from "./clone_debug";
+import type { Timeline } from "@storyflow/collab/Timeline";
+import type { TimelineEntry } from "@storyflow/collab/types";
 
-export function createTimelineMap() {
-  const timelines = new Map<string, Timeline>();
-
-  return {
-    get: (id: string) => {
-      const timeline = timelines.get(id);
-      return timeline;
-    },
-    set: (id: string, timeline: Timeline) => {
-      timelines.set(id, timeline);
-    },
-    delete: (id: string) => {
+export function purgeTimelines(timelines: Map<string, Timeline>) {
+  Array.from(timelines.entries()).forEach(([id, timeline]) => {
+    if (timeline.isInactive()) {
       timelines.delete(id);
-    },
-    syncEach: (
-      callback: (
-        pkg: TimelineEntry[],
-        state: { startId: string | null; length: number },
-        id: string
-      ) => Promise<
-        | { status: "success" | "stale"; updates: TimelineEntry[] }
-        | { status: "error" }
-      >
-    ) => {
-      timelines.forEach((timeline, id) =>
-        timeline.sync((entries, state) => callback(entries, state, id))
-      );
-    },
-    purge: () => {
-      Array.from(timelines.entries()).forEach(([id, timeline]) => {
-        if (timeline.isInactive()) {
-          timelines.delete(id);
-        }
-      });
-    },
-  };
+    }
+  });
 }
 
 const createPromise = <T>() => {
@@ -54,8 +23,8 @@ const createPromise = <T>() => {
   return promise;
 };
 
-export async function syncTimelineMap(
-  timelines: ReturnType<typeof createTimelineMap>,
+export async function batchSyncTimelines(
+  timelines: Map<string, Timeline>,
   mutation: (
     input: Record<
       string,
@@ -97,7 +66,9 @@ export async function syncTimelineMap(
     return promise;
   };
 
-  timelines.syncEach(callback);
+  timelines.forEach((timeline, id) =>
+    timeline.sync((entries, state) => callback(entries, state, id))
+  );
 
   // create input record
 
@@ -111,8 +82,6 @@ export async function syncTimelineMap(
   const result = await mutation(input);
 
   // resolve promises
-
-  console.log("RESULT", clone({ input, result }));
 
   timelineHandlers.forEach(({ id, promise }) => {
     if (isError(result)) {

@@ -12,14 +12,9 @@ import type {
 import type { SyntaxTreeRecord } from "@storyflow/fields-core/types";
 import { clientPromise } from "../mongo/mongoClient";
 import { globals } from "../middleware/globals";
-import { ServerPackage } from "@storyflow/state";
 import { extractRootRecord, getGraph } from "@storyflow/fields-core/graph";
 import { createStages } from "../aggregation/stages";
-import {
-  client,
-  sortHistories,
-  resetHistory,
-} from "../collab-utils/redis-client";
+import { client, resetHistory } from "../collab-utils/redis-client";
 import {
   createRawTemplateFieldId,
   getDocumentId,
@@ -319,26 +314,7 @@ export const documents = createRoute({
         sort,
       });
 
-      const historiesRecord: Record<
-        DocumentId,
-        Record<string, ServerPackage<any>[]>
-      > = Object.fromEntries(
-        await Promise.all(
-          documents.map(async ({ _id }) => {
-            const pkgs = (await client.lrange(
-              `${slug}:${_id}`,
-              0,
-              -1
-            )) as ServerPackage<any>[];
-            return [_id, sortHistories(pkgs)];
-          })
-        )
-      );
-
-      return success({
-        documents: documents,
-        historiesRecord,
-      });
+      return success(documents);
     },
   }),
 
@@ -388,18 +364,7 @@ export const documents = createRoute({
 
       const doc = parseDocument(documentRaw);
 
-      const histories = sortHistories(
-        (await client.lrange(
-          `${slug}:${doc._id}`,
-          0,
-          -1
-        )) as ServerPackage<any>[]
-      );
-
-      return success({
-        doc,
-        histories,
-      });
+      return success(doc);
     },
   }),
 

@@ -1,23 +1,8 @@
 import { createProcedure, createRoute } from "@sfrpc/server";
-import { error, success } from "@storyflow/result";
-import { z } from "zod";
-import type { RawDocumentId } from "@storyflow/shared/types";
+import { success } from "@storyflow/result";
 import type { DBFolder, DBFolderRaw } from "@storyflow/db-core/types";
 import { clientPromise } from "../mongo/mongoClient";
 import { globals } from "../middleware/globals";
-import {
-  ZodDocumentOp,
-  ZodServerPackage,
-  ZodSplice,
-  ZodToggle,
-} from "../collab-utils/zod";
-import {
-  client,
-  getHistoriesFromIds,
-  modifyValues,
-  sortHistories,
-} from "../collab-utils/redis-client";
-import { ServerPackage } from "@storyflow/state";
 import { unwrapObjectId } from "@storyflow/db-core/convert";
 
 export const removeObjectId = <T extends { _id: any }>({
@@ -49,14 +34,11 @@ export const folders = createRoute({
 
       const array: DBFolder[] = folders.map((el) => parseFolder(el));
 
-      const histories = sortHistories(
-        (await client.lrange(`${slug}:folders`, 0, -1)) as ServerPackage<any>[]
-      );
-
-      return success({ folders: array, histories });
+      return success(array);
     },
   }),
 
+  /*
   sync: createProcedure({
     middleware(ctx) {
       return ctx.use(globals);
@@ -127,4 +109,5 @@ export const folders = createRoute({
       }
     },
   }),
+  */
 });

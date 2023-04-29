@@ -1,27 +1,11 @@
-import React from "react";
-import { createTokenStreamTransformer } from "operations/apply";
-import { useDocumentPageContext } from "../../documents/DocumentPageContext";
-import { getDocumentId, getRawFieldId } from "@storyflow/fields-core/ids";
-import { useDocumentCollab } from "../../documents/collab/DocumentCollabContext";
 import { DefaultField } from "./DefaultField";
 import { PreloadFieldState } from "./PreloadFieldState";
 import { useAttributesContext } from "../Attributes";
 import { ExtendPath } from "../Path";
-import { FieldOperation } from "operations/actions";
 import { VersionProvider } from "./VersionContext";
 import type { FieldProps } from "../types";
 
-export function DefaultFieldRoot({ id, version, history }: FieldProps) {
-  /*
-  if (id === "") {
-    return (
-      <div className="text-gray-400 leading-6 pb-5">
-        Intet indhold
-      </div>
-    );
-  }
-  */
-
+export function DefaultFieldRoot({ id, version }: FieldProps) {
   /*
   const collab = useDocumentCollab();
   const { record } = useDocumentPageContext();

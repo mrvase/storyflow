@@ -5,10 +5,8 @@ import type { FieldConfig, FieldUI } from "@storyflow/fields-core/types";
 import { DefaultFieldRoot } from "./default/DefaultFieldRoot";
 import { FieldContainer } from "./FieldContainer";
 import UrlField from "./UrlField";
-import { ServerPackage } from "@storyflow/state";
 import { FieldIdContext } from "./FieldIdContext";
 import { FieldRestrictionsContext } from "./FieldIdContext";
-import { FieldOperation } from "operations/actions";
 import type { FieldProps } from "./types";
 
 const Components: { [K in FieldUI | "default"]: React.FC<FieldProps> } = {
@@ -19,7 +17,6 @@ const Components: { [K in FieldUI | "default"]: React.FC<FieldProps> } = {
 export function RenderField({
   id,
   fieldConfig,
-  history,
   index,
   version,
   dragHandleProps,
@@ -28,7 +25,6 @@ export function RenderField({
   fieldConfig: FieldConfig;
   index: number;
   version: number;
-  history: ServerPackage<FieldOperation>[];
   dragHandleProps?: any;
 }) {
   const Component = Components[fieldConfig.ui ?? "default"];
@@ -47,7 +43,6 @@ export function RenderField({
                 id,
                 fieldConfig,
                 version,
-                history,
               }}
             />
           </NoList>

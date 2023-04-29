@@ -4,16 +4,14 @@ import type { DBFolder, Space, SpaceId } from "@storyflow/db-core/types";
 import { createStaticStore } from "../../state/StaticStore";
 import { useInitialFolders } from "../FoldersContext";
 import { createReactSubject } from "../../state/useSubject";
-import { QueueListenerParam } from "@storyflow/state/collab/Queue";
-import { createCollaborativeState } from "../../state/createCollaborativeState";
-import { useFolderCollab } from "./FolderCollabContext";
+import { QueueListenerParam } from "@storyflow/collab/Queue";
+import { useCollaborativeState } from "../../collab/createCollaborativeState";
 import {
-  FolderListOperation,
-  FolderOperation,
-  SpaceOperation,
-  isSpliceAction,
-  isToggleAction,
-} from "operations/actions";
+  FolderListTransactionEntry,
+  FolderTransactionEntry,
+  SpaceTransactionEntry,
+} from "operations/actions_new";
+import { isSpliceOperation, isToggleOperation } from "@storyflow/collab/utils";
 
 const useFoldersSubject = createReactSubject<DBFolder[]>();
 
@@ -46,83 +44,88 @@ export const useFolderPaths = () => {
 };
 
 export function useFolders() {
-  const { folders: initialFolders, histories } = useInitialFolders();
+  const { folders: initialFolders, timeline } = useInitialFolders();
 
   const version = initialFolders.length;
-  const history = histories[""] ?? [];
+
+  console.log("HERE", initialFolders, timeline);
 
   const operator = React.useCallback(
-    ({ forEach }: QueueListenerParam<FolderListOperation>) => {
+    ({ forEach }: QueueListenerParam<FolderListTransactionEntry>) => {
       let newArray = [...initialFolders];
 
-      forEach(({ operation }) => {
-        operation[1].forEach((action) => {
-          if (typeof action === "object" && !("add" in action)) {
-            newArray.push(action as any);
-          }
-          if ("add" in action) {
-            newArray.push(action.add);
-          }
+      forEach(({ transaction }) => {
+        transaction.forEach((entry) => {
+          entry[1].forEach((action) => {
+            if (typeof action === "object" && !("add" in action)) {
+              newArray.push(action as any);
+            }
+            if (action[0] === "add") {
+              newArray.push(action[1]);
+            }
+          });
         });
       });
+      console.log("FOR EACH FOLDERS", newArray);
 
       return newArray;
     },
     [initialFolders]
   );
 
-  const collab = useFolderCollab();
-  return createCollaborativeState(collab, useFoldersSubject, operator, {
+  return useCollaborativeState(useFoldersSubject, operator, {
     version,
-    history,
-    document: "folders",
-    key: "",
+    timeline,
+    timelineId: "folders",
+    queueId: "",
   });
 }
 
-export function useFolder(id: FolderId): DBFolder {
-  const { histories } = useInitialFolders();
+export function useFolder(folderId: FolderId): DBFolder {
+  const { timeline } = useInitialFolders();
 
-  const initialFolder = useFolders().find((el) => el._id === id); // support newly added folders
+  const initialFolder = useFolders().find((el) => el._id === folderId); // support newly added folders
 
   if (!initialFolder) {
     throw new Error("Folder not found");
   }
 
   const version = initialFolder.versions?.config ?? 0;
-  const history = histories[id] ?? [];
 
   const operator = React.useCallback(
-    ({ forEach }: QueueListenerParam<FolderOperation>) => {
+    ({ forEach }: QueueListenerParam<FolderTransactionEntry>) => {
       const newFolder = { ...initialFolder };
       newFolder.spaces = [...(newFolder.spaces ?? [])];
 
-      forEach(({ operation }) => {
-        operation[1].forEach((action) => {
-          if (isSpliceAction(action)) {
-            const { index, insert, remove } = action;
-            newFolder.spaces!.splice(index, remove ?? 0, ...(insert ?? []));
-          } else if (isToggleAction(action)) {
-            newFolder[action.name as "label"] = action.value;
+      forEach(({ transaction }) => {
+        transaction.forEach((entry) => {
+          if (entry[0] === "") {
+            entry[1].forEach((operation) => {
+              if (isSpliceOperation(operation)) {
+                const [index, remove, insert] = operation;
+                newFolder.spaces!.splice(index, remove ?? 0, ...(insert ?? []));
+              } else if (isToggleOperation(operation)) {
+                newFolder[operation[0] as "label"] = operation[1] as string;
+              }
+            });
           }
         });
       });
+      console.log("FOR EACH FOLDER", newFolder);
 
       return newFolder;
     },
     [initialFolder]
   );
 
-  const collab = useFolderCollab();
-  return createCollaborativeState(
-    collab,
-    (callback) => folders.useKey(id, callback),
+  return useCollaborativeState(
+    (callback) => folders.useKey(folderId, callback),
     operator,
     {
       version,
-      history,
-      document: "folders",
-      key: id,
+      timeline,
+      timelineId: "folders",
+      queueId: folderId,
     }
   );
 }
@@ -134,7 +137,7 @@ export function useSpace<T extends Space>({
   folderId: FolderId;
   spaceId: SpaceId;
 }): T {
-  const { histories } = useInitialFolders();
+  const { timeline } = useInitialFolders();
 
   const folder = useFolder(folderId);
 
@@ -150,41 +153,47 @@ export function useSpace<T extends Space>({
     throw new Error("Folder does not exist");
   }
 
-  const key = `${folderId}/${spaceId}`;
-
-  const history = histories?.[key] ?? [];
   const version = folder?.versions?.[spaceId] ?? 0;
 
+  console.log("SPACE", spaceId);
+
   const operator = React.useCallback(
-    ({ forEach }: QueueListenerParam<SpaceOperation>) => {
+    ({ forEach }: QueueListenerParam<SpaceTransactionEntry>) => {
       const newSpace = { ...initialSpace };
       if ("items" in newSpace) {
         newSpace.items = [...newSpace.items];
 
-        forEach(({ operation }) => {
-          operation[1].forEach((action) => {
-            if (isSpliceAction(action)) {
-              const { index, insert, remove } = action;
-              newSpace.items.splice(index, remove ?? 0, ...(insert ?? []));
+        forEach(({ transaction }) => {
+          console.log("TRANSACTION", transaction);
+          transaction.forEach((entry) => {
+            if (entry[0] === spaceId) {
+              entry[1].forEach((operation) => {
+                console.log("OPERATION", operation);
+                if (isSpliceOperation(operation)) {
+                  const [index, remove, insert] = operation;
+                  newSpace.items.splice(index, remove ?? 0, ...(insert ?? []));
+                }
+              });
             }
           });
         });
+
+        console.log("FOR EACH SPACE", newSpace);
       }
       return newSpace;
     },
-    [initialSpace]
+    [initialSpace, spaceId]
   );
 
-  const collab = useFolderCollab();
-  return createCollaborativeState(
-    collab,
-    (callback) => spaces.useKey(key, callback),
+  return useCollaborativeState(
+    (callback) => spaces.useKey(spaceId, callback),
     operator,
     {
       version,
-      history,
-      document: "folders",
-      key,
+      timeline,
+      timelineId: "folders",
+      queueId: folderId,
+      target: spaceId,
     }
   );
 }

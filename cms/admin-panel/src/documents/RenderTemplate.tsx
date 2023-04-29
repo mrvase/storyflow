@@ -14,19 +14,10 @@ import type {
 import type { SyntaxTree } from "@storyflow/fields-core/types";
 import { getTranslateDragEffect } from "../utils/dragEffects";
 import { RenderField } from "../fields/RenderField";
-import {
-  useDocumentCollab,
-  useDocumentPush,
-} from "./collab/DocumentCollabContext";
-import { ServerPackage } from "@storyflow/state";
+import { useCollab, usePush } from "../collab/CollabContext";
 import { GetDocument } from "./GetDocument";
 import { ExtendTemplatePath } from "./TemplatePathContext";
 import { TopFieldIndexProvider } from "./FieldIndexContext";
-import {
-  DocumentOperation,
-  FieldOperation,
-  StdOperation,
-} from "operations/actions";
 import { useClient } from "../client";
 import { useDocumentIdGenerator } from "../id-generator";
 import { getDefaultValuesFromTemplateAsync } from "./template-fields";
@@ -45,23 +36,21 @@ export function RenderTemplate({
   owner,
   config,
   versions,
-  histories,
   index,
 }: {
   id: DocumentId;
   owner: DocumentId;
   config: DBDocument["config"];
   versions?: DBDocument["versions"];
-  histories: Record<string, ServerPackage<StdOperation>[]>;
   index: number | null;
 }) {
   const isMain = id === owner;
 
   const push = isMain
-    ? useDocumentPush<DocumentTransactionEntry>(owner, "config")
+    ? usePush<DocumentTransactionEntry>(owner, "config")
     : () => {};
 
-  const collab = useDocumentCollab();
+  const collab = useCollab();
 
   const client = useClient();
   const generateDocumentId = useDocumentIdGenerator();
@@ -195,7 +184,6 @@ export function RenderTemplate({
                 id={doc._id}
                 owner={owner}
                 config={doc.config}
-                histories={histories}
                 versions={versions}
                 index={index}
               />
@@ -217,10 +205,6 @@ export function RenderTemplate({
               id: fieldId,
             }}
             version={versions?.[getRawFieldId(fieldId)] ?? 0}
-            history={
-              (histories[getRawFieldId(fieldId)] ??
-                []) as ServerPackage<FieldOperation>[]
-            }
             index={index}
             dragHandleProps={dragHandleProps}
           />

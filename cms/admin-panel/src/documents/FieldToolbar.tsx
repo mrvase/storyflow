@@ -14,12 +14,12 @@ import ReactDOM from "react-dom";
 import { useOptimisticDocumentList } from ".";
 import { useTemplateFolder } from "../folders/FoldersContext";
 import Content from "../layout/components/Content";
-import { useDocumentPush } from "./collab/DocumentCollabContext";
+import { usePush } from "../collab/CollabContext";
 import { useFieldConfig } from "./collab/hooks";
 import { useContextWithError } from "../utils/contextError";
 import { useFieldId } from "../fields/FieldIdContext";
 import { getDocumentId } from "@storyflow/fields-core/ids";
-import { Menu } from "../layout/components/Menu";
+import { Menu } from "../elements/Menu";
 import { useTopFieldIndex } from "./FieldIndexContext";
 import { DocumentTransactionEntry } from "operations/actions_new";
 
@@ -72,7 +72,7 @@ export function FieldToolbar() {
 
   const [config, setConfig] = useFieldConfig(fieldId);
 
-  const push = useDocumentPush<DocumentTransactionEntry>(documentId, "config");
+  const push = usePush<DocumentTransactionEntry>(documentId, "config");
 
   const templateFolder = useTemplateFolder()?._id;
   const { documents: templates } = useOptimisticDocumentList(templateFolder);
@@ -135,7 +135,7 @@ export function FieldToolbar() {
 
 function FieldLabel({ id, label }: { id: FieldId; label: string }) {
   const documentId = getDocumentId(id);
-  const push = useDocumentPush<DocumentTransactionEntry>(documentId, "config");
+  const push = usePush<DocumentTransactionEntry>(documentId, "config");
 
   const onChange = (value: string) => {
     push([[id, [["label", value]]]]);

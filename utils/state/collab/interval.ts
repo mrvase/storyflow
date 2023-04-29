@@ -12,18 +12,26 @@ export function onInterval(
 
   let int: ReturnType<typeof setInterval> | null = null;
 
-  let error = false;
+  // moved throttle in here from calling function
+  let lastSync = 0;
+  function throttle<T>(callback: () => T, time: number): T | undefined {
+    if (Date.now() - lastSync > time) {
+      return callback();
+    }
+    return;
+  }
 
   const run = async (
     event: "start" | "stop" | "interval" | "unload" | "visibilitychange"
   ) => {
-    const result = await callback(event);
-    /*
-    if (result && isError(result)) {
-      error = true;
-      startInterval(); // this might change the condition for the interval
+    if (event === "unload" || event === "visibilitychange") {
+      lastSync = Date.now();
+      return await callback(event);
     }
-    */
+    return await throttle(() => {
+      lastSync = Date.now();
+      return callback(event);
+    }, duration / 2);
   };
 
   const startInterval = async () => {

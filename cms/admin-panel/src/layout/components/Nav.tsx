@@ -10,7 +10,6 @@ import {
   FolderIcon,
   MinusCircleIcon,
   MoonIcon,
-  PencilIcon,
   PhotoIcon,
   PlusIcon,
   SunIcon,
@@ -21,7 +20,7 @@ import { useLocalStorage } from "../../state/useLocalStorage";
 import Dialog from "../../elements/Dialog";
 import { SettingsDialog } from "./SettingsDialog";
 import { usePanelActions } from "../../panel-router/PanelRouter";
-import { useDocumentCollab } from "../../documents/collab/DocumentCollabContext";
+import { useCollab } from "../../collab/CollabContext";
 import { useLocation, useNavigate } from "@storyflow/router";
 import { replacePanelPath } from "../../panel-router/utils";
 import { DropShadow, Sortable } from "@storyflow/dnd";
@@ -359,7 +358,7 @@ function StatusButton() {
     }
   };
 
-  const collab = useDocumentCollab();
+  const collab = useCollab();
 
   React.useEffect(() => {
     return collab.registerEventListener((event) => {

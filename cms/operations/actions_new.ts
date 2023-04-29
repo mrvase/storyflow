@@ -3,11 +3,11 @@ import type {
   ToggleOperation,
   TransactionEntry,
 } from "@storyflow/collab/types";
-import { FieldId, FunctionName } from "@storyflow/shared/types";
+import { DocumentId, FieldId, FunctionName } from "@storyflow/shared/types";
 import { TokenStream } from "./types";
 import { FieldConfig, GetFunctionData } from "@storyflow/fields-core/types";
-import { DocumentConfigItem } from "@storyflow/db-core/types";
-import { createTransaction } from "@storyflow/collab/utils";
+import { DBFolder, DocumentConfigItem, Space } from "@storyflow/db-core/types";
+import { SpaceId } from "@storyflow/db-core/types";
 
 export type StreamOperation = SpliceOperation<TokenStream[number]>;
 
@@ -31,3 +31,24 @@ export type DocumentPropertyOperation = Exclude<
 export type DocumentTransactionEntry =
   | TransactionEntry<"", DocumentSpliceOperation>
   | TransactionEntry<FieldId, DocumentPropertyOperation>;
+
+export type AddFolderOperation = ["add", DBFolder];
+export type DeleteFolderOpertation = ["remove", string];
+export type FolderListTransactionEntry =
+  | TransactionEntry<"", AddFolderOperation>
+  | TransactionEntry<"", DeleteFolderOpertation>;
+
+export type FolderSpacesOperation = SpliceOperation<Space>;
+export type FolderPropertyOperation =
+  | ToggleOperation<"template", DocumentId>
+  | ToggleOperation<"label", string>
+  | ToggleOperation<"domains", string[]>;
+export type FolderTransactionEntry =
+  | TransactionEntry<"", FolderSpacesOperation>
+  | TransactionEntry<"", FolderPropertyOperation>;
+
+export type SpaceItemsOperation = SpliceOperation<string>;
+export type SpacePropertyOperation = ToggleOperation<"label", string>;
+export type SpaceTransactionEntry =
+  | TransactionEntry<SpaceId, SpaceItemsOperation>
+  | TransactionEntry<SpaceId, SpacePropertyOperation>;

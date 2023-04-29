@@ -4,13 +4,15 @@ import {
   useOptimisticDocumentList,
   useDocumentListMutation,
 } from "../documents";
-import { useFolderCollab } from "./collab/FolderCollabContext";
 import { DialogOption } from "../elements/DialogOption";
 import { DocumentDuplicateIcon, PlusIcon } from "@heroicons/react/24/outline";
 import { useTemplateFolder } from "./FoldersContext";
 import { useTemplateIdGenerator } from "../id-generator";
 import type { DocumentId } from "@storyflow/shared/types";
 import { usePanel, useRoute } from "../panel-router/Routes";
+import { usePush } from "../collab/CollabContext";
+import { createTransaction } from "@storyflow/collab/utils";
+import { FolderTransactionEntry } from "operations/actions_new";
 
 export function AddTemplateDialog({
   isOpen,
@@ -28,7 +30,7 @@ export function AddTemplateDialog({
   const [, navigate] = usePanel();
   const route = useRoute();
 
-  const collab = useFolderCollab();
+  const push = usePush<FolderTransactionEntry>("folders", folderId);
 
   const templateFolder = useTemplateFolder()?._id;
 
@@ -37,15 +39,11 @@ export function AddTemplateDialog({
       const label = (data.get("value") as string) ?? "";
       if (!label) return;
       const id = type === "new" ? generateTemplateId() : (label as DocumentId);
-      collab.mutate("folders", folderId).push([
-        "",
-        [
-          {
-            name: "template",
-            value: id,
-          },
-        ],
-      ]);
+      push(
+        createTransaction((t) =>
+          t.target("").toggle({ name: "template", value: id })
+        )
+      );
       if (type === "new") {
         mutateDocuments({
           folder: templateFolder,
@@ -62,14 +60,7 @@ export function AddTemplateDialog({
       }
       close();
     },
-    [
-      collab,
-      folderId,
-      generateTemplateId,
-      mutateDocuments,
-      templateFolder,
-      close,
-    ]
+    [push, folderId, generateTemplateId, mutateDocuments, templateFolder, close]
   );
 
   const { documents: templates } = useOptimisticDocumentList(templateFolder);

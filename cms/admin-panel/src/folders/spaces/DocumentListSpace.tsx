@@ -39,7 +39,7 @@ import { usePanel, useRoute } from "../../panel-router/Routes";
 import { useTemplate } from "../../fields/default/useFieldTemplate";
 import { useFolder } from "../collab/hooks";
 import { getPreview } from "../../fields/default/getPreview";
-import { Menu } from "../../layout/components/Menu";
+import { Menu } from "../../elements/Menu";
 
 export function DocumentListSpace({
   spaceId,

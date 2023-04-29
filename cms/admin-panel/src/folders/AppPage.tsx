@@ -20,7 +20,6 @@ import {
   FolderDomainsProvider,
 } from "./FolderDomainsContext";
 import { useFolder } from "./collab/hooks";
-import { useFolderCollab } from "./collab/FolderCollabContext";
 import { AppSpace } from "./spaces/AppSpace";
 import { getFieldRecord, getGraph } from "@storyflow/fields-core/graph";
 import { DEFAULT_FIELDS } from "@storyflow/fields-core/default-fields";
@@ -29,6 +28,9 @@ import { AppPageContext } from "./AppPageContext";
 import { usePanel, useRoute } from "../panel-router/Routes";
 import { parseSegment } from "../layout/components/parseSegment";
 import { FocusOrchestrator } from "../utils/useIsFocused";
+import { usePush } from "../collab/CollabContext";
+import { FolderTransactionEntry } from "operations/actions_new";
+import { createTransaction } from "@storyflow/collab/utils";
 
 export default function AppPage({ children }: { children?: React.ReactNode }) {
   const route = useRoute();
@@ -114,20 +116,19 @@ export default function AppPage({ children }: { children?: React.ReactNode }) {
     [orderedDocuments]
   );
 
-  const collab = useFolderCollab();
-  const mutateProp = <T extends keyof DBFolder>(
+  const push = usePush<FolderTransactionEntry>("folders", folder._id);
+  const mutateProp = <T extends "label" | "domains">(
     name: T,
     value: DBFolder[T]
   ) => {
-    return collab.mutate("folders", folder._id).push([
-      "",
-      [
-        {
+    return push(
+      createTransaction((t) =>
+        t.target("").toggle({
           name,
           value,
-        },
-      ],
-    ]);
+        } as any)
+      )
+    );
   };
 
   const config = useClientConfig(folder?.domains?.[0]);

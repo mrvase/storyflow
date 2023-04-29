@@ -1,11 +1,7 @@
 import React from "react";
 import cl from "clsx";
 import { useBranchIsFocused } from "./BranchFocusContext";
-import {
-  ChevronDownIcon,
-  ChevronUpIcon,
-  CogIcon,
-} from "@heroicons/react/24/outline";
+import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 import { useLocalStorage } from "../../state/useLocalStorage";
 import {
   usePanel,

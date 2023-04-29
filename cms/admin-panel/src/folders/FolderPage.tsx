@@ -18,7 +18,6 @@ import {
   FolderDomainsProvider,
 } from "./FolderDomainsContext";
 import { useFolder } from "./collab/hooks";
-import { useFolderCollab } from "./collab/FolderCollabContext";
 import { FolderGridSpace } from "./spaces/FolderGridSpace";
 import { createKey } from "../utils/createKey";
 import { AddTemplateDialog } from "./AddTemplateDialog";
@@ -30,8 +29,11 @@ import { useFieldFocus } from "../field-focus";
 import { addNestedFolder } from "../custom-events";
 import { usePanel, useRoute } from "../panel-router/Routes";
 import { parseSegment } from "../layout/components/parseSegment";
-import { Menu } from "../layout/components/Menu";
+import { Menu } from "../elements/Menu";
 import { FocusOrchestrator } from "../utils/useIsFocused";
+import { usePush } from "../collab/CollabContext";
+import { createTransaction } from "@storyflow/collab/utils";
+import { FolderTransactionEntry } from "operations/actions_new";
 
 export default function FolderPage({
   children,
@@ -49,21 +51,20 @@ export default function FolderPage({
 
   const parentDomains = React.useContext(FolderDomainsContext);
 
-  const collab = useFolderCollab();
+  const push = usePush<FolderTransactionEntry>("folders", folder._id);
 
-  const mutateProp = <T extends keyof DBFolder>(
+  const mutateProp = <T extends "label" | "domains">(
     name: T,
-    value: DBFolder[T]
+    value: { label: string; domains: string[] }[T]
   ) => {
-    return collab.mutate("folders", folder._id).push([
-      "",
-      [
-        {
+    return push(
+      createTransaction((t) =>
+        t.target("").toggle({
           name,
           value,
-        },
-      ],
-    ]);
+        } as any)
+      )
+    );
   };
 
   return (
@@ -89,21 +90,20 @@ export default function FolderPage({
                 <Content.ToolbarButton
                   data-focus-remain="true"
                   onClick={() => {
-                    collab.mutate("folders", folder._id).push([
-                      "",
-                      [
-                        {
+                    push(
+                      createTransaction((t) =>
+                        t.target("").splice({
                           index: 0,
                           insert: [
                             {
-                              id: createKey(),
+                              id: createKey() as SpaceId,
                               type: "folders",
                               items: [],
                             },
                           ],
-                        },
-                      ],
-                    ]);
+                        })
+                      )
+                    );
                   }}
                   icon={PlusIcon}
                 >

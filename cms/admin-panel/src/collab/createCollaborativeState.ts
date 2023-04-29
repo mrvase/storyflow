@@ -1,46 +1,38 @@
 import React from "react";
-import { useSingular } from "../../state/useSingular";
+import { useSingular } from "../state/useSingular";
 import type { QueueListenerParam } from "@storyflow/collab/queue";
-import type { createCollaboration } from "../../state/collab_new";
 import {
   QueueEntry,
   TimelineEntry,
   TransactionEntry,
 } from "@storyflow/collab/types";
 import { createQueueFromTimeline } from "@storyflow/collab/utils";
+import { useCollab } from "./CollabContext";
 
 export function initializeTimeline(
-  collab: ReturnType<typeof createCollaboration>,
-  {
-    id,
-    timeline,
-    versions,
-    transform,
-  }: {
-    id: string;
+  timelineId: string,
+  data: {
     timeline: TimelineEntry[];
     versions: Record<string, number>;
-    transform?: (pkgs: TimelineEntry[]) => TimelineEntry[];
+    initialData: any;
   },
   hooks: {
     onStale?: () => void;
     onInitialization?: () => void;
   } = {}
 ) {
+  const collab = useCollab();
+
   let hasCalledStaleHook = React.useRef(false);
 
   React.useLayoutEffect(() => {
-    collab
-      .getOrAddTimeline(id, {
-        transform,
-      })
-      .initialize(timeline, versions);
+    collab.initializeTimeline(timelineId, data);
     hasCalledStaleHook.current = false;
-  }, [collab, timeline, versions]);
+  }, [collab, data.initialData, data.timeline, data.versions]);
 
   React.useEffect(() => {
     if (hooks.onStale) {
-      return collab.getTimeline(id)!.registerStaleListener(() => {
+      return collab.getTimeline(timelineId)!.registerStaleListener(() => {
         if (!hasCalledStaleHook.current) {
           hooks.onStale?.();
           hasCalledStaleHook.current = true;
@@ -50,30 +42,35 @@ export function initializeTimeline(
   }, [hooks.onStale]);
 }
 
-export function createCollaborativeState<Data, TE extends TransactionEntry>(
-  collab: ReturnType<typeof createCollaboration>,
+export function useCollaborativeState<Data, TE extends TransactionEntry>(
   stateInitializer: (
     initialState: () => Data
   ) => [state: Data, setState: (value: Data) => void],
   operator: (params: QueueListenerParam<TE>) => Data,
   {
-    document,
-    key,
+    timelineId,
+    queueId,
     version,
     timeline,
+    target,
   }: {
-    document: string;
-    key: string;
+    timelineId: string;
+    queueId: string;
     version: number;
     timeline: TimelineEntry[];
+    target?: string;
   }
 ) {
-  const singular = useSingular(`collab/${document}/${key}`);
+  const collab = useCollab();
+
+  const singular = useSingular(
+    ["collab", timelineId, queueId, target ?? ""].filter(Boolean).join("-")
+  );
 
   React.useLayoutEffect(() => {
     return collab
-      .getTimeline(document)!
-      .getQueue<TE>(key)
+      .getTimeline(timelineId)!
+      .getQueue<TE>(queueId)
       .register((params) =>
         singular(() => {
           if (version !== params.version) {
@@ -91,8 +88,8 @@ export function createCollaborativeState<Data, TE extends TransactionEntry>(
   const [state, setState] = stateInitializer(() => {
     return operator({
       forEach(callback: (entry: QueueEntry<TE>) => void) {
-        const queue = createQueueFromTimeline<TE>(timeline, []).filter(
-          (entry) => entry.queue === key
+        const queue = createQueueFromTimeline<TE>(timeline).filter(
+          (entry) => entry.queue === queueId
         );
         queue.forEach((entry) => {
           callback(entry);

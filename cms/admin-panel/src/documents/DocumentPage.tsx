@@ -11,7 +11,6 @@ import { getTemplateDocumentId } from "@storyflow/fields-core/ids";
 import type { DocumentId, FolderId, RawFieldId } from "@storyflow/shared/types";
 import type { DBDocument } from "@storyflow/db-core/types";
 import { NoList, useDragItem } from "@storyflow/dnd";
-import { ServerPackage } from "@storyflow/state";
 import cl from "clsx";
 import React from "react";
 import {
@@ -24,10 +23,7 @@ import { useDocumentLabel } from "./useDocumentLabel";
 import { useClientConfig } from "../client-config";
 import { useTemplateFolder } from "../folders/FoldersContext";
 import Content from "../layout/components/Content";
-import {
-  useDocumentCollab,
-  useDocumentPush,
-} from "./collab/DocumentCollabContext";
+import { useCollab, usePush } from "../collab/CollabContext";
 import { useFolder } from "../folders/collab/hooks";
 import { useDocumentConfig } from "./collab/hooks";
 import { FocusOrchestrator, useFocusedIds } from "../utils/useIsFocused";
@@ -43,8 +39,7 @@ import { SWRClient } from "../client";
 import { ExtendTemplatePath } from "./TemplatePathContext";
 import { useRoute } from "../panel-router/Routes";
 import { parseSegment } from "../layout/components/parseSegment";
-import { Menu } from "../layout/components/Menu";
-import { DocumentOperation } from "operations/actions";
+import { Menu } from "../elements/Menu";
 import { TimelineEntry } from "@storyflow/collab/types";
 import { DocumentTransactionEntry } from "operations/actions_new";
 
@@ -58,7 +53,7 @@ const getVersionKey = (versions?: Record<RawFieldId, number>) => {
 function useIsModified(id: string, initial: boolean, key: number) {
   const [isModified, setIsModified] = React.useState(initial);
 
-  const collab = useDocumentCollab();
+  const collab = useCollab();
 
   React.useEffect(() => {
     return collab.registerMutationListener((doc) => {
@@ -232,19 +227,14 @@ export function TemplateMenu({ id }: { id?: DocumentId }) {
 export function DocumentPage({ children }: { children?: React.ReactNode }) {
   const route = useRoute();
   const segment = parseSegment<"document" | "template">(route);
-  let { doc, histories, timeline, error } = useDocument(segment.id);
+  let { doc, timeline, error } = useDocument(segment.id);
 
   console.log("TIMELINE", timeline);
 
   return (
     <>
       {!error && doc && timeline && (
-        <Page
-          type={segment.type}
-          doc={doc}
-          histories={histories}
-          timeline={timeline}
-        >
+        <Page type={segment.type} doc={doc} timeline={timeline}>
           {children}
         </Page>
       )}
@@ -256,13 +246,11 @@ export function DocumentPage({ children }: { children?: React.ReactNode }) {
 const Page = ({
   type,
   doc,
-  histories,
   timeline,
   children,
 }: {
   type: "template" | "document";
   doc: DBDocument;
-  histories: Record<string, ServerPackage<DocumentOperation>[]>;
   timeline: TimelineEntry[];
   children: React.ReactNode;
 }) => {
@@ -284,7 +272,7 @@ const Page = ({
 
   const label = useDocumentLabel(doc);
 
-  const isModified = Object.keys(histories ?? {}).length > 0;
+  const isModified = timeline.length > 0;
 
   const ctx = React.useMemo(
     () => ({
@@ -317,12 +305,10 @@ const Page = ({
                   <GetDocument id={templateId}>
                     {(doc) => (
                       <RenderTemplate
-                        // key={getVersionKey(owner.versions)} // for rerendering
                         id={doc._id}
                         config={doc.config}
                         owner={owner._id}
                         versions={owner.versions}
-                        histories={histories}
                         index={null}
                       />
                     )}
@@ -330,12 +316,10 @@ const Page = ({
                 )}
               </ExtendTemplatePath>
               <RenderTemplate
-                // key={getVersionKey(owner.versions)} // for rerendering
                 id={owner._id}
                 config={config}
                 owner={owner._id}
                 versions={owner.versions}
-                histories={histories}
                 index={null}
               />
             </div>
@@ -348,7 +332,7 @@ const Page = ({
 };
 
 function TemplateSelect({ documentId }: { documentId: DocumentId }) {
-  const push = useDocumentPush<DocumentTransactionEntry>(documentId, "config");
+  const push = usePush<DocumentTransactionEntry>(documentId, "config");
 
   return (
     <div className="py-5 px-14 grid grid-cols-3 gap-5">
@@ -372,7 +356,7 @@ function TemplateSelect({ documentId }: { documentId: DocumentId }) {
 }
 
 function SaveButton({ id, folder }: { id: DocumentId; folder: FolderId }) {
-  const collab = useDocumentCollab();
+  const collab = useCollab();
   const [isLoading, setIsLoading] = React.useState(false);
   const saveDocument = useSaveDocument(folder);
 

@@ -1,57 +1,59 @@
-import { ServerPackage, unwrapServerPackage } from "@storyflow/state";
-import { createServerPackage } from "@storyflow/state";
-import { StdOperation, SpliceAction, isSpliceAction } from "./actions";
+import type {
+  SpliceOperation,
+  TimelineEntry,
+  TransactionEntry,
+} from "@storyflow/collab/types";
+import { isSpliceOperation } from "@storyflow/collab/utils";
 
-const getClientId = (pkg: ServerPackage<any>) => {
-  return unwrapServerPackage(pkg).clientId;
-};
-
-const updateIndex = <Operation extends StdOperation>(
+const updateIndex = (
   target: string,
   index: number,
-  interceptions: ServerPackage<Operation>[],
+  interceptions: TimelineEntry[],
   getLength: (target: string, value: any[]) => number
 ) => {
   let newIndex = index;
 
   interceptions.forEach((pkg) => {
-    const { operations } = unwrapServerPackage(pkg);
-    operations.forEach(([extTarget, actions]) => {
-      if (target !== extTarget) return;
+    const [, , , ...transactions] = pkg;
+    transactions.forEach((transaction) => {
+      transaction.forEach(([extTarget, operations]) => {
+        if (target !== extTarget) return;
 
-      let spanned = 0;
-      let formerRemoved = 0;
-      actions.forEach((action) => {
-        if (!isSpliceAction(action)) {
-          return;
-        }
-        if (spanned > 0 && !action.insert && !action.remove) {
-          // portal
-          newIndex = action.index + spanned;
-        } else if (action.index < newIndex) {
-          if (action.index + (action.remove ?? 0) > newIndex) {
-            spanned = newIndex - action.index;
-          } else {
+        let spanned = 0;
+        let formerRemoved = 0;
+        operations.forEach((operation) => {
+          if (!isSpliceOperation(operation)) {
+            return;
+          }
+          const [opIndex, opRemove, opInsert] = operation;
+          if (spanned > 0 && !opRemove && !opInsert) {
+            // portal
+            newIndex = opIndex + spanned;
+          } else if (opIndex < newIndex) {
+            if (opIndex + (opRemove ?? 0) > newIndex) {
+              spanned = newIndex - opIndex;
+            } else {
+              spanned = 0;
+            }
+
+            const insert =
+              !opInsert && !opRemove
+                ? formerRemoved
+                : getLength(target, opInsert ?? []);
+            newIndex += insert;
+
+            let remove = Math.min(opRemove ?? 0, newIndex - opIndex);
+            newIndex -= remove;
+          } else if (opIndex === newIndex) {
+            const insert =
+              !opInsert && !opRemove
+                ? formerRemoved
+                : getLength(target, opInsert ?? []);
+            newIndex += insert;
             spanned = 0;
           }
-
-          const insert =
-            !action.insert && !action.remove
-              ? formerRemoved
-              : getLength(target, action.insert ?? []);
-          newIndex += insert;
-
-          let remove = Math.min(action.remove ?? 0, newIndex - action.index);
-          newIndex -= remove;
-        } else if (action.index === newIndex) {
-          const insert =
-            !action.insert && !action.remove
-              ? formerRemoved
-              : getLength(target, action.insert ?? []);
-          newIndex += insert;
-          spanned = 0;
-        }
-        formerRemoved = action.remove ?? 0;
+          formerRemoved = opRemove ?? 0;
+        });
       });
     });
   });
@@ -59,7 +61,7 @@ const updateIndex = <Operation extends StdOperation>(
   return newIndex;
 };
 
-type SpliceChar = [SpliceAction<any> | null, number];
+type SpliceChar = [SpliceOperation | null, number];
 type SpliceState = SpliceChar[];
 
 const createInitializingMap = <T>(initializer: (target: string) => T) => {
@@ -82,30 +84,31 @@ const createInitializingMap = <T>(initializer: (target: string) => T) => {
   };
 };
 
-const updateActions = <Operation extends StdOperation>(
-  operation: Operation,
-  interceptions: ServerPackage<Operation>[],
+const updateOperations = (
+  entry: TransactionEntry,
+  interceptions: TimelineEntry[],
   getLength: (target: string, value: any[]) => number,
   states: {
     lastSeenState: SpliceState;
     currentState: SpliceState;
   }
 ) => {
-  let newActions = [] as Operation[1];
+  let newActions = [] as TransactionEntry[1];
 
-  operation[1].forEach((action) => {
-    if (!isSpliceAction(action)) {
-      newActions.push(action as any);
+  const target = entry[0];
+
+  entry[1].forEach((operation) => {
+    if (!isSpliceOperation(operation)) {
+      newActions.push(operation);
       return;
     }
 
-    let spliceActions: SpliceAction<any>[] = [];
+    let spliceActions: SpliceOperation[] = [];
 
-    if (action.remove) {
-      const removals = [...states.lastSeenState].splice(
-        action.index,
-        action.remove
-      );
+    const [index, remove, insert] = operation;
+
+    if (remove) {
+      const removals = [...states.lastSeenState].splice(index, remove);
 
       // it might have become multiple operations, since the removed entities might have been split
       spliceActions = removals.reduce((acc, cur) => {
@@ -113,39 +116,28 @@ const updateActions = <Operation extends StdOperation>(
         const elIndex = states.currentState.findIndex((el) => el === cur);
 
         if (elIndex >= 0) {
-          if (former && elIndex === former.index + (former.remove ?? 0)) {
-            former.remove = (former.remove ?? 0) + 1;
+          if (former && elIndex === former[0] + (former[1] ?? 0)) {
+            former[1] = (former[1] ?? 0) + 1;
           } else {
-            const newSpliceAction: SpliceAction<any> = {
-              index: elIndex,
-              remove: 1,
-            };
+            const newSpliceAction: SpliceOperation = [elIndex, 1];
             acc.push(newSpliceAction);
           }
         }
 
         return acc;
-      }, [] as SpliceAction<any>[]);
+      }, [] as SpliceOperation[]);
     }
 
-    if (action.insert || !action.remove) {
+    if (insert || !remove) {
       // now we need to make the inserts at the right spot
-      const newIndex = updateIndex(
-        operation[0],
-        action.index,
-        interceptions,
-        getLength
-      );
+      const newIndex = updateIndex(target, index, interceptions, getLength);
 
-      const existing = spliceActions.find((el) => el.index === newIndex);
+      const existing = spliceActions.find((el) => el[0] === newIndex);
 
-      const newSpliceAction: SpliceAction<any> = existing ?? {
-        index: newIndex,
-      };
+      const newSpliceAction: SpliceOperation = existing ?? [newIndex, 0];
 
-      if (!action.insert) {
-      } else {
-        newSpliceAction.insert = action.insert;
+      if (insert) {
+        newSpliceAction[2] = insert;
       }
 
       if (!existing) {
@@ -156,11 +148,12 @@ const updateActions = <Operation extends StdOperation>(
     // handle internal indexes
     let offset = 0;
     spliceActions
-      .sort((a, b) => a.index - b.index)
+      .sort((a, b) => a[0] - b[0])
       .forEach((el) => {
-        el.index += offset;
-        offset += getLength(operation[0], el.insert ?? []);
-        offset -= el.remove ?? 0;
+        el[0] += offset;
+        const [, remove, insert] = el;
+        offset += getLength(target, insert ?? []);
+        offset -= remove ?? 0;
       });
 
     newActions.push(...(spliceActions as any));
@@ -169,7 +162,7 @@ const updateActions = <Operation extends StdOperation>(
   return newActions;
 };
 
-const createPseudoStateSplicer = <Operation extends StdOperation>(
+const createPseudoStateSplicer = (
   getLength: (target: string, value: any[]) => number
 ) => {
   /**
@@ -184,37 +177,39 @@ const createPseudoStateSplicer = <Operation extends StdOperation>(
    * multiple times when we construct multiple "state routes" that have
    * been traversed. (e.g. the actual shared state vs temporary local state)
    */
-  const cache = new Map<Required<SpliceAction<any>["insert"]>, SpliceState>();
+  const cache = new Map<Required<SpliceOperation[2]>, SpliceState>();
 
   const createChars = (
     target: string,
-    action: SpliceAction<any>
+    operation: SpliceOperation
   ): SpliceChar[] => {
-    if (!action.insert) return [];
-    let chars = cache.get(action.insert);
+    const insert = operation[2];
+    if (!insert) return [];
+    let chars = cache.get(insert);
     if (chars) return chars;
-    const length = getLength(target, action.insert ?? []);
-    chars = Array.from({ length }, (_, index) => [action, index] as SpliceChar);
-    cache.set(action.insert, chars);
+    const length = getLength(target, insert ?? []);
+    chars = Array.from(
+      { length },
+      (_, index) => [operation, index] as SpliceChar
+    );
+    cache.set(insert, chars);
     return chars;
   };
 
   /** END */
 
-  const splice = (state: SpliceState, operation: Operation) => {
+  const splice = (state: SpliceState, entry: TransactionEntry) => {
     const removed: SpliceChar[] = [];
-    operation[1].forEach((action) => {
-      if (!isSpliceAction(action)) return;
+    entry[1].forEach((operation) => {
+      if (!isSpliceOperation(operation)) return;
 
-      const isMove = !action.insert && !action.remove;
-      let insert: SpliceChar[] = isMove
+      const [index, remove, insert] = operation;
+
+      const isMove = !remove && !insert;
+      let charInsert: SpliceChar[] = isMove
         ? removed
-        : createChars(operation[0], action);
-      const currentlyRemoved = state.splice(
-        action.index,
-        action.remove ?? 0,
-        ...insert
-      );
+        : createChars(entry[0], operation);
+      const currentlyRemoved = state.splice(index, remove ?? 0, ...charInsert);
       removed.push(...currentlyRemoved);
     });
   };
@@ -222,12 +217,14 @@ const createPseudoStateSplicer = <Operation extends StdOperation>(
   return splice;
 };
 
-export function createSpliceTransformer<Operation extends StdOperation>(
+export function createSpliceTransformer(
   getInitialLength: (target: string) => number,
   getLength: (target: string, value: any[]) => number = (value) => value.length
 ) {
-  return (timeline: ServerPackage<Operation>[]) => {
+  return (timeline: TimelineEntry[]) => {
     type SpliceStateArray = [index: number, state: SpliceState][];
+
+    const indexesMap = new Map<string, number>();
 
     const statesMap = createInitializingMap((target: string) => {
       const state: SpliceState = Array.from(
@@ -239,22 +236,19 @@ export function createSpliceTransformer<Operation extends StdOperation>(
 
     const splice = createPseudoStateSplicer(getLength);
 
-    // filterServerPackages ensures that the first transaction acts on the initial state/version
-    const version = timeline.length
-      ? unwrapServerPackage(timeline[0]).index
-      : 0;
-
     const transformPackage = (
-      pkg: ServerPackage<Operation>,
+      pkg: TimelineEntry,
       packageIndex: number,
-      transformedTimeline: ServerPackage<Operation>[]
+      transformedTimeline: TimelineEntry[]
     ) => {
-      const { clientId, index, operations, ...rest } = unwrapServerPackage(pkg);
+      const [index, clientId, queueId, ...transactions] = pkg;
 
-      const interceptions = transformedTimeline.slice(index, packageIndex);
+      const queue = transformedTimeline.filter((el) => el[2] === queueId);
+
+      const interceptions = queue.slice(index, packageIndex);
 
       const externalInterceptions = interceptions.filter(
-        (el) => getClientId(el) !== clientId
+        (el) => el[1] !== clientId
       );
 
       const lastSeenStateInit = (target: string) => {
@@ -266,18 +260,19 @@ export function createSpliceTransformer<Operation extends StdOperation>(
           .slice();
 
         const knownInterceptions = interceptions.filter(
-          (el) => getClientId(el) === clientId
+          (el) => el[1] === clientId
         );
 
         if (knownInterceptions.length) {
           // we apply the known interceptions to get the state that these operations were applied to
 
-          knownInterceptions.forEach((pkg) => {
-            const { operations } = unwrapServerPackage(pkg);
-            operations.forEach((operation) => {
-              if (operation[0] === target) {
-                splice(lastSeenState, operation);
-              }
+          knownInterceptions.forEach(([, , , ...transactions]) => {
+            transactions.forEach((transaction) => {
+              transaction.map((entry) => {
+                if (entry[0] === target) {
+                  splice(lastSeenState, entry);
+                }
+              });
             });
           });
         }
@@ -294,28 +289,30 @@ export function createSpliceTransformer<Operation extends StdOperation>(
 
       const isIntercepted = Boolean(externalInterceptions.length);
 
-      operations.forEach((operation) => {
-        const target = operation[0];
-        const currentState = currentStateMap.get(target);
+      transactions.forEach((entries) => {
+        entries.forEach((entry) => {
+          const target = entry[0];
+          const currentState = currentStateMap.get(target);
 
-        if (isIntercepted) {
-          const lastSeenState = lastSeenStateMap.get(target);
+          if (isIntercepted) {
+            const lastSeenState = lastSeenStateMap.get(target);
 
-          const newActions = updateActions(
-            operation,
-            externalInterceptions,
-            getLength,
-            {
-              currentState,
-              lastSeenState,
-            }
-          );
+            const newOperations = updateOperations(
+              entry,
+              externalInterceptions,
+              getLength,
+              {
+                currentState,
+                lastSeenState,
+              }
+            );
 
-          splice(lastSeenState, operation); // in the next operation, the current operation is seen
-          operation[1] = newActions; // Operation array reference maintained
-        }
+            splice(lastSeenState, entry); // in the next operation, the current operation is seen
+            entry[1] = newOperations; // Operation array reference maintained
+          }
 
-        splice(currentState, operation);
+          splice(currentState, entry);
+        });
       });
 
       // append next state
@@ -324,15 +321,23 @@ export function createSpliceTransformer<Operation extends StdOperation>(
         states.unshift([packageIndex + 1, state]);
       });
 
-      transformedTimeline[packageIndex] = createServerPackage({
-        ...rest,
-        index: version + packageIndex, // they have now seen all previous packages
+      let nextIndex = indexesMap.get(queueId);
+      if (nextIndex === undefined) {
+        nextIndex = index; // first queue member always sees the version number (ensured by filterTimeline)
+      } else {
+        nextIndex++;
+      }
+      indexesMap.set(queueId, nextIndex);
+
+      transformedTimeline[packageIndex] = [
+        nextIndex,
         clientId,
-        operations,
-      }) as any;
+        queueId,
+        ...transactions,
+      ];
     };
 
-    const transformedTimeline: ServerPackage<Operation>[] = [...timeline];
+    const transformedTimeline: TimelineEntry[] = [...timeline];
     transformedTimeline.forEach(transformPackage);
     return transformedTimeline;
   };
