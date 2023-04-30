@@ -6,8 +6,10 @@ import { clone } from "./clone_debug";
 
 const randomUserId = Math.random().toString(36).slice(2, 10);
 
-const absoluteVersion = (versions: Record<string, number>) =>
-  Object.values(versions).reduce((a, b) => a + b, 0);
+const absoluteVersion = (versions: Record<string, number> | number) =>
+  typeof versions === "number"
+    ? versions
+    : Object.values(versions).reduce((a, b) => a + b, 0);
 
 const defaultTransform = (pkg: TimelineEntry[]) => pkg;
 
@@ -24,10 +26,16 @@ export function createTimeline(
     shared: [] as TimelineEntry[],
     posted: [] as TimelineEntry[],
     current: [] as TimelineEntry[],
-    versions: {} as Record<string, number>,
+    versions: {} as Record<string, number> | number,
     initialized: false,
     stale: false,
     saving: false,
+  };
+
+  const isMutated = () => {
+    return Boolean(
+      state.shared.length + state.posted.length + state.current.length
+    );
   };
 
   const queues = new Map<string, Queue>();
@@ -36,9 +44,8 @@ export function createTimeline(
   function initialize(data: {
     transform?: (entries: TimelineEntry[]) => TimelineEntry[];
     timeline: TimelineEntry[];
-    versions: Record<string, number>;
+    versions: Record<string, number> | number;
   }) {
-    console.log("INITIALIZING", data);
     if (
       !state.initialized ||
       absoluteVersion(data.versions) > absoluteVersion(state.versions)
@@ -53,7 +60,8 @@ export function createTimeline(
       state.initialized = true;
       state.stale = false;
       state.saving = false;
-      console.log("INITIALIZED STATE", clone(state));
+
+      mutationListeners.trigger(isMutated());
     }
     return self;
   }
@@ -116,6 +124,7 @@ export function createTimeline(
     state.posted = [];
     state.current = newCurrent;
 
+    mutationListeners.trigger(isMutated());
     new Set(packages.map((el) => el[2])).forEach((queue) =>
       triggerListeners(queue)
     );
@@ -149,7 +158,11 @@ export function createTimeline(
     } else if (result.status === "stale") {
       console.warn("STALE");
       state.stale = true;
-      triggerStaleListeners();
+      staleListeners.trigger(undefined);
+
+      // if staleListener reinitializes, nothing should happen here
+      if (state.stale !== true) return;
+
       state.current = state.posted;
       state.posted = [];
     } else {
@@ -222,22 +235,33 @@ export function createTimeline(
     });
   }
 
-  const staleListeners = new Set<() => void>();
-
-  function registerStaleListener(listener: () => void) {
-    staleListeners.add(listener);
-    return () => {
-      staleListeners.delete(listener);
+  const createListenersSet = <T>() => {
+    const set = new Set<(data: T) => void>();
+    return {
+      register(listener: (data: T) => void) {
+        set.add(listener);
+        return () => {
+          set.delete(listener);
+        };
+      },
+      trigger(data: T) {
+        set.forEach((listener) => listener(data));
+      },
     };
-  }
+  };
 
-  function triggerStaleListeners() {
-    staleListeners.forEach((listener) => listener());
-  }
+  const staleListeners = createListenersSet<undefined>();
+  const mutationListeners = createListenersSet<boolean>();
+
+  const getQueueVersion = (queue: string) => {
+    return typeof state.versions === "number"
+      ? state.versions
+      : state.versions[queue] ?? 0;
+  };
 
   const getUpdatedVersion = (queue: string) => {
     return (
-      (state.versions[queue] ?? 0) +
+      getQueueVersion(queue) +
       state.shared.filter((el) => el[2] === queue).length
     );
   };
@@ -246,7 +270,7 @@ export function createTimeline(
     getState() {
       return {
         stale: state.stale,
-        version: state.versions[queue] ?? 0,
+        version: getQueueVersion(queue),
       };
     },
     getMetadata() {
@@ -269,6 +293,7 @@ export function createTimeline(
           state.current.push(entry);
         }
         entry.push(...transactions);
+        mutationListeners.trigger(true);
       }
       triggerListeners(queue);
     },
@@ -289,7 +314,7 @@ export function createTimeline(
     initialize,
     sync,
     save,
-    getQueue<TE extends TransactionEntry>(name: string) {
+    getQueue<TE extends TransactionEntry>(name: string = "") {
       let current = queues.get(name);
       if (!current) {
         current = createQueue(createActions(name), trackers);
@@ -297,7 +322,8 @@ export function createTimeline(
       }
       return current as unknown as Queue<TE>;
     },
-    registerStaleListener,
+    registerStaleListener: staleListeners.register,
+    registerMutationListener: mutationListeners.register,
     isInactive,
   };
 

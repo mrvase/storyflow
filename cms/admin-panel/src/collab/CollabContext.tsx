@@ -31,16 +31,16 @@ export function CollabProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function usePush<TE extends TransactionEntry>(
-  document: string,
-  key: string
+  timelineId: string,
+  queueId?: string
 ) {
   const collab = useCollab();
   return React.useCallback(
     (...args: Parameters<Queue<TE>["push"]>) =>
       collab
-        .getTimeline(document)!
-        .getQueue<TE>(key)
+        .getTimeline(timelineId)!
+        .getQueue<TE>(queueId)
         .push(...args),
-    [collab, document, key]
+    [collab, timelineId, queueId]
   );
 }

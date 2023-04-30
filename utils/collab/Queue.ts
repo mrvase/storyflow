@@ -105,17 +105,14 @@ export function createQueue<TE extends TransactionEntry>(
   };
 
   function register(listener: QueueListener<TE>) {
-    const runningListener = () => {
+    const listenerWithState = () => {
       listener({
         forEach,
         ...actions.getState(),
       });
     };
-    listener({
-      forEach,
-      ...actions.getState(),
-    });
-    return actions.registerListener(runningListener);
+    listenerWithState();
+    return actions.registerListener(listenerWithState);
   }
 
   return {

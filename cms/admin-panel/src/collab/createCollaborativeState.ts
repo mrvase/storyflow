@@ -13,7 +13,7 @@ export function initializeTimeline(
   timelineId: string,
   data: {
     timeline: TimelineEntry[];
-    versions: Record<string, number>;
+    versions: Record<string, number> | number;
     initialData: any;
   },
   hooks: {
@@ -46,7 +46,10 @@ export function useCollaborativeState<Data, TE extends TransactionEntry>(
   stateInitializer: (
     initialState: () => Data
   ) => [state: Data, setState: (value: Data) => void],
-  operator: (params: QueueListenerParam<TE>) => Data,
+  operator: (
+    params: QueueListenerParam<TE>,
+    origin: "initial" | "update"
+  ) => Data,
   {
     timelineId,
     queueId,
@@ -55,7 +58,7 @@ export function useCollaborativeState<Data, TE extends TransactionEntry>(
     target,
   }: {
     timelineId: string;
-    queueId: string;
+    queueId?: string;
     version: number;
     timeline: TimelineEntry[];
     target?: string;
@@ -80,24 +83,27 @@ export function useCollaborativeState<Data, TE extends TransactionEntry>(
             });
             return;
           }
-          setState(operator(params));
+          setState(operator(params, "update"));
         })
       );
   }, [collab, version, operator]);
 
   const [state, setState] = stateInitializer(() => {
-    return operator({
-      forEach(callback: (entry: QueueEntry<TE>) => void) {
-        const queue = createQueueFromTimeline<TE>(timeline).filter(
-          (entry) => entry.queue === queueId
-        );
-        queue.forEach((entry) => {
-          callback(entry);
-        });
+    return operator(
+      {
+        forEach(callback: (entry: QueueEntry<TE>) => void) {
+          const queue = createQueueFromTimeline<TE>(timeline).filter(
+            (entry) => entry.queue === (queueId ?? "")
+          );
+          queue.forEach((entry) => {
+            callback(entry);
+          });
+        },
+        version,
+        stale: false,
       },
-      version,
-      stale: false,
-    });
+      "initial"
+    );
   });
 
   return state;

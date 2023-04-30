@@ -2,7 +2,7 @@ import React from "react";
 import Content from "./Content";
 import { FolderIcon, TrashIcon } from "@heroicons/react/24/outline";
 import Table from "../../documents/components/Table";
-import { useFolders } from "../../folders/collab/hooks";
+// import { useFolders } from "../../folders/collab/hooks";
 import { DragIcon } from "../../folders/spaces/DragIcon";
 import { useDragItem } from "@storyflow/dnd";
 import type { DBFolder } from "@storyflow/db-core/types";
@@ -10,7 +10,7 @@ import type { DBFolder } from "@storyflow/db-core/types";
 export function SystemFolderPage() {
   const form = React.useRef<HTMLFormElement | null>(null);
 
-  const folders = useFolders();
+  const folders = [] as DBFolder[]; // useFolders();
 
   const handleDelete = () => {
     if (form.current) {

@@ -70,7 +70,6 @@ export const copyRecord = (
               const newToken = { ...token };
               if (newToken.type === "loop") {
                 newToken.data = getRawDocumentId(getNewNestedId(token.data!));
-                console.log("FOUND LOOP", token, newToken);
               }
               return modifyNode(newToken);
             } else if (

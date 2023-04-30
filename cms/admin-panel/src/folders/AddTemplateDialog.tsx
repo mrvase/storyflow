@@ -8,7 +8,7 @@ import { DialogOption } from "../elements/DialogOption";
 import { DocumentDuplicateIcon, PlusIcon } from "@heroicons/react/24/outline";
 import { useTemplateFolder } from "./FoldersContext";
 import { useTemplateIdGenerator } from "../id-generator";
-import type { DocumentId } from "@storyflow/shared/types";
+import type { DocumentId, FolderId } from "@storyflow/shared/types";
 import { usePanel, useRoute } from "../panel-router/Routes";
 import { usePush } from "../collab/CollabContext";
 import { createTransaction } from "@storyflow/collab/utils";
@@ -22,7 +22,7 @@ export function AddTemplateDialog({
 }: {
   isOpen: boolean;
   close: () => void;
-  folderId: string;
+  folderId: FolderId;
   currentTemplate?: string;
 }) {
   const mutateDocuments = useDocumentListMutation();
@@ -30,7 +30,7 @@ export function AddTemplateDialog({
   const [, navigate] = usePanel();
   const route = useRoute();
 
-  const push = usePush<FolderTransactionEntry>("folders", folderId);
+  const push = usePush<FolderTransactionEntry>("folders");
 
   const templateFolder = useTemplateFolder()?._id;
 
@@ -41,7 +41,7 @@ export function AddTemplateDialog({
       const id = type === "new" ? generateTemplateId() : (label as DocumentId);
       push(
         createTransaction((t) =>
-          t.target("").toggle({ name: "template", value: id })
+          t.target(folderId).toggle({ name: "template", value: id })
         )
       );
       if (type === "new") {

@@ -54,13 +54,14 @@ export const createQueueFromTimeline = <
 
 export function filterTimeline(
   pkgs: TimelineEntry[],
-  versions: Record<string, number>
+  versions: Record<string, number> | number
 ) {
   const found = new Set<string>();
   return pkgs.filter((el) => {
     const index = el[0];
     const queue = el[2];
-    const version = versions[queue] ?? 0;
+    const version =
+      typeof versions === "number" ? versions : versions[queue] ?? 0;
     if (index === version) {
       found.add(queue);
     }

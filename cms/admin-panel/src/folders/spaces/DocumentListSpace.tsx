@@ -37,9 +37,9 @@ import { calculateRootFieldFromRecord } from "@storyflow/fields-core/calculate-s
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
 import { usePanel, useRoute } from "../../panel-router/Routes";
 import { useTemplate } from "../../fields/default/useFieldTemplate";
-import { useFolder } from "../collab/hooks";
 import { getPreview } from "../../fields/default/getPreview";
 import { Menu } from "../../elements/Menu";
+import { useFolder } from "../FoldersContext";
 
 export function DocumentListSpace({
   spaceId,

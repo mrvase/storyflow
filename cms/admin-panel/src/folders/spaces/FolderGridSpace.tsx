@@ -1,10 +1,9 @@
 import cl from "clsx";
 import { DropShadow, Sortable } from "@storyflow/dnd";
 import type { FolderId } from "@storyflow/shared/types";
-import type { SpaceId, FolderSpace } from "@storyflow/db-core/types";
+import type { FolderSpace } from "@storyflow/db-core/types";
 import type { DragResultAction } from "@storyflow/dnd/types";
 import { FolderItem } from "./Folder";
-import { useFolders, useSpace } from "../collab/hooks";
 import Space from "./Space";
 import {
   EllipsisHorizontalIcon,
@@ -22,21 +21,23 @@ import {
 } from "operations/actions_new";
 
 export function FolderGridSpace({
-  spaceId,
+  space,
   folderId,
   hidden,
   index,
 }: {
-  spaceId: SpaceId;
+  space: FolderSpace;
   folderId: FolderId;
   hidden: boolean;
   index: number;
 }) {
   const [dialogIsOpen, setDialogIsOpen] = React.useState<null | string>(null);
 
-  const push = usePush<FolderTransactionEntry>("folders", folderId);
+  const push = usePush<FolderTransactionEntry>("folders");
   const handleDelete = () => {
-    push(createTransaction((t) => t.target("").splice({ index, remove: 1 })));
+    push(
+      createTransaction((t) => t.target(folderId).splice({ index, remove: 1 }))
+    );
   };
 
   return (
@@ -45,10 +46,10 @@ export function FolderGridSpace({
         isOpen={dialogIsOpen === "add-folder"}
         close={() => setDialogIsOpen(null)}
         folderId={folderId}
-        spaceId={spaceId}
+        spaceId={space.id}
       />
       <Space
-        id={spaceId}
+        id={space.id}
         label={"Undermapper"}
         buttons={
           <>
@@ -66,33 +67,22 @@ export function FolderGridSpace({
           </>
         }
       >
-        <FolderGrid spaceId={spaceId} folderId={folderId} hidden={hidden} />
+        <FolderGrid space={space} folderId={folderId} hidden={hidden} />
       </Space>
     </>
   );
 }
 
 function FolderGrid({
-  spaceId,
+  space,
   folderId,
   hidden,
 }: {
-  spaceId: SpaceId;
+  space: FolderSpace;
   folderId: FolderId;
   hidden: boolean;
 }) {
-  const space = useSpace<FolderSpace>({
-    folderId,
-    spaceId,
-  });
-
-  const folders = useFolders();
-
-  const push = usePush<SpaceTransactionEntry>("folders", folderId);
-
-  const folderItems = space.items
-    .filter(Boolean)
-    .map((id) => (folders ?? []).find((folder) => folder._id === id)!);
+  const push = usePush<SpaceTransactionEntry>("folders");
 
   const onChange = React.useCallback(
     (actions: DragResultAction[]) => {
@@ -109,9 +99,13 @@ function FolderGrid({
           };
         }
       });
-      push(createTransaction((t) => t.target(spaceId).splice(...ops)));
+      push(
+        createTransaction((t) =>
+          t.target(`${folderId}:${space.id}`).splice(...ops)
+        )
+      );
     },
-    [push, folderId, spaceId]
+    [push, folderId, space.id]
   );
 
   return (
@@ -135,12 +129,12 @@ function FolderGrid({
         {space.items.length === 0 && (
           <div className="absolute text-gray-400 text-sm">Ingen mapper</div>
         )}
-        {folderItems.map((folder, index) => (
-          <FolderItem folder={folder._id} index={index} key={folder._id} />
+        {space.items.map((id, index) => (
+          <FolderItem folder={id} index={index} key={id} />
         ))}
         <DropShadow>
           {(item) => {
-            return <FolderItem index={folders.length} folder={item} />;
+            return <FolderItem index={space.items.length} folder={item} />;
           }}
         </DropShadow>
       </div>

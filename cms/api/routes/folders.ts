@@ -1,6 +1,10 @@
 import { createProcedure, createRoute } from "@sfrpc/server";
 import { success } from "@storyflow/result";
-import type { DBFolder, DBFolderRaw } from "@storyflow/db-core/types";
+import type {
+  DBFolder,
+  DBFolderRaw,
+  DBFolderRecord,
+} from "@storyflow/db-core/types";
 import { clientPromise } from "../mongo/mongoClient";
 import { globals } from "../middleware/globals";
 import { unwrapObjectId } from "@storyflow/db-core/convert";
@@ -28,13 +32,17 @@ export const folders = createRoute({
       const db = (await clientPromise).db(dbName);
 
       const folders = await db
-        .collection<DBFolderRaw>("folders")
-        .find({})
-        .toArray();
+        .collection<{
+          name: "folders";
+          value: DBFolderRecord;
+          version: number;
+        }>("counters")
+        .findOne({ name: "folders" });
 
-      const array: DBFolder[] = folders.map((el) => parseFolder(el));
-
-      return success(array);
+      return success({
+        record: folders?.value ?? {},
+        version: folders?.version ?? 0,
+      });
     },
   }),
 

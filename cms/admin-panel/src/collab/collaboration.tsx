@@ -10,7 +10,7 @@ export function createCollaboration(
   mutation: Parameters<typeof batchSyncTimelines>[1],
   options: { duration?: number } = {}
 ) {
-  const { duration = 3500 } = options;
+  const { duration = 2500 } = options;
 
   const foldersTimeline = createTimeline();
   const newDocumentsTimeline = createTimeline();
@@ -20,9 +20,14 @@ export function createCollaboration(
     "done"
   );
 
-  const sync = async (force?: boolean) => {
+  const sync = async (index: number, force?: boolean) => {
     emitEvent("loading");
-    const result = await batchSyncTimelines(documentTimelines, mutation);
+    const map = new Map(documentTimelines);
+    if (index % 3 === 0) {
+      // only sync folders every 3rd sync
+      map.set("folders", foldersTimeline);
+    }
+    const result = await batchSyncTimelines(map, mutation);
     emitEvent("done");
     purgeTimelines(documentTimelines);
     return result;
@@ -35,16 +40,16 @@ export function createCollaboration(
     sync,
     syncOnInterval() {
       return onInterval(
-        (event) => sync(event === "unload" || event === "visibilitychange"),
+        (index, event) =>
+          sync(index, event === "unload" || event === "visibilitychange"),
         { duration }
       );
     },
 
-    getFoldersTimeline() {
-      return foldersTimeline;
-    },
-
     getTimeline(id: string) {
+      if (id === "folders") {
+        return foldersTimeline;
+      }
       return documentTimelines.get(id);
     },
 
@@ -57,9 +62,16 @@ export function createCollaboration(
       }: {
         initialData: SyntaxTreeRecord;
         timeline: TimelineEntry[];
-        versions: Record<string, number>;
+        versions: Record<string, number> | number;
       }
     ) {
+      if (id === "folders") {
+        foldersTimeline.initialize({
+          timeline,
+          versions,
+        });
+        return foldersTimeline;
+      }
       let exists = documentTimelines.get(id);
       if (!exists) {
         exists = createTimeline();

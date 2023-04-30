@@ -13,7 +13,7 @@ import { insertRootInTransforms } from "@storyflow/fields-core/transform";
 import { usePush } from "../collab/CollabContext";
 import { createTransaction } from "@storyflow/collab/utils";
 import {
-  FolderListTransactionEntry,
+  FolderTransactionEntry,
   SpaceTransactionEntry,
 } from "operations/actions_new";
 
@@ -32,8 +32,9 @@ export function AddFolderDialog({
   const generateFolderId = useFolderIdGenerator();
   const generateDocumentId = useDocumentIdGenerator();
 
-  const pushFolder = usePush<FolderListTransactionEntry>("folders", "");
-  const pushFolderContent = usePush<SpaceTransactionEntry>("folders", folderId);
+  const push = usePush<FolderTransactionEntry | SpaceTransactionEntry>(
+    "folders"
+  );
 
   const onSubmit = React.useCallback(
     async (type: string, data: FormData) => {
@@ -49,17 +50,16 @@ export function AddFolderDialog({
         type: type as "app" | "data",
         spaces: [],
       };
-      pushFolder(
+      push(
         createTransaction((t) =>
-          t.target("").toggle({ name: "add", value: folder })
-        )
-      );
-      pushFolderContent(
-        createTransaction((t) =>
-          t.target(spaceId).splice({
-            index: 0,
-            insert: [id],
-          })
+          t
+            .target(`${folderId}:${spaceId}`)
+            .splice({
+              index: 0,
+              insert: [id],
+            })
+            .target(id)
+            .toggle({ name: "label", value: label })
         )
       );
       if (frontId) {
@@ -90,8 +90,7 @@ export function AddFolderDialog({
       close();
     },
     [
-      pushFolder,
-      pushFolderContent,
+      push,
       folderId,
       spaceId,
       generateDocumentId,

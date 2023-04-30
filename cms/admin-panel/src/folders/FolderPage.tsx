@@ -17,7 +17,6 @@ import {
   FolderDomainsContext,
   FolderDomainsProvider,
 } from "./FolderDomainsContext";
-import { useFolder } from "./collab/hooks";
 import { FolderGridSpace } from "./spaces/FolderGridSpace";
 import { createKey } from "../utils/createKey";
 import { AddTemplateDialog } from "./AddTemplateDialog";
@@ -34,6 +33,7 @@ import { FocusOrchestrator } from "../utils/useIsFocused";
 import { usePush } from "../collab/CollabContext";
 import { createTransaction } from "@storyflow/collab/utils";
 import { FolderTransactionEntry } from "operations/actions_new";
+import { useFolder } from "./FoldersContext";
 
 export default function FolderPage({
   children,
@@ -51,7 +51,7 @@ export default function FolderPage({
 
   const parentDomains = React.useContext(FolderDomainsContext);
 
-  const push = usePush<FolderTransactionEntry>("folders", folder._id);
+  const push = usePush<FolderTransactionEntry>("folders");
 
   const mutateProp = <T extends "label" | "domains">(
     name: T,
@@ -59,7 +59,7 @@ export default function FolderPage({
   ) => {
     return push(
       createTransaction((t) =>
-        t.target("").toggle({
+        t.target(folder._id).toggle({
           name,
           value,
         } as any)
@@ -92,7 +92,7 @@ export default function FolderPage({
                   onClick={() => {
                     push(
                       createTransaction((t) =>
-                        t.target("").splice({
+                        t.target(folder._id).splice({
                           index: 0,
                           insert: [
                             {
@@ -142,7 +142,7 @@ export default function FolderPage({
                       <FolderGridSpace
                         key={space.id}
                         index={index}
-                        spaceId={space.id}
+                        space={space}
                         folderId={folder._id}
                         hidden={!isSelected}
                       />

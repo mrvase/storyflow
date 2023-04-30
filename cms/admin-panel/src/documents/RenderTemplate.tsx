@@ -102,10 +102,11 @@ export function RenderTemplate({
                   */
 
                 collab
-                  .getOrAddTimeline(owner, {
-                    transform: createDocumentTransformer({}),
+                  .initializeTimeline(owner, {
+                    initialData: {},
+                    timeline: [],
+                    versions: {},
                   })
-                  .initialize([], {})
                   .getQueue<FieldTransactionEntry>(getRawFieldId(fieldId))
                   .push(
                     createTransaction((t) =>
@@ -129,14 +130,6 @@ export function RenderTemplate({
     },
     [config, push, client, generateDocumentId, collab, owner]
   );
-
-  React.useEffect(() => {
-    console.log("changing onchange config");
-  }, [config]);
-
-  React.useEffect(() => {
-    console.log("changing onchange push");
-  }, [push]);
 
   let dragHandleProps: any = undefined;
   let containerProps = {};

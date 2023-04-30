@@ -19,7 +19,6 @@ import {
   FolderDomainsContext,
   FolderDomainsProvider,
 } from "./FolderDomainsContext";
-import { useFolder } from "./collab/hooks";
 import { AppSpace } from "./spaces/AppSpace";
 import { getFieldRecord, getGraph } from "@storyflow/fields-core/graph";
 import { DEFAULT_FIELDS } from "@storyflow/fields-core/default-fields";
@@ -31,6 +30,7 @@ import { FocusOrchestrator } from "../utils/useIsFocused";
 import { usePush } from "../collab/CollabContext";
 import { FolderTransactionEntry } from "operations/actions_new";
 import { createTransaction } from "@storyflow/collab/utils";
+import { useFolder } from "./FoldersContext";
 
 export default function AppPage({ children }: { children?: React.ReactNode }) {
   const route = useRoute();
@@ -116,14 +116,14 @@ export default function AppPage({ children }: { children?: React.ReactNode }) {
     [orderedDocuments]
   );
 
-  const push = usePush<FolderTransactionEntry>("folders", folder._id);
+  const push = usePush<FolderTransactionEntry>("folders");
   const mutateProp = <T extends "label" | "domains">(
     name: T,
     value: DBFolder[T]
   ) => {
     return push(
       createTransaction((t) =>
-        t.target("").toggle({
+        t.target(folder._id).toggle({
           name,
           value,
         } as any)

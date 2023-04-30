@@ -125,7 +125,7 @@ export interface DBDocument {
 export type FolderSpace = {
   id: SpaceId;
   type: "folders";
-  items: string[];
+  items: FolderId[];
 };
 
 export type Space =

@@ -23,7 +23,6 @@ import {
   DocumentIcon,
 } from "@heroicons/react/24/outline";
 import React from "react";
-import { useFolders } from "../../folders/collab/hooks";
 import { Option } from "./Option";
 import { useFieldId } from "../FieldIdContext";
 import { useDocumentIdGenerator } from "../../id-generator";
@@ -36,6 +35,7 @@ import { useFieldConfig } from "../../documents/collab/hooks";
 import { usePath, useSelectedPath } from "../Path";
 import { useLoopTemplate } from "../default/LoopTemplateContext";
 import { useTemplate } from "../default/useFieldTemplate";
+import { useFolders } from "../../folders/FoldersContext";
 
 export function ReferencePrompt({
   prompt,
@@ -199,7 +199,7 @@ function FolderPrompt({
   const documentId = getDocumentId(fieldId) as DocumentId;
   const generateDocumentId = useDocumentIdGenerator();
 
-  const folders = useFolders();
+  const folders = Array.from(useFolders().values());
 
   const [fieldConfig, setFieldConfig] = useFieldConfig(fieldId);
 
@@ -290,7 +290,7 @@ function DocumentPrompt({
     [replacePromptWithStream, fieldConfig, setFieldConfig]
   );
 
-  const folders = useFolders();
+  const folders = Array.from(useFolders().values());
 
   const options = React.useMemo(
     () =>

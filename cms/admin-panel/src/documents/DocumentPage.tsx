@@ -7,7 +7,10 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { DEFAULT_FIELDS } from "@storyflow/fields-core/default-fields";
-import { getTemplateDocumentId } from "@storyflow/fields-core/ids";
+import {
+  getDocumentId,
+  getTemplateDocumentId,
+} from "@storyflow/fields-core/ids";
 import type { DocumentId, FolderId, RawFieldId } from "@storyflow/shared/types";
 import type { DBDocument } from "@storyflow/db-core/types";
 import { NoList, useDragItem } from "@storyflow/dnd";
@@ -21,10 +24,9 @@ import {
 } from ".";
 import { useDocumentLabel } from "./useDocumentLabel";
 import { useClientConfig } from "../client-config";
-import { useTemplateFolder } from "../folders/FoldersContext";
+import { useFolder, useTemplateFolder } from "../folders/FoldersContext";
 import Content from "../layout/components/Content";
 import { useCollab, usePush } from "../collab/CollabContext";
-import { useFolder } from "../folders/collab/hooks";
 import { useDocumentConfig } from "./collab/hooks";
 import { FocusOrchestrator, useFocusedIds } from "../utils/useIsFocused";
 import { DocumentPageContext } from "./DocumentPageContext";
@@ -43,29 +45,15 @@ import { Menu } from "../elements/Menu";
 import { TimelineEntry } from "@storyflow/collab/types";
 import { DocumentTransactionEntry } from "operations/actions_new";
 
-const getVersionKey = (versions?: Record<RawFieldId, number>) => {
-  if (!versions) return -1;
-  const values = Object.values(versions);
-  if (!values.length) return -1;
-  return values.reduce((a, c) => a + c);
-};
-
-function useIsModified(id: string, initial: boolean, key: number) {
+function useIsModified(id: DocumentId, initial: boolean) {
   const [isModified, setIsModified] = React.useState(initial);
 
   const collab = useCollab();
-
   React.useEffect(() => {
-    return collab.registerMutationListener((doc) => {
-      if (doc === id) {
-        setIsModified(true);
-      }
+    return collab.getTimeline(id)!.registerMutationListener((isModified) => {
+      setIsModified(isModified);
     });
   }, []);
-
-  React.useEffect(() => {
-    setIsModified(initial);
-  }, [key, initial]);
 
   return isModified;
 }
@@ -77,7 +65,6 @@ export const DocumentContent = ({
   children,
   isModified: initialIsModified,
   variant,
-  version,
   toolbar,
 }: {
   id: DocumentId;
@@ -86,10 +73,9 @@ export const DocumentContent = ({
   children: React.ReactNode;
   isModified: boolean;
   variant?: string;
-  version: number;
   toolbar: React.ReactNode;
 }) => {
-  const isModified = useIsModified(id, initialIsModified, version);
+  const isModified = useIsModified(id, initialIsModified);
 
   return (
     <Content
@@ -229,8 +215,6 @@ export function DocumentPage({ children }: { children?: React.ReactNode }) {
   const segment = parseSegment<"document" | "template">(route);
   let { doc, timeline, error } = useDocument(segment.id);
 
-  console.log("TIMELINE", timeline);
-
   return (
     <>
       {!error && doc && timeline && (
@@ -288,7 +272,6 @@ const Page = ({
       <DocumentPageContext.Provider value={ctx}>
         <FocusOrchestrator>
           <DocumentContent
-            version={getVersionKey(doc.versions)}
             id={id}
             variant={type === "template" ? "template" : undefined}
             folder={doc?.folder}
@@ -411,7 +394,7 @@ function SaveButton({ id, folder }: { id: DocumentId; folder: FolderId }) {
         onClick={async () => {
           if (isLoading) return;
           setIsLoading(true);
-          await collab.sync(true);
+          await collab.sync(1, true);
           const result = await saveDocument({ id, searchable: {} });
           mutateUpdatedUrls();
           setIsLoading(false);

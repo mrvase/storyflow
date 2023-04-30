@@ -2,6 +2,7 @@ import { Result } from "@storyflow/result";
 
 export function onInterval(
   callback: (
+    index: number,
     event: "start" | "stop" | "interval" | "unload" | "visibilitychange"
   ) => Promise<Result<any>> | undefined,
   options: {
@@ -11,6 +12,8 @@ export function onInterval(
   let { duration = 2000 } = options;
 
   let int: ReturnType<typeof setInterval> | null = null;
+
+  let index = 0;
 
   // moved throttle in here from calling function
   let lastSync = 0;
@@ -26,11 +29,11 @@ export function onInterval(
   ) => {
     if (event === "unload" || event === "visibilitychange") {
       lastSync = Date.now();
-      return await callback(event);
+      return await callback(index++, event);
     }
     return await throttle(() => {
       lastSync = Date.now();
-      return callback(event);
+      return callback(index++, event);
     }, duration / 2);
   };
 

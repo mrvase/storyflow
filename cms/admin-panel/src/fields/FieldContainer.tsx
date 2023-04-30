@@ -27,10 +27,10 @@ import { FieldToolbarPortal } from "../documents/FieldToolbar";
 import { EditorFocusProvider } from "../editor/react/useIsFocused";
 import { Attributes, AttributesProvider } from "./Attributes";
 import { SelectedPathProvider, useNestedEntity, useSelectedPath } from "./Path";
-import { useFolder } from "../folders/collab/hooks";
 import { usePanel, useRoute } from "../panel-router/Routes";
 import { useLocalStorage } from "../state/useLocalStorage";
 import { useFieldRestriction } from "./FieldIdContext";
+import { useFolder } from "../folders/FoldersContext";
 
 type Props = {
   fieldConfig: FieldConfig;

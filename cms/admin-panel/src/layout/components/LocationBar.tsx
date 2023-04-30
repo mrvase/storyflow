@@ -19,7 +19,7 @@ import { parseSegment } from "./parseSegment";
 import { useOptimisticDocumentList, useDocument } from "../../documents";
 import { useLabel } from "../../documents/collab/hooks";
 import { useDocumentLabel } from "../../documents/useDocumentLabel";
-import { useFolder } from "../../folders/collab/hooks";
+import { useFolder } from "../../folders/FoldersContext";
 
 export function LocationBar({
   isFocused,

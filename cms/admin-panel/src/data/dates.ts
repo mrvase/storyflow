@@ -132,8 +132,6 @@ export function parseDateFromString(str: string) {
       return acc;
     }, [] as string[]);
 
-  console.log("TOKENS", tokens);
-
   const res: {
     date?: number;
     month?: number | string;

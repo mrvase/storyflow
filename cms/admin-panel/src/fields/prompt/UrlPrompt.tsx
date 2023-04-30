@@ -10,7 +10,6 @@ import { LinkIcon } from "@heroicons/react/24/outline";
 import { $getRoot, $getSelection, $isRangeSelection } from "lexical";
 import React from "react";
 import { useEditorContext } from "../../editor/react/EditorProvider";
-import { useAppFolders } from "../../folders/collab/hooks";
 import { tools } from "operations/stream-methods";
 import { useGlobalState } from "../../state/state";
 import { $getComputation, $getIndexFromPoint } from "../Editor/transforms";
@@ -22,6 +21,7 @@ import { useDocumentIdGenerator } from "../../id-generator";
 import { tokens } from "@storyflow/fields-core/tokens";
 import { useOptimisticDocumentList } from "../../documents";
 import { markMatchingString } from "./helpers";
+import { useFolders } from "../../folders/FoldersContext";
 
 export function UrlPrompt({
   prompt,
@@ -56,7 +56,9 @@ export function UrlPrompt({
 
   const combinedPrompt = parentUrl?.[0] ? `${parentUrl[0]}/${prompt}` : prompt;
 
-  const apps = useAppFolders();
+  const apps = Array.from(useFolders().values()).filter(
+    (el) => el.type === "app"
+  );
 
   return (
     <>

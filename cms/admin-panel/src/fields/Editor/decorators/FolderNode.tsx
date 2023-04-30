@@ -10,7 +10,6 @@ import {
 import type { SyntaxTreeRecord } from "@storyflow/fields-core/types";
 import { FolderIcon } from "@heroicons/react/24/outline";
 import { useTemplate } from "../../default/useFieldTemplate";
-import { useFolder } from "../../../folders/collab/hooks";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 import { ExtendPath, usePath, useSelectedPath } from "../../Path";
 import {
@@ -21,6 +20,7 @@ import {
 import { useFieldTemplateId } from "../../default/FieldTemplateContext";
 import { DefaultField } from "../../default/DefaultField";
 import { EditorFocusProvider } from "../../../editor/react/useIsFocused";
+import { useFolder } from "../../../folders/FoldersContext";
 
 function Decorator({
   value,

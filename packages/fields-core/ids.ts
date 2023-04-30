@@ -148,6 +148,16 @@ export const normalizeDocumentId = (
   return id;
 };
 
+export const normalizeFolderId = (id: RawFolderId | FolderId) => {
+  if (id.length === 12) {
+    return `${ROOT_PARENT_RAW}${id}`;
+  }
+  if (id.length !== 24) {
+    throw new Error(`Invalid field id: ${id}`);
+  }
+  return id;
+};
+
 export const getParentDocumentId = (id: NestedDocumentId): DocumentId => {
   if (id.length !== 24) {
     throw new Error(`Invalid field id: ${id}`);

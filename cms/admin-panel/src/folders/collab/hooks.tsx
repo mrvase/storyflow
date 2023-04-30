@@ -1,20 +1,23 @@
 import React from "react";
 import type { FolderId } from "@storyflow/shared/types";
-import type { DBFolder, Space, SpaceId } from "@storyflow/db-core/types";
+import type {
+  DBFolder,
+  FolderSpace,
+  Space,
+  SpaceId,
+} from "@storyflow/db-core/types";
 import { createStaticStore } from "../../state/StaticStore";
-import { useInitialFolders } from "../FoldersContext";
-import { createReactSubject } from "../../state/useSubject";
+// import { useInitialFolders } from "../FoldersContext";
 import { QueueListenerParam } from "@storyflow/collab/Queue";
 import { useCollaborativeState } from "../../collab/createCollaborativeState";
 import {
-  FolderListTransactionEntry,
   FolderTransactionEntry,
   SpaceTransactionEntry,
 } from "operations/actions_new";
 import { isSpliceOperation, isToggleOperation } from "@storyflow/collab/utils";
+import { getRawFolderId } from "@storyflow/fields-core/ids";
 
-const useFoldersSubject = createReactSubject<DBFolder[]>();
-
+/*
 const folders = createStaticStore<DBFolder, Map<string, DBFolder>>(
   (old?) => new Map(old ?? [])
 );
@@ -43,12 +46,91 @@ export const useFolderPaths = () => {
   return parents;
 };
 
+const stateInitializer = (callback: () => Map<string, DBFolder>) => {
+  const store = folders.useStore(callback);
+
+  const setStore = React.useCallback((updates: Map<string, DBFolder>) => {
+    updates.forEach((value, key) => {
+      // creates new map copy inside store automatically in order to trigger re-render
+      folders.set(key, value);
+    });
+  }, []);
+
+  return [store, setStore] as [typeof store, typeof setStore];
+};
+
 export function useFolders() {
-  const { folders: initialFolders, timeline } = useInitialFolders();
+  const { timeline, folders: initialFolders, version } = useInitialFolders();
 
-  const version = initialFolders.length;
+  const operator = React.useCallback(
+    ({
+      forEach,
+    }: QueueListenerParam<FolderTransactionEntry | SpaceTransactionEntry>) => {
+      const updates: Record<FolderId, DBFolder> = {};
 
-  console.log("HERE", initialFolders, timeline);
+      forEach(({ transaction }) => {
+        transaction.forEach((entry) => {
+          const [folderId, spaceId] = entry[0].split(":") as [
+            FolderId,
+            SpaceId | undefined
+          ];
+          if (spaceId) {
+            (entry as SpaceTransactionEntry)[1].forEach((operation) => {
+              const initial = initialFolders[getRawFolderId(folderId)] ?? {
+                _id: folderId,
+                type: "data",
+                spaces: [],
+              };
+              const newFolder = updates[folderId] ?? {
+                ...initial,
+                spaces: [...initial.spaces],
+              };
+              const newSpace = newFolder.spaces.find(
+                (el) => el.id === spaceId
+              ) as FolderSpace;
+
+              if (isSpliceOperation(operation)) {
+                const [index, remove, insert] = operation;
+                newSpace.items.splice(index, remove ?? 0, ...(insert ?? []));
+              }
+            });
+          } else {
+            (entry as FolderTransactionEntry)[1].forEach((operation) => {
+              const initial = initialFolders[getRawFolderId(folderId)];
+              const newFolder = updates[folderId] ?? {
+                ...initial,
+                spaces: [...initial.spaces],
+              };
+              if (isSpliceOperation(operation)) {
+                const [index, remove, insert] = operation;
+                newFolder.spaces!.splice(index, remove ?? 0, ...(insert ?? []));
+              } else if (isToggleOperation(operation)) {
+                newFolder[operation[0] as "label"] = operation[1] as string;
+              }
+              updates[folderId] = newFolder;
+            });
+          }
+        });
+      });
+
+      return new Map(Object.entries(updates));
+    },
+    [initialFolders]
+  );
+
+  const folders = useCollaborativeState(stateInitializer, operator, {
+    timelineId: "folders",
+    version,
+    timeline,
+  });
+}
+*/
+
+/*
+const useFoldersSubject = createReactSubject<DBFolder[]>();
+
+export function useFolders() {
+  const { folders: initialFolders, version, timeline } = useInitialFolders();
 
   const operator = React.useCallback(
     ({ forEach }: QueueListenerParam<FolderListTransactionEntry>) => {
@@ -80,11 +162,17 @@ export function useFolders() {
     queueId: "",
   });
 }
+*/
 
+/*
 export function useFolder(folderId: FolderId): DBFolder {
-  const { timeline } = useInitialFolders();
+  const { timeline, folders: initialFolders } = useInitialFolders();
 
-  const initialFolder = useFolders().find((el) => el._id === folderId); // support newly added folders
+  const initialFolder: DBFolder = initialFolders[getRawFolderId(folderId)] ?? {
+    _id: folderId,
+    label: "Ny mappe",
+    spaces: [],
+  }; // support newly added folders
 
   if (!initialFolder) {
     throw new Error("Folder not found");
@@ -197,8 +285,4 @@ export function useSpace<T extends Space>({
     }
   );
 }
-
-export const useAppFolders = () => {
-  const ctx = useFolders();
-  return ctx.filter((el) => el.type === "app");
-};
+*/
