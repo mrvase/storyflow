@@ -1,6 +1,5 @@
 import React from "react";
 import Dialog from "../elements/Dialog";
-import { useDocumentListMutation } from "../documents";
 import { getDefaultValuesFromTemplateAsync } from "../documents/template-fields";
 import { createTemplateFieldId } from "@storyflow/fields-core/ids";
 import type { DocumentId, FieldId, FolderId } from "@storyflow/shared/types";
@@ -12,6 +11,7 @@ import { DEFAULT_FIELDS } from "@storyflow/fields-core/default-fields";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
 import { insertRootInTransforms } from "@storyflow/fields-core/transform";
 import { usePanel, useRoute } from "../panel-router/Routes";
+import { useAddDocument } from "../documents";
 
 export function AddDocumentDialog({
   isOpen,
@@ -32,10 +32,9 @@ export function AddDocumentDialog({
   };
   type: "app" | "folder";
 }) {
-  const mutateDocuments = useDocumentListMutation();
+  const addDocument = useAddDocument({ navigate: true });
+
   const generateDocumentId = useDocumentIdGenerator();
-  const [, navigate] = usePanel();
-  const route = useRoute();
   const client = useClient();
 
   const [label, setLabel] = React.useState("");
@@ -51,57 +50,41 @@ export function AddDocumentDialog({
         onSubmit={async (ev) => {
           try {
             ev.preventDefault();
-            const id = generateDocumentId();
-            const record = template
-              ? await getDefaultValuesFromTemplateAsync(id, template, {
-                  client,
-                  generateDocumentId,
-                })
-              : {};
-
-            record[createTemplateFieldId(id, DEFAULT_FIELDS.creation_date.id)] =
-              {
-                ...DEFAULT_SYNTAX_TREE,
-                children: [new Date()],
-              };
-
-            if (parentUrl) {
-              Object.assign(record, parentUrl.record);
-
-              record[createTemplateFieldId(id, DEFAULT_FIELDS.url.id)] =
-                insertRootInTransforms(
-                  {
-                    ...DEFAULT_SYNTAX_TREE,
-                    children: [
-                      {
-                        id: generateDocumentId(id),
-                        field: parentUrl.id,
-                        inline: true,
-                      },
-                      "/",
-                      slug,
-                    ],
-                  },
-                  DEFAULT_FIELDS.url.initialValue.transforms
-                );
-
-              record[createTemplateFieldId(id, DEFAULT_FIELDS.label.id)] = {
-                ...DEFAULT_SYNTAX_TREE,
-                children: [label],
-              };
-            }
-
-            mutateDocuments({
+            addDocument({
               folder,
-              actions: [
-                {
-                  type: "insert",
-                  id,
-                  record,
+              template,
+              createRecord: (id) => ({
+                [createTemplateFieldId(id, DEFAULT_FIELDS.creation_date.id)]: {
+                  ...DEFAULT_SYNTAX_TREE,
+                  children: [new Date()],
                 },
-              ],
+                ...(parentUrl
+                  ? {
+                      ...parentUrl.record,
+                      [createTemplateFieldId(id, DEFAULT_FIELDS.url.id)]:
+                        insertRootInTransforms(
+                          {
+                            ...DEFAULT_SYNTAX_TREE,
+                            children: [
+                              {
+                                id: generateDocumentId(id),
+                                field: parentUrl.id,
+                                inline: true,
+                              },
+                              "/",
+                              slug,
+                            ],
+                          },
+                          DEFAULT_FIELDS.url.initialValue.transforms
+                        ),
+                      [createTemplateFieldId(id, DEFAULT_FIELDS.label.id)]: {
+                        ...DEFAULT_SYNTAX_TREE,
+                        children: [label],
+                      },
+                    }
+                  : {}),
+              }),
             });
-            navigate(`${route}/d${id}`, { navigate: true });
             close();
           } catch (err) {
             console.log(err);

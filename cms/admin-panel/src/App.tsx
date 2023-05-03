@@ -10,6 +10,8 @@ import { Preload } from "./preload";
 import { CollabProvider } from "./collab/CollabContext";
 import { PanelRouter } from "./panel-router/PanelRouter";
 import { Layout } from "./layout/components/Layout";
+import { Panels } from "./layout/components/Panels";
+import { routes } from "./layout/pages/routes";
 
 export function App() {
   return (
@@ -24,7 +26,9 @@ export function App() {
                   <DragDropContext>
                     <ClientConfigProvider>
                       <IdGenerator>
-                        <Layout />
+                        <Layout>
+                          <Panels routes={routes} />
+                        </Layout>
                       </IdGenerator>
                     </ClientConfigProvider>
                   </DragDropContext>

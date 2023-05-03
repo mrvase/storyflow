@@ -37,6 +37,10 @@ export type DocumentTransactionEntry =
   | TransactionEntry<"", DocumentSpliceOperation>
   | TransactionEntry<FieldId, DocumentPropertyOperation>;
 
+export type DocumentAddTransactionEntry =
+  | TransactionEntry<FolderId, ToggleOperation<"add", DocumentId>>
+  | TransactionEntry<FolderId, ToggleOperation<"remove", DocumentId>>;
+
 export type FolderSpliceOperation = SpliceOperation<Space>;
 export type FolderPropertyOperation =
   | ToggleOperation<"template", DocumentId>

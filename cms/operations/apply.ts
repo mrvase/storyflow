@@ -153,6 +153,7 @@ export const applyFieldTransaction = (
 };
 
 // createDocumentTransformer
+/*
 export const createTokenStreamTransformer = (
   fieldId: FieldId,
   initialRecord: SyntaxTreeRecord
@@ -167,6 +168,7 @@ export const createTokenStreamTransformer = (
     (target, value) => tools.getLength(value)
   );
 };
+*/
 
 export const createDocumentTransformer = (initialRecord: SyntaxTreeRecord) => {
   const getInitialLength = (target: string) => {

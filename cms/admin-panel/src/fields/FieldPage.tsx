@@ -17,7 +17,7 @@ import type {
   SyntaxTreeRecord,
   SyntaxTree,
 } from "@storyflow/fields-core/types";
-import Content from "../layout/components/Content";
+import Content from "../layout/pages/Content";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { useClientConfig } from "../client-config";
 import { createComponent } from "./Editor/createComponent";
@@ -351,7 +351,7 @@ export function FieldPage({ children }: { children?: React.ReactNode }) {
   const segment = parseSegment<"field">(route);
   const id = segment.id;
 
-  const documentId = getDocumentId(id);
+  const documentId = getDocumentId<DocumentId>(id);
   const templateFieldId = getRawFieldId(id);
 
   const { iframeProps, listeners, dispatchers } = useIframe();
@@ -364,7 +364,7 @@ export function FieldPage({ children }: { children?: React.ReactNode }) {
 
   return (
     <FieldIdContext.Provider value={id}>
-      <VersionProvider version={versions?.[getRawFieldId(id)] ?? 0}>
+      <VersionProvider version={versions?.[getRawFieldId(id)]?.[0] ?? 0}>
         <AttributesProvider>
           <SelectedPathProvider
             id={id}

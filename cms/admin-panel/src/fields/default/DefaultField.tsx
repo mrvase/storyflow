@@ -1,6 +1,6 @@
 import React from "react";
 import cl from "clsx";
-import type { FieldId } from "@storyflow/shared/types";
+import type { DocumentId, FieldId } from "@storyflow/shared/types";
 import { getDocumentId, getRawFieldId } from "@storyflow/fields-core/ids";
 import { useFieldId } from "../FieldIdContext";
 import { createTokenStream } from "operations/parse-token-stream";
@@ -92,7 +92,7 @@ export function DefaultField({
   const version = useFieldVersion();
 
   const { target, initialValue, value, isPrimitive, templateId, transforms } =
-    useDefaultState(id, version);
+    useDefaultState(id);
 
   const initialEditorValue = createTokenStream(initialValue);
 
@@ -101,7 +101,7 @@ export function DefaultField({
   const tracker = React.useMemo(() => ({}), []);
 
   const push = usePush<FieldTransactionEntry>(
-    getDocumentId(rootId),
+    getDocumentId<DocumentId>(rootId),
     getRawFieldId(rootId)
   );
 

@@ -1,7 +1,12 @@
+export type CollabRef = number;
+
+export type CollabVersion = [index: number, prev: number, user: string] | [0];
+export type VersionRecord = Record<string, CollabVersion>;
+
 export type TimelineEntry = [
-  prev: number,
-  user: string,
   queue: string,
+  prev: CollabRef,
+  user: string,
   ...transactions: Transaction<TransactionEntry>[]
 ];
 
@@ -29,7 +34,7 @@ export type TransactionEntry<
 export type Transaction<T extends TransactionEntry = TransactionEntry> = T[];
 
 export type QueueEntry<TE extends TransactionEntry = TransactionEntry> = {
-  prev: number;
+  prev: CollabRef;
   user: string;
   queue: string;
   transaction: Transaction<TE>;

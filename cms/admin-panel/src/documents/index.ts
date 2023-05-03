@@ -1,85 +1,42 @@
-import { unwrap } from "@storyflow/result";
-import { createQueue } from "@storyflow/state";
+import { isSuccess, unwrap } from "@storyflow/result";
 import React from "react";
-import { Client, SWRClient, cache } from "../client";
+import { Client, SWRClient, readFromCache, useClient } from "../client";
 import {
   DocumentId,
   FolderId,
   RawFieldId,
   ValueArray,
   RawDocumentId,
+  FieldId,
 } from "@storyflow/shared/types";
 import type { SyntaxTreeRecord, Sorting } from "@storyflow/fields-core/types";
 import type { DBDocument } from "@storyflow/db-core/types";
-import { pushAndRetry } from "../utils/retryOnError";
 import {
   DEFAULT_FIELDS,
   generateTemplateId,
   getDefaultValue,
 } from "@storyflow/fields-core/default-fields";
-import { TEMPLATE_FOLDER } from "@storyflow/fields-core/constants";
 import {
+  DEFAULT_SYNTAX_TREE,
+  TEMPLATE_FOLDER,
+} from "@storyflow/fields-core/constants";
+import {
+  createTemplateFieldId,
   getTemplateDocumentId,
   normalizeDocumentId,
 } from "@storyflow/fields-core/ids";
 import type { DefaultFieldConfig } from "@storyflow/fields-core/types";
 import { TimelineEntry } from "@storyflow/collab/types";
-
-type DocumentListMutation =
-  | {
-      type: "insert";
-      id: DocumentId;
-      label?: string;
-      record: SyntaxTreeRecord;
-      // values: ValueRecord;
-    }
-  | {
-      type: "remove";
-      id: DocumentId;
-    };
-
-type DocumentListOperation = {
-  folder: FolderId;
-  actions: DocumentListMutation[];
-};
-
-const queue = createQueue<DocumentListOperation>("documents", {
-  clientId: null,
-}).initialize(0, []);
-
-const getDocumentFromInsert = (
-  folder: FolderId,
-  action: DocumentListMutation
-): DBDocument | undefined => {
-  if (action.type !== "insert") return;
-  return {
-    _id: action.id as DocumentId,
-    folder,
-    versions: { config: 0 },
-    record: action.record,
-    config: [],
-    ...(action.label && { label: action.label }),
-  };
-};
-
-const optimisticUpdate = (
-  documents: DBDocument[],
-  folder: FolderId,
-  actions: DocumentListMutation[]
-): DBDocument[] => {
-  let inserts: DBDocument[] = [];
-  let removes: DocumentId[] = [];
-
-  actions.forEach((action) => {
-    if (action.type === "insert") {
-      inserts.unshift(getDocumentFromInsert(folder, action)!);
-    } else {
-      removes.push(action.id);
-    }
-  });
-
-  return [...inserts, ...documents].filter((el) => !removes.includes(el._id));
-};
+import { createTransaction } from "@storyflow/collab/utils";
+import { DocumentAddTransactionEntry } from "operations/actions_new";
+import { useCollab, usePush } from "../collab/CollabContext";
+import {
+  useDocumentIdGenerator,
+  useTemplateIdGenerator,
+} from "../id-generator";
+import { usePanel, useRoute } from "../panel-router/Routes";
+import { getDefaultValuesFromTemplateAsync } from "./template-fields";
+import { createDocumentTransformer } from "operations/apply";
 
 export async function fetchDocumentList(
   params: {
@@ -145,55 +102,8 @@ export function useDocumentList(
     }
   );
 
-  return { data, error };
+  return { documents: data, error };
 }
-
-export function useOptimisticDocumentList(folderId: FolderId | undefined) {
-  const { data, error } = useDocumentList(folderId);
-
-  const [operations, setOperations] = React.useState<DocumentListOperation[]>(
-    []
-  );
-
-  React.useEffect(() => {
-    return queue.register(({ forEach }) => {
-      const newOps: DocumentListOperation[] = [];
-      forEach(({ operation }) => {
-        newOps.push(operation);
-      });
-      setOperations(newOps);
-    });
-  }, []);
-
-  const documents = React.useMemo(() => {
-    if (!data || !folderId) return undefined;
-    const actions = operations
-      .filter(({ folder }) => folder === folderId)
-      .reduce(
-        (acc, { actions }) => [...acc, ...actions],
-        [] as DocumentListMutation[]
-      );
-    return optimisticUpdate(data, folderId, actions);
-  }, [folderId, data, operations]);
-
-  return { documents, error };
-}
-
-const getDocumentFromOperations = (
-  documentId: string | undefined,
-  operations: DocumentListOperation[]
-) => {
-  if (!documentId) return;
-  let doc: DBDocument | undefined;
-  operations.forEach(({ actions, folder }) => {
-    actions.forEach((action) => {
-      if (action.type === "insert" && action.id === documentId) {
-        doc = getDocumentFromInsert(folder, action)!;
-      }
-    });
-  });
-  return doc;
-};
 
 export async function fetchDocument(
   id: string,
@@ -223,7 +133,8 @@ export function fetchDocumentSync(
   }
 
   const key = client.documents.get.key(id);
-  const exists = cache.read(key);
+  const exists = readFromCache(key);
+
   if (typeof exists !== "undefined") {
     return {
       then(callback) {
@@ -253,7 +164,7 @@ const generateTemplateFromDefaultFields = (
       template: getTemplateDocumentId(field.id),
     })),
     record,
-    versions: { config: 0 },
+    versions: { config: [0] },
   };
 };
 
@@ -292,13 +203,11 @@ const TEMPLATES = [
       label: field.label,
       config: [fieldConfig],
       record,
-      versions: { config: 0 },
+      versions: { config: [0, 0, ""] },
     };
   }),
   ...Object.values(DEFAULT_TEMPLATES),
 ];
-
-const emptyTimeline: TimelineEntry[] = [];
 
 export function useDocument(
   documentId_: RawDocumentId | DocumentId | undefined
@@ -321,84 +230,85 @@ export function useDocument(
     );
   }
 
-  const getInitialDocument = () => {
-    const operations: DocumentListOperation[] = [];
-    queue.forEach(({ operation }) => {
-      operations.push(operation);
-    });
-    return getDocumentFromOperations(documentId, operations);
-  };
-
-  const [initialDocument, setInitialDocument] =
-    React.useState(getInitialDocument);
-
-  const { data, error, mutate } = SWRClient.documents.get.useQuery(
+  const { data, error } = SWRClient.documents.get.useQuery(
     documentId as string,
     {
       inactive: !documentId, // maybe: || Boolean(initialArticle),
+      immutable: true,
     }
   );
-
-  const { data: timeline } = SWRClient.collab.getTimeline.useQuery(
-    documentId as string,
-    {
-      inactive: !documentId,
-    }
-  );
-
-  React.useEffect(() => {
-    if (initialDocument !== undefined && data !== undefined) {
-      setInitialDocument(undefined);
-    }
-  }, [initialDocument, data]);
-
-  const doc = React.useMemo(() => {
-    if (!documentId) return undefined;
-    if (data) {
-      return data;
-    }
-    return initialDocument;
-  }, [documentId, data, initialDocument]);
 
   return {
-    doc,
-    timeline: timeline ?? emptyTimeline,
-    mutate,
-    error: initialDocument ? undefined : error,
+    doc: data,
+    error: data ? undefined : error,
   };
 }
 
-export const useDocumentListMutation = () => {
-  const mutate = SWRClient.documents.sync.useMutation({
-    cacheUpdate: (input, mutate) => {
-      const groups = input.reduce((acc, cur) => {
-        return {
-          [cur.folder as FolderId]: [
-            ...(acc[cur.folder as FolderId] ?? []),
-            ...(cur.actions as DocumentListMutation[]),
-          ],
-        };
-      }, {} as Record<FolderId, DocumentListMutation[]>);
+export function useDocumentWithTimeline(documentId: DocumentId) {
+  const collab = useCollab();
 
-      Object.entries(groups).map(([folder, actions]) => {
-        mutate(["getList", { folder, limit: 50 }], (ps, result) => {
-          if (result === undefined) {
-            // we handle optimistic updates separately
-            // so that we do not update the cache
-            // on error
-            return ps;
-          }
+  React.useLayoutEffect(() => {
+    // for prefetching
+    collab.initializeTimeline(documentId);
+    hasCalledStaleHook.current = false;
+  }, [collab]);
 
-          const documents = optimisticUpdate(ps, folder as FolderId, actions);
-
-          return documents;
-        });
+  const { data, error, mutate } = SWRClient.documents.get.useQuery(documentId, {
+    immutable: true,
+    onSuccess(data) {
+      // only running on fetch, not cache update!
+      /*
+      collab.initializeTimeline(documentId, {
+        versions: data.versions,
+        transform: createDocumentTransformer(data.record),
       });
+      hasCalledStaleHook.current = false;
+      */
     },
   });
 
-  return (operation: DocumentListOperation) => {
-    pushAndRetry("documents", operation, mutate, queue);
+  React.useLayoutEffect(() => {
+    // TODO: This should be made synchronous to avoid flickering
+    if (data) {
+      collab.initializeTimeline(documentId, {
+        versions: data.versions,
+        transform: createDocumentTransformer(data.record),
+      });
+      hasCalledStaleHook.current = false;
+    }
+  }, [data]);
+
+  console.log("DOC DATA", data);
+
+  let hasCalledStaleHook = React.useRef(false);
+  React.useEffect(() => {
+    const timeline = collab.getTimeline(documentId)!;
+    return timeline.registerStaleListener(() => {
+      if (!hasCalledStaleHook.current) {
+        mutate();
+        hasCalledStaleHook.current = true;
+      }
+    });
+  }, [mutate]);
+
+  return {
+    doc: data,
+    error: data ? undefined : error,
+  };
+}
+
+export const useDeleteManyMutation = (folderId: string) => {
+  const { mutate: mutateList } = SWRClient.documents.getList.useQuery({
+    folder: folderId,
+    limit: 50,
+  });
+  const deleteMany = SWRClient.documents.deleteMany.useMutation();
+
+  return async (ids: DocumentId[]) => {
+    const result = await deleteMany(ids);
+    if (isSuccess(result)) {
+      mutateList();
+    }
   };
 };
 
@@ -423,3 +333,120 @@ export const useSaveDocument = (folder: FolderId) => {
     },
   });
 };
+
+export const useAddDocument = (
+  options: { type?: "template" | "document"; navigate?: boolean } = {}
+) => {
+  const generateDocumentId = useDocumentIdGenerator();
+  const generateTemplateId = useTemplateIdGenerator();
+  const [, navigate] = usePanel();
+  const route = useRoute();
+  const client = useClient();
+
+  const push = usePush<DocumentAddTransactionEntry>("documents");
+
+  const addDocument = React.useCallback(
+    async (data: {
+      folder: FolderId;
+      template?: DocumentId;
+      createRecord?: (id: DocumentId) => SyntaxTreeRecord;
+    }) => {
+      const id =
+        options.type === "template"
+          ? generateTemplateId()
+          : generateDocumentId();
+      push(
+        createTransaction((t) =>
+          t.target(data.folder).toggle({ name: "add", value: id })
+        )
+      );
+
+      const record = data.template
+        ? await getDefaultValuesFromTemplateAsync(id, data.template, {
+            client,
+            generateDocumentId,
+          })
+        : {};
+
+      if (data.createRecord) {
+        const createdRecord = data.createRecord(id);
+        Object.entries(createdRecord).forEach(([key, value]) => {
+          record[key as FieldId] = value;
+        });
+      }
+
+      record[createTemplateFieldId(id, DEFAULT_FIELDS.creation_date.id)] = {
+        ...DEFAULT_SYNTAX_TREE,
+        children: [new Date()],
+      };
+
+      // TODO: Push record
+
+      if (options.navigate) {
+        navigate(`${route}/${options.type === "template" ? "t" : "d"}${id}`, {
+          navigate: true,
+        });
+      }
+      return id;
+    },
+    [push, options.navigate, route, navigate, client, generateDocumentId]
+  );
+
+  return addDocument;
+};
+
+/*
+export const useNewSave = () => {
+  const collab = useCollab();
+  const client = useClient();
+
+  return (document: DBDocument) => {
+    collab.getTimeline(document._id)!.save(async (history) => {
+      const result = await client.fields.save.mutation(document._id);
+
+      if (isSuccess(result)) {
+        const newDocument = unwrap(result);
+        return {
+          status: "success",
+          data: {
+            versions: newDocument.versions,
+            timeline: [],
+            record: newDocument.record,
+          },
+        };
+      }
+
+      return {
+        status: "error",
+      };
+    });
+  };
+};
+
+export const saveDocument = async (
+  document: DBDocument,
+  timeline: TimelineEntry[],
+  client: Client
+) => {
+  const result = await client.fields.save.mutation({
+    record: doc.record,
+    versions: doc.versions,
+  });
+
+  if (isSuccess(result)) {
+    const newDocument = unwrap(result);
+    return {
+      status: "success",
+      data: {
+        versions: newDocument.versions,
+        timeline: [],
+        transform: createDocumentTransformer(newDocument.record),
+      },
+    };
+  }
+
+  return {
+    status: "error",
+  };
+};
+*/

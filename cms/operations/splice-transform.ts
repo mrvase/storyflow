@@ -2,8 +2,9 @@ import type {
   SpliceOperation,
   TimelineEntry,
   TransactionEntry,
+  CollabRef,
 } from "@storyflow/collab/types";
-import { isSpliceOperation } from "@storyflow/collab/utils";
+import { isSpliceOperation, read } from "@storyflow/collab/utils";
 
 const updateIndex = (
   target: string,
@@ -14,7 +15,7 @@ const updateIndex = (
   let newIndex = index;
 
   interceptions.forEach((pkg) => {
-    const [, , , ...transactions] = pkg;
+    const transactions = read(pkg).transactions;
     transactions.forEach((transaction) => {
       transaction.forEach(([extTarget, operations]) => {
         if (target !== extTarget) return;
@@ -224,8 +225,6 @@ export function createSpliceTransformer(
   return (timeline: TimelineEntry[]) => {
     type SpliceStateArray = [index: number, state: SpliceState][];
 
-    const indexesMap = new Map<string, number>();
-
     const statesMap = createInitializingMap((target: string) => {
       const state: SpliceState = Array.from(
         { length: getInitialLength(target) },
@@ -241,14 +240,19 @@ export function createSpliceTransformer(
       packageIndex: number,
       transformedTimeline: TimelineEntry[]
     ) => {
-      const [index, clientId, queueId, ...transactions] = pkg;
+      const { prev, user, queue: queueId, transactions } = read(pkg);
 
-      const queue = transformedTimeline.filter((el) => el[2] === queueId);
+      const index = prev;
 
-      const interceptions = queue.slice(index, packageIndex);
+      const queue = transformedTimeline.filter(
+        (el) => read(el).queue === queueId
+      );
+      const queueIndex = queue.findIndex((el) => el === pkg);
+
+      const interceptions = queue.slice(index, queueIndex);
 
       const externalInterceptions = interceptions.filter(
-        (el) => el[1] !== clientId
+        (el) => read(el).user !== user
       );
 
       const lastSeenStateInit = (target: string) => {
@@ -260,14 +264,14 @@ export function createSpliceTransformer(
           .slice();
 
         const knownInterceptions = interceptions.filter(
-          (el) => el[1] === clientId
+          (el) => read(el).user === user
         );
 
         if (knownInterceptions.length) {
           // we apply the known interceptions to get the state that these operations were applied to
 
-          knownInterceptions.forEach(([, , , ...transactions]) => {
-            transactions.forEach((transaction) => {
+          knownInterceptions.forEach((interception) => {
+            read(interception).transactions.forEach((transaction) => {
               transaction.map((entry) => {
                 if (entry[0] === target) {
                   splice(lastSeenState, entry);
@@ -321,18 +325,10 @@ export function createSpliceTransformer(
         states.unshift([packageIndex + 1, state]);
       });
 
-      let nextIndex = indexesMap.get(queueId);
-      if (nextIndex === undefined) {
-        nextIndex = index; // first queue member always sees the version number (ensured by filterTimeline)
-      } else {
-        nextIndex++;
-      }
-      indexesMap.set(queueId, nextIndex);
-
       transformedTimeline[packageIndex] = [
-        nextIndex,
-        clientId,
         queueId,
+        queueIndex,
+        user,
         ...transactions,
       ];
     };

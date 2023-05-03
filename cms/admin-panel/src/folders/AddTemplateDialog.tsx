@@ -1,9 +1,6 @@
 import React from "react";
 import Dialog from "../elements/Dialog";
-import {
-  useOptimisticDocumentList,
-  useDocumentListMutation,
-} from "../documents";
+import { useAddDocument, useDocumentList } from "../documents";
 import { DialogOption } from "../elements/DialogOption";
 import { DocumentDuplicateIcon, PlusIcon } from "@heroicons/react/24/outline";
 import { useTemplateFolder } from "./FoldersContext";
@@ -25,10 +22,7 @@ export function AddTemplateDialog({
   folderId: FolderId;
   currentTemplate?: string;
 }) {
-  const mutateDocuments = useDocumentListMutation();
-  const generateTemplateId = useTemplateIdGenerator();
-  const [, navigate] = usePanel();
-  const route = useRoute();
+  const addDocument = useAddDocument({ type: "template", navigate: true });
 
   const push = usePush<FolderTransactionEntry>("folders");
 
@@ -38,32 +32,25 @@ export function AddTemplateDialog({
     async (type: string, data: FormData) => {
       const label = (data.get("value") as string) ?? "";
       if (!label) return;
-      const id = type === "new" ? generateTemplateId() : (label as DocumentId);
+
+      let id: DocumentId;
+      if (type === "new") {
+        id = await addDocument({ folder: templateFolder });
+      } else {
+        id = label as DocumentId;
+      }
+
       push(
         createTransaction((t) =>
           t.target(folderId).toggle({ name: "template", value: id })
         )
       );
-      if (type === "new") {
-        mutateDocuments({
-          folder: templateFolder,
-          actions: [
-            {
-              type: "insert",
-              id,
-              label,
-              record: {},
-            },
-          ],
-        });
-        navigate(`${route}/t${id}`, { navigate: true });
-      }
       close();
     },
-    [push, folderId, generateTemplateId, mutateDocuments, templateFolder, close]
+    [push, folderId, addDocument, templateFolder, close]
   );
 
-  const { documents: templates } = useOptimisticDocumentList(templateFolder);
+  const { documents: templates } = useDocumentList(templateFolder);
 
   const templateOptions = (templates ?? []).map((el) => ({
     value: el._id,

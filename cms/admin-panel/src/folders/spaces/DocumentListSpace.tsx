@@ -12,14 +12,11 @@ import type { SpaceId } from "@storyflow/db-core/types";
 import React from "react";
 import {
   fetchDocument,
-  useOptimisticDocumentList,
-  useDocumentListMutation,
+  useAddDocument,
+  useDocumentList,
 } from "../../documents";
 import { getDocumentLabel } from "../../documents/useDocumentLabel";
-import {
-  getDefaultValuesFromTemplateAsync,
-  getTemplateFieldsAsync,
-} from "../../documents/template-fields";
+import { getTemplateFieldsAsync } from "../../documents/template-fields";
 import Table from "../../documents/components/Table";
 import { useClient } from "../../client";
 import { addDocumentImport } from "../../custom-events";
@@ -28,18 +25,55 @@ import { useCurrentFolder } from "../FolderPageContext";
 import Space from "./Space";
 import Loader from "../../elements/Loader";
 import { useDeleteForm } from "./useDeleteForm";
-import {
-  DEFAULT_FIELDS,
-  isDefaultField,
-} from "@storyflow/fields-core/default-fields";
-import { useDocumentIdGenerator } from "../../id-generator";
+import { isDefaultField } from "@storyflow/fields-core/default-fields";
 import { calculateRootFieldFromRecord } from "@storyflow/fields-core/calculate-server";
-import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
-import { usePanel, useRoute } from "../../panel-router/Routes";
 import { useTemplate } from "../../fields/default/useFieldTemplate";
 import { getPreview } from "../../fields/default/getPreview";
 import { Menu } from "../../elements/Menu";
 import { useFolder } from "../FoldersContext";
+import { useCollab } from "../../collab/CollabContext";
+import { DocumentAddTransactionEntry } from "operations/actions_new";
+import { useCollaborativeState } from "../../collab/useCollaborativeState";
+
+function useNewDocuments(folderId: FolderId) {
+  const [docs, setDocs] = React.useState<DocumentId[]>([]);
+
+  const collab = useCollab();
+
+  React.useLayoutEffect(() => {
+    const queue = collab
+      .getTimeline("documents")!
+      .getQueue<DocumentAddTransactionEntry>();
+    return queue.register(() => {
+      const docs = new Set<DocumentId>();
+      queue.forEach(({ transaction }) => {
+        transaction.forEach((entry) => {
+          if (entry[0] === folderId) {
+            entry[1].forEach((operation) => {
+              if (operation[0] === "add") {
+                docs.add(operation[1]);
+              } else if (operation[0] === "remove") {
+                docs.delete(operation[1]);
+              }
+            });
+          }
+        });
+      });
+      const array = Array.from(docs).reverse();
+      setDocs((ps) => {
+        if (
+          array.length !== ps.length ||
+          !array.every((el, index) => ps[index] === el)
+        ) {
+          return array;
+        }
+        return ps;
+      });
+    });
+  }, [collab]);
+
+  return docs;
+}
 
 export function DocumentListSpace({
   spaceId,
@@ -52,9 +86,10 @@ export function DocumentListSpace({
   hidden: boolean;
   index: number;
 }) {
-  const { form, handleDelete } = useDeleteForm({ folderId });
+  const newDocuments = useNewDocuments(folderId);
+  const { form, handleDelete } = useDeleteForm({ folderId, newDocuments });
 
-  const { documents } = useOptimisticDocumentList(folderId);
+  const { documents } = useDocumentList(folderId);
 
   const folder = useFolder(folderId);
   const template = (useTemplate(folder.template) ?? [])
@@ -66,9 +101,27 @@ export function DocumentListSpace({
     [template]
   );
 
-  const rows = React.useMemo(
-    () =>
-      (documents ?? []).map((el) => ({
+  const rows = React.useMemo(() => {
+    const rows: { id: string; columns: any[] }[] = [];
+    newDocuments.forEach((id) =>
+      rows.push({
+        id,
+        columns: [
+          {
+            value: (
+              <LinkableLabel id={id}>
+                <span className="text-yellow-400">Nyt dokument</span>
+              </LinkableLabel>
+            ),
+          },
+          ...template.map((field) => ({
+            value: "",
+          })),
+        ],
+      })
+    );
+    (documents ?? []).forEach((el) =>
+      rows.push({
         id: el._id,
         columns: [
           {
@@ -87,9 +140,10 @@ export function DocumentListSpace({
             ),
           })),
         ],
-      })),
-    [documents, template]
-  );
+      })
+    );
+    return rows;
+  }, [newDocuments, documents, template]);
 
   return (
     <>
@@ -178,7 +232,7 @@ function ImportButton() {
 function ExportButton() {
   const folder = useCurrentFolder();
 
-  const { documents } = useOptimisticDocumentList(folder?._id);
+  const { documents } = useDocumentList(folder?._id);
 
   const client = useClient();
 
@@ -223,50 +277,15 @@ function ExportButton() {
 
 function AddDocumentButton({ folder }: { folder: FolderId }) {
   const template = useCurrentFolder()?.template;
+  const addDocument = useAddDocument({ navigate: true });
 
-  const mutateDocuments = useDocumentListMutation();
-  const generateDocumentId = useDocumentIdGenerator();
-  const [, navigate] = usePanel();
-  const route = useRoute();
-  const client = useClient();
-
-  const addDocument = async () => {
-    try {
-      const id = generateDocumentId();
-      const record = template
-        ? await getDefaultValuesFromTemplateAsync(id, template, {
-            client,
-            generateDocumentId,
-          })
-        : {};
-
-      record[createTemplateFieldId(id, DEFAULT_FIELDS.creation_date.id)] = {
-        ...DEFAULT_SYNTAX_TREE,
-        children: [new Date()],
-      };
-
-      mutateDocuments({
-        folder,
-        actions: [
-          {
-            type: "insert",
-            id,
-            record,
-          },
-        ],
-      });
-      navigate(`${route}/d${id}`, { navigate: true });
-    } catch (err) {
-      console.log(err);
-    }
-  };
   return (
     <button
       className={cl(
         "rounded-full px-2 py-0.5 text-xs ring-button text-gray-600 dark:text-gray-400 ml-3 flex-center gap-1"
         // "opacity-0 group-hover/space:opacity-100 transition-opacity"
       )}
-      onClick={addDocument}
+      onClick={() => addDocument({ folder, template })}
     >
       <PlusIcon className="w-3 h-3" /> Tilføj
     </button>

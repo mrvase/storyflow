@@ -169,60 +169,6 @@ export default function Nav() {
             </div>
           </div>
         </div>
-        {/*
-        <div className="h-full flex flex-col justify-between pl-2 py-2 w-48">
-          <div className="mt-auto flex justify-end gap-2">
-            <button
-              className="flex-center w-10 h-10 hover:bg-gray-400/25 dark:hover:bg-gray-850 rounded transition-colors"
-              onClick={() => actions.open({ path: "/folders", index: 0 })}
-            >
-              <FolderIcon className="w-5 h-5" />
-            </button>
-            <button
-              className="flex-center w-10 h-10 hover:bg-gray-400/25 dark:hover:bg-gray-850 rounded transition-colors"
-              onClick={() => actions.open({ path: "/templates", index: 0 })}
-            >
-              <DocumentIcon className="w-5 h-5" />
-            </button>
-            <button
-              className="flex-center w-10 h-10 hover:bg-gray-400/25 dark:hover:bg-gray-850 rounded transition-colors"
-              onClick={() => actions.open({ path: "/files", index: 0 })}
-            >
-              <PhotoIcon className="w-5 h-5" />
-            </button>
-          </div>
-          <div className="flex gap-2 mt-2">
-            <button
-              className="flex-center w-10 h-10 hover:bg-gray-400/25 dark:hover:bg-gray-850 rounded transition-colors"
-              onClick={() => setIsOpen(false)}
-            >
-              <ChevronLeftIcon className="w-5 h-5" />
-            </button>
-            <a
-              className="flex-center w-10 h-10 hover:bg-gray-400/25 dark:hover:bg-gray-850 rounded transition-colors"
-              href="/bruger"
-            >
-              <UserIcon className="w-5 h-5" />
-            </a>
-            <button
-              className="flex-center w-10 h-10 hover:bg-gray-400/25 dark:hover:bg-gray-850 rounded transition-colors"
-              onClick={() => setDarkMode((ps) => !ps)}
-            >
-              <DarkIcon className="w-5 h-5" />
-            </button>
-            <button
-              className="flex-center w-10 h-10 hover:bg-gray-400/25 dark:hover:bg-gray-850 rounded transition-colors"
-              onClick={() => setDialog("settings")}
-            >
-              <CogIcon className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-        */}
-        {/*<div className="w-full h-11 mt-auto px-3 flex-center font-black tracking-wider text-sm">
-          <span className="text-white">Storyflow</span>
-        </div>
-        */}
       </div>
     </>
   );
@@ -369,6 +315,7 @@ function StatusButton() {
     });
   }, [isModified, collabState]);
 
+  /*
   React.useEffect(() => {
     return collab.registerMutationListener(() => {
       changeState({
@@ -376,6 +323,7 @@ function StatusButton() {
       });
     });
   }, [isModified, collabState]);
+  */
 
   const icon = {
     uploading: ArrowUpCircleIcon,
@@ -392,7 +340,7 @@ function StatusButton() {
           ? "text-yellow-400"
           : "text-green-400"
       }
-      onClick={() => collab.sync()}
+      onClick={() => collab.sync(0)}
     />
   );
 }

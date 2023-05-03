@@ -8,11 +8,12 @@ import type {
   PartialFieldConfig,
   TemplateRef,
   DocumentConfig,
+  DocumentVersionRecord,
 } from "@storyflow/db-core/types";
-import { useCollab, usePush } from "../../collab/CollabContext";
+import { usePush } from "../collab/CollabContext";
 import { getFieldConfig, setFieldConfig } from "operations/field-config";
-import { createPurger, createStaticStore } from "../../state/StaticStore";
-import { useDocument } from "..";
+import { createPurger, createStaticStore } from "../state/StaticStore";
+import { useDocument } from ".";
 import {
   getDocumentId,
   getTemplateDocumentId,
@@ -20,15 +21,11 @@ import {
   replaceDocumentId,
   revertTemplateFieldId,
 } from "@storyflow/fields-core/ids";
-import {
-  useCollaborativeState,
-  initializeTimeline,
-} from "../../collab/createCollaborativeState";
-import { QueueListenerParam } from "@storyflow/collab/Queue";
-import { useTemplatePath } from "../TemplatePathContext";
+import { useCollaborativeState } from "../collab/useCollaborativeState";
+import { useTemplatePath } from "./TemplatePathContext";
 import { DocumentTransactionEntry } from "operations/actions_new";
-import { TimelineEntry } from "@storyflow/collab/types";
 import { isSpliceOperation, isToggleOperation } from "@storyflow/collab/utils";
+import { QueueForEach } from "@storyflow/collab/Queue";
 
 /*
 export const labels = createStaticStore<
@@ -57,18 +54,11 @@ export const useDocumentConfig = (
   data: {
     record: SyntaxTreeRecord;
     config: DocumentConfig;
-    timeline: TimelineEntry[];
-    versions: Record<string, number>;
+    versions: DocumentVersionRecord;
   }
 ) => {
-  let { mutate } = useDocument(templateId);
-
-  let refreshOnStale = React.useCallback(() => {
-    mutate();
-  }, [mutate]);
-
   const operator = React.useCallback(
-    ({ forEach }: QueueListenerParam<DocumentTransactionEntry>) => {
+    (forEach: QueueForEach<DocumentTransactionEntry>) => {
       let newTemplate = [...data.config];
 
       forEach(({ transaction }) => {
@@ -132,24 +122,10 @@ export const useDocumentConfig = (
     [data.config]
   );
 
-  initializeTimeline(
-    templateId,
-    {
-      timeline: data.timeline,
-      versions: data.versions,
-      initialData: data.record,
-    },
-    {
-      onStale: refreshOnStale,
-    }
-  );
-
   const state = useCollaborativeState(
     (callback) => configs.useKey(templateId, callback),
     operator,
     {
-      timeline: data.timeline,
-      version: data.versions.config ?? 0,
       timelineId: templateId,
       queueId: "config",
     }
@@ -173,7 +149,7 @@ export function useFieldConfig(
       | ((ps: FieldConfig[Name] | undefined) => FieldConfig[Name])
   ) => void
 ] {
-  const documentId = getDocumentId(fieldId);
+  const documentId = getDocumentId<DocumentId>(fieldId);
   const path = useTemplatePath();
   // removing the first element which is just the current document
   const reversedParentPath = path.slice(1).reverse();

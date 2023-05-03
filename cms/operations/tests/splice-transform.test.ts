@@ -4,6 +4,7 @@ import { tools } from "../stream-methods";
 import { FieldOperation, SpliceAction, StdOperation } from "../actions";
 import { TokenStream } from "../types";
 import { SpliceOperation, TimelineEntry } from "@storyflow/collab/types";
+import { read } from "@storyflow/collab/utils";
 
 const createTransformer = (initialValue: TokenStream) => {
   const getInitialLength = (target: string) => initialValue.length;
@@ -18,9 +19,9 @@ const createTimelineEntry = (
   ...transactions: SpliceOperation<TokenStream[number]>[][]
 ): TimelineEntry => {
   return [
+    "",
     index,
     clientId,
-    "",
     ...transactions.map((operations) => {
       return [["", operations] as [string, typeof operations]];
     }),
@@ -31,7 +32,7 @@ const getStringCreator =
   (initialValue: string[]) => (packages: TimelineEntry[]) => {
     const newValue = initialValue.map((el) => el.split("")).flat(1);
     packages.forEach((pkg) => {
-      const [, , , ...transactions] = pkg;
+      const { transactions } = read(pkg);
       let removed: any[] = [];
       transactions.forEach((transaction) => {
         transaction.forEach(([, ops]) => {

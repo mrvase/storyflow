@@ -1,13 +1,7 @@
-import { QueueEntry, Transaction, TransactionEntry } from "./types";
+import { CollabRef, QueueEntry, Transaction, TransactionEntry } from "./types";
 
-export type QueueListenerParam<TE extends TransactionEntry> = {
-  forEach: (callback: (entry: QueueEntry<TE>) => void) => void;
-  version: number | null;
-  stale: boolean;
-};
-
-export type QueueListener<TE extends TransactionEntry> = (
-  param: QueueListenerParam<TE>
+export type QueueForEach<TE extends TransactionEntry> = (
+  callback: (entry: QueueEntry<TE>) => void
 ) => void;
 
 export type PushFunction<TE extends TransactionEntry> = (
@@ -19,12 +13,8 @@ export type PushFunction<TE extends TransactionEntry> = (
 
 export function createQueue<TE extends TransactionEntry>(
   actions: {
-    getState: () => {
-      version: number;
-      stale: boolean;
-    };
     getMetadata: () => {
-      prev: number;
+      prev: CollabRef;
       user: string;
       queue: string;
     };
@@ -88,7 +78,7 @@ export function createQueue<TE extends TransactionEntry>(
     return payload.push ?? [];
   }
 
-  const forEach = (callback: (entry: QueueEntry<TE>) => void) => {
+  const forEach: QueueForEach<TE> = (callback) => {
     const queue = actions.get();
     if (latest.transaction) {
       queue.push({
@@ -104,15 +94,9 @@ export function createQueue<TE extends TransactionEntry>(
     });
   };
 
-  function register(listener: QueueListener<TE>) {
-    const listenerWithState = () => {
-      listener({
-        forEach,
-        ...actions.getState(),
-      });
-    };
-    listenerWithState();
-    return actions.registerListener(listenerWithState);
+  function register(listener: () => void) {
+    listener();
+    return actions.registerListener(listener);
   }
 
   return {

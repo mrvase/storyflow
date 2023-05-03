@@ -5,6 +5,7 @@ import {
   ValueArray,
   ClientSyntaxTree,
   RawDocumentId,
+  DocumentId,
 } from "@storyflow/shared/types";
 import type { SyntaxTree, FieldTransform } from "@storyflow/fields-core/types";
 import type { TokenStream } from "operations/types";
@@ -17,7 +18,7 @@ import {
 } from "operations/parse-token-stream";
 import { useClient } from "../../client";
 import { useCollab } from "../../collab/CollabContext";
-import { useFieldConfig } from "../../documents/collab/hooks";
+import { useFieldConfig } from "../../documents/hooks";
 import { useSingular } from "../../state/useSingular";
 import { calculateFn } from "./calculateFn";
 import { splitTransformsAndRoot } from "@storyflow/fields-core/transform";
@@ -82,7 +83,7 @@ export function useDefaultStateCore(id: FieldId) {
   return { initialValue, tree, value, setState };
 }
 
-export function useDefaultState(id: FieldId, version: number) {
+export function useDefaultState(id: FieldId) {
   const rootId = useFieldId();
 
   const { initialValue, tree, value, setState } = useDefaultStateCore(id);
@@ -97,7 +98,7 @@ export function useDefaultState(id: FieldId, version: number) {
     // we do not initialize it here, because this hook is also for nested fields that use their
     // parent's queue.
     const queue = collab
-      .getTimeline(getDocumentId(rootId))!
+      .getTimeline(getDocumentId<DocumentId>(rootId))!
       .getQueue<FieldTransactionEntry>(getRawFieldId(rootId));
 
     const [transforms, root] = splitTransformsAndRoot(initialValue);
@@ -107,19 +108,11 @@ export function useDefaultState(id: FieldId, version: number) {
       stream: createTokenStream(root),
     });
 
-    return queue.register((params) => {
+    return queue.register(() => {
       singular(() => {
-        if (version !== params.version) {
-          console.warn("Invalid version", {
-            instance: version,
-            queue: params.version,
-          });
-          return;
-        }
-
         let update = false;
 
-        const result = cache(params.forEach, (prev, { transaction }) => {
+        const result = cache(queue.forEach, (prev, { transaction }) => {
           transaction.map((entry) => {
             if (entry[0] === target) {
               prev = applyFieldTransaction(prev, entry);
@@ -134,7 +127,7 @@ export function useDefaultState(id: FieldId, version: number) {
         }
       });
     });
-  }, [collab, version]);
+  }, [collab]);
 
   const isPrimitive = Array.isArray(value) && value[0] === tree.children[0];
 

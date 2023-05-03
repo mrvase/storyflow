@@ -57,7 +57,7 @@ const getUrlStringFromValue = (value: ValueArray | SyntaxTree) => {
 
 const useRelatedPages = (documentId: DocumentId, initialUrl: string) => {
   const { doc } = useDocument(documentId);
-  const { data: list } = useDocumentList(doc?.folder);
+  const { documents: list } = useDocumentList(doc?.folder);
 
   const getUrl = (doc: DBDocument) => {
     return (
@@ -86,7 +86,7 @@ const useRelatedPages = (documentId: DocumentId, initialUrl: string) => {
   return [parents, children] as [DBDocument[], DBDocument[]];
 };
 
-export default function UrlField({ id, version }: FieldProps) {
+export default function UrlField({ id }: FieldProps) {
   const documentId = getDocumentId(id) as DocumentId;
   const { record } = useDocumentPageContext();
 
@@ -105,7 +105,7 @@ export default function UrlField({ id, version }: FieldProps) {
   }, [collab, version]);
   */
 
-  const { value } = useDefaultState(id, version);
+  const { value } = useDefaultState(id);
 
   const url = getUrlStringFromValue(value);
 

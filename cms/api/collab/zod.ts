@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const ZodTimelineEntry = <T extends z.ZodType>(Transaction: T) =>
-  z.tuple([z.number(), z.string(), z.string()]).rest(Transaction);
+  z.tuple([z.string(), z.number(), z.string()]).rest(Transaction);
 
 export const ZodTransaction = <T extends z.ZodType>(Operation: T) => {
   return z.array(z.tuple([z.string(), z.array(Operation)]));

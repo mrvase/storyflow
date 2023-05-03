@@ -1,8 +1,7 @@
 import React from "react";
 import Dialog from "../elements/Dialog";
 import type { DBFolder, SpaceId } from "@storyflow/db-core/types";
-import type { DocumentId } from "@storyflow/shared/types";
-import { useDocumentListMutation } from "../documents";
+import type { DocumentId, FolderId } from "@storyflow/shared/types";
 import { createTemplateFieldId } from "@storyflow/fields-core/ids";
 import { ComputerDesktopIcon, FolderIcon } from "@heroicons/react/24/outline";
 import { DialogOption } from "../elements/DialogOption";
@@ -16,6 +15,7 @@ import {
   FolderTransactionEntry,
   SpaceTransactionEntry,
 } from "operations/actions_new";
+import { useAddDocument } from "../documents";
 
 export function AddFolderDialog({
   isOpen,
@@ -25,12 +25,13 @@ export function AddFolderDialog({
 }: {
   isOpen: boolean;
   close: () => void;
-  folderId: string;
+  folderId: FolderId;
   spaceId: SpaceId;
 }) {
-  const mutateDocuments = useDocumentListMutation();
   const generateFolderId = useFolderIdGenerator();
   const generateDocumentId = useDocumentIdGenerator();
+
+  const addDocument = useAddDocument();
 
   const push = usePush<FolderTransactionEntry | SpaceTransactionEntry>(
     "folders"
@@ -40,51 +41,44 @@ export function AddFolderDialog({
     async (type: string, data: FormData) => {
       const label = (data.get("value") as string) ?? "";
       if (!label) return;
-      const [id, frontId] = await Promise.all([
-        generateFolderId(),
-        type === "app" ? generateDocumentId() : ("" as DocumentId),
-      ]);
+      const newFolderId = generateFolderId();
+      /*
       const folder: DBFolder = {
-        _id: id,
+        _id: folderId,
         label,
         type: type as "app" | "data",
         spaces: [],
       };
+      */
       push(
         createTransaction((t) =>
           t
             .target(`${folderId}:${spaceId}`)
             .splice({
               index: 0,
-              insert: [id],
+              insert: [newFolderId],
             })
-            .target(id)
+            .target(newFolderId)
             .toggle({ name: "label", value: label })
         )
       );
-      if (frontId) {
-        mutateDocuments({
-          folder: id,
-          actions: [
-            {
-              type: "insert",
-              id: frontId,
-              record: {
-                [createTemplateFieldId(frontId, DEFAULT_FIELDS.label.id)]: {
-                  ...DEFAULT_SYNTAX_TREE,
-                  children: ["Forside"],
-                },
-                [createTemplateFieldId(frontId, DEFAULT_FIELDS.url.id)]:
-                  insertRootInTransforms(
-                    {
-                      ...DEFAULT_SYNTAX_TREE,
-                      children: DEFAULT_FIELDS.url.initialValue.children,
-                    },
-                    DEFAULT_FIELDS.url.initialValue.transforms
-                  ),
-              },
+      if (type === "app") {
+        addDocument({
+          folder: newFolderId,
+          createRecord: (id) => ({
+            [createTemplateFieldId(id, DEFAULT_FIELDS.label.id)]: {
+              ...DEFAULT_SYNTAX_TREE,
+              children: ["Forside"],
             },
-          ],
+            [createTemplateFieldId(id, DEFAULT_FIELDS.url.id)]:
+              insertRootInTransforms(
+                {
+                  ...DEFAULT_SYNTAX_TREE,
+                  children: DEFAULT_FIELDS.url.initialValue.children,
+                },
+                DEFAULT_FIELDS.url.initialValue.transforms
+              ),
+          }),
         });
       }
       close();
@@ -95,7 +89,7 @@ export function AddFolderDialog({
       spaceId,
       generateDocumentId,
       generateFolderId,
-      mutateDocuments,
+      addDocument,
       close,
     ]
   );

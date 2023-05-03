@@ -1,15 +1,17 @@
 import { batch } from "@storyflow/state";
-import type { TimelineEntry, Transaction, TransactionEntry } from "./types";
+import type {
+  CollabRef,
+  CollabVersion,
+  TimelineEntry,
+  Transaction,
+  TransactionEntry,
+  VersionRecord,
+} from "./types";
 import { Queue, createQueue } from "./Queue";
-import { createQueueFromTimeline, filterTimeline, getId } from "./utils";
+import { createQueueFromTimeline, filterTimeline, getId, read } from "./utils";
 import { clone } from "./clone_debug";
 
 const randomUserId = Math.random().toString(36).slice(2, 10);
-
-const absoluteVersion = (versions: Record<string, number> | number) =>
-  typeof versions === "number"
-    ? versions
-    : Object.values(versions).reduce((a, b) => a + b, 0);
 
 const defaultTransform = (pkg: TimelineEntry[]) => pkg;
 
@@ -25,8 +27,10 @@ export function createTimeline(
   const state = {
     shared: [] as TimelineEntry[],
     posted: [] as TimelineEntry[],
+    // non-transformed ids
+    postedIds: [] as string[],
     current: [] as TimelineEntry[],
-    versions: {} as Record<string, number> | number,
+    versions: null as VersionRecord | CollabVersion | null,
     initialized: false,
     stale: false,
     saving: false,
@@ -41,53 +45,118 @@ export function createTimeline(
   const queues = new Map<string, Queue>();
   const trackers = new WeakMap<Transaction, WeakSet<object>>();
 
-  function initialize(data: {
-    transform?: (entries: TimelineEntry[]) => TimelineEntry[];
-    timeline: TimelineEntry[];
-    versions: Record<string, number> | number;
-  }) {
-    if (
-      !state.initialized ||
-      absoluteVersion(data.versions) > absoluteVersion(state.versions)
-    ) {
+  const listeners = new Map<string, Set<() => void>>();
+
+  let promise: Promise<void> | null = null;
+  let prefetched: TimelineEntry[] | boolean = false;
+
+  function initialize(
+    fetch: () => Promise<TimelineEntry[]>,
+    data?: {
+      versions: VersionRecord | CollabVersion | null;
+      transform?: (entries: TimelineEntry[]) => TimelineEntry[];
+    },
+    options: {
+      resetLocalState?: boolean;
+      keepListeners?: boolean;
+    } = {}
+  ) {
+    if (data) {
       transform = data.transform ?? defaultTransform;
 
-      state.shared = transform(filterTimeline(data.timeline, data.versions));
-
-      state.posted = [];
-      state.current = [];
       state.versions = data.versions;
       state.initialized = true;
       state.stale = false;
       state.saving = false;
 
-      mutationListeners.trigger(isMutated());
+      // REMOVE LISTENERS
+      // This ensures that a new queue is not running on stale data
+      if (!options.keepListeners) {
+        if (data.versions !== null && !Array.isArray(data.versions)) {
+          const old = state.versions;
+          if (old === null || Array.isArray(old)) {
+            throw new Error("Invalid versions");
+          }
+          Object.entries(data.versions).forEach(([queue, newVersion]) => {
+            if (newVersion[0] > (old?.[queue]?.[0] ?? 0)) {
+              listeners.get(queue)?.clear();
+            }
+          });
+        } else {
+          listeners.forEach((set) => set.clear());
+        }
+      }
+
+      if (Array.isArray(prefetched)) {
+        if (options.resetLocalState) {
+          state.current = [];
+        }
+        console.log("INITIALIZED WITH PREFETCHED");
+        pull(prefetched);
+        triggerListeners();
+        prefetched = false;
+      } else {
+        console.log("INITIALIZED WITH RESET");
+        // we also need to ensure that new data is not processed by a stale queue.
+        // this is achieved by filtering
+        //
+        /*
+        state.shared = [];
+        state.posted = [];
+        state.current = [];
+        */
+      }
     }
+
+    if (!promise && !prefetched) {
+      if (!state.initialized) prefetched = true;
+
+      promise = fetch()
+        .then((timeline) => {
+          if (!timeline.length) return;
+          if (state.initialized) {
+            pull(timeline);
+            triggerListeners();
+            prefetched = false;
+          } else {
+            prefetched = timeline;
+          }
+        })
+        .finally(() => {
+          promise = null;
+        });
+    }
+
+    mutationListeners.trigger(isMutated());
+
     return self;
   }
 
   function post() {
     if (state.posted.length) return;
     state.posted = state.current;
+    state.postedIds = state.current.map((el) => getId(el));
     state.current = [];
   }
 
   function retract() {
     state.current = state.posted.concat(state.current);
     state.posted = [];
+    state.postedIds = [];
   }
 
-  function pull(packages: TimelineEntry[]) {
-    if (packages.length === 0) {
-      return;
-    }
+  function pull(shared: TimelineEntry[]) {
+    let posted: TimelineEntry[] = [];
 
-    state.posted.forEach((entry) => {
-      const id = getId(entry);
-      const returned = packages.find((el) => getId(el) === id);
+    console.log("---STATE BEFORE ", clone(state));
+
+    // is in principle all or nothing
+    state.posted.forEach((entry, index) => {
+      const id = state.postedIds[index];
+      const returned = shared.find((el) => getId(el) === id);
       if (returned) {
-        const [, , , ...oldTransactions] = entry;
-        const [, , , ...newTransactions] = returned;
+        const oldTransactions = read(entry).transactions;
+        const newTransactions = read(returned).transactions;
         oldTransactions.forEach((old, index) => {
           const tracker = trackers.get(old);
           if (tracker) {
@@ -95,39 +164,47 @@ export function createTimeline(
             trackers.set(newTransactions[index], tracker);
           }
         });
+      } else {
+        posted.push(entry);
       }
     });
 
-    const all = [...state.shared, ...packages, ...state.current];
+    let current = state.current;
 
-    console.log("---ALL", clone(all));
-
-    const newTimeline = filterTimeline(all, state.versions);
-
-    console.log("---NEW TIMELINE", clone(newTimeline));
-
-    const newShared = transform(newTimeline);
-
-    console.log("---NEW SHARED", clone(newShared));
-
-    const newCurrent = newShared.splice(
-      state.shared.length + packages.length,
-      state.current.length
+    console.log(
+      "---PACKAGES BEFORE FILTER",
+      clone({ shared, posted, current })
     );
+
+    [shared, posted, current] = filterTimeline(
+      [shared, posted, current],
+      state.versions
+    );
+
+    current = current.filter((el) => el.length > 3); // if transactions have been removed, we can remove the entry entirely
+
+    console.log("---PACKAGES AFTER FILTER", clone({ shared, posted, current }));
+
+    const transformed = transform([...shared, ...posted, ...current]);
+
+    const transformedCurrent = transformed.splice(
+      shared.length + posted.length,
+      current.length
+    );
+
+    const transformedPosted = transformed.splice(shared.length, posted.length);
 
     console.log("---NEW ", {
-      shared: clone(newShared),
-      current: clone(newCurrent),
+      shared: clone(transformed),
+      posted: clone(transformedPosted),
+      current: clone(transformedCurrent),
     });
 
-    state.shared = newShared;
-    state.posted = [];
-    state.current = newCurrent;
+    state.shared = transformed;
+    state.posted = transformedPosted;
+    state.current = transformedCurrent;
 
     mutationListeners.trigger(isMutated());
-    new Set(packages.map((el) => el[2])).forEach((queue) =>
-      triggerListeners(queue)
-    );
   }
 
   async function sync(
@@ -145,7 +222,7 @@ export function createTimeline(
 
     post();
 
-    console.log("SYNC", clone(state));
+    // console.log("SYNC", clone(state));
 
     const result = await callback(state.posted, {
       startId: getId(state.shared[0]),
@@ -156,17 +233,24 @@ export function createTimeline(
       console.warn("RETRACT");
       retract();
     } else if (result.status === "stale") {
-      console.warn("STALE");
+      console.warn("STALE", result.updates);
       state.stale = true;
-      staleListeners.trigger(undefined);
+
+      retract();
+
+      prefetched = result.updates;
+      staleListeners.trigger(result.updates);
 
       // if staleListener reinitializes, nothing should happen here
       if (state.stale !== true) return;
 
       state.current = state.posted;
       state.posted = [];
-    } else {
-      pull(result.updates);
+    } else if (result.updates.length) {
+      pull([...state.shared, ...result.updates]);
+      new Set(result.updates.map((el) => read(el).queue)).forEach((queue) => {
+        triggerListeners(queue);
+      });
     }
   }
 
@@ -175,8 +259,7 @@ export function createTimeline(
       | {
           status: "success";
           data: {
-            versions: Record<string, number>;
-            timeline?: TimelineEntry[];
+            versions: VersionRecord;
             transform?: (entries: TimelineEntry[]) => TimelineEntry[];
           };
         }
@@ -184,6 +267,8 @@ export function createTimeline(
     >
   ) {
     state.saving = true;
+
+    // sync
 
     const result = await callback([
       ...state.shared,
@@ -194,11 +279,8 @@ export function createTimeline(
     if (result.status === "error") {
       state.saving = false;
     } else {
-      initialize({
-        transform: result.data.transform,
-        timeline: result.data.timeline ?? [],
-        versions: result.data.versions,
-      });
+      // delete on server and set stale = true and set prefetch
+      // trigger stale listeners
     }
   }
 
@@ -214,8 +296,6 @@ export function createTimeline(
     return [...queue1, ...queue2];
   };
 
-  const listeners = new Map<string, Set<() => void>>();
-
   function registerListener(queue: string, listener: () => void) {
     let set = listeners.get(queue);
     if (!set) {
@@ -228,10 +308,15 @@ export function createTimeline(
     };
   }
 
-  function triggerListeners(queue: string) {
-    console.log("LISTENERS TRIGGERED", queue, listeners.get(queue)?.size);
+  function triggerListeners(queue?: string) {
+    console.log("LISTENERS TRIGGERED", queue);
     batch(() => {
-      listeners.get(queue)?.forEach((listener) => listener());
+      if (!queue) {
+        listeners.forEach((set) => set.forEach((listener) => listener()));
+      } else {
+        listeners.get(queue)?.forEach((listener) => listener());
+      }
+      mutationListeners.trigger(isMutated());
     });
   }
 
@@ -250,33 +335,30 @@ export function createTimeline(
     };
   };
 
-  const staleListeners = createListenersSet<undefined>();
+  const staleListeners = createListenersSet<TimelineEntry[]>();
   const mutationListeners = createListenersSet<boolean>();
 
   const getQueueVersion = (queue: string) => {
-    return typeof state.versions === "number"
-      ? state.versions
-      : state.versions[queue] ?? 0;
+    return Array.isArray(state.versions)
+      ? state.versions?.[0]
+      : state.versions?.[queue]?.[0] ?? 0;
   };
 
-  const getUpdatedVersion = (queue: string) => {
-    return (
-      getQueueVersion(queue) +
-      state.shared.filter((el) => el[2] === queue).length
-    );
+  const getPreviousId = (queue: string): CollabRef => {
+    const prevShared = state.shared.filter((el) => read(el).queue === queue);
+    /*
+    const prev = prevShared[prevShared.length - 1];
+    const prevUser = prev ? read(prev).user : "";
+    */
+    const version = getQueueVersion(queue) + prevShared.length;
+    return version;
   };
 
   const createActions = (queue: string) => ({
-    getState() {
-      return {
-        stale: state.stale,
-        version: getQueueVersion(queue),
-      };
-    },
     getMetadata() {
       return {
         user,
-        prev: getUpdatedVersion(queue),
+        prev: getPreviousId(queue),
         queue,
       };
     },
@@ -287,15 +369,14 @@ export function createTimeline(
     push(transactions: Transaction[]) {
       if (transactions.length) {
         let entry = state.current[state.current.length - 1];
-        if (!entry || entry[2] !== queue) {
-          const prev = getUpdatedVersion(queue);
-          entry = [prev, user, queue];
+        if (!entry || read(entry).queue !== queue) {
+          const prev = getPreviousId(queue);
+          entry = [queue, prev, user];
           state.current.push(entry);
         }
         entry.push(...transactions);
-        mutationListeners.trigger(true);
+        triggerListeners(queue);
       }
-      triggerListeners(queue);
     },
     registerListener(listener: () => void) {
       return registerListener(queue, listener);

@@ -3,9 +3,9 @@ import { createProcedure, createRoute } from "@sfrpc/server";
 import { globals } from "../middleware/globals";
 import { z } from "zod";
 import { RawDocumentId } from "@storyflow/shared/types";
-import { TimelineEntry } from "@storyflow/collab/types";
+import { TimelineEntry, ToggleOperation } from "@storyflow/collab/types";
 import { client, modifyValues } from "../collab-utils/redis-client";
-import { getId } from "@storyflow/collab/utils";
+import { getId, read } from "@storyflow/collab/utils";
 import {
   ZodSpliceOperation,
   ZodTimelineEntry,
@@ -19,13 +19,17 @@ export const getTimelinesFromIds = async (
 ) => {
   if (keys.length === 0) return {};
 
-  let getPipeline = client.pipeline();
+  let pipeline = client.pipeline();
 
   keys.forEach((key) => {
-    getPipeline.lrange(`${slug}:${key}`, 0, -1);
+    if (key.endsWith("documents")) {
+      pipeline.smembers(`${slug}:documents`);
+    } else {
+      pipeline.lrange(`${slug}:${key}`, 0, -1);
+    }
   });
 
-  const result = await getPipeline.exec();
+  const result = await pipeline.exec();
 
   const object = Object.fromEntries(
     result.map((value, index) => [
@@ -37,7 +41,42 @@ export const getTimelinesFromIds = async (
   return object;
 };
 
+const createDocumentsTimeline = (set: string[] | undefined) => {
+  return set
+    ? set.map((el: string) => {
+        const [folder, id] = el.split("/");
+        const entry: TimelineEntry = [
+          "",
+          0,
+          "",
+          [[folder, [["add", id] as ToggleOperation]]],
+        ];
+        return entry;
+      })
+    : [];
+};
+
 export const collab = createRoute({
+  getGlobalTimelines: createProcedure({
+    middleware(ctx) {
+      return ctx.use(globals);
+    },
+    async query(_, { slug }) {
+      try {
+        const pipeline = client.pipeline();
+        pipeline.lrange(`${slug}:folders`, 0, -1);
+        pipeline.smembers(`${slug}:documents`);
+        const result = await pipeline.exec();
+        return success([
+          result[0],
+          createDocumentsTimeline(result[1] as string[] | undefined),
+        ] as [folders: TimelineEntry[], documents: TimelineEntry[]]);
+      } catch (err) {
+        console.log(err);
+        return error({ message: "Lykkedes ikke", detail: err });
+      }
+    },
+  }),
   getTimeline: createProcedure({
     middleware(ctx) {
       return ctx.use(globals);
@@ -91,10 +130,33 @@ export const collab = createRoute({
             if (!pipeline) {
               pipeline = client.pipeline();
             }
-            pipeline.rpush(
-              `${slug}:${key}`,
-              ...entries.map((el) => JSON.stringify(el))
-            );
+            if (key === "documents") {
+              const add: string[] = [];
+              const remove: string[] = [];
+              entries.forEach((timelineEntry) => {
+                read(timelineEntry).transactions.forEach((transaction) => {
+                  transaction.map((entry) => {
+                    const folder = entry[0];
+                    entry[1].map((operation: any) => {
+                      const action = operation[0];
+                      const id = operation[1];
+                      if (action === "add") {
+                        add.push(`${folder}/${id}`);
+                      } else if (action === "remove") {
+                        remove.push(`${folder}/${id}`);
+                      }
+                    });
+                  });
+                });
+              });
+              if (add.length) pipeline.sadd(`${slug}:documents`, ...add);
+              if (remove.length) pipeline.srem(`${slug}:documents`, ...remove);
+            } else {
+              pipeline.rpush(
+                `${slug}:${key}`,
+                ...entries.map((el) => JSON.stringify(el))
+              );
+            }
           }
         });
 
@@ -114,6 +176,13 @@ export const collab = createRoute({
         }
 
         const result = modifyValues(timelines, (timeline, key) => {
+          if (key === "documents") {
+            console.log("TIMELINE", timeline);
+            return {
+              status: "stale" as "stale",
+              updates: createDocumentsTimeline(timeline),
+            };
+          }
           const { startId, length } = input[key];
           const isStale = startId !== null && startId !== getId(timeline[0]);
           return {

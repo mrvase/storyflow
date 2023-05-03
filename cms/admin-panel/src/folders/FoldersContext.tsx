@@ -7,44 +7,57 @@ import type {
 import { ROOT_FOLDER, TEMPLATE_FOLDER } from "@storyflow/fields-core/constants";
 import React from "react";
 import { SWRClient } from "../client";
-import { TimelineEntry } from "@storyflow/collab/types";
-import {
-  initializeTimeline,
-  useCollaborativeState,
-} from "../collab/createCollaborativeState";
+import { useCollaborativeState } from "../collab/useCollaborativeState";
 import { getRawFolderId, normalizeFolderId } from "@storyflow/fields-core/ids";
 import { isSpliceOperation, isToggleOperation } from "@storyflow/collab/utils";
 import { FolderId, RawFolderId } from "@storyflow/shared/types";
-import { QueueListenerParam } from "@storyflow/collab/Queue";
+import { QueueForEach } from "@storyflow/collab/Queue";
 import {
   FolderTransactionEntry,
   SpaceTransactionEntry,
 } from "operations/actions_new";
 import { createStaticStore } from "../state/StaticStore";
-
-const emptyTimeline = [] as TimelineEntry[];
+import { useCollab } from "../collab/CollabContext";
 
 export const FoldersProvider = ({
   children,
 }: {
   children: React.ReactNode;
 }) => {
+  const collab = useCollab();
+
+  React.useLayoutEffect(() => {
+    // prefetched
+    collab.initializeTimeline("folders");
+    // initialized immediately (no external data)
+    collab.initializeTimeline("documents", { versions: null });
+  }, [collab]);
+
+  React.useLayoutEffect(() => {
+    const timeline = collab.getTimeline("documents")!;
+    timeline.registerStaleListener(() => {
+      console.log("STALE LISTENER");
+      timeline.initialize(
+        async () => [],
+        { versions: null },
+        { resetLocalState: true, keepListeners: true }
+      );
+    });
+  }, [collab]);
+
   const { data: folders, error } = SWRClient.folders.get.useQuery(undefined, {
-    // refreshInterval: 10000,
+    onSuccess(data) {
+      console.log("INITIALIZING");
+      collab.initializeTimeline("folders", { versions: data.version });
+    },
   });
 
-  const { data: timeline } = SWRClient.collab.getTimeline.useQuery("folders", {
-    immutable: true,
-  });
+  console.log("DATA", folders);
 
-  if (!folders || !timeline) return null;
+  if (!folders) return null;
 
   return (
-    <FetchedFoldersProvider
-      folders={folders.record}
-      timeline={timeline}
-      version={folders.version}
-    >
+    <FetchedFoldersProvider folders={folders.record} version={folders.version}>
       {children}
     </FetchedFoldersProvider>
   );
@@ -76,12 +89,10 @@ const stateInitializer = (callback: () => Map<string, DBFolder>) => {
 
 export function FetchedFoldersProvider({
   folders: initialFoldersFromProps,
-  timeline,
   version,
   children,
 }: {
   folders: DBFolderRecord;
-  timeline: TimelineEntry[];
   version: number;
   children: React.ReactNode;
 }) {
@@ -103,17 +114,9 @@ export function FetchedFoldersProvider({
     };
   }, [initialFoldersFromProps]);
 
-  initializeTimeline("folders", {
-    timeline: timeline ?? emptyTimeline,
-    versions: version,
-    initialData: null,
-  });
-
   const operator = React.useCallback(
     (
-      {
-        forEach,
-      }: QueueListenerParam<FolderTransactionEntry | SpaceTransactionEntry>,
+      forEach: QueueForEach<FolderTransactionEntry | SpaceTransactionEntry>,
       origin: "initial" | "update"
     ) => {
       const updates: Record<FolderId, DBFolder> =
@@ -121,7 +124,7 @@ export function FetchedFoldersProvider({
           ? Object.fromEntries(
               Object.entries(initialFolders).map(([key, value]) => [
                 normalizeFolderId(key as RawFolderId),
-                value,
+                { ...value, spaces: [...value.spaces] },
               ])
             )
           : {};
@@ -148,6 +151,7 @@ export function FetchedFoldersProvider({
           if (spaceId) {
             (entry as SpaceTransactionEntry)[1].forEach((operation) => {
               const newFolder = getInitialFolder(folderId);
+              console.log("UPDATED 2", folderId, newFolder);
               const spaceIndex = newFolder.spaces.findIndex(
                 (el) => el.id === spaceId
               );
@@ -173,11 +177,14 @@ export function FetchedFoldersProvider({
               } else if (isToggleOperation(operation)) {
                 newFolder[operation[0] as "label"] = operation[1] as string;
               }
+              console.log("UPDATED 1", folderId, newFolder);
               updates[folderId] = newFolder;
             });
           }
         });
       });
+
+      console.log("RUNNING", origin, updates);
 
       return new Map(Object.entries(updates));
     },
@@ -186,8 +193,6 @@ export function FetchedFoldersProvider({
 
   useCollaborativeState(stateInitializer, operator, {
     timelineId: "folders",
-    version,
-    timeline,
   });
 
   return <>{children}</>;

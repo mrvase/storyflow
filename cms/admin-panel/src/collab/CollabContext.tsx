@@ -4,6 +4,7 @@ import { useClient } from "../client";
 import { createCollaboration } from "./collaboration";
 import { Queue } from "@storyflow/collab/Queue";
 import { TransactionEntry } from "@storyflow/collab/types";
+import { DocumentId } from "@storyflow/shared/types";
 
 export const DocumentCollabContext = React.createContext<ReturnType<
   typeof createCollaboration
@@ -16,7 +17,9 @@ export function CollabProvider({ children }: { children: React.ReactNode }) {
   const client = useClient();
 
   const collab = React.useMemo(() => {
-    return createCollaboration(client.collab.fields.mutation);
+    return createCollaboration({
+      sync: client.collab.fields.mutation,
+    });
   }, [client]);
 
   React.useLayoutEffect(() => {
@@ -31,7 +34,7 @@ export function CollabProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function usePush<TE extends TransactionEntry>(
-  timelineId: string,
+  timelineId: DocumentId | "folders" | "documents",
   queueId?: string
 ) {
   const collab = useCollab();

@@ -24,6 +24,14 @@ export const useClient = () => useContextWithError(ClientContext, "Client");
 const url =
   process.env.NODE_ENV === "production" ? `/api` : `http://localhost:3000/api`;
 
+export function readFromCache(key: string) {
+  let cached = SWRCache.get(key);
+  if (!cached || !cached.data || cached.isLoading === true) {
+    return;
+  }
+  return cached.data;
+}
+
 export function QueryContextProvider({
   children,
 }: {
@@ -40,13 +48,7 @@ export function QueryContextProvider({
 
   const cache = React.useMemo(
     () => ({
-      read(key: string) {
-        let cached = SWRCache.get(key);
-        if (!cached || !cached.data || cached.isLoading === true) {
-          return;
-        }
-        return cached.data;
-      },
+      read: readFromCache,
       write(key: string, data: unknown) {
         // TODO: hvorfor bruger jeg ikke bare mutate, som er reaktiv?
         // fordi den ikke kan findes udenfor et hook.
@@ -54,13 +56,13 @@ export function QueryContextProvider({
         if (!cached) {
           mutate(key, data);
           /*
-        SWRCache.set(key, {
-          data,
-          isValidating: false,
-          isLoading: false,
-          error: undefined,
-        });
-        */
+          SWRCache.set(key, {
+            data,
+            isValidating: false,
+            isLoading: false,
+            error: undefined,
+          });
+          */
         }
       },
     }),
@@ -95,6 +97,7 @@ export const SWRClient = createSWRClient<API & BucketAPI & CollabAPI>(
   useQueryContext
 );
 
+/*
 export const cache = {
   read(key: string) {
     let cached = SWRCache.get(key);
@@ -117,3 +120,4 @@ export const cache = {
     }
   },
 };
+*/

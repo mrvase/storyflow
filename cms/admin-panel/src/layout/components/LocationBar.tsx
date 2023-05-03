@@ -16,8 +16,8 @@ import { usePanel } from "../../panel-router/Routes";
 import { usePanelActions } from "../../panel-router/PanelRouter";
 import { useDragItem } from "@storyflow/dnd";
 import { parseSegment } from "./parseSegment";
-import { useOptimisticDocumentList, useDocument } from "../../documents";
-import { useLabel } from "../../documents/collab/hooks";
+import { useDocumentList, useDocument } from "../../documents";
+import { useLabel } from "../../documents/hooks";
 import { useDocumentLabel } from "../../documents/useDocumentLabel";
 import { useFolder } from "../../folders/FoldersContext";
 
@@ -166,7 +166,7 @@ function LocationBarItem({
   if (type === "field") {
     label = useLabel(data.id);
   } else if (type === "folder" || type === "app") {
-    const { documents, error } = useOptimisticDocumentList(data.id);
+    const { documents, error } = useDocumentList(data.id);
     label = useFolder(data.id)?.label ?? "";
 
     if (!documents && !error) {

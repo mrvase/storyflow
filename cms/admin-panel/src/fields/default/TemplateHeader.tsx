@@ -1,5 +1,9 @@
 import cl from "clsx";
-import type { FieldId, RawDocumentId } from "@storyflow/shared/types";
+import type {
+  DocumentId,
+  FieldId,
+  RawDocumentId,
+} from "@storyflow/shared/types";
 import type {
   GetFunctionData,
   FieldTransform,
@@ -23,12 +27,11 @@ import { Checkbox } from "../../elements/Checkbox";
 import { Range } from "../../elements/Range";
 import { Menu as HeadlessMenu } from "@headlessui/react";
 import { usePush } from "../../collab/CollabContext";
-import { FieldOperation } from "operations/actions";
 import { useFieldId } from "../FieldIdContext";
 import { Menu } from "../../elements/Menu";
 import { useTemplateFolder } from "../../folders/FoldersContext";
 import React from "react";
-import { useOptimisticDocumentList } from "../../documents";
+import { useDocumentList } from "../../documents";
 import { useFieldTemplateId } from "./FieldTemplateContext";
 import { FieldTransactionEntry } from "operations/actions_new";
 import { createTransaction } from "@storyflow/collab/utils";
@@ -129,7 +132,7 @@ function TransformMenu({
   const current = transforms.find((el) => el.type === "fetch");
 
   const push = usePush<FieldTransactionEntry>(
-    getDocumentId(rootId),
+    getDocumentId<DocumentId>(rootId),
     getRawFieldId(rootId)
   );
 
@@ -188,12 +191,12 @@ function TemplateMenu({
   const rootId = useFieldId();
 
   const push = usePush<FieldTransactionEntry>(
-    getDocumentId(rootId),
+    getDocumentId<DocumentId>(rootId),
     getRawFieldId(rootId)
   );
 
   const templateFolder = useTemplateFolder()?._id;
-  const { documents: templates } = useOptimisticDocumentList(templateFolder);
+  const { documents: templates } = useDocumentList(templateFolder);
 
   const options = React.useMemo(
     () =>

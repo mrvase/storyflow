@@ -11,11 +11,11 @@ import type { DocumentId, FieldId } from "@storyflow/shared/types";
 import type { FieldType2 } from "@storyflow/fields-core/types";
 import React from "react";
 import ReactDOM from "react-dom";
-import { useOptimisticDocumentList } from ".";
+import { useDocumentList } from ".";
 import { useTemplateFolder } from "../folders/FoldersContext";
-import Content from "../layout/components/Content";
+import Content from "../layout/pages/Content";
 import { usePush } from "../collab/CollabContext";
-import { useFieldConfig } from "./collab/hooks";
+import { useFieldConfig } from "./hooks";
 import { useContextWithError } from "../utils/contextError";
 import { useFieldId } from "../fields/FieldIdContext";
 import { getDocumentId } from "@storyflow/fields-core/ids";
@@ -68,14 +68,14 @@ const restrictToOptions = [
 export function FieldToolbar() {
   const fieldId = useFieldId();
   const topIndex = useTopFieldIndex();
-  const documentId = getDocumentId(fieldId);
+  const documentId = getDocumentId<DocumentId>(fieldId);
 
   const [config, setConfig] = useFieldConfig(fieldId);
 
   const push = usePush<DocumentTransactionEntry>(documentId, "config");
 
   const templateFolder = useTemplateFolder()?._id;
-  const { documents: templates } = useOptimisticDocumentList(templateFolder);
+  const { documents: templates } = useDocumentList(templateFolder);
 
   const templateOptions = React.useMemo(
     () =>
@@ -134,7 +134,7 @@ export function FieldToolbar() {
 }
 
 function FieldLabel({ id, label }: { id: FieldId; label: string }) {
-  const documentId = getDocumentId(id);
+  const documentId = getDocumentId<DocumentId>(id);
   const push = usePush<DocumentTransactionEntry>(documentId, "config");
 
   const onChange = (value: string) => {

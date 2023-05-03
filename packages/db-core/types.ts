@@ -96,12 +96,19 @@ export type PartialFieldConfig = Partial<Omit<FieldConfig, "id" | "type">> &
 
 export type PartialDocumentConfig = PartialFieldConfig[];
 
+type CollabVersion = [index: number, prev: number, user: string] | [0];
+
+export type DocumentVersionRecord = Record<
+  "config" | RawFieldId,
+  CollabVersion
+>;
+
 export interface DBDocumentRaw {
   _id: DBId<DocumentId>;
   folder: DBId<FolderId>;
   config: DocumentConfig;
   label?: string;
-  versions: Record<"config" | RawFieldId, number>;
+  versions: DocumentVersionRecord;
   /* compute */
   ids: DBId<NestedDocumentId>[];
   cached: ValueArray[];
@@ -119,7 +126,7 @@ export interface DBDocument {
   record: SyntaxTreeRecord;
   // values: ValueRecord;
   label?: string;
-  versions: Record<"config" | RawFieldId, number>;
+  versions: DocumentVersionRecord;
 }
 
 export type FolderSpace = {
@@ -143,7 +150,6 @@ export interface DBFolderRaw {
   spaces: Space[];
   template?: DBId<DocumentId>;
   domains?: string[];
-  versions?: Record<"config" | SpaceId, number>;
 }
 
 export interface DBFolder {
@@ -153,7 +159,6 @@ export interface DBFolder {
   spaces: Space[];
   template?: DocumentId;
   domains?: string[];
-  versions?: Record<"config" | SpaceId, number>;
 }
 
 export type DBFolderRecord = Record<RawFolderId, DBFolder>;

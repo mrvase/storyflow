@@ -140,12 +140,12 @@ export const normalizeDocumentId = (
   id: RawDocumentId | DocumentId | NestedDocumentId
 ) => {
   if (id.length === 12) {
-    return `${ROOT_PARENT_RAW}${id}`;
+    return `${ROOT_PARENT_RAW}${id}` as DocumentId;
   }
   if (id.length !== 24) {
     throw new Error(`Invalid field id: ${id}`);
   }
-  return id;
+  return id as DocumentId;
 };
 
 export const normalizeFolderId = (id: RawFolderId | FolderId) => {

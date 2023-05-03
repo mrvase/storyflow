@@ -1,6 +1,6 @@
 import React from "react";
 import cl from "clsx";
-import { useBranchIsFocused } from "./BranchFocusContext";
+import { useBranchIsFocused } from "../components/BranchFocusContext";
 import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 import { useLocalStorage } from "../../state/useLocalStorage";
 import {

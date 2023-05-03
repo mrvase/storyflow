@@ -9,25 +9,13 @@ import type {
   RawFieldId,
   ValueArray,
 } from "@storyflow/shared/types";
-import type { SyntaxTreeRecord } from "@storyflow/fields-core/types";
 import { clientPromise } from "../mongo/mongoClient";
 import { globals } from "../middleware/globals";
-import { extractRootRecord, getGraph } from "@storyflow/fields-core/graph";
-import { createStages } from "../aggregation/stages";
-import { client, resetHistory } from "../collab-utils/redis-client";
-import {
-  createRawTemplateFieldId,
-  getDocumentId,
-  getRawDocumentId,
-  getRawFieldId,
-  isFieldOfDocument,
-  isNestedDocumentId,
-} from "@storyflow/fields-core/ids";
-import { unwrapObjectId, parseDocument } from "@storyflow/db-core/convert";
+import { createRawTemplateFieldId } from "@storyflow/fields-core/ids";
+import { parseDocument } from "@storyflow/db-core/convert";
 import { DEFAULT_FIELDS } from "@storyflow/fields-core/default-fields";
 import { getPaths } from "@storyflow/db-core/paths";
 import { createObjectId } from "@storyflow/db-core/mongo";
-import { deduplicate, getImports, getSortedValues } from "./helpers";
 
 const createFetcher =
   (dbName: string) =>
@@ -61,6 +49,7 @@ const createFetcher =
   };
 
 export const documents = createRoute({
+  /*
   sync: createProcedure({
     middleware(ctx) {
       return ctx.use(globals);
@@ -226,17 +215,16 @@ export const documents = createRoute({
         console.log("ERROR", err);
       }
 
-      /* TODO: mongo 5.1
-      db
-        .aggregate([
-          { $documents: inserts },
-          ...createStages([]),
-          createUnsetStage(),
-          { $merge: "documents" },
-        ])
-        .next()
-        .then(() => ({ acknowledged: true }))
-      */
+      // TODO: mongo 5.1
+      // db
+      // .aggregate([
+      //   { $documents: inserts },
+      //   ...createStages([]),
+      //   createUnsetStage(),
+      //   { $merge: "documents" },
+      // ])
+      // .next()
+      // .then(() => ({ acknowledged: true }))
 
       const result: { acknowledged: boolean }[] = await Promise.all([
         ...(inserts.length
@@ -282,9 +270,7 @@ export const documents = createRoute({
           : []),
       ]);
 
-      /**
-       * TODO: Should run updates since references can be made before save
-       */
+      // TODO: Should run updates since references can be made before save
 
       return success(
         result.every((el) =>
@@ -293,6 +279,7 @@ export const documents = createRoute({
       );
     },
   }),
+  */
 
   getList: createProcedure({
     middleware(ctx) {
@@ -359,7 +346,15 @@ export const documents = createRoute({
         .findOne({ _id: createObjectId(id) });
 
       if (!documentRaw) {
-        return error({ message: "No article found" });
+        const initialDoc: DBDocument = {
+          _id: id as DocumentId,
+          folder: "" as FolderId,
+          versions: { config: [0] },
+          config: [],
+          record: {},
+        };
+        return success(initialDoc);
+        // return error({ message: "No article found" });
       }
 
       const doc = parseDocument(documentRaw);
@@ -443,6 +438,30 @@ export const documents = createRoute({
       return success(paths);
 
       // check update timestamp
+    },
+  }),
+
+  deleteMany: createProcedure({
+    middleware(ctx) {
+      return ctx.use(globals);
+    },
+    schema() {
+      return z.array(z.string());
+    },
+    async mutation(ids, { dbName, slug }) {
+      const db = (await clientPromise).db(dbName);
+
+      const removes = ids.map((el) => createObjectId(el));
+
+      const result = await db
+        .collection<DBDocumentRaw>("documents")
+        .deleteMany({ _id: { $in: removes } });
+
+      if (!result.acknowledged) {
+        return error({ message: "Failed to delete" });
+      }
+
+      return success(result.acknowledged);
     },
   }),
 

@@ -1,9 +1,16 @@
 import { useLocalStorage } from "../../state/useLocalStorage";
 import Nav from "./Nav";
 import Sidebar from "./Sidebar";
-import { Panels } from "./Panels";
 
-export function Layout() {
+export function Layout({
+  left,
+  right,
+  children,
+}: {
+  children: React.ReactNode;
+  left?: React.ReactNode;
+  right?: React.ReactNode;
+}) {
   const [sidebarIsOpen] = useLocalStorage<boolean>("sidebar-is-open", false);
   const [navIsOpen] = useLocalStorage<boolean>("nav-is-open", true);
 
@@ -23,9 +30,7 @@ export function Layout() {
             .join(" - ")})`,
         }}
       >
-        <div className="w-full grow overflow-hidden">
-          <Panels />
-        </div>
+        <div className="w-full grow overflow-hidden">{children}</div>
       </div>
       <Sidebar />
     </div>

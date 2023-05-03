@@ -10,7 +10,7 @@ import { tools } from "operations/stream-methods";
 import { applyFieldTransaction } from "operations/apply";
 import { createQueueCache } from "../../../collab/createQueueCache";
 import type { TokenStream } from "operations/types";
-import type { LibraryConfig } from "@storyflow/shared/types";
+import type { DocumentId, LibraryConfig } from "@storyflow/shared/types";
 import {
   $createBlocksFromStream,
   $getComputation,
@@ -27,6 +27,7 @@ import { useCollab } from "../../../collab/CollabContext";
 import { useFieldId } from "../../FieldIdContext";
 import { getDocumentId, getRawFieldId } from "@storyflow/fields-core/ids";
 import { isSpliceOperation } from "@storyflow/collab/utils";
+import { usePanel } from "../../../panel-router/Routes";
 
 const RECONCILIATION_TAG = "reconciliation";
 
@@ -48,9 +49,11 @@ export function Reconciler({
 
   const collab = useCollab();
 
+  const [{ index }] = usePanel();
+
   React.useEffect(() => {
     const queue = collab
-      .getTimeline(getDocumentId(fieldId))!
+      .getTimeline(getDocumentId<DocumentId>(fieldId))!
       .getQueue<FieldTransactionEntry>(getRawFieldId(fieldId));
 
     const cache = createQueueCache(
@@ -58,14 +61,15 @@ export function Reconciler({
       tracker
     );
 
-    return queue.register(({ forEach }) => {
+    return queue.register(() => {
       // trackedForEach only adds any unique operation a single time.
       // Since we are using the bound register, it does not provide
       // the operations pushed from this specific field.
 
       let newOps: StreamOperation[] = [];
 
-      const result = cache(forEach, (prev, { transaction, trackers }) => {
+      const result = cache(queue.forEach, (prev, { transaction, trackers }) => {
+        console.log("FOR EACHING", index, transaction);
         transaction.map((entry) => {
           if (entry[0] === target) {
             prev.stream = applyFieldTransaction(prev, entry).stream;

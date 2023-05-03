@@ -129,13 +129,13 @@ export function createSWRClient<UserAPI extends API>(
                           if (!cached) {
                             mutate(key, data);
                             /*
-                          cache.set(key, {
-                            data,
-                            isValidating: false,
-                            isLoading: false,
-                            error: undefined,
-                          });
-                          */
+                            cache.set(key, {
+                              data,
+                              isValidating: false,
+                              isLoading: false,
+                              error: undefined,
+                            });
+                            */
                           }
                         };
 

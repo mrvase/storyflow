@@ -21,7 +21,6 @@ import { TopFieldIndexProvider } from "./FieldIndexContext";
 import { useClient } from "../client";
 import { useDocumentIdGenerator } from "../id-generator";
 import { getDefaultValuesFromTemplateAsync } from "./template-fields";
-import { createDocumentTransformer } from "operations/apply";
 import { splitTransformsAndRoot } from "@storyflow/fields-core/transform";
 import { createTokenStream } from "operations/parse-token-stream";
 import {
@@ -103,8 +102,6 @@ export function RenderTemplate({
 
                 collab
                   .initializeTimeline(owner, {
-                    initialData: {},
-                    timeline: [],
                     versions: {},
                   })
                   .getQueue<FieldTransactionEntry>(getRawFieldId(fieldId))
@@ -197,7 +194,7 @@ export function RenderTemplate({
               ...fieldConfig,
               id: fieldId,
             }}
-            version={versions?.[getRawFieldId(fieldId)] ?? 0}
+            version={versions?.[getRawFieldId(fieldId)]?.[0] ?? 0}
             index={index}
             dragHandleProps={dragHandleProps}
           />

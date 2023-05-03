@@ -18,16 +18,16 @@ import cl from "clsx";
 import React from "react";
 import {
   DEFAULT_TEMPLATES,
-  useDocument,
-  useOptimisticDocumentList,
+  useDocumentList,
+  useDocumentWithTimeline,
   useSaveDocument,
 } from ".";
 import { useDocumentLabel } from "./useDocumentLabel";
 import { useClientConfig } from "../client-config";
 import { useFolder, useTemplateFolder } from "../folders/FoldersContext";
-import Content from "../layout/components/Content";
+import Content from "../layout/pages/Content";
 import { useCollab, usePush } from "../collab/CollabContext";
-import { useDocumentConfig } from "./collab/hooks";
+import { useDocumentConfig } from "./hooks";
 import { FocusOrchestrator, useFocusedIds } from "../utils/useIsFocused";
 import { DocumentPageContext } from "./DocumentPageContext";
 import { GetDocument } from "./GetDocument";
@@ -45,8 +45,8 @@ import { Menu } from "../elements/Menu";
 import { TimelineEntry } from "@storyflow/collab/types";
 import { DocumentTransactionEntry } from "operations/actions_new";
 
-function useIsModified(id: DocumentId, initial: boolean) {
-  const [isModified, setIsModified] = React.useState(initial);
+function useIsModified(id: DocumentId) {
+  const [isModified, setIsModified] = React.useState(false);
 
   const collab = useCollab();
   React.useEffect(() => {
@@ -63,7 +63,6 @@ export const DocumentContent = ({
   folder,
   label,
   children,
-  isModified: initialIsModified,
   variant,
   toolbar,
 }: {
@@ -71,11 +70,10 @@ export const DocumentContent = ({
   folder: FolderId | undefined;
   label: string;
   children: React.ReactNode;
-  isModified: boolean;
   variant?: string;
   toolbar: React.ReactNode;
 }) => {
-  const isModified = useIsModified(id, initialIsModified);
+  const isModified = useIsModified(id);
 
   return (
     <Content
@@ -186,7 +184,7 @@ function Toolbar({ id }: { id: DocumentId }) {
 
 export function TemplateMenu({ id }: { id?: DocumentId }) {
   const templateFolder = useTemplateFolder()?._id;
-  const { documents: templates } = useOptimisticDocumentList(templateFolder);
+  const { documents: templates } = useDocumentList(templateFolder);
 
   return (
     <Menu
@@ -213,12 +211,12 @@ export function TemplateMenu({ id }: { id?: DocumentId }) {
 export function DocumentPage({ children }: { children?: React.ReactNode }) {
   const route = useRoute();
   const segment = parseSegment<"document" | "template">(route);
-  let { doc, timeline, error } = useDocument(segment.id);
+  let { doc, error } = useDocumentWithTimeline(segment.id);
 
   return (
     <>
-      {!error && doc && timeline && (
-        <Page type={segment.type} doc={doc} timeline={timeline}>
+      {!error && doc && (
+        <Page type={segment.type} doc={doc}>
           {children}
         </Page>
       )}
@@ -230,18 +228,15 @@ export function DocumentPage({ children }: { children?: React.ReactNode }) {
 const Page = ({
   type,
   doc,
-  timeline,
   children,
 }: {
   type: "template" | "document";
   doc: DBDocument;
-  timeline: TimelineEntry[];
   children: React.ReactNode;
 }) => {
   const id = doc._id;
 
   const config = useDocumentConfig(id, {
-    timeline,
     record: doc.record,
     config: doc.config,
     versions: doc.versions,
@@ -255,8 +250,6 @@ const Page = ({
   const owner = doc;
 
   const label = useDocumentLabel(doc);
-
-  const isModified = timeline.length > 0;
 
   const ctx = React.useMemo(
     () => ({
@@ -276,7 +269,6 @@ const Page = ({
             variant={type === "template" ? "template" : undefined}
             folder={doc?.folder}
             label={label ?? "Ingen label"}
-            isModified={isModified}
             toolbar={<Toolbar id={id} />}
           >
             <div className="pb-96 flex flex-col -mt-6">

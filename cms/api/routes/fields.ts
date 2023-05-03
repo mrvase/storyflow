@@ -29,10 +29,7 @@ import {
   unwrapServerPackage,
 } from "@storyflow/state";
 import { setFieldConfig } from "operations/field-config";
-import {
-  applyFieldOperation,
-  createTokenStreamTransformer,
-} from "operations/apply";
+import { applyFieldOperation } from "operations/apply";
 import { isSyntaxTree } from "@storyflow/fields-core/syntax-tree";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
 import {
@@ -586,48 +583,6 @@ const updateFieldRecord = (
     record: updatedRecord,
     versions: updatedVersions,
   };
-};
-
-const transformField = (
-  fieldId: FieldId,
-  initialRecord: SyntaxTreeRecord,
-  pkgs: TimelineEntry[]
-): Record<FieldId, SyntaxTree> => {
-  const transformer = createTokenStreamTransformer(fieldId, initialRecord);
-
-  const updates: Record<
-    FieldId,
-    { stream: TokenStream; transforms: FieldTransform[] }
-  > = {};
-
-  transformer(pkgs).forEach((pkg) => {
-    unwrapServerPackage(pkg).operations.forEach((operation) => {
-      const [target] = operation;
-      const id = target as FieldId;
-      if (!(id in updates)) {
-        const value = initialRecord[id] ?? DEFAULT_SYNTAX_TREE;
-        const [transforms, root] = splitTransformsAndRoot(value);
-
-        updates[id] = {
-          stream: createTokenStream(root),
-          transforms,
-        };
-      }
-      updates[id] = applyFieldOperation(updates[id], operation);
-    });
-  });
-
-  return Object.fromEntries(
-    Object.entries(updates).map(([id, { stream, transforms }]) => {
-      return [
-        id,
-        parseTokenStream(
-          stream,
-          transforms.length > 0 ? transforms : undefined
-        ),
-      ];
-    })
-  );
 };
 
 const updateDocumentConfig = (

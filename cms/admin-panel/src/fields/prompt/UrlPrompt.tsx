@@ -19,7 +19,7 @@ import { calculateRootFieldFromRecord } from "@storyflow/fields-core/calculate-s
 import { useFieldId } from "../FieldIdContext";
 import { useDocumentIdGenerator } from "../../id-generator";
 import { tokens } from "@storyflow/fields-core/tokens";
-import { useOptimisticDocumentList } from "../../documents";
+import { useDocumentList } from "../../documents";
 import { markMatchingString } from "./helpers";
 import { useFolders } from "../../folders/FoldersContext";
 
@@ -87,7 +87,7 @@ function AppUrls({
   const documentId = getDocumentId(id) as DocumentId;
   const generateDocumentId = useDocumentIdGenerator();
 
-  const { documents: list } = useOptimisticDocumentList(app._id);
+  const { documents: list } = useDocumentList(app._id);
 
   const onEnter = React.useCallback(
     (id: DocumentId) => {

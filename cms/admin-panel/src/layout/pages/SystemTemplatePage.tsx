@@ -6,7 +6,7 @@ import { FolderContext } from "../../folders/FolderPageContext";
 import Space from "../../folders/spaces/Space";
 import { useDeleteForm } from "../../folders/spaces/useDeleteForm";
 import Table from "../../documents/components/Table";
-import { useOptimisticDocumentList } from "../../documents";
+import { useDocumentList } from "../../documents";
 import Loader from "../../elements/Loader";
 import type { SpaceId } from "@storyflow/db-core/types";
 
@@ -14,7 +14,7 @@ export function SystemTemplatePage() {
   const folder = useTemplateFolder();
   const { form, handleDelete } = useDeleteForm({ folderId: folder._id });
 
-  const { documents } = useOptimisticDocumentList(folder._id);
+  const { documents } = useDocumentList(folder._id);
 
   const rows = (documents ?? []).map((el) => ({
     id: el._id,

@@ -36,8 +36,7 @@ export function PreloadFieldState({
   id: FieldId;
   createTemplateContext?: NestedDocumentId;
 }) {
-  const version = useFieldVersion();
-  const { tree, templateId } = useDefaultState(id, version);
+  const { tree, templateId } = useDefaultState(id);
 
   if (createTemplateContext) {
     const template = React.useMemo(() => {

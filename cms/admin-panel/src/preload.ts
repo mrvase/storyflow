@@ -1,7 +1,7 @@
 import { hexColorToRgb } from "./data/colors";
 import useSWR from "swr";
 import { TEMPLATE_FOLDER } from "@storyflow/fields-core/constants";
-import { useOptimisticDocumentList } from "./documents";
+import { useDocumentList } from "./documents";
 
 export function Preload() {
   useSWR(
@@ -25,7 +25,7 @@ export function Preload() {
   );
 
   // preload articles
-  useOptimisticDocumentList(TEMPLATE_FOLDER);
+  useDocumentList(TEMPLATE_FOLDER);
 
   return null;
 }

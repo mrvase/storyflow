@@ -1,10 +1,10 @@
 import React from "react";
-import Content from "../layout/components/Content";
+import Content from "../layout/pages/Content";
 import {
   ArrowPathIcon,
   ComputerDesktopIcon,
 } from "@heroicons/react/24/outline";
-import { useOptimisticDocumentList } from "../documents";
+import { useDocumentList } from "../documents";
 import { createTemplateFieldId } from "@storyflow/fields-core/ids";
 import { EditableLabel } from "../elements/EditableLabel";
 import cl from "clsx";
@@ -40,7 +40,7 @@ export default function AppPage({ children }: { children?: React.ReactNode }) {
   const [{ path }] = usePanel();
   const isSelected = path === route;
 
-  const { documents } = useOptimisticDocumentList(folder?._id);
+  const { documents } = useDocumentList(folder?._id);
 
   const orderedDocuments = React.useMemo(() => {
     if (!documents) return [];

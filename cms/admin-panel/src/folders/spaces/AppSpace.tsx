@@ -1,7 +1,7 @@
 import cl from "clsx";
 import { PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { getDocumentId } from "@storyflow/fields-core/ids";
-import { useOptimisticDocumentList } from "../../documents";
+import { useDocumentList } from "../../documents";
 import { getDocumentLabel } from "../../documents/useDocumentLabel";
 import Table from "../../documents/components/Table";
 import Space from "./Space";
@@ -25,7 +25,7 @@ export function AppSpace({
 }) {
   const { form, handleDelete } = useDeleteForm({ folderId });
 
-  const { documents } = useOptimisticDocumentList(folderId);
+  const { documents } = useDocumentList(folderId);
 
   const { urls, addDocumentWithUrl } = useAppPageContext();
 

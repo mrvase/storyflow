@@ -11,7 +11,7 @@ import {
 import React from "react";
 import { useFieldFocus } from "../field-focus";
 import { addImport } from "../custom-events";
-import { useLabel } from "../documents/collab/hooks";
+import { useLabel } from "../documents/hooks";
 import type { FieldId, NestedDocumentId } from "@storyflow/shared/types";
 import type { FieldConfig } from "@storyflow/fields-core/types";
 import { getTranslateDragEffect } from "../utils/dragEffects";

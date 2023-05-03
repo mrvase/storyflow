@@ -9,7 +9,7 @@ import React from "react";
 import { Option } from "./Option";
 import { useFieldId } from "../FieldIdContext";
 import { markMatchingString } from "./helpers";
-import { useOptimisticDocumentList } from "../../documents";
+import { useDocumentList } from "../../documents";
 import { TEMPLATE_FOLDER } from "@storyflow/fields-core/constants";
 import { usePath } from "../Path";
 import { useClientConfig } from "../../client-config";
@@ -23,12 +23,11 @@ export function TemplatePrompt({ prompt }: { prompt: string }) {
   const fieldId = useFieldId();
 
   const push = usePush<FieldTransactionEntry>(
-    getDocumentId(fieldId),
+    getDocumentId<DocumentId>(fieldId),
     getRawFieldId(fieldId)
   );
 
-  const { documents: templates = [] } =
-    useOptimisticDocumentList(TEMPLATE_FOLDER);
+  const { documents: templates = [] } = useDocumentList(TEMPLATE_FOLDER);
 
   const path = usePath();
   const dataFieldId = path.slice(-1)[0];

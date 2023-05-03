@@ -90,7 +90,7 @@ export const calculateFn = (
         promise.then((result) =>
           state.set(() => {
             // might be aborted, so we need a fallback
-            return result?.documents ?? [];
+            return result ?? [];
           })
         );
       }
