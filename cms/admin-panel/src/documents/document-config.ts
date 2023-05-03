@@ -6,7 +6,6 @@ import type {
 } from "@storyflow/fields-core/types";
 import type {
   PartialFieldConfig,
-  TemplateRef,
   DocumentConfig,
   DocumentVersionRecord,
 } from "@storyflow/db-core/types";

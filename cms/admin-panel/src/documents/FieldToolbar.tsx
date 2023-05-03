@@ -15,7 +15,7 @@ import { useDocumentList } from ".";
 import { useTemplateFolder } from "../folders/FoldersContext";
 import Content from "../layout/pages/Content";
 import { usePush } from "../collab/CollabContext";
-import { useFieldConfig } from "./hooks";
+import { useFieldConfig } from "./document-config";
 import { useContextWithError } from "../utils/contextError";
 import { useFieldId } from "../fields/FieldIdContext";
 import { getDocumentId } from "@storyflow/fields-core/ids";

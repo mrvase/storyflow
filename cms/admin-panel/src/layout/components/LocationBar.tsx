@@ -17,7 +17,7 @@ import { usePanelActions } from "../../panel-router/PanelRouter";
 import { useDragItem } from "@storyflow/dnd";
 import { parseSegment } from "./parseSegment";
 import { useDocumentList, useDocument } from "../../documents";
-import { useLabel } from "../../documents/hooks";
+import { useLabel } from "../../documents/document-config";
 import { useDocumentLabel } from "../../documents/useDocumentLabel";
 import { useFolder } from "../../folders/FoldersContext";
 

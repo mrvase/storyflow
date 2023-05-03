@@ -3,7 +3,7 @@ import { LexicalNode, NodeKey } from "lexical";
 import cl from "clsx";
 import { useIsSelected } from "./useIsSelected";
 import { caretClasses } from "./caret";
-import { useLabel } from "../../../documents/hooks";
+import { useLabel } from "../../../documents/document-config";
 import { useGlobalState } from "../../../state/state";
 import { getPreview } from "../../default/getPreview";
 import type { ValueArray } from "@storyflow/shared/types";

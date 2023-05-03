@@ -18,7 +18,7 @@ import {
 } from "operations/parse-token-stream";
 import { useClient } from "../../client";
 import { useCollab } from "../../collab/CollabContext";
-import { useFieldConfig } from "../../documents/hooks";
+import { useFieldConfig } from "../../documents/document-config";
 import { useSingular } from "../../state/useSingular";
 import { calculateFn } from "./calculateFn";
 import { splitTransformsAndRoot } from "@storyflow/fields-core/transform";

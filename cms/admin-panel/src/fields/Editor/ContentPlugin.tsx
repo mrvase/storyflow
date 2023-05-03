@@ -14,7 +14,7 @@ import {
 import type { DocumentId } from "@storyflow/shared/types";
 import type { TokenStream } from "operations/types";
 import { useClientConfig } from "../../client-config";
-import { useFieldConfig } from "../../documents/hooks";
+import { useFieldConfig } from "../../documents/document-config";
 import { useFieldId } from "../FieldIdContext";
 import { createComponent } from "./createComponent";
 import { replaceWithComputation } from "./insertComputation";

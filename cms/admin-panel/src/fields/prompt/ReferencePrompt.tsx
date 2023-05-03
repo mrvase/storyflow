@@ -31,7 +31,7 @@ import { SWRClient } from "../../client";
 import { calculateRootFieldFromRecord } from "@storyflow/fields-core/calculate-server";
 import { DEFAULT_FIELDS } from "@storyflow/fields-core/default-fields";
 import Loader from "../../elements/Loader";
-import { useFieldConfig } from "../../documents/hooks";
+import { useFieldConfig } from "../../documents/document-config";
 import { usePath, useSelectedPath } from "../Path";
 import { useLoopTemplate } from "../default/LoopTemplateContext";
 import { useTemplate } from "../default/useFieldTemplate";
