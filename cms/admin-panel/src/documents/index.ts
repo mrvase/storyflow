@@ -1,13 +1,12 @@
 import { isSuccess, unwrap } from "@storyflow/result";
 import React from "react";
-import { Client, SWRClient, readFromCache, useClient } from "../client";
+import { Client, SWRClient, readFromCache } from "../client";
 import {
   DocumentId,
   FolderId,
   RawFieldId,
   ValueArray,
   RawDocumentId,
-  FieldId,
 } from "@storyflow/shared/types";
 import type { SyntaxTreeRecord, Sorting } from "@storyflow/fields-core/types";
 import type { DBDocument } from "@storyflow/db-core/types";
@@ -16,25 +15,13 @@ import {
   generateTemplateId,
   getDefaultValue,
 } from "@storyflow/fields-core/default-fields";
+import { TEMPLATE_FOLDER } from "@storyflow/fields-core/constants";
 import {
-  DEFAULT_SYNTAX_TREE,
-  TEMPLATE_FOLDER,
-} from "@storyflow/fields-core/constants";
-import {
-  createTemplateFieldId,
   getTemplateDocumentId,
   normalizeDocumentId,
 } from "@storyflow/fields-core/ids";
 import type { DefaultFieldConfig } from "@storyflow/fields-core/types";
-import { createTransaction } from "@storyflow/collab/utils";
-import { DocumentAddTransactionEntry } from "operations/actions_new";
-import { useCollab, usePush } from "../collab/CollabContext";
-import {
-  useDocumentIdGenerator,
-  useTemplateIdGenerator,
-} from "../id-generator";
-import { usePanel, useRoute } from "../panel-router/Routes";
-import { getDefaultValuesFromTemplateAsync } from "./template-fields";
+import { useCollab } from "../collab/CollabContext";
 import { createDocumentTransformer } from "operations/apply";
 
 export async function fetchDocumentList(
@@ -268,16 +255,15 @@ export function useDocumentWithTimeline(documentId: DocumentId) {
 
   React.useLayoutEffect(() => {
     // TODO: This should be made synchronous to avoid flickering
-    if (data) {
-      collab.initializeTimeline(documentId, {
-        versions: data.versions,
-        transform: createDocumentTransformer(data),
-      });
-      hasCalledStaleHook.current = false;
-    }
-  }, [data]);
+    if (!data) return;
 
-  console.log("DOC DATA", data);
+    collab.initializeTimeline(documentId, {
+      versions: data.versions,
+      transform: createDocumentTransformer(data),
+    });
+
+    hasCalledStaleHook.current = false;
+  }, [data]);
 
   let hasCalledStaleHook = React.useRef(false);
   React.useEffect(() => {
@@ -295,79 +281,3 @@ export function useDocumentWithTimeline(documentId: DocumentId) {
     error: data ? undefined : error,
   };
 }
-
-export const useDeleteManyMutation = (folderId: string) => {
-  const { mutate: mutateList } = SWRClient.documents.getList.useQuery({
-    folder: folderId,
-    limit: 50,
-  });
-  const deleteMany = SWRClient.documents.deleteMany.useMutation();
-
-  return async (ids: DocumentId[]) => {
-    const result = await deleteMany(ids);
-    if (isSuccess(result)) {
-      mutateList();
-    }
-  };
-};
-
-export const useAddDocument = (
-  options: { type?: "template" | "document"; navigate?: boolean } = {}
-) => {
-  const generateDocumentId = useDocumentIdGenerator();
-  const generateTemplateId = useTemplateIdGenerator();
-  const [, navigate] = usePanel();
-  const route = useRoute();
-  const client = useClient();
-
-  const push = usePush<DocumentAddTransactionEntry>("documents");
-
-  const addDocument = React.useCallback(
-    async (data: {
-      folder: FolderId;
-      template?: DocumentId;
-      createRecord?: (id: DocumentId) => SyntaxTreeRecord;
-    }) => {
-      const id =
-        options.type === "template"
-          ? generateTemplateId()
-          : generateDocumentId();
-      push(
-        createTransaction((t) =>
-          t.target(data.folder).toggle({ name: "add", value: id })
-        )
-      );
-
-      const record = data.template
-        ? await getDefaultValuesFromTemplateAsync(id, data.template, {
-            client,
-            generateDocumentId,
-          })
-        : {};
-
-      if (data.createRecord) {
-        const createdRecord = data.createRecord(id);
-        Object.entries(createdRecord).forEach(([key, value]) => {
-          record[key as FieldId] = value;
-        });
-      }
-
-      record[createTemplateFieldId(id, DEFAULT_FIELDS.creation_date.id)] = {
-        ...DEFAULT_SYNTAX_TREE,
-        children: [new Date()],
-      };
-
-      // TODO: Push record
-
-      if (options.navigate) {
-        navigate(`${route}/${options.type === "template" ? "t" : "d"}${id}`, {
-          navigate: true,
-        });
-      }
-      return id;
-    },
-    [push, options.navigate, route, navigate, client, generateDocumentId]
-  );
-
-  return addDocument;
-};

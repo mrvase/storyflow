@@ -1,7 +1,7 @@
 import React from "react";
 import Dialog from "../elements/Dialog";
-import type { DBFolder, SpaceId } from "@storyflow/db-core/types";
-import type { DocumentId, FolderId } from "@storyflow/shared/types";
+import type { SpaceId } from "@storyflow/db-core/types";
+import type { FolderId } from "@storyflow/shared/types";
 import { createTemplateFieldId } from "@storyflow/fields-core/ids";
 import { ComputerDesktopIcon, FolderIcon } from "@heroicons/react/24/outline";
 import { DialogOption } from "../elements/DialogOption";
@@ -15,7 +15,7 @@ import {
   FolderTransactionEntry,
   SpaceTransactionEntry,
 } from "operations/actions_new";
-import { useAddDocument } from "../documents";
+import { useAddDocument } from "../documents/useAddDocument";
 
 export function AddFolderDialog({
   isOpen,

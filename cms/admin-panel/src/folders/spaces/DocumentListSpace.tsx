@@ -10,11 +10,8 @@ import { createTemplateFieldId } from "@storyflow/fields-core/ids";
 import type { DocumentId, FolderId } from "@storyflow/shared/types";
 import type { SpaceId } from "@storyflow/db-core/types";
 import React from "react";
-import {
-  fetchDocument,
-  useAddDocument,
-  useDocumentList,
-} from "../../documents";
+import { fetchDocument, useDocumentList } from "../../documents";
+import { useAddDocument } from "../../documents/useAddDocument";
 import { getDocumentLabel } from "../../documents/useDocumentLabel";
 import { getTemplateFieldsAsync } from "../../documents/template-fields";
 import Table from "../../documents/components/Table";

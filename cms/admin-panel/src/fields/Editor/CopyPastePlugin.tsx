@@ -45,7 +45,6 @@ import {
   TokenStreamNode,
 } from "./decorators/TokenStreamNode";
 import { $replaceWithBlocks } from "./insertComputation";
-import { FieldOperation } from "operations/actions";
 import { createTransaction } from "@storyflow/collab/utils";
 import { FieldTransactionEntry } from "operations/actions_new";
 import { getSyntaxTreeEntries } from "@storyflow/fields-core/syntax-tree";

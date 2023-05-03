@@ -29,7 +29,7 @@ export function useCollaborativeState<Data, TE extends TransactionEntry>(
     ["collab", timelineId, queueId, target ?? ""].filter(Boolean).join("-")
   );
 
-  React.useLayoutEffect(() => {
+  React.useEffect(() => {
     const queue = collab.getTimeline(timelineId)!.getQueue<TE>(queueId);
     return queue.register(() =>
       singular(() => {

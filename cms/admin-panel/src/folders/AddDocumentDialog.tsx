@@ -1,6 +1,5 @@
 import React from "react";
 import Dialog from "../elements/Dialog";
-import { getDefaultValuesFromTemplateAsync } from "../documents/template-fields";
 import { createTemplateFieldId } from "@storyflow/fields-core/ids";
 import type { DocumentId, FieldId, FolderId } from "@storyflow/shared/types";
 import type { SyntaxTreeRecord } from "@storyflow/fields-core/types";
@@ -10,8 +9,7 @@ import { useDocumentIdGenerator } from "../id-generator";
 import { DEFAULT_FIELDS } from "@storyflow/fields-core/default-fields";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
 import { insertRootInTransforms } from "@storyflow/fields-core/transform";
-import { usePanel, useRoute } from "../panel-router/Routes";
-import { useAddDocument } from "../documents";
+import { useAddDocument } from "../documents/useAddDocument";
 
 export function AddDocumentDialog({
   isOpen,

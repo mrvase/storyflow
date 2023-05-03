@@ -1,9 +1,25 @@
 import type { DocumentId, FolderId } from "@storyflow/shared/types";
 import React from "react";
-import { useDeleteManyMutation } from "../../documents";
 import { usePush } from "../../collab/CollabContext";
 import { createTransaction } from "@storyflow/collab/utils";
 import { DocumentAddTransactionEntry } from "operations/actions_new";
+import { SWRClient } from "../../client";
+import { isSuccess } from "@storyflow/result";
+
+export const useDeleteManyMutation = (folderId: string) => {
+  const { mutate: mutateList } = SWRClient.documents.getList.useQuery({
+    folder: folderId,
+    limit: 50,
+  });
+  const deleteMany = SWRClient.documents.deleteMany.useMutation();
+
+  return async (ids: DocumentId[]) => {
+    const result = await deleteMany(ids);
+    if (isSuccess(result)) {
+      mutateList();
+    }
+  };
+};
 
 export function useDeleteForm({
   folderId,

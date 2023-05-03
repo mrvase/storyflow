@@ -1,12 +1,11 @@
 import React from "react";
 import Dialog from "../elements/Dialog";
-import { useAddDocument, useDocumentList } from "../documents";
+import { useDocumentList } from "../documents";
+import { useAddDocument } from "../documents/useAddDocument";
 import { DialogOption } from "../elements/DialogOption";
 import { DocumentDuplicateIcon, PlusIcon } from "@heroicons/react/24/outline";
 import { useTemplateFolder } from "./FoldersContext";
-import { useTemplateIdGenerator } from "../id-generator";
 import type { DocumentId, FolderId } from "@storyflow/shared/types";
-import { usePanel, useRoute } from "../panel-router/Routes";
 import { usePush } from "../collab/CollabContext";
 import { createTransaction } from "@storyflow/collab/utils";
 import { FolderTransactionEntry } from "operations/actions_new";

@@ -133,6 +133,7 @@ export const fields = createRoute({
         .collection<DBDocumentRaw>("documents")
         .findOne({ _id: createObjectId(documentId) })) ?? {
         _id: createObjectId(documentId),
+        folder: undefined,
         fields: [],
         values: {},
         versions: { config: [0] },
@@ -411,7 +412,7 @@ export const fields = createRoute({
       const stages: any = [
         {
           $set: {
-            folder: input.folder,
+            folder: doc.folder || createObjectId(input.folder),
             values: { $literal: values }, // uses $literal to do hard replace (otherwise: merges old with new values)
             fields: { $literal: fields },
             config: { $literal: config },

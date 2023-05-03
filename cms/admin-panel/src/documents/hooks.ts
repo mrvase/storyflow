@@ -11,20 +11,17 @@ import type {
   DocumentVersionRecord,
 } from "@storyflow/db-core/types";
 import { usePush } from "../collab/CollabContext";
-import { getFieldConfig, setFieldConfig } from "operations/field-config";
+import { getFieldConfig } from "operations/field-config";
 import { createPurger, createStaticStore } from "../state/StaticStore";
 import { useDocument } from ".";
 import {
   getDocumentId,
-  getTemplateDocumentId,
-  isTemplateField,
   replaceDocumentId,
   revertTemplateFieldId,
 } from "@storyflow/fields-core/ids";
 import { useCollaborativeState } from "../collab/useCollaborativeState";
 import { useTemplatePath } from "./TemplatePathContext";
 import { DocumentTransactionEntry } from "operations/actions_new";
-import { isSpliceOperation, isToggleOperation } from "@storyflow/collab/utils";
 import { QueueForEach } from "@storyflow/collab/Queue";
 import { applyConfigTransaction } from "operations/apply";
 
