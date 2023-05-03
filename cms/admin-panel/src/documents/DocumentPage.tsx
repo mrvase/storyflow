@@ -16,12 +16,8 @@ import type { DBDocument } from "@storyflow/db-core/types";
 import { NoList, useDragItem } from "@storyflow/dnd";
 import cl from "clsx";
 import React from "react";
-import {
-  DEFAULT_TEMPLATES,
-  useDocumentList,
-  useDocumentWithTimeline,
-  useSaveDocument,
-} from ".";
+import { DEFAULT_TEMPLATES, useDocumentList, useDocumentWithTimeline } from ".";
+import { useSaveDocument } from "./useSaveDocument";
 import { useDocumentLabel } from "./useDocumentLabel";
 import { useClientConfig } from "../client-config";
 import { useFolder, useTemplateFolder } from "../folders/FoldersContext";
@@ -42,8 +38,8 @@ import { ExtendTemplatePath } from "./TemplatePathContext";
 import { useRoute } from "../panel-router/Routes";
 import { parseSegment } from "../layout/components/parseSegment";
 import { Menu } from "../elements/Menu";
-import { TimelineEntry } from "@storyflow/collab/types";
 import { DocumentTransactionEntry } from "operations/actions_new";
+import { useCurrentFolder } from "../folders/FolderPageContext";
 
 function useIsModified(id: DocumentId) {
   const [isModified, setIsModified] = React.useState(false);
@@ -53,21 +49,21 @@ function useIsModified(id: DocumentId) {
     return collab.getTimeline(id)!.registerMutationListener((isModified) => {
       setIsModified(isModified);
     });
-  }, []);
+  }, [collab]);
 
   return isModified;
 }
 
 export const DocumentContent = ({
   id,
-  folder,
+  folderId,
   label,
   children,
   variant,
   toolbar,
 }: {
   id: DocumentId;
-  folder: FolderId | undefined;
+  folderId: FolderId | undefined;
   label: string;
   children: React.ReactNode;
   variant?: string;
@@ -91,7 +87,7 @@ export const DocumentContent = ({
             isModified ? "opacity-100" : "opacity-0 pointer-events-none"
           )}
         >
-          {folder && <SaveButton id={id} folder={folder} />}
+          {folderId && <SaveButton id={id} folderId={folderId} />}
         </div>
       }
       toolbar={toolbar}
@@ -242,7 +238,7 @@ const Page = ({
     versions: doc.versions,
   });
 
-  const folder = useFolder(doc.folder);
+  const folder = useCurrentFolder();
   const isApp = folder?.type === "app";
 
   const templateId = folder?.template;
@@ -257,7 +253,7 @@ const Page = ({
       record: doc.record,
       versions: doc.versions,
     }),
-    [id, doc.record]
+    [id, doc.record, doc.versions]
   );
 
   return (
@@ -267,7 +263,7 @@ const Page = ({
           <DocumentContent
             id={id}
             variant={type === "template" ? "template" : undefined}
-            folder={doc?.folder}
+            folderId={folder?._id}
             label={label ?? "Ingen label"}
             toolbar={<Toolbar id={id} />}
           >
@@ -330,15 +326,15 @@ function TemplateSelect({ documentId }: { documentId: DocumentId }) {
   );
 }
 
-function SaveButton({ id, folder }: { id: DocumentId; folder: FolderId }) {
+function SaveButton({ id, folderId }: { id: DocumentId; folderId: FolderId }) {
   const collab = useCollab();
   const [isLoading, setIsLoading] = React.useState(false);
-  const saveDocument = useSaveDocument(folder);
+  const saveDocument = useSaveDocument(id, folderId);
 
   const { mutate: mutateUpdatedUrls } =
     SWRClient.documents.getUpdatedUrls.useQuery(
       {
-        namespace: folder,
+        namespace: folderId,
       },
       {
         immutable: true,
@@ -386,8 +382,7 @@ function SaveButton({ id, folder }: { id: DocumentId; folder: FolderId }) {
         onClick={async () => {
           if (isLoading) return;
           setIsLoading(true);
-          await collab.sync(1, true);
-          const result = await saveDocument({ id, searchable: {} });
+          await collab.saveTimeline(id, saveDocument);
           mutateUpdatedUrls();
           setIsLoading(false);
         }}

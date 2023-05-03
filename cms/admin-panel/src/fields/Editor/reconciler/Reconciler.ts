@@ -69,7 +69,6 @@ export function Reconciler({
       let newOps: StreamOperation[] = [];
 
       const result = cache(queue.forEach, (prev, { transaction, trackers }) => {
-        console.log("FOR EACHING", index, transaction);
         transaction.map((entry) => {
           if (entry[0] === target) {
             prev.stream = applyFieldTransaction(prev, entry).stream;

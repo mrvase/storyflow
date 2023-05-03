@@ -1,0 +1,230 @@
+import { SWRClient } from "../client";
+import {
+  DocumentId,
+  FolderId,
+  FieldId,
+  RawFieldId,
+} from "@storyflow/shared/types";
+import { TimelineEntry } from "@storyflow/collab/types";
+import { useDocument } from ".";
+import {
+  filterTimeline,
+  isSpliceOperation,
+  isToggleOperation,
+  read,
+} from "@storyflow/collab/utils";
+import {
+  DBDocument,
+  DocumentConfig,
+  DocumentVersionRecord,
+  TemplateRef,
+} from "@storyflow/db-core/types";
+import {
+  FieldTransform,
+  SyntaxTree,
+  SyntaxTreeRecord,
+} from "@storyflow/fields-core/types";
+import {
+  computeFieldId,
+  getTemplateDocumentId,
+  isTemplateField,
+} from "@storyflow/fields-core/ids";
+import {
+  applyConfigTransaction,
+  applyFieldTransaction,
+  createDocumentTransformer,
+} from "operations/apply";
+import { TokenStream } from "operations/types";
+import {
+  DocumentTransactionEntry,
+  FieldTransactionEntry,
+} from "operations/actions_new";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
+import { splitTransformsAndRoot } from "@storyflow/fields-core/transform";
+import {
+  createTokenStream,
+  parseTokenStream,
+} from "operations/parse-token-stream";
+import { setFieldConfig } from "operations/field-config";
+
+const splitIntoQueues = (
+  array: TimelineEntry[]
+): Record<"config" | RawFieldId, TimelineEntry[]> => {
+  return array.reduce((acc: Record<string, TimelineEntry[]>, cur) => {
+    const queue = read(cur).queue;
+    if (!acc[queue]) {
+      acc[queue] = [];
+    }
+    const a = acc[queue];
+    a.push(cur);
+    return acc;
+  }, {});
+};
+
+export const useSaveDocument = (documentId: DocumentId, folderId: FolderId) => {
+  const { doc } = useDocument(documentId);
+
+  const mutate = SWRClient.fields.save.useMutation({
+    cacheUpdate: ({ id }, mutate) => {
+      mutate(
+        ["documents/getList", { folder: folderId, limit: 50 }],
+        (ps, result) => {
+          if (!result) {
+            return ps;
+          }
+          const index = ps.findIndex((el) => el._id === id);
+          const newDocuments = [...ps];
+          newDocuments[index] = { ...newDocuments[index], ...result };
+          return newDocuments;
+        }
+      );
+      mutate(["documents/get", id], (ps, result) => {
+        if (!result) {
+          return ps;
+        }
+        return result;
+      });
+    },
+  });
+
+  return async (timeline: TimelineEntry[]): Promise<boolean> => {
+    if (!doc) return false;
+
+    let config = doc.config;
+    const versions = doc.versions ?? { config: 0 };
+
+    [timeline] = filterTimeline([timeline], versions);
+
+    timeline = createDocumentTransformer(doc)(timeline);
+
+    // split timeline into queues
+    const queues = splitIntoQueues(timeline);
+
+    const configQueue = queues["config"];
+
+    if (configQueue?.length) {
+      config = updateDocumentConfig(config, configQueue);
+      const last = read(configQueue[configQueue.length - 1]);
+      versions.config = [
+        versions.config[0] + configQueue.length,
+        last.prev,
+        last.user,
+      ];
+    }
+
+    const { record: updatedRecord, versions: updatedVersions } =
+      updateFieldRecord(
+        {
+          _id: documentId,
+          versions: doc.versions,
+          record: doc.record,
+        },
+        queues
+      );
+
+    mutate({
+      id: documentId,
+      folder: folderId,
+      record: updatedRecord,
+      config,
+      versions: updatedVersions,
+    });
+
+    return true;
+  };
+};
+
+const updateFieldRecord = (
+  article: Pick<DBDocument, "_id" | "record" | "versions">,
+  queues: Record<RawFieldId, TimelineEntry[]>
+) => {
+  const updatedRecord: SyntaxTreeRecord = {};
+  const updatedVersions: Partial<DocumentVersionRecord> = {};
+
+  const entries = Object.entries(queues) as [
+    "config" | RawFieldId,
+    TimelineEntry[]
+  ][];
+
+  entries.forEach(([id, queue]) => {
+    if (id === "config") return;
+
+    if (!queue.length) return;
+
+    // const fieldId = computeFieldId(article._id, id as RawFieldId);
+    const newUpdates = transformField(article.record, queue);
+    Object.assign(updatedRecord, newUpdates);
+
+    const last = read(queue[queue.length - 1]);
+
+    const index = article.versions?.[id as RawFieldId]?.[0] ?? 0;
+    updatedVersions[id as RawFieldId] = [
+      index + queue.length,
+      last.prev,
+      last.user,
+    ];
+  });
+
+  return {
+    record: updatedRecord,
+    versions: updatedVersions,
+  };
+};
+
+const transformField = (
+  initialRecord: SyntaxTreeRecord,
+  queue: TimelineEntry[]
+): Record<FieldId, SyntaxTree> => {
+  const updates: Record<
+    FieldId,
+    { stream: TokenStream; transforms: FieldTransform[] }
+  > = {};
+
+  queue.forEach((pkg) => {
+    read<FieldTransactionEntry>(pkg).transactions.forEach((transaction) => {
+      transaction.forEach((entry) => {
+        const id = entry[0];
+        if (!(id in updates)) {
+          const value = initialRecord[id] ?? DEFAULT_SYNTAX_TREE;
+          const [transforms, root] = splitTransformsAndRoot(value);
+
+          updates[id] = {
+            stream: createTokenStream(root),
+            transforms,
+          };
+        }
+        updates[id] = applyFieldTransaction(updates[id], entry);
+      });
+    });
+  });
+
+  return Object.fromEntries(
+    Object.entries(updates).map(([id, { stream, transforms }]) => {
+      return [
+        id,
+        parseTokenStream(
+          stream,
+          transforms.length > 0 ? transforms : undefined
+        ),
+      ];
+    })
+  );
+};
+
+const updateDocumentConfig = (
+  config: DocumentConfig,
+  queue: TimelineEntry[]
+) => {
+  let newConfig = [...config];
+
+  queue.forEach((entry) => {
+    const { transactions } = read<DocumentTransactionEntry>(entry);
+    transactions.forEach((transaction) => {
+      transaction.forEach((entry) => {
+        newConfig = applyConfigTransaction(newConfig, entry);
+      });
+    });
+  });
+
+  return newConfig;
+};

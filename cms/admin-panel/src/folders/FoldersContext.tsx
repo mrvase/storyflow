@@ -36,7 +36,6 @@ export const FoldersProvider = ({
   React.useLayoutEffect(() => {
     const timeline = collab.getTimeline("documents")!;
     timeline.registerStaleListener(() => {
-      console.log("STALE LISTENER");
       timeline.initialize(
         async () => [],
         { versions: null },
@@ -45,9 +44,8 @@ export const FoldersProvider = ({
     });
   }, [collab]);
 
-  const { data: folders, error } = SWRClient.folders.get.useQuery(undefined, {
+  const { data: folders } = SWRClient.folders.get.useQuery(undefined, {
     onSuccess(data) {
-      console.log("INITIALIZING");
       collab.initializeTimeline("folders", { versions: data.version });
     },
   });

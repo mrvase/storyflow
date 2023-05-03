@@ -1,4 +1,3 @@
-import { onInterval } from "@storyflow/state";
 import { useSubject } from "../state/useSubject";
 import {
   CollabVersion,
@@ -10,23 +9,20 @@ import { purgeTimelines, batchSyncTimelines } from "./batching";
 import { SyntaxTreeRecord } from "@storyflow/fields-core/types";
 import { DocumentId } from "@storyflow/shared/types";
 import { Result, isError, unwrap } from "@storyflow/result";
+import { DBDocument } from "@storyflow/db-core/types";
+import { onInterval } from "./interval";
 
 export function createCollaboration(options: {
   sync: Parameters<typeof batchSyncTimelines>[1];
-  saveDocument?: (input: {
-    record: SyntaxTreeRecord;
-    versions: VersionRecord;
-  }) => Promise<
-    Result<{
-      record: SyntaxTreeRecord;
-      versions: VersionRecord;
-    }>
-  >;
+  update: (input: {
+    id: string;
+    index: number;
+  }) => Promise<Result<TimelineEntry[]>>;
   duration?: number;
 }) {
   const { duration = 2500 } = options;
 
-  const syncSingleTimeline = async (id: string): Promise<TimelineEntry[]> => {
+  const fetchSingleTimeline = async (id: string): Promise<TimelineEntry[]> => {
     const result = await options.sync({
       [id]: { entries: [], startId: null, length: 0 },
     });
@@ -92,11 +88,11 @@ export function createCollaboration(options: {
       }
     ) {
       if (id === "folders") {
-        foldersTimeline.initialize(() => syncSingleTimeline(id), data);
+        foldersTimeline.initialize(() => fetchSingleTimeline(id), data);
         return foldersTimeline;
       }
       if (id === "documents") {
-        newDocumentsTimeline.initialize(() => syncSingleTimeline(id), {
+        newDocumentsTimeline.initialize(() => fetchSingleTimeline(id), {
           versions: null,
         });
         return newDocumentsTimeline;
@@ -106,36 +102,46 @@ export function createCollaboration(options: {
         exists = createTimeline();
         documentTimelines.set(id, exists);
       }
-      exists.initialize(() => syncSingleTimeline(id), data);
+      exists.initialize(() => fetchSingleTimeline(id), data);
       return exists;
     },
 
-    /*
-    saveTimeline(doc: DBDocument) {
-      documentTimelines.get(doc._id)!.save(async (timeline) => {
-        const result = await options.saveDocument({
-          record: doc.record,
-          versions: doc.versions,
-          timeline,
-        });
+    async saveTimeline(
+      id: DocumentId,
+      callback: (timeline: TimelineEntry[]) => Promise<boolean>
+    ): Promise<boolean> {
+      const timeline = documentTimelines.get(id)!;
 
-        if (isSuccess(result)) {
-          const newDocument = unwrap(result);
-          return {
-            status: "success",
-            data: {
-              versions: newDocument.versions,
-              timeline: [],
-              transform: createDocumentTransformer(newDocument.record),
-            },
-          };
+      const success = await timeline.sync(async (upload, state) => {
+        const result = await options.sync({
+          [id]: { entries: upload, ...state },
+        });
+        if (isError(result)) {
+          return { status: "error" };
+        }
+        return unwrap(result)[id];
+      });
+
+      if (!success) return false;
+
+      return await timeline.save(async (timeline) => {
+        const result = await callback(timeline);
+
+        if (!result) {
+          return { status: "error" };
+        }
+
+        const updated = await options.update({ id, index: timeline.length });
+
+        if (isError(updated)) {
+          return { status: "error" };
         }
 
         return {
-          status: "error",
+          status: "success",
+          updated: unwrap(updated),
         };
       });
     },
-    */
   };
 }

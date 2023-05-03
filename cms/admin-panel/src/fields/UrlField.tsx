@@ -32,6 +32,7 @@ import { useDefaultState } from "./default/useDefaultState";
 import type { FieldProps } from "./types";
 import { FieldTransactionEntry } from "operations/actions_new";
 import { createTransaction } from "@storyflow/collab/utils";
+import { useCurrentFolder } from "../folders/FolderPageContext";
 
 export const toSlug = (value: string) =>
   value
@@ -55,9 +56,9 @@ const getUrlStringFromValue = (value: ValueArray | SyntaxTree) => {
   );
 };
 
-const useRelatedPages = (documentId: DocumentId, initialUrl: string) => {
-  const { doc } = useDocument(documentId);
-  const { documents: list } = useDocumentList(doc?.folder);
+const useRelatedPages = (initialUrl: string) => {
+  const folderId = useCurrentFolder()!._id;
+  const { documents: list } = useDocumentList(folderId);
 
   const getUrl = (doc: DBDocument) => {
     return (
@@ -158,7 +159,6 @@ export default function UrlField({ id }: FieldProps) {
   });
 
   const [parents, children] = useRelatedPages(
-    documentId,
     getUrlStringFromValue(calculateRootFieldFromRecord(id, record))
   );
 

@@ -33,7 +33,6 @@ import { Menu } from "../../elements/Menu";
 import { useFolder } from "../FoldersContext";
 import { useCollab } from "../../collab/CollabContext";
 import { DocumentAddTransactionEntry } from "operations/actions_new";
-import { useCollaborativeState } from "../../collab/useCollaborativeState";
 
 function useNewDocuments(folderId: FolderId) {
   const [docs, setDocs] = React.useState<DocumentId[]>([]);

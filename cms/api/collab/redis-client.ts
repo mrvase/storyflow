@@ -1,12 +1,12 @@
 import { Redis } from "@upstash/redis";
-import { ServerPackage } from "@storyflow/state";
-import type { DocumentId, RawDocumentId } from "@storyflow/shared/types";
 
 export const client = new Redis({
   url: "https://eu1-renewed-albacore-38555.upstash.io",
   token:
     "AZabASQgMTJiNTQ4YjQtN2Q1ZS00YWUwLWE4MDAtNmQ4MDM5NDdhMTBkYmFkZDBkOTI4ZWRhNGIzYWE0OGNmMjVhMGY4YmE3YzQ=",
 });
+
+/*
 export const getHistoriesFromIds = async (
   slug: string,
   keys: RawDocumentId[]
@@ -30,6 +30,7 @@ export const getHistoriesFromIds = async (
 
   return object;
 };
+
 export const resetHistory = async (slug: string, id: DocumentId) => {
   const pipeline = client.pipeline();
   try {
@@ -40,6 +41,7 @@ export const resetHistory = async (slug: string, id: DocumentId) => {
     console.log(err);
   }
 };
+
 export const sortHistories = (
   array: ServerPackage<any>[]
 ): Record<string, ServerPackage<any>[]> => {
@@ -52,14 +54,4 @@ export const sortHistories = (
     return acc;
   }, {});
 };
-
-export const modifyValues = <T extends any, V extends Record<string, any>>(
-  obj: V,
-  callback: (val: any, key: string, index: number) => T
-): Record<string, T> =>
-  Object.fromEntries(
-    Object.entries(obj).map(([key, value], index) => [
-      key,
-      callback(value, key, index),
-    ])
-  ) as Record<string, T>;
+*/

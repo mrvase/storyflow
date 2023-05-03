@@ -348,7 +348,7 @@ export const documents = createRoute({
       if (!documentRaw) {
         const initialDoc: DBDocument = {
           _id: id as DocumentId,
-          folder: "" as FolderId,
+          // folder: "" as FolderId,
           versions: { config: [0] },
           config: [],
           record: {},

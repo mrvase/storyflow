@@ -244,7 +244,6 @@ importers:
       next: ^13.3.0
       nodemailer: ^6.9.0
       openai: ^3.2.1
-      operations: workspace:*
       qs: ^6.11.0
       react: 18.2.0
       react-dom: 18.2.0
@@ -268,7 +267,6 @@ importers:
       '@upstash/redis': 1.19.3
       bcryptjs: 2.4.3
       openai: 3.2.1
-      operations: link:../operations
       qs: 6.11.0
       zod: 3.20.2
     devDependencies:

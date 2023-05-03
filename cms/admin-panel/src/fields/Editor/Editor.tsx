@@ -11,7 +11,6 @@ import {
 } from "../../editor/react/useIsFocused";
 import { useClientConfig } from "../../client-config";
 import { useFieldFocus } from "../../field-focus";
-import { type QueueListener } from "@storyflow/state";
 import { useFieldId } from "../FieldIdContext";
 
 import { HeadingNode } from "../../editor/react/HeadingNode";

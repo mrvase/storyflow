@@ -18,13 +18,11 @@ export function RenderField({
   id,
   fieldConfig,
   index,
-  version,
   dragHandleProps,
 }: {
   id: FieldId;
   fieldConfig: FieldConfig;
   index: number;
-  version: number;
   dragHandleProps?: any;
 }) {
   const Component = Components[fieldConfig.ui ?? "default"];
@@ -38,13 +36,7 @@ export function RenderField({
           dragHandleProps={dragHandleProps}
         >
           <NoList>
-            <Component
-              {...{
-                id,
-                fieldConfig,
-                version,
-              }}
-            />
+            <Component id={id} />
           </NoList>
         </FieldContainer>
       </FieldRestrictionsContext.Provider>

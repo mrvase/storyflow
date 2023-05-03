@@ -40,7 +40,7 @@ export function RenderTemplate({
   id: DocumentId;
   owner: DocumentId;
   config: DBDocument["config"];
-  versions?: DBDocument["versions"];
+  versions: DBDocument["versions"];
   index: number | null;
 }) {
   const isMain = id === owner;
@@ -194,7 +194,6 @@ export function RenderTemplate({
               ...fieldConfig,
               id: fieldId,
             }}
-            version={versions?.[getRawFieldId(fieldId)]?.[0] ?? 0}
             index={index}
             dragHandleProps={dragHandleProps}
           />

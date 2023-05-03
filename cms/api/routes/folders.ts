@@ -1,27 +1,8 @@
 import { createProcedure, createRoute } from "@sfrpc/server";
 import { success } from "@storyflow/result";
-import type {
-  DBFolder,
-  DBFolderRaw,
-  DBFolderRecord,
-} from "@storyflow/db-core/types";
+import type { DBFolderRecord } from "@storyflow/db-core/types";
 import { clientPromise } from "../mongo/mongoClient";
 import { globals } from "../middleware/globals";
-import { unwrapObjectId } from "@storyflow/db-core/convert";
-
-export const removeObjectId = <T extends { _id: any }>({
-  _id,
-  ...rest
-}: T): Omit<T, "_id"> => rest;
-
-const parseFolder = (raw: DBFolderRaw): DBFolder => {
-  const { _id, template, ...rest } = raw;
-  return {
-    _id: unwrapObjectId(raw._id),
-    ...(template && { template: unwrapObjectId(template) }),
-    ...rest,
-  };
-};
 
 export const folders = createRoute({
   get: createProcedure({

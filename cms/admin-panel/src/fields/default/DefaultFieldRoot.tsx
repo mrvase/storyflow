@@ -2,10 +2,9 @@ import { DefaultField } from "./DefaultField";
 import { PreloadFieldState } from "./PreloadFieldState";
 import { useAttributesContext } from "../Attributes";
 import { ExtendPath } from "../Path";
-import { VersionProvider } from "./VersionContext";
 import type { FieldProps } from "../types";
 
-export function DefaultFieldRoot({ id, version }: FieldProps) {
+export function DefaultFieldRoot({ id }: FieldProps) {
   /*
   const collab = useDocumentCollab();
   const { record } = useDocumentPageContext();
@@ -25,11 +24,11 @@ export function DefaultFieldRoot({ id, version }: FieldProps) {
   const currentId = currentProp ?? id;
 
   return (
-    <VersionProvider version={version}>
+    <>
       <PreloadFieldState id={id} />
       <ExtendPath id={currentId} type="field">
         <DefaultField key={currentId} id={currentId} showPromptButton />
       </ExtendPath>
-    </VersionProvider>
+    </>
   );
 }

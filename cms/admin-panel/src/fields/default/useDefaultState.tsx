@@ -113,7 +113,7 @@ export function useDefaultState(id: FieldId) {
         let update = false;
 
         const result = cache(queue.forEach, (prev, { transaction }) => {
-          transaction.map((entry) => {
+          transaction.forEach((entry) => {
             if (entry[0] === target) {
               prev = applyFieldTransaction(prev, entry);
               update = true;

@@ -18,7 +18,8 @@ export function CollabProvider({ children }: { children: React.ReactNode }) {
 
   const collab = React.useMemo(() => {
     return createCollaboration({
-      sync: client.collab.fields.mutation,
+      sync: client.collab.sync.mutation,
+      update: client.collab.update.mutation,
     });
   }, [client]);
 

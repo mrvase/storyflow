@@ -26,6 +26,7 @@ import { useTemplatePath } from "./TemplatePathContext";
 import { DocumentTransactionEntry } from "operations/actions_new";
 import { isSpliceOperation, isToggleOperation } from "@storyflow/collab/utils";
 import { QueueForEach } from "@storyflow/collab/Queue";
+import { applyConfigTransaction } from "operations/apply";
 
 /*
 export const labels = createStaticStore<
@@ -59,65 +60,15 @@ export const useDocumentConfig = (
 ) => {
   const operator = React.useCallback(
     (forEach: QueueForEach<DocumentTransactionEntry>) => {
-      let newTemplate = [...data.config];
+      let newConfig = [...data.config];
 
       forEach(({ transaction }) => {
         transaction.forEach((entry) => {
-          const target = entry[0];
-          entry[1].forEach((operation) => {
-            if (isSpliceOperation(operation)) {
-              // reordering of fields
-              const [index, remove, insert] = operation;
-              newTemplate.splice(index, remove ?? 0, ...(insert ?? []));
-            } else if (isToggleOperation(operation)) {
-              // changing properties
-              const fieldId = target as FieldId;
-              // TODO: it is now possible to set an overwriting config for template fields.
-              // if the overwriting config has not been set before, there is no property
-              // for it. So we need to create the property with an array, and add
-              // the config to the array with id, if it is not yet present. Then
-              // we can set it.
-
-              const [name, value] = operation;
-
-              if (isTemplateField(fieldId)) {
-                const templateId = getTemplateDocumentId(fieldId);
-                const templateConfig = newTemplate.find(
-                  (config): config is TemplateRef =>
-                    "template" in config && config.template === templateId
-                );
-                if (templateConfig) {
-                  if (!("config" in templateConfig)) {
-                    templateConfig.config = [];
-                  }
-                  let fieldConfigIndex = templateConfig.config!.findIndex(
-                    (config) => config.id === fieldId
-                  );
-                  if (fieldConfigIndex < 0) {
-                    templateConfig.config!.push({ id: fieldId });
-                    fieldConfigIndex = templateConfig.config!.length - 1;
-                  }
-                  if (name === "label" && value === "") {
-                    delete templateConfig.config![fieldConfigIndex][name];
-                  } else {
-                    templateConfig.config![fieldConfigIndex] = {
-                      ...templateConfig.config![fieldConfigIndex],
-                      [name]: value,
-                    };
-                  }
-                }
-              }
-
-              newTemplate = setFieldConfig(newTemplate, fieldId, (ps) => ({
-                ...ps,
-                [name]: value,
-              }));
-            }
-          });
+          newConfig = applyConfigTransaction(newConfig, entry);
         });
       });
 
-      return newTemplate;
+      return newConfig;
     },
     [data.config]
   );

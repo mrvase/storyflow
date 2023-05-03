@@ -6,13 +6,19 @@ import type {
 import type { TokenStream } from "./types";
 import { FieldOperation, isSpliceAction, isToggleAction } from "./actions";
 import { tools } from "./stream-methods";
-import { createSpliceTransformer } from "./splice-transform_old";
-import { createSpliceTransformer as createSpliceTransformer2 } from "./splice-transform";
+import { createSpliceTransformer } from "./splice-transform";
 import { createTokenStream } from "./parse-token-stream";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
-import { FieldTransactionEntry } from "./actions_new";
+import { DocumentTransactionEntry, FieldTransactionEntry } from "./actions_new";
 import { isSpliceOperation, isToggleOperation } from "@storyflow/collab/utils";
+import { DocumentConfig, TemplateRef } from "@storyflow/db-core/types";
+import {
+  isTemplateField,
+  getTemplateDocumentId,
+} from "@storyflow/fields-core/ids";
+import { setFieldConfig } from "./field-config";
 
+/*
 export const applyFieldOperation = (
   state: { stream: TokenStream; transforms: FieldTransform[] },
   operation: FieldOperation
@@ -81,6 +87,7 @@ export const applyFieldOperation = (
     transforms: newTransforms,
   };
 };
+*/
 
 export const applyFieldTransaction = (
   state: { stream: TokenStream; transforms: FieldTransform[] },
@@ -152,31 +159,73 @@ export const applyFieldTransaction = (
   };
 };
 
-// createDocumentTransformer
-/*
-export const createTokenStreamTransformer = (
-  fieldId: FieldId,
-  initialRecord: SyntaxTreeRecord
+export const applyConfigTransaction = (
+  config: DocumentConfig,
+  transaction: DocumentTransactionEntry
 ) => {
-  const getInitialLength = (target: string) => {
-    const id = target === "" ? fieldId : (target as FieldId);
-    let value = createTokenStream(initialRecord[id] ?? DEFAULT_SYNTAX_TREE);
-    return tools.getLength(value);
-  };
-  return createSpliceTransformer<FieldOperation>(
-    getInitialLength,
-    (target, value) => tools.getLength(value)
-  );
-};
-*/
+  let newConfig = config;
 
-export const createDocumentTransformer = (initialRecord: SyntaxTreeRecord) => {
+  const target = transaction[0];
+  transaction[1].forEach((operation) => {
+    if (isSpliceOperation(operation)) {
+      const [index, remove, insert] = operation;
+      newConfig.splice(index, remove ?? 0, ...(insert ?? []));
+    } else if (isToggleOperation(operation)) {
+      const fieldId = target as FieldId;
+
+      const [name, value] = operation;
+
+      if (isTemplateField(fieldId)) {
+        const templateId = getTemplateDocumentId(fieldId);
+        const templateConfig = newConfig.find(
+          (config): config is TemplateRef =>
+            "template" in config && config.template === templateId
+        );
+        if (templateConfig) {
+          if (!("config" in templateConfig)) {
+            templateConfig.config = [];
+          }
+          let fieldConfigIndex = templateConfig.config!.findIndex(
+            (config) => config.id === fieldId
+          );
+          if (fieldConfigIndex < 0) {
+            templateConfig.config!.push({ id: fieldId });
+            fieldConfigIndex = templateConfig.config!.length - 1;
+          }
+          if (name === "label" && value === "") {
+            delete templateConfig.config![fieldConfigIndex][name];
+          } else {
+            templateConfig.config![fieldConfigIndex] = {
+              ...templateConfig.config![fieldConfigIndex],
+              [name]: value,
+            };
+          }
+        }
+      }
+
+      newConfig = setFieldConfig(newConfig, fieldId, (ps) => ({
+        ...ps,
+        [name]: value,
+      }));
+    }
+  });
+
+  return newConfig;
+};
+
+export const createDocumentTransformer = (initial: {
+  config: DocumentConfig;
+  record: SyntaxTreeRecord;
+}) => {
   const getInitialLength = (target: string) => {
+    if (target === "config") {
+      return initial.config.length;
+    }
     const id = target as FieldId;
-    let value = createTokenStream(initialRecord[id] ?? DEFAULT_SYNTAX_TREE);
+    let value = createTokenStream(initial.record[id] ?? DEFAULT_SYNTAX_TREE);
     return tools.getLength(value);
   };
-  return createSpliceTransformer2(getInitialLength, (target, value) => {
+  return createSpliceTransformer(getInitialLength, (target, value) => {
     if (target === "config") {
       return value.length;
     }

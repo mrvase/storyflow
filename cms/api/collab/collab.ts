@@ -4,7 +4,7 @@ import { globals } from "../middleware/globals";
 import { z } from "zod";
 import { RawDocumentId } from "@storyflow/shared/types";
 import { TimelineEntry, ToggleOperation } from "@storyflow/collab/types";
-import { client, modifyValues } from "../collab-utils/redis-client";
+import { client } from "./redis-client";
 import { getId, read } from "@storyflow/collab/utils";
 import {
   ZodSpliceOperation,
@@ -13,33 +13,16 @@ import {
   ZodTransaction,
 } from "./zod";
 
-export const getTimelinesFromIds = async (
-  slug: string,
-  keys: RawDocumentId[]
-) => {
-  if (keys.length === 0) return {};
-
-  let pipeline = client.pipeline();
-
-  keys.forEach((key) => {
-    if (key.endsWith("documents")) {
-      pipeline.smembers(`${slug}:documents`);
-    } else {
-      pipeline.lrange(`${slug}:${key}`, 0, -1);
-    }
-  });
-
-  const result = await pipeline.exec();
-
-  const object = Object.fromEntries(
-    result.map((value, index) => [
-      keys[index],
-      (value ?? []) as TimelineEntry[],
+const modifyValues = <T extends any, V extends Record<string, any>>(
+  obj: V,
+  callback: (val: any, key: string, index: number) => T
+): Record<string, T> =>
+  Object.fromEntries(
+    Object.entries(obj).map(([key, value], index) => [
+      key,
+      callback(value, key, index),
     ])
-  );
-
-  return object;
-};
+  ) as Record<string, T>;
 
 const createDocumentsTimeline = (set: string[] | undefined) => {
   return set
@@ -57,6 +40,7 @@ const createDocumentsTimeline = (set: string[] | undefined) => {
 };
 
 export const collab = createRoute({
+  /*
   getGlobalTimelines: createProcedure({
     middleware(ctx) {
       return ctx.use(globals);
@@ -95,7 +79,8 @@ export const collab = createRoute({
       }
     },
   }),
-  fields: createProcedure({
+  */
+  sync: createProcedure({
     middleware(ctx) {
       return ctx.use(globals);
     },
@@ -121,15 +106,18 @@ export const collab = createRoute({
     },
     async mutation(input, { slug }) {
       try {
-        let pipeline: ReturnType<typeof client.pipeline> | null = null;
+        const inputEntries = Object.entries(input);
 
-        const entries = Object.entries(input);
+        if (inputEntries.length === 0) {
+          return success({});
+        }
 
-        entries.map(([key, { entries }]) => {
+        const pipeline = client.pipeline();
+
+        let commands = 0;
+
+        inputEntries.map(([key, { entries }]) => {
           if (entries.length) {
-            if (!pipeline) {
-              pipeline = client.pipeline();
-            }
             if (key === "documents") {
               const add: string[] = [];
               const remove: string[] = [];
@@ -149,33 +137,42 @@ export const collab = createRoute({
                   });
                 });
               });
-              if (add.length) pipeline.sadd(`${slug}:documents`, ...add);
-              if (remove.length) pipeline.srem(`${slug}:documents`, ...remove);
+              if (add.length) {
+                pipeline.sadd(`${slug}:documents`, ...add);
+                commands++;
+              }
+              if (remove.length) {
+                pipeline.srem(`${slug}:documents`, ...remove);
+                commands++;
+              }
             } else {
               pipeline.rpush(
                 `${slug}:${key}`,
                 ...entries.map((el) => JSON.stringify(el))
               );
+              commands++;
             }
           }
         });
 
-        if (pipeline) {
-          await (pipeline as any).exec();
-        }
+        inputEntries.forEach(([key]) => {
+          if (key.endsWith("documents")) {
+            pipeline.smembers(`${slug}:documents`);
+          } else {
+            pipeline.lrange(`${slug}:${key}`, 0, -1);
+          }
+        });
 
-        let timelines: Awaited<ReturnType<typeof getTimelinesFromIds>> = {};
+        const result = (await pipeline.exec()).slice(commands);
 
-        let keys = Object.keys(input);
+        const timelines = Object.fromEntries(
+          result.map((value, index) => [
+            inputEntries[index][0],
+            (value ?? []) as TimelineEntry[],
+          ])
+        );
 
-        if (keys.length) {
-          timelines = await getTimelinesFromIds(
-            slug,
-            Object.keys(input) as RawDocumentId[]
-          );
-        }
-
-        const result = modifyValues(timelines, (timeline, key) => {
+        const output = modifyValues(timelines, (timeline, key) => {
           if (key === "documents") {
             console.log("TIMELINE", timeline);
             return {
@@ -191,11 +188,31 @@ export const collab = createRoute({
           };
         });
 
-        return success(result);
+        return success(output);
       } catch (err) {
         console.log(err);
         return error({ message: "Lykkedes ikke", detail: err });
       }
+    },
+  }),
+  update: createProcedure({
+    middleware(ctx) {
+      return ctx.use(globals);
+    },
+    schema() {
+      return z.object({
+        id: z.string(), // timeline
+        index: z.number(),
+      });
+    },
+    async mutation(input, { slug }) {
+      const pipeline = client.pipeline();
+
+      pipeline.ltrim(`${slug}:${input.id}`, input.index, -1);
+      pipeline.lrange(`${slug}:${input.id}`, 0, -1);
+
+      const result = await pipeline.exec();
+      return success(result[1] as []);
     },
   }),
 });

@@ -1,37 +1,22 @@
 import { createProcedure, createRoute } from "@sfrpc/server";
 import { error, success } from "@storyflow/result";
 import { z } from "zod";
+import type { DocumentId, FieldId, ValueArray } from "@storyflow/shared/types";
 import type {
-  DocumentId,
-  FieldId,
-  RawFieldId,
-  ValueArray,
-} from "@storyflow/shared/types";
-import type {
-  DBDocument,
   DBDocumentRaw,
   DBId,
-  TemplateRef,
+  DocumentConfig,
+  DocumentVersionRecord,
 } from "@storyflow/db-core/types";
 import type {
   SyntaxTreeRecord,
-  FieldTransform,
   SyntaxTree,
   NestedField,
 } from "@storyflow/fields-core/types";
 import { getSyntaxTreeRecord, parseDocument } from "@storyflow/db-core/convert";
-import type { TokenStream } from "operations/types";
 import { clientPromise } from "../mongo/mongoClient";
 import { globals } from "../middleware/globals";
-import {
-  filterServerPackages,
-  ServerPackage,
-  unwrapServerPackage,
-} from "@storyflow/state";
-import { setFieldConfig } from "operations/field-config";
-import { applyFieldOperation } from "operations/apply";
 import { isSyntaxTree } from "@storyflow/fields-core/syntax-tree";
-import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
 import {
   extractRootRecord,
   getFieldRecord,
@@ -41,35 +26,16 @@ import {
 import { createStages, Update } from "../aggregation/stages";
 import util from "util";
 import {
-  client,
-  sortHistories,
-  resetHistory,
-} from "../collab-utils/redis-client";
-import {
   computeFieldId,
   getDocumentId,
   getRawFieldId,
-  getTemplateDocumentId,
   isFieldOfDocument,
   isNestedDocumentId,
   isTemplateField,
 } from "@storyflow/fields-core/ids";
 import { deduplicate, getImports, getSortedValues } from "./helpers";
 import { createSyntaxStream } from "@storyflow/db-core/parse-syntax-stream";
-import {
-  createTokenStream,
-  parseTokenStream,
-} from "operations/parse-token-stream";
-import {
-  DocumentOperation,
-  FieldOperation,
-  isSpliceAction,
-  isToggleAction,
-} from "operations/actions";
-import { splitTransformsAndRoot } from "@storyflow/fields-core/transform";
 import { createObjectId } from "@storyflow/db-core/mongo";
-import { FieldTransactionEntry } from "operations/actions_new";
-import { TimelineEntry } from "@storyflow/collab/types";
 
 export const fields = createRoute({
   /*
@@ -152,7 +118,10 @@ export const fields = createRoute({
     schema() {
       return z.object({
         id: z.string(),
-        searchable: z.record(z.record(z.boolean())),
+        folder: z.string(),
+        config: z.array(z.any()),
+        record: z.record(z.string(), z.any()),
+        versions: z.record(z.string(), z.any()),
       });
     },
     async mutation(input, { dbName, slug }) {
@@ -160,22 +129,17 @@ export const fields = createRoute({
 
       const db = (await clientPromise).db(dbName);
 
-      const [article, histories] = await Promise.all([
-        db
-          .collection<DBDocumentRaw>("documents")
-          .findOne({ _id: createObjectId(documentId) }),
-        (
-          client.lrange(`${slug}:${documentId}`, 0, -1) as Promise<
-            ServerPackage<any>[]
-          >
-        ).then((res) => sortHistories(res)),
-      ]);
+      let doc = (await db
+        .collection<DBDocumentRaw>("documents")
+        .findOne({ _id: createObjectId(documentId) })) ?? {
+        _id: createObjectId(documentId),
+        fields: [],
+        values: {},
+        versions: { config: [0] },
+      };
 
-      if (!article) {
-        return error({ message: "No article found" });
-      }
-
-      let config = article.config;
+      let config = input.config as DocumentConfig;
+      const versions = doc.versions as DocumentVersionRecord;
 
       /*
       IMPORTANT ASSUMPTION 1
@@ -185,47 +149,27 @@ export const fields = createRoute({
       ids are computed from other imports (with "pick" function).
       */
 
-      let computationRecord = extractRootRecord(
+      const updatedFieldsIds = new Set(Object.keys(input.record) as FieldId[]);
+
+      let record = extractRootRecord(
         documentId,
-        getSyntaxTreeRecord(documentId, article),
+        getSyntaxTreeRecord(documentId, doc),
         {
           excludeImports: true,
         }
       );
 
-      const versions = article.versions ?? { config: 0 };
-
-      const pkgs = filterServerPackages(
-        versions.config ?? 0,
-        histories[documentId] ?? []
-      );
-
-      config = updateDocumentConfig(config, pkgs);
-      versions.config += pkgs.length;
-
-      const { record: updatedRecord, versions: updatedVersions } =
-        updateFieldRecord(
-          {
-            _id: documentId,
-            versions: article.versions,
-            record: computationRecord,
-          },
-          histories
-        );
-
-      const updatedFieldsIds = new Set(Object.keys(updatedRecord) as FieldId[]);
-
-      Object.assign(computationRecord, updatedRecord);
-      Object.assign(versions, updatedVersions);
+      Object.assign(record, input.record);
+      Object.assign(versions, input.versions);
 
       // trim to not include removed nested fields
-      computationRecord = extractRootRecord(documentId, computationRecord, {
+      record = extractRootRecord(documentId, record, {
         excludeImports: true,
       });
 
       console.log(
         "updated record",
-        util.inspect(computationRecord, { depth: null, colors: true })
+        util.inspect(record, { depth: null, colors: true })
       );
 
       // TODO delete native fields from computationRecord that are not in documentConfig.
@@ -234,7 +178,7 @@ export const fields = createRoute({
       // - possible solution: Include ids of nested template fields in request.
       // I should also delete them from the "versions" and "updated" objects.
 
-      let graph = getGraph(computationRecord);
+      let graph = getGraph(record);
 
       console.log("GRAPH", util.inspect(graph, { depth: null, colors: true }));
 
@@ -273,7 +217,7 @@ export const fields = createRoute({
       updatedFieldsIds.forEach((fieldId) => {
         // even though we are not concerned with picked document ids,
         // we can use the same function to get drefs
-        drefs.push(...getPickedDocumentIds(fieldId, computationRecord));
+        drefs.push(...getPickedDocumentIds(fieldId, record));
       });
 
       drefs.forEach((ref) => {
@@ -316,7 +260,7 @@ export const fields = createRoute({
         a different value now that it is imported back into the article.
       */
 
-      let fullRecord = { ...importsRecord, ...computationRecord };
+      let fullRecord = { ...importsRecord, ...record };
 
       console.log(
         "full record",
@@ -467,6 +411,7 @@ export const fields = createRoute({
       const stages: any = [
         {
           $set: {
+            folder: input.folder,
             values: { $literal: values }, // uses $literal to do hard replace (otherwise: merges old with new values)
             fields: { $literal: fields },
             config: { $literal: config },
@@ -481,6 +426,7 @@ export const fields = createRoute({
       const result1 = await db
         .collection<DBDocumentRaw>("documents")
         .findOneAndUpdate({ _id: createObjectId(documentId) }, stages, {
+          upsert: true,
           returnDocument: "after",
           writeConcern: { w: "majority" },
         });
@@ -541,8 +487,6 @@ export const fields = createRoute({
           }
         );
 
-        await resetHistory(slug, documentId);
-
         return success(parseDocument(result1.value!));
       }
 
@@ -550,94 +494,6 @@ export const fields = createRoute({
     },
   }),
 });
-
-const updateFieldRecord = (
-  article: Pick<DBDocument, "_id" | "record" | "versions">,
-  histories: Record<DocumentId | RawFieldId, ServerPackage<any>[]>
-) => {
-  const updatedRecord: SyntaxTreeRecord = {};
-  const updatedVersions: Record<RawFieldId, number> = {};
-
-  (
-    Object.entries(histories) as [
-      DocumentId | RawFieldId,
-      ServerPackage<any>[]
-    ][]
-  ).forEach(([id, history]) => {
-    if (id === article._id) return;
-
-    const fieldId = computeFieldId(article._id, id as RawFieldId);
-
-    const fieldVersion = article.versions?.[id as RawFieldId] ?? 0;
-    const pkgs = filterServerPackages(fieldVersion, history);
-
-    if (!pkgs.length) return;
-
-    const newUpdates = transformField(fieldId, article.record, pkgs);
-    Object.assign(updatedRecord, newUpdates);
-
-    updatedVersions[id as RawFieldId] = fieldVersion + pkgs.length;
-  });
-
-  return {
-    record: updatedRecord,
-    versions: updatedVersions,
-  };
-};
-
-const updateDocumentConfig = (
-  config: DBDocument["config"],
-  history: ServerPackage<DocumentOperation>[]
-) => {
-  let newConfig = [...config];
-
-  history.forEach((pkg) => {
-    unwrapServerPackage(pkg).operations.forEach((operation) => {
-      operation[1].forEach((action) => {
-        if (isSpliceAction(action)) {
-          const { index, insert, remove } = action;
-          newConfig.splice(index, remove ?? 0, ...(insert ?? []));
-        } else if (isToggleAction(action)) {
-          const fieldId = operation[0] as FieldId;
-          if (isTemplateField(fieldId)) {
-            const templateId = getTemplateDocumentId(fieldId);
-            const templateConfig = newConfig.find(
-              (config): config is TemplateRef =>
-                "template" in config && config.template === templateId
-            );
-            if (templateConfig) {
-              if (!("config" in templateConfig)) {
-                templateConfig.config = [];
-              }
-              let fieldConfigIndex = templateConfig.config!.findIndex(
-                (config) => config.id === fieldId
-              );
-              if (fieldConfigIndex < 0) {
-                templateConfig.config!.push({ id: fieldId });
-                fieldConfigIndex = templateConfig.config!.length - 1;
-              }
-              if (action.name === "label" && action.value === "") {
-                delete templateConfig.config![fieldConfigIndex][action.name];
-              } else {
-                templateConfig.config![fieldConfigIndex] = {
-                  ...templateConfig.config![fieldConfigIndex],
-                  [action.name]: action.value,
-                };
-              }
-            }
-          }
-
-          newConfig = setFieldConfig(newConfig, fieldId, (ps) => ({
-            ...ps,
-            [action.name]: action.value,
-          }));
-        }
-      });
-    });
-  });
-
-  return newConfig;
-};
 
 const getFieldBlocksWithDepths = (
   fieldId: FieldId,

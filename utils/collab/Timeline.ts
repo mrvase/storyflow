@@ -127,8 +127,6 @@ export function createTimeline(
         });
     }
 
-    mutationListeners.trigger(isMutated());
-
     return self;
   }
 
@@ -207,6 +205,10 @@ export function createTimeline(
     mutationListeners.trigger(isMutated());
   }
 
+  type SyncPromise = Promise<"success" | "stale" | "error">;
+
+  let syncPromise: SyncPromise | null = null;
+
   async function sync(
     callback: (
       upload: TimelineEntry[],
@@ -216,6 +218,10 @@ export function createTimeline(
       | { status: "error" }
     >
   ) {
+    if (syncPromise) {
+      return await syncPromise;
+    }
+
     if (state.saving || state.posted.length > 0 || state.stale) {
       return;
     }
@@ -224,63 +230,69 @@ export function createTimeline(
 
     // console.log("SYNC", clone(state));
 
-    const result = await callback(state.posted, {
+    syncPromise = callback(state.posted, {
       startId: getId(state.shared[0]),
       length: state.shared.length,
+    }).then((result) => {
+      syncPromise = null;
+      if (state.saving || result.status === "error") {
+        console.warn("RETRACT");
+        retract();
+
+        return "error";
+      } else if (result.status === "stale") {
+        console.warn("STALE", getId(state.shared[0]), result.updates);
+
+        retract();
+
+        prefetched = result.updates;
+        state.stale = true;
+        staleListeners.trigger(result.updates);
+
+        // if staleListener reinitializes, nothing should happen here
+        if (state.stale !== true) return "success";
+
+        state.current = state.posted;
+        state.posted = [];
+
+        return "stale";
+      } else if (result.updates.length) {
+        pull([...state.shared, ...result.updates]);
+        new Set(result.updates.map((el) => read(el).queue)).forEach((queue) => {
+          triggerListeners(queue);
+        });
+      }
+      return "success";
     });
 
-    if (state.saving || result.status === "error") {
-      console.warn("RETRACT");
-      retract();
-    } else if (result.status === "stale") {
-      console.warn("STALE", result.updates);
-      state.stale = true;
-
-      retract();
-
-      prefetched = result.updates;
-      staleListeners.trigger(result.updates);
-
-      // if staleListener reinitializes, nothing should happen here
-      if (state.stale !== true) return;
-
-      state.current = state.posted;
-      state.posted = [];
-    } else if (result.updates.length) {
-      pull([...state.shared, ...result.updates]);
-      new Set(result.updates.map((el) => read(el).queue)).forEach((queue) => {
-        triggerListeners(queue);
-      });
-    }
+    return await syncPromise;
   }
 
   async function save(
-    callback: (upload: TimelineEntry[]) => Promise<
-      | {
-          status: "success";
-          data: {
-            versions: VersionRecord;
-            transform?: (entries: TimelineEntry[]) => TimelineEntry[];
-          };
-        }
-      | { status: "error" }
+    callback: (
+      upload: TimelineEntry[]
+    ) => Promise<
+      { status: "error" } | { status: "success"; updated: TimelineEntry[] }
     >
   ) {
     state.saving = true;
 
     // sync
 
-    const result = await callback([
-      ...state.shared,
-      ...state.posted,
-      ...state.current,
-    ]);
+    if (state.posted.length || state.current.length) {
+      return false;
+    }
 
-    if (result.status === "error") {
-      state.saving = false;
+    const result = await callback(state.shared);
+
+    if (result.status === "success") {
+      prefetched = result.updated;
+      state.stale = true;
+      staleListeners.trigger(prefetched);
+      return false;
     } else {
-      // delete on server and set stale = true and set prefetch
-      // trigger stale listeners
+      state.saving = false;
+      return false;
     }
   }
 
@@ -375,8 +387,9 @@ export function createTimeline(
           state.current.push(entry);
         }
         entry.push(...transactions);
-        triggerListeners(queue);
       }
+      // push is used to trigger also when there are no transactions
+      triggerListeners(queue);
     },
     registerListener(listener: () => void) {
       return registerListener(queue, listener);

@@ -24,7 +24,6 @@
     "@upstash/redis": "^1.16.0",
     "bcryptjs": "^2.4.3",
     "openai": "^3.2.1",
-    "operations": "workspace:*",
     "qs": "^6.11.0",
     "zod": "^3.20.2"
   },

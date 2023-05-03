@@ -9,12 +9,14 @@ import {
   CollabVersion,
 } from "./types";
 
-export function read(entry: TimelineEntry) {
+export function read<TE extends TransactionEntry = TransactionEntry>(
+  entry: TimelineEntry
+) {
   return {
     queue: entry[0],
     prev: entry[1],
     user: entry[2],
-    transactions: entry.slice(3) as Transaction<TransactionEntry>[],
+    transactions: entry.slice(3) as Transaction<TE>[],
   };
 }
 
@@ -191,6 +193,9 @@ den sidste har ikke set de to forinden. Men det ligner det her.
 
 /*
 
+
+
+
 Antagelser:
 - hvis en queue har opdateret sin version, så der er en "død" pakke, så vil pakker, der tilføjes under det versionsnummer, ikke se den.
 - efterfølgende pakker kan ikke se pakker, der er tilføjet under et højere versionsnummer, uden selv at blive opdateret.
@@ -320,7 +325,6 @@ export function filterTimeline(
         return;
       }
 
-      // TODO - kræver noget mere
       const isShadow = prev < data.version[0] || data.shadows.has(prev);
 
       if (isShadow) {

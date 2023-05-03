@@ -20,7 +20,6 @@ import { Overlay } from "../prompt/Overlay";
 import { Option } from "../prompt/Option";
 import { useMathMode } from "../Editor/useMathMode";
 import { Bars2Icon, VariableIcon } from "@heroicons/react/24/outline";
-import { useFieldVersion } from "./VersionContext";
 import { FieldTemplateIdContext } from "./FieldTemplateContext";
 import {
   FieldTransactionEntry,
@@ -62,6 +61,19 @@ const isSingleSpliceTransaction = (
   );
 };
 
+const createObjectKey = (() => {
+  const ids = new WeakMap();
+
+  return function createObjectKey(object: object) {
+    let key = ids.get(object);
+    if (!key) {
+      key = Math.random().toString(36).slice(2, 10);
+      ids.set(object, key);
+    }
+    return key;
+  };
+})();
+
 const isAdjacent = (
   prev: Transaction<FieldTransactionEntry>,
   next: Transaction<FieldTransactionEntry>
@@ -89,12 +101,14 @@ export function DefaultField({
   showTemplateHeader?: boolean;
 }) {
   const rootId = useFieldId();
-  const version = useFieldVersion();
 
   const { target, initialValue, value, isPrimitive, templateId, transforms } =
     useDefaultState(id);
 
-  const initialEditorValue = createTokenStream(initialValue);
+  const initialEditorValue = React.useMemo(
+    () => createTokenStream(initialValue),
+    [initialValue]
+  );
 
   const preview = getPreview(value);
 
@@ -180,7 +194,7 @@ export function DefaultField({
         />
       )}
       <Editor
-        key={version}
+        key={createObjectKey(initialEditorValue)}
         target={target}
         push={mergePush}
         tracker={tracker}

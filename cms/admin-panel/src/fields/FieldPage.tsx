@@ -50,7 +50,6 @@ import { EditorFocusProvider } from "../editor/react/useIsFocused";
 import { useRoute } from "../panel-router/Routes";
 import { parseSegment } from "../layout/components/parseSegment";
 import { splitStreamByBlocks } from "./Editor/transforms";
-import { VersionProvider } from "./default/VersionContext";
 import { extendPath } from "../utils/extendPath";
 import { usePush } from "../collab/CollabContext";
 import { FieldTransactionEntry } from "operations/actions_new";
@@ -360,60 +359,56 @@ export function FieldPage({ children }: { children?: React.ReactNode }) {
 
   const push = usePush<FieldTransactionEntry>(documentId, templateFieldId);
 
-  const { versions } = useDocumentPageContext();
-
   return (
     <FieldIdContext.Provider value={id}>
-      <VersionProvider version={versions?.[getRawFieldId(id)]?.[0] ?? 0}>
-        <AttributesProvider>
-          <SelectedPathProvider
-            id={id}
-            onChange={(path) => {
-              // dispatch
-            }}
-          >
-            <SyncBuilderPath listeners={listeners} id={id} />
-            <ElementActions id={id} listeners={listeners} push={push} />
-            <Content className="relative h-full">
-              <PropagateStatePlugin
-                id={id}
-                rendered={rendered}
-                dispatchers={dispatchers}
+      <AttributesProvider>
+        <SelectedPathProvider
+          id={id}
+          onChange={(path) => {
+            // dispatch
+          }}
+        >
+          <SyncBuilderPath listeners={listeners} id={id} />
+          <ElementActions id={id} listeners={listeners} push={push} />
+          <Content className="relative h-full">
+            <PropagateStatePlugin
+              id={id}
+              rendered={rendered}
+              dispatchers={dispatchers}
+            />
+            <PanelGroup direction="horizontal" autoSaveId="panels">
+              <Panel collapsible>
+                <div className="relative h-full bg-gray-200">
+                  <div
+                    className={cl(
+                      "h-full transition-opacity duration-300",
+                      rendered ? "opacity-100" : "opacity-0"
+                    )}
+                  >
+                    <BuilderIframe
+                      {...iframeProps}
+                      heightListener={listeners.updateFrameHeight.subscribe}
+                    />
+                  </div>
+                  <FieldOverlay id={id} />
+                </div>
+              </Panel>
+              <PanelResizeHandle
+                className={cl(
+                  "group relative bg-white/10 opacity-50 hover:opacity-100 transition-opacity",
+                  "w-1"
+                )}
               />
-              <PanelGroup direction="horizontal" autoSaveId="panels">
-                <Panel collapsible>
-                  <div className="relative h-full bg-gray-200">
-                    <div
-                      className={cl(
-                        "h-full transition-opacity duration-300",
-                        rendered ? "opacity-100" : "opacity-0"
-                      )}
-                    >
-                      <BuilderIframe
-                        {...iframeProps}
-                        heightListener={listeners.updateFrameHeight.subscribe}
-                      />
-                    </div>
-                    <FieldOverlay id={id} />
-                  </div>
-                </Panel>
-                <PanelResizeHandle
-                  className={cl(
-                    "group relative bg-white/10 opacity-50 hover:opacity-100 transition-opacity",
-                    "w-1"
-                  )}
-                />
-                <Panel collapsible>
-                  <div className="p-2.5 h-full overflow-y-auto overflow-x-hidden no-scrollbar">
-                    <FieldPanel id={id} />
-                  </div>
-                </Panel>
-              </PanelGroup>
-            </Content>
-            {children}
-          </SelectedPathProvider>
-        </AttributesProvider>
-      </VersionProvider>
+              <Panel collapsible>
+                <div className="p-2.5 h-full overflow-y-auto overflow-x-hidden no-scrollbar">
+                  <FieldPanel id={id} />
+                </div>
+              </Panel>
+            </PanelGroup>
+          </Content>
+          {children}
+        </SelectedPathProvider>
+      </AttributesProvider>
     </FieldIdContext.Provider>
   );
 }

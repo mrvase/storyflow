@@ -143,23 +143,6 @@ export function useValue(key: string) {
   return value;
 }
 
-const createKey = () => {
-  return Math.random().toString(36).slice(2, 10);
-};
-
-export const useObjectKey = () => {
-  const ids = new WeakMap();
-
-  return function objectKey(object: object) {
-    let key = ids.get(object);
-    if (!key) {
-      key = createKey();
-      ids.set(object, key);
-    }
-    return key;
-  };
-};
-
 export function RenderBuilder() {
   useCSS();
 

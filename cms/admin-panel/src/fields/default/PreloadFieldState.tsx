@@ -24,7 +24,6 @@ import { getChildrenDocuments } from "@storyflow/fields-core/graph";
 import { useDefaultState } from "./useDefaultState";
 import { splitTransformsAndRoot } from "@storyflow/fields-core/transform";
 import { useLoopTemplate } from "./LoopTemplateContext";
-import { useFieldVersion } from "./VersionContext";
 import { extendPath } from "../../utils/extendPath";
 
 const noTemplate: FieldConfig[] = [];

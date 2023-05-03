@@ -26,7 +26,6 @@ import {
   normalizeDocumentId,
 } from "@storyflow/fields-core/ids";
 import type { DefaultFieldConfig } from "@storyflow/fields-core/types";
-import { TimelineEntry } from "@storyflow/collab/types";
 import { createTransaction } from "@storyflow/collab/utils";
 import { DocumentAddTransactionEntry } from "operations/actions_new";
 import { useCollab, usePush } from "../collab/CollabContext";
@@ -272,7 +271,7 @@ export function useDocumentWithTimeline(documentId: DocumentId) {
     if (data) {
       collab.initializeTimeline(documentId, {
         versions: data.versions,
-        transform: createDocumentTransformer(data.record),
+        transform: createDocumentTransformer(data),
       });
       hasCalledStaleHook.current = false;
     }
@@ -310,28 +309,6 @@ export const useDeleteManyMutation = (folderId: string) => {
       mutateList();
     }
   };
-};
-
-export const useSaveDocument = (folder: FolderId) => {
-  return SWRClient.fields.save.useMutation({
-    cacheUpdate: ({ id }, mutate) => {
-      mutate(["documents/getList", { folder, limit: 50 }], (ps, result) => {
-        if (!result) {
-          return ps;
-        }
-        const index = ps.findIndex((el) => el._id === id);
-        const newDocuments = [...ps];
-        newDocuments[index] = { ...newDocuments[index], ...result };
-        return newDocuments;
-      });
-      mutate(["documents/get", id], (ps, result) => {
-        if (!result) {
-          return ps;
-        }
-        return result;
-      });
-    },
-  });
 };
 
 export const useAddDocument = (
@@ -394,59 +371,3 @@ export const useAddDocument = (
 
   return addDocument;
 };
-
-/*
-export const useNewSave = () => {
-  const collab = useCollab();
-  const client = useClient();
-
-  return (document: DBDocument) => {
-    collab.getTimeline(document._id)!.save(async (history) => {
-      const result = await client.fields.save.mutation(document._id);
-
-      if (isSuccess(result)) {
-        const newDocument = unwrap(result);
-        return {
-          status: "success",
-          data: {
-            versions: newDocument.versions,
-            timeline: [],
-            record: newDocument.record,
-          },
-        };
-      }
-
-      return {
-        status: "error",
-      };
-    });
-  };
-};
-
-export const saveDocument = async (
-  document: DBDocument,
-  timeline: TimelineEntry[],
-  client: Client
-) => {
-  const result = await client.fields.save.mutation({
-    record: doc.record,
-    versions: doc.versions,
-  });
-
-  if (isSuccess(result)) {
-    const newDocument = unwrap(result);
-    return {
-      status: "success",
-      data: {
-        versions: newDocument.versions,
-        timeline: [],
-        transform: createDocumentTransformer(newDocument.record),
-      },
-    };
-  }
-
-  return {
-    status: "error",
-  };
-};
-*/
