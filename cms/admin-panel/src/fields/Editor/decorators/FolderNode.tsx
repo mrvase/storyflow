@@ -6,6 +6,7 @@ import {
   NestedDocument,
   NestedFolder,
   NestedDocumentId,
+  FieldId,
 } from "@storyflow/shared/types";
 import type { SyntaxTreeRecord } from "@storyflow/fields-core/types";
 import { FolderIcon } from "@heroicons/react/24/outline";
@@ -18,9 +19,16 @@ import {
   useAttributesContext,
 } from "../../Attributes";
 import { useFieldTemplateId } from "../../default/FieldTemplateContext";
-import { DefaultField } from "../../default/DefaultField";
 import { EditorFocusProvider } from "../../../editor/react/useIsFocused";
 import { useFolder } from "../../../folders/FoldersContext";
+
+export const FolderCircularImport = {
+  DefaultField: null as React.FC<{
+    id: FieldId;
+    showPromptButton?: boolean;
+    showTemplateHeader?: boolean;
+  }> | null,
+};
 
 function Decorator({
   value,
@@ -129,11 +137,13 @@ function NestedDefaultField({ documentId }: { documentId: NestedDocumentId }) {
     return null;
   }
 
+  const Field = FolderCircularImport.DefaultField!;
+
   return (
     <ExtendPath id={documentId} type="document">
       <ExtendPath id={propId} type="field">
         <div className="cursor-auto mt-1.5 pl-[2.875rem] pr-2.5">
-          <DefaultField id={propId} showPromptButton />
+          <Field id={propId} showPromptButton />
         </div>
       </ExtendPath>
     </ExtendPath>

@@ -29,7 +29,7 @@ import { getPreview } from "../../fields/default/getPreview";
 import { Menu } from "../../elements/Menu";
 import { useFolder } from "../FoldersContext";
 import { useCollab } from "../../collab/CollabContext";
-import { DocumentAddTransactionEntry } from "operations/actions_new";
+import { DocumentAddTransactionEntry } from "operations/actions";
 
 function useNewDocuments(folderId: FolderId) {
   const [docs, setDocs] = React.useState<DocumentId[]>([]);

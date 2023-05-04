@@ -4,8 +4,15 @@ import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
 import type { FieldId } from "@storyflow/shared/types";
 import type { NestedCreator } from "@storyflow/fields-core/types";
-import { DefaultField } from "../../default/DefaultField";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
+
+export const CreatorCircularImport = {
+  DefaultField: null as React.FC<{
+    id: FieldId;
+    showPromptButton?: boolean;
+    showTemplateHeader?: boolean;
+  }> | null,
+};
 
 function Decorator({
   value,
@@ -22,6 +29,8 @@ function Decorator({
 
   const id = React.useMemo(() => `${g()}${g()}${g()}` as FieldId, []);
 
+  const Field = CreatorCircularImport.DefaultField!;
+
   return (
     <div className="py-0.5">
       <div
@@ -37,7 +46,7 @@ function Decorator({
           }
         }}
       >
-        <DefaultField id={id} />
+        <Field id={id} />
         {/*<input
           type="text"
           className="px-1 w-full bg-transparent outline-none"

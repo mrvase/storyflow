@@ -15,7 +15,7 @@ export function Layout({
   const [navIsOpen] = useLocalStorage<boolean>("nav-is-open", true);
 
   return (
-    <div className="flex h-screen bg-gray-100 dark:bg-gray-950 text-gray-800 dark:text-white">
+    <div className="flex w-full h-screen">
       <Nav />
       <div
         className="flex flex-col h-screen grow-0 shrink-0 transition-[width] ease-out mx-2"

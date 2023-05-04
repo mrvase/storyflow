@@ -75,13 +75,16 @@ export function createProcedure<
     Object.assign(context, this.context);
     try {
       await action.middleware?.(context);
+
+      if (this.method === "OPTIONS") return;
+
       if (action.schema) {
         (action.schema() as ZodType).parse(input);
       }
       return await (action as QueryObjectServer<C, Unwrap<I>, O>)[
         type as "query"
       ].call(this, input, { ...context });
-      // Parse "this" on so procedures can call each other.
+      // Pass "this" on so procedures can call each other.
       // Spread of context removes the "use" prototype method.
     } catch (err) {
       if (err instanceof ZodError) {

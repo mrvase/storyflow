@@ -10,7 +10,7 @@ import { getDocumentId, getRawFieldId } from "@storyflow/fields-core/ids";
 import type { DocumentId, FieldId } from "@storyflow/shared/types";
 import { useDocumentIdGenerator } from "../../id-generator";
 import { usePush } from "../../collab/CollabContext";
-import { FieldTransactionEntry } from "operations/actions_new";
+import { FieldTransactionEntry } from "operations/actions";
 
 function Button(props: any) {
   return null;

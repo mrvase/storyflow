@@ -19,10 +19,10 @@ import React from "react";
 import { useLocalStorage } from "../../state/useLocalStorage";
 import Dialog from "../../elements/Dialog";
 import { SettingsDialog } from "./SettingsDialog";
-import { usePanelActions } from "../../panel-router/PanelRouter";
+import { usePanelActions } from "../panel-router/PanelRouter";
 import { useCollab } from "../../collab/CollabContext";
 import { useLocation, useNavigate } from "@storyflow/router";
-import { replacePanelPath } from "../../panel-router/utils";
+import { replacePanelPath } from "../panel-router/utils";
 import { DropShadow, Sortable } from "@storyflow/dnd";
 
 export default function Nav() {
@@ -32,10 +32,6 @@ export default function Nav() {
 
   const [darkMode, setDarkMode] = useLocalStorage<boolean>("dark-mode", true);
   const DarkIcon = darkMode ? MoonIcon : SunIcon;
-
-  React.useEffect(() => {
-    document.body.classList[darkMode ? "add" : "remove"]("dark");
-  }, [darkMode]);
 
   const actions = usePanelActions();
 

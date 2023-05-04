@@ -16,7 +16,7 @@ import { getDocumentId, getRawFieldId } from "@storyflow/fields-core/ids";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
 import { createSyntaxStream } from "@storyflow/db-core/parse-syntax-stream";
 import { tokens } from "@storyflow/fields-core/tokens";
-import { createObjectId } from "@storyflow/db-core/mongo";
+import { createObjectId } from "../../../packages/api-core/mongo";
 
 export const deduplicate = <T>(arr: T[]): T[] => Array.from(new Set(arr));
 

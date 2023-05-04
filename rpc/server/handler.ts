@@ -1,6 +1,6 @@
 import qs from "qs";
 import { error, isError, success } from "@storyflow/result";
-import type { API, QueryObject } from "@sfrpc/types";
+import type { API, MutationObject, QueryObject } from "@sfrpc/types";
 import type { DefaultRequest, DefaultResponse } from "./types";
 
 const isPrimitive = (obj: any) => {
@@ -47,7 +47,7 @@ const handleTypes = (object: object) => {
 const getInputFromUrl = (url: string | undefined) => {
   const query = (url ?? "").split("?")[1] ?? "";
   const parsedQuery = qs.parse(query);
-  return parsedQuery as { query: any; context: any };
+  return parsedQuery as { query: any; ctx: any };
 };
 
 const getInput = (req: any) => {
@@ -55,7 +55,10 @@ const getInput = (req: any) => {
     return handleTypes(getInputFromUrl(req.url));
   }
   if (req.method === "POST") {
-    return req.body ?? {};
+    return {
+      ctx: handleTypes(getInputFromUrl(req.url))?.ctx ?? {},
+      query: req.body?.query ?? {},
+    };
   }
   return undefined;
 };
@@ -72,7 +75,10 @@ export function createHandler<
       ...(_procedure && { procedure: _procedure }),
     };
 
-    console.time(`REQUEST TIME ${route}/${procedure}`);
+    const id = Math.random().toString(36).substring(2, 6);
+
+    console.log("REQUEST", `${route}/${procedure}`, req.method);
+    console.time(`REQUEST TIME ${route}/${procedure} ${id}`);
 
     if (
       !route ||
@@ -80,38 +86,50 @@ export function createHandler<
       typeof route !== "string" ||
       typeof procedure !== "string"
     ) {
-      console.timeEnd(`REQUEST TIME ${route}/${procedure}`);
+      console.timeEnd(`REQUEST TIME ${route}/${procedure} ${id}`);
       console.log("\n\n");
       res.status(404).json(error({ message: "API route not found." }));
       return;
     }
 
-    const action = req.method === "GET" ? "query" : "mutation";
+    const action =
+      req.method === "GET"
+        ? "query"
+        : req.method === "POST"
+        ? "mutation"
+        : undefined;
+
     const input = getInput(req);
-    console.log("INPUT", req.url);
     const context = {
       req,
       res,
-      client: input?.context ?? {},
+      client: input?.ctx ?? {},
     };
-    const func = (router[route]?.[procedure] as QueryObject)?.[
-      action as "query"
-    ];
-    if (!func) {
+    const obj = router[route]?.[procedure] as QueryObject;
+    let func = obj?.[action as "query"];
+
+    if (!obj || (action && !func)) {
       res.status(404).json(
         error({
           message: `API route not found: ${route} ${procedure} ${action}`,
         })
       );
-      console.timeEnd(`REQUEST TIME ${route}/${procedure}`);
+      console.timeEnd(`REQUEST TIME ${route}/${procedure} ${id}`);
       console.log("\n\n");
       return;
     }
 
     try {
-      const result = await func.call({ context }, input?.query);
+      if (!func) {
+        func = "query" in obj ? obj.query : (obj as MutationObject).mutation;
+      }
 
-      console.timeEnd(`REQUEST TIME ${route}/${procedure}`);
+      const result = await func.call(
+        { context, method: req.method },
+        input?.query
+      );
+
+      console.timeEnd(`REQUEST TIME ${route}/${procedure} ${id}`);
       console.log("\n\n");
 
       if (res.writableEnded) {
@@ -119,7 +137,6 @@ export function createHandler<
       }
 
       if (req.method === "OPTIONS") {
-        console.log("^^^ IS OPTIONS");
         console.log("\n\n");
         return res.status(200).end();
       }
@@ -134,7 +151,7 @@ export function createHandler<
 
       return res.status(200).json(result);
     } catch (err) {
-      console.timeEnd(`REQUEST TIME ${route}/${procedure}`);
+      console.timeEnd(`REQUEST TIME ${route}/${procedure} ${id}`);
       console.log("\n\n");
 
       console.log("ERROR");

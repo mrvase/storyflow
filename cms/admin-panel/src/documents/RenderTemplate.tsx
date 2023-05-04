@@ -27,7 +27,7 @@ import {
   DocumentSpliceOperation,
   DocumentTransactionEntry,
   FieldTransactionEntry,
-} from "operations/actions_new";
+} from "operations/actions";
 import { createTransaction } from "@storyflow/collab/utils";
 
 export function RenderTemplate({

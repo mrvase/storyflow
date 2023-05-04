@@ -33,7 +33,6 @@ import {
 import { ExtendPath, usePath, useSelectedPath } from "../../Path";
 import type { PropConfig, RegularOptions } from "@storyflow/shared/types";
 import { flattenPropsWithIds } from "../../../utils/flattenProps";
-import { DefaultField } from "../../default/DefaultField";
 import { getIdFromString } from "@storyflow/fields-core/ids";
 import { useEditorContext } from "../../../editor/react/EditorProvider";
 import $createRangeSelection from "../../../editor/createRangeSelection";
@@ -41,6 +40,14 @@ import { useGlobalState } from "../../../state/state";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
 import { tokens } from "@storyflow/fields-core/tokens";
 import { traverseSyntaxTree } from "@storyflow/fields-core/syntax-tree";
+
+export const LayoutElementCircularImport = {
+  DefaultField: null as React.FC<{
+    id: FieldId;
+    showPromptButton?: boolean;
+    showTemplateHeader?: boolean;
+  }> | null,
+};
 
 const LevelContext = React.createContext(0);
 
@@ -297,11 +304,13 @@ function NestedDefaultField({
     ) : null;
   }
 
+  const Field = LayoutElementCircularImport.DefaultField!;
+
   return (
     <ExtendPath id={documentId} type="document">
       <ExtendPath id={propId} type="field">
         <div className="cursor-auto pl-[2.875rem] pr-2.5">
-          <DefaultField
+          <Field
             id={propId}
             showPromptButton
             showTemplateHeader={propId.endsWith(getIdFromString("data"))}

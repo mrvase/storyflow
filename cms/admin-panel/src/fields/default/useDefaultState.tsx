@@ -25,7 +25,7 @@ import { splitTransformsAndRoot } from "@storyflow/fields-core/transform";
 import { applyFieldTransaction } from "operations/apply";
 import { createQueueCache } from "../../collab/createQueueCache";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
-import { FieldTransactionEntry } from "operations/actions_new";
+import { FieldTransactionEntry } from "operations/actions";
 
 export function useDefaultStateCore(id: FieldId) {
   const rootId = useFieldId();

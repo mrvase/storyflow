@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@sfrpc/server": "workspace:*",
+    "@storyflow/api-core": "workspace:*",
     "@storyflow/db-core": "workspace:*",
     "@storyflow/fields-core": "workspace:*",
     "@storyflow/result": "workspace:*",
@@ -26,17 +27,9 @@
     "@types/bcryptjs": "^2.4.2",
     "eslint": "^7.32.0",
     "eslint-config-custom": "workspace:*",
-    "next": "^13.3.0",
-    "react": "18.2.0",
-    "react-dom": "18.2.0",
     "tsconfig": "workspace:*",
     "typescript": "^5.0.4",
     "vite": "^4.0.4",
     "vitest": "^0.28.4"
-  },
-  "peerDependencies": {
-    "next": "^13.3.0",
-    "react": "18.2.0",
-    "react-dom": "18.2.0"
   }
 }

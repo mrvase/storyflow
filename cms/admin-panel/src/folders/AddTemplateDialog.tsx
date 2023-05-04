@@ -8,7 +8,7 @@ import { useTemplateFolder } from "./FoldersContext";
 import type { DocumentId, FolderId } from "@storyflow/shared/types";
 import { usePush } from "../collab/CollabContext";
 import { createTransaction } from "@storyflow/collab/utils";
-import { FolderTransactionEntry } from "operations/actions_new";
+import { FolderTransactionEntry } from "operations/actions";
 
 export function AddTemplateDialog({
   isOpen,

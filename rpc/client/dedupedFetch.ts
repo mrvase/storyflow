@@ -73,13 +73,24 @@ const createDedupedFetcher = () => {
     ReturnType<typeof createThrottledFetch<any>>
   > = {};
 
-  const fetcher = async (key: string, abortController?: AbortController) => {
+  const fetcher = async (
+    key: string,
+    options: {
+      abortController?: AbortController;
+      headers?: Record<string, string>;
+      generateHeaders?: () => Record<string, string>;
+    } = {}
+  ) => {
     if (!(key in FETCH)) {
       FETCH[key] = fetch(key, {
         ...GET_OPTIONS,
-        ...(abortController && {
-          signal: abortController.signal,
+        ...(options.abortController && {
+          signal: options.abortController.signal,
         }),
+        headers: {
+          ...options.headers,
+          ...options.generateHeaders?.(),
+        },
       }).then((data) => data.json());
     }
     const result = await FETCH[key];
@@ -93,11 +104,15 @@ const createDedupedFetcher = () => {
   const throttledFetcher = async (
     key: string,
     throttle: { key: string; ms: number },
-    abortController?: AbortController
+    options: {
+      abortController?: AbortController;
+      headers?: Record<string, string>;
+      generateHeaders?: () => Record<string, string>;
+    } = {}
   ) => {
     if (!(throttle.key in THROTTLED)) {
       THROTTLED[throttle.key] = createThrottledFetch(
-        (key) => fetcher(key, abortController),
+        (key) => fetcher(key, options),
         throttle.ms
       );
     }
@@ -114,12 +129,14 @@ const createDedupedFetcher = () => {
       options: {
         abortController?: AbortController;
         throttle?: { key: string; ms: number };
+        headers?: Record<string, string>;
+        generateHeaders?: () => Record<string, string>;
       } = {}
     ) => {
       if (options.throttle) {
-        return throttledFetcher(key, options.throttle, options.abortController);
+        return throttledFetcher(key, options.throttle, options);
       }
-      return fetcher(key, options.abortController);
+      return fetcher(key, options);
     },
     delete: (key: string) => key in FETCH && delete FETCH[key],
   };

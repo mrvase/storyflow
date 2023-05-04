@@ -20,7 +20,7 @@ import {
 } from "@storyflow/fields-core/ids";
 import { useCollaborativeState } from "../collab/useCollaborativeState";
 import { useTemplatePath } from "./TemplatePathContext";
-import { DocumentTransactionEntry } from "operations/actions_new";
+import { DocumentTransactionEntry } from "operations/actions";
 import { QueueForEach } from "@storyflow/collab/Queue";
 import { applyConfigTransaction } from "operations/apply";
 

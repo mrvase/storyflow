@@ -1,7 +1,7 @@
 import type { FieldId } from "@storyflow/shared/types";
 import type { DBId } from "@storyflow/db-core/types";
 import type { Operators, SwitchObject } from "./types";
-import { isObjectId } from "@storyflow/db-core/mongo";
+import { isObjectId } from "../../../packages/api-core/mongo";
 
 const createProxy = (value: string): any => {
   return new Proxy({ $$ref: `$$${value}` } as Record<string, any>, {

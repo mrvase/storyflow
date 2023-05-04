@@ -9,7 +9,7 @@ import type {
   UseMutationOptions,
   UseQueryOptions,
 } from "./types";
-import { externalKey, getContext, queryKey } from "./utils";
+import { externalKey, getContext, mutationKey, queryKey } from "./utils";
 import { mutation, proxyErrorMessage } from "./proxy-client";
 
 const extendMutate = (
@@ -57,9 +57,13 @@ const extendMutate = (
 
 const SWRFetcher = async (
   key: string,
-  throttle?: { key: string; ms: number }
+  options: {
+    throttle?: { key: string; ms: number };
+    headers?: Record<string, string>;
+    generateHeaders?: () => Record<string, string>;
+  } = {}
 ) => {
-  const result = await dedupedFetch.fetch(key, { throttle });
+  const result = await dedupedFetch.fetch(key, options);
   if (isError(result)) {
     throw result;
   }
@@ -67,11 +71,17 @@ const SWRFetcher = async (
 };
 
 export function createSWRClient<UserAPI extends API>(
-  apiUrl: string = "/api",
-  useSWR: SWRHook,
-  useSWRImmutable: SWRHook,
-  useSWRConfig: () => FullConfiguration,
-  useContext?: () => Record<string, any>
+  apiUrlFromArg: string | undefined,
+  hooks: {
+    useSWR: SWRHook;
+    useSWRConfig: () => FullConfiguration;
+    useGlobalOptions?: () => {
+      url?: string;
+      context?: Record<string, any>;
+      headers?: Record<string, string>;
+      generateHeaders?: () => Record<string, string>;
+    };
+  }
 ) {
   return new Proxy({} as APIToSWRClient<UserAPI>, {
     get(_, route) {
@@ -94,21 +104,25 @@ export function createSWRClient<UserAPI extends API>(
                   ...SWROptions
                 }: UseQueryOptions<any, any, any> = {}
               ) => {
-                const ctx = useContext?.();
+                const globalOptions = hooks.useGlobalOptions?.() ?? {};
+                const apiUrl = apiUrlFromArg ?? globalOptions.url ?? "/api";
 
                 let fetcher = React.useCallback(
                   (key: string) => {
-                    return SWRFetcher(key, throttle);
+                    return SWRFetcher(key, { throttle, ...globalOptions });
                   },
                   [throttle?.key, throttle?.ms]
                 );
 
                 if (cachePreload) {
-                  const { cache, mutate } = useSWRConfig();
+                  const { cache, mutate } = hooks.useSWRConfig();
 
                   fetcher = React.useCallback(
                     async (key) => {
-                      const result = await SWRFetcher(key, throttle);
+                      const result = await SWRFetcher(key, {
+                        throttle,
+                        ...globalOptions,
+                      });
 
                       if (result !== undefined) {
                         const preloadFunc = (
@@ -122,7 +136,7 @@ export function createSWRClient<UserAPI extends API>(
                               externalProcedure,
                             },
                             input,
-                            ctx
+                            globalOptions.context
                           );
 
                           let cached = cache.get(key);
@@ -148,16 +162,20 @@ export function createSWRClient<UserAPI extends API>(
                   );
                 }
 
-                const hook = immutable ? useSWRImmutable : useSWR;
+                if (immutable) {
+                  SWROptions.revalidateOnFocus = false;
+                  SWROptions.revalidateIfStale = false;
+                  SWROptions.revalidateOnReconnect = false;
+                }
 
-                return hook(
+                return hooks.useSWR(
                   () =>
                     inactive
                       ? undefined
                       : queryKey(
                           `${apiUrl}/${route}/${procedure}`,
                           input,
-                          getContext(context, ctx)
+                          getContext(context, globalOptions.context)
                         ),
                   fetcher,
                   SWROptions
@@ -166,14 +184,19 @@ export function createSWRClient<UserAPI extends API>(
               useMutation: (
                 options: UseMutationOptions<any, any, any> = {}
               ) => {
-                const ctx = useContext?.();
-                const { mutate } = useSWRConfig();
+                const globalOptions = hooks.useGlobalOptions?.() ?? {};
+                const apiUrl = apiUrlFromArg ?? globalOptions.url ?? "/api";
+
+                const { mutate } = hooks.useSWRConfig();
 
                 return async (input: any) => {
                   const promise = mutation(
-                    `${apiUrl}/${route}/${procedure}`,
+                    mutationKey(
+                      `${apiUrl}/${route}/${procedure}`,
+                      getContext(options.context, globalOptions.context)
+                    ),
                     input,
-                    getContext(options.context, ctx)
+                    globalOptions
                   );
 
                   if (options.cacheUpdate) {
@@ -182,7 +205,7 @@ export function createSWRClient<UserAPI extends API>(
                       promise,
                       apiUrl,
                       route,
-                      getContext(options.context, ctx),
+                      getContext(options.context, globalOptions.context),
                       options.options
                     );
                     options.cacheUpdate(input, mutator);

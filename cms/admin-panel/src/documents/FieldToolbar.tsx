@@ -13,7 +13,7 @@ import React from "react";
 import ReactDOM from "react-dom";
 import { useDocumentList } from ".";
 import { useTemplateFolder } from "../folders/FoldersContext";
-import Content from "../layout/pages/Content";
+import Content from "../pages/Content";
 import { usePush } from "../collab/CollabContext";
 import { useFieldConfig } from "./document-config";
 import { useContextWithError } from "../utils/contextError";
@@ -21,7 +21,7 @@ import { useFieldId } from "../fields/FieldIdContext";
 import { getDocumentId } from "@storyflow/fields-core/ids";
 import { Menu } from "../elements/Menu";
 import { useTopFieldIndex } from "./FieldIndexContext";
-import { DocumentTransactionEntry } from "operations/actions_new";
+import { DocumentTransactionEntry } from "operations/actions";
 
 const FieldToolbarPortalContext = React.createContext<
   [HTMLDivElement | null, React.Dispatch<HTMLDivElement | null>] | null

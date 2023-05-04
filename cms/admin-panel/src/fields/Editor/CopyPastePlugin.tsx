@@ -46,7 +46,7 @@ import {
 } from "./decorators/TokenStreamNode";
 import { $replaceWithBlocks } from "./insertComputation";
 import { createTransaction } from "@storyflow/collab/utils";
-import { FieldTransactionEntry } from "operations/actions_new";
+import { FieldTransactionEntry } from "operations/actions";
 import { getSyntaxTreeEntries } from "@storyflow/fields-core/syntax-tree";
 
 const EVENT_LATENCY = 50;

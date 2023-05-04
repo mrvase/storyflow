@@ -17,7 +17,7 @@ import type {
   SyntaxTreeRecord,
   SyntaxTree,
 } from "@storyflow/fields-core/types";
-import Content from "../layout/pages/Content";
+import Content from "../pages/Content";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { useClientConfig } from "../client-config";
 import { createComponent } from "./Editor/createComponent";
@@ -47,12 +47,12 @@ import { SelectedPathProvider, SyncBuilderPath, useSelectedPath } from "./Path";
 import { DefaultField } from "./default/DefaultField";
 import { FieldIdContext } from "./FieldIdContext";
 import { EditorFocusProvider } from "../editor/react/useIsFocused";
-import { useRoute } from "../panel-router/Routes";
+import { useRoute } from "../layout/panel-router/Routes";
 import { parseSegment } from "../layout/components/parseSegment";
 import { splitStreamByBlocks } from "./Editor/transforms";
 import { extendPath } from "../utils/extendPath";
 import { usePush } from "../collab/CollabContext";
-import { FieldTransactionEntry } from "operations/actions_new";
+import { FieldTransactionEntry } from "operations/actions";
 import { Transaction } from "@storyflow/collab/types";
 import { createTransaction } from "@storyflow/collab/utils";
 

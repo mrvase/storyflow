@@ -33,7 +33,7 @@ import { useTemplateFolder } from "../../folders/FoldersContext";
 import React from "react";
 import { useDocumentList } from "../../documents";
 import { useFieldTemplateId } from "./FieldTemplateContext";
-import { FieldTransactionEntry } from "operations/actions_new";
+import { FieldTransactionEntry } from "operations/actions";
 import { createTransaction } from "@storyflow/collab/utils";
 
 export function TemplateHeader({

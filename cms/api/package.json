@@ -13,6 +13,7 @@
     "@aws-sdk/client-s3": "^3.315.0",
     "@aws-sdk/s3-request-presigner": "^3.315.0",
     "@sfrpc/server": "workspace:*",
+    "@storyflow/api-core": "workspace:*",
     "@storyflow/auth": "workspace:*",
     "@storyflow/collab": "workspace:*",
     "@storyflow/db-core": "workspace:*",
@@ -33,19 +34,13 @@
     "@types/nodemailer": "^6.4.7",
     "eslint": "^7.32.0",
     "eslint-config-custom": "workspace:*",
-    "next": "^13.3.0",
     "nodemailer": "^6.9.0",
-    "react": "18.2.0",
-    "react-dom": "18.2.0",
     "tsconfig": "workspace:*",
     "typescript": "^5.0.4",
     "vite": "^4.0.4",
     "vitest": "^0.28.4"
   },
   "peerDependencies": {
-    "next": "^13.3.0",
-    "react": "18.2.0",
-    "react-dom": "18.2.0",
     "nodemailer": "^6.9.0"
   }
 }

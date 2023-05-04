@@ -144,22 +144,6 @@ export function ClientConfigProvider({
             ? `${configUrl}/api/config`
             : configUrl;
 
-          if (process.env.NODE_ENV === "development") {
-            configUrl =
-              {
-                "https://www.storyflow.dk/api/config":
-                  "http://localhost:3000/api/config",
-                "https://storyflow-mrvase.vercel.app/api/config":
-                  "http://localhost:3000/api/config2",
-                "https://kfs-ltc.vercel.app/api/config":
-                  "http://localhost:3002/api/config",
-                "https://www.paaskelejr.dk/api/config":
-                  "http://localhost:3003/api/config",
-                "https://www.sempermagasin.dk/api/config":
-                  "http://localhost:3003/api/config",
-              }[configUrl] ?? configUrl;
-          }
-
           const config = await fetch(configUrl, {
             signal: abortController.signal,
           }).then((res) => res.json());

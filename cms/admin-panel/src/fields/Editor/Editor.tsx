@@ -12,26 +12,25 @@ import {
 import { useClientConfig } from "../../client-config";
 import { useFieldFocus } from "../../field-focus";
 import { useFieldId } from "../FieldIdContext";
-
-import { HeadingNode } from "../../editor/react/HeadingNode";
-import nodes from "./decorators/nodes";
 import { CopyPastePlugin } from "./CopyPastePlugin";
-import { StreamOperation, TransformOperation } from "operations/actions_new";
+import { StreamOperation, TransformOperation } from "operations/actions";
+import { Klass, LexicalNode } from "lexical";
 
 const editorConfig = {
   namespace: "EDITOR",
   theme: {},
   onError: () => {},
-  nodes: [HeadingNode, ...nodes],
 };
 
 export default function Editor({
+  nodes,
   push,
   tracker,
   initialValue,
   children = null,
   target,
 }: {
+  nodes: ReadonlyArray<Klass<LexicalNode>>;
   target?: string;
   push?: (ops: StreamOperation[] | TransformOperation[]) => void;
   tracker?: object;
@@ -42,6 +41,7 @@ export default function Editor({
 
   return (
     <EditorProvider
+      nodes={nodes}
       initialConfig={editorConfig}
       initialize={() => {
         $initializeEditor(initialValue ?? [], libraries);

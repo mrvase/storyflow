@@ -38,7 +38,7 @@ import { TokenStream } from "operations/types";
 import {
   DocumentTransactionEntry,
   FieldTransactionEntry,
-} from "operations/actions_new";
+} from "operations/actions";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
 import { splitTransformsAndRoot } from "@storyflow/fields-core/transform";
 import {

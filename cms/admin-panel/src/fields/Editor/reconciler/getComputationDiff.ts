@@ -1,6 +1,6 @@
 import type { TokenStream } from "operations/types";
 import { tools } from "operations/stream-methods";
-import { StreamOperation } from "operations/actions_new";
+import { StreamOperation } from "operations/actions";
 
 export const getComputationDiff = (
   _oldValue: TokenStream,

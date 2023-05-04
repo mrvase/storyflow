@@ -1,14 +1,17 @@
-import { createAPI, createHandler } from "@sfrpc/server";
 import type {} from "@sfrpc/types";
-import { NextApiRequest, NextApiResponse } from "next";
+import type {} from "@storyflow/api-core";
+
+import { createAPI, createHandler } from "@sfrpc/server";
 import { public_ } from "./public";
 
+/*
 declare module "@sfrpc/server" {
   interface CustomTypes {
     Request: NextApiRequest;
     Response: NextApiResponse;
   }
 }
+*/
 
 export const api = createAPI({
   public: public_,

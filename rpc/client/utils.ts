@@ -1,11 +1,16 @@
 import qs from "qs";
 import type { SharedOptions } from "./types";
 
-export const queryKey = (route: string, input: any, context?: any) => {
+export const queryKey = (route: string, input: any, ctx?: any) => {
   const query = `?${qs.stringify({
     ...(input && { query: input }),
-    ...(context && { context }),
+    ...(ctx && { ctx }),
   })}`;
+  return `${route}${query}`;
+};
+
+export const mutationKey = (route: string, ctx?: any) => {
+  const query = ctx ? `?${qs.stringify({ ctx })}` : "";
   return `${route}${query}`;
 };
 

@@ -11,7 +11,7 @@ import { getTranslateDragEffect } from "../../utils/dragEffects";
 import type { DBFolder } from "@storyflow/db-core/types";
 import type { FolderId } from "@storyflow/shared/types";
 import { DragIcon } from "./DragIcon";
-import { usePanel, useRoute } from "../../panel-router/Routes";
+import { usePanel, useRoute } from "../../layout/panel-router/Routes";
 import { useFolder } from "../FoldersContext";
 
 export function FolderItem({

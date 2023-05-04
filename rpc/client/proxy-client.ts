@@ -2,18 +2,25 @@ import { error, isError, isSuccess, success, unwrap } from "@storyflow/result";
 import type { API } from "@sfrpc/types";
 import type { APIToClient, QueryOptions, SharedOptions } from "./types";
 import { dedupedFetch } from "./dedupedFetch";
-import { externalKey, getContext, queryKey } from "./utils";
+import { externalKey, getContext, mutationKey, queryKey } from "./utils";
 
 export const proxyErrorMessage = "client proxy not accessed correctly";
 
-const query = (key: string, throttle?: { key: string; ms: number }) => {
+const query = (
+  key: string,
+  options: {
+    headers?: Record<string, string>;
+    generateHeaders?: () => Record<string, string>;
+    throttle?: { key: string; ms: number };
+  } = {}
+) => {
   const abortController = new AbortController();
 
   const getResult = async () => {
     try {
       const response = await dedupedFetch.fetch(key, {
         abortController,
-        throttle,
+        ...options,
       });
       if (response.status >= 400) {
         return error({ message: "Fetch failed", detail: "status code" });
@@ -41,7 +48,14 @@ const query = (key: string, throttle?: { key: string; ms: number }) => {
   return promise;
 };
 
-export const mutation = (route: string, input: any, context?: any) => {
+export const mutation = (
+  route: string,
+  input: any,
+  options: {
+    headers?: Record<string, string>;
+    generateHeaders?: () => Record<string, string>;
+  } = {}
+) => {
   const abortController = new AbortController();
 
   const getResult = async () => {
@@ -49,8 +63,12 @@ export const mutation = (route: string, input: any, context?: any) => {
       const response = await fetch(route, {
         method: "POST",
         credentials: "include",
-        body: JSON.stringify({ query: input, ...(context && { context }) }),
-        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: input }),
+        headers: {
+          "Content-Type": "application/json",
+          ...options.headers,
+          ...options.generateHeaders?.(),
+        },
       });
       if (response.status >= 400) {
         return error({ message: "Fetch failed", detail: "status code" });
@@ -73,6 +91,8 @@ export function createClient<T extends API>(
   apiUrl: string = "/api",
   globalOptions: {
     context?: Record<string, any>;
+    headers?: Record<string, string>;
+    generateHeaders?: () => Record<string, string>;
     cache?: {
       read: (key: string) => unknown;
       write: (key: string, value: unknown) => void;
@@ -108,7 +128,7 @@ export function createClient<T extends API>(
                   ctx
                 );
 
-                const cache = options?.cache ?? globalOptions?.cache;
+                const cache = options?.cache ?? globalOptions.cache;
 
                 if (cache) {
                   const cached = cache.read(key);
@@ -120,36 +140,34 @@ export function createClient<T extends API>(
                 let fetcher = query;
 
                 if (options?.cachePreload && cache) {
-                  fetcher = (key) => {
-                    const result = query(key, options?.throttle).then(
-                      (result) => {
-                        if (isSuccess(result)) {
-                          const preloadFunc = (
-                            [externalProcedure, input]: [string, any],
-                            data: any
-                          ) => {
-                            const key = externalKey(
-                              {
-                                apiUrl,
-                                route,
-                                externalProcedure,
-                              },
-                              input,
-                              ctx
-                            );
+                  fetcher = (key, globalOptions) => {
+                    const result = query(key, globalOptions).then((result) => {
+                      if (isSuccess(result)) {
+                        const preloadFunc = (
+                          [externalProcedure, input]: [string, any],
+                          data: any
+                        ) => {
+                          const key = externalKey(
+                            {
+                              apiUrl,
+                              route,
+                              externalProcedure,
+                            },
+                            input,
+                            ctx
+                          );
 
-                            let cached = cache.read(key);
-                            if (!cached) {
-                              cache.write(key, data);
-                            }
-                          };
+                          let cached = cache.read(key);
+                          if (!cached) {
+                            cache.write(key, data);
+                          }
+                        };
 
-                          options.cachePreload?.(unwrap(result), preloadFunc);
-                        }
-
-                        return result;
+                        options.cachePreload?.(unwrap(result), preloadFunc);
                       }
-                    );
+
+                      return result;
+                    });
 
                     return Object.assign(result, {
                       abort: (query as unknown as { abort: () => void }).abort,
@@ -157,7 +175,7 @@ export function createClient<T extends API>(
                   };
                 }
 
-                const result = await fetcher(key);
+                const result = await fetcher(key, globalOptions);
 
                 if (cache && !isError(result)) {
                   cache.write(key, unwrap(result));
@@ -167,9 +185,12 @@ export function createClient<T extends API>(
               },
               mutation(input: any, options?: SharedOptions) {
                 return mutation(
-                  `${apiUrl}/${route}/${procedure}`,
+                  mutationKey(
+                    `${apiUrl}/${route}/${procedure}`,
+                    getContext(options?.context, globalOptions.context)
+                  ),
                   input,
-                  getContext(options?.context, globalOptions.context)
+                  globalOptions
                 );
               },
             };

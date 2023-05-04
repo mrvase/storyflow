@@ -18,7 +18,7 @@ import { createTransaction } from "@storyflow/collab/utils";
 import {
   FolderTransactionEntry,
   SpaceTransactionEntry,
-} from "operations/actions_new";
+} from "operations/actions";
 
 export function FolderGridSpace({
   space,

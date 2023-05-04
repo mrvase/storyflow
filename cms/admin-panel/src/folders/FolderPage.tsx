@@ -1,5 +1,5 @@
 import React from "react";
-import Content from "../layout/pages/Content";
+import Content from "../pages/Content";
 import {
   ArrowPathRoundedSquareIcon,
   DocumentDuplicateIcon,
@@ -26,13 +26,13 @@ import { useDocumentLabel } from "../documents/useDocumentLabel";
 import { FolderContext } from "./FolderPageContext";
 import { useFieldFocus } from "../field-focus";
 import { addNestedFolder } from "../custom-events";
-import { usePanel, useRoute } from "../panel-router/Routes";
+import { usePanel, useRoute } from "../layout/panel-router/Routes";
 import { parseSegment } from "../layout/components/parseSegment";
 import { Menu } from "../elements/Menu";
 import { FocusOrchestrator } from "../utils/useIsFocused";
 import { usePush } from "../collab/CollabContext";
 import { createTransaction } from "@storyflow/collab/utils";
-import { FolderTransactionEntry } from "operations/actions_new";
+import { FolderTransactionEntry } from "operations/actions";
 import { useFolder } from "./FoldersContext";
 
 export default function FolderPage({

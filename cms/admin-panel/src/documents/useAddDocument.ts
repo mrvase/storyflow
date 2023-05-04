@@ -6,13 +6,13 @@ import { DEFAULT_FIELDS } from "@storyflow/fields-core/default-fields";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
 import { createTemplateFieldId } from "@storyflow/fields-core/ids";
 import { createTransaction } from "@storyflow/collab/utils";
-import { DocumentAddTransactionEntry } from "operations/actions_new";
+import { DocumentAddTransactionEntry } from "operations/actions";
 import { usePush } from "../collab/CollabContext";
 import {
   useDocumentIdGenerator,
   useTemplateIdGenerator,
 } from "../id-generator";
-import { usePanel, useRoute } from "../panel-router/Routes";
+import { usePanel, useRoute } from "../layout/panel-router/Routes";
 import { getDefaultValuesFromTemplateAsync } from "./template-fields";
 
 export const useAddDocument = (

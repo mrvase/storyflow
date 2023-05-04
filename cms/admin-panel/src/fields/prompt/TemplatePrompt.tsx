@@ -15,7 +15,7 @@ import { usePath } from "../Path";
 import { useClientConfig } from "../../client-config";
 import { $exitPromptNode } from "./utils";
 import { useEditorContext } from "../../editor/react/EditorProvider";
-import { FieldTransactionEntry } from "operations/actions_new";
+import { FieldTransactionEntry } from "operations/actions";
 import { usePush } from "../../collab/CollabContext";
 import { createTransaction } from "@storyflow/collab/utils";
 

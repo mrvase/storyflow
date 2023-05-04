@@ -14,7 +14,7 @@ import { createTransaction } from "@storyflow/collab/utils";
 import {
   FolderTransactionEntry,
   SpaceTransactionEntry,
-} from "operations/actions_new";
+} from "operations/actions";
 import { useAddDocument } from "../documents/useAddDocument";
 
 export function AddFolderDialog({

@@ -25,10 +25,15 @@ import {
   FieldTransactionEntry,
   StreamOperation,
   TransformOperation,
-} from "operations/actions_new";
+} from "operations/actions";
 import { SpliceOperation, Transaction } from "@storyflow/collab/types";
 import { createTransaction, isSpliceOperation } from "@storyflow/collab/utils";
 import { PushFunction } from "@storyflow/collab/Queue";
+import { HeadingNode } from "../../editor/react/HeadingNode";
+import nodes from "../Editor/decorators/nodes";
+import { CreatorCircularImport } from "../Editor/decorators/CreatorNode";
+import { LayoutElementCircularImport } from "../Editor/decorators/LayoutElementNode";
+import { FolderCircularImport } from "../Editor/decorators/FolderNode";
 
 const isTextInsert = (
   transaction: Transaction<FieldTransactionEntry>
@@ -90,6 +95,12 @@ const isAdjacent = (
 
   return prevEndingIndex === nextStartingIndex;
 };
+
+CreatorCircularImport.DefaultField = DefaultField;
+LayoutElementCircularImport.DefaultField = DefaultField;
+FolderCircularImport.DefaultField = DefaultField;
+
+const allNodes = [HeadingNode, ...nodes];
 
 export function DefaultField({
   id,
@@ -199,6 +210,7 @@ export function DefaultField({
         push={mergePush}
         tracker={tracker}
         initialValue={initialEditorValue}
+        nodes={allNodes}
       >
         <div className={cl("relative")}>
           <Placeholder />

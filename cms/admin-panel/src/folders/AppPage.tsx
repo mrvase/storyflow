@@ -1,5 +1,5 @@
 import React from "react";
-import Content from "../layout/pages/Content";
+import Content from "../pages/Content";
 import {
   ArrowPathIcon,
   ComputerDesktopIcon,
@@ -24,11 +24,11 @@ import { getFieldRecord, getGraph } from "@storyflow/fields-core/graph";
 import { DEFAULT_FIELDS } from "@storyflow/fields-core/default-fields";
 import { calculateRootFieldFromRecord } from "@storyflow/fields-core/calculate-server";
 import { AppPageContext } from "./AppPageContext";
-import { usePanel, useRoute } from "../panel-router/Routes";
+import { usePanel, useRoute } from "../layout/panel-router/Routes";
 import { parseSegment } from "../layout/components/parseSegment";
 import { FocusOrchestrator } from "../utils/useIsFocused";
 import { usePush } from "../collab/CollabContext";
-import { FolderTransactionEntry } from "operations/actions_new";
+import { FolderTransactionEntry } from "operations/actions";
 import { createTransaction } from "@storyflow/collab/utils";
 import { useFolder } from "./FoldersContext";
 

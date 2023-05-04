@@ -1,7 +1,7 @@
 import cl from "clsx";
 import { CheckIcon } from "@heroicons/react/24/outline";
 import { useDragItem } from "@storyflow/dnd";
-import { usePanel, useRoute } from "../../panel-router/Routes";
+import { usePanel, useRoute } from "../../layout/panel-router/Routes";
 
 export default function Table({
   labels,

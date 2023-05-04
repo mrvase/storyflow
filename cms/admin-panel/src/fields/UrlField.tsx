@@ -27,10 +27,10 @@ import {
   isDefaultField,
 } from "@storyflow/fields-core/default-fields";
 import { useDocumentIdGenerator } from "../id-generator";
-import { usePanel, useRoute } from "../panel-router/Routes";
+import { usePanel, useRoute } from "../layout/panel-router/Routes";
 import { useDefaultState } from "./default/useDefaultState";
 import type { FieldProps } from "./types";
-import { FieldTransactionEntry } from "operations/actions_new";
+import { FieldTransactionEntry } from "operations/actions";
 import { createTransaction } from "@storyflow/collab/utils";
 import { useCurrentFolder } from "../folders/FolderPageContext";
 

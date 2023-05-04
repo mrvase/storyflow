@@ -22,7 +22,7 @@ import { useSaveDocument } from "./useSaveDocument";
 import { useDocumentLabel } from "./useDocumentLabel";
 import { useClientConfig } from "../client-config";
 import { useFolder, useTemplateFolder } from "../folders/FoldersContext";
-import Content from "../layout/pages/Content";
+import Content from "../pages/Content";
 import { useCollab, usePush } from "../collab/CollabContext";
 import { useDocumentConfig } from "./document-config";
 import { FocusOrchestrator, useFocusedIds } from "../utils/useIsFocused";
@@ -36,10 +36,10 @@ import {
 } from "./FieldToolbar";
 import { SWRClient } from "../client";
 import { ExtendTemplatePath } from "./TemplatePathContext";
-import { useRoute } from "../panel-router/Routes";
+import { useRoute } from "../layout/panel-router/Routes";
 import { parseSegment } from "../layout/components/parseSegment";
 import { Menu } from "../elements/Menu";
-import { DocumentTransactionEntry } from "operations/actions_new";
+import { DocumentTransactionEntry } from "operations/actions";
 import { useCurrentFolder } from "../folders/FolderPageContext";
 
 function useIsModified(id: DocumentId) {

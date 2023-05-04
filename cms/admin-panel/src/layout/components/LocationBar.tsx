@@ -11,9 +11,9 @@ import {
 } from "@heroicons/react/24/outline";
 import React from "react";
 import Loader from "../../elements/Loader";
-import type { PanelData } from "../../panel-router/types";
-import { usePanel } from "../../panel-router/Routes";
-import { usePanelActions } from "../../panel-router/PanelRouter";
+import type { PanelData } from "../panel-router/types";
+import { usePanel } from "../panel-router/Routes";
+import { usePanelActions } from "../panel-router/PanelRouter";
 import { useDragItem } from "@storyflow/dnd";
 import { parseSegment } from "./parseSegment";
 import { useDocumentList, useDocument } from "../../documents";

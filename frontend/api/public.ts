@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import { clientPromise } from "./mongoClient";
 import { z } from "zod";
 
-import { cors as corsFactory } from "./cors";
+import { cors as corsFactory } from "@storyflow/api-core/middleware";
 
 import { createSessionStorage } from "@storyflow/session";
 import { cookieOptions } from "./cookie-options";
@@ -22,76 +22,11 @@ import {
 } from "@storyflow/fields-core/ids";
 import util from "node:util";
 import type { FolderId } from "@storyflow/shared/types";
-import { createObjectId } from "@storyflow/db-core/mongo";
+import { createObjectId } from "../../packages/api-core/mongo";
 
 const sessionStorage = createSessionStorage({
   cookie: cookieOptions,
 });
-
-const authorization = async (ctx: MiddlewareContext) => {
-  if ((ctx as any).dbName) {
-    return {
-      slug: (ctx as any).dbName.split("-")[0],
-      dbName: (ctx as any).dbName,
-    };
-  }
-  const session = await sessionStorage.get(ctx.req.headers["cookie"]);
-
-  let user: { slug: string; db: string } | null =
-    session.get("api-user") ?? null;
-
-  if (!user) {
-    let auth = ctx.req.headers["x-storyflow"] as string;
-
-    if (!auth) {
-      throw error({ message: "Not authorized.", status: 401 });
-    }
-
-    auth = auth.replace("Basic ", "");
-
-    const result = Buffer.from(auth, "base64").toString();
-
-    const [domainIdAndSlug, key] = result.split(":");
-    const [domainId, slug] = domainIdAndSlug.split("@");
-
-    const organization = await (await clientPromise)
-      .db("cms")
-      .collection("organizations")
-      .findOne({ slug });
-
-    console.log("**** GETTING ORGANIZATION");
-
-    if (!organization) {
-      throw error({ message: "Not authorized.", status: 401 });
-    }
-
-    const fromDb = organization.keys[domainId] as string | undefined;
-
-    if (!fromDb) {
-      throw error({ message: "Not authorized.", status: 401 });
-    }
-
-    const success = await bcrypt.compare(key, fromDb);
-
-    if (!success) {
-      throw error({ message: "Not authorized.", status: 401 });
-    }
-
-    user = {
-      slug: organization.slug,
-      db: organization.dbs[organization.version],
-    };
-
-    session.set("user-api", user);
-    const cookie = await sessionStorage.commit(session);
-    ctx.res.setHeader("Set-Cookie", cookie);
-  }
-
-  return {
-    slug: user!.slug,
-    dbName: user!.db,
-  };
-};
 
 const createFetcher =
   (dbName: string) =>
@@ -127,10 +62,10 @@ const createFetcher =
 export const public_ = createRoute({
   get: createProcedure({
     middleware(ctx) {
-      return ctx.use(
+      return ctx
+        .use
         // corsFactory("allow-all"),
-        authorization
-      );
+        ();
     },
     schema() {
       return z.object({
@@ -222,10 +157,11 @@ export const public_ = createRoute({
   }),
   getPaths: createProcedure({
     middleware(ctx) {
-      return ctx.use(
+      return ctx
+        .use
         // corsFactory("allow-all"),
-        authorization
-      );
+        // authorization
+        ();
     },
     schema() {
       return z.object({

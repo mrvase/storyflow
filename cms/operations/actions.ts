@@ -1,73 +1,58 @@
-import type { FunctionName } from "@storyflow/shared/types";
 import type {
-  DocumentConfigItem,
-  Space,
-  DBFolder,
-} from "@storyflow/db-core/types";
-import type { FunctionData } from "@storyflow/fields-core/types";
-import type { TokenStream } from "./types";
+  SpliceOperation,
+  ToggleOperation,
+  TransactionEntry,
+} from "@storyflow/collab/types";
+import {
+  DocumentId,
+  FieldId,
+  FolderId,
+  FunctionName,
+} from "@storyflow/shared/types";
+import { TokenStream } from "./types";
+import { FieldConfig, GetFunctionData } from "@storyflow/fields-core/types";
+import { DBFolder, DocumentConfigItem, Space } from "@storyflow/db-core/types";
+import { SpaceId } from "@storyflow/db-core/types";
 
-export type StdOperation<
-  T =
-    | SpliceAction<any>
-    | ToggleAction<string, any>
-    | AddFolderAction
-    | DeleteFolderAction
-> = [target: string, ops: T[], ...mode: string[]];
+export type StreamOperation = SpliceOperation<TokenStream[number]>;
 
-export type InferAction<T extends StdOperation<any>> = T extends StdOperation<
-  infer Action
->
-  ? Action
-  : never;
+export type TransformOperation = {
+  [Key in FunctionName]: ToggleOperation<Key, GetFunctionData<Key> | null>;
+}[FunctionName];
 
-export type SpliceAction<T> = {
-  index: number;
-  remove?: number;
-  insert?: T[];
-};
+export type FieldTransactionEntry =
+  | TransactionEntry<FieldId, StreamOperation>
+  | TransactionEntry<FieldId, TransformOperation>;
 
-export type ToggleAction<Name = string, Value = string> = {
-  name: Name;
-  value: Value;
-};
+export type DocumentSpliceOperation = SpliceOperation<DocumentConfigItem>;
 
-export const isSpliceAction = (
-  action: unknown
-): action is SpliceAction<any> => {
-  return typeof action === "object" && action !== null && "index" in action;
-};
-
-export const isToggleAction = (
-  action: unknown
-): action is ToggleAction<any, any> => {
-  return typeof action === "object" && action !== null && "name" in action;
-};
-
-/**
- * OPERATION TYPES
- */
-export type PropertyAction = ToggleAction<string, any>;
-
-export type StreamAction = SpliceAction<TokenStream[number]>;
-export type TransformAction<T extends FunctionName = FunctionName> =
-  ToggleAction<T, FunctionData | null>;
-export type FieldOperation = StdOperation<StreamAction | TransformAction>;
-
-export type AddFolderAction = { add: DBFolder };
-export type DeleteFolderAction = { remove: string };
-export type FolderListOperation = StdOperation<
-  AddFolderAction | DeleteFolderAction
+export type DocumentPropertyOperation = Exclude<
+  {
+    [Key in keyof FieldConfig]: ToggleOperation<Key, FieldConfig[Key]>;
+  }[keyof FieldConfig],
+  undefined
 >;
 
-export type FolderSpacesAction = SpliceAction<Space>;
-export type FolderOperation = StdOperation<PropertyAction | FolderSpacesAction>;
+export type DocumentTransactionEntry =
+  | TransactionEntry<"", DocumentSpliceOperation>
+  | TransactionEntry<FieldId, DocumentPropertyOperation>;
 
-export type SpaceItemsAction = SpliceAction<string>;
-export type SpaceOperation = StdOperation<PropertyAction | SpaceItemsAction>;
+export type DocumentAddTransactionEntry =
+  | TransactionEntry<FolderId, ToggleOperation<"add", DocumentId>>
+  | TransactionEntry<FolderId, ToggleOperation<"remove", DocumentId>>;
 
-export type DocumentConfigAction = SpliceAction<DocumentConfigItem>;
+export type FolderSpliceOperation = SpliceOperation<Space>;
+export type FolderPropertyOperation =
+  | ToggleOperation<"template", DocumentId>
+  | ToggleOperation<"label", string>
+  | ToggleOperation<"domains", string[]>;
 
-export type DocumentOperation = StdOperation<
-  DocumentConfigAction | PropertyAction
->;
+export type FolderTransactionEntry =
+  | TransactionEntry<FolderId, FolderSpliceOperation>
+  | TransactionEntry<FolderId, FolderPropertyOperation>;
+
+export type SpaceSpliceOperation = SpliceOperation<FolderId>;
+export type SpacePropertyOperation = ToggleOperation<"label", string>;
+export type SpaceTransactionEntry =
+  | TransactionEntry<`${FolderId}:${SpaceId}`, SpaceSpliceOperation>
+  | TransactionEntry<`${FolderId}:${SpaceId}`, SpacePropertyOperation>;

@@ -4,7 +4,7 @@ export function onInterval(
   callback: (
     index: number,
     event: "start" | "stop" | "interval" | "unload" | "visibilitychange"
-  ) => Promise<Result<any>> | undefined,
+  ) => Promise<Result<any> | void> | void,
   options: {
     duration?: number;
   } = {}
@@ -27,7 +27,11 @@ export function onInterval(
   const run = async (
     event: "start" | "stop" | "interval" | "unload" | "visibilitychange"
   ) => {
-    if (event === "unload" || event === "visibilitychange") {
+    if (
+      event === "start" ||
+      event === "unload" ||
+      event === "visibilitychange"
+    ) {
       lastSync = Date.now();
       return await callback(index++, event);
     }
@@ -84,6 +88,7 @@ export function onInterval(
     if (document.hasFocus()) {
       startInterval();
     }
+
     if (int === null) {
       run("start");
     }

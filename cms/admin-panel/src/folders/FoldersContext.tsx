@@ -6,7 +6,6 @@ import type {
 } from "@storyflow/db-core/types";
 import { ROOT_FOLDER, TEMPLATE_FOLDER } from "@storyflow/fields-core/constants";
 import React from "react";
-import { SWRClient } from "../client";
 import { useCollaborativeState } from "../collab/useCollaborativeState";
 import { getRawFolderId, normalizeFolderId } from "@storyflow/fields-core/ids";
 import { isSpliceOperation, isToggleOperation } from "@storyflow/collab/utils";
@@ -15,51 +14,8 @@ import { QueueForEach } from "@storyflow/collab/Queue";
 import {
   FolderTransactionEntry,
   SpaceTransactionEntry,
-} from "operations/actions_new";
+} from "operations/actions";
 import { createStaticStore } from "../state/StaticStore";
-import { useCollab } from "../collab/CollabContext";
-
-export const FoldersProvider = ({
-  children,
-}: {
-  children: React.ReactNode;
-}) => {
-  const collab = useCollab();
-
-  React.useLayoutEffect(() => {
-    // prefetched
-    collab.initializeTimeline("folders");
-    // initialized immediately (no external data)
-    collab.initializeTimeline("documents", { versions: null });
-  }, [collab]);
-
-  React.useLayoutEffect(() => {
-    const timeline = collab.getTimeline("documents")!;
-    timeline.registerStaleListener(() => {
-      timeline.initialize(
-        async () => [],
-        { versions: null },
-        { resetLocalState: true, keepListeners: true }
-      );
-    });
-  }, [collab]);
-
-  const { data: folders } = SWRClient.folders.get.useQuery(undefined, {
-    onSuccess(data) {
-      collab.initializeTimeline("folders", { versions: data.version });
-    },
-  });
-
-  console.log("DATA", folders);
-
-  if (!folders) return null;
-
-  return (
-    <FetchedFoldersProvider folders={folders.record} version={folders.version}>
-      {children}
-    </FetchedFoldersProvider>
-  );
-};
 
 const folders = createStaticStore<DBFolder, Map<string, DBFolder>>(
   (old?) => new Map(old ?? [])
@@ -85,13 +41,11 @@ const stateInitializer = (callback: () => Map<string, DBFolder>) => {
   return [store, setStore] as [typeof store, typeof setStore];
 };
 
-export function FetchedFoldersProvider({
+export function FoldersProvider({
   folders: initialFoldersFromProps,
-  version,
   children,
 }: {
   folders: DBFolderRecord;
-  version: number;
   children: React.ReactNode;
 }) {
   const initialFolders: DBFolderRecord = React.useMemo(() => {
@@ -149,7 +103,6 @@ export function FetchedFoldersProvider({
           if (spaceId) {
             (entry as SpaceTransactionEntry)[1].forEach((operation) => {
               const newFolder = getInitialFolder(folderId);
-              console.log("UPDATED 2", folderId, newFolder);
               const spaceIndex = newFolder.spaces.findIndex(
                 (el) => el.id === spaceId
               );
@@ -175,14 +128,11 @@ export function FetchedFoldersProvider({
               } else if (isToggleOperation(operation)) {
                 newFolder[operation[0] as "label"] = operation[1] as string;
               }
-              console.log("UPDATED 1", folderId, newFolder);
               updates[folderId] = newFolder;
             });
           }
         });
       });
-
-      console.log("RUNNING", origin, updates);
 
       return new Map(Object.entries(updates));
     },

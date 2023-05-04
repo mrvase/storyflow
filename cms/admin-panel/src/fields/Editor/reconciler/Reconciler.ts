@@ -22,12 +22,12 @@ import {
   FieldTransactionEntry,
   StreamOperation,
   TransformOperation,
-} from "operations/actions_new";
+} from "operations/actions";
 import { useCollab } from "../../../collab/CollabContext";
 import { useFieldId } from "../../FieldIdContext";
 import { getDocumentId, getRawFieldId } from "@storyflow/fields-core/ids";
 import { isSpliceOperation } from "@storyflow/collab/utils";
-import { usePanel } from "../../../panel-router/Routes";
+import { usePanel } from "../../../layout/panel-router/Routes";
 
 const RECONCILIATION_TAG = "reconciliation";
 

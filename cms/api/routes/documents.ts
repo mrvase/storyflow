@@ -9,13 +9,13 @@ import type {
   RawFieldId,
   ValueArray,
 } from "@storyflow/shared/types";
-import { clientPromise } from "../mongo/mongoClient";
-import { globals } from "../middleware/globals";
+import { clientPromise } from "../mongoClient";
+import { globals } from "../globals";
 import { createRawTemplateFieldId } from "@storyflow/fields-core/ids";
 import { parseDocument } from "@storyflow/db-core/convert";
 import { DEFAULT_FIELDS } from "@storyflow/fields-core/default-fields";
 import { getPaths } from "@storyflow/db-core/paths";
-import { createObjectId } from "@storyflow/db-core/mongo";
+import { createObjectId } from "../../../packages/api-core/mongo";
 
 const createFetcher =
   (dbName: string) =>

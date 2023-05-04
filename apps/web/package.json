@@ -3,9 +3,8 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "dev": "pnpm build:vite && (next dev & vite dev)",
-    "build": "pnpm build:vite && next build",
-    "build:vite": "rm -rf public/dashboard && vite build && mv public/index.html public/dashboard/index.html",
+    "dev": "next dev --port 4000",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "keys": "node key-pair.js"
@@ -41,8 +40,8 @@
     "@types/jsonwebtoken": "^9.0.2",
     "@types/node": "^17.0.45",
     "@types/qs": "^6.9.7",
-    "@types/react": "^18.0.22",
-    "@types/react-dom": "^18.0.7",
+    "@types/react": "^18.2.1",
+    "@types/react-dom": "^18.2.2",
     "autoprefixer": "^10.4.13",
     "eslint": "7.32.0",
     "eslint-config-custom": "workspace:*",

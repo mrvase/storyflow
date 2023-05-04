@@ -3,7 +3,7 @@ import type { FetchPageResult } from "@storyflow/client/types";
 const IS_DEV = process.env.NODE_ENV === "development";
 
 const domain = IS_DEV
-  ? "http://localhost:4000"
+  ? "http://localhost:4001"
   : "https://storyflow-public-api.vercel.app";
 
 const getNamespacesQuery = (namespaces: string[]) => {

@@ -1,8 +1,8 @@
 import { createProcedure, createRoute } from "@sfrpc/server";
 import { success } from "@storyflow/result";
 import type { DBFolderRecord } from "@storyflow/db-core/types";
-import { clientPromise } from "../mongo/mongoClient";
-import { globals } from "../middleware/globals";
+import { clientPromise } from "../mongoClient";
+import { globals } from "../globals";
 
 export const folders = createRoute({
   get: createProcedure({
