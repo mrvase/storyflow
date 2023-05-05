@@ -1,9 +1,9 @@
 import type { ValueArray } from "@storyflow/shared/types";
-import type { DBDocument } from "@storyflow/db-core/types";
+import type { DBDocument } from "@storyflow/cms/types";
 import { useGlobalState } from "../state/state";
-import { createTemplateFieldId } from "@storyflow/fields-core/ids";
-import { DEFAULT_FIELDS } from "@storyflow/fields-core/default-fields";
-import { calculateRootFieldFromRecord } from "@storyflow/fields-core/calculate-server";
+import { createTemplateFieldId } from "@storyflow/cms/ids";
+import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
+import { calculateRootFieldFromRecord } from "@storyflow/cms/calculate-server";
 
 export const fallbackLabel = "[Ingen titel]";
 

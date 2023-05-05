@@ -5,7 +5,7 @@
   "workspaces": [
     "apps/*",
     "packages/*",
-    "frontend/*",
+    "core/*",
     "cms/*",
     "setup/*",
     "rpc/*",

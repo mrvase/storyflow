@@ -1,13 +1,13 @@
 import { CubeIcon } from "@heroicons/react/24/outline";
-import { getDocumentId } from "@storyflow/fields-core/ids";
+import { getDocumentId } from "@storyflow/cms/ids";
 import type { DocumentId } from "@storyflow/shared/types";
-import type { TokenStream } from "operations/types";
+import type { TokenStream } from "../../operations/types";
 import type {
   RegularOptions,
   Option as PropOption,
 } from "@storyflow/shared/types";
 import React from "react";
-import { useClientConfig } from "../../client-config";
+import { useAppConfig } from "../../client-config";
 import { useDocumentIdGenerator } from "../../id-generator";
 import { createComponent } from "../Editor/createComponent";
 import { useFieldId } from "../FieldIdContext";
@@ -33,7 +33,7 @@ export function ElementPrompt({
     );
   }, [optionsFromProps]);
 
-  const { libraries } = useClientConfig();
+  const { libraries } = useAppConfig();
 
   let options = libraries
     .map((library) =>

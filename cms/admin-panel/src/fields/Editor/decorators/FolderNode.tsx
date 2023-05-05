@@ -8,7 +8,7 @@ import {
   NestedDocumentId,
   FieldId,
 } from "@storyflow/shared/types";
-import type { SyntaxTreeRecord } from "@storyflow/fields-core/types";
+import type { SyntaxTreeRecord } from "@storyflow/cms/types";
 import { FolderIcon } from "@heroicons/react/24/outline";
 import { useTemplate } from "../../default/useFieldTemplate";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";

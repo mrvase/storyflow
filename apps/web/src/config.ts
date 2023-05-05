@@ -1,65 +1,34 @@
+import { AppConfig, StoryflowConfig } from "@storyflow/api";
 import { config } from "./components";
 
-type StoryflowConfigOptions = {
-  baseURL: string;
-  apiPath: string;
-  public: {
-    organization: string;
-    key: string;
-  };
-  api: {
-    admin: string;
-    mongoURL: string;
-  };
-  apps: {
-    slug: string;
-    configURL: string;
-  }[];
-};
-
-type AppConfigOptions = {
-  baseURL: string;
-  label: string;
-  builderPath: string;
-  revalidatePath: string;
-  libraries: any[];
-};
-
-const createStoryflowConfig = (options: StoryflowConfigOptions) => {
-  return options;
-};
-
-const createAppConfig = (options: AppConfigOptions) => {
-  return options;
-};
-
-export const generatePublicConfig = (options: StoryflowConfigOptions) => {
-  return options.public;
-};
-
-export const StoryflowConfig = createStoryflowConfig({
+export const storyflowConfig: StoryflowConfig = {
   baseURL: "https://www.storyflow.dk",
-  apiPath: "/_storyflow",
   public: {
     organization: "Semper",
     key: process.env.PUBLIC_KEY as string,
   },
   api: {
     admin: "martin@rvase.dk",
-    mongoURL: "",
+    mongoURL: process.env.MONGO_URL as string,
   },
   apps: [
     {
-      slug: "web",
-      configURL: "https://www.storyflow.dk/api/config",
+      name: "web",
+      configURL: `${process.env.BASE_URL}/api/config`,
     },
   ],
-});
+  workspaces: [
+    {
+      name: "w080",
+      db: "dashboard-w080",
+    },
+  ],
+};
 
-export const FrontendConfig = createAppConfig({
-  baseURL: "https://www.storyflow.dk",
+export const appConfig: AppConfig = {
+  baseURL: process.env.BASE_URL as string,
   label: "storyflow.dk",
   builderPath: "/builder",
   revalidatePath: "/api/revalidate",
   libraries: [config],
-});
+};

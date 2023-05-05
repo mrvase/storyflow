@@ -19,7 +19,7 @@ import {
   $getStartAndEnd,
   $isTextBlockNode,
 } from "./transforms";
-import type { TokenStream } from "operations/types";
+import type { TokenStream } from "../../operations/types";
 import type { LibraryConfig } from "@storyflow/shared/types";
 import { $isPromptNode } from "./decorators/PromptNode";
 import { $isHeadingNode, HeadingNode } from "../../editor/react/HeadingNode";

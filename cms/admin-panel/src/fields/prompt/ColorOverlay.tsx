@@ -6,7 +6,7 @@ import ColorNode from "../Editor/decorators/ColorNode";
 import { Options } from "./OptionsContext";
 import { $createBlocksFromStream } from "../Editor/transforms";
 import { $replaceWithBlocks } from "../Editor/insertComputation";
-import { useClientConfig } from "../../client-config";
+import { useAppConfig } from "../../client-config";
 
 export function ColorOverlay({ node }: { node?: ColorNode }) {
   const editor = useEditorContext();
@@ -24,7 +24,7 @@ export function ColorOverlay({ node }: { node?: ColorNode }) {
     setResults([initialColor]);
   }, [node]);
 
-  const { libraries } = useClientConfig();
+  const { libraries } = useAppConfig();
 
   const handleResult = React.useCallback(() => {
     setResults((prev) => [color, ...prev.slice(0, 7)]);

@@ -1,9 +1,9 @@
 import React from "react";
 import cl from "clsx";
 import type { DocumentId, FieldId } from "@storyflow/shared/types";
-import { getDocumentId, getRawFieldId } from "@storyflow/fields-core/ids";
+import { getDocumentId, getRawFieldId } from "@storyflow/cms/ids";
 import { useFieldId } from "../FieldIdContext";
-import { createTokenStream } from "operations/parse-token-stream";
+import { createTokenStream } from "../../operations/parse-token-stream";
 import { usePush } from "../../collab/CollabContext";
 import { ContentEditable } from "../../editor/react/ContentEditable";
 import Editor from "../Editor/Editor";
@@ -11,7 +11,7 @@ import { getPreview } from "./getPreview";
 import { Placeholder } from "./Placeholder";
 import { PromptButton } from "../prompt/PromptButton";
 import { TemplateHeader } from "./TemplateHeader";
-import { tools } from "operations/stream-methods";
+import { tools } from "../../operations/stream-methods";
 import { useDefaultState } from "./useDefaultState";
 import { useEditorContext } from "../../editor/react/EditorProvider";
 import { $getRoot, BLUR_COMMAND, COMMAND_PRIORITY_EDITOR } from "lexical";
@@ -25,7 +25,7 @@ import {
   FieldTransactionEntry,
   StreamOperation,
   TransformOperation,
-} from "operations/actions";
+} from "../../operations/actions";
 import { SpliceOperation, Transaction } from "@storyflow/collab/types";
 import { createTransaction, isSpliceOperation } from "@storyflow/collab/utils";
 import { PushFunction } from "@storyflow/collab/Queue";

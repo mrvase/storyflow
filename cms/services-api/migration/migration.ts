@@ -1,15 +1,10 @@
 import { error, success } from "@storyflow/result";
 import { createProcedure, createRoute } from "@sfrpc/server";
-import { clientPromise } from "../mongoClient";
 import type { FunctionName, RawFieldId } from "@storyflow/shared/types";
-import type {
-  DBDocumentRaw,
-  DBSyntaxStreamBlock,
-  DocumentConfigItem,
-} from "@storyflow/db-core/types";
-import { getRawFieldId } from "@storyflow/fields-core/ids";
-import { unwrapObjectId } from "@storyflow/db-core/convert";
+import type { DocumentConfigItem } from "@storyflow/cms/types";
+import { getRawFieldId } from "@storyflow/cms/ids";
 
+/*
 const transformField = (field: DBSyntaxStreamBlock): DBSyntaxStreamBlock => {
   const value = field.v.map((token) => {
     if (token !== null && typeof token === "object") {
@@ -100,11 +95,8 @@ export const migration = createRoute({
   migrate: createProcedure({
     async query() {
       if (process.env.NODE_ENV === "development") {
-        /*
         copyCollection("documents", { fromDb: "kfs2-hyz7", toDb: "kfs-hyz7", transform });
-        */
 
-        /*
         const result = (await client.lrange(
           `kfs2:folders`,
           0,
@@ -126,7 +118,6 @@ export const migration = createRoute({
         pipeline.del("kfs:folders");
         pipeline.rpush(`kfs:folders`, ...array.map((el) => JSON.stringify(el)));
         await (pipeline as any).exec();
-        */
 
         return success("true");
       } else {
@@ -137,3 +128,4 @@ export const migration = createRoute({
     },
   }),
 });
+*/

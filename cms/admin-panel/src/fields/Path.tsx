@@ -3,10 +3,10 @@ import {
   NestedDocumentId,
   NestedEntity,
 } from "@storyflow/shared/types";
-import type { NestedField, SyntaxTree } from "@storyflow/fields-core/types";
+import type { NestedField, SyntaxTree } from "@storyflow/cms/types";
 import { createEventsFromIframeToCMS } from "@storyflow/shared/events";
 import React from "react";
-import { getChildrenDocuments } from "@storyflow/fields-core/graph";
+import { getChildrenDocuments } from "@storyflow/cms/graph";
 import { useGlobalState } from "../state/state";
 import { useContextWithError } from "../utils/contextError";
 import { useFieldId } from "./FieldIdContext";

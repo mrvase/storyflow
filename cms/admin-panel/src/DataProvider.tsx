@@ -1,6 +1,6 @@
 import { hexColorToRgb } from "./data/colors";
 import useSWR from "swr";
-import { TEMPLATE_FOLDER } from "@storyflow/fields-core/constants";
+import { TEMPLATE_FOLDER } from "@storyflow/cms/constants";
 import { useDocumentList } from "./documents";
 import { useCollab } from "./collab/CollabContext";
 import React from "react";
@@ -29,7 +29,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     });
   }, [collab]);
 
-  const { data: folders } = SWRClient.folders.get.useQuery(undefined, {
+  const { data: folders } = SWRClient.admin.getFolders.useQuery(undefined, {
     onSuccess(data) {
       collab.initializeTimeline("folders", { versions: data.version });
     },

@@ -18,34 +18,33 @@ import {
   DocumentConfig,
   DocumentVersionRecord,
   TemplateRef,
-} from "@storyflow/db-core/types";
+} from "@storyflow/cms/types";
 import {
   FieldTransform,
   SyntaxTree,
   SyntaxTreeRecord,
-} from "@storyflow/fields-core/types";
+} from "@storyflow/cms/types";
 import {
   computeFieldId,
   getTemplateDocumentId,
   isTemplateField,
-} from "@storyflow/fields-core/ids";
+} from "@storyflow/cms/ids";
 import {
   applyConfigTransaction,
   applyFieldTransaction,
   createDocumentTransformer,
-} from "operations/apply";
-import { TokenStream } from "operations/types";
+} from "../operations/apply";
+import { TokenStream } from "../operations/types";
 import {
   DocumentTransactionEntry,
   FieldTransactionEntry,
-} from "operations/actions";
-import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
-import { splitTransformsAndRoot } from "@storyflow/fields-core/transform";
+} from "../operations/actions";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/cms/constants";
+import { splitTransformsAndRoot } from "@storyflow/cms/transform";
 import {
   createTokenStream,
   parseTokenStream,
-} from "operations/parse-token-stream";
-import { setFieldConfig } from "operations/field-config";
+} from "../operations/parse-token-stream";
 
 const splitIntoQueues = (
   array: TimelineEntry[]
@@ -64,10 +63,10 @@ const splitIntoQueues = (
 export const useSaveDocument = (documentId: DocumentId, folderId: FolderId) => {
   const { doc } = useDocument(documentId);
 
-  const mutate = SWRClient.fields.save.useMutation({
+  const mutate = SWRClient.documents.update.useMutation({
     cacheUpdate: ({ id }, mutate) => {
       mutate(
-        ["documents/getList", { folder: folderId, limit: 50 }],
+        ["documents/find", { folder: folderId, limit: 50 }],
         (ps, result) => {
           if (!result) {
             return ps;
@@ -78,7 +77,7 @@ export const useSaveDocument = (documentId: DocumentId, folderId: FolderId) => {
           return newDocuments;
         }
       );
-      mutate(["documents/get", id], (ps, result) => {
+      mutate(["documents/findById", id], (ps, result) => {
         if (!result) {
           return ps;
         }

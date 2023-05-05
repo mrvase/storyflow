@@ -1,14 +1,14 @@
 import React from "react";
 import Dialog from "../elements/Dialog";
-import { createTemplateFieldId } from "@storyflow/fields-core/ids";
+import { createTemplateFieldId } from "@storyflow/cms/ids";
 import type { DocumentId, FieldId, FolderId } from "@storyflow/shared/types";
-import type { SyntaxTreeRecord } from "@storyflow/fields-core/types";
+import type { SyntaxTreeRecord } from "@storyflow/cms/types";
 import { useClient } from "../client";
 import { toSlug } from "../fields/UrlField";
 import { useDocumentIdGenerator } from "../id-generator";
-import { DEFAULT_FIELDS } from "@storyflow/fields-core/default-fields";
-import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
-import { insertRootInTransforms } from "@storyflow/fields-core/transform";
+import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/cms/constants";
+import { insertRootInTransforms } from "@storyflow/cms/transform";
 import { useAddDocument } from "../documents/useAddDocument";
 
 export function AddDocumentDialog({

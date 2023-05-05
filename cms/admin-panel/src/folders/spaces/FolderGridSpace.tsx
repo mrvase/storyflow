@@ -1,7 +1,7 @@
 import cl from "clsx";
 import { DropShadow, Sortable } from "@storyflow/dnd";
 import type { FolderId } from "@storyflow/shared/types";
-import type { FolderSpace } from "@storyflow/db-core/types";
+import type { FolderSpace } from "@storyflow/cms/types";
 import type { DragResultAction } from "@storyflow/dnd/types";
 import { FolderItem } from "./Folder";
 import Space from "./Space";
@@ -18,7 +18,7 @@ import { createTransaction } from "@storyflow/collab/utils";
 import {
   FolderTransactionEntry,
   SpaceTransactionEntry,
-} from "operations/actions";
+} from "../../operations/actions";
 
 export function FolderGridSpace({
   space,

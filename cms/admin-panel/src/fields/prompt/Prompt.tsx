@@ -7,7 +7,7 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { mergeRegister } from "../../editor/utils/mergeRegister";
-import type { TokenStream } from "operations/types";
+import type { TokenStream } from "../../operations/types";
 import cl from "clsx";
 import {
   $createParagraphNode,
@@ -22,7 +22,7 @@ import {
   KEY_ESCAPE_COMMAND,
 } from "lexical";
 import React from "react";
-import { useClientConfig } from "../../client-config";
+import { useAppConfig } from "../../client-config";
 import { useEditorContext } from "../../editor/react/EditorProvider";
 import PromptNode, { $isPromptNode } from "../Editor/decorators/PromptNode";
 import { useFieldOptions, useFieldRestriction } from "../FieldIdContext";
@@ -91,7 +91,7 @@ export function Prompt({
 
   const showMenu = initializer === "/";
 
-  const { libraries } = useClientConfig();
+  const { libraries } = useAppConfig();
 
   React.useEffect(() => {
     return editor.registerNodeTransform(PromptNode, (node) => {

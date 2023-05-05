@@ -1,7 +1,8 @@
 import React from "react";
-import { useClientConfig } from "../../client-config";
+import { useAppConfig } from "../../client-config";
 import { useBranchIsFocused } from "../../layout/components/BranchFocusContext";
 import { useUrlInfo } from "../../users";
+import { trimTrailingSlash } from "../../utils/trimSlashes";
 
 export const BuilderIframe = React.forwardRef<
   HTMLIFrameElement,
@@ -10,7 +11,7 @@ export const BuilderIframe = React.forwardRef<
     heightListener: (callback: (value: number) => void) => void;
   }
 >(({ uniqueId }, ref) => {
-  const { builderUrl } = useClientConfig();
+  const { baseURL, builderPath } = useAppConfig();
   const { id } = useBranchIsFocused();
   const { organization } = useUrlInfo();
 
@@ -20,7 +21,7 @@ export const BuilderIframe = React.forwardRef<
     scrollRef.current?.scrollTo(0, 384);
   }, []);
 
-  return builderUrl ? (
+  return builderPath ? (
     <div
       ref={scrollRef}
       className="w-full h-full overflow-auto no-scrollbar snap-mandatory snap-x"
@@ -29,7 +30,9 @@ export const BuilderIframe = React.forwardRef<
         <div className="ml-[25%] w-1/2 p-5 snap-start">
           <iframe
             ref={ref}
-            src={`${builderUrl}?uniqueId=${uniqueId}&slug=${organization}`}
+            src={`${trimTrailingSlash(
+              baseURL
+            )}/${builderPath}?uniqueId=${uniqueId}&slug=${organization}`}
             className="w-full min-h-screen bg-white"
             data-select={id}
           />

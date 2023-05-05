@@ -1,20 +1,20 @@
 import React from "react";
 import Dialog from "../elements/Dialog";
-import type { SpaceId } from "@storyflow/db-core/types";
+import type { SpaceId } from "@storyflow/cms/types";
 import type { FolderId } from "@storyflow/shared/types";
-import { createTemplateFieldId } from "@storyflow/fields-core/ids";
+import { createTemplateFieldId } from "@storyflow/cms/ids";
 import { ComputerDesktopIcon, FolderIcon } from "@heroicons/react/24/outline";
 import { DialogOption } from "../elements/DialogOption";
 import { useDocumentIdGenerator, useFolderIdGenerator } from "../id-generator";
-import { DEFAULT_FIELDS } from "@storyflow/fields-core/default-fields";
-import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
-import { insertRootInTransforms } from "@storyflow/fields-core/transform";
+import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/cms/constants";
+import { insertRootInTransforms } from "@storyflow/cms/transform";
 import { usePush } from "../collab/CollabContext";
 import { createTransaction } from "@storyflow/collab/utils";
 import {
   FolderTransactionEntry,
   SpaceTransactionEntry,
-} from "operations/actions";
+} from "../operations/actions";
 import { useAddDocument } from "../documents/useAddDocument";
 
 export function AddFolderDialog({

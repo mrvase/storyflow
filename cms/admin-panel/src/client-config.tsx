@@ -1,15 +1,16 @@
 import React from "react";
 import type {
-  ClientConfig,
+  AppConfig,
   ComponentConfig,
   LibraryConfig,
 } from "@storyflow/shared/types";
 import { SWRClient } from "./client";
 import { useFolderDomains } from "./folders/FolderDomainsContext";
+import { useAuth } from "./Auth";
 
 const ClientConfigContext = React.createContext<Record<
   string,
-  ClientConfig
+  AppConfig
 > | null>(null);
 
 export const getComponentType = (
@@ -82,19 +83,21 @@ const defaultLibrary: LibraryConfig = {
   },
 };
 
-const defaultClientConfig: ClientConfig = {
-  builderUrl: "",
-  revalidateUrl: "",
+const defaultClientConfig: AppConfig = {
+  baseURL: "",
+  label: "",
+  builderPath: "",
+  revalidatePath: "",
   libraries: [defaultLibrary],
 };
 
 const defaultLibraries = [defaultLibrary]; // stable reference
 
-export function useClientConfig(key?: string): ClientConfig {
+export function useAppConfig(key?: string): AppConfig {
   const configs = React.useContext(ClientConfigContext);
   const domains = useFolderDomains();
   if (!configs) {
-    throw new Error("useClientConfig cannot find provider.");
+    throw new Error("useAppConfig cannot find provider.");
   }
 
   if (key) {
@@ -102,7 +105,7 @@ export function useClientConfig(key?: string): ClientConfig {
   }
 
   if (!domains) {
-    throw new Error("useClientConfig must be used within a FolderPage");
+    throw new Error("useAppConfig must be used within a FolderPage");
   }
 
   // TODO should return union of all config libraries
@@ -114,8 +117,10 @@ export function useClientConfig(key?: string): ClientConfig {
   const main = configs[domains[0]];
 
   return {
-    builderUrl: main?.builderUrl ?? "",
-    revalidateUrl: main?.revalidateUrl ?? "",
+    baseURL: main?.baseURL ?? "",
+    label: main?.label ?? "",
+    builderPath: main?.builderPath ?? "",
+    revalidatePath: main?.revalidatePath ?? "",
     libraries: main?.libraries ?? defaultLibraries,
   };
 }
@@ -125,37 +130,28 @@ export function ClientConfigProvider({
 }: {
   children?: React.ReactNode;
 }) {
-  const [configs, setConfigs] = React.useState<Record<string, ClientConfig>>(
-    {}
-  );
+  const { organization } = useAuth();
 
-  const { data } = SWRClient.settings.get.useQuery();
+  const [configs, setConfigs] = React.useState<Record<string, AppConfig>>({});
 
   React.useLayoutEffect(() => {
-    if (!data) return;
-
     let isMounted = true;
     const abortController = new AbortController();
 
     (async () => {
       const fetchedConfigs = await Promise.allSettled(
-        data.domains.map(async ({ id, configUrl }) => {
-          configUrl = configUrl.endsWith(".dk")
-            ? `${configUrl}/api/config`
-            : configUrl;
-
-          const config = await fetch(configUrl, {
+        organization!.apps.map(async ({ name, configURL }) => {
+          const config = await fetch(configURL, {
             signal: abortController.signal,
-          }).then((res) => res.json());
+          }).then((res) => res.json() as Promise<AppConfig>);
 
           return [
-            id,
+            name,
             {
-              builderUrl: config.builderUrl,
-              revalidateUrl: config.revalidateUrl,
+              ...config,
               libraries: [defaultLibrary, ...config.libraries],
             },
-          ] as [string, ClientConfig];
+          ] as [string, AppConfig];
         })
       );
 
@@ -178,7 +174,7 @@ export function ClientConfigProvider({
       isMounted = false;
       abortController.abort();
     };
-  }, [data]);
+  }, [organization?.apps]);
 
   return (
     <ClientConfigContext.Provider value={configs}>

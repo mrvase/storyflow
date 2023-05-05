@@ -1,4 +1,4 @@
-import { tokens } from "@storyflow/fields-core/tokens";
+import { tokens } from "@storyflow/cms/tokens";
 import type { ClientSyntaxTree, ValueArray } from "@storyflow/shared/types";
 
 const valueAsString = (value: any, placeholders: boolean) => {

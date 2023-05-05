@@ -1,6 +1,6 @@
 import { LexicalNode, NodeKey, SerializedTextNode, TextNode } from "lexical";
 import { Spread } from "lexical";
-import type { TokenStream } from "operations/types";
+import type { TokenStream } from "../../../operations/types";
 
 export type SerializedPromptNode = Spread<
   {

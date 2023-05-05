@@ -9,20 +9,20 @@ import {
   NestedFolder,
   RawDocumentId,
 } from "@storyflow/shared/types";
-import type { FieldConfig, NestedField } from "@storyflow/fields-core/types";
-import { getConfigFromType, useClientConfig } from "../../client-config";
+import type { FieldConfig, NestedField } from "@storyflow/cms/types";
+import { getConfigFromType, useAppConfig } from "../../client-config";
 import { useTemplate } from "./useFieldTemplate";
 import {
   computeFieldId,
   createTemplateFieldId,
   getIdFromString,
-} from "@storyflow/fields-core/ids";
+} from "@storyflow/cms/ids";
 import { useFieldId } from "../FieldIdContext";
 import { useDocumentPageContext } from "../../documents/DocumentPageContext";
-import { tokens } from "@storyflow/fields-core/tokens";
-import { getChildrenDocuments } from "@storyflow/fields-core/graph";
+import { tokens } from "@storyflow/cms/tokens";
+import { getChildrenDocuments } from "@storyflow/cms/graph";
 import { useDefaultState } from "./useDefaultState";
-import { splitTransformsAndRoot } from "@storyflow/fields-core/transform";
+import { splitTransformsAndRoot } from "@storyflow/cms/transform";
 import { useLoopTemplate } from "./LoopTemplateContext";
 import { extendPath } from "../../utils/extendPath";
 
@@ -101,7 +101,7 @@ function PreloadNestedState({
   } else if (tokens.isNestedField(entity)) {
     // missing
   } else if (tokens.isNestedElement(entity)) {
-    const { libraries } = useClientConfig();
+    const { libraries } = useAppConfig();
     const { record } = useDocumentPageContext();
 
     const config = getConfigFromType(entity.element, libraries);

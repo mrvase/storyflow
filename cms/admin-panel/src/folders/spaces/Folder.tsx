@@ -8,7 +8,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { useDragItem, useSortableItem } from "@storyflow/dnd";
 import { getTranslateDragEffect } from "../../utils/dragEffects";
-import type { DBFolder } from "@storyflow/db-core/types";
+import type { DBFolder } from "@storyflow/cms/types";
 import type { FolderId } from "@storyflow/shared/types";
 import { DragIcon } from "./DragIcon";
 import { usePanel, useRoute } from "../../layout/panel-router/Routes";

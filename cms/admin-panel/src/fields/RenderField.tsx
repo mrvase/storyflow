@@ -1,7 +1,7 @@
 import { NoList } from "@storyflow/dnd";
 import React from "react";
 import type { FieldId } from "@storyflow/shared/types";
-import type { FieldConfig, FieldUI } from "@storyflow/fields-core/types";
+import type { FieldConfig, FieldUI } from "@storyflow/cms/types";
 import { DefaultFieldRoot } from "./default/DefaultFieldRoot";
 import { FieldContainer } from "./FieldContainer";
 import UrlField from "./UrlField";

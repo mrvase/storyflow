@@ -4,14 +4,14 @@ import {
   createTemplateFieldId,
   getDocumentId,
   getRawFieldId,
-} from "@storyflow/fields-core/ids";
+} from "@storyflow/cms/ids";
 import type { DocumentId, FieldId } from "@storyflow/shared/types";
 import type {
   DocumentConfigItem,
   HeadingConfig,
   DBDocument,
-} from "@storyflow/db-core/types";
-import type { SyntaxTree } from "@storyflow/fields-core/types";
+} from "@storyflow/cms/types";
+import type { SyntaxTree } from "@storyflow/cms/types";
 import { getTranslateDragEffect } from "../utils/dragEffects";
 import { RenderField } from "../fields/RenderField";
 import { useCollab, usePush } from "../collab/CollabContext";
@@ -21,13 +21,13 @@ import { TopFieldIndexProvider } from "./FieldIndexContext";
 import { useClient } from "../client";
 import { useDocumentIdGenerator } from "../id-generator";
 import { getDefaultValuesFromTemplateAsync } from "./template-fields";
-import { splitTransformsAndRoot } from "@storyflow/fields-core/transform";
-import { createTokenStream } from "operations/parse-token-stream";
+import { splitTransformsAndRoot } from "@storyflow/cms/transform";
+import { createTokenStream } from "../operations/parse-token-stream";
 import {
   DocumentSpliceOperation,
   DocumentTransactionEntry,
   FieldTransactionEntry,
-} from "operations/actions";
+} from "../operations/actions";
 import { createTransaction } from "@storyflow/collab/utils";
 
 export function RenderTemplate({

@@ -5,12 +5,12 @@ import {
   TrashIcon,
 } from "@heroicons/react/24/outline";
 import { createComponent } from "../Editor/createComponent";
-import { getInfoFromType, useClientConfig } from "../../client-config";
-import { getDocumentId, getRawFieldId } from "@storyflow/fields-core/ids";
+import { getInfoFromType, useAppConfig } from "../../client-config";
+import { getDocumentId, getRawFieldId } from "@storyflow/cms/ids";
 import type { DocumentId, FieldId } from "@storyflow/shared/types";
 import { useDocumentIdGenerator } from "../../id-generator";
 import { usePush } from "../../collab/CollabContext";
-import { FieldTransactionEntry } from "operations/actions";
+import { FieldTransactionEntry } from "../../operations/actions";
 
 function Button(props: any) {
   return null;
@@ -36,7 +36,7 @@ export function Actions({
   const documentId = getDocumentId(id) as DocumentId;
   const generateDocumentId = useDocumentIdGenerator();
 
-  const { libraries } = useClientConfig();
+  const { libraries } = useAppConfig();
 
   return (
     <>

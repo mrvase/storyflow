@@ -7,25 +7,25 @@ import {
   RawDocumentId,
   DocumentId,
 } from "@storyflow/shared/types";
-import type { SyntaxTree, FieldTransform } from "@storyflow/fields-core/types";
-import type { TokenStream } from "operations/types";
-import { getDocumentId, getRawFieldId } from "@storyflow/fields-core/ids";
+import type { SyntaxTree, FieldTransform } from "@storyflow/cms/types";
+import type { TokenStream } from "../../operations/types";
+import { getDocumentId, getRawFieldId } from "@storyflow/cms/ids";
 import { useFieldId } from "../FieldIdContext";
 import { useDocumentPageContext } from "../../documents/DocumentPageContext";
 import {
   createTokenStream,
   parseTokenStream,
-} from "operations/parse-token-stream";
+} from "../../operations/parse-token-stream";
 import { useClient } from "../../client";
 import { useCollab } from "../../collab/CollabContext";
 import { useFieldConfig } from "../../documents/document-config";
 import { useSingular } from "../../state/useSingular";
 import { calculateFn } from "./calculateFn";
-import { splitTransformsAndRoot } from "@storyflow/fields-core/transform";
-import { applyFieldTransaction } from "operations/apply";
+import { splitTransformsAndRoot } from "@storyflow/cms/transform";
+import { applyFieldTransaction } from "../../operations/apply";
 import { createQueueCache } from "../../collab/createQueueCache";
-import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
-import { FieldTransactionEntry } from "operations/actions";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/cms/constants";
+import { FieldTransactionEntry } from "../../operations/actions";
 
 export function useDefaultStateCore(id: FieldId) {
   const rootId = useFieldId();

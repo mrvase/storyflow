@@ -2,12 +2,12 @@ import type { DocumentId, FolderId } from "@storyflow/shared/types";
 import React from "react";
 import { usePush } from "../../collab/CollabContext";
 import { createTransaction } from "@storyflow/collab/utils";
-import { DocumentAddTransactionEntry } from "operations/actions";
+import { DocumentAddTransactionEntry } from "../../operations/actions";
 import { SWRClient } from "../../client";
 import { isSuccess } from "@storyflow/result";
 
 export const useDeleteManyMutation = (folderId: string) => {
-  const { mutate: mutateList } = SWRClient.documents.getList.useQuery({
+  const { mutate: mutateList } = SWRClient.documents.find.useQuery({
     folder: folderId,
     limit: 50,
   });

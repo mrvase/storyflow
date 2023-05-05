@@ -8,7 +8,7 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import type { DocumentId, FieldId } from "@storyflow/shared/types";
-import type { FieldType2 } from "@storyflow/fields-core/types";
+import type { FieldType2 } from "@storyflow/cms/types";
 import React from "react";
 import ReactDOM from "react-dom";
 import { useDocumentList } from ".";
@@ -18,10 +18,10 @@ import { usePush } from "../collab/CollabContext";
 import { useFieldConfig } from "./document-config";
 import { useContextWithError } from "../utils/contextError";
 import { useFieldId } from "../fields/FieldIdContext";
-import { getDocumentId } from "@storyflow/fields-core/ids";
+import { getDocumentId } from "@storyflow/cms/ids";
 import { Menu } from "../elements/Menu";
 import { useTopFieldIndex } from "./FieldIndexContext";
-import { DocumentTransactionEntry } from "operations/actions";
+import { DocumentTransactionEntry } from "../operations/actions";
 
 const FieldToolbarPortalContext = React.createContext<
   [HTMLDivElement | null, React.Dispatch<HTMLDivElement | null>] | null

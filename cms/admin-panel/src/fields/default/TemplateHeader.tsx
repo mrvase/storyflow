@@ -4,10 +4,7 @@ import type {
   FieldId,
   RawDocumentId,
 } from "@storyflow/shared/types";
-import type {
-  GetFunctionData,
-  FieldTransform,
-} from "@storyflow/fields-core/types";
+import type { GetFunctionData, FieldTransform } from "@storyflow/cms/types";
 import {
   ChevronDownIcon,
   ChevronUpIcon,
@@ -20,7 +17,7 @@ import {
   getDocumentId,
   getRawDocumentId,
   getRawFieldId,
-} from "@storyflow/fields-core/ids";
+} from "@storyflow/cms/ids";
 import { useTemplate } from "./useFieldTemplate";
 import { useFieldFocus } from "../../field-focus";
 import { Checkbox } from "../../elements/Checkbox";
@@ -33,7 +30,7 @@ import { useTemplateFolder } from "../../folders/FoldersContext";
 import React from "react";
 import { useDocumentList } from "../../documents";
 import { useFieldTemplateId } from "./FieldTemplateContext";
-import { FieldTransactionEntry } from "operations/actions";
+import { FieldTransactionEntry } from "../../operations/actions";
 import { createTransaction } from "@storyflow/collab/utils";
 
 export function TemplateHeader({

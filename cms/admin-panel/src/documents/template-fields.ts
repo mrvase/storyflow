@@ -9,8 +9,8 @@ import type {
   SyntaxTreeRecord,
   FieldConfig,
   SyntaxTree,
-} from "@storyflow/fields-core/types";
-import type { DocumentConfig } from "@storyflow/db-core/types";
+} from "@storyflow/cms/types";
+import type { DocumentConfig } from "@storyflow/cms/types";
 import {
   createTemplateFieldId,
   getDocumentId,
@@ -18,13 +18,10 @@ import {
   getRawDocumentId,
   isNestedDocumentId,
   replaceDocumentId,
-} from "@storyflow/fields-core/ids";
+} from "@storyflow/cms/ids";
 import { fetchDocument } from "./index";
-import {
-  isSyntaxTree,
-  getSyntaxTreeEntries,
-} from "@storyflow/fields-core/syntax-tree";
-import { tokens } from "@storyflow/fields-core/tokens";
+import { isSyntaxTree, getSyntaxTreeEntries } from "@storyflow/cms/syntax-tree";
+import { tokens } from "@storyflow/cms/tokens";
 
 export const copyRecord = (
   originalRecord: SyntaxTreeRecord,

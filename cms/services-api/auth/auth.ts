@@ -1,15 +1,14 @@
 import { error, success } from "@storyflow/result";
 import { createProcedure, createRoute } from "@sfrpc/server";
-import { cors as corsFactory } from "@storyflow/api-core/middleware";
-import { getHeader } from "@storyflow/api-core/utils";
+import { cors as corsFactory } from "@storyflow/server/middleware";
+import { getHeader } from "@storyflow/server/utils";
 import {
   encrypt,
   decrypt,
   createLink,
   validateLink,
   unsetAuthCookie,
-  parseAuthToken,
-} from "@storyflow/api-core/auth";
+} from "@storyflow/server/auth";
 import { z } from "zod";
 import {
   GLOBAL_SESSION,
@@ -17,16 +16,11 @@ import {
   LINK_COOKIE,
   parseAuthCookie,
   serializeAuthCookie,
-} from "@storyflow/api-core/auth";
-import { Payload } from "@storyflow/auth/email";
+} from "@storyflow/server/auth";
+import { Payload } from "@storyflow/server/auth/email";
 import { createTransport } from "nodemailer";
 import postgres from "postgres";
-
-const config = {
-  host: process.env.DATABASE_HOST,
-  username: process.env.DATABASE_USERNAME,
-  password: process.env.DATABASE_PASSWORD,
-};
+import { KEY_COOKIE } from "@storyflow/server/auth/cookies";
 
 const sql = postgres(process.env.PGCONNECTION as string, { ssl: "require" });
 
@@ -242,7 +236,7 @@ WHERE u.email = ${user.email};
     },
   }),
 
-  update: createProcedure({
+  authenticate: createProcedure({
     middleware(ctx) {
       return ctx.use(cors);
     },
@@ -250,6 +244,8 @@ WHERE u.email = ${user.email};
       return z.string();
     },
     async mutation(org, { res, req }) {
+      const setCookies: string[] = [];
+
       try {
         const user = parseAuthCookie(
           GLOBAL_SESSION,
@@ -260,21 +256,82 @@ WHERE u.email = ${user.email};
           return error({ message: "Not authenticated" });
         }
 
-        if (org) {
-        }
+        const setKeyCookie = async () => {
+          if (!org) return;
 
-        res.setHeader(
-          "Set-Cookie",
-          serializeAuthCookie(GLOBAL_TOKEN, { email: user.email })
+          const current = parseAuthCookie(
+            KEY_COOKIE,
+            getHeader(req as any, "cookie")
+          );
+
+          if (current && current.slug === org) return;
+
+          const result = await sql<
+            { slug: string; url: string }[]
+          >`SELECT url FROM organizations WHERE slug = ${org};`;
+
+          if (!result.length) return;
+
+          const url = result[0].url;
+
+          console.log(`${url}/.storyflow/config`);
+
+          const json = await fetch(`http://${url}/.storyflow/public`).then(
+            (res) => res.json()
+          );
+
+          if (
+            !json ||
+            typeof json !== "object" ||
+            !("key" in json) ||
+            typeof json.key !== "string"
+          ) {
+            return;
+          }
+          console.log("JSON", json.key);
+
+          setCookies.push(
+            serializeAuthCookie(KEY_COOKIE, {
+              key: json.key,
+              slug: org,
+            })
+          );
+
+          return url;
+        };
+
+        const url = await setKeyCookie();
+
+        setCookies.push(
+          serializeAuthCookie(
+            GLOBAL_TOKEN,
+            { email: user.email },
+            process.env.STORYFLOW_PRIVATE_KEY as string
+          )
         );
 
-        return success({ email: user.email });
+        res.setHeader("Set-Cookie", setCookies.join(", "));
+
+        return success({ user: { email: user.email }, url: url ?? null });
       } catch (err) {
         console.log(err);
         return error({ message: "Lykkedes ikke", detail: err });
       }
     },
   }),
+
+  /*
+  getOrganizationKey: createProcedure({
+    middleware(ctx) {
+      return ctx.use(cors);
+    },
+    schema() {
+      return z.string();
+    },
+    async query(org, { req }) {
+    }
+  }),
+  */
 
   logout: createProcedure({
     middleware(ctx) {

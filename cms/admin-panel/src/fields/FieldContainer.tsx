@@ -13,16 +13,13 @@ import { useFieldFocus } from "../field-focus";
 import { addImport } from "../custom-events";
 import { useLabel } from "../documents/document-config";
 import type { FieldId, NestedDocumentId } from "@storyflow/shared/types";
-import type { FieldConfig } from "@storyflow/fields-core/types";
+import type { FieldConfig } from "@storyflow/cms/types";
 import { getTranslateDragEffect } from "../utils/dragEffects";
 import useIsFocused from "../utils/useIsFocused";
 import { useIsFocused as useIsEditorFocused } from "../editor/react/useIsFocused";
-import {
-  getDefaultField,
-  isDefaultField,
-} from "@storyflow/fields-core/default-fields";
-import { getConfigFromType, useClientConfig } from "../client-config";
-import { isTemplateField } from "@storyflow/fields-core/ids";
+import { getDefaultField, isDefaultField } from "@storyflow/cms/default-fields";
+import { getConfigFromType, useAppConfig } from "../client-config";
+import { isTemplateField } from "@storyflow/cms/ids";
 import { FieldToolbarPortal } from "../documents/FieldToolbar";
 import { EditorFocusProvider } from "../editor/react/useIsFocused";
 import { Attributes, AttributesProvider } from "./Attributes";
@@ -283,7 +280,7 @@ function ElementLabel(props: {
   const [, setPath] = useSelectedPath();
   const entity = useNestedEntity(props);
 
-  const { libraries } = useClientConfig();
+  const { libraries } = useAppConfig();
 
   if (!entity) {
     return null;

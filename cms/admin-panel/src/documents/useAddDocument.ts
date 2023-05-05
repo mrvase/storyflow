@@ -1,12 +1,12 @@
 import React from "react";
 import { useClient } from "../client";
 import { DocumentId, FolderId, FieldId } from "@storyflow/shared/types";
-import type { SyntaxTreeRecord } from "@storyflow/fields-core/types";
-import { DEFAULT_FIELDS } from "@storyflow/fields-core/default-fields";
-import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
-import { createTemplateFieldId } from "@storyflow/fields-core/ids";
+import type { SyntaxTreeRecord } from "@storyflow/cms/types";
+import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/cms/constants";
+import { createTemplateFieldId } from "@storyflow/cms/ids";
 import { createTransaction } from "@storyflow/collab/utils";
-import { DocumentAddTransactionEntry } from "operations/actions";
+import { DocumentAddTransactionEntry } from "../operations/actions";
 import { usePush } from "../collab/CollabContext";
 import {
   useDocumentIdGenerator,

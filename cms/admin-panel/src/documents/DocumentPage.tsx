@@ -6,13 +6,10 @@ import {
   PlusIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
-import { DEFAULT_FIELDS } from "@storyflow/fields-core/default-fields";
-import {
-  getDocumentId,
-  getTemplateDocumentId,
-} from "@storyflow/fields-core/ids";
+import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
+import { getDocumentId, getTemplateDocumentId } from "@storyflow/cms/ids";
 import type { DocumentId, FolderId, RawFieldId } from "@storyflow/shared/types";
-import type { DBDocument } from "@storyflow/db-core/types";
+import type { DBDocument } from "@storyflow/cms/types";
 import { NoList, useDragItem } from "@storyflow/dnd";
 import cl from "clsx";
 import React from "react";
@@ -20,7 +17,7 @@ import { useDocumentList, useDocumentWithTimeline } from ".";
 import { DEFAULT_TEMPLATES } from "./templates";
 import { useSaveDocument } from "./useSaveDocument";
 import { useDocumentLabel } from "./useDocumentLabel";
-import { useClientConfig } from "../client-config";
+import { useAppConfig } from "../client-config";
 import { useFolder, useTemplateFolder } from "../folders/FoldersContext";
 import Content from "../pages/Content";
 import { useCollab, usePush } from "../collab/CollabContext";
@@ -39,7 +36,7 @@ import { ExtendTemplatePath } from "./TemplatePathContext";
 import { useRoute } from "../layout/panel-router/Routes";
 import { parseSegment } from "../layout/components/parseSegment";
 import { Menu } from "../elements/Menu";
-import { DocumentTransactionEntry } from "operations/actions";
+import { DocumentTransactionEntry } from "../operations/actions";
 import { useCurrentFolder } from "../folders/FolderPageContext";
 
 function useIsModified(id: DocumentId) {
@@ -342,7 +339,7 @@ function SaveButton({ id, folderId }: { id: DocumentId; folderId: FolderId }) {
       }
     );
 
-  const { libraries } = useClientConfig();
+  const { libraries } = useAppConfig();
 
   /*
   const searchable: SearchableProps = React.useMemo(() => {

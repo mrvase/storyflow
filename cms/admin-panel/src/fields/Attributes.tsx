@@ -5,15 +5,12 @@ import {
   NestedDocumentId,
   NestedEntity,
 } from "@storyflow/shared/types";
-import type { FieldConfig } from "@storyflow/fields-core/types";
+import type { FieldConfig } from "@storyflow/cms/types";
 import { useFieldId } from "./FieldIdContext";
-import { getConfigFromType, useClientConfig } from "../client-config";
-import {
-  createTemplateFieldId,
-  getDocumentId,
-} from "@storyflow/fields-core/ids";
+import { getConfigFromType, useAppConfig } from "../client-config";
+import { createTemplateFieldId, getDocumentId } from "@storyflow/cms/ids";
 import { useGlobalState } from "../state/state";
-import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/cms/constants";
 import { useClient } from "../client";
 import { useDocumentPageContext } from "../documents/DocumentPageContext";
 import { calculateFn } from "./default/calculateFn";
@@ -60,7 +57,7 @@ export function Attributes({
   color?: "gray" | "red" | "pink" | "yellow";
 }) {
   const [currentProp, setCurrentProp] = useAttributesContext();
-  const { libraries } = useClientConfig();
+  const { libraries } = useAppConfig();
 
   let templateId = useFieldTemplateId();
   const template = useTemplate(templateId) ?? noTemplate;

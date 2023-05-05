@@ -3,13 +3,13 @@ import { useGlobalContext } from "../state/context";
 import { addContext, addImport } from "../custom-events";
 import { useClient } from "../client";
 import type { DocumentId, FieldId, ValueArray } from "@storyflow/shared/types";
-import type { DBDocument } from "@storyflow/db-core/types";
-import type { SyntaxTree, NestedField } from "@storyflow/fields-core/types";
+import type { DBDocument } from "@storyflow/cms/types";
+import type { SyntaxTree, NestedField } from "@storyflow/cms/types";
 import {
   createTemplateFieldId,
   getDocumentId,
   getRawFieldId,
-} from "@storyflow/fields-core/ids";
+} from "@storyflow/cms/ids";
 import { usePush } from "../collab/CollabContext";
 import { HomeIcon, LinkIcon, StarIcon } from "@heroicons/react/24/outline";
 import { useAppPageContext } from "../folders/AppPageContext";
@@ -21,16 +21,13 @@ import { useDocumentPageContext } from "../documents/DocumentPageContext";
 import {
   calculate,
   calculateRootFieldFromRecord,
-} from "@storyflow/fields-core/calculate-server";
-import {
-  DEFAULT_FIELDS,
-  isDefaultField,
-} from "@storyflow/fields-core/default-fields";
+} from "@storyflow/cms/calculate-server";
+import { DEFAULT_FIELDS, isDefaultField } from "@storyflow/cms/default-fields";
 import { useDocumentIdGenerator } from "../id-generator";
 import { usePanel, useRoute } from "../layout/panel-router/Routes";
 import { useDefaultState } from "./default/useDefaultState";
 import type { FieldProps } from "./types";
-import { FieldTransactionEntry } from "operations/actions";
+import { FieldTransactionEntry } from "../operations/actions";
 import { createTransaction } from "@storyflow/collab/utils";
 import { useCurrentFolder } from "../folders/FolderPageContext";
 

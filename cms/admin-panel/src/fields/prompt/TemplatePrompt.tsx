@@ -3,19 +3,19 @@ import {
   getDocumentId,
   getRawDocumentId,
   getRawFieldId,
-} from "@storyflow/fields-core/ids";
+} from "@storyflow/cms/ids";
 import { DocumentDuplicateIcon } from "@heroicons/react/24/outline";
 import React from "react";
 import { Option } from "./Option";
 import { useFieldId } from "../FieldIdContext";
 import { markMatchingString } from "./helpers";
 import { useDocumentList } from "../../documents";
-import { TEMPLATE_FOLDER } from "@storyflow/fields-core/constants";
+import { TEMPLATE_FOLDER } from "@storyflow/cms/constants";
 import { usePath } from "../Path";
-import { useClientConfig } from "../../client-config";
+import { useAppConfig } from "../../client-config";
 import { $exitPromptNode } from "./utils";
 import { useEditorContext } from "../../editor/react/EditorProvider";
-import { FieldTransactionEntry } from "operations/actions";
+import { FieldTransactionEntry } from "../../operations/actions";
 import { usePush } from "../../collab/CollabContext";
 import { createTransaction } from "@storyflow/collab/utils";
 
@@ -35,7 +35,7 @@ export function TemplatePrompt({ prompt }: { prompt: string }) {
   console.log("ELEMENT ID", dataFieldId);
 
   const editor = useEditorContext();
-  const { libraries } = useClientConfig();
+  const { libraries } = useAppConfig();
 
   const onEnter = React.useCallback(
     (id: DocumentId | null) => {

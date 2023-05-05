@@ -77,7 +77,7 @@ export const bucket = createRoute({
     },
     async query(
       { type, label, size, extension, metadata = {}, access = "public" },
-      { dbName, slug }
+      { slug }
     ) {
       const name = createFileName({
         type,

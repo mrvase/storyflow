@@ -6,8 +6,8 @@ import {
   FieldId,
   NestedDocumentId,
 } from "@storyflow/shared/types";
-import type { FieldConfig, NestedField } from "@storyflow/fields-core/types";
-import type { TokenStream, HasSelect } from "operations/types";
+import type { FieldConfig, NestedField } from "@storyflow/cms/types";
+import type { TokenStream, HasSelect } from "../../operations/types";
 import {
   computeFieldId,
   createRawTemplateFieldId,
@@ -16,7 +16,7 @@ import {
   getIdFromString,
   getRawDocumentId,
   getRawFieldId,
-} from "@storyflow/fields-core/ids";
+} from "@storyflow/cms/ids";
 import {
   Bars3BottomLeftIcon,
   ComputerDesktopIcon,
@@ -28,8 +28,8 @@ import { useFieldId } from "../FieldIdContext";
 import { useDocumentIdGenerator } from "../../id-generator";
 import { markMatchingString } from "./helpers";
 import { SWRClient } from "../../client";
-import { calculateRootFieldFromRecord } from "@storyflow/fields-core/calculate-server";
-import { DEFAULT_FIELDS } from "@storyflow/fields-core/default-fields";
+import { calculateRootFieldFromRecord } from "@storyflow/cms/calculate-server";
+import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
 import Loader from "../../elements/Loader";
 import { useFieldConfig } from "../../documents/document-config";
 import { usePath, useSelectedPath } from "../Path";

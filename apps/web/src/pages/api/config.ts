@@ -1,6 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { createConfig } from "@storyflow/react/config";
-import { config } from "../../components";
+import { appConfig } from "../../config";
 
 export default async function handler(
   req: NextApiRequest,
@@ -22,11 +21,5 @@ export default async function handler(
     res.setHeader("Access-Control-Allow-Credentials", "true");
     res.setHeader("Access-Control-Allow-Origin", req.headers.origin);
   }
-  res.status(200).json(
-    createConfig({
-      builderUrl: `${process.env.BASE_URL as string}/builder`,
-      revalidateUrl: `${process.env.BASE_URL as string}/api/revalidate`,
-      libraries: [config],
-    })
-  );
+  res.status(200).json(appConfig);
 }

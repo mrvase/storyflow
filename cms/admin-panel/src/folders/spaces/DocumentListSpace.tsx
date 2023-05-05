@@ -6,9 +6,9 @@ import {
   PlusIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
-import { createTemplateFieldId } from "@storyflow/fields-core/ids";
+import { createTemplateFieldId } from "@storyflow/cms/ids";
 import type { DocumentId, FolderId } from "@storyflow/shared/types";
-import type { SpaceId } from "@storyflow/db-core/types";
+import type { SpaceId } from "@storyflow/cms/types";
 import React from "react";
 import { fetchDocument, useDocumentList } from "../../documents";
 import { useAddDocument } from "../../documents/useAddDocument";
@@ -22,14 +22,14 @@ import { useCurrentFolder } from "../FolderPageContext";
 import Space from "./Space";
 import Loader from "../../elements/Loader";
 import { useDeleteForm } from "./useDeleteForm";
-import { isDefaultField } from "@storyflow/fields-core/default-fields";
-import { calculateRootFieldFromRecord } from "@storyflow/fields-core/calculate-server";
+import { isDefaultField } from "@storyflow/cms/default-fields";
+import { calculateRootFieldFromRecord } from "@storyflow/cms/calculate-server";
 import { useTemplate } from "../../fields/default/useFieldTemplate";
 import { getPreview } from "../../fields/default/getPreview";
 import { Menu } from "../../elements/Menu";
 import { useFolder } from "../FoldersContext";
 import { useCollab } from "../../collab/CollabContext";
-import { DocumentAddTransactionEntry } from "operations/actions";
+import { DocumentAddTransactionEntry } from "../../operations/actions";
 
 function useNewDocuments(folderId: FolderId) {
   const [docs, setDocs] = React.useState<DocumentId[]>([]);

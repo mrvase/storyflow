@@ -13,7 +13,8 @@ import {
   createDocumentId,
   USER_DOCUMENT_OFFSET,
   USER_TEMPLATE_OFFSET,
-} from "@storyflow/fields-core/ids";
+} from "@storyflow/cms/ids";
+import { useAuth } from "./Auth";
 
 /*
 [organisation]:ids {
@@ -84,16 +85,14 @@ const IdContext = React.createContext<{
 } | null>(null);
 
 export function IdGenerator({ children }: { children: React.ReactNode }) {
-  const { organization } = useUrlInfo();
+  const { organization: slug } = useUrlInfo();
 
-  const { data: workspaceId } = SWRClient.ids.getWorkspaceId.useQuery();
+  const { organization } = useAuth();
+  const workspaceId = organization!.workspaces[0].name;
 
-  const getName = (name: string = "ids") => `${organization}:${name}`;
+  const getName = (name: string = "ids") => `${slug}:${name}`;
 
   const getItem = (name: string): string | null => {
-    if (!workspaceId) {
-      throw new Error("Tried to get value before initialization");
-    }
     if (typeof window === "undefined") return null;
     return localStorage.getItem(name) ?? null;
   };
@@ -248,7 +247,7 @@ export function IdGenerator({ children }: { children: React.ReactNode }) {
 
   const fetchOffset = async (name: "id" | "template" | "field") => {
     if (!promises.current[name]) {
-      const promise = client.ids.getOffset.query({
+      const promise = client.admin.getOffset.query({
         name,
         size: batchSizes[name],
       });

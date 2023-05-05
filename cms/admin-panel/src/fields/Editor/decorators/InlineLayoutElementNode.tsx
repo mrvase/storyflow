@@ -4,9 +4,9 @@ import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
 import { caretClasses } from "./caret";
 import type { NestedElement, ValueArray } from "@storyflow/shared/types";
-import { getConfigFromType, useClientConfig } from "../../../client-config";
+import { getConfigFromType, useAppConfig } from "../../../client-config";
 import { useGlobalState } from "../../../state/state";
-import { computeFieldId, getIdFromString } from "@storyflow/fields-core/ids";
+import { computeFieldId, getIdFromString } from "@storyflow/cms/ids";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 import { usePath, useSelectedPath } from "../../Path";
 
@@ -28,7 +28,7 @@ function Decorator({
 
   const selectClick = React.useRef(false);
 
-  const { libraries } = useClientConfig();
+  const { libraries } = useAppConfig();
   const config = getConfigFromType(value.element, libraries);
 
   const text =

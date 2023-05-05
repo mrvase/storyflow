@@ -5,7 +5,7 @@ import {
 import cl from "clsx";
 import React from "react";
 import { calculateFn } from "./default/calculateFn";
-import { tools } from "operations/stream-methods";
+import { tools } from "../operations/stream-methods";
 import { store, useGlobalState } from "../state/state";
 import {
   DocumentId,
@@ -13,13 +13,10 @@ import {
   ValueArray,
   ClientSyntaxTree,
 } from "@storyflow/shared/types";
-import type {
-  SyntaxTreeRecord,
-  SyntaxTree,
-} from "@storyflow/fields-core/types";
+import type { SyntaxTreeRecord, SyntaxTree } from "@storyflow/cms/types";
 import Content from "../pages/Content";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-import { useClientConfig } from "../client-config";
+import { useAppConfig } from "../client-config";
 import { createComponent } from "./Editor/createComponent";
 import { useDocumentPageContext } from "../documents/DocumentPageContext";
 import { fetchDocumentSync } from "../documents";
@@ -30,12 +27,12 @@ import {
   getIdFromString,
   getParentDocumentId,
   getRawFieldId,
-} from "@storyflow/fields-core/ids";
+} from "@storyflow/cms/ids";
 import type { ComponentConfig, LibraryConfig } from "@storyflow/shared/types";
 import { useDocumentIdGenerator } from "../id-generator";
-import { tokens } from "@storyflow/fields-core/tokens";
-import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
-import { createTokenStream } from "operations/parse-token-stream";
+import { tokens } from "@storyflow/cms/tokens";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/cms/constants";
+import { createTokenStream } from "../operations/parse-token-stream";
 import {
   Attributes,
   AttributesProvider,
@@ -52,7 +49,7 @@ import { parseSegment } from "../layout/components/parseSegment";
 import { splitStreamByBlocks } from "./Editor/transforms";
 import { extendPath } from "../utils/extendPath";
 import { usePush } from "../collab/CollabContext";
-import { FieldTransactionEntry } from "operations/actions";
+import { FieldTransactionEntry } from "../operations/actions";
 import { Transaction } from "@storyflow/collab/types";
 import { createTransaction } from "@storyflow/collab/utils";
 
@@ -128,7 +125,7 @@ const ElementActions = ({
   const documentId = getDocumentId(id) as DocumentId;
   const generateDocumentId = useDocumentIdGenerator();
 
-  const { libraries } = useClientConfig();
+  const { libraries } = useAppConfig();
   React.useEffect(() => {
     return listeners.createComponent.subscribe(({ path, name, library }) => {
       const target = path.split(".").slice(-1)[0] as FieldId;
@@ -609,7 +606,7 @@ function PropagateStatePlugin({
 
   const client = useClient();
 
-  const { libraries } = useClientConfig();
+  const { libraries } = useAppConfig();
 
   // state initialized in ComponentField
   const [tree, setTree] = useGlobalState<ValueRecord>(`${id}/record`, () => {

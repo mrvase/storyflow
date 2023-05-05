@@ -1,13 +1,13 @@
-import type { SyntaxTreeRecord } from "@storyflow/fields-core/types";
-import type { DBDocument } from "@storyflow/db-core/types";
+import type { SyntaxTreeRecord } from "@storyflow/cms/types";
+import type { DBDocument } from "@storyflow/cms/types";
 import {
   DEFAULT_FIELDS,
   generateTemplateId,
   getDefaultValue,
-} from "@storyflow/fields-core/default-fields";
-import { TEMPLATE_FOLDER } from "@storyflow/fields-core/constants";
-import { getTemplateDocumentId } from "@storyflow/fields-core/ids";
-import type { DefaultFieldConfig } from "@storyflow/fields-core/types";
+} from "@storyflow/cms/default-fields";
+import { TEMPLATE_FOLDER } from "@storyflow/cms/constants";
+import { getTemplateDocumentId } from "@storyflow/cms/ids";
+import type { DefaultFieldConfig } from "@storyflow/cms/types";
 
 const generateTemplateFromDefaultFields = (
   label: string,

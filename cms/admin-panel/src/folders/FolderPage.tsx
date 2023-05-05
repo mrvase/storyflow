@@ -11,7 +11,7 @@ import {
 import { EditableLabel } from "../elements/EditableLabel";
 import cl from "clsx";
 import type { DocumentId } from "@storyflow/shared/types";
-import type { DBFolder, SpaceId } from "@storyflow/db-core/types";
+import type { DBFolder, SpaceId } from "@storyflow/cms/types";
 import { SWRClient } from "../client";
 import {
   FolderDomainsContext,
@@ -32,8 +32,9 @@ import { Menu } from "../elements/Menu";
 import { FocusOrchestrator } from "../utils/useIsFocused";
 import { usePush } from "../collab/CollabContext";
 import { createTransaction } from "@storyflow/collab/utils";
-import { FolderTransactionEntry } from "operations/actions";
+import { FolderTransactionEntry } from "../operations/actions";
 import { useFolder } from "./FoldersContext";
+import { useAuth } from "../Auth";
 
 export default function FolderPage({
   children,
@@ -267,7 +268,7 @@ export function DomainsButton({
   domains?: string[];
   mutate: (domains: string[]) => void;
 }) {
-  const { data } = SWRClient.settings.get.useQuery();
+  const { organization } = useAuth();
 
   const getLabel = (domain: string) => {
     domain = domain.replace("https://", "");
@@ -277,19 +278,18 @@ export function DomainsButton({
   };
 
   const options = React.useMemo(() => {
-    if (!data?.domains) return [];
-    return data.domains.map((el) => ({
-      id: el.id,
-      label: getLabel(el.configUrl),
-      disabled: parentDomains.includes(el.id),
+    return organization!.apps.map((el) => ({
+      id: el.name,
+      label: getLabel(el.configURL),
+      disabled: parentDomains.includes(el.name),
     }));
-  }, [data?.domains]);
+  }, [organization?.apps]);
 
   const selected = options.filter(
     (el) => parentDomains.includes(el.id) || domains.includes(el.id)
   );
 
-  if (!data?.domains || data.domains.length === 0) return null;
+  if (!organization?.apps.length) return null;
 
   return (
     <Menu<{ id: string; label: string }>

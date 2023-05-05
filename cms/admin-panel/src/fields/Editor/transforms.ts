@@ -20,17 +20,17 @@ import {
   LexicalEditor,
 } from "lexical";
 import { GridSelection, PointType } from "lexical/LexicalSelection";
-import { tools } from "operations/stream-methods";
+import { tools } from "../../operations/stream-methods";
 import {
   matchNonEscapedCharacter,
   splitByNonEscapedCharacter,
-} from "operations/escaped-characters";
+} from "../../operations/escaped-characters";
 import type { NestedElement } from "@storyflow/shared/types";
-import type { TokenStream } from "operations/types";
+import type { TokenStream } from "../../operations/types";
 import type { LibraryConfig } from "@storyflow/shared/types";
 import { getConfigFromType } from "../../client-config";
-import { tokens } from "@storyflow/fields-core/tokens";
-import { isSymbol } from "operations/is-symbol";
+import { tokens } from "@storyflow/cms/tokens";
+import { isSymbol } from "../../operations/is-symbol";
 
 import {
   $createHeadingNode,

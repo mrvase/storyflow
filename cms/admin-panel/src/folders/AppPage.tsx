@@ -5,32 +5,33 @@ import {
   ComputerDesktopIcon,
 } from "@heroicons/react/24/outline";
 import { useDocumentList } from "../documents";
-import { createTemplateFieldId } from "@storyflow/fields-core/ids";
+import { createTemplateFieldId } from "@storyflow/cms/ids";
 import { EditableLabel } from "../elements/EditableLabel";
 import cl from "clsx";
 import { AddDocumentDialog } from "./AddDocumentDialog";
 import type { FieldId } from "@storyflow/shared/types";
-import type { DBDocument, DBFolder, SpaceId } from "@storyflow/db-core/types";
-import type { SyntaxTreeRecord } from "@storyflow/fields-core/types";
+import type { DBDocument, DBFolder, SpaceId } from "@storyflow/cms/types";
+import type { SyntaxTreeRecord } from "@storyflow/cms/types";
 import { SWRClient, useClient } from "../client";
-import { useClientConfig } from "../client-config";
+import { useAppConfig } from "../client-config";
 import { DomainsButton } from "./FolderPage";
 import {
   FolderDomainsContext,
   FolderDomainsProvider,
 } from "./FolderDomainsContext";
 import { AppSpace } from "./spaces/AppSpace";
-import { getFieldRecord, getGraph } from "@storyflow/fields-core/graph";
-import { DEFAULT_FIELDS } from "@storyflow/fields-core/default-fields";
-import { calculateRootFieldFromRecord } from "@storyflow/fields-core/calculate-server";
+import { getFieldRecord, getGraph } from "@storyflow/cms/graph";
+import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
+import { calculateRootFieldFromRecord } from "@storyflow/cms/calculate-server";
 import { AppPageContext } from "./AppPageContext";
 import { usePanel, useRoute } from "../layout/panel-router/Routes";
 import { parseSegment } from "../layout/components/parseSegment";
 import { FocusOrchestrator } from "../utils/useIsFocused";
 import { usePush } from "../collab/CollabContext";
-import { FolderTransactionEntry } from "operations/actions";
+import { FolderTransactionEntry } from "../operations/actions";
 import { createTransaction } from "@storyflow/collab/utils";
 import { useFolder } from "./FoldersContext";
+import { trimTrailingSlash } from "../utils/trimSlashes";
 
 export default function AppPage({ children }: { children?: React.ReactNode }) {
   const route = useRoute();
@@ -131,7 +132,7 @@ export default function AppPage({ children }: { children?: React.ReactNode }) {
     );
   };
 
-  const config = useClientConfig(folder?.domains?.[0]);
+  const config = useAppConfig(folder?.domains?.[0]);
 
   const parentDomains = React.useContext(FolderDomainsContext);
 
@@ -174,10 +175,12 @@ export default function AppPage({ children }: { children?: React.ReactNode }) {
                   true ? "opacity-100" : "opacity-0 pointer-events-none"
                 )}
               >
-                {folder && config.revalidateUrl && (
+                {folder && config.revalidatePath && (
                   <RefreshButton
                     namespace={folder._id}
-                    revalidateUrl={config.revalidateUrl}
+                    revalidateUrl={`${trimTrailingSlash(config.baseURL)}/${
+                      config.revalidatePath
+                    }`}
                   />
                 )}
               </div>
@@ -254,7 +257,7 @@ function RefreshButton({
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
               }).then((res) => res.json());
-              await client.documents.revalidated.mutation();
+              await client.documents.registerRevalidation.mutation();
               if (result.revalidated === true) {
               }
               mutate();

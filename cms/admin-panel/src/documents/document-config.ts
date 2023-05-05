@@ -1,28 +1,25 @@
 import React from "react";
 import type { DocumentId, FieldId } from "@storyflow/shared/types";
-import type {
-  FieldConfig,
-  SyntaxTreeRecord,
-} from "@storyflow/fields-core/types";
+import type { FieldConfig, SyntaxTreeRecord } from "@storyflow/cms/types";
 import type {
   PartialFieldConfig,
   DocumentConfig,
   DocumentVersionRecord,
-} from "@storyflow/db-core/types";
+} from "@storyflow/cms/types";
 import { usePush } from "../collab/CollabContext";
-import { getFieldConfig } from "operations/field-config";
+import { getFieldConfig } from "../operations/field-config";
 import { createPurger, createStaticStore } from "../state/StaticStore";
 import { useDocument } from ".";
 import {
   getDocumentId,
   replaceDocumentId,
   revertTemplateFieldId,
-} from "@storyflow/fields-core/ids";
+} from "@storyflow/cms/ids";
 import { useCollaborativeState } from "../collab/useCollaborativeState";
 import { useTemplatePath } from "./TemplatePathContext";
-import { DocumentTransactionEntry } from "operations/actions";
+import { DocumentTransactionEntry } from "../operations/actions";
 import { QueueForEach } from "@storyflow/collab/Queue";
-import { applyConfigTransaction } from "operations/apply";
+import { applyConfigTransaction } from "../operations/apply";
 
 /*
 export const labels = createStaticStore<

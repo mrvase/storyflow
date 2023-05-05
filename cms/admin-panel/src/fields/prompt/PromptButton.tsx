@@ -16,11 +16,11 @@ import {
   $getComputation,
   $getIndexesFromSelection,
 } from "../Editor/transforms";
-import { tools } from "operations/stream-methods";
+import { tools } from "../../operations/stream-methods";
 import { $createPromptNode } from "../Editor/decorators/PromptNode";
 import { $replaceWithBlocks } from "../Editor/insertComputation";
 import { $exitPromptNode, $getPromptNode } from "./utils";
-import { useClientConfig } from "../../client-config";
+import { useAppConfig } from "../../client-config";
 import { useIsEmpty } from "../../editor/react/useIsEmpty";
 
 export function PromptButton() {
@@ -34,7 +34,7 @@ export function PromptButton() {
 
   const normalize = (value: number) => value;
 
-  const { libraries } = useClientConfig();
+  const { libraries } = useAppConfig();
 
   React.useEffect(() => {
     return editor.registerUpdateListener(({ editorState }) => {

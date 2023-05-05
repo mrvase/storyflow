@@ -7,8 +7,8 @@ import {
   NestedDocumentId,
   NestedElement,
 } from "@storyflow/shared/types";
-import type { SyntaxTree } from "@storyflow/fields-core/types";
-import { getConfigFromType, useClientConfig } from "../../../client-config";
+import type { SyntaxTree } from "@storyflow/cms/types";
+import { getConfigFromType, useAppConfig } from "../../../client-config";
 import {
   ArrowPathRoundedSquareIcon,
   ChevronUpDownIcon,
@@ -33,13 +33,13 @@ import {
 import { ExtendPath, usePath, useSelectedPath } from "../../Path";
 import type { PropConfig, RegularOptions } from "@storyflow/shared/types";
 import { flattenPropsWithIds } from "../../../utils/flattenProps";
-import { getIdFromString } from "@storyflow/fields-core/ids";
+import { getIdFromString } from "@storyflow/cms/ids";
 import { useEditorContext } from "../../../editor/react/EditorProvider";
 import $createRangeSelection from "../../../editor/createRangeSelection";
 import { useGlobalState } from "../../../state/state";
-import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
-import { tokens } from "@storyflow/fields-core/tokens";
-import { traverseSyntaxTree } from "@storyflow/fields-core/syntax-tree";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/cms/constants";
+import { tokens } from "@storyflow/cms/tokens";
+import { traverseSyntaxTree } from "@storyflow/cms/syntax-tree";
 
 export const LayoutElementCircularImport = {
   DefaultField: null as React.FC<{
@@ -76,7 +76,7 @@ function Decorator({
 
   const { isSelected, select } = useIsSelected(nodeKey);
 
-  const { libraries } = useClientConfig();
+  const { libraries } = useAppConfig();
   const config = getConfigFromType(value.element, libraries);
 
   let props = flattenPropsWithIds(value.id, config?.props ?? []);
@@ -243,7 +243,7 @@ function useParentPropConfig() {
       }
     }
   );
-  const { libraries } = useClientConfig();
+  const { libraries } = useAppConfig();
   const config = element ? getConfigFromType(element, libraries) : undefined;
   if (!config) return;
   return flattenPropsWithIds(documentId, config.props).find(

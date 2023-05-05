@@ -1,15 +1,15 @@
 import { $getRoot, $getSelection, $setSelection, LexicalEditor } from "lexical";
 import React from "react";
-import { useClientConfig } from "../../../client-config";
+import { useAppConfig } from "../../../client-config";
 import {
   INITIALIZATION_TAG,
   useEditorContext,
 } from "../../../editor/react/EditorProvider";
 import { getComputationDiff } from "./getComputationDiff";
-import { tools } from "operations/stream-methods";
-import { applyFieldTransaction } from "operations/apply";
+import { tools } from "../../../operations/stream-methods";
+import { applyFieldTransaction } from "../../../operations/apply";
 import { createQueueCache } from "../../../collab/createQueueCache";
-import type { TokenStream } from "operations/types";
+import type { TokenStream } from "../../../operations/types";
 import type { DocumentId, LibraryConfig } from "@storyflow/shared/types";
 import {
   $createBlocksFromStream,
@@ -22,10 +22,10 @@ import {
   FieldTransactionEntry,
   StreamOperation,
   TransformOperation,
-} from "operations/actions";
+} from "../../../operations/actions";
 import { useCollab } from "../../../collab/CollabContext";
 import { useFieldId } from "../../FieldIdContext";
-import { getDocumentId, getRawFieldId } from "@storyflow/fields-core/ids";
+import { getDocumentId, getRawFieldId } from "@storyflow/cms/ids";
 import { isSpliceOperation } from "@storyflow/collab/utils";
 import { usePanel } from "../../../layout/panel-router/Routes";
 
@@ -45,7 +45,7 @@ export function Reconciler({
   const editor = useEditorContext();
 
   const fieldId = useFieldId();
-  const { libraries } = useClientConfig();
+  const { libraries } = useAppConfig();
 
   const collab = useCollab();
 

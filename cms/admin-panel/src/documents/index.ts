@@ -8,11 +8,11 @@ import {
   ValueArray,
   RawDocumentId,
 } from "@storyflow/shared/types";
-import type { Sorting } from "@storyflow/fields-core/types";
-import type { DBDocument } from "@storyflow/db-core/types";
-import { normalizeDocumentId } from "@storyflow/fields-core/ids";
+import type { Sorting } from "@storyflow/cms/types";
+import type { DBDocument } from "@storyflow/cms/types";
+import { normalizeDocumentId } from "@storyflow/cms/ids";
 import { useCollab } from "../collab/CollabContext";
-import { createDocumentTransformer } from "operations/apply";
+import { createDocumentTransformer } from "../operations/apply";
 import { TEMPLATES } from "./templates";
 
 export async function fetchDocument(
@@ -24,7 +24,7 @@ export async function fetchDocument(
     return defaultTemplate;
   }
 
-  const result = await client.documents.get.query(id);
+  const result = await client.documents.findById.query(id);
   return unwrap(result);
 }
 
@@ -42,7 +42,7 @@ export function fetchDocumentSync(
     };
   }
 
-  const key = client.documents.get.key(id);
+  const key = client.documents.findById.key(id);
   const exists = readFromCache(key);
 
   if (typeof exists !== "undefined") {
@@ -52,7 +52,7 @@ export function fetchDocumentSync(
       },
     };
   }
-  const result = client.documents.get.query(id).then((res) => unwrap(res));
+  const result = client.documents.findById.query(id).then((res) => unwrap(res));
   return result;
 }
 
@@ -77,7 +77,7 @@ export function useDocument(
     );
   }
 
-  const { data, error } = SWRClient.documents.get.useQuery(
+  const { data, error } = SWRClient.documents.findById.useQuery(
     documentId as string,
     {
       inactive: !documentId, // maybe: || Boolean(initialArticle),
@@ -100,11 +100,14 @@ export function useDocumentWithTimeline(documentId: DocumentId) {
     hasCalledStaleHook.current = false;
   }, [collab]);
 
-  const { data, error, mutate } = SWRClient.documents.get.useQuery(documentId, {
-    immutable: true,
-    // only running on fetch, not cache update!
-    // onSuccess(data) {}
-  });
+  const { data, error, mutate } = SWRClient.documents.findById.useQuery(
+    documentId,
+    {
+      immutable: true,
+      // only running on fetch, not cache update!
+      // onSuccess(data) {}
+    }
+  );
 
   React.useLayoutEffect(() => {
     // TODO: This should be made synchronous to avoid flickering
@@ -146,10 +149,10 @@ export async function fetchDocumentList(
   throttleKey?: string
 ) {
   const result = unwrap(
-    await client.documents.getList.query(params, {
+    await client.documents.find.query(params, {
       cachePreload: (result, preload) => {
         result.forEach((doc) => {
-          preload(["get", doc._id], () => {
+          preload(["findById", doc._id], () => {
             return doc;
           });
         });
@@ -178,14 +181,14 @@ export function useDocumentList(
     | undefined,
   throttleKey?: string
 ) {
-  const { data, error } = SWRClient.documents.getList.useQuery(
+  const { data, error } = SWRClient.documents.find.useQuery(
     typeof arg === "object" ? arg : { folder: arg!, limit: 50 },
     {
       inactive: typeof arg === "undefined",
       immutable: true,
       cachePreload: (result, preload) => {
         result.forEach((doc) => {
-          preload(["get", doc._id], () => {
+          preload(["findById", doc._id], () => {
             return doc;
           });
         });

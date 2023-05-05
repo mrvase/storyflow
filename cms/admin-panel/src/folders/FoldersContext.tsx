@@ -3,18 +3,18 @@ import type {
   DBFolderRecord,
   FolderSpace,
   SpaceId,
-} from "@storyflow/db-core/types";
-import { ROOT_FOLDER, TEMPLATE_FOLDER } from "@storyflow/fields-core/constants";
+} from "@storyflow/cms/types";
+import { ROOT_FOLDER, TEMPLATE_FOLDER } from "@storyflow/cms/constants";
 import React from "react";
 import { useCollaborativeState } from "../collab/useCollaborativeState";
-import { getRawFolderId, normalizeFolderId } from "@storyflow/fields-core/ids";
+import { getRawFolderId, normalizeFolderId } from "@storyflow/cms/ids";
 import { isSpliceOperation, isToggleOperation } from "@storyflow/collab/utils";
 import { FolderId, RawFolderId } from "@storyflow/shared/types";
 import { QueueForEach } from "@storyflow/collab/Queue";
 import {
   FolderTransactionEntry,
   SpaceTransactionEntry,
-} from "operations/actions";
+} from "../operations/actions";
 import { createStaticStore } from "../state/StaticStore";
 
 const folders = createStaticStore<DBFolder, Map<string, DBFolder>>(

@@ -3,17 +3,17 @@ import { DecoratorPlugin } from "./DecoratorPlugin";
 import { EditorProvider } from "../../editor/react/EditorProvider";
 import React from "react";
 import { $initializeEditor } from "./transforms";
-import type { TokenStream } from "operations/types";
+import type { TokenStream } from "../../operations/types";
 import { Reconciler } from "./reconciler/Reconciler";
 import {
   EditorFocusPlugin,
   useIsFocused,
 } from "../../editor/react/useIsFocused";
-import { useClientConfig } from "../../client-config";
+import { useAppConfig } from "../../client-config";
 import { useFieldFocus } from "../../field-focus";
 import { useFieldId } from "../FieldIdContext";
 import { CopyPastePlugin } from "./CopyPastePlugin";
-import { StreamOperation, TransformOperation } from "operations/actions";
+import { StreamOperation, TransformOperation } from "../../operations/actions";
 import { Klass, LexicalNode } from "lexical";
 
 const editorConfig = {
@@ -37,7 +37,7 @@ export default function Editor({
   initialValue: TokenStream;
   children?: React.ReactNode;
 }) {
-  const { libraries } = useClientConfig();
+  const { libraries } = useAppConfig();
 
   return (
     <EditorProvider

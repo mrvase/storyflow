@@ -6,10 +6,8 @@ import {
 } from "@storyflow/collab/types";
 import { Timeline, createTimeline } from "@storyflow/collab/Timeline";
 import { purgeTimelines, batchSyncTimelines } from "./batching";
-import { SyntaxTreeRecord } from "@storyflow/fields-core/types";
 import { DocumentId } from "@storyflow/shared/types";
 import { Result, isError, unwrap } from "@storyflow/result";
-import { DBDocument } from "@storyflow/db-core/types";
 import { onInterval } from "./interval";
 
 export function createCollaboration(options: {

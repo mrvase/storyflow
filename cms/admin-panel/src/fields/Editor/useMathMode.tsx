@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useEditorContext } from "../../editor/react/EditorProvider";
-import type { TokenStream } from "operations/types";
-import { useClientConfig } from "../../client-config";
+import type { TokenStream } from "../../operations/types";
+import { useAppConfig } from "../../client-config";
 import { operators } from "@storyflow/shared/types";
 import { replaceWithComputation } from "./insertComputation";
 
@@ -15,7 +15,7 @@ export function useMathMode(defaultValue: boolean = false) {
     state[1](defaultValue);
   }, [defaultValue]);
 
-  const { libraries } = useClientConfig();
+  const { libraries } = useAppConfig();
 
   React.useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {

@@ -1,6 +1,6 @@
 import React from "react";
 import { onInterval } from "./collab/interval";
-import { unwrap } from "@storyflow/result";
+import { Result, error, isError, unwrap } from "@storyflow/result";
 import { createClient, createSWRClient } from "@sfrpc/client";
 import Loader from "./elements/Loader";
 import useSWR, { useSWRConfig } from "swr";
@@ -8,6 +8,7 @@ import type { AuthAPI } from "services-api/auth";
 import type { CollabAPI } from "services-api/collab";
 import type { BucketAPI } from "services-api/bucket";
 import { useUrlInfo } from "./users";
+import { AppReference } from "@storyflow/api";
 
 const url =
   process.env.NODE_ENV === "production" ? `/api` : `http://localhost:3000/api`;
@@ -22,44 +23,98 @@ export const servicesClientSWR = createSWRClient<
   useSWRConfig,
 });
 
+type Organization = { apps: AppReference[]; workspaces: { name: string }[] };
+
 const AuthContext = React.createContext<{
   user: {
     email: string;
   } | null;
   getToken: () => string;
-}>({ user: null, getToken: () => "" });
+  organization: Organization | null;
+  apiUrl: string | null;
+}>({ user: null, organization: null, apiUrl: null, getToken: () => "" });
 
 export const useAuth = () => React.useContext(AuthContext);
 
-export function AuthProvider({ children }: { children?: React.ReactNode }) {
-  const { organization } = useUrlInfo();
+const getCookie = (name: string) => {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) {
+    return parts.pop()!.split(";").shift()!;
+  }
+  return "";
+};
 
-  const [user, setUser] = React.useState<{ email: string } | null>(null);
+export function AuthProvider({ children }: { children?: React.ReactNode }) {
+  const { organization: slug } = useUrlInfo();
+
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  const [apiUrl, setApiUrl] = React.useState<string | null>(null);
+
+  const [user, setUser] = React.useState<{ email: string } | null>(null); // <-- confirms session in panel
+
+  const [organization, setOrganization] = React.useState<Organization | null>(
+    null
+  ); // <-- confirms session in external api
 
   React.useEffect(() => {
-    const func = async () => {
-      const result = await servicesClient.auth.update.mutation(organization);
-      setUser((ps) => (ps ? ps : unwrap(result, null)));
+    // authentication for panel
+    (async () => {
+      // sets global token, organization key, and returns user and organization url
+      const result = unwrap(
+        await servicesClient.auth.authenticate.mutation(slug)
+      );
+
+      // we check previous state, because there is no need to trigger reference rerender
+      // if user is already set
+      setUser((ps) => (!ps && result ? result.user : ps));
+      setApiUrl(result ? `${result.url}/api` : null);
+      setIsLoading(false);
+    })();
+  }, [slug]);
+
+  React.useEffect(() => {
+    // authentication for organization api
+    if (!apiUrl) return;
+
+    const run = async (includeHeader?: boolean) => {
+      const token = getCookie("sf.local.token");
+      if (!token) return error({ message: "No token" });
+      return await fetch(`${apiUrl}/admin/authenticate`, {
+        method: "POST",
+        headers: includeHeader
+          ? {
+              "X-Storyflow-Token": token,
+            }
+          : undefined,
+      }).then((res) => res.json() as Promise<Result<Organization>>);
     };
 
-    func();
-    return onInterval(func, { duration: 30000 });
-  }, []);
+    run(true).then((result) => {
+      if (isError(result)) {
+        // navigate
+      } else {
+        setOrganization(unwrap(result));
+      }
+    });
+
+    return onInterval(() => run(), { duration: 30000 });
+  }, [apiUrl]);
 
   const ctx = React.useMemo(
     () => ({
       user,
-      getToken: () => {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; sf.token=`);
-        if (parts.length === 2) {
-          return parts.pop()!.split(";").shift()!;
-        }
-        return "";
-      },
+      organization: organization,
+      apiUrl,
+      getToken: () => getCookie("sf.local.token"),
     }),
-    [user]
+    [user, organization]
   );
+
+  if (isLoading) {
+    return <div>LOCKED</div>;
+  }
 
   return <AuthContext.Provider value={ctx}>{children}</AuthContext.Provider>;
 }

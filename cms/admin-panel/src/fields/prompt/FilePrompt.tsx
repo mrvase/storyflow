@@ -1,5 +1,5 @@
 import cl from "clsx";
-import type { TokenStream } from "operations/types";
+import type { TokenStream } from "../../operations/types";
 import React from "react";
 import {
   getFileExtension,

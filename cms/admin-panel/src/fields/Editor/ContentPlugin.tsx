@@ -12,20 +12,20 @@ import {
   addNestedFolder,
 } from "../../custom-events";
 import type { DocumentId } from "@storyflow/shared/types";
-import type { TokenStream } from "operations/types";
-import { useClientConfig } from "../../client-config";
+import type { TokenStream } from "../../operations/types";
+import { useAppConfig } from "../../client-config";
 import { useFieldConfig } from "../../documents/document-config";
 import { useFieldId } from "../FieldIdContext";
 import { createComponent } from "./createComponent";
 import { replaceWithComputation } from "./insertComputation";
 import { useDocumentIdGenerator } from "../../id-generator";
-import { getDocumentId } from "@storyflow/fields-core/ids";
+import { getDocumentId } from "@storyflow/cms/ids";
 import { useIsFocused } from "../../editor/react/useIsFocused";
 
 export function ContentPlugin() {
   const editor = useEditorContext();
 
-  const { libraries } = useClientConfig();
+  const { libraries } = useAppConfig();
 
   useEditorEvents();
 
@@ -40,7 +40,7 @@ function useEditorEvents() {
   const editor = useEditorContext();
   const isFocused = useIsFocused();
 
-  const { libraries } = useClientConfig();
+  const { libraries } = useAppConfig();
 
   const fieldId = useFieldId();
 

@@ -7,9 +7,9 @@ import { useLabel } from "../../../documents/document-config";
 import { useGlobalState } from "../../../state/state";
 import { getPreview } from "../../default/getPreview";
 import type { ValueArray } from "@storyflow/shared/types";
-import type { NestedField } from "@storyflow/fields-core/types";
-import type { HasSelect } from "operations/types";
-import { revertTemplateFieldId } from "@storyflow/fields-core/ids";
+import type { NestedField } from "@storyflow/cms/types";
+import type { HasSelect } from "../../../operations/types";
+import { revertTemplateFieldId } from "@storyflow/cms/ids";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 
 const useState = (

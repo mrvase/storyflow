@@ -8,10 +8,7 @@ import {
   ClientSyntaxTree,
   FieldId,
 } from "@storyflow/shared/types";
-import type {
-  SyntaxTree,
-  SyntaxTreeRecord,
-} from "@storyflow/fields-core/types";
+import type { SyntaxTree, SyntaxTreeRecord } from "@storyflow/cms/types";
 import { DocumentIcon, LinkIcon } from "@heroicons/react/24/outline";
 import { useFieldId } from "../../FieldIdContext";
 import { useDocument } from "../../../documents";
@@ -22,7 +19,7 @@ import {
   createTemplateFieldId,
   getDocumentId,
   isNestedDocumentId,
-} from "@storyflow/fields-core/ids";
+} from "@storyflow/cms/ids";
 import { useClient } from "../../../client";
 import { getPreview } from "../../default/getPreview";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";

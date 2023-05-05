@@ -5,7 +5,7 @@ import Table from "../documents/components/Table";
 // import { useFolders } from "../../folders/collab/hooks";
 import { DragIcon } from "../folders/spaces/DragIcon";
 import { useDragItem } from "@storyflow/dnd";
-import type { DBFolder } from "@storyflow/db-core/types";
+import type { DBFolder } from "@storyflow/cms/types";
 
 export function SystemFolderPage() {
   const form = React.useRef<HTMLFormElement | null>(null);

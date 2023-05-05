@@ -4,7 +4,7 @@ export function onInterval(
   callback: (
     index: number,
     event: "start" | "stop" | "interval" | "unload" | "visibilitychange"
-  ) => Promise<Result<any> | void> | void,
+  ) => void,
   options: {
     duration?: number;
   } = {}

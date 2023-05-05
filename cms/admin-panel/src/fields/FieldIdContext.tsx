@@ -1,6 +1,6 @@
 import React from "react";
 import type { FieldId } from "@storyflow/shared/types";
-import type { FieldType2 } from "@storyflow/fields-core/types";
+import type { FieldType2 } from "@storyflow/cms/types";
 import { useContextWithError } from "../utils/contextError";
 import type { RegularOptions } from "@storyflow/shared/types";
 

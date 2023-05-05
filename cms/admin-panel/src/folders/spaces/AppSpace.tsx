@@ -1,6 +1,6 @@
 import cl from "clsx";
 import { PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
-import { getDocumentId } from "@storyflow/fields-core/ids";
+import { getDocumentId } from "@storyflow/cms/ids";
 import { useDocumentList } from "../../documents";
 import { getDocumentLabel } from "../../documents/useDocumentLabel";
 import Table from "../../documents/components/Table";
@@ -9,7 +9,7 @@ import { useAppPageContext } from "../AppPageContext";
 import Loader from "../../elements/Loader";
 import { useDeleteForm } from "./useDeleteForm";
 import type { FolderId } from "@storyflow/shared/types";
-import type { SpaceId } from "@storyflow/db-core/types";
+import type { SpaceId } from "@storyflow/cms/types";
 import React from "react";
 
 export function AppSpace({
