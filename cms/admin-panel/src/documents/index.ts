@@ -1,4 +1,4 @@
-import { isSuccess, unwrap } from "@storyflow/result";
+import { unwrap } from "@storyflow/rpc-client/result";
 import React from "react";
 import { Client, SWRClient, readFromCache } from "../client";
 import {

@@ -1,5 +1,5 @@
-import { error, success } from "@storyflow/result";
-import { createProcedure, createRoute } from "@sfrpc/server";
+import { error, success } from "@storyflow/rpc-server/result";
+import { createProcedure, createRoute } from "@storyflow/rpc-server";
 import { globals } from "../globals";
 import { z } from "zod";
 import { TimelineEntry, ToggleOperation } from "@storyflow/collab/types";

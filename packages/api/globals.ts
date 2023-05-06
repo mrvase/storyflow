@@ -1,4 +1,4 @@
-import { MiddlewareContext } from "@sfrpc/server";
+import type { MiddlewareContext } from "@storyflow/rpc-server";
 
 import { auth, cors as corsFactory } from "@storyflow/server/middleware";
 

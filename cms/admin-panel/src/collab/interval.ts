@@ -1,5 +1,3 @@
-import { Result } from "@storyflow/result";
-
 export function onInterval(
   callback: (
     index: number,

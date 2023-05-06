@@ -1,0 +1,16 @@
+{
+  "name": "@storyflow/collab",
+  "private": true,
+  "version": "0.0.0",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "scripts": {},
+  "devDependencies": {
+    "@storyflow/state": "workspace:*",
+    "tsconfig": "workspace:*",
+    "typescript": "^5.0.4"
+  },
+  "peerDependencies": {
+    "@storyflow/state": "workspace:*"
+  }
+}

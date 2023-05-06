@@ -7,7 +7,7 @@ import {
 import { Timeline, createTimeline } from "@storyflow/collab/Timeline";
 import { purgeTimelines, batchSyncTimelines } from "./batching";
 import { DocumentId } from "@storyflow/shared/types";
-import { Result, isError, unwrap } from "@storyflow/result";
+import { Result, isError, unwrap } from "@storyflow/rpc-client/result";
 import { onInterval } from "./interval";
 
 export function createCollaboration(options: {

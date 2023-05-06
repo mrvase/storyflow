@@ -4,7 +4,7 @@ import { usePush } from "../../collab/CollabContext";
 import { createTransaction } from "@storyflow/collab/utils";
 import { DocumentAddTransactionEntry } from "../../operations/actions";
 import { SWRClient } from "../../client";
-import { isSuccess } from "@storyflow/result";
+import { isSuccess } from "@storyflow/rpc-client/result";
 
 export const useDeleteManyMutation = (folderId: string) => {
   const { mutate: mutateList } = SWRClient.documents.find.useQuery({

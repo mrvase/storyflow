@@ -1,5 +1,5 @@
-import { createProcedure, createRoute } from "@sfrpc/server";
-import { success } from "@storyflow/result";
+import { createProcedure, createRoute } from "@storyflow/rpc-server";
+import { success } from "@storyflow/rpc-server/result";
 import { getClientPromise } from "../mongoClient";
 import { globals } from "../globals";
 import { StoryflowConfig } from "@storyflow/shared/types";

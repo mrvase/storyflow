@@ -1,7 +1,7 @@
-import { error, success } from "@storyflow/result";
+import { error, success } from "@storyflow/rpc-server/result";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { createProcedure, createRoute } from "@sfrpc/server";
+import { createProcedure, createRoute } from "@storyflow/rpc-server";
 import { globals } from "../globals";
 import { z } from "zod";
 

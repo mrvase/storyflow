@@ -1,5 +1,5 @@
-import { error, success } from "@storyflow/result";
-import { createProcedure, createRoute } from "@sfrpc/server";
+import { error, success } from "@storyflow/rpc-server/result";
+import { createProcedure, createRoute } from "@storyflow/rpc-server";
 import type { FunctionName, RawFieldId } from "@storyflow/shared/types";
 import type { DocumentConfigItem } from "@storyflow/cms/types";
 import { getRawFieldId } from "@storyflow/cms/ids";

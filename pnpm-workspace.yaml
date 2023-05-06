@@ -1,8 +1,8 @@
 packages:
   - "apps/*"
   - "cms/*"
+  - "cms-utils/*"
   - "packages/*"
   - "core/*"
-  - "utils/*"
   - "setup/*"
   - "rpc/*"

@@ -1,19 +1,17 @@
-import { MiddlewareContext } from "@sfrpc/server";
-import {
-  GLOBAL_TOKEN,
-  LOCAL_SESSION,
-  parseAuthCookie,
-  parseAuthToken,
-} from "../auth";
+import type { MiddlewareContext } from "@storyflow/rpc-server";
+import { error } from "@storyflow/rpc-server/result";
+import { LOCAL_SESSION, parseAuthCookie, parseAuthToken } from "../auth";
 import { getHeader } from "../utils";
-import { error } from "@storyflow/result";
 import { KEY_COOKIE, LOCAL_TOKEN } from "../auth/cookies";
 
 export const servicesAuth = async ({ req, client }: MiddlewareContext) => {
   const cookie = parseAuthCookie(KEY_COOKIE, getHeader(req, "cookie"));
 
   if (!cookie) {
-    throw error({ message: "Not authorized.", status: 401 });
+    throw error({
+      message: "Not authorized.",
+      status: 401,
+    });
   }
 
   const tokenHeader = getHeader(req, "X-Storyflow-Token");

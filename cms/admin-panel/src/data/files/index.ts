@@ -1,5 +1,5 @@
-import { isError, unwrap } from "@storyflow/result";
-import { SWRClient, useClient, useServicesClient } from "../../client";
+import { isError, unwrap } from "@storyflow/rpc-client/result";
+import { SWRClient, useServicesClient } from "../../client";
 
 function useFilesQuery() {
   return SWRClient.files.getAll.useQuery(undefined, {

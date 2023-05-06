@@ -1,5 +1,5 @@
-import { error, success } from "@storyflow/result";
-import { createProcedure, createRoute } from "@sfrpc/server";
+import { error, success } from "@storyflow/rpc-server/result";
+import { createProcedure, createRoute } from "@storyflow/rpc-server/router";
 import { cors as corsFactory } from "@storyflow/server/middleware";
 import { getHeader } from "@storyflow/server/utils";
 import {

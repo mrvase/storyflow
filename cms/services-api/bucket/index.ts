@@ -1,4 +1,4 @@
-import { createAPI, createHandler } from "@sfrpc/server";
+import { createAPI, createHandler } from "@storyflow/rpc-server";
 import { bucket } from "./bucket";
 
 export const api = createAPI({

@@ -1,5 +1,5 @@
-import { createProcedure, createRoute } from "@sfrpc/server";
-import { success } from "@storyflow/result";
+import { createProcedure, createRoute } from "@storyflow/rpc-server";
+import { success } from "@storyflow/rpc-server/result";
 import { z } from "zod";
 import { globals } from "../globals";
 import { Configuration, OpenAIApi } from "openai";

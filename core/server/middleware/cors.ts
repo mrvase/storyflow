@@ -1,4 +1,4 @@
-import type { MiddlewareContext } from "@sfrpc/server";
+import type { MiddlewareContext } from "@storyflow/rpc-server";
 
 export function cors(allowedOrigins: string[] | "allow-all") {
   return async ({ req, res }: MiddlewareContext) => {

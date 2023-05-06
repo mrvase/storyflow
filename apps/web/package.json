@@ -12,12 +12,8 @@
   "dependencies": {
     "@headlessui/react": "^1.7.3",
     "@heroicons/react": "^2.0.11",
-    "@sfrpc/client": "workspace:*",
-    "@sfrpc/server": "workspace:*",
     "@storyflow/api": "workspace:*",
-    "@storyflow/auth": "workspace:*",
     "@storyflow/react": "workspace:*",
-    "@storyflow/result": "workspace:*",
     "@vitejs/plugin-react": "^3.0.1",
     "admin-panel": "workspace:*",
     "clsx": "^1.2.1",
@@ -33,7 +29,6 @@
   },
   "devDependencies": {
     "@babel/core": "^7.0.0",
-    "@sfrpc/types": "workspace:*",
     "@tailwindcss/container-queries": "^0.1.1",
     "@types/jsonwebtoken": "^9.0.2",
     "@types/node": "^17.0.45",

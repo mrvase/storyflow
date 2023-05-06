@@ -14,11 +14,10 @@
     "@heroicons/react": "^2.0.11",
     "@lexical/selection": "^0.9.1",
     "@lexical/utils": "^0.9.1",
-    "@sfrpc/client": "workspace:*",
+    "@storyflow/rpc-client": "workspace:*",
     "@storyflow/collab": "workspace:*",
     "@storyflow/dnd": "workspace:*",
     "@storyflow/cms": "workspace:*",
-    "@storyflow/result": "workspace:*",
     "@storyflow/router": "workspace:*",
     "@storyflow/shared": "workspace:*",
     "@storyflow/state": "workspace:*",
@@ -32,7 +31,6 @@
     "zod": "^3.20.2"
   },
   "devDependencies": {
-    "@sfrpc/types": "workspace:*",
     "@storyflow/api": "workspace:*",
     "@tailwindcss/container-queries": "^0.1.1",
     "@types/react": "^18.2.1",

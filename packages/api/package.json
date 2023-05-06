@@ -10,13 +10,10 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@sfrpc/server": "workspace:*",
-    "@storyflow/server": "workspace:*",
-    "@storyflow/collab": "workspace:*",
     "@storyflow/cms": "workspace:*",
-    "@storyflow/result": "workspace:*",
+    "@storyflow/rpc-server": "workspace:*",
+    "@storyflow/server": "workspace:*",
     "@storyflow/shared": "workspace:*",
-    "@storyflow/state": "workspace:*",
     "@upstash/redis": "^1.16.0",
     "bcryptjs": "^2.4.3",
     "mongodb": "^4.13.0",
@@ -24,7 +21,6 @@
     "zod": "^3.20.2"
   },
   "devDependencies": {
-    "@sfrpc/types": "workspace:*",
     "@types/bcryptjs": "^2.4.2",
     "eslint": "^7.32.0",
     "eslint-config-custom": "workspace:*",

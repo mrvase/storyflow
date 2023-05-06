@@ -17,10 +17,6 @@ importers:
       '@babel/core': ^7.0.0
       '@headlessui/react': ^1.7.3
       '@heroicons/react': ^2.0.11
-      '@sfrpc/client': workspace:*
-      '@sfrpc/server': workspace:*
-      '@sfrpc/types': workspace:*
-      '@storyflow/result': workspace:*
       '@tailwindcss/container-queries': ^0.1.1
       '@types/node': ^17.0.45
       '@types/qs': ^6.9.7
@@ -45,9 +41,6 @@ importers:
     dependencies:
       '@headlessui/react': 1.7.7_biqbaboplfbrettd7655fr4n2y
       '@heroicons/react': 2.0.13_react@18.2.0
-      '@sfrpc/client': link:../../rpc/client
-      '@sfrpc/server': link:../../rpc/server
-      '@storyflow/result': link:../../utils/result
       '@vitejs/plugin-react': 3.0.1_vite@4.0.4
       admin-panel: link:../../cms/admin-panel
       next: 13.4.1_pjwopsidmaokadturxaafygjp4
@@ -59,7 +52,6 @@ importers:
       zod: 3.20.2
     devDependencies:
       '@babel/core': 7.20.12
-      '@sfrpc/types': link:../../rpc/types
       '@tailwindcss/container-queries': 0.1.1_tailwindcss@3.2.4
       '@types/node': 17.0.45
       '@types/qs': 6.9.7
@@ -73,65 +65,13 @@ importers:
       tsconfig: link:../../setup/tsconfig
       typescript: 5.0.4
 
-  apps/public-api:
-    specifiers:
-      '@babel/core': ^7.0.0
-      '@sfrpc/client': workspace:*
-      '@sfrpc/server': workspace:*
-      '@sfrpc/types': workspace:*
-      '@storyflow/api': workspace:*
-      '@storyflow/react': workspace:*
-      '@storyflow/result': workspace:*
-      '@types/node': ^17.0.45
-      '@types/qs': ^6.9.7
-      '@types/react': ^18.2.1
-      '@types/react-dom': ^18.2.2
-      eslint: 7.32.0
-      eslint-config-custom: workspace:*
-      mongodb: ^4.13.0
-      next: ^13.4.1
-      react: 18.2.0
-      react-dom: 18.2.0
-      server-only: ^0.0.1
-      tsconfig: workspace:*
-      typescript: ^5.0.4
-      zod: ^3.20.2
-    dependencies:
-      '@sfrpc/client': link:../../rpc/client
-      '@sfrpc/server': link:../../rpc/server
-      '@storyflow/api': link:../../packages/api
-      '@storyflow/react': link:../../packages/react
-      '@storyflow/result': link:../../utils/result
-      mongodb: 4.13.0
-      next: 13.4.1_pjwopsidmaokadturxaafygjp4
-      react: 18.2.0
-      react-dom: 18.2.0_react@18.2.0
-      server-only: 0.0.1
-      zod: 3.20.2
-    devDependencies:
-      '@babel/core': 7.20.12
-      '@sfrpc/types': link:../../rpc/types
-      '@types/node': 17.0.45
-      '@types/qs': 6.9.7
-      '@types/react': 18.2.1
-      '@types/react-dom': 18.2.2
-      eslint: 7.32.0
-      eslint-config-custom: link:../../setup/eslint-config-custom
-      tsconfig: link:../../setup/tsconfig
-      typescript: 5.0.4
-
   apps/web:
     specifiers:
       '@babel/core': ^7.0.0
       '@headlessui/react': ^1.7.3
       '@heroicons/react': ^2.0.11
-      '@sfrpc/client': workspace:*
-      '@sfrpc/server': workspace:*
-      '@sfrpc/types': workspace:*
       '@storyflow/api': workspace:*
-      '@storyflow/auth': workspace:*
       '@storyflow/react': workspace:*
-      '@storyflow/result': workspace:*
       '@tailwindcss/container-queries': ^0.1.1
       '@types/jsonwebtoken': ^9.0.2
       '@types/node': ^17.0.45
@@ -160,12 +100,8 @@ importers:
     dependencies:
       '@headlessui/react': 1.7.7_biqbaboplfbrettd7655fr4n2y
       '@heroicons/react': 2.0.13_react@18.2.0
-      '@sfrpc/client': link:../../rpc/client
-      '@sfrpc/server': link:../../rpc/server
       '@storyflow/api': link:../../packages/api
-      '@storyflow/auth': link:../../utils/auth
       '@storyflow/react': link:../../packages/react
-      '@storyflow/result': link:../../utils/result
       '@vitejs/plugin-react': 3.0.1_vite@4.0.4
       admin-panel: link:../../cms/admin-panel
       clsx: 1.2.1
@@ -180,7 +116,6 @@ importers:
       zod: 3.20.2
     devDependencies:
       '@babel/core': 7.20.12
-      '@sfrpc/types': link:../../rpc/types
       '@tailwindcss/container-queries': 0.1.1_tailwindcss@3.2.4
       '@types/jsonwebtoken': 9.0.2
       '@types/node': 17.0.45
@@ -195,20 +130,68 @@ importers:
       tsconfig: link:../../setup/tsconfig
       typescript: 5.0.4
 
+  cms-utils/collab:
+    specifiers:
+      '@storyflow/state': workspace:*
+      tsconfig: workspace:*
+      typescript: ^5.0.4
+    devDependencies:
+      '@storyflow/state': link:../state
+      tsconfig: link:../../setup/tsconfig
+      typescript: 5.0.4
+
+  cms-utils/dnd:
+    specifiers:
+      '@types/react': ^18.2.1
+      '@types/react-dom': ^18.2.1
+      react: ^18.2.0
+      react-dom: ^18.2.0
+      tsconfig: workspace:*
+      typescript: ^5.0.4
+    devDependencies:
+      '@types/react': 18.2.1
+      '@types/react-dom': 18.2.2
+      react: 18.2.0
+      react-dom: 18.2.0_react@18.2.0
+      tsconfig: link:../../setup/tsconfig
+      typescript: 5.0.4
+
+  cms-utils/router:
+    specifiers:
+      '@types/react': ^18.2.1
+      '@types/react-dom': ^18.2.1
+      react: ^18.2.0
+      react-dom: ^18.2.0
+      tsconfig: workspace:*
+      typescript: ^5.0.4
+    devDependencies:
+      '@types/react': 18.2.1
+      '@types/react-dom': 18.2.2
+      react: 18.2.0
+      react-dom: 18.2.0_react@18.2.0
+      tsconfig: link:../../setup/tsconfig
+      typescript: 5.0.4
+
+  cms-utils/state:
+    specifiers:
+      tsconfig: workspace:*
+      typescript: ^5.0.4
+    devDependencies:
+      tsconfig: link:../../setup/tsconfig
+      typescript: 5.0.4
+
   cms/admin-panel:
     specifiers:
       '@headlessui/react': ^1.7.3
       '@heroicons/react': ^2.0.11
       '@lexical/selection': ^0.9.1
       '@lexical/utils': ^0.9.1
-      '@sfrpc/client': workspace:*
-      '@sfrpc/types': workspace:*
       '@storyflow/api': workspace:*
       '@storyflow/cms': workspace:*
       '@storyflow/collab': workspace:*
       '@storyflow/dnd': workspace:*
-      '@storyflow/result': workspace:*
       '@storyflow/router': workspace:*
+      '@storyflow/rpc-client': workspace:*
       '@storyflow/shared': workspace:*
       '@storyflow/state': workspace:*
       '@tailwindcss/container-queries': ^0.1.1
@@ -238,14 +221,13 @@ importers:
       '@heroicons/react': 2.0.13_react@18.2.0
       '@lexical/selection': 0.9.1_lexical@0.9.1
       '@lexical/utils': 0.9.1_lexical@0.9.1
-      '@sfrpc/client': link:../../rpc/client
       '@storyflow/cms': link:../../core/cms
-      '@storyflow/collab': link:../../utils/collab
-      '@storyflow/dnd': link:../../utils/dnd
-      '@storyflow/result': link:../../utils/result
-      '@storyflow/router': link:../../utils/router
+      '@storyflow/collab': link:../../cms-utils/collab
+      '@storyflow/dnd': link:../../cms-utils/dnd
+      '@storyflow/router': link:../../cms-utils/router
+      '@storyflow/rpc-client': link:../../core/rpc-client
       '@storyflow/shared': link:../../core/shared
-      '@storyflow/state': link:../../utils/state
+      '@storyflow/state': link:../../cms-utils/state
       clsx: 1.2.1
       lexical: 0.9.1
       qs: 6.11.0
@@ -255,7 +237,6 @@ importers:
       swr: 2.0.1_react@18.2.0
       zod: 3.20.2
     devDependencies:
-      '@sfrpc/types': link:../../rpc/types
       '@storyflow/api': link:../../packages/api
       '@tailwindcss/container-queries': 0.1.1_tailwindcss@3.2.4
       '@types/react': 18.2.1
@@ -276,11 +257,9 @@ importers:
     specifiers:
       '@aws-sdk/client-s3': ^3.328.0
       '@aws-sdk/s3-request-presigner': ^3.328.0
-      '@sfrpc/server': workspace:*
-      '@sfrpc/types': workspace:*
       '@storyflow/cms': workspace:*
       '@storyflow/collab': workspace:*
-      '@storyflow/result': workspace:*
+      '@storyflow/rpc-server': workspace:*
       '@storyflow/server': workspace:*
       '@storyflow/shared': workspace:*
       '@storyflow/state': workspace:*
@@ -302,21 +281,19 @@ importers:
     dependencies:
       '@aws-sdk/client-s3': 3.328.0
       '@aws-sdk/s3-request-presigner': 3.328.0
-      '@sfrpc/server': link:../../rpc/server
       '@storyflow/cms': link:../../core/cms
-      '@storyflow/collab': link:../../utils/collab
-      '@storyflow/result': link:../../utils/result
+      '@storyflow/collab': link:../../cms-utils/collab
+      '@storyflow/rpc-server': link:../../core/rpc-server
       '@storyflow/server': link:../../core/server
       '@storyflow/shared': link:../../core/shared
-      '@storyflow/state': link:../../utils/state
+      '@storyflow/state': link:../../cms-utils/state
       '@upstash/redis': 1.19.3
       bcryptjs: 2.4.3
       openai: 3.2.1
       postgres: 3.3.4
       qs: 6.11.0
-      zod: 3.20.2
+      zod: 3.21.4
     devDependencies:
-      '@sfrpc/types': link:../../rpc/types
       '@types/bcryptjs': 2.4.2
       '@types/nodemailer': 6.4.7
       eslint: 7.32.0
@@ -346,11 +323,44 @@ importers:
       vite: 4.0.4
       vitest: 0.28.4
 
+  core/rpc-client:
+    specifiers:
+      '@storyflow/rpc-server': workspace:*
+      '@types/qs': ^6.9.7
+      '@types/react': ^18.2.1
+      qs: ^6.11.0
+      react: 18.2.0
+      swr: ^2.0.1
+      tsconfig: workspace:*
+      typescript: ^5.0.4
+    devDependencies:
+      '@storyflow/rpc-server': link:../rpc-server
+      '@types/qs': 6.9.7
+      '@types/react': 18.2.1
+      qs: 6.11.0
+      react: 18.2.0
+      swr: 2.0.1_react@18.2.0
+      tsconfig: link:../../setup/tsconfig
+      typescript: 5.0.4
+
+  core/rpc-server:
+    specifiers:
+      '@types/qs': ^6.9.7
+      qs: ^6.11.0
+      tsconfig: workspace:*
+      typescript: ^5.0.4
+      zod: ^3.20.2
+    devDependencies:
+      '@types/qs': 6.9.7
+      qs: 6.11.0
+      tsconfig: link:../../setup/tsconfig
+      typescript: 5.0.4
+      zod: 3.21.4
+
   core/server:
     specifiers:
-      '@sfrpc/server': workspace:*
       '@storyflow/cms': workspace:*
-      '@storyflow/result': workspace:*
+      '@storyflow/rpc-server': workspace:*
       '@storyflow/shared': workspace:*
       '@types/crypto-js': ^4.1.1
       '@types/jsonwebtoken': ^9.0.2
@@ -369,12 +379,11 @@ importers:
       vitest: ^0.28.4
     dependencies:
       '@storyflow/cms': link:../cms
-      '@storyflow/result': link:../../utils/result
       '@storyflow/shared': link:../shared
       crypto-js: 4.1.1
       jsonwebtoken: 9.0.0
     devDependencies:
-      '@sfrpc/server': link:../../rpc/server
+      '@storyflow/rpc-server': link:../rpc-server
       '@types/crypto-js': 4.1.1
       '@types/jsonwebtoken': 9.0.2
       '@types/node': 17.0.45
@@ -407,14 +416,10 @@ importers:
 
   packages/api:
     specifiers:
-      '@sfrpc/server': workspace:*
-      '@sfrpc/types': workspace:*
       '@storyflow/cms': workspace:*
-      '@storyflow/collab': workspace:*
-      '@storyflow/result': workspace:*
+      '@storyflow/rpc-server': workspace:*
       '@storyflow/server': workspace:*
       '@storyflow/shared': workspace:*
-      '@storyflow/state': workspace:*
       '@types/bcryptjs': ^2.4.2
       '@upstash/redis': ^1.16.0
       bcryptjs: ^2.4.3
@@ -429,20 +434,16 @@ importers:
       vitest: ^0.28.4
       zod: ^3.20.2
     dependencies:
-      '@sfrpc/server': link:../../rpc/server
       '@storyflow/cms': link:../../core/cms
-      '@storyflow/collab': link:../../utils/collab
-      '@storyflow/result': link:../../utils/result
+      '@storyflow/rpc-server': link:../../core/rpc-server
       '@storyflow/server': link:../../core/server
       '@storyflow/shared': link:../../core/shared
-      '@storyflow/state': link:../../utils/state
       '@upstash/redis': 1.19.3
       bcryptjs: 2.4.3
       mongodb: 4.13.0
       qs: 6.11.0
-      zod: 3.20.2
+      zod: 3.21.4
     devDependencies:
-      '@sfrpc/types': link:../../rpc/types
       '@types/bcryptjs': 2.4.2
       eslint: 7.32.0
       eslint-config-custom: link:../../setup/eslint-config-custom
@@ -512,56 +513,6 @@ importers:
       tslib: 2.5.0
       typescript: 5.0.4
 
-  rpc/client:
-    specifiers:
-      '@sfrpc/types': workspace:*
-      '@storyflow/result': workspace:*
-      '@types/qs': ^6.9.7
-      '@types/react': ^18.2.1
-      qs: ^6.11.0
-      react: 18.2.0
-      swr: ^2.0.1
-      tsconfig: workspace:*
-      typescript: ^5.0.4
-    devDependencies:
-      '@sfrpc/types': link:../types
-      '@storyflow/result': link:../../utils/result
-      '@types/qs': 6.9.7
-      '@types/react': 18.2.1
-      qs: 6.11.0
-      react: 18.2.0
-      swr: 2.0.1_react@18.2.0
-      tsconfig: link:../../setup/tsconfig
-      typescript: 5.0.4
-
-  rpc/server:
-    specifiers:
-      '@sfrpc/types': workspace:*
-      '@storyflow/result': workspace:*
-      '@types/qs': ^6.9.7
-      qs: ^6.11.0
-      tsconfig: workspace:*
-      typescript: ^5.0.4
-      zod: ^3.20.2
-    devDependencies:
-      '@sfrpc/types': link:../types
-      '@storyflow/result': link:../../utils/result
-      '@types/qs': 6.9.7
-      qs: 6.11.0
-      tsconfig: link:../../setup/tsconfig
-      typescript: 5.0.4
-      zod: 3.20.2
-
-  rpc/types:
-    specifiers:
-      '@storyflow/result': workspace:*
-      tsconfig: workspace:*
-      typescript: ^5.0.4
-    devDependencies:
-      '@storyflow/result': link:../../utils/result
-      tsconfig: link:../../setup/tsconfig
-      typescript: 5.0.4
-
   setup/eslint-config-custom:
     specifiers:
       eslint: ^7.23.0
@@ -581,104 +532,6 @@ importers:
 
   setup/tsconfig:
     specifiers: {}
-
-  utils/auth:
-    specifiers:
-      '@storyflow/result': workspace:*
-      '@storyflow/session': workspace:*
-      '@types/crypto-js': ^4.1.1
-      '@types/node': ^17.0.45
-      crypto-js: ^4.1.1
-      tsconfig: workspace:*
-      typescript: ^5.0.4
-    dependencies:
-      crypto-js: 4.1.1
-    devDependencies:
-      '@storyflow/result': link:../result
-      '@storyflow/session': link:../session
-      '@types/crypto-js': 4.1.1
-      '@types/node': 17.0.45
-      tsconfig: link:../../setup/tsconfig
-      typescript: 5.0.4
-
-  utils/collab:
-    specifiers:
-      '@storyflow/result': workspace:*
-      '@storyflow/state': workspace:*
-      tsconfig: workspace:*
-      typescript: ^5.0.4
-    devDependencies:
-      '@storyflow/result': link:../result
-      '@storyflow/state': link:../state
-      tsconfig: link:../../setup/tsconfig
-      typescript: 5.0.4
-
-  utils/dnd:
-    specifiers:
-      '@types/react': ^18.2.1
-      '@types/react-dom': ^18.2.1
-      react: ^18.2.0
-      react-dom: ^18.2.0
-      tsconfig: workspace:*
-      typescript: ^5.0.4
-    devDependencies:
-      '@types/react': 18.2.1
-      '@types/react-dom': 18.2.2
-      react: 18.2.0
-      react-dom: 18.2.0_react@18.2.0
-      tsconfig: link:../../setup/tsconfig
-      typescript: 5.0.4
-
-  utils/result:
-    specifiers:
-      tsconfig: workspace:*
-      typescript: ^5.0.4
-    devDependencies:
-      tsconfig: link:../../setup/tsconfig
-      typescript: 5.0.4
-
-  utils/router:
-    specifiers:
-      '@types/react': ^18.2.1
-      '@types/react-dom': ^18.2.1
-      react: ^18.2.0
-      react-dom: ^18.2.0
-      tsconfig: workspace:*
-      typescript: ^5.0.4
-    devDependencies:
-      '@types/react': 18.2.1
-      '@types/react-dom': 18.2.2
-      react: 18.2.0
-      react-dom: 18.2.0_react@18.2.0
-      tsconfig: link:../../setup/tsconfig
-      typescript: 5.0.4
-
-  utils/session:
-    specifiers:
-      '@types/cookie': ^0.5.1
-      '@types/cookie-signature': ^1.0.4
-      cookie: ^0.5.0
-      cookie-signature: ^1.2.0
-      tsconfig: workspace:*
-      typescript: ^5.0.4
-    dependencies:
-      cookie: 0.5.0
-      cookie-signature: 1.2.0
-    devDependencies:
-      '@types/cookie': 0.5.1
-      '@types/cookie-signature': 1.1.0
-      tsconfig: link:../../setup/tsconfig
-      typescript: 5.0.4
-
-  utils/state:
-    specifiers:
-      '@storyflow/result': workspace:*
-      tsconfig: workspace:*
-      typescript: ^5.0.4
-    devDependencies:
-      '@storyflow/result': link:../result
-      tsconfig: link:../../setup/tsconfig
-      typescript: 5.0.4
 
 packages:
 
@@ -3236,16 +3089,6 @@ packages:
     resolution: {integrity: sha512-KnRanxnpfpjUTqTCXslZSEdLfXExwgNxYPdiO2WGUj8+HDjFi8R3k5RVKPeSCzLjCcshCAtVO2QBbVuAV4kTnw==}
     dev: true
 
-  /@types/cookie-signature/1.1.0:
-    resolution: {integrity: sha512-6/OwJHoeGW5taC2vWq1sz8X7/T2rAPVXj3zQds+rM4b5VrW8lgpYjpDVjTJmkRB1IODBCAiuPXNk092CjYlryQ==}
-    dependencies:
-      '@types/node': 17.0.45
-    dev: true
-
-  /@types/cookie/0.5.1:
-    resolution: {integrity: sha512-COUnqfB2+ckwXXSFInsFdOAWQzCCx+a5hq2ruyj+Vjund94RJQd4LG2u9hnvJrTgunKAaax7ancBYlDrNYxA0g==}
-    dev: true
-
   /@types/crypto-js/4.1.1:
     resolution: {integrity: sha512-BG7fQKZ689HIoc5h+6D2Dgq1fABRa0RbBWKBd9SP/MVRVXROflpm5fhwyATX5duFmbStzyzyycPB8qUYKDH3NA==}
     dev: true
@@ -3809,16 +3652,6 @@ packages:
 
   /convert-source-map/1.9.0:
     resolution: {integrity: sha512-ASFBup0Mz1uyiIjANan1jzLQami9z1PoYSZCiiYW2FczPbenXc45FZdBZLzOT+r6+iciuEModtmCti+hjaAk0A==}
-
-  /cookie-signature/1.2.0:
-    resolution: {integrity: sha512-R0BOPfLGTitaKhgKROKZQN6iyq2iDQcH1DOF8nJoaWapguX5bC2w+Q/I9NmmM5lfcvEarnLZr+cCvmEYYSXvYA==}
-    engines: {node: '>=6.6.0'}
-    dev: false
-
-  /cookie/0.5.0:
-    resolution: {integrity: sha512-YZ3GUyn/o8gfKJlnlX7g7xq4gyO6OSuhGPKaaGssGB2qgDUS0gPgtTvoyZLTt9Ab6dC4hfc9dV5arkvc/OCmrw==}
-    engines: {node: '>= 0.6'}
-    dev: false
 
   /cross-spawn/7.0.3:
     resolution: {integrity: sha512-iRDPJKUPVEND7dHPO8rkbOnPpyDygcDFtWjpeWNCgy8WP2rXcxXL8TskReQl6OrB2G7+UJrags1q15Fudc7G6w==}
@@ -6482,6 +6315,7 @@ packages:
 
   /zod/3.20.2:
     resolution: {integrity: sha512-1MzNQdAvO+54H+EaK5YpyEy0T+Ejo/7YLHS93G3RnYWh5gaotGHwGeN/ZO687qEDU2y4CdStQYXVHIgrUl5UVQ==}
+    dev: false
 
   /zod/3.21.4:
     resolution: {integrity: sha512-m46AKbrzKVzOzs/DZgVnG5H55N1sv1M8qZU3A8RIKbs3mrACDNeIOeilDymVb2HdmP8uwshOCF4uJ8uM9rCqJw==}

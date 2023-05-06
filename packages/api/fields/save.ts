@@ -1,6 +1,4 @@
-import { createProcedure, createRoute } from "@sfrpc/server";
-import { error, success } from "@storyflow/result";
-import { z } from "zod";
+import { error, success } from "@storyflow/rpc-server/result";
 import type { DocumentId, FieldId, ValueArray } from "@storyflow/shared/types";
 import type {
   DocumentConfig,
@@ -14,7 +12,6 @@ import type {
 } from "@storyflow/cms/types";
 import { getSyntaxTreeRecord, parseDocument } from "../convert";
 import { getClientPromise } from "../mongoClient";
-import { globals } from "../globals";
 import { isSyntaxTree } from "@storyflow/cms/syntax-tree";
 import {
   extractRootRecord,

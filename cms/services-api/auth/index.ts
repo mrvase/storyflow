@@ -1,5 +1,5 @@
-import { createAPI, createHandler } from "@sfrpc/server";
-import type {} from "@sfrpc/types";
+import { createAPI, createHandler } from "@storyflow/rpc-server";
+import type {} from "@storyflow/rpc-server/types-shared";
 import { auth } from "./auth";
 
 export const api = createAPI({

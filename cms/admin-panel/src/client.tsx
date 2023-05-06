@@ -1,10 +1,13 @@
 import React from "react";
-import { APIToClient, createClient, createSWRClient } from "@sfrpc/client";
+import {
+  APIToClient,
+  createClient,
+  createSWRClient,
+} from "@storyflow/rpc-client";
 import type { API } from "@storyflow/api";
 import type { BucketAPI } from "services-api/bucket";
 import type { CollabAPI } from "services-api/collab";
-import type {} from "@sfrpc/types";
-import type {} from "@storyflow/result";
+import type {} from "@storyflow/rpc-client/types-shared";
 import useSWR, { useSWRConfig } from "swr";
 import { useUrlInfo } from "./users";
 import { useContextWithError } from "./utils/contextError";

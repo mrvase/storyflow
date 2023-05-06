@@ -11,14 +11,13 @@
     "build:package": "rollup --config rollup.config.ts --configPlugin typescript"
   },
   "dependencies": {
-    "@storyflow/result": "workspace:*",
     "@storyflow/shared": "workspace:*",
     "@storyflow/cms": "workspace:*",
     "crypto-js": "^4.1.1",
     "jsonwebtoken": "^9.0.0"
   },
   "devDependencies": {
-    "@sfrpc/server": "workspace:*",
+    "@storyflow/rpc-server": "workspace:*",
     "@types/crypto-js": "^4.1.1",
     "@types/jsonwebtoken": "^9.0.2",
     "@types/node": "^17.0.45",
@@ -34,6 +33,7 @@
     "vitest": "^0.28.4"
   },
   "peerDependencies": {
+    "@storyflow/rpc-server": "workspace:*",
     "mongodb": "^4.13.0"
   }
 }

@@ -1,7 +1,7 @@
-import type {} from "@sfrpc/types";
+import type {} from "@storyflow/rpc-server/types-shared";
 import type {} from "@storyflow/server";
 
-import { createAPI, createHandler } from "@sfrpc/server";
+import { createAPI, createHandler } from "@storyflow/rpc-server";
 import { documents } from "./routes/documents";
 import { admin } from "./routes/admin";
 import { files } from "./routes/files";
@@ -41,3 +41,5 @@ export type {
   AppReference,
   AppConfig,
 } from "@storyflow/shared/types";
+
+export * from "@storyflow/rpc-server/result";

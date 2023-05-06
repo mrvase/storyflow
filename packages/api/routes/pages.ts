@@ -1,10 +1,10 @@
-import { createProcedure, createRoute } from "@sfrpc/server";
+import { createProcedure, createRoute } from "@storyflow/rpc-server";
 import { getClientPromise } from "../mongoClient";
 import { z } from "zod";
 
 import { cors as corsFactory } from "@storyflow/server/middleware";
 
-import { success } from "@storyflow/result";
+import { success } from "@storyflow/rpc-server/result";
 import { createFieldRecordGetter } from "@storyflow/cms/get-field-record";
 import { calculateRootFieldFromRecord } from "@storyflow/cms/calculate-server";
 import type { StoryflowConfig } from "@storyflow/shared/types";

@@ -3,7 +3,7 @@ import { PlusIcon, TrashIcon } from "@heroicons/react/24/outline";
 import React from "react";
 import { SWRClient, useClient } from "../../client";
 import { Spinner } from "../../elements/Spinner";
-import { isSuccess, unwrap } from "@storyflow/result";
+import { isSuccess, unwrap } from "@storyflow/rpc-client/result";
 import { useUrlInfo } from "../../users";
 
 /*

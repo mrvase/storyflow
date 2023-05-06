@@ -7,9 +7,9 @@
     "packages/*",
     "core/*",
     "cms/*",
+    "cms-utils/*",
     "setup/*",
-    "rpc/*",
-    "utils/*"
+    "rpc/*"
   ],
   "scripts": {
     "build": "turbo run build",

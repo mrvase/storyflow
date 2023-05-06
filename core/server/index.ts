@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 
-declare module "@sfrpc/server" {
+declare module "@storyflow/rpc-server" {
   interface CustomTypes {
     Request: NextApiRequest;
     Response: NextApiResponse;

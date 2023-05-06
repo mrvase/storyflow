@@ -1,4 +1,4 @@
-import { isError, Result, unwrap } from "@storyflow/result";
+import { isError, Result, unwrap } from "@storyflow/rpc-client/result";
 import type { Timeline } from "@storyflow/collab/Timeline";
 import type { TimelineEntry } from "@storyflow/collab/types";
 

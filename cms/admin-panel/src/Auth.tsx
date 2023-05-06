@@ -1,7 +1,7 @@
 import React from "react";
 import { onInterval } from "./collab/interval";
-import { Result, error, isError, unwrap } from "@storyflow/result";
-import { createClient, createSWRClient } from "@sfrpc/client";
+import { Result, error, isError, unwrap } from "@storyflow/rpc-client/result";
+import { createClient, createSWRClient } from "@storyflow/rpc-client";
 import Loader from "./elements/Loader";
 import useSWR, { useSWRConfig } from "swr";
 import type { AuthAPI } from "services-api/auth";
