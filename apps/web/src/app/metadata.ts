@@ -1,6 +1,4 @@
 import { Metadata } from "next";
-import { request } from "@storyflow/react/rsc";
-import { options } from "./options";
 import { getPage } from "./api";
 
 export const metadata: Metadata = {

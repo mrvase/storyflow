@@ -1,5 +1,4 @@
 import { RenderPage, request } from "@storyflow/react/rsc";
-import { options } from "./options";
 import { config, library } from "../components";
 import { registerLibraries, registerLibraryConfigs } from "@storyflow/react";
 import { getPage } from "./api";

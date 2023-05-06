@@ -1,10 +1,4 @@
 import { createAPI, createHandler } from "@sfrpc/server";
-import { migration } from "./migration";
+import type {} from "@sfrpc/types";
 
-export const api = createAPI({
-  migration,
-});
-
-export const handler = createHandler(api, "migration");
-
-export type MigrationAPI = typeof api;
+export const handler = () => {};

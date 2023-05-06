@@ -345,11 +345,11 @@ export function filterTimeline(
 
   const filteredShadows: TimelineEntry[] = [];
 
-  for (let [, data] of queueMap) {
+  Array.from(queueMap.values()).forEach((data) => {
     if (data.allAreShadows && data.elements.length) {
       filteredShadows.push(...data.elements);
     }
-  }
+  });
 
   if (filteredShadows.length) {
     newTimelines = newTimelines.map((arr) =>

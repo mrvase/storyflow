@@ -257,7 +257,7 @@ function DocumentPrompt({
 }) {
   const [search, setSearch] = React.useState("");
 
-  const { data, isLoading } = SWRClient.documents.getByLabel.useQuery(search, {
+  const { data, isLoading } = SWRClient.documents.findByLabel.useQuery(search, {
     inactive: search === "",
   });
 

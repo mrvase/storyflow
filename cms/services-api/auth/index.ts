@@ -1,4 +1,5 @@
 import { createAPI, createHandler } from "@sfrpc/server";
+import type {} from "@sfrpc/types";
 import { auth } from "./auth";
 
 export const api = createAPI({

@@ -6,6 +6,7 @@ import { Spinner } from "../../elements/Spinner";
 import { isSuccess, unwrap } from "@storyflow/result";
 import { useUrlInfo } from "../../users";
 
+/*
 export function SettingsDialog({ close }: { close: () => void }) {
   const [focused, setFocused] = React.useState<number | null>(null);
   const [loading, setLoading] = React.useState<boolean>(false);
@@ -175,3 +176,4 @@ export function SettingsDialog({ close }: { close: () => void }) {
     </div>
   );
 }
+*/

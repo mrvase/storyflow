@@ -5,7 +5,8 @@ import {
 import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
 import { createFieldRecordGetter } from "@storyflow/cms/get-field-record";
 import { parseDocument } from "./convert";
-import { DBDocument, DBDocumentRaw } from "./types";
+import { DBDocument } from "@storyflow/cms/types";
+import { DBDocumentRaw } from "./types";
 import { FolderId, RawFieldId, ValueArray } from "@storyflow/shared/types";
 
 export async function getPaths(

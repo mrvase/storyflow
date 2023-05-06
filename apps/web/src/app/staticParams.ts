@@ -1,5 +1,3 @@
-import { requestPaths } from "@storyflow/react/rsc";
-import { options } from "./options";
 import { getPaths } from "./api";
 
 export const staticParams = async (depth: number) => {

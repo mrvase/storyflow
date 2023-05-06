@@ -4,13 +4,20 @@ import { globals } from "../globals";
 import { z } from "zod";
 import { TimelineEntry, ToggleOperation } from "@storyflow/collab/types";
 import { getId, read } from "@storyflow/collab/utils";
-import {
-  ZodSpliceOperation,
-  ZodTimelineEntry,
-  ZodToggleOperation,
-  ZodTransaction,
-} from "./zod";
 import { Redis } from "@upstash/redis";
+
+const ZodTimelineEntry = <T extends z.ZodType>(Transaction: T) =>
+  z.tuple([z.string(), z.number(), z.string()]).rest(Transaction);
+
+const ZodTransaction = <T extends z.ZodType>(Operation: T) => {
+  return z.array(z.tuple([z.string(), z.array(Operation)]));
+};
+
+const ZodSpliceOperation = <T extends z.ZodType>(Value: T) =>
+  z.tuple([z.number(), z.number()]).rest(Value);
+
+const ZodToggleOperation = <T extends z.ZodType>(Value: T) =>
+  z.tuple([z.string(), Value]);
 
 export const client = new Redis({
   url: "https://eu1-renewed-albacore-38555.upstash.io",

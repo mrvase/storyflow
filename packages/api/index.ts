@@ -5,7 +5,7 @@ import { createAPI, createHandler } from "@sfrpc/server";
 import { documents } from "./routes/documents";
 import { admin } from "./routes/admin";
 import { files } from "./routes/files";
-import { pages } from "./routes/pages";
+import { pages as _pages } from "./routes/pages";
 import { StoryflowConfig } from "@storyflow/shared/types";
 import { setClientPromise } from "./mongoClient";
 
@@ -14,7 +14,7 @@ const api = (config: StoryflowConfig) =>
     admin: admin(config),
     documents: documents(config),
     files: files(config),
-    pages: pages(config),
+    pages: _pages(config),
   });
 
 export const handler = (config: StoryflowConfig) => {
@@ -24,7 +24,10 @@ export const handler = (config: StoryflowConfig) => {
 
 export type API = ReturnType<typeof api>;
 
-export { pages } from "./routes/pages";
+export const pages = (config: StoryflowConfig) => {
+  setClientPromise(config.api.mongoURL);
+  return _pages(config);
+};
 
 export const pagesHandler = (config: StoryflowConfig) => {
   setClientPromise(config.api.mongoURL);

@@ -1,6 +1,7 @@
 import cl from "clsx";
 import {
   ArrowDownCircleIcon,
+  ArrowRightOnRectangleIcon,
   ArrowUpCircleIcon,
   CheckCircleIcon,
   ChevronLeftIcon,
@@ -18,7 +19,6 @@ import {
 import React from "react";
 import { useLocalStorage } from "../../state/useLocalStorage";
 import Dialog from "../../elements/Dialog";
-import { SettingsDialog } from "./SettingsDialog";
 import { usePanelActions } from "../panel-router/PanelRouter";
 import { useCollab } from "../../collab/CollabContext";
 import { useLocation, useNavigate } from "@storyflow/router";
@@ -53,6 +53,7 @@ export default function Nav() {
 
   return (
     <>
+      {/*
       <Dialog
         isOpen={dialog === "settings"}
         close={() => setDialog(null)}
@@ -60,6 +61,7 @@ export default function Nav() {
       >
         <SettingsDialog close={() => setDialog(null)} />
       </Dialog>
+      */}
       <div
         className={cl(
           "group h-screen flex flex-col shrink-0 grow-0 overflow-hidden transition-[width] ease-out",
@@ -157,10 +159,7 @@ export default function Nav() {
                 icon={DarkIcon}
               />
               <NavButton icon={UserIcon} onClick={() => {}} />
-              <NavButton
-                icon={Cog6ToothIcon}
-                onClick={() => setDialog("settings")}
-              />
+              <NavButton icon={ArrowRightOnRectangleIcon} onClick={() => {}} />
               <StatusButton />
             </div>
           </div>

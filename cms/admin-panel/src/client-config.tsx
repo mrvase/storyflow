@@ -8,10 +8,9 @@ import { SWRClient } from "./client";
 import { useFolderDomains } from "./folders/FolderDomainsContext";
 import { useAuth } from "./Auth";
 
-const ClientConfigContext = React.createContext<Record<
-  string,
-  AppConfig
-> | null>(null);
+const AppConfigContext = React.createContext<Record<string, AppConfig> | null>(
+  null
+);
 
 export const getComponentType = (
   libraryName: string,
@@ -94,7 +93,7 @@ const defaultClientConfig: AppConfig = {
 const defaultLibraries = [defaultLibrary]; // stable reference
 
 export function useAppConfig(key?: string): AppConfig {
-  const configs = React.useContext(ClientConfigContext);
+  const configs = React.useContext(AppConfigContext);
   const domains = useFolderDomains();
   if (!configs) {
     throw new Error("useAppConfig cannot find provider.");
@@ -177,8 +176,8 @@ export function ClientConfigProvider({
   }, [organization?.apps]);
 
   return (
-    <ClientConfigContext.Provider value={configs}>
+    <AppConfigContext.Provider value={configs}>
       {children}
-    </ClientConfigContext.Provider>
+    </AppConfigContext.Provider>
   );
 }

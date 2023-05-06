@@ -1,5 +1,5 @@
 import {
-  ClientConfig,
+  AppConfig,
   ComponentConfig,
   ExtendedLibraryConfig,
   ExtendedPartialConfig,
@@ -28,7 +28,7 @@ declare module "@storyflow/shared/types" {
   }
 }
 
-export const createConfig = (config: ClientConfig) => {
+export const createConfig = (config: AppConfig) => {
   return config;
 };
 
