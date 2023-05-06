@@ -62,60 +62,42 @@ export function createProcedure<
 ):
   | QueryObject<Unwrap<I>, Promisify<O>>
   | MutationObject<Unwrap<I>, Promisify<O>> {
-  async function handleAction(
-    action: APIObject<C, I> &
-      (
-        | QueryObjectServer<C, Unwrap<I>, O>
-        | MutationObjectServer<C, Unwrap<I>, O>
-      ),
-    input: any,
-    type: "query" | "mutation"
-  ) {
-    const context = Object.create({ use });
-    Object.assign(context, this.context);
-    try {
-      await action.middleware?.(context);
+  const type = "query" in action ? "query" : "mutation";
 
-      if (this.method === "OPTIONS") return;
+  return {
+    [type]: async function (input: any) {
+      const context = Object.create({ use });
+      Object.assign(context, this.context);
+      try {
+        await action.middleware?.(context);
 
-      if (action.schema) {
-        (action.schema() as ZodType).parse(input);
-      }
-      return await (action as QueryObjectServer<C, Unwrap<I>, O>)[
-        type as "query"
-      ].call(this, input, { ...context });
-      // Pass "this" on so procedures can call each other.
-      // Spread of context removes the "use" prototype method.
-    } catch (err) {
-      if (err instanceof ZodError) {
-        return error({
-          message: "Invalid input",
-          status: 400,
-          detail: err.message,
-        });
-      }
-      if (!isResult(err) || !isError(err)) {
+        if (this.method === "OPTIONS") return;
+
+        if (action.schema) {
+          (action.schema() as ZodType).parse(input);
+        }
+        return await (action as QueryObjectServer<C, Unwrap<I>, O>)[
+          type as "query"
+        ].call(this, input, { ...context });
+        // Pass "this" on so procedures can call each other.
+        // Spread of context removes the "use" prototype method.
+      } catch (err) {
+        if (err instanceof ZodError) {
+          return error({
+            message: "Invalid input",
+            status: 400,
+            detail: err.message,
+          });
+        }
+        if (!isResult(err) || !isError(err)) {
+          console.error(err);
+          return error({ message, detail: err });
+        }
         console.error(err);
-        return error({ message, detail: err });
+        return err;
       }
-      console.error(err);
-      return err;
-    }
-  }
-
-  if ("query" in action) {
-    return {
-      query(input: any) {
-        return handleAction.call(this, action, input, "query");
-      },
-    } as QueryObject<Unwrap<I>, Promisify<O>>;
-  } else {
-    return {
-      mutation(input: any) {
-        return handleAction.call(this, action, input, "mutation");
-      },
-    } as MutationObject<Unwrap<I>, Promisify<O>>;
-  }
+    },
+  } as QueryObject<Unwrap<I>, Promisify<O>>;
 }
 
 export function createRoute<T extends APIRoute>(route: T): T {

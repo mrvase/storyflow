@@ -28,11 +28,6 @@
       ],
       "outputs": [".next/**"]
     },
-    "public-api#build": {
-      "dependsOn": ["^build"],
-      "env": ["NODE_ENV", "MONGO_URL"],
-      "outputs": [".next/**"]
-    },
     "web#build": {
       "dependsOn": ["^build"],
       "env": [

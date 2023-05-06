@@ -5,7 +5,7 @@ module.exports = {
   content: [
     "./index.html",
     "./index.tsx",
-    "../../cms/admin-panel/src/**/*.{js,ts,jsx,tsx}",
+    "../../cms/cms-panel/src/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     colors: {

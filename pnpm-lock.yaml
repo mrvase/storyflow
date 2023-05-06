@@ -19,7 +19,6 @@ importers:
       '@heroicons/react': ^2.0.11
       '@tailwindcss/container-queries': ^0.1.1
       '@types/node': ^17.0.45
-      '@types/qs': ^6.9.7
       '@types/react': ^18.2.1
       '@types/react-dom': ^18.2.2
       '@vitejs/plugin-react': ^3.0.1
@@ -37,26 +36,22 @@ importers:
       tsconfig: workspace:*
       typescript: ^5.0.4
       vite: ^4.0.4
-      zod: ^3.20.2
     dependencies:
       '@headlessui/react': 1.7.7_biqbaboplfbrettd7655fr4n2y
       '@heroicons/react': 2.0.13_react@18.2.0
-      '@vitejs/plugin-react': 3.0.1_vite@4.0.4
       admin-panel: link:../../cms/admin-panel
       next: 13.4.1_pjwopsidmaokadturxaafygjp4
       nodemailer: 6.9.0
       react: 18.2.0
       react-dom: 18.2.0_react@18.2.0
       services-api: link:../../cms/services-api
-      vite: 4.0.4_@types+node@17.0.45
-      zod: 3.20.2
     devDependencies:
       '@babel/core': 7.20.12
       '@tailwindcss/container-queries': 0.1.1_tailwindcss@3.2.4
       '@types/node': 17.0.45
-      '@types/qs': 6.9.7
       '@types/react': 18.2.1
       '@types/react-dom': 18.2.2
+      '@vitejs/plugin-react': 3.0.1_vite@4.0.4
       autoprefixer: 10.4.13_postcss@8.4.21
       eslint: 7.32.0
       eslint-config-custom: link:../../setup/eslint-config-custom
@@ -64,6 +59,7 @@ importers:
       tailwindcss: 3.2.4_postcss@8.4.21
       tsconfig: link:../../setup/tsconfig
       typescript: 5.0.4
+      vite: 4.0.4_@types+node@17.0.45
 
   apps/web:
     specifiers:
@@ -73,18 +69,14 @@ importers:
       '@storyflow/api': workspace:*
       '@storyflow/react': workspace:*
       '@tailwindcss/container-queries': ^0.1.1
-      '@types/jsonwebtoken': ^9.0.2
       '@types/node': ^17.0.45
-      '@types/qs': ^6.9.7
       '@types/react': ^18.2.1
       '@types/react-dom': ^18.2.2
-      '@vitejs/plugin-react': ^3.0.1
       admin-panel: workspace:*
       autoprefixer: ^10.4.13
       clsx: ^1.2.1
       eslint: 7.32.0
       eslint-config-custom: workspace:*
-      jsonwebtoken: ^9.0.0
       mongodb: ^4.13.0
       next: ^13.4.1
       nodemailer: ^6.9.0
@@ -95,31 +87,23 @@ importers:
       tailwindcss: ^3.2.4
       tsconfig: workspace:*
       typescript: ^5.0.4
-      vite: ^4.0.4
-      zod: ^3.20.2
     dependencies:
       '@headlessui/react': 1.7.7_biqbaboplfbrettd7655fr4n2y
       '@heroicons/react': 2.0.13_react@18.2.0
       '@storyflow/api': link:../../packages/api
       '@storyflow/react': link:../../packages/react
-      '@vitejs/plugin-react': 3.0.1_vite@4.0.4
       admin-panel: link:../../cms/admin-panel
       clsx: 1.2.1
-      jsonwebtoken: 9.0.0
       mongodb: 4.13.0
       next: 13.4.1_pjwopsidmaokadturxaafygjp4
       nodemailer: 6.9.0
       react: 18.2.0
       react-dom: 18.2.0_react@18.2.0
       server-only: 0.0.1
-      vite: 4.0.4_@types+node@17.0.45
-      zod: 3.20.2
     devDependencies:
       '@babel/core': 7.20.12
       '@tailwindcss/container-queries': 0.1.1_tailwindcss@3.2.4
-      '@types/jsonwebtoken': 9.0.2
       '@types/node': 17.0.45
-      '@types/qs': 6.9.7
       '@types/react': 18.2.1
       '@types/react-dom': 18.2.2
       autoprefixer: 10.4.13_postcss@8.4.21
@@ -127,56 +111,6 @@ importers:
       eslint-config-custom: link:../../setup/eslint-config-custom
       postcss: 8.4.21
       tailwindcss: 3.2.4_postcss@8.4.21
-      tsconfig: link:../../setup/tsconfig
-      typescript: 5.0.4
-
-  cms-utils/collab:
-    specifiers:
-      '@storyflow/state': workspace:*
-      tsconfig: workspace:*
-      typescript: ^5.0.4
-    devDependencies:
-      '@storyflow/state': link:../state
-      tsconfig: link:../../setup/tsconfig
-      typescript: 5.0.4
-
-  cms-utils/dnd:
-    specifiers:
-      '@types/react': ^18.2.1
-      '@types/react-dom': ^18.2.1
-      react: ^18.2.0
-      react-dom: ^18.2.0
-      tsconfig: workspace:*
-      typescript: ^5.0.4
-    devDependencies:
-      '@types/react': 18.2.1
-      '@types/react-dom': 18.2.2
-      react: 18.2.0
-      react-dom: 18.2.0_react@18.2.0
-      tsconfig: link:../../setup/tsconfig
-      typescript: 5.0.4
-
-  cms-utils/router:
-    specifiers:
-      '@types/react': ^18.2.1
-      '@types/react-dom': ^18.2.1
-      react: ^18.2.0
-      react-dom: ^18.2.0
-      tsconfig: workspace:*
-      typescript: ^5.0.4
-    devDependencies:
-      '@types/react': 18.2.1
-      '@types/react-dom': 18.2.2
-      react: 18.2.0
-      react-dom: 18.2.0_react@18.2.0
-      tsconfig: link:../../setup/tsconfig
-      typescript: 5.0.4
-
-  cms-utils/state:
-    specifiers:
-      tsconfig: workspace:*
-      typescript: ^5.0.4
-    devDependencies:
       tsconfig: link:../../setup/tsconfig
       typescript: 5.0.4
 
@@ -222,12 +156,12 @@ importers:
       '@lexical/selection': 0.9.1_lexical@0.9.1
       '@lexical/utils': 0.9.1_lexical@0.9.1
       '@storyflow/cms': link:../../core/cms
-      '@storyflow/collab': link:../../cms-utils/collab
-      '@storyflow/dnd': link:../../cms-utils/dnd
-      '@storyflow/router': link:../../cms-utils/router
+      '@storyflow/collab': link:../collab
+      '@storyflow/dnd': link:../dnd
+      '@storyflow/router': link:../router
       '@storyflow/rpc-client': link:../../core/rpc-client
       '@storyflow/shared': link:../../core/shared
-      '@storyflow/state': link:../../cms-utils/state
+      '@storyflow/state': link:../state
       clsx: 1.2.1
       lexical: 0.9.1
       qs: 6.11.0
@@ -235,7 +169,7 @@ importers:
       react-error-boundary: 3.1.4_react@18.2.0
       react-resizable-panels: 0.0.29_biqbaboplfbrettd7655fr4n2y
       swr: 2.0.1_react@18.2.0
-      zod: 3.20.2
+      zod: 3.21.4
     devDependencies:
       '@storyflow/api': link:../../packages/api
       '@tailwindcss/container-queries': 0.1.1_tailwindcss@3.2.4
@@ -252,6 +186,48 @@ importers:
       typescript: 5.0.4
       vite: 4.0.4
       vitest: 0.28.4
+
+  cms/collab:
+    specifiers:
+      '@storyflow/state': workspace:*
+      tsconfig: workspace:*
+      typescript: ^5.0.4
+    devDependencies:
+      '@storyflow/state': link:../state
+      tsconfig: link:../../setup/tsconfig
+      typescript: 5.0.4
+
+  cms/dnd:
+    specifiers:
+      '@types/react': ^18.2.1
+      '@types/react-dom': ^18.2.1
+      react: ^18.2.0
+      react-dom: ^18.2.0
+      tsconfig: workspace:*
+      typescript: ^5.0.4
+    devDependencies:
+      '@types/react': 18.2.1
+      '@types/react-dom': 18.2.2
+      react: 18.2.0
+      react-dom: 18.2.0_react@18.2.0
+      tsconfig: link:../../setup/tsconfig
+      typescript: 5.0.4
+
+  cms/router:
+    specifiers:
+      '@types/react': ^18.2.1
+      '@types/react-dom': ^18.2.1
+      react: ^18.2.0
+      react-dom: ^18.2.0
+      tsconfig: workspace:*
+      typescript: ^5.0.4
+    devDependencies:
+      '@types/react': 18.2.1
+      '@types/react-dom': 18.2.2
+      react: 18.2.0
+      react-dom: 18.2.0_react@18.2.0
+      tsconfig: link:../../setup/tsconfig
+      typescript: 5.0.4
 
   cms/services-api:
     specifiers:
@@ -282,11 +258,11 @@ importers:
       '@aws-sdk/client-s3': 3.328.0
       '@aws-sdk/s3-request-presigner': 3.328.0
       '@storyflow/cms': link:../../core/cms
-      '@storyflow/collab': link:../../cms-utils/collab
+      '@storyflow/collab': link:../collab
       '@storyflow/rpc-server': link:../../core/rpc-server
       '@storyflow/server': link:../../core/server
       '@storyflow/shared': link:../../core/shared
-      '@storyflow/state': link:../../cms-utils/state
+      '@storyflow/state': link:../state
       '@upstash/redis': 1.19.3
       bcryptjs: 2.4.3
       openai: 3.2.1
@@ -303,6 +279,14 @@ importers:
       typescript: 5.0.4
       vite: 4.0.4
       vitest: 0.28.4
+
+  cms/state:
+    specifiers:
+      tsconfig: workspace:*
+      typescript: ^5.0.4
+    devDependencies:
+      tsconfig: link:../../setup/tsconfig
+      typescript: 5.0.4
 
   core/cms:
     specifiers:
@@ -2321,7 +2305,7 @@ packages:
   /@babel/helper-plugin-utils/7.20.2:
     resolution: {integrity: sha512-8RvlJG2mj4huQ4pZ+rU9lqKi9ZKiRmuvGuM2HlWmkmgOhbs6zEAw6IEiJ5cQqGbDzGZOhwuOQNtZMi/ENLjZoQ==}
     engines: {node: '>=6.9.0'}
-    dev: false
+    dev: true
 
   /@babel/helper-simple-access/7.20.2:
     resolution: {integrity: sha512-+0woI/WPq59IrqDYbVGfshjT5Dmk/nnbdpcF8SnMhhXObpTq2KNBdLFRFrkVdbDOyUmHBCxzm5FHV1rACIkIbA==}
@@ -2380,7 +2364,7 @@ packages:
     dependencies:
       '@babel/core': 7.20.12
       '@babel/helper-plugin-utils': 7.20.2
-    dev: false
+    dev: true
 
   /@babel/plugin-transform-react-jsx-source/7.19.6_@babel+core@7.20.12:
     resolution: {integrity: sha512-RpAi004QyMNisst/pvSanoRdJ4q+jMCWyk9zdw/CyLB9j8RXEahodR6l2GyttDRyEVWZtbN+TpLiHJ3t34LbsQ==}
@@ -2390,7 +2374,7 @@ packages:
     dependencies:
       '@babel/core': 7.20.12
       '@babel/helper-plugin-utils': 7.20.2
-    dev: false
+    dev: true
 
   /@babel/runtime/7.20.13:
     resolution: {integrity: sha512-gt3PKXs0DBoL9xCvOIIZ2NEqAGZqHjAnmVbfQtB620V0uReIQutpel14KcneZuer7UioY8ALKZ7iocavvzTNFA==}
@@ -2438,6 +2422,7 @@ packages:
     cpu: [arm]
     os: [android]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@esbuild/android-arm/0.17.5:
@@ -2455,6 +2440,7 @@ packages:
     cpu: [arm64]
     os: [android]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@esbuild/android-arm64/0.17.5:
@@ -2472,6 +2458,7 @@ packages:
     cpu: [x64]
     os: [android]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@esbuild/android-x64/0.17.5:
@@ -2489,6 +2476,7 @@ packages:
     cpu: [arm64]
     os: [darwin]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@esbuild/darwin-arm64/0.17.5:
@@ -2506,6 +2494,7 @@ packages:
     cpu: [x64]
     os: [darwin]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@esbuild/darwin-x64/0.17.5:
@@ -2523,6 +2512,7 @@ packages:
     cpu: [arm64]
     os: [freebsd]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@esbuild/freebsd-arm64/0.17.5:
@@ -2540,6 +2530,7 @@ packages:
     cpu: [x64]
     os: [freebsd]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@esbuild/freebsd-x64/0.17.5:
@@ -2557,6 +2548,7 @@ packages:
     cpu: [arm]
     os: [linux]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@esbuild/linux-arm/0.17.5:
@@ -2574,6 +2566,7 @@ packages:
     cpu: [arm64]
     os: [linux]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@esbuild/linux-arm64/0.17.5:
@@ -2591,6 +2584,7 @@ packages:
     cpu: [ia32]
     os: [linux]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@esbuild/linux-ia32/0.17.5:
@@ -2608,6 +2602,7 @@ packages:
     cpu: [loong64]
     os: [linux]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@esbuild/linux-loong64/0.17.5:
@@ -2625,6 +2620,7 @@ packages:
     cpu: [mips64el]
     os: [linux]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@esbuild/linux-mips64el/0.17.5:
@@ -2642,6 +2638,7 @@ packages:
     cpu: [ppc64]
     os: [linux]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@esbuild/linux-ppc64/0.17.5:
@@ -2659,6 +2656,7 @@ packages:
     cpu: [riscv64]
     os: [linux]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@esbuild/linux-riscv64/0.17.5:
@@ -2676,6 +2674,7 @@ packages:
     cpu: [s390x]
     os: [linux]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@esbuild/linux-s390x/0.17.5:
@@ -2693,6 +2692,7 @@ packages:
     cpu: [x64]
     os: [linux]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@esbuild/linux-x64/0.17.5:
@@ -2710,6 +2710,7 @@ packages:
     cpu: [x64]
     os: [netbsd]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@esbuild/netbsd-x64/0.17.5:
@@ -2727,6 +2728,7 @@ packages:
     cpu: [x64]
     os: [openbsd]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@esbuild/openbsd-x64/0.17.5:
@@ -2744,6 +2746,7 @@ packages:
     cpu: [x64]
     os: [sunos]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@esbuild/sunos-x64/0.17.5:
@@ -2761,6 +2764,7 @@ packages:
     cpu: [arm64]
     os: [win32]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@esbuild/win32-arm64/0.17.5:
@@ -2778,6 +2782,7 @@ packages:
     cpu: [ia32]
     os: [win32]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@esbuild/win32-ia32/0.17.5:
@@ -2795,6 +2800,7 @@ packages:
     cpu: [x64]
     os: [win32]
     requiresBuild: true
+    dev: true
     optional: true
 
   /@esbuild/win32-x64/0.17.5:
@@ -3235,7 +3241,7 @@ packages:
       vite: 4.0.4_@types+node@17.0.45
     transitivePeerDependencies:
       - supports-color
-    dev: false
+    dev: true
 
   /@vitest/expect/0.28.4:
     resolution: {integrity: sha512-JqK0NZ4brjvOSL8hXAnIsfi+jxDF7rH/ZWCGCt0FAqRnVFc1hXsfwXksQvEnKqD84avRt3gmeXoK4tNbmkoVsQ==}
@@ -3927,6 +3933,7 @@ packages:
       '@esbuild/win32-arm64': 0.16.17
       '@esbuild/win32-ia32': 0.16.17
       '@esbuild/win32-x64': 0.16.17
+    dev: true
 
   /esbuild/0.17.5:
     resolution: {integrity: sha512-Bu6WLCc9NMsNoMJUjGl3yBzTjVLXdysMltxQWiLAypP+/vQrf+3L1Xe8fCXzxaECus2cEJ9M7pk4yKatEwQMqQ==}
@@ -4381,6 +4388,7 @@ packages:
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
     os: [darwin]
     requiresBuild: true
+    dev: true
     optional: true
 
   /function-bind/1.1.1:
@@ -4895,7 +4903,7 @@ packages:
     engines: {node: '>=12'}
     dependencies:
       '@jridgewell/sourcemap-codec': 1.4.14
-    dev: false
+    dev: true
 
   /magic-string/0.30.0:
     resolution: {integrity: sha512-LA+31JYDJLs82r2ScLrlz1GjSgu66ZV518eyWT+S8VhyQn/JL0u9MeBOvQMGYiPk1DBiSN9DDMOcXvigJZaViQ==}
@@ -5329,6 +5337,7 @@ packages:
       nanoid: 3.3.4
       picocolors: 1.0.0
       source-map-js: 1.0.2
+    dev: true
 
   /postgres/3.3.4:
     resolution: {integrity: sha512-XVu0+d/Y56pl2lSaf0c7V19AhAEfpVrhID1IENWN8nf0xch6hFq6dAov5dtUX6ZD46wfr1TxvLhxLtV8WnNsOg==}
@@ -5423,7 +5432,7 @@ packages:
   /react-refresh/0.14.0:
     resolution: {integrity: sha512-wViHqhAd8OHeLS/IRMJjTSDHF3U9eWi62F/MledQGPdJGDhodXJ9PBLNGr6WWL7qlH12Mt3TyTpbS+hGXMjCzQ==}
     engines: {node: '>=0.10.0'}
-    dev: false
+    dev: true
 
   /react-resizable-panels/0.0.29_biqbaboplfbrettd7655fr4n2y:
     resolution: {integrity: sha512-XWr6xH1LuL+5ztNoN+wXnY/S47tl04Q5b5jO1uuyyrH45C0X4z92/Lbo76o66yivWdPmf89i3r26wcx/I2nhGQ==}
@@ -5544,6 +5553,7 @@ packages:
     hasBin: true
     optionalDependencies:
       fsevents: 2.3.2
+    dev: true
 
   /run-parallel/1.2.0:
     resolution: {integrity: sha512-5l4VyZR86LZ/lDxZTR6jqL8AFE2S0IFLMP26AbjsLVADxHdhB/c0GUsH+y39UfCi3dzz8OlQuPmnaJOMoDHQBA==}
@@ -6156,6 +6166,7 @@ packages:
       rollup: 3.12.0
     optionalDependencies:
       fsevents: 2.3.2
+    dev: true
 
   /vitest/0.28.4:
     resolution: {integrity: sha512-sfWIy0AdlbyGRhunm+TLQEJrFH9XuRPdApfubsyLcDbCRrUX717BRQKInTgzEfyl2Ipi1HWoHB84Nqtcwxogcg==}
@@ -6312,10 +6323,6 @@ packages:
     resolution: {integrity: sha512-9bnSc/HEW2uRy67wc+T8UwauLuPJVn28jb+GtJY16iiKWyvmYJRXVT4UamsAEGQfPohgr2q4Tq0sQbQlxTfi1g==}
     engines: {node: '>=12.20'}
     dev: true
-
-  /zod/3.20.2:
-    resolution: {integrity: sha512-1MzNQdAvO+54H+EaK5YpyEy0T+Ejo/7YLHS93G3RnYWh5gaotGHwGeN/ZO687qEDU2y4CdStQYXVHIgrUl5UVQ==}
-    dev: false
 
   /zod/3.21.4:
     resolution: {integrity: sha512-m46AKbrzKVzOzs/DZgVnG5H55N1sv1M8qZU3A8RIKbs3mrACDNeIOeilDymVb2HdmP8uwshOCF4uJ8uM9rCqJw==}
