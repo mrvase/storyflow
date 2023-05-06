@@ -20,6 +20,7 @@ export type LinkCookie = string;
 
 export type KeyCookie = {
   slug: string;
+  url: string;
   key: string;
 };
 
@@ -90,10 +91,14 @@ export function parseAuthToken<
   T extends typeof GLOBAL_TOKEN | typeof LOCAL_TOKEN
 >(name: T, value: string | undefined, key: string) {
   if (!value) return null;
-  return jwt.verify(value, parseKey(key, "public"), {
-    algorithms: ["RS256"],
-    issuer: "storyflow",
-  }) as CookieValue[T];
+  try {
+    return jwt.verify(value, parseKey(key, "public"), {
+      algorithms: ["RS256"],
+      issuer: "storyflow",
+    }) as CookieValue[T];
+  } catch (err) {
+    return null;
+  }
 }
 
 export function parseAuthSession<

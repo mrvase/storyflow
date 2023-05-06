@@ -9,6 +9,7 @@ import type { CollabAPI } from "services-api/collab";
 import type { BucketAPI } from "services-api/bucket";
 import { useUrlInfo } from "./users";
 import { AppReference } from "@storyflow/api";
+import { useNavigate } from "@storyflow/router";
 
 const url =
   process.env.NODE_ENV === "production" ? `/api` : `http://localhost:3000/api`;
@@ -68,44 +69,55 @@ export function AuthProvider({ children }: { children?: React.ReactNode }) {
 
       // we check previous state, because there is no need to trigger reference rerender
       // if user is already set
+      if (!result) {
+        navigate("/");
+      }
+
       setUser((ps) => (!ps && result ? result.user : ps));
-      setApiUrl(result ? `${result.url}/api` : null);
+      setApiUrl(result?.url ? `${result.url}/api` : null);
       setIsLoading(false);
     })();
   }, [slug]);
+
+  const navigate = useNavigate();
 
   React.useEffect(() => {
     // authentication for organization api
     if (!apiUrl) return;
 
     const run = async (includeHeader?: boolean) => {
-      const token = getCookie("sf.local.token");
-      if (!token) return error({ message: "No token" });
+      const token = getCookie("sf.token");
+      if (!token && includeHeader) return error({ message: "No token" });
       return await fetch(`${apiUrl}/admin/authenticate`, {
         method: "POST",
+        credentials: "include",
         headers: includeHeader
           ? {
               "X-Storyflow-Token": token,
             }
           : undefined,
-      }).then((res) => res.json() as Promise<Result<Organization>>);
+      }).then(async (res) => {
+        const json = (await res.json()) as Promise<Result<Organization>>;
+        return json;
+      });
     };
 
     run(true).then((result) => {
       if (isError(result)) {
-        // navigate
+        navigate("/");
       } else {
         setOrganization(unwrap(result));
       }
     });
 
     return onInterval(() => run(), { duration: 30000 });
+    // navigate depends on pathname, but is not relevant for this effect
   }, [apiUrl]);
 
   const ctx = React.useMemo(
     () => ({
       user,
-      organization: organization,
+      organization,
       apiUrl,
       getToken: () => getCookie("sf.local.token"),
     }),
@@ -113,7 +125,7 @@ export function AuthProvider({ children }: { children?: React.ReactNode }) {
   );
 
   if (isLoading) {
-    return <div>LOCKED</div>;
+    return <div></div>;
   }
 
   return <AuthContext.Provider value={ctx}>{children}</AuthContext.Provider>;

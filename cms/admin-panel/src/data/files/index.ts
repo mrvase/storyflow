@@ -1,5 +1,5 @@
 import { isError, unwrap } from "@storyflow/result";
-import { SWRClient, useClient } from "../../client";
+import { SWRClient, useClient, useServicesClient } from "../../client";
 
 function useFilesQuery() {
   return SWRClient.files.getAll.useQuery(undefined, {
@@ -19,7 +19,7 @@ export function useFileLabel(name: string) {
 export function useFiles() {
   const { data, mutate } = useFilesQuery();
 
-  const client = useClient();
+  const client = useServicesClient();
 
   const upload = async (
     file: File,

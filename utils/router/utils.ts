@@ -31,12 +31,10 @@ export function parsePath(path: string): Partial<Path> {
   return parsedPath;
 }
 
-export function resolveTo(toArg: To, pathname: string): Path {
+export function resolveTo(toArg: To, from: string): Path {
   let to = typeof toArg === "string" ? parsePath(toArg) : { ...toArg };
   let isEmptyPath = toArg === "" || to.pathname === "";
   let toPathname = isEmptyPath ? "/" : to.pathname;
-
-  let from = pathname;
 
   let path = resolvePath(to, from);
 
@@ -44,7 +42,7 @@ export function resolveTo(toArg: To, pathname: string): Path {
   let hasExplicitTrailingSlash =
     toPathname && toPathname !== "/" && toPathname.endsWith("/");
   // Or if this was a link to the current path which has a trailing slash
-  let hasCurrentTrailingSlash = isEmptyPath && pathname.endsWith("/");
+  let hasCurrentTrailingSlash = isEmptyPath && from.endsWith("/");
   if (
     !path.pathname.endsWith("/") &&
     (hasExplicitTrailingSlash || hasCurrentTrailingSlash)

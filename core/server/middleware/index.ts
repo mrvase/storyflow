@@ -1,2 +1,2 @@
 export { cors } from "./cors";
-export { auth } from "./auth";
+export { auth, servicesAuth } from "./auth";

@@ -7,7 +7,6 @@ import type {
   DocumentId,
   FieldId,
   FolderId,
-  RawFieldId,
   StoryflowConfig,
   ValueArray,
 } from "@storyflow/shared/types";

@@ -3,12 +3,15 @@ import { options } from "./options";
 import { pages } from "@storyflow/api";
 import { isError, unwrap } from "@storyflow/result";
 import "server-only";
+import { storyflowConfig } from "../config";
+
+const api = pages(storyflowConfig);
 
 export const getPage = cache(async (url_: string) => {
   const url = url_.startsWith("/") ? url_ : `/${url_}`;
   console.log("CACHED PAGE REQUEST", url);
   try {
-    const result = await pages.get.query.call(
+    const result = await api.get.query.call(
       { context: { dbName: "dashboard-w080" } },
       {
         namespaces: options.namespaces,
@@ -27,7 +30,7 @@ export const getPage = cache(async (url_: string) => {
 export const getPaths = cache(async () => {
   console.log("CACHED PATHS REQUEST");
   try {
-    const result = await pages.getPaths.query.call(
+    const result = await api.getPaths.query.call(
       { context: { dbName: "dashboard-w080" } },
       {
         namespaces: options.namespaces,

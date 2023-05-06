@@ -151,7 +151,7 @@ export const auth = createRoute({
 
         const email = payload.email;
 
-        await sql`insert into users (email) values (${email});`;
+        await sql`insert into users (email) values (${email}) on conflict do nothing;`;
 
         res.setHeader(
           "Set-Cookie",
@@ -256,6 +256,8 @@ WHERE u.email = ${user.email};
           return error({ message: "Not authenticated" });
         }
 
+        console.log("user", user, org);
+
         const setKeyCookie = async () => {
           if (!org) return;
 
@@ -264,11 +266,13 @@ WHERE u.email = ${user.email};
             getHeader(req as any, "cookie")
           );
 
-          if (current && current.slug === org) return;
+          if (current && current.slug === org) return current.url;
 
           const result = await sql<
             { slug: string; url: string }[]
           >`SELECT url FROM organizations WHERE slug = ${org};`;
+
+          console.log(`result`, result);
 
           if (!result.length) return;
 
@@ -276,23 +280,23 @@ WHERE u.email = ${user.email};
 
           console.log(`${url}/.storyflow/config`);
 
-          const json = await fetch(`http://${url}/.storyflow/public`).then(
-            (res) => res.json()
+          const json = await fetch(`${url}/.storyflow/public`).then((res) =>
+            res.json()
           );
 
           if (
             !json ||
             typeof json !== "object" ||
-            !("key" in json) ||
-            typeof json.key !== "string"
+            !("publicKey" in json) ||
+            typeof json.publicKey !== "string"
           ) {
             return;
           }
-          console.log("JSON", json.key);
 
           setCookies.push(
             serializeAuthCookie(KEY_COOKIE, {
-              key: json.key,
+              key: json.publicKey,
+              url,
               slug: org,
             })
           );

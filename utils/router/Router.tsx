@@ -68,7 +68,8 @@ export function useNavigate(): NavigateFunction {
         state: options.state ?? null,
       });
     },
-    [navigator, pathname]
+    // navigator is a stable ref
+    [pathname]
   );
 
   return navigate;

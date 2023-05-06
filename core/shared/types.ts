@@ -321,11 +321,13 @@ export type StoryflowConfig = {
   baseURL: string;
   public: {
     organization: string;
-    key: string;
+    publicKey: string;
   };
   api: {
     admin: string;
     mongoURL: string;
+    privateKey: string;
+    storyflowKey: string;
   };
   workspaces: [WorkspaceReference, ...WorkspaceReference[]];
   apps: AppReference[];

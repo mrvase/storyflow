@@ -1,6 +1,6 @@
 import React from "react";
 import { useContextWithError } from "../utils/contextError";
-import { useClient } from "../client";
+import { useClient, useServicesClient } from "../client";
 import { createCollaboration } from "./collaboration";
 import { Queue } from "@storyflow/collab/Queue";
 import { TransactionEntry } from "@storyflow/collab/types";
@@ -14,7 +14,7 @@ export const useCollab = () =>
   useContextWithError(DocumentCollabContext, "Collab");
 
 export function CollabProvider({ children }: { children: React.ReactNode }) {
-  const client = useClient();
+  const client = useServicesClient();
 
   const collab = React.useMemo(() => {
     return createCollaboration({

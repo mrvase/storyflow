@@ -1,11 +1,14 @@
 import { MiddlewareContext } from "@sfrpc/server";
 
-import { auth, cors as corsFactory } from "@storyflow/server/middleware";
+import {
+  cors as corsFactory,
+  servicesAuth,
+} from "@storyflow/server/middleware";
 
 export const cors = corsFactory(
   process.env.NODE_ENV === "production" ? [] : ["http://localhost:5173"]
 );
 
 export const globals = (ctx: MiddlewareContext) => {
-  return ctx.use(cors, auth);
+  return ctx.use(cors, servicesAuth);
 };

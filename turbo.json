@@ -10,6 +10,7 @@
       "env": [
         "NODE_ENV",
         "BASE_URL",
+        "SECRE_KEY",
         "STORYFLOW_PUBLIC_KEY",
         "STORYFLOW_PRIVATE_KEY",
         "EMAIL_SERVER_HOST",

@@ -5,6 +5,7 @@ import { getHeader } from "@storyflow/server/utils";
 import {
   GLOBAL_TOKEN,
   LOCAL_SESSION,
+  LOCAL_TOKEN,
   parseAuthCookie,
   parseAuthToken,
   serializeAuthCookie,
@@ -23,38 +24,48 @@ export const admin = (config: StoryflowConfig) => {
         return ctx.use(corsFactory(["http://localhost:5173"]));
       },
       async mutation(_, { res, req }) {
+        const cookies: string[] = [];
         try {
-          const cookie = parseAuthCookie(
+          let session = parseAuthCookie(
             LOCAL_SESSION,
             getHeader(req as any, "cookie")
           );
 
-          const tokenString = getHeader(req as any, "X-Storyflow-Token");
+          console.log("ADMIN HAS COOKIE", session);
 
-          if (!cookie) {
-            try {
-              const token = parseAuthToken(
-                GLOBAL_TOKEN,
-                tokenString,
-                process.env.PUBLIC_STORYFLOW_KEY as string
-              );
-              if (!token) throw "";
-              // TODO validate!!
-              res.setHeader(
-                "Set-Cookie",
-                serializeAuthCookie(
-                  GLOBAL_TOKEN,
-                  { email: token.email },
-                  process.env.PRIVATE_KEY as string
-                )
-              );
-            } catch (err) {
-              return error({ message: "Not authenticated" });
+          const tokenHeader = getHeader(req as any, "X-Storyflow-Token");
+
+          if (!session) {
+            session = parseAuthToken(
+              GLOBAL_TOKEN,
+              tokenHeader,
+              config.api.storyflowKey
+            );
+            if (!session) {
+              return error({
+                message: tokenHeader ? "Token not valid" : "Not authenticated",
+              });
             }
+            // TODO validate!!
+            const cookie = serializeAuthCookie(LOCAL_SESSION, {
+              email: session.email,
+            });
+            console.log("SETTING LOCAL SESSION", cookie);
+            cookies.push(cookie);
           }
 
+          const cookie = serializeAuthCookie(
+            LOCAL_TOKEN,
+            { email: session.email },
+            config.api.privateKey
+          );
+
+          cookies.push(cookie);
+
+          res.setHeader("Set-Cookie", cookies.join(", "));
+
           return success(
-            tokenString
+            tokenHeader
               ? {
                   apps: config.apps,
                   workspaces: config.workspaces.map(({ name }) => ({ name })),
