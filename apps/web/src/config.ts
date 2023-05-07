@@ -2,7 +2,7 @@ import { AppConfig, StoryflowConfig } from "@storyflow/api";
 import { config } from "./components";
 
 export const storyflowConfig: StoryflowConfig = {
-  baseURL: "https://www.storyflow.dk",
+  baseURL: process.env.BASE_URL as string,
   public: {
     organization: "Semper",
     publicKey: process.env.PUBLIC_KEY as string,

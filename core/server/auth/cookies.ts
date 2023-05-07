@@ -40,31 +40,23 @@ export type LocalAuthToken = {
   email: string;
 };
 
-const cookies = {
-  KEY_COOKIE: "sf.key",
-  LINK_COOKIE: "sf.verify",
-  GLOBAL_SESSION_COOKIE: "sf.session",
-  GLOBAL_TOKEN: "sf.token",
-  LOCAL_SESSION_COOKIE: "sf.local.session",
-  LOCAL_TOKEN: "sf.local.token",
-} as const;
+export const KEY_COOKIE = "key";
+export const LINK_COOKIE = "verify";
+export const GLOBAL_SESSION_COOKIE = "session";
+export const GLOBAL_TOKEN = "token";
+export const LOCAL_SESSION_COOKIE = "local-session";
+export const LOCAL_TOKEN = "local-token";
 
-type CookieName = (typeof cookies)[keyof typeof cookies];
-
-export const {
-  KEY_COOKIE,
-  LINK_COOKIE,
-  GLOBAL_SESSION_COOKIE,
-  LOCAL_SESSION_COOKIE,
-  GLOBAL_TOKEN,
-  LOCAL_TOKEN,
-} = cookies;
-
-type CookieValue = {
+export type AuthCookies = {
   [KEY_COOKIE]: KeyCookie;
   [LINK_COOKIE]: LinkCookie;
   [GLOBAL_SESSION_COOKIE]: GlobalAuthSession;
   [LOCAL_SESSION_COOKIE]: LocalAuthSession;
+  [GLOBAL_TOKEN]: string;
+  [LOCAL_TOKEN]: string;
+};
+
+export type AuthTokens = {
   [GLOBAL_TOKEN]: GlobalAuthToken;
   [LOCAL_TOKEN]: LocalAuthToken;
 };
@@ -89,18 +81,19 @@ export function serializeAuthToken(
 
 export function parseAuthToken<
   T extends typeof GLOBAL_TOKEN | typeof LOCAL_TOKEN
->(name: T, value: string | undefined, key: string) {
-  if (!value) return null;
+>(name: T, value: string | null | undefined, key: string) {
+  if (!value) return;
   try {
     return jwt.verify(value, parseKey(key, "public"), {
       algorithms: ["RS256"],
       issuer: "storyflow",
-    }) as CookieValue[T];
+    }) as AuthTokens[T];
   } catch (err) {
-    return null;
+    return;
   }
 }
 
+/*
 export function parseAuthSession<
   T extends
     | typeof GLOBAL_SESSION_COOKIE
@@ -153,8 +146,4 @@ export function serializeAuthCookie<T extends CookieName>(
     return `${name}=${btoa(JSON.stringify(value))}; ${options}`;
   }
 }
-
-export function unsetAuthCookie<T extends CookieName>(name: T) {
-  const options = "Path=/; HttpOnly; SameSite=Lax; Secure";
-  return `${name}=; ${options}; Max-Age=0`;
-}
+*/

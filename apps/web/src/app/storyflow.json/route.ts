@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { storyflowConfig } from "../../../config";
+import { storyflowConfig } from "../../config";
 
 export async function GET(request: NextRequest) {
-  console.log("RECIEVED REQUEST", request.headers.get("origin")!);
-  return NextResponse.json(storyflowConfig.public, {
+  return new Response(JSON.stringify(storyflowConfig.public), {
     headers: {
       "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
       "Access-Control-Allow-Headers":

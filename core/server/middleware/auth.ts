@@ -1,11 +1,11 @@
 import type { MiddlewareContext } from "@storyflow/rpc-server";
 import { error } from "@storyflow/rpc-server/result";
-import { LOCAL_SESSION, parseAuthCookie, parseAuthToken } from "../auth";
+import { LOCAL_SESSION, parseAuthToken } from "../auth";
 import { getHeader } from "../utils";
-import { KEY_COOKIE, LOCAL_TOKEN } from "../auth/cookies";
+import { KEY_COOKIE, LOCAL_TOKEN, AuthCookies } from "../auth/cookies";
 
-export const servicesAuth = async ({ req, client }: MiddlewareContext) => {
-  const cookie = parseAuthCookie(KEY_COOKIE, getHeader(req, "cookie"));
+export const servicesAuth = async ({ request, client }: MiddlewareContext) => {
+  const cookie = request.cookies<AuthCookies>().get(KEY_COOKIE)?.value;
 
   if (!cookie) {
     throw error({
@@ -14,7 +14,7 @@ export const servicesAuth = async ({ req, client }: MiddlewareContext) => {
     });
   }
 
-  const tokenHeader = getHeader(req, "X-Storyflow-Token");
+  const tokenHeader = request.headers.get("X-Storyflow-Token");
 
   const token = parseAuthToken(LOCAL_TOKEN, tokenHeader, cookie.key);
 
@@ -33,8 +33,8 @@ export const servicesAuth = async ({ req, client }: MiddlewareContext) => {
   };
 };
 
-export const auth = async ({ req, client }: MiddlewareContext) => {
-  const session = parseAuthCookie(LOCAL_SESSION, getHeader(req, "cookie"));
+export const auth = async ({ request, client }: MiddlewareContext) => {
+  const session = request.cookies<AuthCookies>().get(LOCAL_SESSION)?.value;
 
   console.log("AUTH SESSION", session);
 
@@ -43,7 +43,7 @@ export const auth = async ({ req, client }: MiddlewareContext) => {
   }
 
   // sikrer gyldighed fra databasen indenfor de sidste 5 minutter
-  const tokenHeader = getHeader(req, "X-Storyflow-Token");
+  const tokenHeader = request.headers.get("X-Storyflow-Token");
 
   const token = parseAuthToken(
     LOCAL_TOKEN,

@@ -1,7 +1,7 @@
 import type {} from "@storyflow/rpc-server/types-shared";
-import type {} from "@storyflow/server";
+import { createAPIRoute, createRouteHandler } from "@storyflow/server/next";
 
-import { createAPI, createHandler } from "@storyflow/rpc-server";
+import { createAPI } from "@storyflow/rpc-server";
 import { documents } from "./routes/documents";
 import { admin } from "./routes/admin";
 import { files } from "./routes/files";
@@ -17,9 +17,9 @@ const api = (config: StoryflowConfig) =>
     pages: _pages(config),
   });
 
-export const handler = (config: StoryflowConfig) => {
+export const createHandler = (config: StoryflowConfig) => {
   setClientPromise(config.api.mongoURL);
-  return createHandler(api(config));
+  return createRouteHandler(api(config));
 };
 
 export type API = ReturnType<typeof api>;
@@ -29,9 +29,9 @@ export const pages = (config: StoryflowConfig) => {
   return _pages(config);
 };
 
-export const pagesHandler = (config: StoryflowConfig) => {
+export const createPagesHandler = (config: StoryflowConfig) => {
   setClientPromise(config.api.mongoURL);
-  return createHandler(createAPI({ pages: pages(config) }), "pages");
+  return createAPIRoute(createAPI({ pages: pages(config) }), "pages");
 };
 
 export type PagesAPI = typeof api;

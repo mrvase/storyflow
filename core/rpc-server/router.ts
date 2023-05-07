@@ -38,6 +38,17 @@ type UserContext = Record<string, any>;
 
 const message = "Server error.";
 
+const errorProxy = new Proxy(
+  {},
+  {
+    get: () => {
+      throw new Error(
+        "You are making an RPC which needs HTTP context through the local API."
+      );
+    },
+  }
+);
+
 export function createProcedure<
   C extends UserContext,
   I extends SchemaInput,
@@ -67,7 +78,7 @@ export function createProcedure<
   return {
     [type]: async function (input: any) {
       const context = Object.create({ use });
-      Object.assign(context, this.context);
+      Object.assign(context, this.context ?? errorProxy);
       try {
         await action.middleware?.(context);
 

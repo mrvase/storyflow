@@ -86,14 +86,14 @@ export function AuthProvider({ children }: { children?: React.ReactNode }) {
     if (!apiUrl) return;
 
     const run = async (includeHeader?: boolean) => {
-      const token = getCookie("sf.token");
+      const token = getCookie("sf.c.token");
       if (!token && includeHeader) return error({ message: "No token" });
       return await fetch(`${apiUrl}/admin/authenticate`, {
         method: "POST",
         credentials: "include",
         headers: includeHeader
           ? {
-              "X-Storyflow-Token": token,
+              "x-storyflow-token": token,
             }
           : undefined,
       }).then(async (res) => {
@@ -119,7 +119,7 @@ export function AuthProvider({ children }: { children?: React.ReactNode }) {
       user,
       organization,
       apiUrl,
-      getToken: () => getCookie("sf.local.token"),
+      getToken: () => getCookie("sf.c.local-token"),
     }),
     [user, organization]
   );

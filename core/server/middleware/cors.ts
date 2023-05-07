@@ -1,19 +1,23 @@
 import type { MiddlewareContext } from "@storyflow/rpc-server";
 
 export function cors(allowedOrigins: string[] | "allow-all") {
-  return async ({ req, res }: MiddlewareContext) => {
+  return async ({ request, response }: MiddlewareContext) => {
+    const origin = request.headers.get("origin");
     if (
-      req.headers.origin &&
-      (allowedOrigins === "allow-all" ||
-        allowedOrigins.includes(req.headers.origin))
+      origin &&
+      (allowedOrigins === "allow-all" || allowedOrigins.includes(origin))
     ) {
-      res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
-      res.setHeader(
-        "Access-Control-Allow-Headers",
-        "Origin, X-Requested-With, Content-Type, Accept, Authorization, Content-Encoding, X-Storyflow-Token"
+      response.headers.set("Access-Control-Allow-Origin", origin);
+      response.headers.set(
+        "Access-Control-Allow-Methods",
+        "POST, GET, OPTIONS"
       );
-      res.setHeader("Access-Control-Allow-Credentials", "true");
-      res.setHeader("Access-Control-Allow-Origin", req.headers.origin);
+      response.headers.set(
+        "Access-Control-Allow-Headers",
+        "origin, x-requested-with, content-type, accept, authorization, content-encoding, x-storyflow-token"
+      );
+      response.headers.set("Access-Control-Allow-Credentials", "true");
+
       return {
         cors: true,
       };

@@ -1,14 +1,15 @@
 import { error, success } from "@storyflow/rpc-server/result";
 import { createProcedure, createRoute } from "@storyflow/rpc-server/router";
 import { cors as corsFactory } from "@storyflow/server/middleware";
-import { getHeader } from "@storyflow/server/utils";
+import {
+  AuthCookies,
+  serializeAuthToken,
+} from "@storyflow/server/auth/cookies";
 import {
   GLOBAL_TOKEN,
   LOCAL_SESSION,
   LOCAL_TOKEN,
-  parseAuthCookie,
   parseAuthToken,
-  serializeAuthCookie,
 } from "@storyflow/server/auth";
 import { globals } from "../globals";
 import { z } from "zod";
@@ -23,17 +24,14 @@ export const admin = (config: StoryflowConfig) => {
       middleware(ctx) {
         return ctx.use(corsFactory(["http://localhost:5173"]));
       },
-      async mutation(_, { res, req }) {
-        const cookies: string[] = [];
+      async mutation(_, { request, response }) {
         try {
-          let session = parseAuthCookie(
-            LOCAL_SESSION,
-            getHeader(req as any, "cookie")
-          );
+          let session = request
+            .cookies<AuthCookies>()
+            .get(LOCAL_SESSION)?.value;
 
-          console.log("ADMIN HAS COOKIE", session);
-
-          const tokenHeader = getHeader(req as any, "X-Storyflow-Token");
+          const tokenHeader = request.headers.get("x-storyflow-token");
+          console.log("token header", tokenHeader);
 
           if (!session) {
             session = parseAuthToken(
@@ -47,13 +45,27 @@ export const admin = (config: StoryflowConfig) => {
               });
             }
             // TODO validate!!
-            const cookie = serializeAuthCookie(LOCAL_SESSION, {
-              email: session.email,
-            });
-            console.log("SETTING LOCAL SESSION", cookie);
-            cookies.push(cookie);
+            response
+              .cookies<AuthCookies>()
+              .set(
+                LOCAL_SESSION,
+                { email: session.email },
+                { path: "/", httpOnly: true, sameSite: "lax", secure: true }
+              );
           }
 
+          response
+            .cookies<AuthCookies>()
+            .set(
+              LOCAL_TOKEN,
+              serializeAuthToken(
+                { email: session.email },
+                config.api.privateKey
+              ),
+              { path: "/" }
+            );
+
+          /*
           const cookie = serializeAuthCookie(
             LOCAL_TOKEN,
             { email: session.email },
@@ -63,6 +75,7 @@ export const admin = (config: StoryflowConfig) => {
           cookies.push(cookie);
 
           res.setHeader("Set-Cookie", cookies.join(", "));
+          */
 
           return success(
             tokenHeader

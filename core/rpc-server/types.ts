@@ -1,7 +1,10 @@
 import { ZodType } from "zod";
+import { parse } from "cookie";
+import type { CookieSerializeOptions } from "cookie";
 
 export * from "./types-shared";
 
+/*
 export type DefaultRequest = {
   params?: object;
   query?: object;
@@ -31,12 +34,75 @@ type ExtendedType<K extends ExtendableTypes, B> = unknown extends CustomTypes[K]
 
 export type Request = ExtendedType<"Request", DefaultRequest>;
 export type Response = ExtendedType<"Response", DefaultResponse>;
+*/
+
+export type ResponseCookie<Name extends string = string, Value = any> = Omit<
+  CookieSerializeOptions,
+  "encode"
+> & {
+  name: Name;
+  value: Value;
+};
+
+export type RequestCookie<Name extends string = string, Value = any> = {
+  name: Name;
+  value: Value;
+};
+
+export type RequestCookies<
+  T extends Record<string, any> = Record<string, any>
+> = {
+  get size(): number;
+  get<Name extends keyof T>(
+    name: Name
+  ): (Name extends string ? RequestCookie<Name, T[Name]> : never) | undefined;
+  has(name: string): boolean;
+};
+
+export type ResponseCookies<
+  T extends Record<string, any> = Record<string, any>
+> = {
+  get<Name extends keyof T & string>(
+    name: Name
+  ): ResponseCookie<Name, T[Name]> | undefined;
+  set<Name extends keyof T & string>(
+    ...args:
+      | [
+          key: Name,
+          value: T[Name],
+          cookie?: Partial<ResponseCookie<Name, T[Name]>>
+        ]
+      | [options: ResponseCookie<Name, T[Name]>]
+  ): void;
+  delete(name: string): void;
+};
+
+export type RPCRequest = {
+  method: "GET" | "POST" | "OPTIONS";
+  url: string;
+  headers: Headers;
+  route: string;
+  procedure: string;
+};
+
+export type RPCResponse = {
+  headers: Headers;
+  status: number;
+};
 
 export type SchemaInput = ZodType<any, any, any> | unknown;
 
 export interface Context {
-  req: Request;
-  res: Response;
+  request: RPCRequest & {
+    cookies<
+      T extends Record<string, any> = Record<string, any>
+    >(): RequestCookies<T>;
+  };
+  response: RPCResponse & {
+    cookies<
+      T extends Record<string, any> = Record<string, any>
+    >(): ResponseCookies<T>;
+  };
   client: Record<string, any>;
 }
 

@@ -7,20 +7,21 @@ import {
   decrypt,
   createLink,
   validateLink,
-  unsetAuthCookie,
 } from "@storyflow/server/auth";
 import { z } from "zod";
 import {
   GLOBAL_SESSION,
   GLOBAL_TOKEN,
   LINK_COOKIE,
-  parseAuthCookie,
-  serializeAuthCookie,
 } from "@storyflow/server/auth";
 import { Payload } from "@storyflow/server/auth/email";
 import { createTransport } from "nodemailer";
 import postgres from "postgres";
-import { KEY_COOKIE } from "@storyflow/server/auth/cookies";
+import {
+  AuthCookies,
+  KEY_COOKIE,
+  serializeAuthToken,
+} from "@storyflow/server/auth/cookies";
 
 const sql = postgres(process.env.PGCONNECTION as string, { ssl: "require" });
 
@@ -76,7 +77,7 @@ export const auth = createRoute({
     schema() {
       return z.string();
     },
-    async query(email, { req, res }) {
+    async query(email, { request, response }) {
       if (!/.+@.+/u.test(email)) {
         throw new Error("A valid email is required.");
       }
@@ -95,10 +96,12 @@ export const auth = createRoute({
 
       await sendLinkByEmail(link, { email });
 
-      res.setHeader(
-        "Set-Cookie",
-        serializeAuthCookie(LINK_COOKIE, encyptedLink)
-      );
+      response.cookies<AuthCookies>().set(LINK_COOKIE, encyptedLink, {
+        path: "/",
+        httpOnly: true,
+        sameSite: "lax",
+        secure: true,
+      });
 
       return success(null);
     },
@@ -108,10 +111,10 @@ export const auth = createRoute({
     middleware(ctx) {
       return ctx.use(cors);
     },
-    async query(_, { req, res }) {
+    async query(_, { request, response }) {
       let token: string;
       try {
-        const url = new URL(`https://storyflow.dk${req.url!}`);
+        const url = new URL(`https://storyflow.dk${request.url}`);
         token = url.searchParams.get("token") ?? "";
       } catch {
         return error({ message: "Invalid token." });
@@ -120,10 +123,9 @@ export const auth = createRoute({
       // retrieve link from cookie and decrypt
       const SECRET = process.env.SECRET_KEY as string;
 
-      const encryptedLink = parseAuthCookie(
-        LINK_COOKIE,
-        getHeader(req, "cookie")
-      );
+      const encryptedLink = request
+        .cookies<AuthCookies>()
+        .get(LINK_COOKIE)?.value;
 
       if (!encryptedLink) {
         return error({ message: "Invalid link" });
@@ -139,6 +141,8 @@ export const auth = createRoute({
         return error({ message: "Invalid device" });
       }
 
+      console.log("* LINK", token, serverToken);
+
       if (token !== serverToken) {
         return error({ message: "Invalid token" });
       }
@@ -153,10 +157,13 @@ export const auth = createRoute({
 
         await sql`insert into users (email) values (${email}) on conflict do nothing;`;
 
-        res.setHeader(
-          "Set-Cookie",
-          serializeAuthCookie(GLOBAL_SESSION, { email })
-        );
+        response
+          .cookies<AuthCookies>()
+          .set(
+            GLOBAL_SESSION,
+            { email },
+            { path: "/", httpOnly: true, sameSite: "lax", secure: true }
+          );
 
         return success(null);
       } catch (err) {
@@ -206,11 +213,8 @@ UPDATE users SET organizations = array_append(organizations, (SELECT id FROM new
     middleware(ctx) {
       return ctx.use(cors);
     },
-    async query(_, { req }) {
-      const user = parseAuthCookie(
-        GLOBAL_SESSION,
-        getHeader(req as any, "cookie")
-      );
+    async query(_, { request, response }) {
+      const user = request.cookies<AuthCookies>().get(GLOBAL_SESSION)?.value;
 
       if (!user) {
         return error({ message: "Not authenticated" });
@@ -243,14 +247,9 @@ WHERE u.email = ${user.email};
     schema() {
       return z.string();
     },
-    async mutation(org, { res, req }) {
-      const setCookies: string[] = [];
-
+    async mutation(org, { request, response }) {
       try {
-        const user = parseAuthCookie(
-          GLOBAL_SESSION,
-          getHeader(req as any, "cookie")
-        );
+        const user = request.cookies<AuthCookies>().get(GLOBAL_SESSION)?.value;
 
         if (!user) {
           return error({ message: "Not authenticated" });
@@ -261,10 +260,7 @@ WHERE u.email = ${user.email};
         const setKeyCookie = async () => {
           if (!org) return;
 
-          const current = parseAuthCookie(
-            KEY_COOKIE,
-            getHeader(req as any, "cookie")
-          );
+          const current = request.cookies<AuthCookies>().get(KEY_COOKIE)?.value;
 
           if (current && current.slug === org) return current.url;
 
@@ -272,15 +268,11 @@ WHERE u.email = ${user.email};
             { slug: string; url: string }[]
           >`SELECT url FROM organizations WHERE slug = ${org};`;
 
-          console.log(`result`, result);
-
           if (!result.length) return;
 
           const url = result[0].url;
 
-          console.log(`${url}/.storyflow/config`);
-
-          const json = await fetch(`${url}/.storyflow/public`).then((res) =>
+          const json = await fetch(`${url}/storyflow.json`).then((res) =>
             res.json()
           );
 
@@ -293,12 +285,14 @@ WHERE u.email = ${user.email};
             return;
           }
 
-          setCookies.push(
-            serializeAuthCookie(KEY_COOKIE, {
+          response.cookies<AuthCookies>().set(
+            KEY_COOKIE,
+            {
               key: json.publicKey,
               url,
               slug: org,
-            })
+            },
+            { path: "/", httpOnly: true, sameSite: "lax", secure: true }
           );
 
           return url;
@@ -306,15 +300,16 @@ WHERE u.email = ${user.email};
 
         const url = await setKeyCookie();
 
-        setCookies.push(
-          serializeAuthCookie(
+        response
+          .cookies<AuthCookies>()
+          .set(
             GLOBAL_TOKEN,
-            { email: user.email },
-            process.env.STORYFLOW_PRIVATE_KEY as string
-          )
-        );
-
-        res.setHeader("Set-Cookie", setCookies.join(", "));
+            serializeAuthToken(
+              { email: user.email },
+              process.env.STORYFLOW_PRIVATE_KEY as string
+            ),
+            { path: "/" }
+          );
 
         return success({ user: { email: user.email }, url: url ?? null });
       } catch (err) {
@@ -341,9 +336,9 @@ WHERE u.email = ${user.email};
     middleware(ctx) {
       return ctx.use(cors);
     },
-    async mutation(_, { res }) {
-      res.setHeader("Set-Cookie", unsetAuthCookie(GLOBAL_TOKEN));
-      res.setHeader("Set-Cookie", unsetAuthCookie(GLOBAL_SESSION));
+    async mutation(_, { response }) {
+      response.cookies<AuthCookies>().delete(GLOBAL_TOKEN);
+      response.cookies<AuthCookies>().delete(GLOBAL_SESSION);
       return success(null);
     },
   }),
