@@ -19,7 +19,7 @@ export const admin = (config: StoryflowConfig) => {
   return createRoute({
     authenticate: createProcedure({
       middleware(ctx) {
-        return ctx.use(corsFactory(["http://localhost:5173"]));
+        return ctx.use(corsFactory(config.api.cors));
       },
       async mutation(_, { request, response }) {
         try {
@@ -90,7 +90,7 @@ export const admin = (config: StoryflowConfig) => {
 
     getOffset: createProcedure({
       middleware(ctx) {
-        return ctx.use(globals);
+        return ctx.use(globals(config.api));
       },
       schema() {
         return z.object({
@@ -122,7 +122,7 @@ export const admin = (config: StoryflowConfig) => {
 
     getFolders: createProcedure({
       middleware(ctx) {
-        return ctx.use(globals);
+        return ctx.use(globals(config.api));
       },
       async query(_) {
         const db = (await getClientPromise()).db(dbName);

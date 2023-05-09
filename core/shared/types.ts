@@ -459,6 +459,7 @@ export type Path = PathSegment[];
 type BasicApiConfig = {
   mongoURL: string;
   storyflowKey: string;
+  cors?: string[];
 };
 
 export type StoryflowConfig = {

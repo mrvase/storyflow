@@ -1,7 +1,9 @@
 import type { MiddlewareContext } from "@storyflow/rpc-server";
 
-export function cors(allowedOrigins: string[] | "allow-all") {
+export function cors(allowedOrigins?: string[] | "allow-all") {
   return async ({ request, response }: MiddlewareContext) => {
+    if (!allowedOrigins) return {};
+
     const origin = request.headers.get("origin");
     if (
       origin &&

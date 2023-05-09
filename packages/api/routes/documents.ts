@@ -25,7 +25,7 @@ export const documents = (config: StoryflowConfig) => {
   return createRoute({
     find: createProcedure({
       middleware(ctx) {
-        return ctx.use(globals);
+        return ctx.use(globals(config.api));
       },
       schema() {
         return z.object({
@@ -49,7 +49,7 @@ export const documents = (config: StoryflowConfig) => {
 
     findByLabel: createProcedure({
       middleware(ctx) {
-        return ctx.use(globals);
+        return ctx.use(globals(config.api));
       },
       schema() {
         return z.string();
@@ -75,7 +75,7 @@ export const documents = (config: StoryflowConfig) => {
 
     findById: createProcedure({
       middleware(ctx) {
-        return ctx.use(globals);
+        return ctx.use(globals(config.api));
       },
       schema() {
         return z.string();
@@ -107,7 +107,7 @@ export const documents = (config: StoryflowConfig) => {
 
     update: createProcedure({
       middleware(ctx) {
-        return ctx.use(globals);
+        return ctx.use(globals(config.api));
       },
       schema() {
         return z.object({
@@ -125,7 +125,7 @@ export const documents = (config: StoryflowConfig) => {
 
     deleteMany: createProcedure({
       middleware(ctx) {
-        return ctx.use(globals);
+        return ctx.use(globals(config.api));
       },
       schema() {
         return z.array(z.string());
@@ -149,7 +149,7 @@ export const documents = (config: StoryflowConfig) => {
 
     getUpdatedUrls: createProcedure({
       middleware(ctx) {
-        return ctx.use(globals);
+        return ctx.use(globals(config.api));
       },
       schema() {
         return z.object({
@@ -228,7 +228,7 @@ export const documents = (config: StoryflowConfig) => {
 
     registerRevalidation: createProcedure({
       middleware(ctx) {
-        return ctx.use(globals);
+        return ctx.use(globals(config.api));
       },
       async mutation(_) {
         const db = (await getClientPromise()).db(dbName);

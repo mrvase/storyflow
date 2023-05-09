@@ -2,7 +2,7 @@ import { createProcedure, createRoute } from "@storyflow/rpc-server";
 import { getClientPromise } from "../mongoClient";
 import { z } from "zod";
 
-import { cors as corsFactory } from "@storyflow/server/middleware";
+import { cors } from "@storyflow/server/middleware";
 
 import { error, success } from "@storyflow/rpc-server/result";
 import { createFieldRecordGetter } from "@storyflow/cms/get-field-record";
@@ -22,7 +22,7 @@ import {
 } from "@storyflow/cms/ids";
 import { createObjectId } from "@storyflow/server/mongo";
 import { createFetcher } from "../create-fetcher";
-import { cors, globals } from "../globals";
+import { globals } from "../globals";
 
 const modifyValues = <Result, V extends Record<string, any>>(
   obj: V,
@@ -44,7 +44,7 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
   return createRoute({
     config: createProcedure({
       middleware(ctx) {
-        return ctx.use(cors);
+        return ctx.use(cors(apiConfig.cors));
       },
 
       async query() {
@@ -106,7 +106,7 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
 
     revalidate: createProcedure({
       middleware(ctx) {
-        return ctx.use(globals);
+        return ctx.use(globals(apiConfig));
       },
       schema() {
         return z.array(z.string());
@@ -124,7 +124,7 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
 
     getPage: createProcedure({
       middleware(ctx) {
-        return ctx.use(cors);
+        return ctx.use(cors(apiConfig.cors));
       },
       schema() {
         return z.string();
@@ -219,7 +219,7 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
 
     getPaths: createProcedure({
       middleware(ctx) {
-        return ctx.use(cors);
+        return ctx.use(cors(apiConfig.cors));
       },
       async query() {
         console.log("REQUESTING PATHS");

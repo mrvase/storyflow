@@ -12,6 +12,10 @@ export const appConfig: AppConfig = {
 export const apiConfig: ApiConfig = {
   mongoURL: process.env.MONGO_URL as string,
   storyflowKey: process.env.STORYFLOW_PUBLIC_KEY as string,
+  cors:
+    process.env.NODE_ENV === "development"
+      ? ["http://localhost:5173"]
+      : ["https://www.app.storyflow.dk"],
   revalidate: (path: string) => {
     revalidatePath(path);
   },

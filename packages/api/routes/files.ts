@@ -9,7 +9,7 @@ export const files = (config: StoryflowConfig) => {
   return createRoute({
     getAll: createProcedure({
       middleware(ctx) {
-        return ctx.use(globals);
+        return ctx.use(globals(config.api));
       },
       async query(_) {
         const db = (await getClientPromise()).db(dbName);

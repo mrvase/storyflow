@@ -6,7 +6,7 @@ import {
 } from "@storyflow/server/middleware";
 
 export const cors = corsFactory(
-  process.env.NODE_ENV === "production" ? [] : ["http://localhost:5173"]
+  process.env.NODE_ENV === "production" ? undefined : ["http://localhost:5173"]
 );
 
 export const globals = (ctx: MiddlewareContext) => {

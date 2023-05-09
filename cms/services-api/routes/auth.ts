@@ -12,10 +12,9 @@ import {
 } from "@storyflow/server/auth";
 import { createTransport } from "nodemailer";
 import postgres from "postgres";
+import { cors } from "../globals";
 
 const sql = postgres(process.env.PGCONNECTION as string, { ssl: "require" });
-
-const cors = corsFactory(["http://localhost:3000", "http://localhost:5173"]);
 
 const options = {
   server: {
