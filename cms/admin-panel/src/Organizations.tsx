@@ -1,65 +1,95 @@
 import cl from "clsx";
 import React from "react";
-import { servicesClient, servicesClientSWR } from "./Auth";
+import { servicesClient, servicesClientSWR, useAuth } from "./Auth";
 import Loader from "./elements/Loader";
+import { Link } from "@storyflow/router";
 
 export function Organizations() {
   const { data } = servicesClientSWR.auth.getOrganizations.useQuery(undefined, {
     immutable: true,
   });
 
+  const { user } = useAuth();
+
   return (
-    <div className="w-full h-full flex-center p-5">
-      <div className="grid grid-cols-3 w-full max-w-4xl gap-5">
-        {(data?.organizations ?? []).map((data) => (
-          <Organization key={data.slug} data={data} />
-        ))}
-        <AddOrganization />
+    <div className="w-full h-full flex flex-col">
+      <div className="w-full flex-center p-5 grow">
+        <div className="grid grid-cols-3 w-full max-w-4xl gap-5">
+          <AddOrganization index={0} />
+          {(data?.organizations ?? []).map((data, index) => (
+            <Organization index={index + 1} key={data.slug} data={data} />
+          ))}
+        </div>
       </div>
-      <button
-        onClick={async () => {
-          await servicesClient.auth.logout.mutation();
-        }}
-      >
-        Log ud
-      </button>
+      <div className="w-full py-5 flex flex-col gap-3 items-center text-sm">
+        <div className="text-gray-600">Logget ind som {user?.email}</div>
+        <Link to="/logout" className="rounded px-4 py-2 ring-button">
+          Log ud
+        </Link>
+      </div>
     </div>
   );
 }
 
 export function OrganizationCard({
+  index,
   children,
   className,
+  ...action
 }: {
+  index: number;
   children: React.ReactNode;
   className?: string;
+  to?: string;
 }) {
+  const [isMounted, setIsMounted] = React.useState(false);
+  React.useEffect(() => {
+    setIsMounted(true);
+  }, []);
+  const Component = action.to ? Link : "div";
+
   return (
-    <div className={cl("rounded bg-gray-900 p-5 h-52", className)}>
+    <Component
+      {...(action as any)}
+      className={cl(
+        "rounded bg-gray-900 p-5 h-52 transition-[transform,opacity] duration-300 ease-out",
+        isMounted ? "translate-y-0 opacity-100" : "translate-y-5 opacity-0",
+        className
+      )}
+      style={{
+        transitionDelay: `${index * 50}ms`,
+      }}
+    >
       {children}
-    </div>
+    </Component>
   );
 }
 
 export function Organization({
+  index,
   data,
 }: {
+  index: number;
   data: { slug: string; url: string };
 }) {
   return (
-    <OrganizationCard className="flex flex-col justify-center gap-3">
+    <OrganizationCard
+      index={index}
+      to={`/${data.slug}`}
+      className={cl("flex flex-col justify-center gap-3")}
+    >
       <div className="text-3xl">{data.slug}</div>
       <div className="text-gray-400">{data.url}</div>
     </OrganizationCard>
   );
 }
 
-export function AddOrganization() {
+export function AddOrganization({ index }: { index: number }) {
   const [isCreating, setIsCreating] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
 
   return (
-    <OrganizationCard>
+    <OrganizationCard index={index}>
       <form
         onSubmit={async (ev) => {
           ev.preventDefault();

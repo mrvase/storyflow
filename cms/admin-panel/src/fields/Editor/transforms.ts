@@ -25,7 +25,10 @@ import {
   matchNonEscapedCharacter,
   splitByNonEscapedCharacter,
 } from "../../operations/escaped-characters";
-import type { NestedElement } from "@storyflow/shared/types";
+import type {
+  LibraryConfigRecord,
+  NestedElement,
+} from "@storyflow/shared/types";
 import type { TokenStream } from "../../operations/types";
 import type { LibraryConfig } from "@storyflow/shared/types";
 import { getConfigFromType } from "../../client-config";
@@ -62,10 +65,10 @@ import { $createCommaNode } from "./decorators/CommaNode";
 import { $createBracketNode } from "./decorators/BracketNode";
 
 export const isInlineElement = (
-  libraries: LibraryConfig[],
+  configs: LibraryConfigRecord,
   element: NestedElement
 ): element is typeof element & { inline: true } => {
-  const config = getConfigFromType(element.element, libraries);
+  const config = getConfigFromType(element.element, configs);
   const result = Boolean(config?.inline);
   return result;
 };
@@ -389,7 +392,7 @@ export const $getPointFromIndex = (
 
 export const $createInlinesFromStream = (
   stream: TokenStream,
-  libraries: LibraryConfig[]
+  configs: LibraryConfigRecord
 ) => {
   let bold = false;
   let italic = false;
@@ -436,7 +439,7 @@ export const $createInlinesFromStream = (
       const node = $createParameterNode(el);
       acc.push(node);
     } else if (tokens.isNestedElement(el)) {
-      if (isInlineElement(libraries, el)) {
+      if (isInlineElement(configs, el)) {
         const node = $createInlineLayoutElementNode(el);
         acc.push(node);
       } else {
@@ -488,10 +491,10 @@ export const $createInlinesFromStream = (
 
 const isBlockElement = (
   el: TokenStream[number],
-  libraries: LibraryConfig[]
+  configs: LibraryConfigRecord
 ) => {
   return (
-    (tokens.isNestedElement(el) && !isInlineElement(libraries, el)) ||
+    (tokens.isNestedElement(el) && !isInlineElement(configs, el)) ||
     tokens.isNestedDocument(el) ||
     tokens.isNestedFolder(el) ||
     tokens.isFileToken(el) ||
@@ -501,11 +504,11 @@ const isBlockElement = (
 
 export function splitStreamByBlocks(
   stream: TokenStream,
-  libraries: LibraryConfig[]
+  configs: LibraryConfigRecord
 ) {
   const splitResult = tools.split(
     stream,
-    (el) => tokens.isLineBreak(el) || isBlockElement(el, libraries)
+    (el) => tokens.isLineBreak(el) || isBlockElement(el, configs)
   );
 
   let blocks = splitResult
@@ -527,11 +530,11 @@ export function splitStreamByBlocks(
 
 export function $createBlocksFromStream(
   initialState: TokenStream,
-  libraries: LibraryConfig[]
+  configs: LibraryConfigRecord
 ) {
   const blocks: LexicalNode[] = [];
 
-  const streamBlocks = splitStreamByBlocks(initialState, libraries);
+  const streamBlocks = splitStreamByBlocks(initialState, configs);
 
   if (!streamBlocks.length) {
     const paragraphNode = $createParagraphNode();
@@ -540,7 +543,7 @@ export function $createBlocksFromStream(
   }
 
   streamBlocks.forEach((stream, index) => {
-    if (stream.length === 1 && isBlockElement(stream[0], libraries)) {
+    if (stream.length === 1 && isBlockElement(stream[0], configs)) {
       if (tokens.isNestedElement(stream[0])) {
         blocks.push($createLayoutElementNode(stream[0]));
       } else if (tokens.isNestedFolder(stream[0])) {
@@ -568,7 +571,7 @@ export function $createBlocksFromStream(
         ? $createHeadingNode(`h${isHeading.length}` as "h1")
         : $createParagraphNode();
       stream = isHeading ? tools.slice(stream, 1 + isHeading.length) : stream;
-      const nodes = $createInlinesFromStream(stream, libraries);
+      const nodes = $createInlinesFromStream(stream, configs);
       paragraphNode.append(...nodes);
       blocks.push(paragraphNode);
     }
@@ -579,21 +582,15 @@ export function $createBlocksFromStream(
 
 export function $initializeEditor(
   initialState: TokenStream,
-  libraries: LibraryConfig[]
+  configs: LibraryConfigRecord
 ): void {
   const root = $getRoot();
 
   if (root.isEmpty()) {
-    const blocks = $createBlocksFromStream(initialState, libraries);
+    const blocks = $createBlocksFromStream(initialState, configs);
     root.append(...blocks);
   }
 }
-
-export async function replaceEditor(
-  editor: LexicalEditor,
-  stream: TokenStream,
-  libraries: LibraryConfig[]
-) {}
 
 export function $clearEditor() {
   const root = $getRoot();
@@ -602,7 +599,7 @@ export function $clearEditor() {
 
 export function $getLastBlock(
   selection: RangeSelection | NodeSelection | GridSelection,
-  libraries: LibraryConfig[]
+  configs: LibraryConfigRecord
 ) {
   const nodes = selection.getNodes();
   if (nodes.length === 0) return;
@@ -616,7 +613,7 @@ export function $getLastBlock(
     !$isHeadingNode(lastNode) &&
     !(
       $isLayoutElementNode(lastNode) &&
-      !isInlineElement(libraries, lastNode.getToken())
+      !isInlineElement(configs, lastNode.getToken())
     ) &&
     !$isDocumentNode(lastNode)
   ) {

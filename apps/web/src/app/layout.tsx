@@ -1,36 +1,14 @@
 import "../styles.css";
 import React from "react";
-import { RenderLayout, request } from "@storyflow/react/rsc";
-import { config, library } from "../components";
-import { registerLibraries, registerLibraryConfigs } from "@storyflow/react";
-import { getPage } from "./api";
-
-registerLibraries([library]);
-registerLibraryConfigs([config]);
 
 export default async function Layout({
   children,
-  params,
 }: {
   children: React.ReactNode;
-  params: any;
 }) {
-  const url = Object.values(params).join("/");
-  const data = await getPage(url); // await request(url, options);
-
-  const content = (
-    <RenderLayout data={data?.layout ?? null}>{children}</RenderLayout>
+  return (
+    <html>
+      <body>{children}</body>
+    </html>
   );
-
-  if (url === "") {
-    return (
-      <html>
-        <body>{content}</body>
-      </html>
-    );
-  }
-
-  return content;
 }
-
-export { metadata } from "./metadata";

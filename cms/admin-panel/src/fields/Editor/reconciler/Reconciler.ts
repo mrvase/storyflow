@@ -10,7 +10,7 @@ import { tools } from "../../../operations/stream-methods";
 import { applyFieldTransaction } from "../../../operations/apply";
 import { createQueueCache } from "../../../collab/createQueueCache";
 import type { TokenStream } from "../../../operations/types";
-import type { DocumentId, LibraryConfig } from "@storyflow/shared/types";
+import type { DocumentId, LibraryConfigRecord } from "@storyflow/shared/types";
 import {
   $createBlocksFromStream,
   $getComputation,
@@ -45,7 +45,7 @@ export function Reconciler({
   const editor = useEditorContext();
 
   const fieldId = useFieldId();
-  const { libraries } = useAppConfig();
+  const { configs } = useAppConfig();
 
   const collab = useCollab();
 
@@ -86,11 +86,11 @@ export function Reconciler({
 
       if (!newOps.length) return;
 
-      editor.update(() => $reconcile(editor, result.stream, libraries), {
+      editor.update(() => $reconcile(editor, result.stream, configs), {
         tag: RECONCILIATION_TAG,
       });
     });
-  }, [editor, libraries]);
+  }, [editor, configs]);
 
   React.useEffect(() => {
     return editor.registerUpdateListener(
@@ -125,7 +125,7 @@ export function Reconciler({
 function $reconcile(
   editor: LexicalEditor,
   value: TokenStream,
-  libraries: LibraryConfig[]
+  configs: LibraryConfigRecord
 ) {
   /** SAVE CURRENT SELECTION */
   try {
@@ -140,7 +140,7 @@ function $reconcile(
     const root = $getRoot();
 
     const oldBlocks = root.getChildren();
-    const newBlocks = $createBlocksFromStream(value, libraries);
+    const newBlocks = $createBlocksFromStream(value, configs);
 
     /** UPDATE CONTENT */
     const operations = createDiffOperations(oldBlocks, newBlocks, {

@@ -41,7 +41,7 @@ export async function save(
     record: Record<string, any>;
     versions: Record<string, any>;
   },
-  dbName: string
+  dbName?: string
 ) {
   const documentId = input.id as DocumentId;
 

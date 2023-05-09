@@ -60,16 +60,28 @@ type ProcedureCall<
   APIObject
 > = APIObject extends QueryObject<infer Input, infer Output>
   ? {
-      key: OptionalParamFunc<Input, string, [options?: SharedOptions]>;
+      key: OptionalParamFunc<
+        Input,
+        string,
+        [options?: SharedOptions & { url?: string }]
+      >;
       query: OptionalParamFunc<
         Input,
         Output,
-        [options?: QueryOptions<UserAPI, DefaultRoute, APIObject>]
+        [
+          options?: QueryOptions<UserAPI, DefaultRoute, APIObject> & {
+            url?: string;
+          }
+        ]
       >;
     }
   : APIObject extends MutationObject<infer Input, infer Output>
   ? {
-      mutation: OptionalParamFunc<Input, Output, [options?: SharedOptions]>;
+      mutation: OptionalParamFunc<
+        Input,
+        Output,
+        [options?: SharedOptions & { url?: string }]
+      >;
     }
   : never;
 

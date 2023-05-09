@@ -1,26 +1,22 @@
 import * as React from "react";
-import { ExtendPath, usePath, useSelectedPath } from "./contexts";
+import { ExtendPath, useConfig, usePath, useSelectedPath } from "./contexts";
 import RenderElement from "./RenderElement";
-import type { Component, ValueArray } from "@storyflow/shared/types";
+import type { ConfigRecord, ValueArray } from "@storyflow/shared/types";
 import { createRenderArray } from "@storyflow/client/render";
 import { ParseRichText } from "../src/ParseRichText";
-import { getLibraries, getLibraryConfigs } from "../config";
 import { getConfigByType } from "../config/getConfigByType";
 import { EditorProvider } from "./editor";
+import { getDefaultComponent } from "../utils/getDefaultComponent";
 
-const getDefaultComponent = (type: string) => {
-  // we use this only to get the default render components
-  // Text, H1, H2, ...
-  const libraries = getLibraries();
-  let component: Component<any> | undefined;
-  for (let i = 0; i < libraries.length; i++) {
-    component = libraries[i].components[type] as Component<any> | undefined;
-    if (component) break;
-  }
-  return component!;
-};
+export default function RenderChildren({
+  value,
+  options,
+}: {
+  value: ValueArray;
+  options?: ConfigRecord;
+}) {
+  const { configs, libraries } = useConfig();
 
-export default function RenderChildren({ value }: { value: ValueArray }) {
   const renderArray = React.useMemo(() => {
     /*
     let array: ValueArray = [];
@@ -34,16 +30,15 @@ export default function RenderChildren({ value }: { value: ValueArray }) {
     }
     if (!value) return [];
     */
-    const configs = getLibraryConfigs();
     return createRenderArray(value, (type: string) =>
-      Boolean(getConfigByType(type, configs)?.inline)
+      Boolean(getConfigByType(type, { configs })?.config?.inline)
     );
   }, [value]);
 
   const createElement = ({ id, element }: { id: string; element: string }) => {
     return (
       <ExtendPath key={id} id={id}>
-        <RenderElement type={element} />
+        <RenderElement type={element} options={options} />
       </ExtendPath>
     );
   };
@@ -57,7 +52,7 @@ export default function RenderChildren({ value }: { value: ValueArray }) {
           ...renderChildren.map((block, childIndex) => {
             if ("$heading" in block) {
               const type = `H${block.$heading[0]}`;
-              const Component = getDefaultComponent(type)!;
+              const Component = getDefaultComponent(type, libraries)!;
               const string = String(block.$heading[1]);
               return (
                 <ExtendPath key={`${index}-${childIndex}`} id={`[${index}]`}>
@@ -69,7 +64,7 @@ export default function RenderChildren({ value }: { value: ValueArray }) {
             }
             if ("$text" in block) {
               const type = "Text";
-              const Component = getDefaultComponent(type)!;
+              const Component = getDefaultComponent(type, libraries)!;
               return (
                 <ExtendPath key={`${index}-${childIndex}`} id={`[${index}]`}>
                   <EditorProvider string={block.$text.join("")}>

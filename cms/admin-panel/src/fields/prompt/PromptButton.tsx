@@ -34,7 +34,7 @@ export function PromptButton() {
 
   const normalize = (value: number) => value;
 
-  const { libraries } = useAppConfig();
+  const { configs } = useAppConfig();
 
   React.useEffect(() => {
     return editor.registerUpdateListener(({ editorState }) => {
@@ -60,7 +60,7 @@ export function PromptButton() {
         setY(normalize(offset + y - root));
       });
     });
-  }, [editor, libraries]);
+  }, [editor, configs]);
 
   const Icon = PaintBrushIcon; // mathMode ? CalculatorIcon : PaintBrushIcon;
 
@@ -87,7 +87,7 @@ export function PromptButton() {
               $getRoot().selectEnd();
             }
             if ($getPromptNode()) {
-              $exitPromptNode(libraries);
+              $exitPromptNode(configs);
               return;
             }
 

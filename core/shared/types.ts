@@ -115,8 +115,8 @@ export type ClientSyntaxTree = {
 FRONTEND
 */
 
-export interface ComponentType<P extends ComponentProps<ComponentConfig>> {
-  (value: P): any;
+export interface Component<P extends Config["props"]> {
+  (value: Props<P>): any;
 }
 
 type ExtendableTypes = "Element";
@@ -133,6 +133,144 @@ type ExtendedType<K extends ExtendableTypes, B> = unknown extends CustomTypes[K]
 
 export type Element = ExtendedType<"Element", object>;
 
+type PropTypes = {
+  string: string;
+  color: string;
+  image: {
+    src: string;
+    width: number;
+    height: number;
+  };
+  video: {
+    src: string;
+    width: number;
+    height: number;
+  };
+  number: number;
+  boolean: boolean;
+  children: (string | number | Element)[];
+  data: any[];
+};
+
+export type Option =
+  | string
+  | number
+  | ({
+      label?: string;
+    } & (
+      | {
+          value: string | number;
+          name?: string;
+        }
+      | {
+          name: string;
+        }
+    ));
+
+export type PropConfig = {
+  type: keyof PropTypes;
+  label: string;
+  defaultValue?: any;
+  searchable?: boolean;
+  options?: Options;
+};
+
+export type Options =
+  | Option[]
+  | {
+      [key: keyof ConfigRecord]: Config & { component: Config["component"] };
+    };
+
+export type PropGroup = {
+  type: "group";
+  label: string;
+  props: Record<string, PropConfig>;
+  searchable?: boolean;
+};
+
+export type PropConfigRecord = Record<string, PropConfig | PropGroup>;
+
+type Type<T extends PropConfig | PropGroup> = T extends { type: "group" }
+  ? Props<T["props"]>
+  : T["type"] extends keyof PropTypes
+  ? PropTypes[T["type"]]
+  : never;
+
+// The logic tests if the generic passed to props is just "PropConfigRecord" and not a more specific type.
+// If it is the case, we get errors on configs in options, where we pass a component with very specific
+// props to a type with general props. E.G.: "label" and "href" does not exists on Props<PropConfigRecord>.
+export type Props<T extends PropConfigRecord> = string extends keyof T
+  ? any
+  : {
+      [Key in keyof T]: Type<T[Key]>;
+    };
+
+type PartialType<T extends PropConfig | PropGroup> = T extends { type: "group" }
+  ? PartialProps<T["props"]>
+  : T["type"] extends keyof PropTypes
+  ? PropTypes[T["type"]]
+  : never;
+
+export type PartialProps<T extends PropConfigRecord> = {
+  [Key in keyof T]?: AddConfigAsChild<PartialType<T[Key]>>;
+};
+
+type AddConfigAsChild<A> = A extends PropTypes["children"]
+  ? (
+      | A[number]
+      | Config
+      | {
+          config: Config;
+          props?: PartialProps<Config["props"]>;
+          story?: keyof Required<Config>["stories"];
+        }
+    )[]
+  : A;
+
+export type Story<T extends PropConfigRecord = PropConfigRecord> = {
+  props: PartialProps<T>;
+};
+
+export type Stories<T extends PropConfigRecord> = Record<string, Story<T>>;
+
+export type Config<T extends PropConfigRecord = PropConfigRecord> = {
+  label: string;
+  props: T;
+  stories?: Stories<T>;
+  inline?: boolean;
+  hidden?: boolean;
+  component?: Component<T>;
+};
+
+export type ConfigRecord<T extends PropConfigRecord = PropConfigRecord> = {
+  [key: ConfigName<string>]: Config<T>;
+};
+
+type ConfigName<T extends string> = `${T}Config`;
+
+type Name<T> = T extends ConfigName<infer U> ? U : T;
+
+export type LibraryConfig = {
+  label: string;
+  configs: ConfigRecord;
+};
+
+export type Library<T extends LibraryConfig = LibraryConfig> = {
+  [Key in keyof T["configs"] as Name<Key>]: Component<
+    T["configs"][Key] extends { props: PropConfigRecord }
+      ? T["configs"][Key]["props"]
+      : never
+  >;
+};
+
+export type LibraryConfigRecord = { [key: string]: LibraryConfig };
+
+export type LibraryRecord<T extends LibraryConfigRecord = LibraryConfigRecord> =
+  {
+    [Key in keyof LibraryConfigRecord]: Library<T[Key]>;
+  };
+
+/*
 type PropTypes = {
   string: string;
   color: string;
@@ -261,8 +399,8 @@ export type ComponentConfig<T extends PropConfigArray = PropConfigArray> = {
 
 export type PartialConfig<T extends PropConfigArray = PropConfigArray> = {
   name?: string;
-  typespace?: string;
   label?: string;
+  typespace?: string;
   inline?: boolean;
   hidden?: boolean;
   props: T;
@@ -309,6 +447,7 @@ export type ComponentProps<C extends PartialConfig> = {
 export type Component<C extends PartialConfig> = ComponentType<
   ComponentProps<C>
 >;
+*/
 
 /* PATH */
 
@@ -317,36 +456,44 @@ export type Path = PathSegment[];
 
 /* */
 
+type BasicApiConfig = {
+  mongoURL: string;
+  storyflowKey: string;
+};
+
 export type StoryflowConfig = {
   baseURL: string;
   public: {
     organization: string;
     publicKey: string;
   };
-  api: {
+  auth: {
     admin: string;
-    mongoURL: string;
+    secret: string;
     privateKey: string;
-    storyflowKey: string;
   };
+  api: BasicApiConfig;
   workspaces: [WorkspaceReference, ...WorkspaceReference[]];
   apps: AppReference[];
 };
 
 export type WorkspaceReference = {
   name: string;
-  db: string;
 };
 
 export type AppReference = {
   name: string;
-  configURL: string;
+  baseURL: string;
 };
 
 export type AppConfig = {
   baseURL: string;
   label: string;
-  builderPath: string;
-  revalidatePath: string;
-  libraries: LibraryConfig[];
+  builderPath?: string;
+  configs: Record<string, LibraryConfig>;
+  namespaces?: string[];
+};
+
+export type ApiConfig = BasicApiConfig & {
+  revalidate?: (path: string) => void;
 };

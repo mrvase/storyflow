@@ -30,9 +30,9 @@ export const BuilderIframe = React.forwardRef<
         <div className="ml-[25%] w-1/2 p-5 snap-start">
           <iframe
             ref={ref}
-            src={`${trimTrailingSlash(
-              baseURL
-            )}/${builderPath}?uniqueId=${uniqueId}&slug=${organization}`}
+            src={`${trimTrailingSlash(baseURL)}${
+              builderPath ?? "/builder"
+            }?uniqueId=${uniqueId}&slug=${organization}`}
             className="w-full min-h-screen bg-white"
             data-select={id}
           />

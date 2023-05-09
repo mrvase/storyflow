@@ -5,7 +5,7 @@ import { globals } from "../globals";
 import { StoryflowConfig } from "@storyflow/shared/types";
 
 export const files = (config: StoryflowConfig) => {
-  const dbName = config.workspaces[0].db;
+  const dbName = undefined; // config.workspaces[0].db;
   return createRoute({
     getAll: createProcedure({
       middleware(ctx) {

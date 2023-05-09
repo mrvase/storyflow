@@ -1,12 +1,16 @@
 import React from "react";
 import type {
-  AppConfig,
-  ComponentConfig,
+  Config,
   LibraryConfig,
+  AppConfig,
+  LibraryRecord,
+  LibraryConfigRecord,
 } from "@storyflow/shared/types";
-import { SWRClient } from "./client";
 import { useFolderDomains } from "./folders/FolderDomainsContext";
 import { useAuth } from "./Auth";
+import { useAppClient } from "./client";
+import { isError, unwrap } from "@storyflow/rpc-client/result";
+import { defaultLibraryConfig } from "@storyflow/shared/defaultLibraryConfig";
 
 const AppConfigContext = React.createContext<Record<string, AppConfig> | null>(
   null
@@ -33,64 +37,27 @@ export const getInfoFromType = (type: string) => {
   };
 };
 
-export const getTypeFromConfig = (
-  library: LibraryConfig,
-  component: ComponentConfig
+export const getConfigFromType = (
+  type: string,
+  configs: LibraryConfigRecord
 ) => {
-  return getComponentType(library.name, component.name);
-};
-
-export const getConfigFromType = (type: string, libraries: LibraryConfig[]) => {
   const { library, name } = getInfoFromType(type);
-  const config = libraries.find((el) => el.name === library);
+  const config = configs[library];
 
   if (!config) return;
 
-  const result = Object.values(config.components).find(
-    (el) => el.name === name
-  );
+  const result = config.configs[`${name}Config`];
 
   return result;
-};
-
-const defaultLibrary: LibraryConfig = {
-  name: "",
-  label: "Default",
-  components: {
-    Link: {
-      label: "Link",
-      name: "Link",
-      props: [
-        { name: "label", type: "string", label: "Label", searchable: true },
-        { name: "href", type: "string", label: "URL" },
-      ],
-      inline: true,
-    },
-    Outlet: {
-      label: "Side",
-      name: "Outlet",
-      props: [],
-    },
-    Loop: {
-      label: "Generer fra data",
-      name: "Loop",
-      props: [
-        { name: "children", type: "children", label: "Indhold" },
-        { name: "data", type: "data", label: "Data" },
-      ],
-    },
-  },
 };
 
 const defaultClientConfig: AppConfig = {
   baseURL: "",
   label: "",
-  builderPath: "",
-  revalidatePath: "",
-  libraries: [defaultLibrary],
+  configs: { "": defaultLibraryConfig },
 };
 
-const defaultLibraries = [defaultLibrary]; // stable reference
+const defaultLibraries = { "": defaultLibraryConfig }; // stable reference
 
 export function useAppConfig(key?: string): AppConfig {
   const configs = React.useContext(AppConfigContext);
@@ -118,9 +85,8 @@ export function useAppConfig(key?: string): AppConfig {
   return {
     baseURL: main?.baseURL ?? "",
     label: main?.label ?? "",
-    builderPath: main?.builderPath ?? "",
-    revalidatePath: main?.revalidatePath ?? "",
-    libraries: main?.libraries ?? defaultLibraries,
+    builderPath: main?.builderPath,
+    configs: main?.configs ?? defaultLibraries,
   };
 }
 
@@ -133,38 +99,47 @@ export function ClientConfigProvider({
 
   const [configs, setConfigs] = React.useState<Record<string, AppConfig>>({});
 
+  const appClient = useAppClient();
+
   React.useLayoutEffect(() => {
     let isMounted = true;
     const abortController = new AbortController();
 
     (async () => {
-      const fetchedConfigs = await Promise.allSettled(
-        organization!.apps.map(async ({ name, configURL }) => {
+      const fetchedConfigs = await Promise.all(
+        organization!.apps.map(async ({ name, baseURL }) => {
+          const result = await appClient.app.config.query(undefined, {
+            url: `${baseURL}/api`,
+          });
+          /*
           const config = await fetch(configURL, {
             signal: abortController.signal,
           }).then((res) => res.json() as Promise<AppConfig>);
+          */
+
+          if (isError(result)) {
+            return;
+          }
+
+          const config = unwrap(result);
 
           return [
             name,
             {
               ...config,
-              libraries: [defaultLibrary, ...config.libraries],
+              configs: {
+                "": defaultLibraryConfig,
+                ...config.configs,
+              },
             },
           ] as [string, AppConfig];
         })
       );
 
       if (isMounted) {
-        const configs = fetchedConfigs
-          .filter(
-            (
-              el
-            ): el is Exclude<
-              typeof el,
-              PromiseRejectedResult | PromiseFulfilledResult<undefined>
-            > => Boolean(el.status === "fulfilled" && el.value)
-          )
-          .map((el) => el.value);
+        const configs = fetchedConfigs.filter(
+          (el): el is Exclude<typeof el, undefined> => Boolean(el)
+        );
 
         setConfigs(Object.fromEntries(configs));
       }

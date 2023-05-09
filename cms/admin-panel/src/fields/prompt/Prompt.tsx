@@ -38,6 +38,7 @@ import { $exitPromptNode, $getPromptNode } from "./utils";
 import { TokenPrompt } from "./TokenPrompt";
 import { ReferencePrompt } from "./ReferencePrompt";
 import { TemplatePrompt } from "./TemplatePrompt";
+import { ConfigRecord } from "@storyflow/shared/types";
 
 const panes = [
   {
@@ -67,6 +68,8 @@ const panes = [
   },
 ] satisfies { id: string; icon: React.FC<any>; label: string }[];
 
+const emptyOptions = {};
+
 export function Prompt({
   node,
   prompt,
@@ -91,12 +94,12 @@ export function Prompt({
 
   const showMenu = initializer === "/";
 
-  const { libraries } = useAppConfig();
+  const { configs } = useAppConfig();
 
   React.useEffect(() => {
     return editor.registerNodeTransform(PromptNode, (node) => {
       if (node.getTextContent() === "\uFEFF") {
-        $exitPromptNode(libraries, node);
+        $exitPromptNode(configs, node);
       } else if (node.getTextContent() === "\uFEFF\uFEFF/") {
         node.select(0, 3);
         const p = $createParagraphNode();
@@ -109,7 +112,7 @@ export function Prompt({
         $replaceWithBlocks([p]);
       }
     });
-  }, [editor, libraries]);
+  }, [editor, configs]);
 
   /*
   React.useEffect(() => {
@@ -205,7 +208,7 @@ export function Prompt({
         (ev) => {
           ev?.preventDefault();
           editor.update(() => {
-            $exitPromptNode(libraries);
+            $exitPromptNode(configs);
           });
           return true;
         },
@@ -215,7 +218,7 @@ export function Prompt({
         BLUR_COMMAND,
         () => {
           editor.update(() => {
-            $exitPromptNode(libraries);
+            $exitPromptNode(configs);
             $setSelection(null);
           });
           return false;
@@ -223,7 +226,7 @@ export function Prompt({
         COMMAND_PRIORITY_HIGH
       )
     );
-  }, [editor, libraries]);
+  }, [editor, configs]);
 
   const [currentPane_, setCurrentPane] =
     React.useState<(typeof panes)[number]["id"]>();
@@ -247,11 +250,11 @@ export function Prompt({
     (stream: TokenStream) => {
       editor.update(() => {
         $getPromptNode()?.select(0);
-        const blocks = $createBlocksFromStream(stream, libraries);
+        const blocks = $createBlocksFromStream(stream, configs);
         $replaceWithBlocks(blocks);
       });
     },
-    [editor, libraries]
+    [editor, configs]
   );
 
   return (
@@ -264,7 +267,7 @@ export function Prompt({
         }}
         onClick={() => {
           editor.update(() => {
-            $exitPromptNode(libraries);
+            $exitPromptNode(configs);
           });
         }}
       >
@@ -320,7 +323,9 @@ export function Prompt({
             {currentPane === "elements" && (
               <ElementPrompt
                 prompt={prompt}
-                options={restrictTo === "children" ? options ?? [] : []}
+                options={
+                  restrictTo === "children" ? (options as string[]) : undefined
+                }
                 replacePromptWithStream={replacePromptWithStream}
               />
             )}

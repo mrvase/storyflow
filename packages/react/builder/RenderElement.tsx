@@ -1,11 +1,16 @@
 import * as React from "react";
 import {
   ClientSyntaxTree,
+  Component,
+  Config,
+  ConfigRecord,
+  Library,
+  LibraryConfig,
   PropConfig,
-  PropConfigArray,
+  PropConfigRecord,
   ValueArray,
 } from "@storyflow/shared/types";
-import { ExtendPath, usePath } from "./contexts";
+import { ExtendPath, useConfig, usePath } from "./contexts";
 import {
   focusCMSElement,
   getSiblings,
@@ -13,11 +18,7 @@ import {
   isActiveSibling,
 } from "./focus";
 import { log, useValue } from "../builder/RenderBuilder";
-import {
-  ExtendedComponentConfig,
-  getConfigByType,
-} from "../config/getConfigByType";
-import { getLibraries, getLibraryConfigs } from "../config";
+import { getConfigByType } from "../config/getConfigByType";
 import { extendPath } from "../utils/extendPath";
 import RenderChildren from "./RenderChildren";
 import { getIdFromString } from "@storyflow/shared/getIdFromString";
@@ -134,7 +135,10 @@ const calculateProp = (
     const children = Array.isArray(value) ? value : array;
     return (
       <ExtendPath id={id}>
-        <RenderChildren value={children} />
+        <RenderChildren
+          value={children}
+          options={config.options as ConfigRecord}
+        />
       </ExtendPath>
     );
   }
@@ -143,40 +147,43 @@ const calculateProp = (
 
 export default function RenderElement({
   type,
-  props: propsFromProps,
+  options,
 }: {
   type: string;
-  props?: Record<string, ValueArray>;
+  options?: ConfigRecord;
 }) {
+  const { configs, libraries } = useConfig();
+
   const path = usePath();
   const elementId = path.slice(-1)[0];
 
-  let config_ = getConfigByType(type, getLibraryConfigs(), getLibraries());
+  let { config, component } = getConfigByType(type, {
+    configs,
+    libraries,
+    options,
+  });
 
-  if (!config_) {
+  if (!config || !component) {
     return null;
   }
 
-  const config = config_;
-
-  const uncomputedProps =
-    propsFromProps ??
-    Object.fromEntries(
-      config.props.reduce((acc, cur) => {
-        if (cur.type === "group") {
-          cur.props.forEach((el) => {
-            const id = `${elementId.slice(12, 24)}${getIdFromString(
-              extendPath(cur.name, el.name, "#")
-            )}`;
-            acc.push([id, useValue(id) ?? []]);
-          });
-        } else {
-          const id = `${elementId.slice(12, 24)}${getIdFromString(cur.name)}`;
+  const uncomputedProps = Object.fromEntries(
+    Object.entries(config.props).reduce((acc, [name, cur]) => {
+      if (cur.type === "group") {
+        const groupName = name;
+        Object.entries(cur.props).forEach(([name, el]) => {
+          const id = `${elementId.slice(12, 24)}${getIdFromString(
+            extendPath(groupName, name, "#")
+          )}`;
           acc.push([id, useValue(id) ?? []]);
-        }
-        return acc;
-      }, [] as [string, ValueArray | ClientSyntaxTree][])
-    );
+        });
+      } else {
+        const id = `${elementId.slice(12, 24)}${getIdFromString(name)}`;
+        acc.push([id, useValue(id) ?? []]);
+      }
+      return acc;
+    }, [] as [string, ValueArray | ClientSyntaxTree][])
+  );
 
   React.useEffect(() => {
     const activeEl = document.activeElement as HTMLElement;
@@ -222,8 +229,9 @@ export default function RenderElement({
             <LoopProvider key={index} id={rawDocumentId} index={index}>
               <RenderElementWithProps
                 elementId={elementId}
-                config={config}
-                props={uncomputedProps}
+                props={config!.props}
+                component={component!}
+                values={uncomputedProps}
               />
             </LoopProvider>
           );
@@ -235,50 +243,54 @@ export default function RenderElement({
   return (
     <RenderElementWithProps
       elementId={elementId}
-      config={config}
-      props={uncomputedProps}
+      component={component}
+      props={config.props}
+      values={uncomputedProps}
     />
   );
 }
 
 function RenderElementWithProps({
   elementId,
-  props: uncomputedProps,
-  config,
+  values,
+  props,
+  component: Component,
 }: {
   elementId: string;
-  props: Record<string, ValueArray | ClientSyntaxTree>;
-  config: ExtendedComponentConfig;
+  values: Record<string, ValueArray | ClientSyntaxTree>;
+  props: Config["props"];
+  component: Component<PropConfigRecord>;
 }) {
   const loopCtx = React.useContext(LoopContext);
   // const index = React.useContext(IndexContext);
 
-  const calculatePropsFromConfig = (props: PropConfigArray, group?: string) => {
+  const calculatePropsFromConfig = (
+    props: PropConfigRecord,
+    group?: string
+  ) => {
     return Object.fromEntries(
-      props.map((config): [string, any] => {
-        const key = extendPath(group ?? "", config.name, "#");
+      Object.entries(props).map(([name, config]): [string, any] => {
+        const key = extendPath(group ?? "", name, "#");
         const id = `${elementId.slice(12, 24)}${getIdFromString(key)}`;
         return [
-          config.name,
+          name,
           config.type === "group"
-            ? calculatePropsFromConfig(config.props, config.name)
-            : calculateProp(id, config, uncomputedProps?.[id] ?? [], loopCtx) ??
-              [],
+            ? calculatePropsFromConfig(config.props, name)
+            : calculateProp(id, config, values?.[id] ?? [], loopCtx) ?? [],
         ];
       })
     );
   };
 
-  const props = React.useMemo(() => {
-    const props = calculatePropsFromConfig(config.props);
-    return props;
-  }, [uncomputedProps, loopCtx]);
+  const resolvedProps = React.useMemo(() => {
+    return calculatePropsFromConfig(props);
+  }, [values, props, loopCtx]);
 
-  log("PROPS PROPS", props);
+  log("PROPS PROPS", resolvedProps);
 
   return (
     <NoEditor>
-      <config.component {...props} />
+      <Component {...resolvedProps} />
     </NoEditor>
   );
 }

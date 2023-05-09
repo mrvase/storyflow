@@ -278,7 +278,7 @@ function FileOverlay({
   holdActions: HoldActions;
 }) {
   const editor = useEditorContext();
-  const { libraries } = useAppConfig();
+  const { configs } = useAppConfig();
 
   const replacePromptWithStream = React.useCallback(
     (stream: TokenStream) => {
@@ -287,12 +287,12 @@ function FileOverlay({
         if (node) {
           node.setToken(token);
         } else {
-          const blocks = $createBlocksFromStream(stream, libraries);
+          const blocks = $createBlocksFromStream(stream, configs);
           $replaceWithBlocks(blocks);
         }
       });
     },
-    [editor, node, libraries]
+    [editor, node, configs]
   );
 
   return (

@@ -12,7 +12,7 @@ import { AddDocumentDialog } from "./AddDocumentDialog";
 import type { FieldId } from "@storyflow/shared/types";
 import type { DBDocument, DBFolder, SpaceId } from "@storyflow/cms/types";
 import type { SyntaxTreeRecord } from "@storyflow/cms/types";
-import { SWRClient, useClient } from "../client";
+import { SWRClient, useAppClient, useClient } from "../client";
 import { useAppConfig } from "../client-config";
 import { DomainsButton } from "./FolderPage";
 import {
@@ -31,7 +31,7 @@ import { usePush } from "../collab/CollabContext";
 import { FolderTransactionEntry } from "../operations/actions";
 import { createTransaction } from "@storyflow/collab/utils";
 import { useFolder } from "./FoldersContext";
-import { trimTrailingSlash } from "../utils/trimSlashes";
+import { isSuccess } from "@storyflow/rpc-client/result";
 
 export default function AppPage({ children }: { children?: React.ReactNode }) {
   const route = useRoute();
@@ -175,12 +175,10 @@ export default function AppPage({ children }: { children?: React.ReactNode }) {
                   true ? "opacity-100" : "opacity-0 pointer-events-none"
                 )}
               >
-                {folder && config.revalidatePath && (
+                {folder && config && (
                   <RefreshButton
                     namespace={folder._id}
-                    revalidateUrl={`${trimTrailingSlash(config.baseURL)}/${
-                      config.revalidatePath
-                    }`}
+                    baseURL={config.baseURL}
                   />
                 )}
               </div>
@@ -216,10 +214,10 @@ export default function AppPage({ children }: { children?: React.ReactNode }) {
 
 function RefreshButton({
   namespace,
-  revalidateUrl,
+  baseURL,
 }: {
   namespace: string;
-  revalidateUrl: string;
+  baseURL: string;
 }) {
   const [isLoading, setIsLoading] = React.useState(false);
 
@@ -228,6 +226,7 @@ function RefreshButton({
   });
 
   const client = useClient();
+  const appClient = useAppClient();
 
   const number = data?.length ?? 0;
 
@@ -250,17 +249,13 @@ function RefreshButton({
         <button
           className="relative z-0 bg-button-yellow ring-button-yellow text-button rounded px-3 py-1 flex-center gap-2 text-sm overflow-hidden"
           onClick={async () => {
-            if (revalidateUrl && data?.length) {
+            if (baseURL && data?.length) {
               setIsLoading(true);
-              const result = await fetch(revalidateUrl, {
-                body: JSON.stringify(data),
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-              }).then((res) => res.json());
-              await client.documents.registerRevalidation.mutation();
-              if (result.revalidated === true) {
+              const result = await appClient.app.revalidate.mutation(data);
+              if (isSuccess(result)) {
+                await client.documents.registerRevalidation.mutation();
+                mutate();
               }
-              mutate();
               setIsLoading(false);
             }
           }}

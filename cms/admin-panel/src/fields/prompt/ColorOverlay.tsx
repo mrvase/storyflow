@@ -24,7 +24,7 @@ export function ColorOverlay({ node }: { node?: ColorNode }) {
     setResults([initialColor]);
   }, [node]);
 
-  const { libraries } = useAppConfig();
+  const { configs } = useAppConfig();
 
   const handleResult = React.useCallback(() => {
     setResults((prev) => [color, ...prev.slice(0, 7)]);
@@ -32,11 +32,11 @@ export function ColorOverlay({ node }: { node?: ColorNode }) {
       if (node) {
         node.setToken({ color });
       } else {
-        const blocks = $createBlocksFromStream([{ color }], libraries);
+        const blocks = $createBlocksFromStream([{ color }], configs);
         $replaceWithBlocks(blocks);
       }
     });
-  }, [color, node, editor, libraries]);
+  }, [color, node, editor, configs]);
 
   const isNewColor = color !== results[0];
 

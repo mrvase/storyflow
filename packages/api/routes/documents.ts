@@ -21,7 +21,7 @@ import { save } from "../fields/save";
 import { createFetcher } from "../create-fetcher";
 
 export const documents = (config: StoryflowConfig) => {
-  const dbName = config.workspaces[0].db;
+  const dbName = undefined; // config.workspaces[0].db;
   return createRoute({
     find: createProcedure({
       middleware(ctx) {

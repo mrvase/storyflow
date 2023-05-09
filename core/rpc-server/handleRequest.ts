@@ -1,5 +1,5 @@
 import qs from "qs";
-import { error, isError, success } from "./result";
+import { error, isError, isResult, success } from "./result";
 import type {
   API,
   Context,
@@ -9,17 +9,12 @@ import type {
   RequestCookie,
   ResponseCookie,
   RequestCookies,
+  Result,
+  Failure,
 } from "./types";
 import type { RPCRequest } from "./types";
 import { parse, serialize } from "cookie";
-
-const encrypt = (value: any): string => {
-  return btoa(JSON.stringify(value));
-};
-
-const decrypt = (value: string): unknown => {
-  return JSON.parse(atob(value));
-};
+import { decode, encode } from "./crypto";
 
 const isPrimitive = (obj: any) => {
   return (
@@ -83,7 +78,10 @@ const getInput = (req: RPCRequest, body: any) => {
 
 export async function handleRequest<T extends API>(
   { body, ...request }: RPCRequest & { body?: any },
-  router: T
+  router: T,
+  options: {
+    secret?: string;
+  } = {}
 ): Promise<{ data?: any; init: RPCResponse }> {
   const { route, procedure } = request;
 
@@ -118,17 +116,26 @@ export async function handleRequest<T extends API>(
 
   const cookies = parse(request.headers.get("cookie") ?? "");
 
-  // sf.s.token
   const entries: [string, any][] = [];
 
   Object.entries(cookies).forEach(([prefixedName, string]) => {
     const [prefix, env, ...rest] = prefixedName.split(".");
     const name = rest.join(".");
-    if (prefix === "sf" && ["s", "c"].includes(env) && name !== "") {
-      entries.push([
-        name,
-        { name, value: env === "s" ? decrypt(string) : string },
-      ]);
+    if (
+      options.secret &&
+      prefix === "sf" &&
+      ["e", "s", "c"].includes(env) &&
+      name !== ""
+    ) {
+      let value: unknown = string;
+      if (env !== "c") {
+        value = decode(string, {
+          secret: options.secret,
+          decrypt: env === "e",
+        });
+        if (!value) return;
+      }
+      entries.push([name, { name, value }]);
     }
   });
 
@@ -165,12 +172,13 @@ export async function handleRequest<T extends API>(
               });
             }
           },
-          delete(name) {
+          delete(name, options) {
             const exists = this.get(name);
-            if (exists) {
+            if (exists && exists.maxAge !== 0) {
               setCookies.delete(this.get(name));
             } else {
               setCookies.set(name, {
+                ...options,
                 name,
                 value: "",
                 maxAge: 0,
@@ -181,6 +189,10 @@ export async function handleRequest<T extends API>(
       },
     },
     client: input?.ctx ?? {},
+    encode: (string, o) =>
+      encode(string, { ...o, secret: o.secret ?? options.secret }),
+    decode: (string, o) =>
+      decode(string, { ...o, secret: o.secret ?? options.secret }),
   };
 
   const obj = router[route]?.[procedure] as QueryObject;
@@ -200,59 +212,32 @@ export async function handleRequest<T extends API>(
     };
   }
 
+  if (!func) {
+    func = "query" in obj ? obj.query : (obj as MutationObject).mutation;
+  }
+
+  let result: void | Result<any>;
+
+  const getErrorStatus = (err: Failure) => {
+    if (err.status) return err.status;
+    return context.response.status === 200 ? 500 : context.response.status;
+  };
+
   try {
-    if (!func) {
-      func = "query" in obj ? obj.query : (obj as MutationObject).mutation;
-    }
-
-    const result = await func.call(
-      { context, method: request.method },
-      input?.query
-    );
-
-    console.timeEnd(`REQUEST TIME ${route}/${procedure} ${id}`);
-    console.log("\n\n");
-
-    if (request.method === "OPTIONS") {
-      console.log("\n\n");
-      return {
-        init: {
-          headers: context.response.headers,
-          status: 200,
-        },
-      };
-    }
-
-    if (result && isError(result)) {
-      context.response.status =
-        context.response.status === 200 ? 500 : context.response.status;
-    }
-
-    if (!context.response.headers.has("Set-Cookie")) {
-      context.response.headers.set(
-        "Set-Cookie",
-        Array.from(setCookies.values())
-          .map((el) => {
-            const name = `sf.${el.httpOnly ? "s" : "c"}.${el.name}`;
-            const value = el.httpOnly ? encrypt(el.value) : el.value;
-            return serialize(name, value, el);
-          })
-          .join("; ")
-      );
-    }
-
-    return {
-      data: result ?? success(null),
-      init: {
-        headers: context.response.headers,
-        status: context.response.status,
-      },
-    };
+    result = await func.call({ context, method: request.method }, input?.query);
   } catch (err) {
     console.timeEnd(`REQUEST TIME ${route}/${procedure} ${id}`);
     console.log("\n\n");
 
-    console.log("ERROR");
+    if (isResult(err) && isError(err)) {
+      return {
+        data: err,
+        init: {
+          headers: new Headers(),
+          status: getErrorStatus(err),
+        },
+      };
+    }
 
     return {
       data: error({ message: "serverfejl", detail: err }),
@@ -262,4 +247,45 @@ export async function handleRequest<T extends API>(
       },
     };
   }
+
+  console.timeEnd(`REQUEST TIME ${route}/${procedure} ${id}`);
+  console.log("\n\n");
+
+  if (request.method === "OPTIONS") {
+    console.log("\n\n");
+    return {
+      init: {
+        headers: context.response.headers,
+        status: 200,
+      },
+    };
+  }
+
+  if (result && isError(result)) {
+    context.response.status = getErrorStatus(result);
+  }
+
+  if (!context.response.headers.has("Set-Cookie")) {
+    Array.from(setCookies.values()).forEach((el) => {
+      const isDeleting = el.value === "" && el.maxAge === 0;
+      const code = el.httpOnly ? (el.encrypt ? "e" : "s") : "c";
+      const name = `sf.${code}.${el.name}`;
+      const value =
+        el.httpOnly && !isDeleting
+          ? encode(el.value, {
+              secret: options.secret,
+              encrypt: el.encrypt,
+            })
+          : el.value;
+      context.response.headers.append("Set-Cookie", serialize(name, value, el));
+    });
+  }
+
+  return {
+    data: result ?? success(null),
+    init: {
+      headers: context.response.headers,
+      status: context.response.status,
+    },
+  };
 }

@@ -18,10 +18,9 @@ import {
 } from "@heroicons/react/24/outline";
 import React from "react";
 import { useLocalStorage } from "../../state/useLocalStorage";
-import Dialog from "../../elements/Dialog";
 import { usePanelActions } from "../panel-router/PanelRouter";
 import { useCollab } from "../../collab/CollabContext";
-import { useLocation, useNavigate } from "@storyflow/router";
+import { Link, useLocation, useNavigate } from "@storyflow/router";
 import { replacePanelPath } from "../panel-router/utils";
 import { DropShadow, Sortable } from "@storyflow/dnd";
 
@@ -158,8 +157,8 @@ export default function Nav() {
                 onClick={() => setDarkMode((ps) => !ps)}
                 icon={DarkIcon}
               />
-              <NavButton icon={UserIcon} onClick={() => {}} />
-              <NavButton icon={ArrowRightOnRectangleIcon} onClick={() => {}} />
+              <NavButton icon={UserIcon} to="/" />
+              <NavButton icon={ArrowRightOnRectangleIcon} to="/logout" />
               <StatusButton />
             </div>
           </div>
@@ -171,26 +170,34 @@ export default function Nav() {
 
 function NavButton({
   children,
-  onClick,
   className,
   icon: Icon,
+  ...action
 }: {
   children?: React.ReactNode;
-  onClick: () => void;
   className?: string;
   icon: React.ComponentType<{ className: string }>;
-}) {
+} & (
+  | {
+      onClick: () => void;
+    }
+  | {
+      to: string;
+    }
+)) {
+  const Component = "to" in action ? Link : "button";
+
   return (
-    <button
+    <Component
       className={cl(
         "w-full h-7 px-1.5 rounded flex gap-2.5 items-center [.menu-closed_&]:opacity-40 [.menu-closed:hover_&]:opacity-75 opacity-75 hover:opacity-100 [.menu-closed:hover_&]:hover:opacity-100 transition-opacity text-sm",
         className
       )}
-      onClick={onClick}
+      {...(action as any)}
     >
-      {<Icon className="w-4 h-4" />}
+      {<Icon className="w-[1.125rem] h-[1.125rem]" />}
       {children && <div>{children}</div>}
-    </button>
+    </Component>
   );
 }
 

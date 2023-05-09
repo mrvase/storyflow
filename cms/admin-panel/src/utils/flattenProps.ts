@@ -2,31 +2,35 @@ import { computeFieldId, getIdFromString } from "@storyflow/cms/ids";
 import type { NestedDocumentId } from "@storyflow/shared/types";
 import {
   PropConfig,
-  PropConfigArray,
+  PropConfigRecord,
   PropGroup,
-  RegularOptions,
 } from "@storyflow/shared/types";
 import { extendPath } from "./extendPath";
 
-export function flattenProps<T = PropConfig<RegularOptions>>(
-  props: PropConfigArray<RegularOptions>,
+export function flattenProps<T = PropConfig & { name: string }>(
+  props: PropConfigRecord,
   transform: (
-    el: PropConfig<RegularOptions>,
-    group: PropGroup<RegularOptions> | undefined
+    el: PropConfig & { name: string },
+    group: (PropGroup & { name: string }) | undefined
   ) => T = (el) => el as T
 ): T[] {
-  return props.reduce(
-    (acc: T[], el) =>
-      el.type === "group"
-        ? [...acc, ...el.props.map((nested) => transform(nested, el))]
-        : [...acc, transform(el, undefined)],
-    []
-  );
+  return Object.entries(props).reduce((acc: T[], [name, el]) => {
+    if (el.type === "group") {
+      const group = { ...el, name };
+      return [
+        ...acc,
+        ...Object.entries(el.props).map(([nestedName, nested]) =>
+          transform({ ...nested, name: nestedName }, group)
+        ),
+      ];
+    }
+    return [...acc, transform({ ...el, name }, undefined)];
+  }, []);
 }
 
 export function flattenPropsWithIds(
   id: NestedDocumentId,
-  props: PropConfigArray<RegularOptions>
+  props: PropConfigRecord
 ) {
   return flattenProps(props, (el, group) => ({
     id: group

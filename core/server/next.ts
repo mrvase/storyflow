@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { handleRequest } from "@storyflow/rpc-server";
 import { API, RPCRequest } from "@storyflow/rpc-server/types";
-import { NextApiRequest, NextApiResponse } from "next";
+import type { NextApiRequest, NextApiResponse } from "next";
 export type { NextRequest, NextResponse, NextApiRequest, NextApiResponse };
 
 export const createAPIRoute = <T extends API>(
   router: T,
-  route_?: string,
-  procedure_?: string
+  options: {
+    route?: string;
+    procedure?: string;
+    secret?: string;
+  } = {}
 ) => {
   return async (req: NextApiRequest, res: NextApiResponse) => {
     const { route, procedure } = req.query;
@@ -22,12 +25,12 @@ export const createAPIRoute = <T extends API>(
           (el): el is [string, string] => typeof el[1] === "string"
         )
       ),
-      route: route_ ?? (route as string),
-      procedure: procedure_ ?? (procedure as string),
+      route: options.route ?? (route as string),
+      procedure: options.procedure ?? (procedure as string),
       body: req.body,
     };
 
-    const { init, data } = await handleRequest(request, router);
+    const { init, data } = await handleRequest(request, router, options);
 
     const headers: string[] = [];
     init.headers.forEach((_, key) => headers.push(key));
@@ -44,13 +47,16 @@ export const createAPIRoute = <T extends API>(
 
 export const createRouteHandler = <T extends API>(
   router: T,
-  route_?: string,
-  procedure_?: string
+  options: {
+    route?: string;
+    procedure?: string;
+    secret?: string;
+  } = {}
 ) => {
   const createEndpoint =
     (method: "GET" | "POST" | "OPTIONS") =>
-    async (req: NextRequest, options: { params: Record<string, string> }) => {
-      const { route, procedure } = options.params;
+    async (req: NextRequest, context: { params: Record<string, string> }) => {
+      const { route, procedure } = context?.params ?? {};
 
       const headers: any[] = [];
       req.headers.forEach(
@@ -61,11 +67,11 @@ export const createRouteHandler = <T extends API>(
         method,
         url: req.url,
         headers: req.headers,
-        route: route_ ?? route,
-        procedure: procedure_ ?? procedure,
+        route: options.route ?? route,
+        procedure: options.procedure ?? procedure,
       };
 
-      const { init, data } = await handleRequest(request, router);
+      const { init, data } = await handleRequest(request, router, options);
 
       if (!data) {
         return new Response(null, init);

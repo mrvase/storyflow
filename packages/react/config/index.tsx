@@ -1,23 +1,5 @@
-import {
-  AppConfig,
-  ComponentConfig,
-  ExtendedLibraryConfig,
-  ExtendedPartialConfig,
-  Library,
-  LibraryConfig,
-  PartialConfig,
-  ComponentProps,
-  Story,
-  StoryConfig,
-  StoryProps,
-  PropConfigArray,
-  StoryLibrary,
-  ExtendedOptions,
-} from "@storyflow/shared/types";
+import { Config, PartialProps } from "@storyflow/shared/types";
 import * as React from "react";
-import { cms } from "../src/CMSElement";
-import { createRenderArray } from "@storyflow/client/render";
-import { getConfigByType } from "./getConfigByType";
 
 declare module "@storyflow/shared/types" {
   interface ComponentType<P> {
@@ -28,6 +10,22 @@ declare module "@storyflow/shared/types" {
   }
 }
 
+export const child = <
+  T extends Config,
+  U extends PartialProps<T["props"]>,
+  V extends keyof Required<T>["stories"]
+>(
+  config: T,
+  {
+    props,
+    story,
+  }: {
+    props?: U;
+    story?: V;
+  } = {}
+): { config: T; props?: U; story?: V } => ({ config, props, story });
+
+/*
 export const createConfig = (config: AppConfig) => {
   return config;
 };
@@ -132,6 +130,22 @@ export const createComponent = <T extends PropConfigArray<ExtendedOptions>>(
   };
 };
 
+export const createFullConfig = <T extends ExtendedLibraryConfig>(
+  config: T
+): [LibraryConfig, Library, StoryLibrary] => {
+  const entries = Object.entries(config.components);
+  const componentConfigs: any = {};
+  const components: any = {};
+  const stories: any = {};
+
+  const extendedName = ([key, el]: [string, ExtendedPartialConfig<any>]) => {
+    return el.typespace ? `${el.typespace}/${el.name ?? key}` : el.name ?? key;
+  };
+
+  const getName = (componentConfig: ExtendedPartialConfig<any>) => {
+    return entries.find(([, value]) => value === componentConfig)?.[0];
+  };
+
 function modifyValues<T extends object>(
   obj: T,
   callback: (value: T[keyof T], key: string) => any
@@ -163,22 +177,6 @@ export function modifyChild<T extends PropConfigArray<ExtendedOptions>>(
   }
   return { config: child, story: { props } };
 }
-
-export const createFullConfig = <T extends ExtendedLibraryConfig>(
-  config: T
-): [LibraryConfig, Library, StoryLibrary] => {
-  const entries = Object.entries(config.components);
-  const componentConfigs: any = {};
-  const components: any = {};
-  const stories: any = {};
-
-  const extendedName = ([key, el]: [string, ExtendedPartialConfig<any>]) => {
-    return el.typespace ? `${el.typespace}/${el.name ?? key}` : el.name ?? key;
-  };
-
-  const getName = (componentConfig: ExtendedPartialConfig<any>) => {
-    return entries.find(([, value]) => value === componentConfig)?.[0];
-  };
 
   const handleImports = (
     props: StoryProps<any>,
@@ -328,3 +326,4 @@ export const getLibraryConfigs = () => {
 };
 
 export type { ComponentConfig, PartialConfig, ComponentProps };
+*/

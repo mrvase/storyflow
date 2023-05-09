@@ -12,6 +12,8 @@ import {
   FieldId,
   ValueArray,
   ClientSyntaxTree,
+  LibraryConfigRecord,
+  Config,
 } from "@storyflow/shared/types";
 import type { SyntaxTreeRecord, SyntaxTree } from "@storyflow/cms/types";
 import Content from "../pages/Content";
@@ -28,7 +30,6 @@ import {
   getParentDocumentId,
   getRawFieldId,
 } from "@storyflow/cms/ids";
-import type { ComponentConfig, LibraryConfig } from "@storyflow/shared/types";
 import { useDocumentIdGenerator } from "../id-generator";
 import { tokens } from "@storyflow/cms/tokens";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/cms/constants";
@@ -125,7 +126,7 @@ const ElementActions = ({
   const documentId = getDocumentId(id) as DocumentId;
   const generateDocumentId = useDocumentIdGenerator();
 
-  const { libraries } = useAppConfig();
+  const { configs } = useAppConfig();
   React.useEffect(() => {
     return listeners.createComponent.subscribe(({ path, name, library }) => {
       const target = path.split(".").slice(-1)[0] as FieldId;
@@ -136,14 +137,14 @@ const ElementActions = ({
             insert: [
               createComponent(generateDocumentId(documentId), name, {
                 library,
-                libraries,
+                configs,
               }),
             ],
           })
         )
       );
     });
-  }, [libraries, generateDocumentId]);
+  }, [configs, generateDocumentId]);
 
   React.useEffect(() => {
     return listeners.changeComponent.subscribe(({ library, name }) => {
@@ -172,7 +173,7 @@ const ElementActions = ({
             insert: [
               createComponent(generateDocumentId(documentId), name, {
                 library,
-                libraries,
+                configs,
               }),
             ],
             remove: 1,
@@ -180,7 +181,7 @@ const ElementActions = ({
         )
       );
     });
-  }, [id, libraries, tokenStream, parentId, elementId, generateDocumentId]);
+  }, [id, configs, tokenStream, parentId, elementId, generateDocumentId]);
 
   React.useEffect(() => {
     return listeners.deleteComponent.subscribe(() => {
@@ -211,13 +212,13 @@ const ElementActions = ({
 
       setBuilderPath((ps) => ps.slice(0, -1));
     });
-  }, [id, libraries, tokenStream, parentId, elementId]);
+  }, [id, configs, tokenStream, parentId, elementId]);
 
   React.useEffect(() => {
     return listeners.moveComponent.subscribe(({ parent, from, to }) => {
       console.log("MOVE", parent, from, to, tokenStream);
       if (!tokenStream || !parentId) return;
-      const blocks = splitStreamByBlocks(tokenStream, libraries);
+      const blocks = splitStreamByBlocks(tokenStream, configs);
 
       let length = 0;
       let fromIndex = 0;
@@ -291,7 +292,7 @@ const ElementActions = ({
         )
       );
     });
-  }, [id, tokenStream, parentId, libraries]);
+  }, [id, tokenStream, parentId, configs]);
 
   return null;
 };
@@ -452,11 +453,11 @@ const getRecordSnapshot = (
   {
     record = {},
     client,
-    libraries,
+    configs,
   }: {
     record?: SyntaxTreeRecord;
     client: Client;
-    libraries: LibraryConfig[];
+    configs: LibraryConfigRecord;
   }
 ) => {
   const finalRecord: ValueRecord = {};
@@ -539,34 +540,39 @@ const getRecordSnapshot = (
           // this should propably just flat it infinitely out
           return Object.assign(acc, getChildren(element));
         } else if (tokens.isNestedElement(element)) {
-          const components = libraries
+          const components = Object.entries(configs)
             .reduce(
-              (acc: ComponentConfig[], library) =>
+              (acc: (Config & { name: string })[], [libraryName, library]) =>
                 acc.concat(
-                  Object.values(library.components).map((el) => ({
-                    ...el,
-                    name: extendPath(library.name, el.name, ":"),
+                  Object.entries(library.configs).map(([name, config]) => ({
+                    ...config,
+                    name: extendPath(libraryName, name, ":"),
                   }))
                 ),
               []
             )
             .flat(1);
 
-          const propConfigArray = components.find(
+          const propConfigRecord = components.find(
             (el) => el.name === element.element
           )?.props;
 
           const propKeys =
-            propConfigArray?.reduce((acc: string[], el) => {
-              if (el.type === "group") {
-                acc.push(
-                  ...el.props.map((child) => `${el.name}#${child.name}`)
-                );
+            Object.entries(propConfigRecord ?? {}).reduce(
+              (acc: string[], [name, el]) => {
+                if (el.type === "group") {
+                  acc.push(
+                    ...Object.keys(el.props).map(
+                      (childName) => `${name}#${childName}`
+                    )
+                  );
+                  return acc;
+                }
+                acc.push(name);
                 return acc;
-              }
-              acc.push(el.name);
-              return acc;
-            }, []) ?? [];
+              },
+              []
+            ) ?? [];
 
           propKeys.push("key");
 
@@ -606,14 +612,14 @@ function PropagateStatePlugin({
 
   const client = useClient();
 
-  const { libraries } = useAppConfig();
+  const { configs } = useAppConfig();
 
   // state initialized in ComponentField
   const [tree, setTree] = useGlobalState<ValueRecord>(`${id}/record`, () => {
     return getRecordSnapshot(id, {
       record,
       client,
-      libraries,
+      configs,
     });
   });
 

@@ -1,21 +1,14 @@
 import * as React from "react";
-import type { Component, NestedElement } from "@storyflow/shared/types";
+import type {
+  Component,
+  LibraryRecord,
+  NestedElement,
+} from "@storyflow/shared/types";
 import type { RenderArray } from "@storyflow/client/types";
-import { getLibraries } from "../config";
 import { ParseRichText } from "./ParseRichText";
+import { getDefaultComponent } from "../utils/getDefaultComponent";
 
-const getDefaultComponent = (type: string) => {
-  // we use this only to get the default render components
-  // Text, H1, H2, ...
-  const libraries = getLibraries();
-  let component: Component<any> | undefined;
-  for (let i = 0; i < libraries.length; i++) {
-    component = libraries[i].components[type] as Component<any> | undefined;
-    if (component) break;
-  }
-  return component!;
-};
-
+/*
 const getComponentByType = (type: string) => {
   // the type property has been transformed by the server (traverse-async),
   // so that it parses to the true library with its matching key
@@ -35,8 +28,10 @@ const getComponentByType = (type: string) => {
 const Component = ({
   data,
   children,
+  libraries,
 }: {
   data: RenderArray;
+  libraries: LibraryRecord;
   children?: React.ReactNode;
 }) => {
   return (
@@ -50,7 +45,10 @@ const Component = ({
               return <React.Fragment key="Outlet">{children}</React.Fragment>;
             }
             if ("$heading" in d) {
-              const Component = getDefaultComponent(`H${d.$heading[0]}`)!;
+              const Component = getDefaultComponent(
+                `H${d.$heading[0]}`,
+                libraries
+              )!;
               const string = String(d.$heading[1]);
               return (
                 <Component key={`${index}-${childIndex}`}>
@@ -59,7 +57,7 @@ const Component = ({
               );
             }
             if ("$text" in d) {
-              const Component = getDefaultComponent("Text")!;
+              const Component = getDefaultComponent("Text", libraries)!;
               return (
                 <Component key={`${index}-${childIndex}`}>
                   {d.$text.map((el, textElementIndex) => {
@@ -91,7 +89,7 @@ const Component = ({
 
 const getPropValue = (value: any, children: React.ReactNode | undefined) =>
   typeof value === "object" && "$children" in value ? (
-    <Component data={value.$children} children={children} />
+    <Component data={value.$children} children={children} libraries />
   ) : (
     value
   );
@@ -131,3 +129,4 @@ export const RenderSingleLayout = ({
   if (!data || data.length === 0) return <>{children}</>;
   return <Component data={data} children={children} />;
 };
+*/

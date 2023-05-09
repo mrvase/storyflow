@@ -88,7 +88,7 @@ export const mutation = (
 };
 
 export function createClient<T extends API>(
-  apiUrl: string = "/api",
+  apiUrlFromArg?: string,
   globalOptions: {
     context?: Record<string, any>;
     headers?: Record<string, string>;
@@ -111,15 +111,26 @@ export function createClient<T extends API>(
             return {
               key(
                 input: any,
-                options?: Pick<QueryOptions<any, any, any>, "context">
+                options?: Pick<QueryOptions<any, any, any>, "context"> & {
+                  url?: string;
+                }
               ) {
+                const apiUrl = options?.url ?? apiUrlFromArg;
+                if (!apiUrl) throw new Error("No API URL provided");
+
                 return queryKey(
                   `${apiUrl}/${route}/${procedure}`,
                   input,
                   getContext(options?.context, globalOptions.context)
                 );
               },
-              async query(input: any, options?: QueryOptions<any, any, any>) {
+              async query(
+                input: any,
+                options?: QueryOptions<any, any, any> & { url?: string }
+              ) {
+                const apiUrl = options?.url ?? apiUrlFromArg;
+                if (!apiUrl) throw new Error("No API URL provided");
+
                 const ctx = getContext(options?.context, globalOptions.context);
 
                 const key = queryKey(
@@ -183,7 +194,10 @@ export function createClient<T extends API>(
 
                 return result;
               },
-              mutation(input: any, options?: SharedOptions) {
+              mutation(input: any, options?: SharedOptions & { url?: string }) {
+                const apiUrl = options?.url ?? apiUrlFromArg;
+                if (!apiUrl) throw new Error("No API URL provided");
+
                 return mutation(
                   mutationKey(
                     `${apiUrl}/${route}/${procedure}`,

@@ -37,14 +37,14 @@ export default function Editor({
   initialValue: TokenStream;
   children?: React.ReactNode;
 }) {
-  const { libraries } = useAppConfig();
+  const { configs } = useAppConfig();
 
   return (
     <EditorProvider
       nodes={nodes}
       initialConfig={editorConfig}
       initialize={() => {
-        $initializeEditor(initialValue ?? [], libraries);
+        $initializeEditor(initialValue ?? [], configs);
       }}
     >
       <ContentPlugin />

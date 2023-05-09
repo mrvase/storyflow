@@ -43,7 +43,7 @@ const errorProxy = new Proxy(
   {
     get: () => {
       throw new Error(
-        "You are making an RPC which needs HTTP context through the local API."
+        "You are making a local procedure call, but the procedure relies on HTTP context (headers or cookies)."
       );
     },
   }
@@ -80,7 +80,9 @@ export function createProcedure<
       const context = Object.create({ use });
       Object.assign(context, this.context ?? errorProxy);
       try {
-        await action.middleware?.(context);
+        if (this.method) {
+          await action.middleware?.(context);
+        }
 
         if (this.method === "OPTIONS") return;
 
@@ -115,9 +117,11 @@ export function createRoute<T extends APIRoute>(route: T): T {
   return route;
 }
 
+/*
 export function createAPI<T extends API>(router: T): T {
   return router;
 }
+*/
 
 const use: MiddlewareContext["use"] = async function use(...fns) {
   for (const fn of fns) {

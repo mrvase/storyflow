@@ -13,12 +13,10 @@
   "dependencies": {
     "@storyflow/cms": "workspace:*",
     "@storyflow/shared": "workspace:*",
-    "crypto-js": "^4.1.1",
     "jsonwebtoken": "^9.0.0"
   },
   "devDependencies": {
     "@storyflow/rpc-server": "workspace:*",
-    "@types/crypto-js": "^4.1.1",
     "@types/jsonwebtoken": "^9.0.2",
     "@types/node": "^17.0.45",
     "eslint": "^7.32.0",

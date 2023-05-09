@@ -1,45 +1,57 @@
 import type {} from "@storyflow/rpc-server/types-shared";
 import { createAPIRoute, createRouteHandler } from "@storyflow/server/next";
 
-import { createAPI } from "@storyflow/rpc-server";
 import { documents } from "./routes/documents";
 import { admin } from "./routes/admin";
 import { files } from "./routes/files";
-import { pages as _pages } from "./routes/pages";
-import { StoryflowConfig } from "@storyflow/shared/types";
+import { app } from "./routes/app";
+import { ApiConfig, AppConfig, StoryflowConfig } from "@storyflow/shared/types";
 import { setClientPromise } from "./mongoClient";
 
-const api = (config: StoryflowConfig) =>
-  createAPI({
-    admin: admin(config),
-    documents: documents(config),
-    files: files(config),
-    pages: _pages(config),
-  });
+const createAPI = (config: StoryflowConfig) => ({
+  admin: admin(config),
+  documents: documents(config),
+  files: files(config),
+});
+
+export type DefaultAPI = ReturnType<typeof createAPI>;
+
+export type AppAPI = { app: ReturnType<typeof app> };
 
 export const createHandler = (config: StoryflowConfig) => {
   setClientPromise(config.api.mongoURL);
-  return createRouteHandler(api(config));
+  return createRouteHandler(createAPI(config), { secret: config.auth.secret });
 };
 
-export type API = ReturnType<typeof api>;
-
-export const pages = (config: StoryflowConfig) => {
-  setClientPromise(config.api.mongoURL);
-  return _pages(config);
+export const createLocalAPI = (appConfig: AppConfig, apiConfig: ApiConfig) => {
+  setClientPromise(apiConfig.mongoURL);
+  return {
+    app: app(appConfig, apiConfig),
+  };
 };
 
-export const createPagesHandler = (config: StoryflowConfig) => {
-  setClientPromise(config.api.mongoURL);
-  return createAPIRoute(createAPI({ pages: pages(config) }), "pages");
+export const createAppHandler = (
+  appConfig: AppConfig,
+  apiConfig: ApiConfig,
+  procedure?: string
+) => {
+  setClientPromise(apiConfig.mongoURL);
+  return createRouteHandler(
+    {
+      app: app(appConfig, apiConfig),
+    },
+    {
+      route: "app",
+      procedure,
+    }
+  );
 };
-
-export type PagesAPI = typeof api;
 
 export type {
   StoryflowConfig,
   AppReference,
   AppConfig,
+  ApiConfig,
 } from "@storyflow/shared/types";
 
 export * from "@storyflow/rpc-server/result";

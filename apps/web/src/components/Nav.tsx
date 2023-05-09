@@ -1,9 +1,15 @@
-import { cms, CMSElement } from "@storyflow/react";
-import { createComponent } from "@storyflow/react/config";
+import {
+  cms,
+  CMSElement,
+  Config,
+  PropConfigRecord,
+  Props,
+  withComponent,
+} from "@storyflow/react";
 import Link from "next/link";
 
-export const NavItem = createComponent(
-  ({ label, href }) => {
+export const NavItemConfig = withComponent(
+  function NavItem({ label, href }) {
     return (
       <CMSElement>
         <Link href={href || "/"} className="rounded text-sm font-bold">
@@ -12,54 +18,53 @@ export const NavItem = createComponent(
       </CMSElement>
     );
   },
+
   {
     label: "Menulink",
-    props: [
-      {
+    props: {
+      label: {
         type: "string",
-        name: "label",
         label: "Label",
+        searchable: true,
       },
-      {
+      href: {
         type: "string",
-        name: "href",
         label: "URL",
       },
-    ] as const,
-    stories: [
-      {
+    },
+    stories: {
+      "": {
         props: {
           label: "Testlabel",
         },
       },
-    ],
+    },
   }
 );
 
-export const Nav = createComponent(
-  ({ children }) => {
-    return (
-      <cms.nav className="px-20 py-8 flex gap-5 justify-end">
-        {children}
-      </cms.nav>
-    );
+export const Nav = ({ children }: Props<typeof props>) => {
+  return (
+    <cms.nav className="px-20 py-8 flex gap-5 justify-end">{children}</cms.nav>
+  );
+};
+
+const props = {
+  children: {
+    type: "children",
+    label: "Komponenter",
+    options: { NavItemConfig },
   },
-  {
-    label: "Menu",
-    props: [
-      {
-        type: "children",
-        name: "children",
-        label: "Komponenter",
-        options: { NavItem },
+} satisfies PropConfigRecord;
+
+export const NavConfig = {
+  label: "Menu",
+  props,
+  stories: {
+    test: {
+      props: {
+        children: [NavItemConfig, NavItemConfig],
       },
-    ] as const,
-    stories: [
-      {
-        props: {
-          children: [NavItem, NavItem],
-        },
-      },
-    ],
-  }
-);
+    },
+  },
+  component: Nav,
+} satisfies Config<typeof props>;

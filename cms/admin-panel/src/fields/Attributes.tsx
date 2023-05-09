@@ -57,7 +57,7 @@ export function Attributes({
   color?: "gray" | "red" | "pink" | "yellow";
 }) {
   const [currentProp, setCurrentProp] = useAttributesContext();
-  const { libraries } = useAppConfig();
+  const { configs } = useAppConfig();
 
   let templateId = useFieldTemplateId();
   const template = useTemplate(templateId) ?? noTemplate;
@@ -69,12 +69,12 @@ export function Attributes({
 
   let props: { id: FieldId; label: React.ReactNode }[] = React.useMemo(() => {
     if (entity && "element" in entity) {
-      const config = getConfigFromType(entity.element, libraries);
+      const config = getConfigFromType(entity.element, configs);
 
       let result: { id: FieldId; label: React.ReactNode; type?: string }[] =
         flattenPropsWithIds(
           entity!.id as NestedDocumentId,
-          config?.props ?? []
+          config?.props ?? {}
         );
       if (hideChildrenProps) {
         result = result.filter((el) => el.type !== "children");

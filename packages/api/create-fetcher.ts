@@ -5,7 +5,7 @@ import { getClientPromise } from "./mongoClient";
 import { DBDocumentRaw } from "./types";
 
 export const createFetcher =
-  (dbName: string) =>
+  (dbName: string | undefined) =>
   async (fetchObject: {
     folder: FolderId;
     filters: Record<RawFieldId, ValueArray>;

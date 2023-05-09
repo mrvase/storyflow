@@ -1,11 +1,8 @@
 import { CubeIcon } from "@heroicons/react/24/outline";
 import { getDocumentId } from "@storyflow/cms/ids";
-import type { DocumentId } from "@storyflow/shared/types";
+import type { ConfigRecord, DocumentId } from "@storyflow/shared/types";
 import type { TokenStream } from "../../operations/types";
-import type {
-  RegularOptions,
-  Option as PropOption,
-} from "@storyflow/shared/types";
+import type { Options, Option as PropOption } from "@storyflow/shared/types";
 import React from "react";
 import { useAppConfig } from "../../client-config";
 import { useDocumentIdGenerator } from "../../id-generator";
@@ -16,39 +13,34 @@ import { Option } from "./Option";
 
 export function ElementPrompt({
   prompt,
-  options: optionsFromProps,
+  options: optionsFromProps = [],
   replacePromptWithStream,
 }: {
   prompt: string;
-  options: RegularOptions;
+  options?: string[];
   replacePromptWithStream: (stream: TokenStream) => void;
 }) {
   const id = useFieldId();
   const documentId = getDocumentId(id) as DocumentId;
   const generateDocumentId = useDocumentIdGenerator();
 
-  const elementOptions = React.useMemo(() => {
-    return (optionsFromProps as PropOption[]).filter(
-      (el): el is string => typeof el === "string"
-    );
-  }, [optionsFromProps]);
+  const { configs } = useAppConfig();
 
-  const { libraries } = useAppConfig();
-
-  let options = libraries
-    .map((library) =>
-      Object.values(library.components).map((component) => ({
+  let options = Object.entries(configs)
+    .map(([libraryName, library]) =>
+      Object.entries(library.configs).map(([name, component]) => ({
         ...component,
-        libraryName: library.name,
+        name,
+        libraryName,
         libraryLabel: library.label,
       }))
     )
     .flat(1);
 
-  if (elementOptions.length > 0) {
+  if (optionsFromProps.length > 0) {
     const defaultOptions = options.filter((el) => el.libraryName === "");
     options = options.filter((el) =>
-      elementOptions.includes(`${el.libraryName}:${el.name}`)
+      optionsFromProps.includes(`${el.libraryName}:${el.name}`)
     );
     options.push(...defaultOptions);
   } else {
@@ -66,7 +58,7 @@ export function ElementPrompt({
       replacePromptWithStream([
         createComponent(generateDocumentId(documentId), config.name, {
           library: config.libraryName,
-          libraries,
+          configs,
         }),
       ]);
     },

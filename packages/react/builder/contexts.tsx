@@ -1,6 +1,6 @@
 import * as React from "react";
 import { dispatchers } from "./events";
-import type { Path } from "@storyflow/shared/types";
+import type { Library, LibraryConfig, Path } from "@storyflow/shared/types";
 
 /**
  * BUILDER SELECTION CONTEXT
@@ -81,3 +81,16 @@ export function ExtendPath({
     <PathContext.Provider value={nextPath}>{children}</PathContext.Provider>
   );
 }
+
+/**
+ * CONFIG CONTEXT
+ */
+
+export const ConfigContext = React.createContext<{
+  configs: Record<string, LibraryConfig>;
+  libraries: Record<string, Library>;
+} | null>(null);
+
+export const useConfig = () => {
+  return React.useContext(ConfigContext)!;
+};

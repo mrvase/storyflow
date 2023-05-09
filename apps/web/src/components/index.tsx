@@ -1,23 +1,31 @@
-import { Content } from "./Content";
-import { Nav } from "./Nav";
-import { createFullConfig } from "@storyflow/react/config";
-import { Header } from "./Header/Header";
-import { Link } from "./Link";
+import {
+  Library,
+  LibraryConfig,
+  LibraryConfigRecord,
+  LibraryRecord,
+  extractLibrary,
+} from "@storyflow/react";
+import { ContentConfig } from "./Content";
+import { LinkConfig } from "./Link";
+import { HeaderConfig } from "./Header/Header";
+import { NavConfig } from "./Nav";
 
-export const [config, library, stories] = createFullConfig({
-  name: "sf",
-  label: "Storyflow",
-  components: {
-    Content,
-    Header,
-    Nav,
-    Link,
+const kfs = {
+  label: "KFS UI",
+  configs: {
+    ContentConfig,
+    LinkConfig,
+    HeaderConfig,
+    NavConfig,
   },
-});
+} satisfies LibraryConfig;
 
-/*
-console.log(
-  "CONFIG",
-  util.inspect({ config, library, stories }, { colors: true, depth: null })
-);
-*/
+export const configs = {
+  kfs,
+} satisfies LibraryConfigRecord;
+
+const kfsLibrary = extractLibrary(kfs) satisfies Library<typeof kfs>;
+
+export const libraries = {
+  kfs: kfsLibrary,
+} satisfies LibraryRecord<typeof configs>;

@@ -25,13 +25,11 @@ import { useIsFocused } from "../../editor/react/useIsFocused";
 export function ContentPlugin() {
   const editor = useEditorContext();
 
-  const { libraries } = useAppConfig();
-
   useEditorEvents();
 
   useLayoutEffect(() => {
-    return registerPlainText(editor, libraries, { allowLineBreaks: true });
-  }, [editor, libraries]);
+    return registerPlainText(editor, { allowLineBreaks: true });
+  }, [editor]);
 
   return null;
 }
@@ -40,7 +38,7 @@ function useEditorEvents() {
   const editor = useEditorContext();
   const isFocused = useIsFocused();
 
-  const { libraries } = useAppConfig();
+  const { configs } = useAppConfig();
 
   const fieldId = useFieldId();
 
@@ -67,7 +65,7 @@ function useEditorEvents() {
             },
           ];
 
-          replaceWithComputation(editor, insert, libraries);
+          replaceWithComputation(editor, insert, configs);
         }),
 
         addContext.subscribe(async (ctx) => {
@@ -77,7 +75,7 @@ function useEditorEvents() {
             },
           ];
 
-          replaceWithComputation(editor, insert, libraries);
+          replaceWithComputation(editor, insert, configs);
         }),
 
         addNestedFolder.subscribe(async ({ folderId, templateId }) => {
@@ -88,7 +86,7 @@ function useEditorEvents() {
             },
           ];
 
-          replaceWithComputation(editor, insert, libraries);
+          replaceWithComputation(editor, insert, configs);
 
           if (templateId && !fieldConfig?.template) {
             setFieldConfig("template", templateId);
@@ -102,7 +100,7 @@ function useEditorEvents() {
             },
           ];
 
-          replaceWithComputation(editor, insert, libraries);
+          replaceWithComputation(editor, insert, configs);
           /*
           editor.update(() => {
             addBlockElement(insert);
@@ -117,12 +115,12 @@ function useEditorEvents() {
           const component = createComponent(
             generateDocumentId(documentId),
             name,
-            { library, libraries }
+            { library, configs }
           );
 
           const insert: TokenStream = [component];
 
-          replaceWithComputation(editor, insert, libraries);
+          replaceWithComputation(editor, insert, configs);
 
           /*
           if (isInlineElement(libraries, component)) {
@@ -137,7 +135,7 @@ function useEditorEvents() {
 
         addNestedDocument.subscribe(() => {
           const insert: TokenStream = [{ id: generateDocumentId(documentId) }];
-          replaceWithComputation(editor, insert, libraries);
+          replaceWithComputation(editor, insert, configs);
           /*
           editor.update(() => {
             addBlockElement([{ id: generateDocumentId(documentId) }]);
@@ -146,5 +144,5 @@ function useEditorEvents() {
         })
       );
     }
-  }, [editor, libraries, isFocused, fieldId, generateDocumentId]);
+  }, [editor, configs, isFocused, fieldId, generateDocumentId]);
 }

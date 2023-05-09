@@ -28,8 +28,8 @@ function Decorator({
 
   const selectClick = React.useRef(false);
 
-  const { libraries } = useAppConfig();
-  const config = getConfigFromType(value.element, libraries);
+  const { configs } = useAppConfig();
+  const config = getConfigFromType(value.element, configs);
 
   const text =
     typeof output?.[0] === "string"

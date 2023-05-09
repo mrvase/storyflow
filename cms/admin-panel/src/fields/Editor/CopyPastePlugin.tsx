@@ -111,7 +111,7 @@ const emulateCopyEvent = (
 
 export function CopyPastePlugin() {
   const editor = useEditorContext();
-  const { libraries } = useAppConfig();
+  const { configs } = useAppConfig();
   const id = useFieldId();
   const documentId = getDocumentId(id) as DocumentId;
   const generateDocumentId = useDocumentIdGenerator();
@@ -283,7 +283,7 @@ export function CopyPastePlugin() {
 
                 const stream = createTokenStream(entry);
 
-                const blocks = $createBlocksFromStream(stream, libraries);
+                const blocks = $createBlocksFromStream(stream, configs);
                 $replaceWithBlocks(blocks);
                 /*
                 const lastNode = $getLastBlock(selection, libraries);
@@ -343,6 +343,6 @@ export function CopyPastePlugin() {
         COMMAND_PRIORITY_EDITOR
       )
     );
-  }, [editor, libraries, documentId, id, collab]);
+  }, [editor, configs, documentId, id, collab]);
   return null;
 }

@@ -36,7 +36,7 @@ export function Actions({
   const documentId = getDocumentId(id) as DocumentId;
   const generateDocumentId = useDocumentIdGenerator();
 
-  const { libraries } = useAppConfig();
+  const { configs } = useAppConfig();
 
   return (
     <>

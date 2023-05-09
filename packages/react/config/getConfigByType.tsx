@@ -1,6 +1,7 @@
 import {
   Component,
-  ComponentConfig,
+  Config,
+  ConfigRecord,
   Library,
   LibraryConfig,
 } from "@storyflow/shared/types";
@@ -11,67 +12,33 @@ const parseTypeString = (type: string): [library: string, name: string] => {
     : ["", type];
 };
 
-export type ExtendedComponentConfig = ComponentConfig & {
-  component: Component<ComponentConfig>;
-};
-
 export function getConfigByType(
   type: string,
-  configs: LibraryConfig[]
-): ComponentConfig | undefined;
-export function getConfigByType(
-  type: string,
-  configs: LibraryConfig[],
-  libraries: Library[]
-): ExtendedComponentConfig | undefined;
-export function getConfigByType(
-  type: string,
-  configs: LibraryConfig[],
-  libraries?: Library[]
-): ComponentConfig | ExtendedComponentConfig | undefined {
+  {
+    configs,
+    libraries,
+    options,
+  }: {
+    configs: Record<string, LibraryConfig>;
+    libraries?: Record<string, Library>;
+    options?: ConfigRecord;
+  }
+): { config?: Config; component?: Component<Config["props"]> } {
   const [libraryName, name] = parseTypeString(type);
-  // const libraries = getLibraries();
 
-  const getComponentFromLibraryConfig = (
-    libraryConfig: LibraryConfig
-  ): ComponentConfig | ExtendedComponentConfig | undefined => {
-    const result = Object.entries(libraryConfig.components).find(
-      ([, el]) => el.name === name
-    );
-    if (!result) return;
-    const [key, componentConfig] = result;
+  const libraryConfig = configs[libraryName];
+  let config = libraryConfig?.configs?.[`${name}Config`];
 
-    if (!libraries) {
-      return componentConfig;
-    }
-
-    const library = libraries.find((el) => el.name === libraryConfig.name)!;
-
-    return {
-      ...componentConfig,
-      component: library.components[key]!,
-    };
-  };
-
-  // prioritize libraries with the true name
-  // but we always let other libraries overwrite the default library
-
-  const mainLibraryConfigs =
-    libraryName == "" ? [] : configs.filter((el) => el.name === libraryName);
-  const rest =
-    libraryName === ""
-      ? configs
-      : configs.filter((el) => el.name !== libraryName);
-
-  for (let i = 0; i < mainLibraryConfigs.length; i++) {
-    let config = mainLibraryConfigs[i];
-    const result = getComponentFromLibraryConfig(config);
-    if (result) return result;
+  if (!config && options) {
+    config = options[`${name}Config`];
   }
 
-  for (let i = 0; i < rest.length; i++) {
-    let config = configs[i];
-    const result = getComponentFromLibraryConfig(config);
-    if (result) return result;
+  let component = config?.component;
+
+  if (libraries && config && !component) {
+    const library = libraries[libraryName];
+    component = library[name];
   }
+
+  return { config, component };
 }

@@ -3,12 +3,25 @@ import { dispatchers, listeners } from "./events";
 import { RenderContext } from "../src/RenderContext";
 import { useCMSElement } from "./useCMSElement";
 import { getSiblings } from "./focus";
-import type { ClientSyntaxTree, ValueArray } from "@storyflow/shared/types";
+import type {
+  ClientSyntaxTree,
+  Library,
+  LibraryConfig,
+  LibraryConfigRecord,
+  LibraryRecord,
+  ValueArray,
+} from "@storyflow/shared/types";
 import ReactDOM from "react-dom";
 import { useCSS } from "./useCSS";
 import RenderChildren from "./RenderChildren";
-import { SelectedPathProvider, useSelectedPath } from "./contexts";
+import {
+  ConfigContext,
+  SelectedPathProvider,
+  useSelectedPath,
+} from "./contexts";
 import { Select } from "./Select";
+import { defaultLibraryConfig } from "@storyflow/shared/defaultLibraryConfig";
+import { defaultLibrary } from "../config/defaultLibrary";
 
 const LOG = true;
 export const log: typeof console.log = LOG
@@ -143,7 +156,13 @@ export function useValue(key: string) {
   return value;
 }
 
-export function RenderBuilder() {
+export function RenderBuilder<T extends LibraryConfigRecord>({
+  configs,
+  libraries,
+}: {
+  configs: T;
+  libraries: LibraryRecord<T>;
+}) {
   useCSS();
 
   const { id, key } = useFullValue();
@@ -185,18 +204,31 @@ export function RenderBuilder() {
     };
   }, []);
 
+  const configCtx = React.useMemo(() => {
+    return {
+      configs: {
+        "": defaultLibraryConfig,
+        ...configs,
+      },
+      libraries: {
+        "": defaultLibrary,
+        ...libraries,
+      },
+    };
+  }, [configs, libraries]);
+
   return (
-    <>
+    <ConfigContext.Provider value={configCtx}>
       <SelectedPathProvider key={key}>
         <RenderContext.Provider value={useCMSElement}>
           <Frame>{id && <RenderRoot id={id} />}</Frame>
         </RenderContext.Provider>
       </SelectedPathProvider>
       <BodyPortal>
-        <Select />
+        <Select configs={configs} />
         <ReadFrameHeight />
       </BodyPortal>
-    </>
+    </ConfigContext.Provider>
   );
 }
 

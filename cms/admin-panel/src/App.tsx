@@ -68,11 +68,11 @@ export function App() {
 function FrontPage({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
 
-  return pathname === "/" ? <>{children}</> : null;
+  return pathname === "/" || pathname === "logout" ? <>{children}</> : null;
 }
 
 function PanelPage({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
 
-  return pathname === "/" ? null : <>{children}</>;
+  return pathname === "/" || pathname === "logout" ? null : <>{children}</>;
 }

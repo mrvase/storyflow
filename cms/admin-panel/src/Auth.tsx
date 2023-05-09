@@ -1,15 +1,14 @@
 import React from "react";
+import cl from "clsx";
 import { onInterval } from "./collab/interval";
 import { Result, error, isError, unwrap } from "@storyflow/rpc-client/result";
 import { createClient, createSWRClient } from "@storyflow/rpc-client";
 import Loader from "./elements/Loader";
 import useSWR, { useSWRConfig } from "swr";
-import type { AuthAPI } from "services-api/auth";
-import type { CollabAPI } from "services-api/collab";
-import type { BucketAPI } from "services-api/bucket";
+import type { AuthAPI, CollabAPI, BucketAPI } from "services-api";
 import { useUrlInfo } from "./users";
 import { AppReference } from "@storyflow/api";
-import { useNavigate } from "@storyflow/router";
+import { useLocation, useNavigate } from "@storyflow/router";
 
 const url =
   process.env.NODE_ENV === "production" ? `/api` : `http://localhost:3000/api`;
@@ -30,10 +29,10 @@ const AuthContext = React.createContext<{
   user: {
     email: string;
   } | null;
-  getToken: () => string;
+  getToken: () => string | undefined;
   organization: Organization | null;
   apiUrl: string | null;
-}>({ user: null, organization: null, apiUrl: null, getToken: () => "" });
+}>({ user: null, organization: null, apiUrl: null, getToken: () => undefined });
 
 export const useAuth = () => React.useContext(AuthContext);
 
@@ -43,24 +42,28 @@ const getCookie = (name: string) => {
   if (parts.length === 2) {
     return parts.pop()!.split(";").shift()!;
   }
-  return "";
 };
 
 export function AuthProvider({ children }: { children?: React.ReactNode }) {
   const { organization: slug } = useUrlInfo();
 
   const [isLoading, setIsLoading] = React.useState(true);
-
   const [apiUrl, setApiUrl] = React.useState<string | null>(null);
-
   const [user, setUser] = React.useState<{ email: string } | null>(null); // <-- confirms session in panel
-
   const [organization, setOrganization] = React.useState<Organization | null>(
     null
   ); // <-- confirms session in external api
 
+  const reset = () => {
+    setIsLoading(true);
+    setUser(null);
+    setOrganization(null);
+    setApiUrl(null);
+  };
+
   React.useEffect(() => {
     // authentication for panel
+    if (slug === "logout") return;
     (async () => {
       // sets global token, organization key, and returns user and organization url
       const result = unwrap(
@@ -91,11 +94,12 @@ export function AuthProvider({ children }: { children?: React.ReactNode }) {
       return await fetch(`${apiUrl}/admin/authenticate`, {
         method: "POST",
         credentials: "include",
-        headers: includeHeader
-          ? {
-              "x-storyflow-token": token,
-            }
-          : undefined,
+        headers:
+          includeHeader && token
+            ? {
+                "x-storyflow-token": token,
+              }
+            : undefined,
       }).then(async (res) => {
         const json = (await res.json()) as Promise<Result<Organization>>;
         return json;
@@ -113,6 +117,19 @@ export function AuthProvider({ children }: { children?: React.ReactNode }) {
     return onInterval(() => run(), { duration: 30000 });
     // navigate depends on pathname, but is not relevant for this effect
   }, [apiUrl]);
+
+  const { pathname } = useLocation();
+
+  React.useEffect(() => {
+    if (pathname === "/logout") {
+      const logout = async () => {
+        reset();
+        await servicesClient.auth.logout.mutation();
+        navigate("/", { replace: true });
+      };
+      logout();
+    }
+  }, [servicesClient, pathname]);
 
   const ctx = React.useMemo(
     () => ({
@@ -144,17 +161,25 @@ export function SignedOut({ children }: { children?: React.ReactNode }) {
 export function SignIn() {
   const [show, setShow] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [isDone, setIsDone] = React.useState(false);
 
   React.useEffect(() => {
-    const t = setTimeout(() => setShow(true), 500);
+    const t = setTimeout(() => setShow(true), 200);
 
     return () => {
       clearTimeout(t);
     };
   }, []);
 
-  return show ? (
-    <div className="w-full h-full flex-center">
+  return isDone ? (
+    <div className="w-full h-full flex-center">Email sendt</div>
+  ) : (
+    <div
+      className={cl(
+        "w-full h-full flex-center transition-opacity duration-300",
+        show ? "opacity-100" : "opacity-0"
+      )}
+    >
       <form
         onSubmit={async (ev) => {
           ev.preventDefault();
@@ -166,6 +191,7 @@ export function SignIn() {
             data.get("email") as string
           );
           setIsLoading(false);
+          setIsDone(true);
         }}
         className="flex flex-col gap-5 items-center"
       >
@@ -181,5 +207,5 @@ export function SignIn() {
         </button>
       </form>
     </div>
-  ) : null;
+  );
 }

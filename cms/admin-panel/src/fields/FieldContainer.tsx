@@ -280,7 +280,7 @@ function ElementLabel(props: {
   const [, setPath] = useSelectedPath();
   const entity = useNestedEntity(props);
 
-  const { libraries } = useAppConfig();
+  const { configs } = useAppConfig();
 
   if (!entity) {
     return null;
@@ -309,7 +309,7 @@ function ElementLabel(props: {
   }
 
   if ("element" in entity) {
-    const config = getConfigFromType(entity.element, libraries);
+    const config = getConfigFromType(entity.element, configs);
 
     return (
       <button

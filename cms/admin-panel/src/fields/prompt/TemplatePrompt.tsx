@@ -35,12 +35,12 @@ export function TemplatePrompt({ prompt }: { prompt: string }) {
   console.log("ELEMENT ID", dataFieldId);
 
   const editor = useEditorContext();
-  const { libraries } = useAppConfig();
+  const { configs } = useAppConfig();
 
   const onEnter = React.useCallback(
     (id: DocumentId | null) => {
       editor.update(() => {
-        $exitPromptNode(libraries);
+        $exitPromptNode(configs);
       });
       push(
         createTransaction((t) =>
@@ -51,7 +51,7 @@ export function TemplatePrompt({ prompt }: { prompt: string }) {
         )
       );
     },
-    [push, dataFieldId, libraries]
+    [push, dataFieldId, configs]
   );
 
   const options = templates

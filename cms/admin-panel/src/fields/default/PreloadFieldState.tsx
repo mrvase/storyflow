@@ -101,28 +101,28 @@ function PreloadNestedState({
   } else if (tokens.isNestedField(entity)) {
     // missing
   } else if (tokens.isNestedElement(entity)) {
-    const { libraries } = useAppConfig();
+    const { configs } = useAppConfig();
     const { record } = useDocumentPageContext();
 
-    const config = getConfigFromType(entity.element, libraries);
-    const props = config?.props ?? [];
+    const config = getConfigFromType(entity.element, configs);
+    const props = config?.props ?? {};
 
     ids = React.useMemo(() => {
       const keyId = computeFieldId(entity.id, getIdFromString("key"));
 
-      return props.reduce(
-        (acc: FieldId[], prop) => {
+      return Object.entries(props).reduce(
+        (acc: FieldId[], [name, prop]) => {
           if (prop.type === "group") {
-            const nestedIds = prop.props.map((innerProp) => {
+            const nestedIds = Object.entries(prop.props).map(([innerName]) => {
               const id = computeFieldId(
                 entity.id,
-                getIdFromString(extendPath(prop.name, innerProp.name, "#"))
+                getIdFromString(extendPath(name, innerName, "#"))
               );
               return id;
             });
             acc.push(...nestedIds);
           } else {
-            const id = computeFieldId(entity.id, getIdFromString(prop.name));
+            const id = computeFieldId(entity.id, getIdFromString(name));
             acc.push(id);
           }
           return acc;

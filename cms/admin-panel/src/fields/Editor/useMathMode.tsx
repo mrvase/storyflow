@@ -15,7 +15,7 @@ export function useMathMode(defaultValue: boolean = false) {
     state[1](defaultValue);
   }, [defaultValue]);
 
-  const { libraries } = useAppConfig();
+  const { configs } = useAppConfig();
 
   React.useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -64,7 +64,7 @@ export function useMathMode(defaultValue: boolean = false) {
       const insert = (stream: TokenStream) => {
         if (event.defaultPrevented) return;
         event.preventDefault();
-        replaceWithComputation(editor, stream, libraries);
+        replaceWithComputation(editor, stream, configs);
       };
 
       if (mathMode) {
@@ -97,7 +97,7 @@ export function useMathMode(defaultValue: boolean = false) {
         next.addEventListener("keydown", onKeyDown);
       }
     });
-  }, [editor, libraries, mathMode]);
+  }, [editor, configs, mathMode]);
 
   return state;
 }

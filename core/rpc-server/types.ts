@@ -42,6 +42,7 @@ export type ResponseCookie<Name extends string = string, Value = any> = Omit<
 > & {
   name: Name;
   value: Value;
+  encrypt?: boolean;
 };
 
 export type RequestCookie<Name extends string = string, Value = any> = {
@@ -74,7 +75,7 @@ export type ResponseCookies<
         ]
       | [options: ResponseCookie<Name, T[Name]>]
   ): void;
-  delete(name: string): void;
+  delete(name: string, options: Partial<ResponseCookie>): void;
 };
 
 export type RPCRequest = {
@@ -104,6 +105,14 @@ export interface Context {
     >(): ResponseCookies<T>;
   };
   client: Record<string, any>;
+  encode: (
+    value: any,
+    options: { secret?: string; encrypt?: boolean }
+  ) => string;
+  decode: <T>(
+    value: string,
+    options: { secret?: string; decrypt?: boolean }
+  ) => T | null;
 }
 
 type MiddlewareFunc = (ctx: any) => any;

@@ -339,8 +339,6 @@ function SaveButton({ id, folderId }: { id: DocumentId; folderId: FolderId }) {
       }
     );
 
-  const { libraries } = useAppConfig();
-
   /*
   const searchable: SearchableProps = React.useMemo(() => {
     const searchableProps: SearchableProps = {};

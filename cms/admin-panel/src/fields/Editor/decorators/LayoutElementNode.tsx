@@ -6,6 +6,7 @@ import {
   FieldId,
   NestedDocumentId,
   NestedElement,
+  Options,
 } from "@storyflow/shared/types";
 import type { SyntaxTree } from "@storyflow/cms/types";
 import { getConfigFromType, useAppConfig } from "../../../client-config";
@@ -31,7 +32,7 @@ import {
   useAttributesContext,
 } from "../../Attributes";
 import { ExtendPath, usePath, useSelectedPath } from "../../Path";
-import type { PropConfig, RegularOptions } from "@storyflow/shared/types";
+import type { PropConfig } from "@storyflow/shared/types";
 import { flattenPropsWithIds } from "../../../utils/flattenProps";
 import { getIdFromString } from "@storyflow/cms/ids";
 import { useEditorContext } from "../../../editor/react/EditorProvider";
@@ -76,10 +77,10 @@ function Decorator({
 
   const { isSelected, select } = useIsSelected(nodeKey);
 
-  const { libraries } = useAppConfig();
-  const config = getConfigFromType(value.element, libraries);
+  const { configs } = useAppConfig();
+  const config = getConfigFromType(value.element, configs);
 
-  let props = flattenPropsWithIds(value.id, config?.props ?? []);
+  let props = flattenPropsWithIds(value.id, config?.props ?? {});
 
   const Icon =
     value.element === "Loop"
@@ -243,8 +244,8 @@ function useParentPropConfig() {
       }
     }
   );
-  const { libraries } = useAppConfig();
-  const config = element ? getConfigFromType(element, libraries) : undefined;
+  const { configs } = useAppConfig();
+  const config = element ? getConfigFromType(element, configs) : undefined;
   if (!config) return;
   return flattenPropsWithIds(documentId, config.props).find(
     (el) => el.id === fieldId
@@ -256,7 +257,7 @@ function FieldSpecification({
   isLoop,
   children,
 }: {
-  props: (PropConfig<RegularOptions> & { id: FieldId })[];
+  props: (PropConfig & { id: FieldId })[];
   isLoop: boolean;
   children: React.ReactNode;
 }) {
@@ -269,7 +270,7 @@ function FieldSpecification({
 
   const config = props.find((el) => el.id === propId)!;
 
-  let options: RegularOptions | undefined =
+  let options: Options | undefined =
     "options" in config ? config.options : undefined;
 
   if (isLoop) {

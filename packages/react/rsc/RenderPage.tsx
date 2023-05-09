@@ -1,22 +1,26 @@
 import { createRenderArray } from "@storyflow/client/render";
 import {
   ClientSyntaxTree,
+  Component,
+  ConfigRecord,
   FileToken,
+  Library,
+  LibraryConfig,
+  LibraryConfigRecord,
+  LibraryRecord,
   PropConfig,
-  PropConfigArray,
+  PropConfigRecord,
   ValueArray,
 } from "@storyflow/shared/types";
 import React from "react";
-import { getLibraries, getLibraryConfigs } from "../config";
-import {
-  ExtendedComponentConfig,
-  getConfigByType,
-} from "../config/getConfigByType";
+import { getConfigByType } from "../config/getConfigByType";
 import { ParseRichText } from "../src/ParseRichText";
 import { extendPath } from "../utils/extendPath";
 import { getDefaultComponent } from "../utils/getDefaultComponent";
 import { getIdFromString } from "@storyflow/shared/getIdFromString";
 import { calculateClient } from "@storyflow/client/calculate-client";
+import { defaultLibrary } from "../config/defaultLibrary";
+import { defaultLibraryConfig } from "@storyflow/shared/defaultLibraryConfig";
 
 const getImageObject = (name: string, url: string) => {
   const src = `${url}/${name}`;
@@ -36,7 +40,10 @@ const normalizeProp = (
   prop: ValueArray | ClientSyntaxTree,
   loopCtx: Record<string, number>,
   transforms: {
-    children: (value: ValueArray | undefined) => React.ReactElement;
+    children: (
+      value: ValueArray | undefined,
+      options?: ConfigRecord
+    ) => React.ReactElement;
     file?: (value: FileToken | undefined) => any;
   }
 ) => {
@@ -90,7 +97,10 @@ const normalizeProp = (
     return String(value || "");
   } else if (type === "children") {
     const children = Array.isArray(value) ? value : array;
-    return transforms.children(children);
+    return transforms.children(
+      children,
+      config.options as ConfigRecord | undefined
+    );
   }
 
   return value;
@@ -99,19 +109,23 @@ const normalizeProp = (
 const RenderChildren = ({
   value,
   record,
+  options,
   ctx,
 }: {
   value: ValueArray;
   record: Record<string, ValueArray | ClientSyntaxTree>;
+  options?: ConfigRecord;
   ctx: {
     index: number;
     spread: boolean;
     loop: Record<string, number>;
+    configs: Record<string, LibraryConfig>;
+    libraries: Record<string, Library>;
     children?: React.ReactNode;
   };
 }) => {
-  const libraries = getLibraries();
-  const configs = getLibraryConfigs();
+  const libraries = ctx.libraries;
+  const configs = ctx.configs;
 
   /*
   let array: ValueArray = [];
@@ -126,10 +140,12 @@ const RenderChildren = ({
   */
 
   const getDisplayType = (type: string) => {
-    return Boolean(getConfigByType(type, configs)?.inline);
+    return Boolean(getConfigByType(type, { configs })?.config?.inline);
   };
 
   const renderArray = createRenderArray(value, getDisplayType);
+
+  console.log("RENDER", value, renderArray);
 
   return (
     <>
@@ -166,6 +182,7 @@ const RenderChildren = ({
                           id={el.id}
                           type={el.element}
                           record={record}
+                          options={options}
                           ctx={{
                             ...ctx,
                             index: 0,
@@ -186,9 +203,11 @@ const RenderChildren = ({
             }
             return (
               <RenderElement
+                key={`${arrayIndex}-${childIndex}`}
                 id={block.id}
                 type={block.element}
                 record={record}
+                options={options}
                 ctx={{
                   ...ctx,
                   index: 0,
@@ -208,23 +227,35 @@ const RenderElement = ({
   id,
   record,
   type,
+  options,
   ctx,
 }: {
   id: string;
   record: Record<string, ValueArray | ClientSyntaxTree>;
   type: string;
+  options?: ConfigRecord;
   ctx: {
     index: number;
     spread: boolean;
     loop: Record<string, number>;
+    configs: Record<string, LibraryConfig>;
+    libraries: Record<string, Library>;
     children?: React.ReactNode;
   };
 }) => {
-  let config = getConfigByType(type, getLibraryConfigs(), getLibraries());
-  if (!config) return null;
+  let { config, component } = getConfigByType(type, {
+    configs: ctx.configs,
+    libraries: ctx.libraries,
+    options,
+  });
+
+  console.log("RENDER ELEMENT", id, type, options, config, component);
+
+  if (!config || !component) return null;
 
   let props = {
-    config,
+    props: config.props,
+    component,
     record,
     elementId: id,
   };
@@ -245,11 +276,15 @@ const RenderElement = ({
               key={newIndex}
               loopCtx={loopCtx}
               {...props}
-              renderChildren={(value: ValueArray | undefined) => {
+              renderChildren={(
+                value: ValueArray | undefined,
+                options?: ConfigRecord
+              ) => {
                 return (
                   <RenderChildren
                     value={value ?? []}
                     record={record}
+                    options={options}
                     ctx={{
                       ...ctx,
                       spread: true,
@@ -270,8 +305,18 @@ const RenderElement = ({
     <RenderElementWithProps
       loopCtx={ctx.loop}
       {...props}
-      renderChildren={(value: ValueArray | undefined) => {
-        return <RenderChildren value={value ?? []} record={record} ctx={ctx} />;
+      renderChildren={(
+        value: ValueArray | undefined,
+        options?: ConfigRecord
+      ) => {
+        return (
+          <RenderChildren
+            value={value ?? []}
+            record={record}
+            ctx={ctx}
+            options={options}
+          />
+        );
       }}
     />
   );
@@ -291,24 +336,29 @@ function RenderElementWithProps({
   elementId,
   record,
   loopCtx,
-  config,
+  props,
+  component: Component,
   renderChildren,
 }: {
   elementId: string;
   record: Record<string, ValueArray | ClientSyntaxTree>;
   loopCtx: Record<string, number>;
-  config: ExtendedComponentConfig;
+  props: PropConfigRecord;
+  component: Component<PropConfigRecord>;
   renderChildren: (value: ValueArray | undefined) => React.ReactElement;
 }) {
-  const resolveProps = (props: PropConfigArray, group?: string) => {
-    return Object.fromEntries(
-      props.map((config): [string, any] => {
-        const key = extendPath(group ?? "", config.name, "#");
-        const id = `${elementId.slice(12, 24)}${getIdFromString(key)}`;
+  console.log("RESOLVE", elementId, props);
 
+  const resolveProps = (props: PropConfigRecord, group?: string) => {
+    return Object.fromEntries(
+      Object.entries(props).map(([name, config]): [string, any] => {
         if (config.type === "group") {
-          return [config.name, resolveProps(config.props, config.name)];
+          return [name, resolveProps(config.props, name)];
         }
+
+        const key = extendPath(group ?? "", name, "#");
+
+        const id = `${elementId.slice(12, 24)}${getIdFromString(key)}`;
 
         const transforms = {
           children: renderChildren,
@@ -316,20 +366,22 @@ function RenderElementWithProps({
         };
 
         return [
-          config.name,
+          name,
           normalizeProp(config, record[id] ?? [], loopCtx, transforms),
         ];
       })
     );
   };
 
-  const props = resolveProps(config.props);
+  const resolvedProps = resolveProps(props);
 
-  return <config.component {...props} />;
+  return <Component {...resolvedProps} />;
 }
 
-export const RenderPage = ({
+export const RenderPage = <T extends LibraryConfigRecord>({
   data,
+  configs: configsFromProps,
+  libraries: librariesFromProps,
 }: {
   data:
     | {
@@ -338,8 +390,17 @@ export const RenderPage = ({
       }
     | null
     | undefined;
-}) =>
-  data ? (
+  configs: T;
+  libraries: LibraryRecord<T>;
+}) => {
+  const libraries = { "": defaultLibrary, ...librariesFromProps };
+
+  const configs = {
+    "": defaultLibraryConfig,
+    ...configsFromProps,
+  };
+
+  return data ? (
     <RenderChildren
       value={data.entry as ValueArray}
       record={data.record}
@@ -348,13 +409,17 @@ export const RenderPage = ({
         spread: false,
         loop: {},
         children: undefined,
+        configs,
+        libraries,
       }}
     />
   ) : null;
-
-export const RenderLayout = ({
+};
+export const RenderLayout = <T extends LibraryConfigRecord>({
   data,
   children,
+  configs: configsFromProps,
+  libraries: librariesFromProps,
 }: {
   data:
     | {
@@ -364,7 +429,16 @@ export const RenderLayout = ({
     | null
     | undefined;
   children: React.ReactNode;
+  configs: T;
+  libraries: LibraryRecord<T>;
 }) => {
+  const libraries = { "": defaultLibrary, ...librariesFromProps };
+
+  const configs = {
+    "": defaultLibraryConfig,
+    ...configsFromProps,
+  };
+
   return data ? (
     <RenderChildren
       value={data.entry as ValueArray}
@@ -374,6 +448,8 @@ export const RenderLayout = ({
         spread: false,
         loop: {},
         children,
+        configs,
+        libraries,
       }}
     />
   ) : (

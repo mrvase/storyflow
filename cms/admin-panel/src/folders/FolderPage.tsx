@@ -280,7 +280,7 @@ export function DomainsButton({
   const options = React.useMemo(() => {
     return organization!.apps.map((el) => ({
       id: el.name,
-      label: getLabel(el.configURL),
+      label: getLabel(el.baseURL),
       disabled: parentDomains.includes(el.name),
     }));
   }, [organization?.apps]);

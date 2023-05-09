@@ -1,11 +1,10 @@
 import * as React from "react";
 import { dispatchers } from "./events";
-import { ComponentConfig, getLibraryConfigs } from "../config";
 import { FocusEffect, getState } from "./RenderBuilder";
 import {
+  Config,
+  LibraryConfigRecord,
   NestedElement,
-  PropConfigArray,
-  RegularOptions,
 } from "@storyflow/shared/types";
 
 function Dialog({
@@ -67,14 +66,16 @@ function Dialog({
   );
 }
 
-const getOptionsFromParentPath = (parent: string) => {
-  const configs = getLibraryConfigs();
-
-  const initialOptions = configs
-    .map((config) =>
-      Object.values(config.components).map((component) => ({
+const getOptionsFromParentPath = (
+  parent: string,
+  configs: LibraryConfigRecord
+) => {
+  const initialOptions = Object.entries(configs)
+    .map(([libraryName, config]) =>
+      Object.entries(config.configs).map(([name, component]) => ({
         ...component,
-        libraryName: config.name,
+        name,
+        libraryName,
         libraryLabel: config.label,
       }))
     )
@@ -98,7 +99,9 @@ const getOptionsFromParentPath = (parent: string) => {
       (el) => `${el.libraryName}:${el.name}` === type
     );
     if (!config) return [];
-    const prop = config.props.find((el) => el.name === parentProp);
+    const prop = Object.entries(config.props).find(
+      ([name]) => name === parentProp
+    )?.[1];
     if (!prop) return [];
     if ("options" in prop && prop.options) {
       return initialOptions.filter(
@@ -112,10 +115,11 @@ const getOptionsFromParentPath = (parent: string) => {
   }
 };
 
-export function Select() {
+export function Select({ configs }: { configs: LibraryConfigRecord }) {
   const [dialog, setDialog_] = React.useState<"select" | "delete" | null>(null);
   const [options, setOptions] = React.useState<
-    (ComponentConfig<PropConfigArray<RegularOptions>> & {
+    (Config & {
+      name: string;
       libraryName: string;
       libraryLabel: string;
     })[]
@@ -155,7 +159,7 @@ export function Select() {
           const [parent, element] = [el.dataset.parent, el.dataset.element];
           if (!parent) return;
 
-          const options = getOptionsFromParentPath(parent);
+          const options = getOptionsFromParentPath(parent, configs);
 
           setOptions(options);
           setDialog((ps) => (ps === null ? "select" : ps));

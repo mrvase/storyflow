@@ -1,13 +1,10 @@
 import { error, success } from "@storyflow/rpc-server/result";
 import { createProcedure, createRoute } from "@storyflow/rpc-server/router";
 import { cors as corsFactory } from "@storyflow/server/middleware";
-import {
-  AuthCookies,
-  serializeAuthToken,
-} from "@storyflow/server/auth/cookies";
+import { AuthCookies, serializeAuthToken } from "@storyflow/server/auth";
 import {
   GLOBAL_TOKEN,
-  LOCAL_SESSION,
+  LOCAL_SESSION_COOKIE,
   LOCAL_TOKEN,
   parseAuthToken,
 } from "@storyflow/server/auth";
@@ -18,7 +15,7 @@ import { DBFolderRecord } from "@storyflow/cms/types";
 import { StoryflowConfig } from "@storyflow/shared/types";
 
 export const admin = (config: StoryflowConfig) => {
-  const dbName = config.workspaces[0].db;
+  const dbName = undefined; // config.workspaces[0].db;
   return createRoute({
     authenticate: createProcedure({
       middleware(ctx) {
@@ -28,10 +25,9 @@ export const admin = (config: StoryflowConfig) => {
         try {
           let session = request
             .cookies<AuthCookies>()
-            .get(LOCAL_SESSION)?.value;
+            .get(LOCAL_SESSION_COOKIE)?.value;
 
           const tokenHeader = request.headers.get("x-storyflow-token");
-          console.log("token header", tokenHeader);
 
           if (!session) {
             session = parseAuthToken(
@@ -48,7 +44,7 @@ export const admin = (config: StoryflowConfig) => {
             response
               .cookies<AuthCookies>()
               .set(
-                LOCAL_SESSION,
+                LOCAL_SESSION_COOKIE,
                 { email: session.email },
                 { path: "/", httpOnly: true, sameSite: "lax", secure: true }
               );
@@ -60,7 +56,7 @@ export const admin = (config: StoryflowConfig) => {
               LOCAL_TOKEN,
               serializeAuthToken(
                 { email: session.email },
-                config.api.privateKey
+                config.auth.privateKey
               ),
               { path: "/" }
             );
