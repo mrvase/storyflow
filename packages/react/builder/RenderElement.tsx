@@ -18,7 +18,7 @@ import {
   isActiveSibling,
 } from "./focus";
 import { log, useValue } from "../builder/RenderBuilder";
-import { getConfigByType } from "../config/getConfigByType";
+import { getConfigByType } from "../src/getConfigByType";
 import { extendPath } from "../utils/extendPath";
 import RenderChildren from "./RenderChildren";
 import { getIdFromString } from "@storyflow/shared/getIdFromString";

@@ -32,22 +32,6 @@ export function useDefaultStateCore(id: FieldId) {
   const { record } = useDocumentPageContext();
   const client = useClient();
 
-  /*
-  if (id === rootId) {
-    let [config] = useFieldConfig(rootId);
-    if (!config) {
-      // dragged component
-      const defaultFieldConfig = getDefaultField(rootId);
-      config = {
-        id: rootId,
-        ui: defaultFieldConfig?.ui,
-        type2: defaultFieldConfig?.type2,
-        label: defaultFieldConfig?.label ?? "",
-      };
-    }
-  }
-  */
-
   const initialValue = record[id] ?? DEFAULT_SYNTAX_TREE;
 
   const [tree, setTree] = useGlobalState<SyntaxTree>(
@@ -94,9 +78,6 @@ export function useDefaultState(id: FieldId) {
   const singular = useSingular(id);
 
   React.useEffect(() => {
-    // we assume it has been initialized in a useLayoutEffect in the component or its parent.
-    // we do not initialize it here, because this hook is also for nested fields that use their
-    // parent's queue.
     const queue = collab
       .getTimeline(getDocumentId<DocumentId>(rootId))!
       .getQueue<FieldTransactionEntry>(getRawFieldId(rootId));

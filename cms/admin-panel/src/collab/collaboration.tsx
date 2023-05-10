@@ -30,8 +30,8 @@ export function createCollaboration(options: {
     return unwrap(result)[id].updates;
   };
 
-  const foldersTimeline = createTimeline();
-  const newDocumentsTimeline = createTimeline();
+  const foldersTimeline = createTimeline({ debugId: "folders" });
+  const newDocumentsTimeline = createTimeline({ debugId: "documents" });
   const documentTimelines = new Map<DocumentId, Timeline>();
 
   const [registerEventListener, emitEvent] = useSubject<"loading" | "done">(
@@ -77,31 +77,50 @@ export function createCollaboration(options: {
       return documentTimelines.get(id);
     },
 
+    async getInitializedTimelineAsync(
+      id: DocumentId,
+      data: {
+        versions: VersionRecord | CollabVersion | null;
+        transform: (timeline: TimelineEntry[]) => TimelineEntry[];
+      }
+    ) {
+      let exists = documentTimelines.get(id);
+      if (!exists) {
+        exists = createTimeline({
+          debugId: `doc ${parseInt(id, 16).toString(16)}`,
+        });
+        documentTimelines.set(id, exists);
+      }
+      return await exists.softInitializeAsync(
+        () => fetchSingleTimeline(id),
+        data
+      );
+    },
+
     initializeTimeline(
       id: DocumentId | "documents" | "folders",
       data?: {
         versions: VersionRecord | CollabVersion | null;
         transform?: (timeline: TimelineEntry[]) => TimelineEntry[];
-        timeline?: TimelineEntry[];
       }
     ) {
       if (id === "folders") {
-        foldersTimeline.initialize(() => fetchSingleTimeline(id), data);
-        return foldersTimeline;
+        return foldersTimeline.initialize(() => fetchSingleTimeline(id), data);
       }
       if (id === "documents") {
-        newDocumentsTimeline.initialize(() => fetchSingleTimeline(id), {
+        return newDocumentsTimeline.initialize(() => fetchSingleTimeline(id), {
           versions: null,
         });
-        return newDocumentsTimeline;
+      } else {
+        let exists = documentTimelines.get(id);
+        if (!exists) {
+          exists = createTimeline({
+            debugId: `doc ${parseInt(id, 16).toString(16)}`,
+          });
+          documentTimelines.set(id, exists);
+        }
+        return exists.initialize(() => fetchSingleTimeline(id), data);
       }
-      let exists = documentTimelines.get(id);
-      if (!exists) {
-        exists = createTimeline();
-        documentTimelines.set(id, exists);
-      }
-      exists.initialize(() => fetchSingleTimeline(id), data);
-      return exists;
     },
 
     async saveTimeline(

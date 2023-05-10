@@ -1,7 +1,6 @@
 import React from "react";
 import { useGlobalContext } from "../state/context";
 import { addContext, addImport } from "../custom-events";
-import { useClient } from "../client";
 import type { DocumentId, FieldId, ValueArray } from "@storyflow/shared/types";
 import type { DBDocument } from "@storyflow/cms/types";
 import type { SyntaxTree, NestedField } from "@storyflow/cms/types";
@@ -12,7 +11,6 @@ import {
 } from "@storyflow/cms/ids";
 import { usePush } from "../collab/CollabContext";
 import { HomeIcon, LinkIcon, StarIcon } from "@heroicons/react/24/outline";
-import { useAppPageContext } from "../folders/AppPageContext";
 import { Link } from "@storyflow/router";
 import { useDocument, useDocumentList } from "../documents";
 import { getDocumentLabel } from "../documents/useDocumentLabel";
@@ -30,15 +28,11 @@ import type { FieldProps } from "./types";
 import { FieldTransactionEntry } from "../operations/actions";
 import { createTransaction } from "@storyflow/collab/utils";
 import { useCurrentFolder } from "../folders/FolderPageContext";
-
-export const toSlug = (value: string) =>
-  value
-    .toLowerCase()
-    .replace(/æ/g, "ae")
-    .replace(/ø/g, "oe")
-    .replace(/å/g, "aa")
-    .replace(/\s/g, "-")
-    .replace(/[^\w\/\*\-]/g, "");
+import {
+  AddDocumentDialog,
+  useAddDocumentDialog,
+} from "../folders/AddDocumentDialog";
+import { createSlug } from "../utils/createSlug";
 
 const getUrlStringFromValue = (value: ValueArray | SyntaxTree) => {
   const getString = (val: any[]) => {
@@ -90,7 +84,6 @@ export default function UrlField({ id }: FieldProps) {
 
   const [isFocused, setIsFocused] = React.useState(false);
 
-  const ctx = useAppPageContext();
   const generateDocumentId = useDocumentIdGenerator();
 
   /*
@@ -137,7 +130,7 @@ export default function UrlField({ id }: FieldProps) {
       );
       return;
     }
-    const newSlug = toSlug(value);
+    const newSlug = createSlug(value);
     push(
       createTransaction((t) =>
         t.target(id).splice({
@@ -202,8 +195,20 @@ export default function UrlField({ id }: FieldProps) {
     parentSlugs.unshift("");
   }
 
+  const [dialogUrl, addDocumentWithUrl, close] = useAddDocumentDialog();
+  const folder = useCurrentFolder();
+
   return (
     <div className="pb-2.5">
+      {folder && (
+        <AddDocumentDialog
+          isOpen={Boolean(dialogUrl)}
+          close={close}
+          folder={folder._id}
+          parentUrl={dialogUrl}
+          type="app"
+        />
+      )}
       <div className="outline-none rounded flex items-center px-3 mb-2.5 bg-gray-50 dark:bg-gray-800 ring-button">
         <Link
           to={replacePage(parents[0]?._id ?? "")}
@@ -308,7 +313,7 @@ export default function UrlField({ id }: FieldProps) {
             <button
               className="group text-sm flex-center gap-2"
               onClick={() =>
-                ctx.addDocumentWithUrl({
+                addDocumentWithUrl({
                   _id: documentId,
                   record,
                 })

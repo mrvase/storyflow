@@ -13,13 +13,13 @@ import {
   ValueArray,
 } from "@storyflow/shared/types";
 import React from "react";
-import { getConfigByType } from "../config/getConfigByType";
+import { getConfigByType } from "../src/getConfigByType";
 import { ParseRichText } from "../src/ParseRichText";
 import { extendPath } from "../utils/extendPath";
-import { getDefaultComponent } from "../utils/getDefaultComponent";
+import { getDefaultComponent } from "../src/getDefaultComponent";
 import { getIdFromString } from "@storyflow/shared/getIdFromString";
 import { calculateClient } from "@storyflow/client/calculate-client";
-import { defaultLibrary } from "../config/defaultLibrary";
+import { defaultLibrary } from "../src/defaultLibrary";
 import { defaultLibraryConfig } from "@storyflow/shared/defaultLibraryConfig";
 
 const getImageObject = (name: string, url: string) => {

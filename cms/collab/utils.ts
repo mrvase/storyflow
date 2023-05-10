@@ -376,7 +376,7 @@ export const isToggleOperation = (
   return (
     Array.isArray(action) &&
     action.length === 2 &&
-    typeof action[1] === "string"
+    typeof action[0] === "string"
   );
 };
 

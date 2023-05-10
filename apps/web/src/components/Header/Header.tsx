@@ -11,7 +11,7 @@ import { PopoverGroup } from "./(PopoverGroup)";
 import { HeaderButtonConfig } from "./HeaderButton";
 import { HeaderItemConfig } from "./HeaderItem";
 import { HeaderPopoverConfig } from "./HeaderPopover/config";
-import { child } from "@storyflow/react/config";
+import { child } from "@storyflow/react";
 
 export const Header = ({ items, buttons }: Props<typeof props>) => {
   return (

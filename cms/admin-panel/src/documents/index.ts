@@ -96,6 +96,7 @@ export function useDocumentWithTimeline(documentId: DocumentId) {
 
   React.useLayoutEffect(() => {
     // for prefetching
+    console.log("PREFETCHING");
     collab.initializeTimeline(documentId);
     hasCalledStaleHook.current = false;
   }, [collab]);
@@ -112,6 +113,8 @@ export function useDocumentWithTimeline(documentId: DocumentId) {
   React.useLayoutEffect(() => {
     // TODO: This should be made synchronous to avoid flickering
     if (!data) return;
+
+    console.log("UPDATED! ON STALE?", hasCalledStaleHook.current);
 
     collab.initializeTimeline(documentId, {
       versions: data.versions,

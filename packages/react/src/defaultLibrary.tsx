@@ -1,5 +1,5 @@
 import { Library } from "@storyflow/shared/types";
-import { cms } from "../src/CMSElement";
+import { cms } from "./CMSElement";
 import { defaultLibraryConfig } from "@storyflow/shared/defaultLibraryConfig";
 
 export const defaultLibrary = {

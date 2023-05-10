@@ -1,18 +1,20 @@
 import React from "react";
 import Content from "../pages/Content";
 import {
+  ArrowPathIcon,
   ArrowPathRoundedSquareIcon,
+  ComputerDesktopIcon,
   DocumentDuplicateIcon,
   FolderIcon,
   GlobeAltIcon,
   PencilIcon,
   PlusIcon,
+  StopIcon,
 } from "@heroicons/react/24/outline";
 import { EditableLabel } from "../elements/EditableLabel";
 import cl from "clsx";
 import type { DocumentId } from "@storyflow/shared/types";
-import type { DBFolder, SpaceId } from "@storyflow/cms/types";
-import { SWRClient } from "../client";
+import type { DBFolder, Space, SpaceId } from "@storyflow/cms/types";
 import {
   FolderDomainsContext,
   FolderDomainsProvider,
@@ -35,6 +37,31 @@ import { createTransaction } from "@storyflow/collab/utils";
 import { FolderTransactionEntry } from "../operations/actions";
 import { useFolder } from "./FoldersContext";
 import { useAuth } from "../Auth";
+import { DropShadow, Sortable } from "@storyflow/dnd";
+import { AppSpace } from "./spaces/AppSpace";
+import { useAppConfig } from "../client-config";
+import { SWRClient, useClient, useAppClient } from "../client";
+import { isSuccess } from "@storyflow/rpc-client/result";
+import { getFolderData } from "./getFolderData";
+
+const spaces = [
+  {
+    label: "Mapper",
+    item: {
+      type: "folders",
+      items: [],
+    },
+  },
+  { label: "Dokumenter", item: { type: "documents" } },
+  { label: "Hjemmeside", item: { type: "pages" } },
+  {
+    label: "Statistik",
+    item: {
+      type: "folders",
+      items: [],
+    },
+  },
+];
 
 export default function FolderPage({
   children,
@@ -44,16 +71,12 @@ export default function FolderPage({
   const route = useRoute();
   const segment = parseSegment<"folder">(route);
   const folder = useFolder(segment.id);
+  const { type } = getFolderData(folder);
 
   const [{ path }] = usePanel();
   const isSelected = (path || "/") === (route || "/");
 
-  const [dialogIsOpen, setDialogIsOpen] = React.useState<null | string>(null);
-
-  const parentDomains = React.useContext(FolderDomainsContext);
-
   const push = usePush<FolderTransactionEntry>("folders");
-
   const mutateProp = <T extends "label" | "domains">(
     name: T,
     value: { label: string; domains: string[] }[T]
@@ -68,14 +91,90 @@ export default function FolderPage({
     );
   };
 
+  const [templateDialogIsOpen, setTemplateDialogIsOpen] =
+    React.useState<boolean>(false);
+  const parentDomains = React.useContext(FolderDomainsContext);
+
+  const onChange = React.useCallback(
+    (actions: any) => {
+      if (!isSelected) return;
+      push(
+        createTransaction((t) => {
+          t.target(folder._id);
+
+          for (let action of actions) {
+            const { type, index } = action;
+
+            if (type === "add") {
+              t.splice({
+                index,
+                insert: [
+                  {
+                    id: createKey(),
+                    ...action.item,
+                  },
+                ],
+              });
+            }
+
+            if (type === "delete") {
+              t.splice({
+                index,
+                remove: 1,
+              });
+            }
+          }
+
+          return t;
+        })
+      );
+    },
+    [folder, push]
+  );
+
+  const renderSpace = (space: Space, index: number) => {
+    const props = {
+      key: space.id,
+      index,
+      folderId: folder._id,
+      hidden: !isSelected,
+    };
+    if (space.type === "folders") {
+      return <FolderGridSpace space={space} {...props} />;
+    } else if (space.type === "documents") {
+      return <DocumentListSpace space={space} {...props} />;
+    } else if (space.type === "pages") {
+      return <AppSpace space={space} {...props} />;
+    }
+    return null;
+  };
+
+  /* ADD SPACE
+  push(
+    createTransaction((t) =>
+      t.target(folder._id).splice({
+        index: 0,
+        insert: [
+          {
+            id: createKey() as SpaceId,
+            type: "folders",
+            items: [],
+          },
+        ],
+      })
+    )
+  );
+  */
+
   return (
     <FolderContext.Provider value={folder}>
       <FolderDomainsProvider domains={folder?.domains ?? []}>
         <FocusOrchestrator>
           <Content
-            icon={FolderIcon}
+            icon={type === "app" ? ComputerDesktopIcon : FolderIcon}
             header={
               <FolderLabel
+                isApp={type === "app"}
                 folder={folder}
                 onChange={(value) => {
                   mutateProp("label", value);
@@ -84,32 +183,26 @@ export default function FolderPage({
             }
             toolbar={
               <Content.Toolbar>
-                <FolderTemplateButton
-                  template={folder?.template}
-                  openDialog={() => setDialogIsOpen("add-template")}
-                />
-                <Content.ToolbarButton
-                  data-focus-remain="true"
-                  onClick={() => {
-                    push(
-                      createTransaction((t) =>
-                        t.target(folder._id).splice({
-                          index: 0,
-                          insert: [
-                            {
-                              id: createKey() as SpaceId,
-                              type: "folders",
-                              items: [],
-                            },
-                          ],
-                        })
-                      )
-                    );
-                  }}
-                  icon={PlusIcon}
+                {type === "data" && (
+                  <FolderTemplateButton
+                    template={folder?.template}
+                    openDialog={() => setTemplateDialogIsOpen(true)}
+                  />
+                )}
+                <Menu
+                  as={Content.ToolbarButton}
+                  label="Tilføj space"
+                  icon={StopIcon}
                 >
-                  Tilføj space
-                </Content.ToolbarButton>
+                  {spaces.map((el) => (
+                    <Menu.DragItem
+                      key={el.label}
+                      type="spaces"
+                      id={`nyt-space-${el.label}`}
+                      {...el}
+                    />
+                  ))}
+                </Menu>
                 {folder && (
                   <>
                     <DomainsButton
@@ -124,44 +217,52 @@ export default function FolderPage({
                 )}
               </Content.Toolbar>
             }
+            buttons={
+              type === "app" && folder ? (
+                <div
+                  className={cl(
+                    "flex-center",
+                    "transition-opacity",
+                    true ? "opacity-100" : "opacity-0 pointer-events-none"
+                  )}
+                >
+                  <RefreshButton
+                    namespace={folder._id}
+                    domain={folder?.domains?.[0]}
+                  />
+                </div>
+              ) : undefined
+            }
           >
             {folder && (
               <>
                 <AddTemplateDialog
-                  isOpen={dialogIsOpen === "add-template"}
-                  close={() => setDialogIsOpen(null)}
+                  isOpen={templateDialogIsOpen}
+                  close={() => setTemplateDialogIsOpen(false)}
                   folderId={folder._id}
                   currentTemplate={folder.template}
                 />
+                <Sortable
+                  type="spaces"
+                  id={`${folder._id}-spaces`}
+                  onChange={onChange}
+                  canReceive={{
+                    link: () => "ignore",
+                    move: ({ type, item }) =>
+                      type === "spaces" ? "accept" : "ignore",
+                  }}
+                  disabled={!isSelected}
+                >
+                  <div className="flex flex-col gap-8">
+                    {(folder.spaces ?? []).map(renderSpace)}
+                    <DropShadow>
+                      {(item) =>
+                        renderSpace(item, (folder.spaces ?? []).length)
+                      }
+                    </DropShadow>
+                  </div>
+                </Sortable>
               </>
-            )}
-            {folder ? (
-              <div className="flex flex-col gap-8">
-                {(folder.spaces ?? []).map((space, index) => {
-                  if (space.type === "folders") {
-                    return (
-                      <FolderGridSpace
-                        key={space.id}
-                        index={index}
-                        space={space}
-                        folderId={folder._id}
-                        hidden={!isSelected}
-                      />
-                    );
-                  }
-                  return null;
-                })}
-                <DocumentListSpace
-                  index={0}
-                  spaceId={`${folder._id}-documents` as SpaceId}
-                  folderId={folder._id}
-                  hidden={!isSelected}
-                />
-              </div>
-            ) : (
-              <div className="text-center py-5 text-xl font-bold text-gray-300">
-                {/*Vent et øjeblik*/}
-              </div>
             )}
           </Content>
         </FocusOrchestrator>
@@ -174,9 +275,11 @@ export default function FolderPage({
 function FolderLabel({
   folder,
   onChange,
+  isApp,
 }: {
   folder: DBFolder;
   onChange: (label: string) => void;
+  isApp: boolean;
 }) {
   const [focused] = useFieldFocus();
 
@@ -198,7 +301,9 @@ function FolderLabel({
     <EditableLabel
       value={folder.label ?? ""}
       onChange={onChange}
-      className={cl("font-medium")}
+      className={cl(
+        isApp ? "text-yellow-400 dark:text-yellow-300" : "font-medium"
+      )}
     />
   );
 }
@@ -214,7 +319,7 @@ export function FolderTemplateButton({
   const [{ path }, navigate] = usePanel();
 
   const { doc } = useDocument(template);
-  const label = useDocumentLabel(doc);
+  const { label } = useDocumentLabel(doc);
 
   if (!template) {
     return (
@@ -306,5 +411,70 @@ export function DomainsButton({
       options={options}
       multi
     />
+  );
+}
+
+function RefreshButton({
+  namespace,
+  domain,
+}: {
+  namespace: string;
+  domain?: string;
+}) {
+  const config = useAppConfig(domain);
+
+  const [isLoading, setIsLoading] = React.useState(false);
+
+  const { data, mutate } = SWRClient.documents.getUpdatedUrls.useQuery({
+    namespace,
+  });
+
+  const client = useClient();
+  const appClient = useAppClient();
+
+  const number = data?.length ?? 0;
+
+  if (!config) return null;
+
+  return (
+    <>
+      {number > 0 && (
+        <span
+          title={(data ?? []).join(", ")}
+          className="text-xs opacity-50 ml-5 cursor-default hover:underline"
+        >
+          {number} {number === 1 ? "side" : "sider"} ændret
+        </span>
+      )}
+      <div className="relative ml-5">
+        {/*isLoading && (
+        <div className="absolute inset-0 flex-center">
+          <div className="w-8 h-8 bg-white/5 rounded-full animate-ping-lg" />
+        </div>
+      )*/}
+        <button
+          className="relative z-0 bg-button-yellow ring-button-yellow text-button rounded px-3 py-1 flex-center gap-2 text-sm overflow-hidden"
+          onClick={async () => {
+            if (config.baseURL && data?.length) {
+              setIsLoading(true);
+              const result = await appClient.app.revalidate.mutation(data);
+              if (isSuccess(result)) {
+                await client.documents.registerRevalidation.mutation();
+                mutate();
+              }
+              setIsLoading(false);
+            }
+          }}
+        >
+          {isLoading && (
+            <div className="absolute inset-0 -z-10 flex-center">
+              <div className="w-8 h-8 bg-teal-300 rounded-full animate-ping-lg" />
+            </div>
+          )}
+          <ArrowPathIcon className="w-3 h-3" />
+          Opdater
+        </button>
+      </div>
+    </>
   );
 }

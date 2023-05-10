@@ -54,37 +54,39 @@ function Content({
       {header && (
         <div
           className={cl(
-            "pt-12 pb-5 px-5 mb-6 sticky -top-10 z-50 border-b border-gray-100 dark:border-gray-800 max-w-6xl",
-            "bg-white dark:bg-gray-850" // need bg color because it is sticky
-            // isFocused ? "dark:bg-gray-850" : "dark:bg-gray-900"
+            "mb-6 sticky -top-10 z-50 border-b border-gray-100 dark:border-gray-800",
+            "bg-white", // need bg color because it is sticky
+            "bg-gradient-to-b dark:from-gray-800 dark:to-[#1b2533]"
             // "bg-gradient-to-b from-gray-850 to-rose-800"
           )}
         >
-          <div
-            className={cl(
-              "flex justify-between",
-              isFocused ? "opacity-100" : "opacity-50"
-            )}
-          >
-            <div className="text-gray-800 dark:text-white text-2xl leading-none flex-center font-medium">
-              <div className="text-sm w-4 mt-0.5 mr-5">
-                {Icon && (
-                  <div
-                    onClick={() => setIsOpen((ps) => !ps)}
-                    data-focus-remain="true"
-                    className={
-                      "opacity-25 hover:opacity-100 transition-opacity"
-                    }
-                  >
-                    <Icon className="w-5 h-5" />
-                  </div>
-                )}
+          <div className="w-full max-w-6xl pt-12 pb-8 px-5 ">
+            <div
+              className={cl(
+                "flex justify-between",
+                isFocused ? "opacity-100" : "opacity-50"
+              )}
+            >
+              <div className="text-gray-800 dark:text-white text-3xl flex-center font-medium">
+                <div className="text-sm w-4 mt-0.5 mr-5">
+                  {Icon && (
+                    <div
+                      onClick={() => setIsOpen((ps) => !ps)}
+                      data-focus-remain="true"
+                      className={
+                        "opacity-25 hover:opacity-100 transition-opacity"
+                      }
+                    >
+                      <Icon className="w-4 h-4" />
+                    </div>
+                  )}
+                </div>
+                {header}
               </div>
-              {header}
+              <div className="flex flex-center">{buttons}</div>
             </div>
-            <div className="flex flex-center">{buttons}</div>
+            <ToolbarWrapper toolbar={toolbar} isFocused={isFocused} />
           </div>
-          <ToolbarWrapper toolbar={toolbar} isFocused={isFocused} />
         </div>
       )}
       {!header && toolbar && (
@@ -113,7 +115,7 @@ function ToolbarWrapper({
       {isOpen && (
         <div
           className={cl(
-            "flex items-center max-w-6xl mt-4",
+            "flex items-center max-w-6xl mt-5",
             isFocused ? "opacity-100" : "opacity-50"
           )}
         >
@@ -151,7 +153,7 @@ const ToolbarButton = React.forwardRef<
       ref={ref}
       {...props}
       className={cl(
-        "ring-button flex-center gap-1.5 text-xs h-6 px-2 rounded whitespace-nowrap",
+        "ring-button flex-center gap-1.5 text-xs h-7 px-2.5 rounded whitespace-nowrap",
         active ? "bg-button-active" : "bg-button",
         selected === false
           ? "text-gray-800 dark:text-white text-opacity-50 dark:text-opacity-50"
@@ -161,7 +163,7 @@ const ToolbarButton = React.forwardRef<
         props.className
       )}
     >
-      {Icon && <Icon className="w-3 h-3" />}
+      {Icon && <Icon className="w-4 h-4" />}
       <span className={Icon ? "hidden @lg:block" : ""}>{props.children}</span>
       {typeof selected === "boolean" &&
         (active ? (

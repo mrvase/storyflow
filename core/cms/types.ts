@@ -215,17 +215,21 @@ export type FolderSpace = {
   items: FolderId[];
 };
 
-export type Space =
-  | FolderSpace
-  | {
-      id: SpaceId;
-      type: "documents";
-      folder?: FolderId;
-    };
+export type DocumentSpace = {
+  id: SpaceId;
+  type: "documents";
+  folder?: FolderId;
+};
+
+export type AppSpace = {
+  id: SpaceId;
+  type: "pages";
+};
+
+export type Space = FolderSpace | DocumentSpace | AppSpace;
 
 export interface DBFolder {
   _id: FolderId;
-  type: "data" | "app";
   label: string;
   spaces: Space[];
   template?: DocumentId;

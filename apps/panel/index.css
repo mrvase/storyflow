@@ -2,7 +2,7 @@
 @tailwind components;
 
 .bg-button {
-  @apply bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-700/60 dark:to-gray-725/60 backdrop-blur-md;
+  @apply bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-700/20 dark:to-gray-725/20 backdrop-blur-md;
 }
 
 .bg-button-teal {
@@ -30,7 +30,7 @@
 }
 
 .text-button {
-  @apply text-gray-800 dark:text-white text-opacity-90 dark:text-opacity-80 hover:text-opacity-100 dark:hover:text-opacity-100 font-medium;
+  @apply text-gray-800 dark:text-white text-opacity-90 dark:text-opacity-60 hover:text-opacity-100 dark:hover:text-opacity-100 font-medium;
 }
 
 button,

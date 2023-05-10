@@ -6,7 +6,6 @@ import {
   CheckCircleIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  Cog6ToothIcon,
   DocumentDuplicateIcon,
   FolderIcon,
   MinusCircleIcon,
@@ -72,7 +71,7 @@ export default function Nav() {
           <div className="flex flex-col gap-2">
             <NavButton
               onClick={() => {
-                actions.open({ path: "/", index: -1 });
+                actions.open({ path: "/", index: 0 });
               }}
               icon={PlusIcon}
             >
@@ -153,12 +152,11 @@ export default function Nav() {
                 icon={MenuIcon}
                 className="important [.menu-closed_&.important]:opacity-80 [.menu-closed:hover_&.important]:opacity-80"
               />
+              <NavButton icon={ArrowRightOnRectangleIcon} to="/" />
               <NavButton
                 onClick={() => setDarkMode((ps) => !ps)}
                 icon={DarkIcon}
               />
-              <NavButton icon={UserIcon} to="/" />
-              <NavButton icon={ArrowRightOnRectangleIcon} to="/logout" />
               <StatusButton />
             </div>
           </div>

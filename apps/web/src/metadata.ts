@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { getPage } from "./localApi";
+import { getPage } from "./app/(pages)/localApi";
 
 export const metadata: Metadata = {
   title: {
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
 
 export async function generateMetadata({ params }: { params: any }) {
   const url = Object.values(params).join("/");
-  const data = await getPage(`/${url}`); // request(url, options);
+  const data = await getPage(`/${url}`);
 
   return { title: data?.head?.title };
 }

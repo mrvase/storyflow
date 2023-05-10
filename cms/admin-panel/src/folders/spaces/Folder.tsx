@@ -13,6 +13,7 @@ import type { FolderId } from "@storyflow/shared/types";
 import { DragIcon } from "./DragIcon";
 import { usePanel, useRoute } from "../../layout/panel-router/Routes";
 import { useFolder } from "../FoldersContext";
+import { getFolderData } from "../getFolderData";
 
 export function FolderItem({
   index,
@@ -25,24 +26,20 @@ export function FolderItem({
   const route = useRoute();
 
   const folder = typeof folder_ === "string" ? useFolder(folder_) : folder_;
+  const { type } = getFolderData(folder);
 
-  const typeCode = { data: "f", app: "a" }[folder.type as "data"] ?? "f";
+  const isOpen = path.startsWith(`${route}/f${folder._id}`);
 
-  const isOpen = path.startsWith(`${route}/${typeCode}${folder._id}`);
-
-  const to = `${route}/${typeCode}${parseInt(folder._id, 16).toString(16)}`;
+  const to = `${route}/f${parseInt(folder._id, 16).toString(16)}`;
 
   if (!folder) {
     return null;
   }
 
-  const Icon =
-    {
-      data: isOpen ? FolderOpenIcon : FolderIcon,
-      app: ComputerDesktopIcon,
-      root: () => null,
-      templates: () => null,
-    }[folder.type ?? "data"] ?? React.Fragment;
+  const Icon = {
+    data: isOpen ? FolderOpenIcon : FolderIcon,
+    app: ComputerDesktopIcon,
+  }[type];
 
   const label = folder.label;
 
@@ -67,9 +64,7 @@ export function FolderItem({
         ? "border-yellow-300 dark:border-yellow-600"
         : "border-yellow-100 hover:border-yellow-300 hover:dark:border-yellow-300"
     ),
-    root: "",
-    templates: "",
-  }[folder.type];
+  }[type];
 
   const { dragHandleProps: linkDragHandleProps } = useDragItem({
     type: `link:${panelIndex}`,
@@ -83,7 +78,7 @@ export function FolderItem({
       ref={ref as any}
       to={navigate(to, { navigate: false })}
       className={cl(
-        "group flex items-center px-3 py-4 rounded-md text-lg transition-colors border",
+        "group flex items-center px-3 py-4 rounded-md text-lg transition-shadow border",
         colors
       )}
       style={style}
@@ -96,7 +91,7 @@ export function FolderItem({
       </div>
       <span className="truncate">{label}</span>
       <div className="ml-auto transition-opacity w-8 h-8 flex-center rounded-md">
-        <Icon className="w-5 h-5 shrink-0 opacity-25 group-hover:opacity-75 transition-opacity" />{" "}
+        <Icon className="w-6 h-6 shrink-0 opacity-25 group-hover:opacity-75 transition-opacity" />{" "}
       </div>
     </Link>
   );

@@ -17,8 +17,7 @@ import { useDocumentList, useDocumentWithTimeline } from ".";
 import { DEFAULT_TEMPLATES } from "./templates";
 import { useSaveDocument } from "./useSaveDocument";
 import { useDocumentLabel } from "./useDocumentLabel";
-import { useAppConfig } from "../client-config";
-import { useFolder, useTemplateFolder } from "../folders/FoldersContext";
+import { useTemplateFolder } from "../folders/FoldersContext";
 import Content from "../pages/Content";
 import { useCollab, usePush } from "../collab/CollabContext";
 import { useDocumentConfig } from "./document-config";
@@ -38,6 +37,7 @@ import { parseSegment } from "../layout/components/parseSegment";
 import { Menu } from "../elements/Menu";
 import { DocumentTransactionEntry } from "../operations/actions";
 import { useCurrentFolder } from "../folders/FolderPageContext";
+import { getFolderData } from "../folders/getFolderData";
 
 function useIsModified(id: DocumentId) {
   const [isModified, setIsModified] = React.useState(false);
@@ -116,15 +116,15 @@ function Toolbar({ id }: { id: DocumentId }) {
   const fields = [
     {
       label: DEFAULT_FIELDS.label.label,
-      item: () => ({
+      item: {
         template: getTemplateDocumentId(DEFAULT_FIELDS.label.id),
-      }),
+      },
     },
     {
       label: DEFAULT_FIELDS.slug.label,
-      item: () => ({
+      item: {
         template: getTemplateDocumentId(DEFAULT_FIELDS.slug.id),
-      }),
+      },
     },
     {
       label: DEFAULT_FIELDS.published.label,
@@ -165,7 +165,12 @@ function Toolbar({ id }: { id: DocumentId }) {
               icon={BoltIcon}
             >
               {fields.map((el) => (
-                <DragOption key={el.label} {...el} />
+                <Menu.DragItem
+                  key={el.label}
+                  type="fields"
+                  id={`ny-blok-${el.item.template}`}
+                  {...el}
+                />
               ))}
             </Menu>
             <TemplateMenu id={id} />
@@ -189,8 +194,10 @@ export function TemplateMenu({ id }: { id?: DocumentId }) {
       {(templates ?? []).map((el) => (
         <React.Fragment key={el._id}>
           {el._id === id ? null : (
-            <DragOption
+            <Menu.DragItem
               label={el.label ?? el._id}
+              type="fields"
+              id={`ny-template-${el._id}`}
               item={{
                 template: el._id,
               }}
@@ -237,13 +244,13 @@ const Page = ({
   });
 
   const folder = useCurrentFolder();
-  const isApp = folder?.type === "app";
+  const folderData = getFolderData(folder);
 
   const templateId = folder?.template;
 
   const owner = doc;
 
-  const label = useDocumentLabel(doc);
+  const { label } = useDocumentLabel(doc);
 
   const ctx = React.useMemo(
     () => ({
@@ -266,9 +273,9 @@ const Page = ({
             toolbar={<Toolbar id={id} />}
           >
             <div className="pb-96 flex flex-col -mt-6">
-              {isApp && !templateId && config.length === 0 && (
-                <TemplateSelect documentId={doc._id} />
-              )}
+              {folderData.type === "app" &&
+                !templateId &&
+                config.length === 0 && <TemplateSelect documentId={doc._id} />}
               <ExtendTemplatePath template={owner._id}>
                 {templateId && (
                   <GetDocument id={templateId}>
@@ -412,23 +419,5 @@ function DragButton({ item, label }: { label: string; item: any }) {
     >
       {label}
     </Content.ToolbarButton>
-  );
-}
-
-export function DragOption({ label, item }: { label: string; item: any }) {
-  const { ref, dragHandleProps } = useDragItem({
-    id: `ny-blok-2-${label}`,
-    type: "fields",
-    item,
-    mode: "move",
-  });
-
-  return (
-    <Menu.Item
-      ref={ref as React.MutableRefObject<HTMLButtonElement | null>}
-      {...dragHandleProps}
-      label={label}
-      className="cursor-grab"
-    />
   );
 }

@@ -24,4 +24,4 @@ export default async function Layout({
   );
 }
 
-export { metadata } from "./metadata";
+export { metadata } from "../../metadata";

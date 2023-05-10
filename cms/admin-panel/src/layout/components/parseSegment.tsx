@@ -7,10 +7,6 @@ type SegmentType =
       id: FolderId;
     }
   | {
-      type: "app";
-      id: FolderId;
-    }
-  | {
       type: "document";
       id: DocumentId;
     }
@@ -43,7 +39,6 @@ export function parseSegment<T extends SegmentType["type"]>(
   return {
     type: {
       f: "folder",
-      a: "app",
       d: "document",
       t: "template",
       c: "field",

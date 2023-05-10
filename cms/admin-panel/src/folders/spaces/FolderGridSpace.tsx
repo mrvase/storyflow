@@ -8,6 +8,7 @@ import Space from "./Space";
 import {
   EllipsisHorizontalIcon,
   FolderPlusIcon,
+  PlusIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
 import React from "react";
@@ -34,7 +35,7 @@ export function FolderGridSpace({
   const [dialogIsOpen, setDialogIsOpen] = React.useState<null | string>(null);
 
   const push = usePush<FolderTransactionEntry>("folders");
-  const handleDelete = () => {
+  const handleDeleteSpace = () => {
     push(
       createTransaction((t) => t.target(folderId).splice({ index, remove: 1 }))
     );
@@ -49,8 +50,14 @@ export function FolderGridSpace({
         spaceId={space.id}
       />
       <Space
-        id={space.id}
-        label={"Undermapper"}
+        space={space}
+        index={index}
+        label={
+          <>
+            Mappe
+            <AddFolderButton onClick={() => setDialogIsOpen("add-folder")} />
+          </>
+        }
         buttons={
           <>
             <Space.Button
@@ -61,7 +68,7 @@ export function FolderGridSpace({
               <Menu.Item
                 label="Slet space"
                 icon={TrashIcon}
-                onClick={handleDelete}
+                onClick={handleDeleteSpace}
               />
             </Menu>
           </>
@@ -139,5 +146,19 @@ function FolderGrid({
         </DropShadow>
       </div>
     </Sortable>
+  );
+}
+
+function AddFolderButton({ onClick }: { onClick: any }) {
+  return (
+    <button
+      className={cl(
+        "rounded-full px-2 py-0.5 text-xs ring-button text-gray-600 dark:text-gray-400 ml-3 flex-center gap-1"
+        // "opacity-0 group-hover/space:opacity-100 transition-opacity"
+      )}
+      onClick={onClick}
+    >
+      <PlusIcon className="w-3 h-3" /> Tilføj
+    </button>
   );
 }

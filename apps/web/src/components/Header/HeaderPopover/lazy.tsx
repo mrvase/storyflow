@@ -4,14 +4,14 @@ import { Fragment } from "react";
 import { Popover, Transition } from "@headlessui/react";
 import { ChevronDownIcon } from "@heroicons/react/20/solid";
 import cl from "clsx";
-import type { HeaderPopoverConfigProps } from "./config";
+import type { HeaderPopoverProps } from "./config";
 import { CMSElement, Props } from "@storyflow/react";
 
 export default function HeaderPopoverLazy({
   label,
   items,
   callsToAction,
-}: Props<HeaderPopoverConfigProps>) {
+}: HeaderPopoverProps) {
   return (
     <CMSElement>
       <Popover className="relative">

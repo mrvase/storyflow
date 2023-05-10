@@ -119,6 +119,8 @@ function FocusContainer({
 
   const [isOpen] = useLocalStorage<boolean>("toolbar-open", true);
 
+  ring = "ring-transparent";
+  /*
   if (isEditorFocused) {
     ring = "ring-transparent";
     // ring = isOpen ? " dark:ring-yellow-200/60" : " dark:ring-gray-600";
@@ -129,6 +131,7 @@ function FocusContainer({
       ? "ring-transparent group-hover/container:ring-gray-700/50"
       : "ring-transparent";
   }
+  */
 
   return (
     <div
@@ -402,7 +405,11 @@ function Label({ id }: { id: FieldId }) {
       }}
     >
       {label || "Ingen label"}
-      {isLink && <LinkIcon className="w-3 h-3 opacity-50" />}
+      {isLink && (
+        <button className="rounded-full font-medium px-2 py-0.5 text-xs ring-button-teal text-teal-400 opacity-40 hover:opacity-100 ml-1 mr-3 flex-center gap-1">
+          <LinkIcon className="w-3 h-3 opacity-50" /> Referer
+        </button>
+      )}
     </div>
   );
 }

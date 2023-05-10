@@ -17,10 +17,11 @@ const defaultTransform = (pkg: TimelineEntry[]) => pkg;
 
 export function createTimeline(
   options: {
+    debugId?: string;
     user?: string;
   } = {}
 ) {
-  const { user = randomUserId } = options;
+  const { user = randomUserId, debugId = "" } = options;
 
   let transform = defaultTransform;
 
@@ -36,10 +37,12 @@ export function createTimeline(
     saving: false,
   };
 
-  const isMutated = () => {
-    return Boolean(
-      state.shared.length + state.posted.length + state.current.length
-    );
+  const getStatus = () => {
+    return {
+      isMutated: Boolean(
+        state.shared.length + state.posted.length + state.current.length
+      ),
+    };
   };
 
   const queues = new Map<string, Queue>();
@@ -49,6 +52,11 @@ export function createTimeline(
 
   let promise: Promise<void> | null = null;
   let prefetched: TimelineEntry[] | boolean = false;
+
+  let savedData: {
+    versions: VersionRecord | CollabVersion | null;
+    transform?: (entries: TimelineEntry[]) => TimelineEntry[];
+  } | null = null;
 
   function initialize(
     fetch: () => Promise<TimelineEntry[]>,
@@ -61,6 +69,18 @@ export function createTimeline(
       keepListeners?: boolean;
     } = {}
   ) {
+    if (state.saving) {
+      if (data) {
+        // since we now have new data, the queue MUST know to not give a stale queue.
+        // so we continue under the assumption of an empty queue. WHen it is done saving,
+        // it initializes again with the same data, but the updated queue.
+        savedData = data;
+        prefetched = [];
+      } else {
+        return self;
+      }
+    }
+
     if (data) {
       transform = data.transform ?? defaultTransform;
 
@@ -91,12 +111,12 @@ export function createTimeline(
         if (options.resetLocalState) {
           state.current = [];
         }
-        console.log("INITIALIZED WITH PREFETCHED");
+        console.log("/t", debugId, "INITIALIZED WITH PREFETCHED");
         pull(prefetched);
         triggerListeners();
         prefetched = false;
       } else {
-        console.log("INITIALIZED WITH RESET");
+        console.log("/t", debugId, "INITIALIZED WITH FETCH");
         // we also need to ensure that new data is not processed by a stale queue.
         // this is achieved by filtering
         //
@@ -130,6 +150,28 @@ export function createTimeline(
     return self;
   }
 
+  async function softInitializeAsync(
+    fetch: () => Promise<TimelineEntry[]>,
+    data: {
+      versions: VersionRecord | CollabVersion | null;
+      transform?: (entries: TimelineEntry[]) => TimelineEntry[];
+    }
+  ) {
+    if (promise) {
+      await promise;
+      return self;
+    } else if (state.initialized) {
+      return self;
+    }
+    initialize(fetch, data);
+    if (promise) {
+      await promise;
+      return self;
+    } else {
+      return self;
+    }
+  }
+
   function post() {
     if (state.posted.length) return;
     state.posted = state.current;
@@ -146,7 +188,7 @@ export function createTimeline(
   function pull(shared: TimelineEntry[]) {
     let posted: TimelineEntry[] = [];
 
-    console.log("---STATE BEFORE ", clone(state));
+    console.log("/t", debugId, "---STATE BEFORE ", clone(state));
 
     // is in principle all or nothing
     state.posted.forEach((entry, index) => {
@@ -170,6 +212,8 @@ export function createTimeline(
     let current = state.current;
 
     console.log(
+      "/t",
+      debugId,
       "---PACKAGES BEFORE FILTER",
       clone({ shared, posted, current })
     );
@@ -181,7 +225,12 @@ export function createTimeline(
 
     current = current.filter((el) => el.length > 3); // if transactions have been removed, we can remove the entry entirely
 
-    console.log("---PACKAGES AFTER FILTER", clone({ shared, posted, current }));
+    console.log(
+      "/t",
+      debugId,
+      "---PACKAGES AFTER FILTER",
+      clone({ shared, posted, current })
+    );
 
     const transformed = transform([...shared, ...posted, ...current]);
 
@@ -192,7 +241,7 @@ export function createTimeline(
 
     const transformedPosted = transformed.splice(shared.length, posted.length);
 
-    console.log("---NEW ", {
+    console.log("/t", debugId, "---NEW ", {
       shared: clone(transformed),
       posted: clone(transformedPosted),
       current: clone(transformedCurrent),
@@ -202,7 +251,7 @@ export function createTimeline(
     state.posted = transformedPosted;
     state.current = transformedCurrent;
 
-    mutationListeners.trigger(isMutated());
+    mutationListeners.trigger(getStatus().isMutated);
   }
 
   type SyncPromise = Promise<"success" | "stale" | "error">;
@@ -222,7 +271,15 @@ export function createTimeline(
       return await syncPromise;
     }
 
-    if (state.saving || state.posted.length > 0 || state.stale) {
+    const size = listenersSize();
+
+    if (
+      // should either have something for the server or someone to listen to the server
+      !(size > 0 || state.current.length > 0) ||
+      state.saving ||
+      state.posted.length > 0 ||
+      state.stale
+    ) {
       return;
     }
 
@@ -236,12 +293,18 @@ export function createTimeline(
     }).then((result) => {
       syncPromise = null;
       if (state.saving || result.status === "error") {
-        console.warn("RETRACT");
+        console.warn("/t", debugId, "RETRACT");
         retract();
 
         return "error";
       } else if (result.status === "stale") {
-        console.warn("STALE", getId(state.shared[0]), result.updates);
+        console.warn(
+          "/t",
+          debugId,
+          "STALE",
+          getId(state.shared[0]),
+          result.updates
+        );
 
         retract();
 
@@ -283,15 +346,27 @@ export function createTimeline(
       return false;
     }
 
-    const result = await callback(state.shared);
+    const promise = callback(state.shared);
 
+    const result = await promise;
+
+    state.saving = false;
     if (result.status === "success") {
-      prefetched = result.updated;
-      state.stale = true;
-      staleListeners.trigger(prefetched);
-      return false;
+      if (savedData) {
+        console.log("/t", debugId, "WITH SAVED DATA", savedData);
+        prefetched = result.updated;
+        initialize(
+          () => new Promise(() => []), // uses prefetched
+          savedData
+        );
+        savedData = null;
+      } else {
+        prefetched = result.updated;
+        state.stale = true;
+        staleListeners.trigger(prefetched);
+      }
+      return true;
     } else {
-      state.saving = false;
       return false;
     }
   }
@@ -321,14 +396,14 @@ export function createTimeline(
   }
 
   function triggerListeners(queue?: string) {
-    console.log("LISTENERS TRIGGERED", queue);
+    console.log("/t", debugId, "LISTENERS TRIGGERED", queue);
     batch(() => {
       if (!queue) {
         listeners.forEach((set) => set.forEach((listener) => listener()));
       } else {
         listeners.get(queue)?.forEach((listener) => listener());
       }
-      mutationListeners.trigger(isMutated());
+      mutationListeners.trigger(getStatus().isMutated);
     });
   }
 
@@ -396,9 +471,14 @@ export function createTimeline(
     },
   });
 
-  function isInactive() {
+  function listenersSize() {
     let size = 0;
     listeners.forEach((set) => (size += set.size));
+    return size;
+  }
+
+  function isInactive() {
+    const size = listenersSize();
     return (
       size === 0 && state.posted.length === 0 && state.current.length === 0
     );
@@ -406,6 +486,7 @@ export function createTimeline(
 
   const self = {
     initialize,
+    softInitializeAsync,
     sync,
     save,
     getQueue<TE extends TransactionEntry>(name: string = "") {
@@ -416,6 +497,7 @@ export function createTimeline(
       }
       return current as unknown as Queue<TE>;
     },
+    getStatus,
     registerStaleListener: staleListeners.register,
     registerMutationListener: mutationListeners.register,
     isInactive,

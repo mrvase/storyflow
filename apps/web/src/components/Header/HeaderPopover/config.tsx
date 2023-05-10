@@ -1,7 +1,7 @@
 import { HeaderPopover } from ".";
 import { HeaderPopoverCTAConfig } from "../HeaderPopoverCTA";
 import { HeaderPopoverItemConfig } from "../HeaderPopoverItem";
-import { Config } from "@storyflow/react";
+import { Config, Props } from "@storyflow/react";
 
 export const HeaderPopoverConfig = {
   label: "Menulistepunkt",
@@ -38,4 +38,4 @@ export const HeaderPopoverConfig = {
   component: HeaderPopover,
 } satisfies Config;
 
-export type HeaderPopoverConfigProps = (typeof HeaderPopoverConfig)["props"];
+export type HeaderPopoverProps = Props<(typeof HeaderPopoverConfig)["props"]>;

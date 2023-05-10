@@ -8,6 +8,7 @@ import {
 import { TimelineEntry } from "@storyflow/collab/types";
 import { useDocument } from ".";
 import {
+  createTransaction,
   filterTimeline,
   isSpliceOperation,
   isToggleOperation,
@@ -25,17 +26,13 @@ import {
   SyntaxTreeRecord,
 } from "@storyflow/cms/types";
 import {
-  computeFieldId,
-  getTemplateDocumentId,
-  isTemplateField,
-} from "@storyflow/cms/ids";
-import {
   applyConfigTransaction,
   applyFieldTransaction,
   createDocumentTransformer,
 } from "../operations/apply";
 import { TokenStream } from "../operations/types";
 import {
+  DocumentAddTransactionEntry,
   DocumentTransactionEntry,
   FieldTransactionEntry,
 } from "../operations/actions";
@@ -45,6 +42,8 @@ import {
   createTokenStream,
   parseTokenStream,
 } from "../operations/parse-token-stream";
+import { isSuccess } from "@storyflow/rpc-client/result";
+import { usePush } from "../collab/CollabContext";
 
 const splitIntoQueues = (
   array: TimelineEntry[]
@@ -63,6 +62,8 @@ const splitIntoQueues = (
 export const useSaveDocument = (documentId: DocumentId, folderId: FolderId) => {
   const { doc } = useDocument(documentId);
 
+  const push = usePush<DocumentAddTransactionEntry>("documents");
+
   const mutate = SWRClient.documents.update.useMutation({
     cacheUpdate: ({ id }, mutate) => {
       mutate(
@@ -73,7 +74,11 @@ export const useSaveDocument = (documentId: DocumentId, folderId: FolderId) => {
           }
           const index = ps.findIndex((el) => el._id === id);
           const newDocuments = [...ps];
-          newDocuments[index] = { ...newDocuments[index], ...result };
+          if (index >= 0) {
+            newDocuments[index] = { ...newDocuments[index], ...result };
+          } else {
+            newDocuments.unshift(result);
+          }
           return newDocuments;
         }
       );
@@ -121,15 +126,39 @@ export const useSaveDocument = (documentId: DocumentId, folderId: FolderId) => {
         queues
       );
 
-    mutate({
+    const input = {
       id: documentId,
       folder: folderId,
       record: updatedRecord,
       config,
       versions: updatedVersions,
-    });
+    };
 
-    return true;
+    console.log("INPUT", input);
+
+    push(
+      createTransaction((t) => {
+        t.target(folderId);
+        t.toggle({ name: "remove", value: documentId });
+        return t;
+      })
+    );
+
+    const result = await mutate(input);
+
+    const succeeded = isSuccess(result);
+
+    if (!succeeded) {
+      push(
+        createTransaction((t) => {
+          t.target(folderId);
+          t.toggle({ name: "add", value: documentId });
+          return t;
+        })
+      );
+    }
+
+    return succeeded;
   };
 };
 

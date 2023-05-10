@@ -183,6 +183,7 @@ export const collab = createRoute({
       pipeline.lrange(`${slug}:${input.id}`, 0, -1);
 
       const result = await pipeline.exec();
+
       return success(result[1] as []);
     },
   }),

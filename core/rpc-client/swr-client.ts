@@ -111,7 +111,7 @@ export function createSWRClient<UserAPI extends API>(
                   (key: string) => {
                     return SWRFetcher(key, { throttle, ...globalOptions });
                   },
-                  [throttle?.key, throttle?.ms]
+                  [throttle?.key, throttle?.ms, globalOptions]
                 );
 
                 if (cachePreload) {

@@ -1,12 +1,13 @@
+import React from "react";
 import {
   PropConfigRecord,
   Config,
   Component,
   ConfigRecord,
   LibraryConfig,
+  PartialProps,
 } from "@storyflow/shared/types";
 
-export { RenderHead } from "./src/RenderHead";
 export { ParseRichText } from "./src/ParseRichText";
 export { cms, CMSElement } from "./src/CMSElement";
 
@@ -24,6 +25,15 @@ export type {
 } from "@storyflow/shared/types";
 
 export type { FetchPageResult } from "@storyflow/client/types";
+
+declare module "@storyflow/shared/types" {
+  interface ComponentType<P> {
+    (props: P): React.ReactElement<any, any> | null;
+  }
+  interface CustomTypes {
+    Element: React.ReactElement;
+  }
+}
 
 export const withComponent = <T extends PropConfigRecord>(
   component: Component<T>,
@@ -56,3 +66,18 @@ export function extractLibrary<T extends LibraryConfig>(
     }, [] as [string, Component<any>][])
   ) as ComponentsFromConfig<T["configs"]>;
 }
+
+export const child = <
+  T extends Config,
+  U extends PartialProps<T["props"]>,
+  V extends keyof Required<T>["stories"]
+>(
+  config: T,
+  {
+    props,
+    story,
+  }: {
+    props?: U;
+    story?: V;
+  } = {}
+): { config: T; props?: U; story?: V } => ({ config, props, story });

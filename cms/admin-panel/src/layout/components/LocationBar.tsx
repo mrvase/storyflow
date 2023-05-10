@@ -4,6 +4,7 @@ import {
   ComputerDesktopIcon,
   DocumentIcon,
   FolderIcon,
+  HomeIcon,
   PlusIcon,
   Square2StackIcon,
   WindowIcon,
@@ -20,6 +21,8 @@ import { useDocumentList, useDocument } from "../../documents";
 import { useLabel } from "../../documents/document-config";
 import { useDocumentLabel } from "../../documents/useDocumentLabel";
 import { useFolder } from "../../folders/FoldersContext";
+import { Link } from "@storyflow/router";
+import { getFolderData } from "../../folders/getFolderData";
 
 export function LocationBar({
   isFocused,
@@ -69,7 +72,7 @@ export function LocationBar({
     <div
       className={cl(
         "h-11 shrink-0 grow-0 overflow-x-auto dark:text-white",
-        "bg-white dark:bg-gray-850"
+        "bg-white dark:bg-gray-800"
         // isFocused ? "bg-white dark:bg-gray-850" : "bg-white dark:bg-gray-900"
       )}
     >
@@ -80,12 +83,18 @@ export function LocationBar({
         )}
         {...dragHandleProps}
       >
-        <div className="flex gap-2 pl-2 h-full overflow-x-auto no-scrollbar grow">
-          {segments.map((segment, index) => (
+        <Link
+          to={navigate("/", { navigate: false })}
+          className="h-11 flex-center ml-2 w-10 text-gray-500 hover:text-white transition-colors"
+        >
+          <HomeIcon className="w-4 h-4" />
+        </Link>
+        <div className="flex gap-6 pl-2 h-full overflow-x-auto no-scrollbar grow">
+          {segments.slice(1).map((segment, index) => (
             <LocationBarItem
               key={segment}
               segment={segment}
-              isCurrent={index === segments.length - 1}
+              isCurrent={index === segments.length - 2}
               onHover={() => {}}
               navigate={navigate}
               panelIndex={panelIndex}
@@ -162,45 +171,41 @@ function LocationBarItem({
 
   let loading = false;
   let label = "";
+  let Icon: React.FC<{ className?: string }>;
+  let isModified = false;
+  let isNew = false;
 
   if (type === "field") {
     label = useLabel(data.id);
-  } else if (type === "folder" || type === "app") {
+    Icon = WindowIcon;
+  } else if (type === "folder") {
     const { documents, error } = useDocumentList(data.id);
-    label = useFolder(data.id)?.label ?? "";
+    const folder = useFolder(data.id);
+    const folderData = getFolderData(folder);
+    label = folder?.label ?? "";
 
     if (!documents && !error) {
       loading = true;
     }
+
+    Icon = folderData.type === "app" ? ComputerDesktopIcon : FolderIcon;
   } else if (type === "document" || type === "template") {
     let { doc, error } = useDocument(data.id);
-    label = useDocumentLabel(doc) ?? "";
+    ({ label = "", isModified } = useDocumentLabel(doc));
 
     if (!doc && !error) {
       loading = true;
     }
-  }
 
-  const Icon = {
-    folder: FolderIcon,
-    app: ComputerDesktopIcon,
-    field: WindowIcon,
-    document: DocumentIcon,
-    template: DocumentIcon,
-  }[type];
+    isNew = Boolean(doc && !doc.folder);
+    Icon = DocumentIcon;
+  } else {
+    throw new Error("Url is not valid");
+  }
 
   const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const clearTimer = () => {
     timer.current && clearTimeout(timer.current);
-  };
-
-  const onMouseEnter = () => {
-    if (isCurrent) return;
-    timer.current = setTimeout(onHover, 400);
-  };
-
-  const onMouseLeave = () => {
-    clearTimer();
   };
 
   React.useEffect(() => clearTimer);
@@ -217,16 +222,15 @@ function LocationBarItem({
     <button
       {...dragHandleProps}
       className={cl(
-        "px-3 my-2 h-7 text-sm leading-none rounded-md",
+        "my-2 h-7 text-sm leading-none rounded-md",
         type === "template"
           ? "bg-teal-800"
           : /*
           : type === "app"
           ? "bg-yellow-100 dark:bg-yellow-300 text-black"
           */
-          isCurrent
-          ? "bg-white dark:bg-gray-850 font-medium"
-          : "bg-button ring-button text-button"
+            " font-medium",
+        !isCurrent && "text-gray-500"
       )}
       // onMouseEnter={onMouseEnter}
       // onMouseLeave={onMouseLeave}
@@ -242,6 +246,14 @@ function LocationBarItem({
           >
             {label}
           </span>
+          {isModified && (
+            <div
+              className={cl(
+                "w-2 h-2 rounded ml-2",
+                isNew ? "bg-yellow-400" : "bg-teal-400"
+              )}
+            />
+          )}
         </div>
       )}
     </button>

@@ -3,6 +3,7 @@ import { Menu as HeadlessMenu } from "@headlessui/react";
 import { CheckIcon } from "@heroicons/react/24/outline";
 import { MenuTransition } from "./transitions/MenuTransition";
 import React from "react";
+import { useDragItem } from "@storyflow/dnd";
 
 function Menu<T extends { label: string; disabled?: boolean }>({
   as,
@@ -147,7 +148,36 @@ const MenuItem = React.forwardRef<
   );
 });
 
+function MenuDragItem({
+  label,
+  item,
+  type,
+  id,
+}: {
+  label: string;
+  item: any;
+  type: string;
+  id: string;
+}) {
+  const { ref, dragHandleProps } = useDragItem({
+    id,
+    type,
+    item,
+    mode: "move",
+  });
+
+  return (
+    <Menu.Item
+      ref={ref as React.MutableRefObject<HTMLButtonElement | null>}
+      {...dragHandleProps}
+      label={label}
+      className="cursor-grab"
+    />
+  );
+}
+
 Menu.Item = MenuItem;
+Menu.DragItem = MenuDragItem;
 Menu.Items = MenuItems;
 
 export { Menu };

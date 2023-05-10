@@ -2,7 +2,6 @@ import type { RouteConfig } from "../layout/panel-router/types";
 import { SystemFolderPage } from "./SystemFolderPage";
 import { SystemTemplatePage } from "./SystemTemplatePage";
 import FolderPage from "../folders/FolderPage";
-import AppPage from "../folders/AppPage";
 import { DocumentPage } from "../documents/DocumentPage";
 import { FieldPage } from "../fields/FieldPage";
 
@@ -18,10 +17,6 @@ export const routes: RouteConfig[] = [
   {
     matcher: /^(f.*)?$/,
     component: ({ children }) => <FolderPage>{children}</FolderPage>,
-  },
-  {
-    matcher: /^a.*/,
-    component: ({ children }) => <AppPage>{children}</AppPage>,
   },
   {
     matcher: /^(d|t).*/,

@@ -10,6 +10,7 @@ import type {
   DocumentConfigItem,
   HeadingConfig,
   DBDocument,
+  SyntaxTreeRecord,
 } from "@storyflow/cms/types";
 import type { SyntaxTree } from "@storyflow/cms/types";
 import { getTranslateDragEffect } from "../utils/dragEffects";
@@ -20,7 +21,10 @@ import { ExtendTemplatePath } from "./TemplatePathContext";
 import { TopFieldIndexProvider } from "./FieldIndexContext";
 import { useClient } from "../client";
 import { useDocumentIdGenerator } from "../id-generator";
-import { getDefaultValuesFromTemplateAsync } from "./template-fields";
+import {
+  getDefaultValuesFromTemplateAsync,
+  pushDefaultValues,
+} from "./template-fields";
 import { splitTransformsAndRoot } from "@storyflow/cms/transform";
 import { createTokenStream } from "../operations/parse-token-stream";
 import {
@@ -29,6 +33,7 @@ import {
   FieldTransactionEntry,
 } from "../operations/actions";
 import { createTransaction } from "@storyflow/collab/utils";
+import { Timeline } from "@storyflow/collab/Timeline";
 
 export function RenderTemplate({
   id,
@@ -66,55 +71,18 @@ export function RenderTemplate({
             ...action.item,
           };
           ops.push([index, 0, [templateItem]]);
+
           getDefaultValuesFromTemplateAsync(owner, templateItem.template, {
             client,
             generateDocumentId,
           }).then((defaultValues) => {
-            Object.entries(defaultValues).forEach((entry) => {
-              const [fieldId, tree] = entry as [FieldId, SyntaxTree];
-              /* only care about native fields */
-              if (getDocumentId(fieldId) !== owner) return;
-              /*
-              Continue only if it does not exist already
-              (that is, if not deleted and now added without a save in between)
-              */
-              if (versions && getRawFieldId(fieldId) in versions) return;
-              const [transforms, root] = splitTransformsAndRoot(tree);
-              const transformOperations = transforms.map((transform) => {
-                return { name: transform.type, value: transform.data ?? true };
+            const timeline = collab.getTimeline(owner);
+            if (timeline) {
+              pushDefaultValues(timeline, {
+                id: owner,
+                record: defaultValues,
               });
-              const stream = createTokenStream(root);
-              const streamOperation = stream.length
-                ? { index: 0, insert: createTokenStream(root) }
-                : undefined;
-              if (transformOperations.length > 0 || streamOperation) {
-                /*
-                  TODO: Overvejelse: Jeg kan godt tilføje og slette og tilføje.
-                  Har betydning ift. fx url, hvor default children pushes igen.
-                  Skal muligvis lave en mulighed for, at splice action overskriver alt.
-                  I så fald kan jeg tjekke, om den har været initialized.
-                  Hvis ikke, så starter jeg den på version = 0 og pusher med det samme.
-                  Da det sker sync, ved jeg, at det push registreres som om,
-                  at det ikke har set andre actions endnu.
-
-                  Men hvad sker der, når den kører gennem transform?
-                  */
-
-                collab
-                  .initializeTimeline(owner, {
-                    versions: {},
-                  })
-                  .getQueue<FieldTransactionEntry>(getRawFieldId(fieldId))
-                  .push(
-                    createTransaction((t) =>
-                      t
-                        .target(fieldId)
-                        .splice(streamOperation)
-                        .toggle(...transformOperations)
-                    )
-                  );
-              }
-            });
+            }
           });
         }
 

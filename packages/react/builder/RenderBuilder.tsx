@@ -21,7 +21,7 @@ import {
 } from "./contexts";
 import { Select } from "./Select";
 import { defaultLibraryConfig } from "@storyflow/shared/defaultLibraryConfig";
-import { defaultLibrary } from "../config/defaultLibrary";
+import { defaultLibrary } from "../src/defaultLibrary";
 
 const LOG = true;
 export const log: typeof console.log = LOG

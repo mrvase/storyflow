@@ -7,13 +7,17 @@ import { DEFAULT_SYNTAX_TREE } from "@storyflow/cms/constants";
 import { createTemplateFieldId } from "@storyflow/cms/ids";
 import { createTransaction } from "@storyflow/collab/utils";
 import { DocumentAddTransactionEntry } from "../operations/actions";
-import { usePush } from "../collab/CollabContext";
+import { useCollab, usePush } from "../collab/CollabContext";
 import {
   useDocumentIdGenerator,
   useTemplateIdGenerator,
 } from "../id-generator";
 import { usePanel, useRoute } from "../layout/panel-router/Routes";
-import { getDefaultValuesFromTemplateAsync } from "./template-fields";
+import {
+  getDefaultValuesFromTemplateAsync,
+  pushDefaultValues,
+} from "./template-fields";
+import { createDocumentTransformer } from "../operations/apply";
 
 export const useAddDocument = (
   options: { type?: "template" | "document"; navigate?: boolean } = {}
@@ -24,6 +28,7 @@ export const useAddDocument = (
   const route = useRoute();
   const client = useClient();
 
+  const collab = useCollab();
   const push = usePush<DocumentAddTransactionEntry>("documents");
 
   const addDocument = React.useCallback(
@@ -62,6 +67,16 @@ export const useAddDocument = (
       };
 
       // TODO: Push record
+      const timeline = collab.initializeTimeline(id, {
+        versions: { config: [0] },
+        transform: createDocumentTransformer({
+          config: [],
+          record: {},
+        }),
+      });
+
+      pushDefaultValues(timeline, { id, record });
+
       if (options.navigate) {
         navigate(`${route}/${options.type === "template" ? "t" : "d"}${id}`, {
           navigate: true,
@@ -69,7 +84,15 @@ export const useAddDocument = (
       }
       return id;
     },
-    [push, options.navigate, route, navigate, client, generateDocumentId]
+    [
+      push,
+      options.navigate,
+      route,
+      navigate,
+      client,
+      generateDocumentId,
+      collab,
+    ]
   );
 
   return addDocument;

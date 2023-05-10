@@ -63,12 +63,21 @@ export const createRouteHandler = <T extends API>(
         (value, key) => key !== "cookie" && headers.push([key, value])
       );
 
-      const request: RPCRequest = {
+      let body;
+
+      if (method === "POST") {
+        try {
+          body = await req.json();
+        } catch (err) {}
+      }
+
+      const request: RPCRequest & { body?: any } = {
         method,
         url: req.url,
         headers: req.headers,
         route: options.route ?? route,
         procedure: options.procedure ?? procedure,
+        body,
       };
 
       const { init, data } = await handleRequest(request, router, options);

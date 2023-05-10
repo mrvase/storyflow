@@ -5,8 +5,8 @@ import type {
   NestedElement,
 } from "@storyflow/shared/types";
 import type { RenderArray } from "@storyflow/client/types";
-import { ParseRichText } from "./ParseRichText";
-import { getDefaultComponent } from "../utils/getDefaultComponent";
+import { ParseRichText } from "../src/ParseRichText";
+import { getDefaultComponent } from "../src/getDefaultComponent";
 
 /*
 const getComponentByType = (type: string) => {

@@ -4,9 +4,9 @@ import RenderElement from "./RenderElement";
 import type { ConfigRecord, ValueArray } from "@storyflow/shared/types";
 import { createRenderArray } from "@storyflow/client/render";
 import { ParseRichText } from "../src/ParseRichText";
-import { getConfigByType } from "../config/getConfigByType";
+import { getConfigByType } from "../src/getConfigByType";
 import { EditorProvider } from "./editor";
-import { getDefaultComponent } from "../utils/getDefaultComponent";
+import { getDefaultComponent } from "../src/getDefaultComponent";
 
 export default function RenderChildren({
   value,

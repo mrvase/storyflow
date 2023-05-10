@@ -16,12 +16,18 @@ import {
   getDocumentId,
   getIdFromString,
   getRawDocumentId,
+  getRawFieldId,
   isNestedDocumentId,
   replaceDocumentId,
 } from "@storyflow/cms/ids";
 import { fetchDocument } from "./index";
 import { isSyntaxTree, getSyntaxTreeEntries } from "@storyflow/cms/syntax-tree";
 import { tokens } from "@storyflow/cms/tokens";
+import { splitTransformsAndRoot } from "@storyflow/cms/transform";
+import { Timeline } from "@storyflow/collab/Timeline";
+import { createTransaction } from "@storyflow/collab/utils";
+import { FieldTransactionEntry } from "../operations/actions";
+import { createTokenStream } from "../operations/parse-token-stream";
 
 export const copyRecord = (
   originalRecord: SyntaxTreeRecord,
@@ -179,4 +185,53 @@ export const getTemplateFieldsAsync = async (
   };
 
   return await getFields(template);
+};
+
+export const pushDefaultValues = (
+  timeline: Timeline,
+  data: {
+    id: DocumentId;
+    record: SyntaxTreeRecord;
+  }
+) => {
+  Object.entries(data.record).forEach((entry) => {
+    const [fieldId, tree] = entry as [FieldId, SyntaxTree];
+    /* only care about native fields */
+    if (getDocumentId(fieldId) !== data.id) return;
+    /*
+    Continue only if it does not exist already
+    (that is, if not deleted and now added without a save in between)
+    */
+    // if (versions && getRawFieldId(fieldId) in versions) return;
+    const [transforms, root] = splitTransformsAndRoot(tree);
+    const transformOperations = transforms.map((transform) => {
+      return { name: transform.type, value: transform.data ?? true };
+    });
+    const stream = createTokenStream(root);
+    const streamOperation = stream.length
+      ? { index: 0, insert: createTokenStream(root) }
+      : undefined;
+    if (transformOperations.length > 0 || streamOperation) {
+      /*
+      TODO: Overvejelse: Jeg kan godt tilføje og slette og tilføje.
+      Har betydning ift. fx url, hvor default children pushes igen.
+      Skal muligvis lave en mulighed for, at splice action overskriver alt.
+      I så fald kan jeg tjekke, om den har været initialized.
+      Hvis ikke, så starter jeg den på version = 0 og pusher med det samme.
+      Da det sker sync, ved jeg, at det push registreres som om,
+      at det ikke har set andre actions endnu.
+
+      Men hvad sker der, når den kører gennem transform?
+      */
+
+      timeline.getQueue<FieldTransactionEntry>(getRawFieldId(fieldId)).push(
+        createTransaction((t) =>
+          t
+            .target(fieldId)
+            .toggle(...transformOperations)
+            .splice(streamOperation)
+        )
+      );
+    }
+  });
 };
