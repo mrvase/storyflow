@@ -13,6 +13,23 @@ import { z } from "zod";
 import { getClientPromise } from "../mongoClient";
 import { DBFolderRecord } from "@storyflow/cms/types";
 import { StoryflowConfig } from "@storyflow/shared/types";
+import { createRawTemplateFieldId } from "@storyflow/cms/ids";
+import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
+
+const validate = async (email: string, admin: string) => {
+  console.log("validate", email, admin);
+  if (email === admin) {
+    return true;
+  }
+  const promise = await getClientPromise();
+  const result = await promise
+    .db()
+    .collection("documents")
+    .findOne({
+      [`values.${createRawTemplateFieldId(DEFAULT_FIELDS.user.id)}`]: email,
+    });
+  return Boolean(result);
+};
 
 export const admin = (config: StoryflowConfig) => {
   const dbName = undefined; // config.workspaces[0].db;
@@ -21,66 +38,48 @@ export const admin = (config: StoryflowConfig) => {
       middleware(ctx) {
         return ctx.use(corsFactory(config.api.cors));
       },
-      async mutation(_, { request, response }) {
+      schema() {
+        return z.object({
+          key: z.boolean(),
+          config: z.boolean(),
+        });
+      },
+      async mutation(include, { request, response }) {
         try {
-          let session = request
-            .cookies<AuthCookies>()
-            .get(LOCAL_SESSION_COOKIE)?.value;
+          const tokenHeader = (
+            request.headers.get("authorization") ?? ""
+          ).replace("Bearer ", "");
 
-          const tokenHeader = request.headers.get("x-storyflow-token");
+          const token = parseAuthToken(
+            GLOBAL_TOKEN,
+            tokenHeader,
+            config.api.storyflowKey
+          );
 
-          if (!session) {
-            session = parseAuthToken(
-              GLOBAL_TOKEN,
-              tokenHeader,
-              config.api.storyflowKey
-            );
-            if (!session) {
-              return error({
-                message: tokenHeader ? "Token not valid" : "Not authenticated",
-              });
-            }
-            // TODO validate!!
-            response
-              .cookies<AuthCookies>()
-              .set(
-                LOCAL_SESSION_COOKIE,
-                { email: session.email },
-                { path: "/", httpOnly: true, sameSite: "lax", secure: true }
-              );
+          if (!token) {
+            return error({
+              message: tokenHeader ? "Token not valid" : "Not authenticated",
+            });
           }
 
-          response
-            .cookies<AuthCookies>()
-            .set(
-              LOCAL_TOKEN,
-              serializeAuthToken(
-                { email: session.email },
-                config.auth.privateKey
-              ),
-              { path: "/" }
-            );
+          const email = token.email;
 
-          /*
-          const cookie = serializeAuthCookie(
-            LOCAL_TOKEN,
-            { email: session.email },
-            config.api.privateKey
-          );
+          const isValidated = await validate(email, config.auth.admin);
 
-          cookies.push(cookie);
+          if (!isValidated) {
+            return error({ message: "Not authenticated", status: 401 });
+          }
 
-          res.setHeader("Set-Cookie", cookies.join(", "));
-          */
-
-          return success(
-            tokenHeader
-              ? {
-                  apps: config.apps,
-                  workspaces: config.workspaces.map(({ name }) => ({ name })),
-                }
-              : null
-          );
+          return success({
+            token: serializeAuthToken({ email }, config.auth.privateKey),
+            ...(include.config && {
+              config: {
+                apps: config.apps,
+                workspaces: config.workspaces.map(({ name }) => ({ name })),
+              },
+            }),
+            ...(include.key && { key: config.api.publicKey }),
+          });
         } catch (err) {
           console.log(err);
           return error({ message: "Lykkedes ikke", detail: err });

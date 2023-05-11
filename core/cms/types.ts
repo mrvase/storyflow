@@ -204,8 +204,6 @@ export interface DBDocument {
   folder?: FolderId; // not defined on new document generated entirely from id
   config: DocumentConfig;
   record: SyntaxTreeRecord;
-  // values: ValueRecord;
-  label?: string;
   versions: DocumentVersionRecord;
 }
 

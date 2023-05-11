@@ -3,7 +3,7 @@ import Content from "./Content";
 import { FolderIcon, TrashIcon } from "@heroicons/react/24/outline";
 import Table from "../documents/components/Table";
 // import { useFolders } from "../../folders/collab/hooks";
-import { DragIcon } from "../folders/spaces/DragIcon";
+import { DragIcon } from "../elements/DragIcon";
 import { useDragItem } from "@storyflow/dnd";
 import type { DBFolder } from "@storyflow/cms/types";
 

@@ -9,6 +9,10 @@ import type { DocumentId, FolderId } from "@storyflow/shared/types";
 import { usePush } from "../collab/CollabContext";
 import { createTransaction } from "@storyflow/collab/utils";
 import { FolderTransactionEntry } from "../operations/actions";
+import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/cms/constants";
+import { createTemplateFieldId } from "@storyflow/cms/ids";
+import { getDocumentLabel } from "../documents/useDocumentLabel";
 
 export function AddTemplateDialog({
   isOpen,
@@ -34,7 +38,21 @@ export function AddTemplateDialog({
 
       let id: DocumentId;
       if (type === "new") {
-        id = await addDocument({ folder: templateFolder });
+        id = await addDocument({
+          folder: templateFolder,
+          createRecord: (id) => {
+            return {
+              [createTemplateFieldId(id, DEFAULT_FIELDS.creation_date.id)]: {
+                ...DEFAULT_SYNTAX_TREE,
+                children: [new Date()],
+              },
+              [createTemplateFieldId(id, DEFAULT_FIELDS.template_label.id)]: {
+                ...DEFAULT_SYNTAX_TREE,
+                children: [label],
+              },
+            };
+          },
+        });
       } else {
         id = label as DocumentId;
       }
@@ -53,7 +71,7 @@ export function AddTemplateDialog({
 
   const templateOptions = (templates ?? []).map((el) => ({
     value: el._id,
-    label: el.label ?? el._id,
+    label: getDocumentLabel(el) ?? el._id,
   }));
 
   return (

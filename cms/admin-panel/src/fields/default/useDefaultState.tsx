@@ -16,7 +16,7 @@ import {
   createTokenStream,
   parseTokenStream,
 } from "../../operations/parse-token-stream";
-import { useClient } from "../../client";
+import { useClient } from "../../RPCProvider";
 import { useCollab } from "../../collab/CollabContext";
 import { useFieldConfig } from "../../documents/document-config";
 import { useSingular } from "../../state/useSingular";

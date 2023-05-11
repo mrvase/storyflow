@@ -6,11 +6,12 @@ export const appConfig: AppConfig = {
   baseURL: process.env.BASE_URL as string,
   label: "storyflow.dk",
   configs,
-  namespaces: process.env.NAMESPACES?.split(",") ?? [],
+  // namespaces: process.env.NAMESPACES?.split(",") ?? [],
 };
 
 export const apiConfig: ApiConfig = {
   mongoURL: process.env.MONGO_URL as string,
+  publicKey: process.env.PUBLIC_KEY as string,
   storyflowKey: process.env.STORYFLOW_PUBLIC_KEY as string,
   cors:
     process.env.NODE_ENV === "development"

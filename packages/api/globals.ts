@@ -4,5 +4,5 @@ import { auth, cors } from "@storyflow/server/middleware";
 import { ApiConfig } from "@storyflow/shared/types";
 
 export const globals = (config: ApiConfig) => (ctx: MiddlewareContext) => {
-  return ctx.use(cors(config.cors), auth);
+  return ctx.use(cors(config.cors ?? []), auth(config.publicKey));
 };

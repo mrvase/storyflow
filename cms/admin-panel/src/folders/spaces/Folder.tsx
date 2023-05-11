@@ -10,10 +10,11 @@ import { useDragItem, useSortableItem } from "@storyflow/dnd";
 import { getTranslateDragEffect } from "../../utils/dragEffects";
 import type { DBFolder } from "@storyflow/cms/types";
 import type { FolderId } from "@storyflow/shared/types";
-import { DragIcon } from "./DragIcon";
+import { DragIcon } from "../../elements/DragIcon";
 import { usePanel, useRoute } from "../../layout/panel-router/Routes";
 import { useFolder } from "../FoldersContext";
 import { getFolderData } from "../getFolderData";
+import { useLocalStorage } from "../../state/useLocalStorage";
 
 export function FolderItem({
   index,
@@ -72,6 +73,8 @@ export function FolderItem({
     mode: "link",
   });
 
+  const [isEditing] = useLocalStorage<boolean>("toolbar-open", true);
+
   return (
     <Link
       {...linkDragHandleProps}
@@ -83,13 +86,15 @@ export function FolderItem({
       )}
       style={style}
     >
-      <div
-        className="w-4 h-4 mr-3 shrink-0 opacity-25 hover:opacity-100 transition-opacity cursor-grab"
-        {...dragHandleProps}
-      >
-        <DragIcon className="w-4 h-4" />
-      </div>
-      <span className="truncate">{label}</span>
+      {isEditing && (
+        <div
+          className="w-5 h-5 shrink-0 opacity-75 hover:opacity-100 transition-opacity cursor-grab"
+          {...dragHandleProps}
+        >
+          <DragIcon className="w-5 h-5 text-yellow-200" />
+        </div>
+      )}
+      <span className="ml-3 truncate">{label}</span>
       <div className="ml-auto transition-opacity w-8 h-8 flex-center rounded-md">
         <Icon className="w-6 h-6 shrink-0 opacity-25 group-hover:opacity-75 transition-opacity" />{" "}
       </div>

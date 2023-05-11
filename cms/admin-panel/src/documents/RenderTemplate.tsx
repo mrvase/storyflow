@@ -19,7 +19,7 @@ import { useCollab, usePush } from "../collab/CollabContext";
 import { GetDocument } from "./GetDocument";
 import { ExtendTemplatePath } from "./TemplatePathContext";
 import { TopFieldIndexProvider } from "./FieldIndexContext";
-import { useClient } from "../client";
+import { useClient } from "../RPCProvider";
 import { useDocumentIdGenerator } from "../id-generator";
 import {
   getDefaultValuesFromTemplateAsync,

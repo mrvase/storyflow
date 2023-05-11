@@ -9,7 +9,7 @@ import {
   Options,
 } from "@storyflow/shared/types";
 import type { SyntaxTree } from "@storyflow/cms/types";
-import { getConfigFromType, useAppConfig } from "../../../client-config";
+import { getConfigFromType, useAppConfig } from "../../../AppConfigContext";
 import {
   ArrowPathRoundedSquareIcon,
   ChevronUpDownIcon,

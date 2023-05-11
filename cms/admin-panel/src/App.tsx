@@ -1,9 +1,9 @@
 import { DragDropContext } from "@storyflow/dnd";
 import { Router, useLocation } from "@storyflow/router";
 import { SWRConfig } from "swr";
-import { provider, QueryContextProvider } from "./client";
-import { ClientConfigProvider } from "./client-config";
-import { FieldFocusProvider } from "./field-focus";
+import { provider, RPCProvider } from "./RPCProvider";
+import { AppConfigProvider } from "./AppConfigContext";
+import { FieldFocusProvider } from "./FieldFocusContext";
 import { IdGenerator } from "./id-generator";
 import { DataProvider, Preload } from "./DataProvider";
 import { CollabProvider } from "./collab/CollabContext";
@@ -16,7 +16,11 @@ import React from "react";
 import { useLocalStorage } from "./state/useLocalStorage";
 import { Organizations } from "./Organizations";
 
-export function App() {
+export function App({
+  organization,
+}: {
+  organization?: { slug: string; url: string };
+}) {
   const [darkMode] = useLocalStorage<boolean>("dark-mode", true);
 
   React.useLayoutEffect(() => {
@@ -28,30 +32,30 @@ export function App() {
       <SWRConfig value={{ provider }}>
         <Router>
           <PanelRouter>
-            <AuthProvider>
+            <AuthProvider organization={organization}>
               <SignedIn>
                 <FrontPage>
-                  <Organizations />
+                  <Organizations preset={organization} />
                 </FrontPage>
                 <PanelPage>
-                  <QueryContextProvider>
+                  <RPCProvider>
                     <Preload />
                     <CollabProvider>
                       <DataProvider>
-                        <FieldFocusProvider>
-                          <DragDropContext>
-                            <ClientConfigProvider>
-                              <IdGenerator>
+                        <AppConfigProvider>
+                          <IdGenerator>
+                            <FieldFocusProvider>
+                              <DragDropContext>
                                 <Layout>
                                   <Panels routes={routes} />
                                 </Layout>
-                              </IdGenerator>
-                            </ClientConfigProvider>
-                          </DragDropContext>
-                        </FieldFocusProvider>
+                              </DragDropContext>
+                            </FieldFocusProvider>
+                          </IdGenerator>
+                        </AppConfigProvider>
                       </DataProvider>
                     </CollabProvider>
-                  </QueryContextProvider>
+                  </RPCProvider>
                 </PanelPage>
               </SignedIn>
               <SignedOut>

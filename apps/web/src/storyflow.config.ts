@@ -4,7 +4,6 @@ export const storyflowConfig: StoryflowConfig = {
   baseURL: process.env.BASE_URL as string,
   public: {
     organization: "Semper",
-    publicKey: process.env.PUBLIC_KEY as string,
   },
   auth: {
     admin: "martin@rvase.dk",
@@ -13,6 +12,7 @@ export const storyflowConfig: StoryflowConfig = {
   },
   api: {
     mongoURL: process.env.MONGO_URL as string,
+    publicKey: process.env.PUBLIC_KEY as string,
     storyflowKey: process.env.STORYFLOW_PUBLIC_KEY as string,
     cors:
       process.env.NODE_ENV === "development"

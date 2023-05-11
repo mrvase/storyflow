@@ -43,6 +43,10 @@ Dokumenter
 00 00 00 01 00 00 - FF FF FF FF FF FF bruges til dokumenter
 */
 
+export function isTemplateDocument(id: DocumentId) {
+  return parseInt(getRawDocumentId(id), 16) < USER_DOCUMENT_OFFSET - 1;
+}
+
 function toHex(number: number, length: `${number}b`) {
   const no = parseInt(length, 10);
   if (no < 1 || no > 6) {
@@ -148,14 +152,14 @@ export const normalizeDocumentId = (
   return id as DocumentId;
 };
 
-export const normalizeFolderId = (id: RawFolderId | FolderId) => {
+export const normalizeFolderId = (id: RawFolderId | FolderId): FolderId => {
   if (id.length === 12) {
-    return `${ROOT_PARENT_RAW}${id}`;
+    return `${ROOT_PARENT_RAW}${id}` as FolderId;
   }
   if (id.length !== 24) {
     throw new Error(`Invalid field id: ${id}`);
   }
-  return id;
+  return id as FolderId;
 };
 
 export const getParentDocumentId = (id: NestedDocumentId): DocumentId => {

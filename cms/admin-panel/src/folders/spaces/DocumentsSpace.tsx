@@ -6,23 +6,15 @@ import {
   PlusIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
-import { createTemplateFieldId } from "@storyflow/cms/ids";
 import type { DocumentId, FolderId } from "@storyflow/shared/types";
-import type {
-  DBDocument,
-  DocumentSpace,
-  FolderSpace,
-  SpaceId,
-} from "@storyflow/cms/types";
+import type { DBDocument, DocumentSpace } from "@storyflow/cms/types";
 import React from "react";
 import { fetchDocument, useDocumentList } from "../../documents";
 import { useAddDocument } from "../../documents/useAddDocument";
-import { getDocumentLabel } from "../../documents/useDocumentLabel";
 import { getTemplateFieldsAsync } from "../../documents/template-fields";
-import Table from "../../documents/components/Table";
-import { useClient } from "../../client";
+import { useClient } from "../../RPCProvider";
 import { addDocumentImport } from "../../custom-events";
-import { useFieldFocus } from "../../field-focus";
+import { useFieldFocus } from "../../FieldFocusContext";
 import { useCurrentFolder } from "../FolderPageContext";
 import Space from "./Space";
 import Loader from "../../elements/Loader";
@@ -30,7 +22,6 @@ import { useDeleteForm } from "./useDeleteForm";
 import { DEFAULT_FIELDS, isDefaultField } from "@storyflow/cms/default-fields";
 import { calculateRootFieldFromRecord } from "@storyflow/cms/calculate-server";
 import { useTemplate } from "../../fields/default/useFieldTemplate";
-import { getPreview } from "../../fields/default/getPreview";
 import { Menu } from "../../elements/Menu";
 import { useFolder } from "../FoldersContext";
 import { usePush } from "../../collab/CollabContext";
@@ -39,7 +30,7 @@ import { createTransaction } from "@storyflow/collab/utils";
 import { useNewDocuments } from "./useNewDocuments";
 import DocumentTable from "../../documents/components/DocumentTable";
 
-export function DocumentListSpace({
+export function DocumentsSpace({
   space,
   folderId,
   hidden,
@@ -96,7 +87,7 @@ export function DocumentListSpace({
         index={index}
         label={
           <>
-            Data
+            Dokumenter
             <AddDocumentButton folder={folderId} />
           </>
         }

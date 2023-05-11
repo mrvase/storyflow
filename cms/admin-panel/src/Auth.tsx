@@ -1,21 +1,22 @@
 import React from "react";
 import cl from "clsx";
 import { onInterval } from "./collab/interval";
-import { Result, error, isError, unwrap } from "@storyflow/rpc-client/result";
+import { isSuccess, unwrap } from "@storyflow/rpc-client/result";
 import { createClient, createSWRClient } from "@storyflow/rpc-client";
 import Loader from "./elements/Loader";
 import useSWR, { useSWRConfig } from "swr";
 import type { AuthAPI, CollabAPI, BucketAPI } from "services-api";
-import { useUrlInfo } from "./users";
 import { AppReference } from "@storyflow/api";
 import { useLocation, useNavigate } from "@storyflow/router";
+import { trimLeadingSlash } from "./utils/trimSlashes";
 
 const url =
   process.env.NODE_ENV === "production" ? `/api` : `http://localhost:3000/api`;
 
-export const servicesClient = createClient<AuthAPI & BucketAPI & CollabAPI>(
-  url
-);
+export const servicesClientWithoutContext = createClient<
+  AuthAPI & BucketAPI & CollabAPI
+>(url);
+
 export const servicesClientSWR = createSWRClient<
   AuthAPI & BucketAPI & CollabAPI
 >(url, {
@@ -23,7 +24,11 @@ export const servicesClientSWR = createSWRClient<
   useSWRConfig,
 });
 
-type Organization = { apps: AppReference[]; workspaces: { name: string }[] };
+type Organization = {
+  slug: string;
+  apps: AppReference[];
+  workspaces: { name: string }[];
+};
 
 const AuthContext = React.createContext<{
   user: {
@@ -32,23 +37,58 @@ const AuthContext = React.createContext<{
   getToken: () => string | undefined;
   organization: Organization | null;
   apiUrl: string | null;
-}>({ user: null, organization: null, apiUrl: null, getToken: () => undefined });
+}>({
+  user: null,
+  organization: null,
+  apiUrl: null,
+  getToken: () => undefined,
+});
 
 export const useAuth = () => React.useContext(AuthContext);
 
-const getCookie = (name: string) => {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) {
-    return parts.pop()!.split(";").shift()!;
-  }
-};
+function useToken() {
+  const cachedToken = React.useRef<string | null>(null);
 
-export function AuthProvider({ children }: { children?: React.ReactNode }) {
-  const { organization: slug } = useUrlInfo();
+  const updateToken = React.useCallback(() => {
+    const getCookie = (name: string) => {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) {
+        return parts.pop()!.split(";").shift()!;
+      }
+    };
+    cachedToken.current = getCookie("sf.c.local-token") ?? cachedToken.current;
+  }, []);
+
+  const getToken = React.useCallback(() => {
+    return cachedToken.current ?? undefined;
+  }, []);
+
+  return [getToken, updateToken] as [typeof getToken, typeof updateToken];
+}
+
+function useOrganizationSlug() {
+  const { pathname } = useLocation();
+  const segments = trimLeadingSlash(pathname).split("/");
+  const first = segments[0];
+  return !first || first === "" || first.startsWith("~") ? null : first;
+}
+
+export function AuthProvider({
+  children,
+  organization: preset,
+}: {
+  organization?: { slug: string; url: string };
+  children?: React.ReactNode;
+}) {
+  const slug = preset ? preset.slug : useOrganizationSlug();
+
+  const [getToken, updateToken] = useToken();
 
   const [isLoading, setIsLoading] = React.useState(true);
+
   const [apiUrl, setApiUrl] = React.useState<string | null>(null);
+
   const [user, setUser] = React.useState<{ email: string } | null>(null); // <-- confirms session in panel
   const [organization, setOrganization] = React.useState<Organization | null>(
     null
@@ -64,59 +104,48 @@ export function AuthProvider({ children }: { children?: React.ReactNode }) {
   React.useEffect(() => {
     // authentication for panel
     if (slug === "logout") return;
-    (async () => {
-      // sets global token, organization key, and returns user and organization url
-      const result = unwrap(
-        await servicesClient.auth.authenticate.mutation(slug)
-      );
+    if (isLoading === false && slug === null) return;
 
-      // we check previous state, because there is no need to trigger reference rerender
-      // if user is already set
-      if (!result) {
-        navigate("/");
-      }
-
-      setUser((ps) => (!ps && result ? result.user : ps));
-      setApiUrl(result?.url ? `${result.url}/api` : null);
-      setIsLoading(false);
-    })();
-  }, [slug]);
-
-  const navigate = useNavigate();
-
-  React.useEffect(() => {
-    // authentication for organization api
-    if (!apiUrl) return;
-
-    const run = async (includeHeader?: boolean) => {
-      const token = getCookie("sf.c.token");
-      if (!token && includeHeader) return error({ message: "No token" });
-      return await fetch(`${apiUrl}/admin/authenticate`, {
-        method: "POST",
-        credentials: "include",
-        headers:
-          includeHeader && token
-            ? {
-                "x-storyflow-token": token,
-              }
-            : undefined,
-      }).then(async (res) => {
-        const json = (await res.json()) as Promise<Result<Organization>>;
-        return json;
-      });
+    // sets global token, organization key, and returns user and organization url
+    const run = async (returnConfig?: boolean) => {
+      const result =
+        await servicesClientWithoutContext.auth.authenticate.mutation({
+          organization: {
+            slug,
+            url: preset?.url ?? null,
+          },
+          returnConfig: Boolean(returnConfig),
+        });
+      updateToken();
+      return result;
     };
 
     run(true).then((result) => {
-      if (isError(result)) {
-        navigate("/");
+      const data = unwrap(result);
+      if (!data) {
+        navigate(slug ? `/?next=${slug}` : "/");
       } else {
-        setOrganization(unwrap(result));
+        // we check previous state, because there is no need to trigger reference rerender
+        // if user is already set
+        setUser((ps) => (ps && ps.email === data.user.email ? ps : data.user));
+        if (data.config) {
+          setOrganization({
+            slug: slug!, // we do not get a config, if there was no slug
+            ...data.config!,
+          });
+        } else if (slug) {
+          navigate(`/?unauthorized=${slug}`);
+        }
       }
+
+      setApiUrl(data?.url ? `${data.url}/api` : null);
+      setIsLoading(false);
     });
 
     return onInterval(() => run(), { duration: 30000 });
-    // navigate depends on pathname, but is not relevant for this effect
-  }, [apiUrl]);
+  }, [slug]);
+
+  const navigate = useNavigate();
 
   const { pathname } = useLocation();
 
@@ -124,19 +153,19 @@ export function AuthProvider({ children }: { children?: React.ReactNode }) {
     if (pathname === "/logout") {
       const logout = async () => {
         reset();
-        await servicesClient.auth.logout.mutation();
+        await servicesClientWithoutContext.auth.logout.mutation();
         navigate("/", { replace: true });
       };
       logout();
     }
-  }, [servicesClient, pathname]);
+  }, [pathname]);
 
   const ctx = React.useMemo(
     () => ({
       user,
       organization,
       apiUrl,
-      getToken: () => getCookie("sf.c.local-token"),
+      getToken,
     }),
     [user, organization]
   );
@@ -163,6 +192,8 @@ export function SignIn() {
   const [isLoading, setIsLoading] = React.useState(false);
   const [isDone, setIsDone] = React.useState(false);
 
+  const { search } = useLocation();
+
   React.useEffect(() => {
     const t = setTimeout(() => setShow(true), 200);
 
@@ -187,11 +218,21 @@ export function SignIn() {
           const data = new FormData(ev.currentTarget);
 
           setIsLoading(true);
-          await servicesClient.auth.sendEmail.query(
-            data.get("email") as string
-          );
+
+          const next = new URLSearchParams(search).get("next") ?? undefined;
+
+          const result =
+            await servicesClientWithoutContext.auth.sendEmail.query({
+              email: data.get("email") as string,
+              // get next url from query params
+              ...(next && encodeURIComponent(next) === next && next.length < 50
+                ? { next }
+                : {}),
+            });
           setIsLoading(false);
-          setIsDone(true);
+          if (isSuccess(result)) {
+            setIsDone(true);
+          }
         }}
         className="flex flex-col gap-5 items-center"
       >

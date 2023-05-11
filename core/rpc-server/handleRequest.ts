@@ -173,9 +173,9 @@ export async function handleRequest<T extends API>(
             }
           },
           delete(name, options) {
-            const exists = this.get(name);
+            const exists = setCookies.get(name);
             if (exists && exists.maxAge !== 0) {
-              setCookies.delete(this.get(name));
+              setCookies.delete(name);
             } else {
               setCookies.set(name, {
                 ...options,
@@ -229,16 +229,6 @@ export async function handleRequest<T extends API>(
     console.timeEnd(`REQUEST TIME ${route}/${procedure} ${id}`);
     console.log("\n\n");
 
-    if (isResult(err) && isError(err)) {
-      return {
-        data: err,
-        init: {
-          headers: new Headers(),
-          status: getErrorStatus(err),
-        },
-      };
-    }
-
     return {
       data: error({ message: "serverfejl", detail: err }),
       init: {
@@ -277,13 +267,15 @@ export async function handleRequest<T extends API>(
               encrypt: el.encrypt,
             })
           : el.value;
-      context.response.headers.append("Set-Cookie", serialize(name, value, el));
+      const string = serialize(name, value, el);
+      context.response.headers.append("Set-Cookie", string);
     });
   }
 
   return {
-    data: result ?? success(null),
+    data: result,
     init: {
+      redirect: context.response.redirect,
       headers: context.response.headers,
       status: context.response.status,
     },

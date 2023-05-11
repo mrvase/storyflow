@@ -18,11 +18,11 @@ import {
 import type { SyntaxTreeRecord, SyntaxTree } from "@storyflow/cms/types";
 import Content from "../pages/Content";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-import { useAppConfig } from "../client-config";
+import { useAppConfig } from "../AppConfigContext";
 import { createComponent } from "./Editor/createComponent";
 import { useDocumentPageContext } from "../documents/DocumentPageContext";
 import { fetchDocumentSync } from "../documents";
-import { Client, useClient } from "../client";
+import { Client, useClient } from "../RPCProvider";
 import {
   computeFieldId,
   getDocumentId,
@@ -397,7 +397,7 @@ export function FieldPage({ children }: { children?: React.ReactNode }) {
                   "w-1"
                 )}
               />
-              <Panel collapsible>
+              <Panel collapsible minSize={35} className="hidden @3xl:block">
                 <div className="p-2.5 h-full overflow-y-auto overflow-x-hidden no-scrollbar">
                   <FieldPanel id={id} />
                 </div>
@@ -428,18 +428,29 @@ function FieldOverlay({ id }: { id: FieldId }) {
     <EditorFocusProvider>
       <div
         className={cl(
-          "absolute max-h-[calc(100%-1.25rem)] min-h-[5.25rem] bg-gray-850 shadow-lg shadow-black/20 w-[calc(100%-1.25rem)] rounded-md bottom-2.5 left-2.5 overflow-y-auto no-scrollbar transition-[transform,opacity] ease-out duration-200 origin-bottom",
+          "absolute w-[calc(100%-1.25rem)] bottom-2.5 left-2.5",
+          "transition-[transform,opacity] ease-out duration-200 origin-bottom",
           !currentId
             ? "opacity-0 pointer-events-none scale-[0.98]"
             : "opacity-100 scale-100"
         )}
       >
-        <div className={cl("relative grow shrink basis-0 p-2.5")}>
-          <div className="flex items-center text-sm gap-2 mb-2.5">
-            <Attributes hideChildrenProps />
+        <div
+          className={cl(
+            "w-full max-w-xl mx-auto max-h-[calc(100%-1.25rem)] bg-gray-850 shadow-lg shadow-black/20 rounded-md overflow-y-auto no-scrollbar"
+          )}
+        >
+          <div
+            className={cl(
+              "relative grow shrink basis-0 p-2.5 pb-0.5 min-h-[4.75rem]"
+            )}
+          >
+            <div className="flex items-center text-sm gap-2 mb-2.5">
+              <Attributes hideChildrenProps />
+            </div>
+            {/* we assume queue has been initialized by previous page, so no need for root */}
+            {currentId && <DefaultField key={currentId} id={currentId} />}
           </div>
-          {/* we assume queue has been initialized by previous page, so no need for root */}
-          {currentId && <DefaultField key={currentId} id={currentId} />}
         </div>
       </div>
     </EditorFocusProvider>
@@ -546,7 +557,11 @@ const getRecordSnapshot = (
                 acc.concat(
                   Object.entries(library.configs).map(([name, config]) => ({
                     ...config,
-                    name: extendPath(libraryName, name, ":"),
+                    name: extendPath(
+                      libraryName,
+                      name.replace(/Config$/, ""),
+                      ":"
+                    ),
                   }))
                 ),
               []

@@ -5,9 +5,14 @@ import {
   generateTemplateId,
   getDefaultValue,
 } from "@storyflow/cms/default-fields";
-import { TEMPLATE_FOLDER } from "@storyflow/cms/constants";
-import { getTemplateDocumentId } from "@storyflow/cms/ids";
+import { DEFAULT_SYNTAX_TREE, TEMPLATE_FOLDER } from "@storyflow/cms/constants";
+import {
+  createTemplateFieldId,
+  getDocumentId,
+  getTemplateDocumentId,
+} from "@storyflow/cms/ids";
 import type { DefaultFieldConfig } from "@storyflow/cms/types";
+import { DocumentId } from "@storyflow/shared/types";
 
 const generateTemplateFromDefaultFields = (
   label: string,
@@ -15,14 +20,21 @@ const generateTemplateFromDefaultFields = (
 ): DBDocument => {
   const record: SyntaxTreeRecord = {};
 
+  const _id = generateTemplateId();
+
   fields.forEach((field) => {
-    if (field.initialValue) record[field.id] = getDefaultValue(field);
+    if (field.initialValue)
+      record[createTemplateFieldId(_id, field.id)] = getDefaultValue(field);
   });
 
+  record[createTemplateFieldId(_id, DEFAULT_FIELDS.template_label.id)] = {
+    ...DEFAULT_SYNTAX_TREE,
+    children: [label],
+  };
+
   return {
-    _id: generateTemplateId(),
+    _id,
     folder: TEMPLATE_FOLDER,
-    label,
     config: fields.map((field) => ({
       template: getTemplateDocumentId(field.id),
     })),
@@ -48,21 +60,31 @@ export const DEFAULT_TEMPLATES = {
     DEFAULT_FIELDS.redirect,
   ]),
 };
+
 export const TEMPLATES = [
   ...Object.values(DEFAULT_FIELDS).map((field): DBDocument => {
     let { initialValue, ...fieldConfig } = field as typeof field & {
       initialValue?: any;
     };
 
+    // default fields are the zeroth field in their own template document
+    // so we just get the document id
+    const _id = getDocumentId<DocumentId>(field.id);
+
     const record: SyntaxTreeRecord = {};
     if ("initialValue" in field) {
       record[field.id] = getDefaultValue(field);
     }
 
+    // this is external to the field
+    record[createTemplateFieldId(_id, DEFAULT_FIELDS.template_label.id)] = {
+      ...DEFAULT_SYNTAX_TREE,
+      children: [field.label],
+    };
+
     return {
-      _id: getTemplateDocumentId(field.id),
+      _id,
       folder: TEMPLATE_FOLDER,
-      label: field.label,
       config: [fieldConfig],
       record,
       versions: { config: [0, 0, ""] },

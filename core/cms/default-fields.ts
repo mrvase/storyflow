@@ -28,6 +28,10 @@ export const DEFAULT_FIELDS = {
     id: generateTemplateFieldId(),
     label: "Label",
   },
+  template_label: {
+    id: generateTemplateFieldId(),
+    label: "Label til template",
+  },
   url: {
     id: generateTemplateFieldId(),
     ui: "url",

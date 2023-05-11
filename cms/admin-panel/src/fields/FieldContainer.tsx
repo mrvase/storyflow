@@ -9,7 +9,7 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import React from "react";
-import { useFieldFocus } from "../field-focus";
+import { useFieldFocus } from "../FieldFocusContext";
 import { addImport } from "../custom-events";
 import { useLabel } from "../documents/document-config";
 import type { FieldId, NestedDocumentId } from "@storyflow/shared/types";
@@ -18,7 +18,7 @@ import { getTranslateDragEffect } from "../utils/dragEffects";
 import useIsFocused from "../utils/useIsFocused";
 import { useIsFocused as useIsEditorFocused } from "../editor/react/useIsFocused";
 import { getDefaultField, isDefaultField } from "@storyflow/cms/default-fields";
-import { getConfigFromType, useAppConfig } from "../client-config";
+import { getConfigFromType, useAppConfig } from "../AppConfigContext";
 import { isTemplateField } from "@storyflow/cms/ids";
 import { FieldToolbarPortal } from "../documents/FieldToolbar";
 import { EditorFocusProvider } from "../editor/react/useIsFocused";

@@ -18,7 +18,7 @@ import {
 import { mergeRegister } from "../../editor/utils/mergeRegister";
 import { useEditorContext } from "../../editor/react/EditorProvider";
 import { copyRecord } from "../../documents/template-fields";
-import { useAppConfig } from "../../client-config";
+import { useAppConfig } from "../../AppConfigContext";
 import { useFieldId } from "../FieldIdContext";
 import {
   getDocumentId,

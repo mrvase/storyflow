@@ -1,5 +1,5 @@
 import React from "react";
-import { useClient } from "../client";
+import { useClient } from "../RPCProvider";
 import { DocumentId, FolderId, FieldId } from "@storyflow/shared/types";
 import type { SyntaxTreeRecord } from "@storyflow/cms/types";
 import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
@@ -78,9 +78,15 @@ export const useAddDocument = (
       pushDefaultValues(timeline, { id, record });
 
       if (options.navigate) {
-        navigate(`${route}/${options.type === "template" ? "t" : "d"}${id}`, {
-          navigate: true,
-        });
+        navigate(
+          `${route}/${options.type === "template" ? "t" : "d"}${parseInt(
+            id,
+            16
+          ).toString(16)}`,
+          {
+            navigate: true,
+          }
+        );
       }
       return id;
     },

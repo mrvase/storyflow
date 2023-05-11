@@ -5,7 +5,7 @@ import {
   TrashIcon,
 } from "@heroicons/react/24/outline";
 import { createComponent } from "../Editor/createComponent";
-import { getInfoFromType, useAppConfig } from "../../client-config";
+import { getInfoFromType, useAppConfig } from "../../AppConfigContext";
 import { getDocumentId, getRawFieldId } from "@storyflow/cms/ids";
 import type { DocumentId, FieldId } from "@storyflow/shared/types";
 import { useDocumentIdGenerator } from "../../id-generator";

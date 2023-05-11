@@ -1,11 +1,10 @@
 import React from "react";
-import { SWRClient, useClient } from "./client";
+import { SWRClient, useClient } from "./RPCProvider";
 import {
   DocumentId,
   FolderId,
   NestedDocumentId,
 } from "@storyflow/shared/types";
-import { useUrlInfo } from "./users";
 import { z } from "zod";
 import {
   getRawDocumentId,
@@ -85,12 +84,10 @@ const IdContext = React.createContext<{
 } | null>(null);
 
 export function IdGenerator({ children }: { children: React.ReactNode }) {
-  const { organization: slug } = useUrlInfo();
-
   const { organization } = useAuth();
   const workspaceId = organization!.workspaces[0].name;
 
-  const getName = (name: string = "ids") => `${slug}:${name}`;
+  const getName = (name: string = "ids") => `${organization!.slug}:${name}`;
 
   const getItem = (name: string): string | null => {
     if (typeof window === "undefined") return null;
@@ -99,9 +96,11 @@ export function IdGenerator({ children }: { children: React.ReactNode }) {
 
   const initialize = async () => {
     if (getObject()) return;
-    const id_offset = await fetchOffset("id");
-    const template_offset = await fetchOffset("template");
-    const field_offset = await fetchOffset("field");
+    const [id_offset, template_offset, field_offset] = await Promise.all([
+      fetchOffset("id"),
+      fetchOffset("template"),
+      fetchOffset("field"),
+    ]);
     const object = {
       workspace: workspaceId,
       id: id_offset,

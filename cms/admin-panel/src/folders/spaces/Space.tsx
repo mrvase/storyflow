@@ -3,7 +3,7 @@ import cl from "clsx";
 import React from "react";
 import { useLocalStorage } from "../../state/useLocalStorage";
 import useIsFocused from "../../utils/useIsFocused";
-import { DragIcon } from "./DragIcon";
+import { DragIcon } from "../../elements/DragIcon";
 import { useSortableItem } from "@storyflow/dnd";
 import { getTranslateDragEffect } from "../../utils/dragEffects";
 
@@ -54,10 +54,15 @@ function Space({
     >
       <div className="flex items-center mb-3.5 h-7">
         <div
-          className="cursor-grab opacity-25 hover:opacity-100 transition-opacity"
+          className={cl(
+            "cursor-grab transition-opacity w-4 mr-5",
+            isOpen
+              ? "opacity-75 hover:opacity-100"
+              : "opacity-0 pointer-events-none"
+          )}
           {...dragHandleProps}
         >
-          <DragIcon className="w-4 h-4 mr-5" />
+          <DragIcon className="w-5 h-5 -ml-0.5 text-yellow-200" />
         </div>
         <h2 className="text-sm text-gray-600 dark:text-gray-400 flex-center font-medium">
           {label}
@@ -84,7 +89,7 @@ const Button = React.forwardRef<
       ref={ref}
       {...props}
       className={cl(
-        "rounded p-1.5",
+        "rounded-full ring-button p-0.5",
         selected === false
           ? "text-gray-800 dark:text-white text-opacity-50 dark:text-opacity-50"
           : "text-button",

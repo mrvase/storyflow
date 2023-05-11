@@ -2,6 +2,7 @@ import cl from "clsx";
 import {
   BookmarkIcon,
   ComputerDesktopIcon,
+  DocumentDuplicateIcon,
   DocumentIcon,
   FolderIcon,
   HomeIcon,
@@ -83,12 +84,14 @@ export function LocationBar({
         )}
         {...dragHandleProps}
       >
-        <Link
-          to={navigate("/", { navigate: false })}
-          className="h-11 flex-center ml-2 w-10 text-gray-500 hover:text-white transition-colors"
-        >
-          <HomeIcon className="w-4 h-4" />
-        </Link>
+        {segments.length > 1 && (
+          <Link
+            to={navigate("/", { navigate: false })}
+            className="h-11 flex-center ml-2 w-10 text-gray-500 hover:text-white transition-colors"
+          >
+            <HomeIcon className="w-4 h-4" />
+          </Link>
+        )}
         <div className="flex gap-6 pl-2 h-full overflow-x-auto no-scrollbar grow">
           {segments.slice(1).map((segment, index) => (
             <LocationBarItem
@@ -198,7 +201,7 @@ function LocationBarItem({
     }
 
     isNew = Boolean(doc && !doc.folder);
-    Icon = DocumentIcon;
+    Icon = type === "template" ? DocumentDuplicateIcon : DocumentIcon;
   } else {
     throw new Error("Url is not valid");
   }
@@ -222,15 +225,12 @@ function LocationBarItem({
     <button
       {...dragHandleProps}
       className={cl(
-        "my-2 h-7 text-sm leading-none rounded-md",
-        type === "template"
-          ? "bg-teal-800"
-          : /*
-          : type === "app"
-          ? "bg-yellow-100 dark:bg-yellow-300 text-black"
-          */
-            " font-medium",
-        !isCurrent && "text-gray-500"
+        "my-2 h-7 text-sm leading-none rounded-md font-medium",
+        !isCurrent
+          ? "text-gray-500 hover:text-white transition-colors"
+          : type === "template"
+          ? "text-teal-400"
+          : ""
       )}
       // onMouseEnter={onMouseEnter}
       // onMouseLeave={onMouseLeave}

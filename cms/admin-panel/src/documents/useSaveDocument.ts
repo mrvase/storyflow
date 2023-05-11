@@ -1,4 +1,4 @@
-import { SWRClient } from "../client";
+import { SWRClient } from "../RPCProvider";
 import {
   DocumentId,
   FolderId,
@@ -36,7 +36,7 @@ import {
   DocumentTransactionEntry,
   FieldTransactionEntry,
 } from "../operations/actions";
-import { DEFAULT_SYNTAX_TREE } from "@storyflow/cms/constants";
+import { DEFAULT_SYNTAX_TREE, TEMPLATE_FOLDER } from "@storyflow/cms/constants";
 import { splitTransformsAndRoot } from "@storyflow/cms/transform";
 import {
   createTokenStream,
@@ -44,6 +44,7 @@ import {
 } from "../operations/parse-token-stream";
 import { isSuccess } from "@storyflow/rpc-client/result";
 import { usePush } from "../collab/CollabContext";
+import { isTemplateDocument } from "@storyflow/cms/ids";
 
 const splitIntoQueues = (
   array: TimelineEntry[]
@@ -59,8 +60,13 @@ const splitIntoQueues = (
   }, {});
 };
 
-export const useSaveDocument = (documentId: DocumentId, folderId: FolderId) => {
+export const useSaveDocument = (
+  documentId: DocumentId,
+  folderId_: FolderId
+) => {
   const { doc } = useDocument(documentId);
+
+  const folderId = isTemplateDocument(documentId) ? TEMPLATE_FOLDER : folderId_;
 
   const push = usePush<DocumentAddTransactionEntry>("documents");
 

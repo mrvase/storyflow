@@ -8,34 +8,16 @@ import type { AppAPI, DefaultAPI } from "@storyflow/api";
 import type { BucketAPI, CollabAPI } from "services-api";
 import type {} from "@storyflow/rpc-client/types-shared";
 import useSWR, { useSWRConfig } from "swr";
-import { useUrlInfo } from "./users";
 import { useContextWithError } from "./utils/contextError";
 import { useAuth } from "./Auth";
 import { ScopedMutator } from "swr/_internal";
 
-const SWRCache = new Map();
-export const provider = () => SWRCache;
-
-const QueryContext = React.createContext<{
-  url?: string;
-  context?: Record<string, any>;
-  headers?: Record<string, string>;
-  generateHeaders?: () => Record<string, string>;
-}>({});
-
-export const useQueryContext = () => React.useContext(QueryContext);
-
-export type Client = APIToClient<DefaultAPI>;
-export type ServicesClient = APIToClient<BucketAPI & CollabAPI>;
-
-const ClientContext = React.createContext<Client | null>(null);
-export const useClient = () => useContextWithError(ClientContext, "Client");
-
 const servicesUrl = "http://localhost:3000/api";
 
-const ServicesClientContext = React.createContext<ServicesClient | null>(null);
-export const useServicesClient = () =>
-  useContextWithError(ServicesClientContext, "Client");
+/* cache */
+
+const SWRCache = new Map();
+export const provider = () => SWRCache;
 
 export function readFromCache(key: string) {
   let cached = SWRCache.get(key);
@@ -53,13 +35,22 @@ const createCache = (mutate: ScopedMutator<any>) => ({
   },
 });
 
+export type Client = APIToClient<DefaultAPI>;
+export type ServicesClient = APIToClient<BucketAPI & CollabAPI>;
+
+const ClientContext = React.createContext<Client | null>(null);
+export const useClient = () => useContextWithError(ClientContext, "Client");
+
+const ServicesClientContext = React.createContext<ServicesClient | null>(null);
+export const useServicesClient = () =>
+  useContextWithError(ServicesClientContext, "ServicesClient");
+
 export function useAppClient() {
   const { mutate } = useSWRConfig();
-  const { getToken } = useAuth();
-  const { organization: slug, version } = useUrlInfo();
+  const { getToken, organization } = useAuth();
   const cache = React.useMemo(() => createCache(mutate), []);
   return createClient<AppAPI>(undefined, {
-    context: { slug, version },
+    context: { slug: organization?.slug },
     generateHeaders: (): Record<string, string> => ({
       "x-storyflow-token": getToken() ?? "",
     }),
@@ -67,26 +58,20 @@ export function useAppClient() {
   });
 }
 
-export function QueryContextProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export function RPCProvider({ children }: { children: React.ReactNode }) {
   const { mutate } = useSWRConfig();
-
-  const { organization: slug, version } = useUrlInfo();
 
   const { getToken, apiUrl, organization } = useAuth();
 
   const queryCtx = React.useMemo(
     () => ({
       url: apiUrl!, // is certainly known here because it is set when signed in
-      context: { slug, version },
+      context: { slug: organization?.slug ?? "" },
       generateHeaders: () => ({
         "x-storyflow-token": getToken() ?? "",
       }),
     }),
-    [slug, apiUrl]
+    [organization, apiUrl]
   );
 
   const cache = React.useMemo(() => createCache(mutate), []);
@@ -112,21 +97,30 @@ export function QueryContextProvider({
   );
 
   return (
-    <QueryContext.Provider value={queryCtx}>
+    <GlobalOptionsContext.Provider value={queryCtx}>
       <ClientContext.Provider value={clientCtx}>
         <ServicesClientContext.Provider value={servicesClientCtx}>
           {organization ? children : null}
         </ServicesClientContext.Provider>
       </ClientContext.Provider>
-    </QueryContext.Provider>
+    </GlobalOptionsContext.Provider>
   );
 }
+
+const GlobalOptionsContext = React.createContext<{
+  url?: string;
+  context?: Record<string, any>;
+  headers?: Record<string, string>;
+  generateHeaders?: () => Record<string, string>;
+}>({});
+
+const useGlobalOptions = () => React.useContext(GlobalOptionsContext);
 
 export const SWRClient = createSWRClient<DefaultAPI & BucketAPI & CollabAPI>(
   undefined,
   {
     useSWR,
     useSWRConfig,
-    useGlobalOptions: useQueryContext,
+    useGlobalOptions,
   }
 );

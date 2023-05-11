@@ -13,7 +13,7 @@ import {
 } from "../../custom-events";
 import type { DocumentId } from "@storyflow/shared/types";
 import type { TokenStream } from "../../operations/types";
-import { useAppConfig } from "../../client-config";
+import { useAppConfig } from "../../AppConfigContext";
 import { useFieldConfig } from "../../documents/document-config";
 import { useFieldId } from "../FieldIdContext";
 import { createComponent } from "./createComponent";

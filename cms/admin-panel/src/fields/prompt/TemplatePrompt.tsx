@@ -12,12 +12,13 @@ import { markMatchingString } from "./helpers";
 import { useDocumentList } from "../../documents";
 import { TEMPLATE_FOLDER } from "@storyflow/cms/constants";
 import { usePath } from "../Path";
-import { useAppConfig } from "../../client-config";
+import { useAppConfig } from "../../AppConfigContext";
 import { $exitPromptNode } from "./utils";
 import { useEditorContext } from "../../editor/react/EditorProvider";
 import { FieldTransactionEntry } from "../../operations/actions";
 import { usePush } from "../../collab/CollabContext";
 import { createTransaction } from "@storyflow/collab/utils";
+import { getDocumentLabel } from "../../documents/useDocumentLabel";
 
 export function TemplatePrompt({ prompt }: { prompt: string }) {
   const fieldId = useFieldId();
@@ -54,11 +55,18 @@ export function TemplatePrompt({ prompt }: { prompt: string }) {
     [push, dataFieldId, configs]
   );
 
-  const options = templates
-    .filter((el) => el.label!.toLowerCase().startsWith(prompt.toLowerCase()))
+  const templatesWithLabels = React.useMemo(() => {
+    return templates.map((el) => ({
+      ...el,
+      label: getDocumentLabel(el) ?? "",
+    }));
+  }, [templates]);
+
+  const options = templatesWithLabels
+    .filter((el) => el.label.toLowerCase().startsWith(prompt.toLowerCase()))
     .map((el) => ({
       value: el._id,
-      label: markMatchingString(el.label!, prompt),
+      label: markMatchingString(el.label, prompt),
     }));
 
   return (

@@ -10,7 +10,7 @@ import {
   RawDocumentId,
 } from "@storyflow/shared/types";
 import type { FieldConfig, NestedField } from "@storyflow/cms/types";
-import { getConfigFromType, useAppConfig } from "../../client-config";
+import { getConfigFromType, useAppConfig } from "../../AppConfigContext";
 import { useTemplate } from "./useFieldTemplate";
 import {
   computeFieldId,

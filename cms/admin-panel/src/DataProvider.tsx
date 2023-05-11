@@ -4,7 +4,7 @@ import { TEMPLATE_FOLDER } from "@storyflow/cms/constants";
 import { useDocumentList } from "./documents";
 import { useCollab } from "./collab/CollabContext";
 import React from "react";
-import { SWRClient } from "./client";
+import { SWRClient } from "./RPCProvider";
 import { FoldersProvider } from "./folders/FoldersContext";
 
 export const DataProvider = ({ children }: { children: React.ReactNode }) => {

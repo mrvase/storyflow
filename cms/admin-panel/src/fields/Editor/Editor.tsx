@@ -9,8 +9,8 @@ import {
   EditorFocusPlugin,
   useIsFocused,
 } from "../../editor/react/useIsFocused";
-import { useAppConfig } from "../../client-config";
-import { useFieldFocus } from "../../field-focus";
+import { useAppConfig } from "../../AppConfigContext";
+import { useFieldFocus } from "../../FieldFocusContext";
 import { useFieldId } from "../FieldIdContext";
 import { CopyPastePlugin } from "./CopyPastePlugin";
 import { StreamOperation, TransformOperation } from "../../operations/actions";

@@ -2,7 +2,7 @@ import React from "react";
 import cl from "clsx";
 import type { PanelData } from "../panel-router/types";
 import { fetchDocument } from "../../documents";
-import { useClient } from "../../client";
+import { useClient } from "../../RPCProvider";
 import { getDocumentLabel } from "../../documents/useDocumentLabel";
 import { Link, useLocation } from "@storyflow/router";
 import { replacePanelPath } from "../panel-router/utils";

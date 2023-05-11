@@ -20,7 +20,7 @@ import { tools } from "../../operations/stream-methods";
 import { $createPromptNode } from "../Editor/decorators/PromptNode";
 import { $replaceWithBlocks } from "../Editor/insertComputation";
 import { $exitPromptNode, $getPromptNode } from "./utils";
-import { useAppConfig } from "../../client-config";
+import { useAppConfig } from "../../AppConfigContext";
 import { useIsEmpty } from "../../editor/react/useIsEmpty";
 
 export function PromptButton() {

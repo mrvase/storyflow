@@ -1,6 +1,6 @@
 import { $getRoot, $getSelection, $setSelection, LexicalEditor } from "lexical";
 import React from "react";
-import { useAppConfig } from "../../../client-config";
+import { useAppConfig } from "../../../AppConfigContext";
 import {
   INITIALIZATION_TAG,
   useEditorContext,

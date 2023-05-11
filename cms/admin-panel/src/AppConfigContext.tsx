@@ -8,7 +8,7 @@ import type {
 } from "@storyflow/shared/types";
 import { useFolderDomains } from "./folders/FolderDomainsContext";
 import { useAuth } from "./Auth";
-import { useAppClient } from "./client";
+import { useAppClient } from "./RPCProvider";
 import { isError, unwrap } from "@storyflow/rpc-client/result";
 import { defaultLibraryConfig } from "@storyflow/shared/defaultLibraryConfig";
 
@@ -90,7 +90,7 @@ export function useAppConfig(key?: string): AppConfig {
   };
 }
 
-export function ClientConfigProvider({
+export function AppConfigProvider({
   children,
 }: {
   children?: React.ReactNode;

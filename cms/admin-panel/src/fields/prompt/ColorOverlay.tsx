@@ -6,7 +6,7 @@ import ColorNode from "../Editor/decorators/ColorNode";
 import { Options } from "./OptionsContext";
 import { $createBlocksFromStream } from "../Editor/transforms";
 import { $replaceWithBlocks } from "../Editor/insertComputation";
-import { useAppConfig } from "../../client-config";
+import { useAppConfig } from "../../AppConfigContext";
 
 export function ColorOverlay({ node }: { node?: ColorNode }) {
   const editor = useEditorContext();

@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useEditorContext } from "../../editor/react/EditorProvider";
 import type { TokenStream } from "../../operations/types";
-import { useAppConfig } from "../../client-config";
+import { useAppConfig } from "../../AppConfigContext";
 import { operators } from "@storyflow/shared/types";
 import { replaceWithComputation } from "./insertComputation";
 

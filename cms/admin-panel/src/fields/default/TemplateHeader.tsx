@@ -19,7 +19,7 @@ import {
   getRawFieldId,
 } from "@storyflow/cms/ids";
 import { useTemplate } from "./useFieldTemplate";
-import { useFieldFocus } from "../../field-focus";
+import { useFieldFocus } from "../../FieldFocusContext";
 import { Checkbox } from "../../elements/Checkbox";
 import { Range } from "../../elements/Range";
 import { Menu as HeadlessMenu } from "@headlessui/react";

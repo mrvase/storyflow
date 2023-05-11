@@ -4,14 +4,12 @@ import {
   PlusIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
-import { createTemplateFieldId, getDocumentId } from "@storyflow/cms/ids";
+import { createTemplateFieldId } from "@storyflow/cms/ids";
 import { useDocumentList } from "../../documents";
-import { getDocumentLabel } from "../../documents/useDocumentLabel";
-import Table from "../../documents/components/Table";
 import Space from "./Space";
 import Loader from "../../elements/Loader";
 import { useDeleteForm } from "./useDeleteForm";
-import type { FieldId, FolderId } from "@storyflow/shared/types";
+import type { FolderId } from "@storyflow/shared/types";
 import type { AppSpace, DBDocument } from "@storyflow/cms/types";
 import React from "react";
 import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
@@ -34,7 +32,7 @@ const columns = [
   },
 ];
 
-export function AppSpace({
+export function PagesSpace({
   space,
   folderId,
   hidden,

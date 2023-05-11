@@ -150,10 +150,13 @@ export function createClient<T extends API>(
 
                 let fetcher = query;
 
-                if (options?.cachePreload && cache) {
+                if (cache) {
                   fetcher = (key, globalOptions) => {
-                    const result = query(key, globalOptions).then((result) => {
-                      if (isSuccess(result)) {
+                    const promise = query(key, globalOptions);
+                    const result = promise.then((result) => {
+                      if (isError(result)) return result;
+
+                      if (options?.cachePreload) {
                         const preloadFunc = (
                           [externalProcedure, input]: [string, any],
                           data: any
@@ -177,22 +180,18 @@ export function createClient<T extends API>(
                         options.cachePreload?.(unwrap(result), preloadFunc);
                       }
 
+                      cache.write(key, unwrap(result));
+
                       return result;
                     });
 
                     return Object.assign(result, {
-                      abort: (query as unknown as { abort: () => void }).abort,
+                      abort: promise.abort,
                     });
                   };
                 }
 
-                const result = await fetcher(key, globalOptions);
-
-                if (cache && !isError(result)) {
-                  cache.write(key, unwrap(result));
-                }
-
-                return result;
+                return fetcher(key, globalOptions);
               },
               mutation(input: any, options?: SharedOptions & { url?: string }) {
                 const apiUrl = options?.url ?? apiUrlFromArg;

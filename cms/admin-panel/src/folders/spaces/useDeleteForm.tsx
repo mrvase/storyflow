@@ -3,7 +3,7 @@ import React from "react";
 import { usePush } from "../../collab/CollabContext";
 import { createTransaction } from "@storyflow/collab/utils";
 import { DocumentAddTransactionEntry } from "../../operations/actions";
-import { SWRClient } from "../../client";
+import { SWRClient } from "../../RPCProvider";
 import { isSuccess } from "@storyflow/rpc-client/result";
 
 export const useDeleteManyMutation = (folderId: string) => {

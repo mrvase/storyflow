@@ -9,6 +9,7 @@ import Table from "../documents/components/Table";
 import { useDocumentList } from "../documents";
 import Loader from "../elements/Loader";
 import type { SpaceId } from "@storyflow/cms/types";
+import { getDocumentLabel } from "../documents/useDocumentLabel";
 
 export function SystemTemplatePage() {
   const folder = useTemplateFolder();
@@ -20,7 +21,7 @@ export function SystemTemplatePage() {
     id: el._id,
     columns: [
       {
-        value: el.label!,
+        value: getDocumentLabel(el),
       },
     ],
   }));
@@ -29,20 +30,15 @@ export function SystemTemplatePage() {
     <FolderContext.Provider value={folder}>
       <Content icon={DocumentDuplicateIcon} header="Alle skabeloner">
         <Space
+          index={0}
           label="Sider"
-          id={"system-template" as SpaceId}
+          space={{ id: "system-template" as SpaceId, type: "documents" }}
           buttons={<Space.Button icon={TrashIcon} onClick={handleDelete} />}
         >
           {!documents && (
-            <Space
-              id={"system-template" as SpaceId}
-              label="Data"
-              buttons={<></>}
-            >
-              <div className="ml-14">
-                <Loader size="md" />
-              </div>
-            </Space>
+            <div className="ml-14">
+              <Loader size="md" />
+            </div>
           )}
           <form
             ref={form}

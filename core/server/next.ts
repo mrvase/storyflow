@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { redirect } from "next/navigation";
 import { handleRequest } from "@storyflow/rpc-server";
 import { API, RPCRequest } from "@storyflow/rpc-server/types";
 import type { NextApiRequest, NextApiResponse } from "next";
@@ -39,6 +40,12 @@ export const createAPIRoute = <T extends API>(
       res.setHeader(key, value);
     });
 
+    if (typeof init.redirect === "string") {
+      res.redirect(init.redirect);
+      res.end();
+      return;
+    }
+
     res.status(init.status).json(data);
 
     res.end();
@@ -58,10 +65,13 @@ export const createRouteHandler = <T extends API>(
     async (req: NextRequest, context: { params: Record<string, string> }) => {
       const { route, procedure } = context?.params ?? {};
 
+      /*
       const headers: any[] = [];
       req.headers.forEach(
         (value, key) => key !== "cookie" && headers.push([key, value])
       );
+      console.log("HEADERS", headers);
+      */
 
       let body;
 
@@ -80,7 +90,14 @@ export const createRouteHandler = <T extends API>(
         body,
       };
 
-      const { init, data } = await handleRequest(request, router, options);
+      const {
+        init: { redirect, ...init },
+        data,
+      } = await handleRequest(request, router, options);
+
+      if (typeof redirect === "string") {
+        return NextResponse.redirect(redirect, init);
+      }
 
       if (!data) {
         return new Response(null, init);

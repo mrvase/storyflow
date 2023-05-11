@@ -63,8 +63,8 @@ export default function Nav() {
       <div
         className={cl(
           "group h-screen flex flex-col shrink-0 grow-0 overflow-hidden transition-[width] ease-out",
-          isOpen ? "w-48" : "w-9 menu-closed",
-          "dark:text-white font-medium"
+          isOpen ? "w-60" : "w-10 menu-closed",
+          "dark:text-white"
         )}
       >
         <div className="h-full flex flex-col pl-2 py-4 w-48">
@@ -77,24 +77,24 @@ export default function Nav() {
             >
               Åbn nyt panel
             </NavButton>
-            <NavButton
+            {/*<NavButton
               onClick={() => {
                 setToolbarIsOpen((ps) => !ps);
               }}
               icon={toolbarIsOpen ? EditingOffIcon : EditingIcon}
             >
               Slå redigering {toolbarIsOpen ? "fra" : "til"}
-            </NavButton>
+            </NavButton>*/}
           </div>
           <div className="lex flex-col gap-1 mt-6">
-            <div
+            {/*<div
               className={cl(
                 "text-xs ml-1 font-bold text-gray-500 mb-1 transition-[opacity,height]",
                 isOpen ? "opacity-100 h-4" : "opacity-0 h-0"
               )}
             >
               Dine mapper
-            </div>
+            </div>*/}
             <NavButton
               onClick={() => {
                 navigatePanel("/");
@@ -188,12 +188,12 @@ function NavButton({
   return (
     <Component
       className={cl(
-        "w-full h-7 px-1.5 rounded flex gap-2.5 items-center [.menu-closed_&]:opacity-40 [.menu-closed:hover_&]:opacity-75 opacity-75 hover:opacity-100 [.menu-closed:hover_&]:hover:opacity-100 transition-opacity text-sm",
+        "w-full h-7 px-1.5 rounded flex gap-4 items-center [.menu-closed_&]:opacity-40 [.menu-closed:hover_&]:opacity-75 opacity-75 hover:opacity-100 [.menu-closed:hover_&]:hover:opacity-100 transition-opacity",
         className
       )}
       {...(action as any)}
     >
-      {<Icon className="w-[1.125rem] h-[1.125rem]" />}
+      {<Icon className="w-5 h-5" />}
       {children && <div>{children}</div>}
     </Component>
   );

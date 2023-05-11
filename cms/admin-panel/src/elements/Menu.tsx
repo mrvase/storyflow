@@ -139,7 +139,7 @@ const MenuItem = React.forwardRef<
             </div>
           )}
           {typeof selected !== "boolean" && Icon && (
-            <Icon className="w-3 h-3" />
+            <Icon className="w-3 h-3 shrink-0" />
           )}
           <span className="truncate">{label}</span>
         </button>
@@ -148,16 +148,18 @@ const MenuItem = React.forwardRef<
   );
 });
 
-function MenuDragItem({
+function MenuDragItem<T>({
   label,
   item,
   type,
   id,
+  onClick: onClickFromProps,
 }: {
   label: string;
-  item: any;
+  item: T;
   type: string;
   id: string;
+  onClick?: (value: T) => void;
 }) {
   const { ref, dragHandleProps } = useDragItem({
     id,
@@ -166,10 +168,15 @@ function MenuDragItem({
     mode: "move",
   });
 
+  const onClick = React.useCallback(() => {
+    if (onClickFromProps) onClickFromProps(item);
+  }, [onClickFromProps, item]);
+
   return (
     <Menu.Item
       ref={ref as React.MutableRefObject<HTMLButtonElement | null>}
       {...dragHandleProps}
+      onClick={onClick}
       label={label}
       className="cursor-grab"
     />

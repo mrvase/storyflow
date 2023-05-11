@@ -27,7 +27,7 @@ import { Option } from "./Option";
 import { useFieldId } from "../FieldIdContext";
 import { useDocumentIdGenerator } from "../../id-generator";
 import { markMatchingString } from "./helpers";
-import { SWRClient } from "../../client";
+import { SWRClient } from "../../RPCProvider";
 import { calculateRootFieldFromRecord } from "@storyflow/cms/calculate-server";
 import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
 import Loader from "../../elements/Loader";

@@ -24,7 +24,6 @@ const folders = createStaticStore<DBFolder, Map<string, DBFolder>>(
 const createDefaultFolder = (_id: FolderId): DBFolder => ({
   _id,
   label: "",
-  type: "data",
   spaces: [],
 });
 
@@ -52,15 +51,24 @@ export function FoldersProvider({
     return {
       [getRawFolderId(ROOT_FOLDER)]: {
         _id: ROOT_FOLDER,
-        type: "data",
         label: "Hjem",
-        spaces: [],
+        spaces: [
+          {
+            id: "00000000",
+            type: "folders",
+            items: [],
+          },
+        ],
       },
       [getRawFolderId(TEMPLATE_FOLDER)]: {
         _id: TEMPLATE_FOLDER,
-        type: "data",
         label: "Skabeloner",
-        spaces: [],
+        spaces: [
+          {
+            id: "00000001",
+            type: "documents",
+          },
+        ],
       },
       ...initialFoldersFromProps,
     };
@@ -95,6 +103,8 @@ export function FoldersProvider({
 
       forEach(({ transaction }) => {
         transaction.forEach((entry) => {
+          console.log("ENTRY", entry);
+
           const [folderId, spaceId] = entry[0].split(":") as [
             FolderId,
             SpaceId | undefined
@@ -107,6 +117,11 @@ export function FoldersProvider({
                 (el) => el.id === spaceId
               );
               const space = newFolder.spaces[spaceIndex] as FolderSpace;
+
+              console.log("space", { newFolder, spaceId, space });
+
+              if (!space) return;
+
               const newSpace = {
                 ...space,
                 items: [...space.items],
@@ -122,6 +137,7 @@ export function FoldersProvider({
           } else {
             (entry as FolderTransactionEntry)[1].forEach((operation) => {
               const newFolder = getInitialFolder(folderId);
+              console.log("folder", { newFolder });
               if (isSpliceOperation(operation)) {
                 const [index, remove, insert] = operation;
                 newFolder.spaces!.splice(index, remove ?? 0, ...(insert ?? []));

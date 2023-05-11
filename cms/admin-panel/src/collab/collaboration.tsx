@@ -18,7 +18,7 @@ export function createCollaboration(options: {
   }) => Promise<Result<TimelineEntry[]>>;
   duration?: number;
 }) {
-  const { duration = 2500 } = options;
+  const { duration = 5000 } = options;
 
   const fetchSingleTimeline = async (id: string): Promise<TimelineEntry[]> => {
     const result = await options.sync({

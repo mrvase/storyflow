@@ -1,7 +1,17 @@
 import React from "react";
 import cl from "clsx";
 import { useBranchIsFocused } from "../layout/components/BranchFocusContext";
-import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowsPointingOutIcon,
+  ArrowsUpDownIcon,
+  ChevronDownIcon,
+  ChevronLeftIcon,
+  ChevronUpIcon,
+  ComputerDesktopIcon,
+  DocumentDuplicateIcon,
+  StopIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
 import { useLocalStorage } from "../state/useLocalStorage";
 import {
   usePanel,
@@ -30,7 +40,7 @@ function Content({
   const [{ path }] = usePanel();
   const isSelected = (path || "/") === (route || "/");
 
-  const [, setIsOpen] = useLocalStorage<boolean>("toolbar-open", true);
+  const [isOpen, setIsOpen] = useLocalStorage<boolean>("toolbar-open", true);
 
   const status = useRouteTransition();
 
@@ -54,13 +64,13 @@ function Content({
       {header && (
         <div
           className={cl(
-            "mb-6 sticky -top-10 z-50 border-b border-gray-100 dark:border-gray-800",
+            "mb-6 sticky -top-16 z-50 border-b border-gray-100 dark:border-gray-800",
             "bg-white", // need bg color because it is sticky
             "bg-gradient-to-b dark:from-gray-800 dark:to-[#1b2533]"
             // "bg-gradient-to-b from-gray-850 to-rose-800"
           )}
         >
-          <div className="w-full max-w-6xl pt-12 pb-8 px-5 ">
+          <div className="w-full max-w-6xl pt-[4.5rem] pb-12 px-5">
             <div
               className={cl(
                 "flex justify-between",
@@ -68,24 +78,67 @@ function Content({
               )}
             >
               <div className="text-gray-800 dark:text-white text-3xl flex-center font-medium">
-                <div className="text-sm w-4 mt-0.5 mr-5">
-                  {Icon && (
-                    <div
-                      onClick={() => setIsOpen((ps) => !ps)}
-                      data-focus-remain="true"
-                      className={
-                        "opacity-25 hover:opacity-100 transition-opacity"
-                      }
-                    >
-                      <Icon className="w-4 h-4" />
-                    </div>
-                  )}
+                <div className="opacity-75 w-4 mt-0.5 mr-5">
+                  {Icon && <Icon className="w-5 h-5 -ml-0.5" />}
                 </div>
                 {header}
               </div>
-              <div className="flex flex-center">{buttons}</div>
+              <div className="absolute w-full h-7 translate-y-11 text-sm flex items-center">
+                <button
+                  className={cl(
+                    "relative",
+                    "shrink-0 h-7 rounded text-sm transition-all px-2.5",
+                    isOpen
+                      ? "mx-0 bg-yellow-400/25 text-yellow-200 w-[6.5rem]"
+                      : "-mx-2.5 w-9 text-gray-500 hover:text-gray-200"
+                  )}
+                  onClick={() => setIsOpen((ps) => !ps)}
+                >
+                  <ArrowsUpDownIcon className="shrink-0 w-4 h-4" />
+                  <div
+                    className={cl(
+                      "absolute top-1 ml-[1.625rem] pointer-events-none transition-opacity",
+                      isOpen ? "opacity-100" : "opacity-0"
+                    )}
+                  >
+                    Arranger
+                  </div>
+                </button>
+                <div className="relative h-7 flex items-center w-full ml-5">
+                  <div
+                    className={cl(
+                      "absolute w-full flex gap-5 transition-[transform,opacity]",
+                      !isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+                    )}
+                  >
+                    <button className="flex-center gap-2 text-gray-500 hover:text-gray-200 transition-colors">
+                      <DocumentDuplicateIcon className="w-4 h-4" />
+                      Person
+                      <ChevronDownIcon className="w-4 h-4" />
+                    </button>
+                    <button className="flex-center gap-2 text-gray-500 hover:text-gray-200 transition-colors">
+                      <ComputerDesktopIcon className="w-4 h-4" />
+                      Domæner
+                      <ChevronDownIcon className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div
+                    className={cl(
+                      "absolute w-full flex gap-5 transition-[transform,opacity]",
+                      isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+                    )}
+                  >
+                    <button className="flex-center gap-2 text-gray-400 hover:text-gray-200 transition-colors">
+                      <StopIcon className="w-4 h-4" />
+                      Tilføj space
+                      <ChevronDownIcon className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div className={cl("flex flex-center")}>{buttons}</div>
             </div>
-            <ToolbarWrapper toolbar={toolbar} isFocused={isFocused} />
+            {/*<ToolbarWrapper toolbar={toolbar} isFocused={isFocused} />*/}
           </div>
         </div>
       )}
@@ -115,7 +168,7 @@ function ToolbarWrapper({
       {isOpen && (
         <div
           className={cl(
-            "flex items-center max-w-6xl mt-5",
+            "flex items-center max-w-6xl mt-4 -mb-5",
             isFocused ? "opacity-100" : "opacity-50"
           )}
         >

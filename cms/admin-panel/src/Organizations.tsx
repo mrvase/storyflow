@@ -1,13 +1,33 @@
 import cl from "clsx";
 import React from "react";
-import { servicesClient, servicesClientSWR, useAuth } from "./Auth";
+import {
+  servicesClientWithoutContext,
+  servicesClientSWR,
+  useAuth,
+} from "./Auth";
 import Loader from "./elements/Loader";
 import { Link } from "@storyflow/router";
 
-export function Organizations() {
-  const { data } = servicesClientSWR.auth.getOrganizations.useQuery(undefined, {
-    immutable: true,
-  });
+export function Organizations({
+  preset,
+}: {
+  preset?: { slug: string; url: string };
+}) {
+  let organizations: {
+    slug: string;
+    url: string;
+  }[] = [];
+  if (preset) {
+    organizations = [preset];
+  } else {
+    const { data } = servicesClientSWR.auth.getOrganizations.useQuery(
+      undefined,
+      {
+        immutable: true,
+      }
+    );
+    organizations = data?.organizations ?? organizations;
+  }
 
   const { user } = useAuth();
 
@@ -16,7 +36,7 @@ export function Organizations() {
       <div className="w-full flex-center p-5 grow">
         <div className="grid grid-cols-3 w-full max-w-4xl gap-5">
           <AddOrganization index={0} />
-          {(data?.organizations ?? []).map((data, index) => (
+          {organizations.map((data, index) => (
             <Organization index={index + 1} key={data.slug} data={data} />
           ))}
         </div>
@@ -95,7 +115,7 @@ export function AddOrganization({ index }: { index: number }) {
           ev.preventDefault();
           const data = new FormData(ev.currentTarget);
           setIsLoading(true);
-          await servicesClient.auth.addOrganization.mutation({
+          await servicesClientWithoutContext.auth.addOrganization.mutation({
             slug: data.get("slug") as string,
             url: (data.get("url") as string) || undefined,
           });

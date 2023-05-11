@@ -34,7 +34,7 @@ export function Layout({
           width: `calc(${[
             "100%",
             "1rem",
-            navIsOpen ? "12rem" : "2.25rem",
+            navIsOpen ? "15rem" : "2.5rem",
             sidebarIsOpen && "12rem",
           ]
             .filter(Boolean)

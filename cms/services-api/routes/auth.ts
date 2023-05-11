@@ -1,4 +1,11 @@
-import { error, success } from "@storyflow/rpc-server/result";
+import {
+  Result,
+  error,
+  isError,
+  isSuccess,
+  success,
+  unwrap,
+} from "@storyflow/rpc-server/result";
 import { createProcedure, createRoute } from "@storyflow/rpc-server";
 import { cors as corsFactory } from "@storyflow/server/middleware";
 import { z } from "zod";
@@ -9,10 +16,18 @@ import {
   KEY_COOKIE,
   AuthCookies,
   serializeAuthToken,
+  parseAuthToken,
+  LOCAL_TOKEN,
+  KeyCookie,
 } from "@storyflow/server/auth";
 import { createTransport } from "nodemailer";
 import postgres from "postgres";
 import { cors } from "../globals";
+import { AppReference } from "@storyflow/shared/types";
+import { emailAuth } from "@storyflow/server/middleware/auth";
+
+const domain =
+  process.env.NODE_ENV === "development" ? "http://localhost:5173" : "";
 
 const sql = postgres(process.env.PGCONNECTION as string, { ssl: "require" });
 
@@ -71,9 +86,9 @@ export const auth = createRoute({
       return ctx.use(cors);
     },
     schema() {
-      return z.string();
+      return z.object({ email: z.string(), next: z.string().optional() });
     },
-    async query(email, { response, encode }) {
+    async query({ email, next }, { response, encode }) {
       if (!/.+@.+/u.test(email)) {
         throw new Error("A valid email is required.");
       }
@@ -89,15 +104,18 @@ export const auth = createRoute({
 
       const url = new URL(path);
       url.searchParams.set("token", token);
+      if (next) {
+        url.searchParams.set("next", next);
+      }
       const link = url.toString();
 
       await sendLinkByEmail(link, payload);
 
       response.cookies<AuthCookies>().set(LINK_COOKIE, link, {
         path: "/",
-        httpOnly: true,
-        sameSite: "lax",
+        sameSite: "strict",
         secure: true,
+        httpOnly: true,
         encrypt: true,
       });
 
@@ -111,9 +129,11 @@ export const auth = createRoute({
     },
     async query(_, { request, response, decode }) {
       let token: string;
+      let next: string | null;
       try {
         const url = new URL(`https://storyflow.dk${request.url}`);
         token = url.searchParams.get("token") ?? "";
+        next = url.searchParams.get("next") ?? "";
       } catch {
         return error({ message: "Invalid token." });
       }
@@ -167,7 +187,9 @@ export const auth = createRoute({
       const expirationTime = linkCreationDate.getTime() + 10 * 60 * 1000;
 
       if (Date.now() > expirationTime) {
-        throw new Error("Magic link expired. Please request a new one. [5]");
+        return error({
+          message: "Magic link expired. Please request a new one. [5]",
+        });
       }
 
       await sql`insert into users (email) values (${email}) on conflict do nothing;`;
@@ -177,16 +199,31 @@ export const auth = createRoute({
         .set(
           GLOBAL_SESSION_COOKIE,
           { email },
-          { path: "/", httpOnly: true, sameSite: "lax", secure: true }
+          { path: "/", sameSite: "strict", secure: true, httpOnly: true }
         );
 
+      /*
+      response.cookies<AuthCookies>().delete(LINK_COOKIE, {
+        path: "/",
+        sameSite: "strict",
+        secure: true,
+        httpOnly: true,
+        encrypt: true,
+      });
+      */
+
+      response.redirect = `${domain}/${next ?? ""}?success=true`;
+
       return success(null);
+    },
+    redirect(result) {
+      return isError(result) ? `${domain}/?success=false` : undefined;
     },
   }),
 
   addOrganization: createProcedure({
     middleware(ctx) {
-      return ctx.use(cors);
+      return ctx.use(cors, emailAuth);
     },
     schema() {
       return z.object({
@@ -194,8 +231,7 @@ export const auth = createRoute({
         url: z.string().optional(),
       });
     },
-    async mutation({ slug, url }) {
-      const email = "martin@rvase.dk";
+    async mutation({ slug, url }, { request, email }) {
       try {
         if (url) {
           const result = await sql`
@@ -209,10 +245,14 @@ RETURNING (SELECT id FROM new_org);
           console.log("A", slug, url, result);
         } else {
           const result = await sql`
+WITH new_org AS (
+    SELECT id, slug FROM organizations WHERE slug = ${slug}
+)
 UPDATE users SET organizations = array_append(organizations, (SELECT id FROM new_org)) WHERE email = ${email}          
 `;
           console.log("B", slug, result);
         }
+        return success(null);
       } catch (err) {
         console.log(slug, url, err);
         return error({ message: "Failed", detail: err });
@@ -222,22 +262,14 @@ UPDATE users SET organizations = array_append(organizations, (SELECT id FROM new
 
   getOrganizations: createProcedure({
     middleware(ctx) {
-      return ctx.use(cors);
+      return ctx.use(cors, emailAuth);
     },
-    async query(_, { request, response }) {
-      const user = request
-        .cookies<AuthCookies>()
-        .get(GLOBAL_SESSION_COOKIE)?.value;
-
-      if (!user) {
-        return error({ message: "Not authenticated" });
-      }
-
+    async query(_, { request, response, email }) {
       const result = await sql<{ slug: string | null; url: string | null }[]>`
 SELECT u.*, o.*
 FROM Users u
 LEFT JOIN Organizations o ON o.id = ANY (u.organizations)
-WHERE u.email = ${user.email};
+WHERE u.email = ${email};
 `;
 
       const organizations = result
@@ -247,7 +279,7 @@ WHERE u.email = ${user.email};
         )
         .map(({ slug, url }) => ({ slug, url }));
 
-      const data = { email: user.email, organizations };
+      const data = { email, organizations };
 
       return success(data);
     },
@@ -258,86 +290,168 @@ WHERE u.email = ${user.email};
       return ctx.use(cors);
     },
     schema() {
-      return z.string();
+      return z.object({
+        organization: z.object({
+          slug: z.string().nullable(),
+          url: z.string().nullable(),
+        }),
+        returnConfig: z.boolean(),
+      });
     },
-    async mutation(org, { request, response }) {
+    async mutation({ organization, returnConfig }, { request, response }) {
+      const cookies = {
+        req: request.cookies<AuthCookies>(),
+        res: response.cookies<AuthCookies>(),
+      };
+
+      const user = cookies.req.get(GLOBAL_SESSION_COOKIE)?.value;
+
+      if (!user) {
+        return error({ message: "Not authenticated", status: 401 });
+      }
+
       try {
-        const user = request
-          .cookies<AuthCookies>()
-          .get(GLOBAL_SESSION_COOKIE)?.value;
-
-        if (!user) {
-          return error({ message: "Not authenticated", status: 401 });
-        }
-
-        console.log("user", user, org);
-
-        const setKeyCookie = async () => {
-          if (!org) return;
-
-          const current = request.cookies<AuthCookies>().get(KEY_COOKIE)?.value;
-
-          if (current && current.slug === org) return current.url;
+        const getUrl = async (slug: string) => {
+          if (organization.url) return organization.url;
 
           const result = await sql<
             { slug: string; url: string }[]
-          >`SELECT url FROM organizations WHERE slug = ${org};`;
+          >`SELECT url FROM organizations WHERE slug = ${slug};`;
 
           if (!result.length) return;
 
-          const url = result[0].url;
+          return result[0].url;
+        };
 
-          const json = await fetch(`${url}/storyflow.json`).then((res) =>
-            res.json()
+        const getData = async (url: string, key: string | undefined) => {
+          const token = serializeAuthToken(
+            { email: user.email },
+            process.env.STORYFLOW_PRIVATE_KEY as string
           );
 
+          const json = await fetch(`${url}/api/admin/authenticate`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              query: { key: !key, config: returnConfig },
+            }),
+          }).then(
+            (res) =>
+              res.json() as Promise<
+                Result<{
+                  token: string;
+                  key?: string;
+                  config?: {
+                    apps: AppReference[];
+                    workspaces: {
+                      name: string;
+                    }[];
+                  };
+                }>
+              >
+          );
+
+          if (isError(json)) {
+            return;
+          }
+
+          const data = unwrap(json);
+
           if (
-            !json ||
-            typeof json !== "object" ||
-            !("publicKey" in json) ||
-            typeof json.publicKey !== "string"
+            !data ||
+            typeof data !== "object" ||
+            !("token" in data) ||
+            typeof data.token !== "string"
           ) {
             return;
           }
 
-          response.cookies<AuthCookies>().set(
-            KEY_COOKIE,
-            {
-              key: json.publicKey,
-              url,
-              slug: org,
-            },
-            { path: "/", httpOnly: true, sameSite: "lax", secure: true }
-          );
+          if (!key) {
+            if (!("key" in data) || !data.key || typeof data.key !== "string") {
+              return;
+            }
+            key = data.key;
+          }
 
-          return url;
+          const validated = parseAuthToken(LOCAL_TOKEN, data.token, key);
+
+          if (!validated || validated.email !== user.email) {
+            return;
+          }
+
+          if (
+            returnConfig &&
+            (!("config" in data) || typeof data.config !== "object")
+          ) {
+            return;
+          }
+
+          return data;
         };
 
-        const url = await setKeyCookie();
+        const keyCookie = cookies.req.get(KEY_COOKIE)?.value;
 
-        response.cookies<AuthCookies>().delete(LINK_COOKIE, {
+        const hasKey =
+          keyCookie &&
+          keyCookie.slug === organization.slug &&
+          (!organization.url || keyCookie.url === organization.url);
+
+        let url: string | undefined;
+
+        if (hasKey) {
+          // we only get here if organization.slug is something
+          url = keyCookie.url;
+        } else if (organization.slug) {
+          // and the same here
+          url = await getUrl(organization.slug);
+        }
+
+        // so now organization.slug is defined
+
+        if (!url) {
+          // catched below
+          throw "";
+        }
+
+        const data = await getData(url, hasKey ? keyCookie.key : undefined);
+
+        if (!data) {
+          // catched below
+          throw "";
+        }
+
+        if (!hasKey && data.key) {
+          // stays on the server
+          cookies.res.set(
+            KEY_COOKIE,
+            {
+              key: data.key,
+              url,
+              slug: organization.slug!,
+            },
+            { path: "/", sameSite: "strict", secure: true, httpOnly: true }
+          );
+        }
+
+        cookies.res.set(LOCAL_TOKEN, data.token, {
           path: "/",
-          httpOnly: true,
-          sameSite: "lax",
+          sameSite: "strict",
           secure: true,
-          encrypt: true,
         });
 
-        response
-          .cookies<AuthCookies>()
-          .set(
-            GLOBAL_TOKEN,
-            serializeAuthToken(
-              { email: user.email },
-              process.env.STORYFLOW_PRIVATE_KEY as string
-            ),
-            { path: "/" }
-          );
-
-        return success({ user: { email: user.email }, url: url ?? null });
+        return success({
+          user: { email: user.email },
+          config: data.config ?? null,
+          url,
+        });
       } catch (err) {
-        console.log(err);
-        return error({ message: "Lykkedes ikke", detail: err });
+        return success({
+          user: { email: user.email },
+          config: null,
+          url: null,
+        });
       }
     },
   }),
@@ -349,12 +463,14 @@ WHERE u.email = ${user.email};
     async mutation(_, { response }) {
       response.cookies<AuthCookies>().delete(GLOBAL_SESSION_COOKIE, {
         path: "/",
-        httpOnly: true,
-        sameSite: "lax",
+        sameSite: "strict",
         secure: true,
+        httpOnly: true,
       });
       response.cookies<AuthCookies>().delete(GLOBAL_TOKEN, {
         path: "/",
+        sameSite: "strict",
+        secure: true,
       });
       return success(null);
     },

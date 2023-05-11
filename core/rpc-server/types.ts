@@ -89,6 +89,7 @@ export type RPCRequest = {
 export type RPCResponse = {
   headers: Headers;
   status: number;
+  redirect?: string;
 };
 
 export type SchemaInput = ZodType<any, any, any> | unknown;

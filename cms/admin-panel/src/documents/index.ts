@@ -1,6 +1,6 @@
 import { unwrap } from "@storyflow/rpc-client/result";
 import React from "react";
-import { Client, SWRClient, readFromCache } from "../client";
+import { Client, SWRClient, readFromCache } from "../RPCProvider";
 import {
   DocumentId,
   FolderId,

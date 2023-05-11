@@ -4,7 +4,7 @@ import type { ConfigRecord, DocumentId } from "@storyflow/shared/types";
 import type { TokenStream } from "../../operations/types";
 import type { Options, Option as PropOption } from "@storyflow/shared/types";
 import React from "react";
-import { useAppConfig } from "../../client-config";
+import { useAppConfig } from "../../AppConfigContext";
 import { useDocumentIdGenerator } from "../../id-generator";
 import { createComponent } from "../Editor/createComponent";
 import { useFieldId } from "../FieldIdContext";
@@ -30,7 +30,7 @@ export function ElementPrompt({
     .map(([libraryName, library]) =>
       Object.entries(library.configs).map(([name, component]) => ({
         ...component,
-        name,
+        name: name.replace(/Config$/, ""),
         libraryName,
         libraryLabel: library.label,
       }))

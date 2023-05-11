@@ -6,7 +6,7 @@ import {
   $createParagraphNode,
 } from "lexical";
 import React from "react";
-import { useAppConfig } from "../../client-config";
+import { useAppConfig } from "../../AppConfigContext";
 import { useEditorContext } from "../../editor/react/EditorProvider";
 import {
   $createHeadingNode,

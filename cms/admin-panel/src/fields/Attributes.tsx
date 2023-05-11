@@ -7,11 +7,11 @@ import {
 } from "@storyflow/shared/types";
 import type { FieldConfig } from "@storyflow/cms/types";
 import { useFieldId } from "./FieldIdContext";
-import { getConfigFromType, useAppConfig } from "../client-config";
+import { getConfigFromType, useAppConfig } from "../AppConfigContext";
 import { createTemplateFieldId, getDocumentId } from "@storyflow/cms/ids";
 import { useGlobalState } from "../state/state";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/cms/constants";
-import { useClient } from "../client";
+import { useClient } from "../RPCProvider";
 import { useDocumentPageContext } from "../documents/DocumentPageContext";
 import { calculateFn } from "./default/calculateFn";
 import { useContextWithError } from "../utils/contextError";

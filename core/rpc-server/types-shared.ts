@@ -16,7 +16,7 @@ export type UnwrapSuccess<S, Or = never> = S extends Success<infer U> ? U : Or;
 
 /* */
 
-export type Output = Result<any> | void | Promise<Result<any> | void>;
+export type Output = Result<any> | Promise<Result<any>>;
 
 export type OptionalParamFunc<
   Input,

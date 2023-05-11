@@ -22,6 +22,7 @@ import { getDocumentId } from "@storyflow/cms/ids";
 import { Menu } from "../elements/Menu";
 import { useTopFieldIndex } from "./FieldIndexContext";
 import { DocumentTransactionEntry } from "../operations/actions";
+import { getDocumentLabel } from "./useDocumentLabel";
 
 const FieldToolbarPortalContext = React.createContext<
   [HTMLDivElement | null, React.Dispatch<HTMLDivElement | null>] | null
@@ -79,10 +80,12 @@ export function FieldToolbar() {
 
   const templateOptions = React.useMemo(
     () =>
-      (templates ?? []).map((el) => ({
-        id: el._id,
-        label: el.label ?? el._id,
-      })),
+      (templates ?? [])
+        .filter((el) => el.folder)
+        .map((el) => ({
+          id: el._id,
+          label: getDocumentLabel(el)!,
+        })),
     [templates]
   );
 

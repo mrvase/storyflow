@@ -1,6 +1,6 @@
 import React from "react";
 import { useContextWithError } from "../utils/contextError";
-import { useClient, useServicesClient } from "../client";
+import { useServicesClient } from "../RPCProvider";
 import { createCollaboration } from "./collaboration";
 import { Queue } from "@storyflow/collab/Queue";
 import { TransactionEntry } from "@storyflow/collab/types";

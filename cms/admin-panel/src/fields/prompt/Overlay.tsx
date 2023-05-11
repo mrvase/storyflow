@@ -34,7 +34,7 @@ import type { FileToken } from "@storyflow/shared/types";
 import type { TokenStream } from "../../operations/types";
 import { useIsFocused } from "../../editor/react/useIsFocused";
 import { useFieldRestriction } from "../FieldIdContext";
-import { useAppConfig } from "../../client-config";
+import { useAppConfig } from "../../AppConfigContext";
 
 const matchers: ((
   node: LexicalNode

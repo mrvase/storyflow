@@ -13,20 +13,25 @@ import {
 } from "@heroicons/react/24/outline";
 import { EditableLabel } from "../elements/EditableLabel";
 import cl from "clsx";
-import type { DocumentId } from "@storyflow/shared/types";
-import type { DBFolder, Space, SpaceId } from "@storyflow/cms/types";
+import type { DocumentId, FolderId } from "@storyflow/shared/types";
+import type {
+  DBFolder,
+  FolderSpace,
+  Space,
+  SpaceId,
+} from "@storyflow/cms/types";
 import {
   FolderDomainsContext,
   FolderDomainsProvider,
 } from "./FolderDomainsContext";
-import { FolderGridSpace } from "./spaces/FolderGridSpace";
+import { FoldersSpace } from "./spaces/FoldersSpace";
 import { createKey } from "../utils/createKey";
 import { AddTemplateDialog } from "./AddTemplateDialog";
-import { DocumentListSpace } from "./spaces/DocumentListSpace";
+import { DocumentsSpace } from "./spaces/DocumentsSpace";
 import { useDocument } from "../documents";
 import { useDocumentLabel } from "../documents/useDocumentLabel";
 import { FolderContext } from "./FolderPageContext";
-import { useFieldFocus } from "../field-focus";
+import { useFieldFocus } from "../FieldFocusContext";
 import { addNestedFolder } from "../custom-events";
 import { usePanel, useRoute } from "../layout/panel-router/Routes";
 import { parseSegment } from "../layout/components/parseSegment";
@@ -38,19 +43,19 @@ import { FolderTransactionEntry } from "../operations/actions";
 import { useFolder } from "./FoldersContext";
 import { useAuth } from "../Auth";
 import { DropShadow, Sortable } from "@storyflow/dnd";
-import { AppSpace } from "./spaces/AppSpace";
-import { useAppConfig } from "../client-config";
-import { SWRClient, useClient, useAppClient } from "../client";
+import { PagesSpace } from "./spaces/PagesSpace";
+import { useAppConfig } from "../AppConfigContext";
+import { SWRClient, useClient, useAppClient } from "../RPCProvider";
 import { isSuccess } from "@storyflow/rpc-client/result";
 import { getFolderData } from "./getFolderData";
 
-const spaces = [
+const spaces: { label: string; item: Omit<Space, "id"> }[] = [
   {
     label: "Mapper",
     item: {
       type: "folders",
       items: [],
-    },
+    } as Omit<FolderSpace, "id">,
   },
   { label: "Dokumenter", item: { type: "documents" } },
   { label: "Hjemmeside", item: { type: "pages" } },
@@ -59,7 +64,7 @@ const spaces = [
     item: {
       type: "folders",
       items: [],
-    },
+    } as Omit<FolderSpace, "id">,
   },
 ];
 
@@ -132,6 +137,25 @@ export default function FolderPage({
     [folder, push]
   );
 
+  const onClick = React.useCallback(
+    (item: Omit<Space, "id">) => {
+      push(
+        createTransaction((t) =>
+          t.target(folder._id).splice({
+            index: 0,
+            insert: [
+              {
+                ...item,
+                id: createKey() as SpaceId,
+              } as Space,
+            ],
+          })
+        )
+      );
+    },
+    [folder, push]
+  );
+
   const renderSpace = (space: Space, index: number) => {
     const props = {
       key: space.id,
@@ -140,11 +164,11 @@ export default function FolderPage({
       hidden: !isSelected,
     };
     if (space.type === "folders") {
-      return <FolderGridSpace space={space} {...props} />;
+      return <FoldersSpace space={space} {...props} />;
     } else if (space.type === "documents") {
-      return <DocumentListSpace space={space} {...props} />;
+      return <DocumentsSpace space={space} {...props} />;
     } else if (space.type === "pages") {
-      return <AppSpace space={space} {...props} />;
+      return <PagesSpace space={space} {...props} />;
     }
     return null;
   };
@@ -199,6 +223,7 @@ export default function FolderPage({
                       key={el.label}
                       type="spaces"
                       id={`nyt-space-${el.label}`}
+                      onClick={onClick}
                       {...el}
                     />
                   ))}
@@ -210,9 +235,6 @@ export default function FolderPage({
                       domains={folder.domains}
                       mutate={(domains) => mutateProp("domains", domains)}
                     />
-                    <div className="text-xs text-gray-600 flex-center h-6 ring-1 ring-inset ring-gray-700 px-2 rounded cursor-default">
-                      ID: {folder._id.replace(/^0+/, "")}
-                    </div>
                   </>
                 )}
               </Content.Toolbar>

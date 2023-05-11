@@ -31,7 +31,7 @@ import type {
 } from "@storyflow/shared/types";
 import type { TokenStream } from "../../operations/types";
 import type { LibraryConfig } from "@storyflow/shared/types";
-import { getConfigFromType } from "../../client-config";
+import { getConfigFromType } from "../../AppConfigContext";
 import { tokens } from "@storyflow/cms/tokens";
 import { isSymbol } from "../../operations/is-symbol";
 

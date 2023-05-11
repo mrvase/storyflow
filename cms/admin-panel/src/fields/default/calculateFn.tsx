@@ -17,7 +17,7 @@ import {
   getParentDocumentId,
   getRawFieldId,
 } from "@storyflow/cms/ids";
-import { Client } from "../../client";
+import { Client } from "../../RPCProvider";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/cms/constants";
 
 type FetcherResult = { _id: DocumentId; record: SyntaxTreeRecord }[];

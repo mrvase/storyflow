@@ -4,7 +4,7 @@ import type {
   NestedElement,
 } from "@storyflow/shared/types";
 import type { Config } from "@storyflow/shared/types";
-import { getComponentType, getConfigFromType } from "../../client-config";
+import { getComponentType, getConfigFromType } from "../../AppConfigContext";
 
 export const createComponent = (
   id: NestedDocumentId,

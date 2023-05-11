@@ -21,7 +21,7 @@ import {
   SpaceTransactionEntry,
 } from "../../operations/actions";
 
-export function FolderGridSpace({
+export function FoldersSpace({
   space,
   folderId,
   hidden,
@@ -54,16 +54,16 @@ export function FolderGridSpace({
         index={index}
         label={
           <>
-            Mappe
+            Mapper
             <AddFolderButton onClick={() => setDialogIsOpen("add-folder")} />
           </>
         }
         buttons={
           <>
-            <Space.Button
+            {/*<Space.Button
               icon={FolderPlusIcon}
               onClick={() => setDialogIsOpen("add-folder")}
-            />
+            />*/}
             <Menu as={Space.Button} icon={EllipsisHorizontalIcon} align="right">
               <Menu.Item
                 label="Slet space"

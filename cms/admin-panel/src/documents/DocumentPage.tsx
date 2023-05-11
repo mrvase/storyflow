@@ -7,7 +7,11 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
-import { getDocumentId, getTemplateDocumentId } from "@storyflow/cms/ids";
+import {
+  getDocumentId,
+  getTemplateDocumentId,
+  isTemplateDocument,
+} from "@storyflow/cms/ids";
 import type { DocumentId, FolderId, RawFieldId } from "@storyflow/shared/types";
 import type { DBDocument } from "@storyflow/cms/types";
 import { NoList, useDragItem } from "@storyflow/dnd";
@@ -16,7 +20,7 @@ import React from "react";
 import { useDocumentList, useDocumentWithTimeline } from ".";
 import { DEFAULT_TEMPLATES } from "./templates";
 import { useSaveDocument } from "./useSaveDocument";
-import { useDocumentLabel } from "./useDocumentLabel";
+import { getDocumentLabel, useDocumentLabel } from "./useDocumentLabel";
 import { useTemplateFolder } from "../folders/FoldersContext";
 import Content from "../pages/Content";
 import { useCollab, usePush } from "../collab/CollabContext";
@@ -30,7 +34,7 @@ import {
   FieldToolbarPortalProvider,
   useFieldToolbarPortal,
 } from "./FieldToolbar";
-import { SWRClient } from "../client";
+import { SWRClient } from "../RPCProvider";
 import { ExtendTemplatePath } from "./TemplatePathContext";
 import { useRoute } from "../layout/panel-router/Routes";
 import { parseSegment } from "../layout/components/parseSegment";
@@ -153,7 +157,7 @@ function Toolbar({ id }: { id: DocumentId }) {
         <Content.Toolbar>
           <NoList>
             <DragButton
-              label={"Indsæt felt"}
+              label={"Tilføj felt"}
               item={() => ({
                 id: generateFieldId(id),
                 label: "",
@@ -161,7 +165,7 @@ function Toolbar({ id }: { id: DocumentId }) {
             />
             <Menu
               as={Content.ToolbarButton}
-              label="Indsæt specialfelt"
+              label="Specialfelter"
               icon={BoltIcon}
             >
               {fields.map((el) => (
@@ -188,23 +192,25 @@ export function TemplateMenu({ id }: { id?: DocumentId }) {
   return (
     <Menu
       as={Content.ToolbarButton}
-      label={"Indsæt skabelon"}
+      label={"Skabeloner"}
       icon={DocumentDuplicateIcon}
     >
-      {(templates ?? []).map((el) => (
-        <React.Fragment key={el._id}>
-          {el._id === id ? null : (
-            <Menu.DragItem
-              label={el.label ?? el._id}
-              type="fields"
-              id={`ny-template-${el._id}`}
-              item={{
-                template: el._id,
-              }}
-            />
-          )}
-        </React.Fragment>
-      ))}
+      {(templates ?? [])
+        .filter((el) => el.folder)
+        .map((el) => (
+          <React.Fragment key={el._id}>
+            {el._id === id ? null : (
+              <Menu.DragItem
+                label={getDocumentLabel(el)!}
+                type="fields"
+                id={`ny-template-${el._id}`}
+                item={{
+                  template: el._id,
+                }}
+              />
+            )}
+          </React.Fragment>
+        ))}
     </Menu>
   );
 }
@@ -248,6 +254,8 @@ const Page = ({
 
   const templateId = folder?.template;
 
+  const isTemplate = isTemplateDocument(doc._id);
+
   const owner = doc;
 
   const { label } = useDocumentLabel(doc);
@@ -276,21 +284,23 @@ const Page = ({
               {folderData.type === "app" &&
                 !templateId &&
                 config.length === 0 && <TemplateSelect documentId={doc._id} />}
-              <ExtendTemplatePath template={owner._id}>
-                {templateId && (
-                  <GetDocument id={templateId}>
-                    {(doc) => (
-                      <RenderTemplate
-                        id={doc._id}
-                        config={doc.config}
-                        owner={owner._id}
-                        versions={owner.versions}
-                        index={null}
-                      />
-                    )}
-                  </GetDocument>
-                )}
-              </ExtendTemplatePath>
+              {!isTemplate && (
+                <ExtendTemplatePath template={owner._id}>
+                  {templateId && (
+                    <GetDocument id={templateId}>
+                      {(doc) => (
+                        <RenderTemplate
+                          id={doc._id}
+                          config={doc.config}
+                          owner={owner._id}
+                          versions={owner.versions}
+                          index={null}
+                        />
+                      )}
+                    </GetDocument>
+                  )}
+                </ExtendTemplatePath>
+              )}
               <RenderTemplate
                 id={owner._id}
                 config={config}
@@ -316,15 +326,15 @@ function TemplateSelect({ documentId }: { documentId: DocumentId }) {
         DEFAULT_TEMPLATES.staticPage,
         DEFAULT_TEMPLATES.dynamicPage,
         DEFAULT_TEMPLATES.redirectPage,
-      ].map(({ label, _id }) => (
+      ].map((doc) => (
         <button
-          key={_id}
+          key={doc._id}
           className="rounded bg-button ring-button p-5 text-center"
           onClick={() => {
-            push([["", [[0, 0, [{ template: _id }]]]]]);
+            push([["", [[0, 0, [{ template: doc._id }]]]]]);
           }}
         >
-          {label}
+          {getDocumentLabel(doc)}
         </button>
       ))}
     </div>

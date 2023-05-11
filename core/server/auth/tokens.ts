@@ -45,6 +45,7 @@ export function parseAuthToken<
       issuer: "storyflow",
     }) as AuthTokens[T];
   } catch (err) {
+    console.log(err);
     return;
   }
 }

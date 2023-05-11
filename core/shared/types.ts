@@ -459,6 +459,7 @@ export type Path = PathSegment[];
 type BasicApiConfig = {
   mongoURL: string;
   storyflowKey: string;
+  publicKey: string;
   cors?: string[];
 };
 
@@ -466,7 +467,6 @@ export type StoryflowConfig = {
   baseURL: string;
   public: {
     organization: string;
-    publicKey: string;
   };
   auth: {
     admin: string;

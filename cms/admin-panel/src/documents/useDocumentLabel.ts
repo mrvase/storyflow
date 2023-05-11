@@ -1,7 +1,11 @@
 import type { ClientSyntaxTree, ValueArray } from "@storyflow/shared/types";
 import type { DBDocument } from "@storyflow/cms/types";
 import { useGlobalState } from "../state/state";
-import { createTemplateFieldId, getRawFieldId } from "@storyflow/cms/ids";
+import {
+  createTemplateFieldId,
+  getRawFieldId,
+  isTemplateDocument,
+} from "@storyflow/cms/ids";
 import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
 import { calculateRootFieldFromRecord } from "@storyflow/cms/calculate-server";
 import React from "react";
@@ -13,24 +17,29 @@ import {
 import { FieldTransactionEntry } from "../operations/actions";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/cms/constants";
 import { splitTransformsAndRoot } from "@storyflow/cms/transform";
-import { useClient } from "../client";
+import { useClient } from "../RPCProvider";
 import { calculateFn } from "../fields/default/calculateFn";
 import {
   createTokenStream,
   parseTokenStream,
 } from "../operations/parse-token-stream";
 
-export const fallbackLabel = "[Ingen titel]";
-
 export const getDocumentLabel = (doc: DBDocument | undefined) => {
-  if (!doc) return undefined;
-  /* TODO should be calculated */
-  const defaultLabelValue = calculateRootFieldFromRecord(
-    createTemplateFieldId(doc._id, DEFAULT_FIELDS.label.id),
+  if (!doc) return "Unavngivet dokument";
+
+  const isTemplate = isTemplateDocument(doc?._id);
+  const label = isTemplate ? "template_label" : "label";
+
+  let defaultLabel = calculateRootFieldFromRecord(
+    createTemplateFieldId(doc._id, DEFAULT_FIELDS[label].id),
     doc.record
   )[0] as string | undefined;
-  const defaultLabel =
-    typeof defaultLabelValue === "string" ? defaultLabelValue.trim() : null;
+
+  defaultLabel =
+    typeof defaultLabel === "string" ? defaultLabel.trim() : undefined;
+  const fallback = isTemplate ? "Ugemt skabelon" : "Unavngivet dokument";
+  return defaultLabel ?? fallback;
+  /*
   const creationDateString = calculateRootFieldFromRecord(
     createTemplateFieldId(doc._id, DEFAULT_FIELDS.creation_date.id),
     doc.record
@@ -43,6 +52,7 @@ export const getDocumentLabel = (doc: DBDocument | undefined) => {
       timeStyle: "medium",
     }).format(creationDate)})`
   );
+  */
 };
 
 export const useDocumentLabel = <T extends DBDocument | undefined>(
@@ -51,10 +61,13 @@ export const useDocumentLabel = <T extends DBDocument | undefined>(
   label: T extends undefined ? undefined : string;
   isModified: boolean;
 } => {
+  const isTemplate = doc ? isTemplateDocument(doc?._id) : false;
+  const label = isTemplate ? "template_label" : "label";
+
   const defaultLabel = getDocumentLabel(doc);
 
   const id = doc
-    ? createTemplateFieldId(doc._id, DEFAULT_FIELDS.label.id)
+    ? createTemplateFieldId(doc._id, DEFAULT_FIELDS[label].id)
     : undefined;
 
   const client = useClient();
@@ -75,6 +88,12 @@ export const useDocumentLabel = <T extends DBDocument | undefined>(
        * We only want to know what the live value is at this moment, and
        * we do not need to register to changes. This is what getInitializedTimelineAsync
        * allows us to do.
+       */
+
+      /**
+       * TODO
+       * Does not take into account that label might refer to other fields
+       * which are not yet initialized. And the value is not the latest.
        */
       const timeline = await collab.getInitializedTimelineAsync(doc._id, {
         versions: doc.versions,
@@ -125,21 +144,17 @@ export const useDocumentLabel = <T extends DBDocument | undefined>(
     };
   }
 
-  if (doc?.label) {
+  if (
+    output &&
+    Array.isArray(output) &&
+    output.length > 0 &&
+    typeof output[0] === "string"
+  ) {
     return {
-      label: (doc.label as any).trim() || fallbackLabel,
+      label: output[0].trim() as any,
       isModified,
     };
   }
 
-  if (output && Array.isArray(output) && output.length > 0) {
-    return {
-      label:
-        (typeof output[0] === "string" ? output[0] : "")?.trim() ||
-        (fallbackLabel as any),
-      isModified,
-    };
-  }
-
-  return { label: defaultLabel?.trim() || (fallbackLabel as any), isModified };
+  return { label: defaultLabel as any, isModified };
 };

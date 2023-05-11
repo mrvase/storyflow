@@ -3,6 +3,76 @@ import { createProcedure, createRoute } from "@storyflow/rpc-server";
 import type { FunctionName, RawFieldId } from "@storyflow/shared/types";
 import type { DocumentConfigItem } from "@storyflow/cms/types";
 import { getRawFieldId } from "@storyflow/cms/ids";
+import { client } from "./collab";
+
+export const migration = createRoute({
+  migrate: createProcedure({
+    async query() {
+      if (process.env.NODE_ENV === "development") {
+        type Package = [
+          queue: string,
+          user: string,
+          index: number,
+          transactions: [target: string, ops: Operation[]][]
+        ];
+
+        type Operation =
+          | { add: any }
+          | { index: number; insert: any }
+          | { index: number; remove: number }
+          | { name: "domains"; value: string[] }
+          | { name: "termplate"; value: string };
+
+        const result = (await client.lrange(
+          `semper:folders`,
+          0,
+          -1
+        )) as Package[];
+
+        const transactions = result
+          .map((el) => {
+            const queue = el[0];
+            return el[3]
+              .map((el) => {
+                return el[1];
+              })
+              .flat(1)
+              .map((el) => {
+                if ("add" in el) {
+                  return [el.add._id, [["label", el.add.label]]];
+                }
+                if ("insert" in el) {
+                  return [queue.replace("/", ":"), [[el.index, 0, el.insert]]];
+                }
+                if ("remove" in el) {
+                  return [queue.replace("/", ":"), [[el.index, el.remove]]];
+                }
+                if ("name" in el) {
+                  return [queue.replace("/", ":"), [[el.name, el.value]]];
+                }
+              });
+          })
+          .flat(1);
+
+        /*
+        const pipeline = client.pipeline();
+        pipeline.del("kfs:folders");
+        pipeline.rpush(`kfs:folders`, ...array.map((el) => JSON.stringify(el)));
+        await (pipeline as any).exec();
+        */
+
+        client.del(`semper2:folders`);
+        client.rpush(`semper2:folders`, ["", 0, "047mpcup", transactions]);
+
+        return success(["", 0, "047mpcup", transactions]);
+      } else {
+        return error({
+          message: "This function can only be run in development.",
+        });
+      }
+    },
+  }),
+});
 
 /*
 const transformField = (field: DBSyntaxStreamBlock): DBSyntaxStreamBlock => {

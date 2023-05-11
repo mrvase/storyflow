@@ -20,7 +20,7 @@ import {
   getDocumentId,
   isNestedDocumentId,
 } from "@storyflow/cms/ids";
-import { useClient } from "../../../client";
+import { useClient } from "../../../RPCProvider";
 import { getPreview } from "../../default/getPreview";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 import { useFieldTemplateId } from "../../default/FieldTemplateContext";

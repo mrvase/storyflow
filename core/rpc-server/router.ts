@@ -1,4 +1,4 @@
-import { error, isError, isResult } from "./result";
+import { error, isError, isResult, success } from "./result";
 import { z, ZodError, ZodType } from "zod";
 import type {
   API,
@@ -6,6 +6,8 @@ import type {
   Output,
   QueryObject,
   MutationObject,
+  Result,
+  Failure,
 } from "./types";
 import type { Context, MiddlewareContext, SchemaInput } from "./types";
 
@@ -29,9 +31,14 @@ type MutationObjectServer<
   mutation: (input: I, context: Context & C) => O;
 };
 
-type APIObject<C extends UserContext, I extends SchemaInput> = {
+type APIObject<
+  C extends UserContext,
+  I extends SchemaInput,
+  O extends Output
+> = {
   schema?: () => I;
   middleware?: (ctx: MiddlewareContext) => Promise<C>;
+  redirect?: (result: Awaited<O> | Failure) => string | void;
 };
 
 type UserContext = Record<string, any>;
@@ -54,62 +61,79 @@ export function createProcedure<
   I extends SchemaInput,
   O extends Output
 >(
-  action: APIObject<C, I> & QueryObjectServer<C, Unwrap<I>, O>
+  action: APIObject<C, I, O> & QueryObjectServer<C, Unwrap<I>, O>
 ): QueryObject<Unwrap<I>, Promisify<O>>;
 export function createProcedure<
   C extends UserContext,
   I extends SchemaInput,
   O extends Output
 >(
-  action: APIObject<C, I> & MutationObjectServer<C, Unwrap<I>, O>
+  action: APIObject<C, I, O> & MutationObjectServer<C, Unwrap<I>, O>
 ): MutationObject<Unwrap<I>, Promisify<O>>;
 export function createProcedure<
   C extends UserContext,
   I extends SchemaInput,
   O extends Output
 >(
-  action: APIObject<C, I> &
+  action: APIObject<C, I, O> &
     (QueryObjectServer<C, Unwrap<I>, O> | MutationObjectServer<C, Unwrap<I>, O>)
 ):
   | QueryObject<Unwrap<I>, Promisify<O>>
   | MutationObject<Unwrap<I>, Promisify<O>> {
   const type = "query" in action ? "query" : "mutation";
 
-  return {
-    [type]: async function (input: any) {
-      const context = Object.create({ use });
-      Object.assign(context, this.context ?? errorProxy);
-      try {
-        if (this.method) {
-          await action.middleware?.(context);
-        }
+  const handleProcedure = async function (input: any) {
+    const context = Object.create({ use });
+    Object.assign(context, this.context ?? errorProxy);
 
-        if (this.method === "OPTIONS") return;
+    let result: Result<any>;
 
-        if (action.schema) {
-          (action.schema() as ZodType).parse(input);
-        }
-        return await (action as QueryObjectServer<C, Unwrap<I>, O>)[
-          type as "query"
-        ].call(this, input, { ...context });
-        // Pass "this" on so procedures can call each other.
-        // Spread of context removes the "use" prototype method.
-      } catch (err) {
-        if (err instanceof ZodError) {
-          return error({
-            message: "Invalid input",
-            status: 400,
-            detail: err.message,
-          });
-        }
-        if (!isResult(err) || !isError(err)) {
-          console.error(err);
-          return error({ message, detail: err });
-        }
-        console.error(err);
-        return err;
+    try {
+      if (this.method) {
+        await action.middleware?.(context);
       }
-    },
+
+      if (this.method === "OPTIONS") {
+        return success(null);
+      }
+
+      if (action.schema) {
+        (action.schema() as ZodType).parse(input);
+      }
+      const initial = await (action as QueryObjectServer<C, Unwrap<I>, O>)[
+        type as "query"
+      ].call(this, input, { ...context });
+      // Pass "this" on so procedures can call each other.
+      // Spread of context removes the "use" prototype method.
+
+      result = initial;
+    } catch (err) {
+      if (err instanceof ZodError) {
+        result = error({
+          message: "Invalid input",
+          status: 400,
+        });
+      } else if (!isResult(err) || !isError(err)) {
+        console.error(err);
+        result = error({ message, detail: err });
+      } else {
+        console.error(err);
+        result = err;
+      }
+    }
+
+    const redirect = action.redirect?.(result as Awaited<O>);
+
+    if (typeof redirect === "string") {
+      this.context.response.redirect = redirect;
+      return result;
+    }
+
+    return result;
+  };
+
+  return {
+    [type]: handleProcedure,
   } as QueryObject<Unwrap<I>, Promisify<O>>;
 }
 
