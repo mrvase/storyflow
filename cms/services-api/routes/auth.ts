@@ -198,10 +198,9 @@ export const auth = createRoute({
         .set(
           GLOBAL_SESSION_COOKIE,
           { email },
-          { path: "/", sameSite: "strict", secure: true, httpOnly: true }
+          { path: "/", sameSite: "lax", secure: true, httpOnly: true }
         );
 
-      /*
       response.cookies<AuthCookies>().delete(LINK_COOKIE, {
         path: "/",
         sameSite: "lax",
@@ -209,17 +208,14 @@ export const auth = createRoute({
         httpOnly: true,
         encrypt: true,
       });
-      */
 
-      // response.redirect = `${domain}/${next ?? ""}?success=true`;
+      response.redirect = `${domain}/${next ?? ""}?success=true`;
 
       return success(null);
     },
-    /*
     redirect(result) {
       return isError(result) ? `${domain}/?success=false` : undefined;
     },
-    */
   }),
 
   addOrganization: createProcedure({
@@ -464,7 +460,7 @@ WHERE u.email = ${email};
     async mutation(_, { response }) {
       response.cookies<AuthCookies>().delete(GLOBAL_SESSION_COOKIE, {
         path: "/",
-        sameSite: "strict",
+        sameSite: "lax",
         secure: true,
         httpOnly: true,
       });

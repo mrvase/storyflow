@@ -43,7 +43,10 @@ export const createAPIRoute = <T extends API>(
     });
 
     if (cookies.length) {
-      res.setHeader("Set-Cookie", cookies);
+      res.setHeader(
+        "Set-Cookie",
+        cookies.map((el) => el.split(/,\s?/g)).flat(1)
+      );
     }
 
     if (typeof init.redirect === "string") {

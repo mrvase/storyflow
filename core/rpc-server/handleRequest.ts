@@ -272,11 +272,6 @@ export async function handleRequest<T extends API>(
     });
   }
 
-  console.log("COOKIE", {
-    values: Array.from(setCookies.values()),
-    result: context.response.headers.get("Set-Cookie"),
-  });
-
   return {
     data: result,
     init: {
