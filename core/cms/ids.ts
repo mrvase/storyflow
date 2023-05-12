@@ -24,6 +24,7 @@ const ROOT_PARENT_NUMBER = 0;
 export const ROOT_FOLDER_NUMBER = 1;
 export const TEMPLATE_FOLDER_NUMBER = 2;
 export const SYSTEM_TEMPLATE_OFFSET = 3;
+export const SYSTEM_COMPOUND_TEMPLATE_OFFSET = 128;
 export const USER_TEMPLATE_OFFSET = 256;
 export const USER_DOCUMENT_OFFSET = 256 ** 2;
 

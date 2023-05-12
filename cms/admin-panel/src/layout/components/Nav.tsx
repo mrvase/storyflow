@@ -67,7 +67,7 @@ export default function Nav() {
           "dark:text-white"
         )}
       >
-        <div className="h-full flex flex-col pl-2 py-4 w-48">
+        <div className="h-full flex flex-col pl-2 py-4 w-60">
           <div className="flex flex-col gap-2">
             <NavButton
               onClick={() => {
@@ -86,7 +86,7 @@ export default function Nav() {
               Slå redigering {toolbarIsOpen ? "fra" : "til"}
             </NavButton>*/}
           </div>
-          <div className="lex flex-col gap-1 mt-6">
+          <div className="lex flex-col gap-2 mt-6">
             {/*<div
               className={cl(
                 "text-xs ml-1 font-bold text-gray-500 mb-1 transition-[opacity,height]",
@@ -117,7 +117,7 @@ export default function Nav() {
             </Sortable>
           </div>
           <div className="w-full grow" onClick={() => setIsOpen((ps) => !ps)} />
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-2">
             <div
               className={cl(
                 "text-xs ml-1 font-bold text-gray-500 mb-1 transition-[opacity,height]",
@@ -144,7 +144,7 @@ export default function Nav() {
             >
               Filer
             </NavButton>
-            <div className="flex justify-between mt-3">
+            <div className="flex justify-between mt-3 gap-8">
               <NavButton
                 onClick={() => {
                   setIsOpen((ps) => !ps);
@@ -189,6 +189,7 @@ function NavButton({
     <Component
       className={cl(
         "w-full h-7 px-1.5 rounded flex gap-4 items-center [.menu-closed_&]:opacity-40 [.menu-closed:hover_&]:opacity-75 opacity-75 hover:opacity-100 [.menu-closed:hover_&]:hover:opacity-100 transition-opacity",
+        "font-medium",
         className
       )}
       {...(action as any)}

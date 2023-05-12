@@ -150,7 +150,7 @@ function Row({
                 {value}
               </div>
             ) : (
-              <div className="flex items-center">{value}</div>
+              value
             )}
           </td>
         );
@@ -176,8 +176,8 @@ function LabelColumn({ doc }: { doc: DBDocument }) {
   const { label, isModified } = useDocumentLabel(doc);
 
   return (
-    <>
-      <span>{label}</span>
+    <div className="flex items-center">
+      <span className="truncate">{label}</span>
       {isModified && (
         <div
           className={cl(
@@ -186,7 +186,7 @@ function LabelColumn({ doc }: { doc: DBDocument }) {
           )}
         />
       )}
-    </>
+    </div>
   );
 }
 

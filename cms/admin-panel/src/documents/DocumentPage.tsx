@@ -107,8 +107,8 @@ function Toolbar({ id }: { id: DocumentId }) {
   if (ids.length > 1) {
     return (
       <Content.Toolbar>
-        <div className="h-6 px-2 flex-center gap-1.5 rounded dark:bg-yellow-400/10 dark:text-yellow-200/75 ring-1 ring-yellow-200/50 text-xs whitespace-nowrap">
-          {ids.length} valgt
+        <div className="h-7 px-2 mx-2.5 flex-center gap-1.5 rounded dark:bg-yellow-400/10 dark:text-yellow-200/75 ring-1 ring-yellow-200/50 text-sm font-medium whitespace-nowrap">
+          {ids.length} felter valgt
           <XMarkIcon className="w-3 h-3" />
         </div>
       </Content.Toolbar>
@@ -152,35 +152,38 @@ function Toolbar({ id }: { id: DocumentId }) {
 
   return (
     <>
-      <div ref={setPortal} />
-      {ids.length === 0 && (
-        <Content.Toolbar>
-          <NoList>
-            <DragButton
-              label={"Tilføj felt"}
-              item={() => ({
-                id: generateFieldId(id),
-                label: "",
-              })}
-            />
-            <Menu
-              as={Content.ToolbarButton}
-              label="Specialfelter"
-              icon={BoltIcon}
-            >
-              {fields.map((el) => (
-                <Menu.DragItem
-                  key={el.label}
-                  type="fields"
-                  id={`ny-blok-${el.item.template}`}
-                  {...el}
-                />
-              ))}
-            </Menu>
-            <TemplateMenu id={id} />
-          </NoList>
-        </Content.Toolbar>
-      )}
+      <Content.Toolbar ref={setPortal}>
+        {ids.length === 0 && <div></div>}
+      </Content.Toolbar>
+      <Content.Toolbar secondary>
+        <NoList>
+          <Content.ToolbarDragButton
+            id="new-field"
+            type="fields"
+            icon={PlusIcon}
+            label="Tilføj felt"
+            item={() => ({
+              id: generateFieldId(id),
+              label: "",
+            })}
+          />
+          <Menu
+            as={Content.ToolbarButton}
+            label="Specialfelter"
+            icon={BoltIcon}
+          >
+            {fields.map((el) => (
+              <Menu.DragItem
+                key={el.label}
+                type="fields"
+                id={`ny-blok-${el.item.template}`}
+                {...el}
+              />
+            ))}
+          </Menu>
+          <TemplateMenu id={id} />
+        </NoList>
+      </Content.Toolbar>
     </>
   );
 }
@@ -283,7 +286,18 @@ const Page = ({
             <div className="pb-96 flex flex-col -mt-6">
               {folderData.type === "app" &&
                 !templateId &&
-                config.length === 0 && <TemplateSelect documentId={doc._id} />}
+                config.filter(
+                  (el) =>
+                    "template" in el &&
+                    el.template &&
+                    [
+                      DEFAULT_TEMPLATES.staticPage,
+                      DEFAULT_TEMPLATES.dynamicPage,
+                      DEFAULT_TEMPLATES.redirectPage,
+                    ]
+                      .map((el) => el._id)
+                      .includes(el.template)
+                ).length === 0 && <TemplateSelect documentId={doc._id} />}
               {!isTemplate && (
                 <ExtendTemplatePath template={owner._id}>
                   {templateId && (
@@ -409,25 +423,5 @@ function SaveButton({ id, folderId }: { id: DocumentId; folderId: FolderId }) {
         Udgiv
       </button>
     </div>
-  );
-}
-
-function DragButton({ item, label }: { label: string; item: any }) {
-  const { ref, dragHandleProps, state } = useDragItem({
-    id: `new-field-${label}`,
-    type: "fields",
-    item,
-    mode: "move",
-  });
-
-  return (
-    <Content.ToolbarButton
-      ref={ref as React.MutableRefObject<HTMLButtonElement | null>}
-      {...dragHandleProps}
-      icon={PlusIcon}
-      className="cursor-grab"
-    >
-      {label}
-    </Content.ToolbarButton>
   );
 }

@@ -10,14 +10,15 @@ export const FolderDomainsProvider = ({
   domains,
 }: {
   children: React.ReactNode;
-  domains: string[];
+  domains: string[] | undefined;
 }) => {
   const parent = React.useContext(FolderDomainsContext);
 
-  let next = new Set(parent ?? []);
-  domains.forEach((d) => next.add(d));
-
-  const array = React.useMemo(() => Array.from(next), [parent, domains]);
+  const array = React.useMemo(() => {
+    let next = new Set(parent ?? []);
+    (domains ?? []).forEach((d) => next.add(d));
+    return Array.from(next);
+  }, [parent, domains]);
 
   return (
     <FolderDomainsContext.Provider value={array}>

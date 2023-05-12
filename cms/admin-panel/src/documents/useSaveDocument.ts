@@ -101,7 +101,7 @@ export const useSaveDocument = (
     if (!doc) return false;
 
     let config = doc.config;
-    const versions = doc.versions ?? { config: 0 };
+    const versions: DocumentVersionRecord = doc.versions ?? { config: [0] };
 
     [timeline] = filterTimeline([timeline], versions);
 
@@ -112,25 +112,29 @@ export const useSaveDocument = (
 
     const configQueue = queues["config"];
 
+    const updatedVersions = versions;
+
     if (configQueue?.length) {
       config = updateDocumentConfig(config, configQueue);
       const last = read(configQueue[configQueue.length - 1]);
-      versions.config = [
+      updatedVersions.config = [
         versions.config[0] + configQueue.length,
         last.prev,
         last.user,
       ];
     }
 
-    const { record: updatedRecord, versions: updatedVersions } =
+    const { record: updatedRecord, versions: updatedFieldVersions } =
       updateFieldRecord(
         {
           _id: documentId,
-          versions: doc.versions,
+          versions,
           record: doc.record,
         },
         queues
       );
+
+    Object.assign(updatedVersions, updatedFieldVersions);
 
     const input = {
       id: documentId,

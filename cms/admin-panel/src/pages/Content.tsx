@@ -18,6 +18,28 @@ import {
   useRoute,
   useRouteTransition,
 } from "../layout/panel-router/Routes";
+import { Menu } from "../elements/Menu";
+import { Space, FolderSpace } from "@storyflow/cms/types";
+import { useDragItem } from "@storyflow/dnd";
+
+const spaces: { label: string; item: Omit<Space, "id"> }[] = [
+  {
+    label: "Mapper",
+    item: {
+      type: "folders",
+      items: [],
+    } as Omit<FolderSpace, "id">,
+  },
+  { label: "Dokumenter", item: { type: "documents" } },
+  { label: "Hjemmeside", item: { type: "pages" } },
+  {
+    label: "Statistik",
+    item: {
+      type: "folders",
+      items: [],
+    } as Omit<FolderSpace, "id">,
+  },
+];
 
 function Content({
   children,
@@ -39,8 +61,6 @@ function Content({
   const route = useRoute();
   const [{ path }] = usePanel();
   const isSelected = (path || "/") === (route || "/");
-
-  const [isOpen, setIsOpen] = useLocalStorage<boolean>("toolbar-open", true);
 
   const status = useRouteTransition();
 
@@ -83,57 +103,10 @@ function Content({
                 </div>
                 {header}
               </div>
-              <div className="absolute w-full h-7 translate-y-11 text-sm flex items-center">
-                <button
-                  className={cl(
-                    "relative",
-                    "shrink-0 h-7 rounded text-sm transition-all px-2.5",
-                    isOpen
-                      ? "mx-0 bg-yellow-400/25 text-yellow-200 w-[6.5rem]"
-                      : "-mx-2.5 w-9 text-gray-500 hover:text-gray-200"
-                  )}
-                  onClick={() => setIsOpen((ps) => !ps)}
-                >
-                  <ArrowsUpDownIcon className="shrink-0 w-4 h-4" />
-                  <div
-                    className={cl(
-                      "absolute top-1 ml-[1.625rem] pointer-events-none transition-opacity",
-                      isOpen ? "opacity-100" : "opacity-0"
-                    )}
-                  >
-                    Arranger
-                  </div>
-                </button>
-                <div className="relative h-7 flex items-center w-full ml-5">
-                  <div
-                    className={cl(
-                      "absolute w-full flex gap-5 transition-[transform,opacity]",
-                      !isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-                    )}
-                  >
-                    <button className="flex-center gap-2 text-gray-500 hover:text-gray-200 transition-colors">
-                      <DocumentDuplicateIcon className="w-4 h-4" />
-                      Person
-                      <ChevronDownIcon className="w-4 h-4" />
-                    </button>
-                    <button className="flex-center gap-2 text-gray-500 hover:text-gray-200 transition-colors">
-                      <ComputerDesktopIcon className="w-4 h-4" />
-                      Domæner
-                      <ChevronDownIcon className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <div
-                    className={cl(
-                      "absolute w-full flex gap-5 transition-[transform,opacity]",
-                      isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-                    )}
-                  >
-                    <button className="flex-center gap-2 text-gray-400 hover:text-gray-200 transition-colors">
-                      <StopIcon className="w-4 h-4" />
-                      Tilføj space
-                      <ChevronDownIcon className="w-4 h-4" />
-                    </button>
-                  </div>
+              <div className="absolute w-full h-7 translate-y-[2.675rem] text-sm flex items-center">
+                <ArrangeButton />
+                <div className="relative h-7 flex items-center w-full ml-2.5">
+                  {toolbar}
                 </div>
               </div>
               <div className={cl("flex flex-center")}>{buttons}</div>
@@ -154,6 +127,34 @@ function Content({
   );
 }
 
+function ArrangeButton() {
+  const [isOpen, setIsOpen] = useLocalStorage<boolean>("toolbar-open", true);
+
+  return (
+    <button
+      className={cl(
+        "relative",
+        "shrink-0 h-7 rounded text-sm transition-all px-2.5 font-medium",
+        isOpen
+          ? "mx-0 bg-yellow-400/25 text-yellow-200 w-[6.5rem]"
+          : "-mx-2.5 w-9 text-gray-500 hover:text-gray-200"
+      )}
+      onClick={() => setIsOpen((ps) => !ps)}
+    >
+      <ArrowsUpDownIcon className="shrink-0 w-4 h-4" />
+      <div
+        className={cl(
+          "absolute top-1 ml-[1.625rem] pointer-events-none transition-opacity",
+          isOpen ? "opacity-100" : "opacity-0"
+        )}
+      >
+        Arranger
+      </div>
+    </button>
+  );
+}
+
+/*
 function ToolbarWrapper({
   toolbar,
   isFocused,
@@ -184,15 +185,34 @@ function ToolbarWrapper({
     </>
   );
 }
+*/
 
-const Toolbar = ({ children }: { children: React.ReactNode }) => {
+const Toolbar = React.forwardRef<
+  HTMLDivElement,
+  {
+    children: React.ReactNode;
+    secondary?: boolean;
+  }
+>(({ children, secondary }, ref) => {
+  const [isOpen, setIsOpen] = useLocalStorage<boolean>("toolbar-open", true);
+  let show = secondary ? isOpen : !isOpen;
   return (
-    <div className="flex p-1 gap-2 overflow-x-auto no-scrollbar">
+    <div
+      ref={ref}
+      className={cl(
+        "absolute w-full flex transition-[transform,opacity] child:text-gray-500 duration-150 child:hover",
+        show ? "opacity-100" : "opacity-0 pointer-events-none",
+        secondary
+          ? "[&_.active]:text-yellow-200 child:text-yellow-200/75 hover:child:text-yellow-200"
+          : "[&_.active]:text-gray-200 child:text-gray-500 hover:child:text-gray-200"
+      )}
+    >
       {children}
     </div>
   );
-};
+});
 
+/*
 const ToolbarButton = React.forwardRef<
   HTMLButtonElement,
   React.ComponentProps<"button"> & {
@@ -227,8 +247,88 @@ const ToolbarButton = React.forwardRef<
     </button>
   );
 });
+*/
+
+const ToolbarButton = React.forwardRef<
+  HTMLButtonElement,
+  React.ComponentProps<"button"> & {
+    icon?: React.FC<{ className?: string }>;
+    active?: boolean;
+    selected?: boolean;
+  }
+>(({ icon: Icon, active, selected, ...props }, ref) => {
+  return (
+    <button
+      ref={ref}
+      {...props}
+      className={cl(
+        "h-7 flex-center gap-2 transition-colors rounded px-2.5 font-medium",
+        active && "active",
+        props.className
+      )}
+    >
+      {Icon && <Icon className="w-4 h-4" />}
+      <span className={Icon ? "hidden @lg:block" : ""}>{props.children}</span>
+      {typeof selected === "boolean" &&
+        (active ? (
+          <ChevronUpIcon className="w-3 h-3" />
+        ) : (
+          <ChevronDownIcon className="w-3 h-3" />
+        ))}
+    </button>
+  );
+});
+
+function ToolbarDragButton({
+  item,
+  label,
+  type,
+  id,
+  icon,
+}: {
+  label: string;
+  item: any;
+  id: string;
+  type: string;
+  icon: React.FC<{ className?: string }>;
+}) {
+  const { ref, dragHandleProps, state } = useDragItem({
+    id,
+    type,
+    item,
+    mode: "move",
+  });
+
+  return (
+    <ToolbarButton
+      ref={ref as React.MutableRefObject<HTMLButtonElement | null>}
+      {...dragHandleProps}
+      icon={icon}
+      className="cursor-grab"
+    >
+      {label}
+    </ToolbarButton>
+  );
+}
 
 export default Object.assign(Content, {
   Toolbar,
   ToolbarButton,
+  ToolbarDragButton,
 });
+
+function Test() {
+  return (
+    <Menu as={ToolbarButton} label="Tilføj space" icon={StopIcon}>
+      {spaces.map((el) => (
+        <Menu.DragItem
+          key={el.label}
+          type="spaces"
+          id={`nyt-space-${el.label}`}
+          onClick={() => {}}
+          {...el}
+        />
+      ))}
+    </Menu>
+  );
+}

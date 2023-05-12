@@ -61,12 +61,12 @@ export async function save(
   const versions = doc.versions as DocumentVersionRecord;
 
   /*
-      IMPORTANT ASSUMPTION 1
-      We do NOT know the values of the document's imports (even though they are stored in the document).
-      We need to fetch them first.
-      The catch: we cannot fetch all imports in the first pass, since some import
-      ids are computed from other imports (with "pick" function).
-      */
+  IMPORTANT ASSUMPTION 1
+  We do NOT know the values of the document's imports (even though they are stored in the document).
+  We need to fetch them first.
+  The catch: we cannot fetch all imports in the first pass, since some import
+  ids are computed from other imports (with "pick" function).
+  */
 
   const updatedFieldsIds = new Set(Object.keys(input.record) as FieldId[]);
 
@@ -80,6 +80,8 @@ export async function save(
 
   Object.assign(record, input.record);
   Object.assign(versions, input.versions);
+
+  console.log("VERSION VERSIONS", versions, input.versions);
 
   // trim to not include removed nested fields
   record = extractRootRecord(documentId, record, {
@@ -169,14 +171,14 @@ export async function save(
   // second import check
 
   /*
-        TODO: Among the imports of imports, there may be fields from the saved article.
-        These are not added since flatten() makes sure it does not add fields that are
-        already added. But if it is a deleted field that is not included in the original
-        computationRecord, it gets added to the flattenedRecord through the imports.
-        This is perhaps the way it should work to ensure consistency. When the imported
-        field is computed with the cached value of the deleted field, it should not obtain
-        a different value now that it is imported back into the article.
-      */
+  TODO: Among the imports of imports, there may be fields from the saved article.
+  These are not added since flatten() makes sure it does not add fields that are
+  already added. But if it is a deleted field that is not included in the original
+  computationRecord, it gets added to the flattenedRecord through the imports.
+  This is perhaps the way it should work to ensure consistency. When the imported
+  field is computed with the cached value of the deleted field, it should not obtain
+  a different value now that it is imported back into the article.
+*/
 
   let fullRecord = { ...importsRecord, ...record };
 

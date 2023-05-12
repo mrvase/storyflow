@@ -3,20 +3,21 @@ import {
   createDocumentId,
   createFieldId,
   getTemplateDocumentId,
+  SYSTEM_COMPOUND_TEMPLATE_OFFSET,
   SYSTEM_TEMPLATE_OFFSET,
 } from "./ids";
 import { insertRootInTransforms } from "./transform";
 import type { FieldId } from "@storyflow/shared/types";
 import type { DefaultFieldConfig, FieldConfig } from "./types";
 
-let index = 0;
-
-export const generateTemplateId = () => {
-  return createDocumentId(SYSTEM_TEMPLATE_OFFSET + index++);
+let index1 = 0;
+const generateTemplateFieldId = () => {
+  return createFieldId(0, createDocumentId(SYSTEM_TEMPLATE_OFFSET + index1++));
 };
 
-const generateTemplateFieldId = () => {
-  return createFieldId(0, generateTemplateId());
+let index2 = 0;
+export const generateTemplateId = () => {
+  return createDocumentId(SYSTEM_COMPOUND_TEMPLATE_OFFSET + index2++);
 };
 
 export const DEFAULT_FIELDS = {
@@ -27,10 +28,6 @@ export const DEFAULT_FIELDS = {
   label: {
     id: generateTemplateFieldId(),
     label: "Label",
-  },
-  template_label: {
-    id: generateTemplateFieldId(),
-    label: "Label til template",
   },
   url: {
     id: generateTemplateFieldId(),
@@ -85,6 +82,10 @@ export const DEFAULT_FIELDS = {
   params: {
     id: generateTemplateFieldId(),
     label: "URL-segmenter",
+  },
+  template_label: {
+    id: generateTemplateFieldId(),
+    label: "Label til template",
   },
 } satisfies Record<string, DefaultFieldConfig>;
 

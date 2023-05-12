@@ -81,7 +81,7 @@ export function FolderItem({
       ref={ref as any}
       to={navigate(to, { navigate: false })}
       className={cl(
-        "group flex items-center px-3 py-4 rounded-md text-lg transition-shadow border",
+        "group flex items-center px-3 py-4 rounded-md text-lg transition-[border] border",
         colors
       )}
       style={style}
@@ -96,7 +96,7 @@ export function FolderItem({
       )}
       <span className="ml-3 truncate">{label}</span>
       <div className="ml-auto transition-opacity w-8 h-8 flex-center rounded-md">
-        <Icon className="w-6 h-6 shrink-0 opacity-25 group-hover:opacity-75 transition-opacity" />{" "}
+        <Icon className="w-6 h-6 shrink-0 opacity-25 group-hover:opacity-50 transition-opacity" />{" "}
       </div>
     </Link>
   );

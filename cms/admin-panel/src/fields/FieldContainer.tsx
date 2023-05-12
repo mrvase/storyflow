@@ -86,7 +86,7 @@ export function FieldContainer({
           <FieldToolbarPortal show={isFocused} />
           <div
             {...props}
-            {...(isOpen ? handlers : {})}
+            {...handlers}
             className={cl(
               "relative grow shrink basis-0 group/container px-2.5 mt-8"
             )}
@@ -120,18 +120,17 @@ function FocusContainer({
   const [isOpen] = useLocalStorage<boolean>("toolbar-open", true);
 
   ring = "ring-transparent";
-  /*
-  if (isEditorFocused) {
-    ring = "ring-transparent";
-    // ring = isOpen ? " dark:ring-yellow-200/60" : " dark:ring-gray-600";
-  } else if (isFieldFocused) {
-    ring = "ring-yellow-200/40";
-  } else {
-    ring = isOpen
-      ? "ring-transparent group-hover/container:ring-gray-700/50"
-      : "ring-transparent";
+
+  if (isOpen) {
+    if (isEditorFocused) {
+      ring = "ring-transparent";
+      // ring = isOpen ? " dark:ring-yellow-200/60" : " dark:ring-gray-600";
+    } else if (isFieldFocused) {
+      ring = "ring-yellow-200/40";
+    } else {
+      ring = "ring-transparent group-hover/container:ring-gray-700/50";
+    }
   }
-  */
 
   return (
     <div

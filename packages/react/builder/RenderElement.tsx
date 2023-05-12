@@ -75,7 +75,8 @@ const calculateProp = (
   id: string,
   config: PropConfig,
   prop: ValueArray | ClientSyntaxTree,
-  loopCtx: LoopIndexRecord
+  loopCtx: LoopIndexRecord,
+  parentOptions?: ConfigRecord
 ) => {
   const type = config.type;
 
@@ -137,7 +138,7 @@ const calculateProp = (
       <ExtendPath id={id}>
         <RenderChildren
           value={children}
-          options={config.options as ConfigRecord}
+          options={parentOptions ?? (config.options as ConfigRecord)}
         />
       </ExtendPath>
     );
@@ -232,6 +233,7 @@ export default function RenderElement({
                 props={config!.props}
                 component={component!}
                 values={uncomputedProps}
+                parentOptions={options}
               />
             </LoopProvider>
           );
@@ -255,11 +257,13 @@ function RenderElementWithProps({
   values,
   props,
   component: Component,
+  parentOptions,
 }: {
   elementId: string;
   values: Record<string, ValueArray | ClientSyntaxTree>;
   props: Config["props"];
   component: Component<PropConfigRecord>;
+  parentOptions?: ConfigRecord;
 }) {
   const loopCtx = React.useContext(LoopContext);
   // const index = React.useContext(IndexContext);
@@ -276,7 +280,13 @@ function RenderElementWithProps({
           name,
           config.type === "group"
             ? calculatePropsFromConfig(config.props, name)
-            : calculateProp(id, config, values?.[id] ?? [], loopCtx) ?? [],
+            : calculateProp(
+                id,
+                config,
+                values?.[id] ?? [],
+                loopCtx,
+                parentOptions
+              ) ?? [],
         ];
       })
     );
@@ -284,7 +294,7 @@ function RenderElementWithProps({
 
   const resolvedProps = React.useMemo(() => {
     return calculatePropsFromConfig(props);
-  }, [values, props, loopCtx]);
+  }, [values, props, loopCtx, parentOptions]);
 
   log("PROPS PROPS", resolvedProps);
 

@@ -3,9 +3,11 @@ import Content from "../pages/Content";
 import {
   ArrowPathIcon,
   ArrowPathRoundedSquareIcon,
+  Bars4Icon,
   ComputerDesktopIcon,
   DocumentDuplicateIcon,
   FolderIcon,
+  FolderPlusIcon,
   GlobeAltIcon,
   PencilIcon,
   PlusIcon,
@@ -192,7 +194,7 @@ export default function FolderPage({
 
   return (
     <FolderContext.Provider value={folder}>
-      <FolderDomainsProvider domains={folder?.domains ?? []}>
+      <FolderDomainsProvider domains={folder?.domains}>
         <FocusOrchestrator>
           <Content
             icon={type === "app" ? ComputerDesktopIcon : FolderIcon}
@@ -206,38 +208,56 @@ export default function FolderPage({
               />
             }
             toolbar={
-              <Content.Toolbar>
-                {type === "data" && (
-                  <FolderTemplateButton
-                    template={folder?.template}
-                    openDialog={() => setTemplateDialogIsOpen(true)}
+              <>
+                <Content.Toolbar>
+                  {type === "data" && (
+                    <FolderTemplateButton
+                      template={folder?.template}
+                      openDialog={() => setTemplateDialogIsOpen(true)}
+                    />
+                  )}
+                  {folder && (
+                    <>
+                      <DomainsButton
+                        parentDomains={parentDomains ?? undefined}
+                        domains={folder.domains}
+                        mutate={(domains) => mutateProp("domains", domains)}
+                      />
+                    </>
+                  )}
+                </Content.Toolbar>
+                <Content.Toolbar secondary>
+                  <Content.ToolbarDragButton
+                    id={`nyt-space-mapper`}
+                    type="spaces"
+                    icon={StopIcon}
+                    label="Mapper"
+                    item={spaces[0].item}
                   />
-                )}
-                <Menu
-                  as={Content.ToolbarButton}
-                  label="Tilføj space"
-                  icon={StopIcon}
-                >
-                  {spaces.map((el) => (
-                    <Menu.DragItem
-                      key={el.label}
-                      type="spaces"
-                      id={`nyt-space-${el.label}`}
-                      onClick={onClick}
-                      {...el}
-                    />
-                  ))}
-                </Menu>
-                {folder && (
-                  <>
-                    <DomainsButton
-                      parentDomains={parentDomains ?? undefined}
-                      domains={folder.domains}
-                      mutate={(domains) => mutateProp("domains", domains)}
-                    />
-                  </>
-                )}
-              </Content.Toolbar>
+                  <Content.ToolbarDragButton
+                    id={`nyt-space-dokumenter`}
+                    type="spaces"
+                    icon={StopIcon}
+                    label="Dokumenter"
+                    item={spaces[1].item}
+                  />
+                  <Menu
+                    as={Content.ToolbarButton}
+                    label="Andre spaces"
+                    icon={StopIcon}
+                  >
+                    {spaces.slice(2).map((el) => (
+                      <Menu.DragItem
+                        key={el.label}
+                        type="spaces"
+                        id={`nyt-space-${el.label}`}
+                        onClick={onClick}
+                        {...el}
+                      />
+                    ))}
+                  </Menu>
+                </Content.Toolbar>
+              </>
             }
             buttons={
               type === "app" && folder ? (
@@ -358,11 +378,7 @@ export function FolderTemplateButton({
   }
 
   return (
-    <Menu
-      as={Content.ToolbarButton}
-      label={`Skabelon: ${label}`}
-      icon={DocumentDuplicateIcon}
-    >
+    <Menu as={Content.ToolbarButton} label={label} icon={DocumentDuplicateIcon}>
       <Menu.Item
         icon={PencilIcon}
         label={`Rediger skabelon "${label}"`}
@@ -405,18 +421,32 @@ export function DomainsButton({
   };
 
   const options = React.useMemo(() => {
-    return organization!.apps.map((el) => ({
-      id: el.name,
-      label: getLabel(el.baseURL),
-      disabled: parentDomains.includes(el.name),
-    }));
-  }, [organization?.apps]);
+    const options = domains
+      .filter((el) => !organization!.apps.some((app) => app.name === el))
+      .map((name) => ({
+        id: name,
+        label: "Ukendt",
+        disabled: false,
+      }));
+
+    options.push(
+      ...organization!.apps.map((el) => ({
+        id: el.name,
+        label: getLabel(el.baseURL),
+        disabled: parentDomains.includes(el.name),
+      }))
+    );
+
+    return options;
+  }, [domains, parentDomains, organization?.apps]);
 
   const selected = options.filter(
     (el) => parentDomains.includes(el.id) || domains.includes(el.id)
   );
 
   if (!organization?.apps.length) return null;
+
+  console.log("SELECTED", selected);
 
   return (
     <Menu<{ id: string; label: string }>

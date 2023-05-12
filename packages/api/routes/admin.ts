@@ -1,13 +1,8 @@
 import { error, success } from "@storyflow/rpc-server/result";
 import { createProcedure, createRoute } from "@storyflow/rpc-server/router";
 import { cors as corsFactory } from "@storyflow/server/middleware";
-import { AuthCookies, serializeAuthToken } from "@storyflow/server/auth";
-import {
-  GLOBAL_TOKEN,
-  LOCAL_SESSION_COOKIE,
-  LOCAL_TOKEN,
-  parseAuthToken,
-} from "@storyflow/server/auth";
+import { serializeAuthToken } from "@storyflow/server/auth";
+import { GLOBAL_TOKEN, parseAuthToken } from "@storyflow/server/auth";
 import { globals } from "../globals";
 import { z } from "zod";
 import { getClientPromise } from "../mongoClient";

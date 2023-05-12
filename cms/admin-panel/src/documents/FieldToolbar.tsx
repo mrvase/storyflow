@@ -90,9 +90,9 @@ export function FieldToolbar() {
   );
 
   return (
-    <Content.Toolbar>
-      <div className="h-6 px-2 flex-center gap-1.5 rounded dark:bg-yellow-400/10 dark:text-yellow-200/75 ring-1 ring-yellow-200/50 text-xs whitespace-nowrap pointer-events-none">
-        1 valgt
+    <>
+      <div className="h-7 mx-2.5 px-2 flex-center gap-1.5 rounded dark:bg-yellow-400/10 dark:text-yellow-200/75 ring-1 ring-yellow-200/50 ring-inset text-sm whitespace-nowrap pointer-events-none font-medium">
+        1 felt valgt
         <XMarkIcon className="w-3 h-3" />
       </div>
       <FieldLabel id={fieldId} label={config?.label ?? ""} />
@@ -132,7 +132,7 @@ export function FieldToolbar() {
           <TrashIcon className="w-4 h-4" />
         </Content.ToolbarButton>
       )}
-    </Content.Toolbar>
+    </>
   );
 }
 
@@ -211,7 +211,7 @@ function EditableLabel({
   return (
     <div
       className={cl(
-        " text-xs text-gray-300 flex h-6 ring-1 rounded",
+        "text-sm text-gray-300 flex h-7 ring-1 ring-inset rounded mx-2.5",
         isEditing ? "ring-gray-600" : "ring-button"
       )}
       data-focus-remain="true"
@@ -229,7 +229,7 @@ function EditableLabel({
           onChange={handleChange}
           type="text"
           className={cl(
-            "outline-none padding-0 margin-0 bg-transparent h-6 items-center px-2",
+            "outline-none padding-0 margin-0 bg-transparent h-7 items-center px-2.5 font-medium",
             className
           )}
           placeholder="Ingen label"
@@ -253,29 +253,29 @@ function EditableLabel({
         />
         {!isEditing && (
           <div className="mr-2 h-full flex-center cursor-text">
-            <PencilSquareIcon className="w-3 h-3" />
+            <PencilSquareIcon className="w-4 h-4" />
           </div>
         )}
       </label>
       {isEditing && (
         <>
           <div
-            className="h-6 w-6 flex-center bg-gray-750 hover:bg-green-700/60 transition-colors rounded-l"
+            className="h-7 w-7 flex-center bg-gray-750 hover:bg-green-700/60 transition-colors rounded-l"
             onMouseDown={(ev) => {
               accept();
             }}
             onClick={(ev) => {}}
           >
-            <CheckIcon className="w-3 h-3" />
+            <CheckIcon className="w-4 h-4" />
           </div>
           <div
-            className="h-6 w-6 flex-center bg-gray-750 hover:bg-red-700/50 transition-colors rounded-r"
+            className="h-7 w-7 flex-center bg-gray-750 hover:bg-red-700/50 transition-colors rounded-r"
             onMouseDown={(ev) => {
               reject();
             }}
             onClick={(ev) => {}}
           >
-            <XMarkIcon className="w-3 h-3" />
+            <XMarkIcon className="w-4 h-4" />
           </div>
         </>
       )}

@@ -1,14 +1,73 @@
 import { error, success } from "@storyflow/rpc-server/result";
 import { createProcedure, createRoute } from "@storyflow/rpc-server";
-import type { FunctionName, RawFieldId } from "@storyflow/shared/types";
-import type { DocumentConfigItem } from "@storyflow/cms/types";
-import { getRawFieldId } from "@storyflow/cms/ids";
-import { client } from "./collab";
+import { getClientPromise, setClientPromise } from "../mongoClient";
+import { Redis } from "@upstash/redis";
+
+const copyCollection = async <T extends object = any>(options: {
+  collection: string;
+  fromDb: string;
+  toDb: string;
+  transform?: (doc: T) => T;
+}) => {
+  const db1 = (await getClientPromise()).db(options.fromDb);
+  const db2 = (await getClientPromise()).db(options.toDb);
+
+  let docs = (await db1.collection(options.collection).find().toArray()) as T[];
+
+  if (options.transform) {
+    docs = docs.map((doc) => options.transform!(doc as T));
+  }
+
+  await db2.collection(options.collection).deleteMany({});
+  await db2.collection(options.collection).insertMany(docs);
+
+  return docs.length;
+};
+
+export const client = new Redis({
+  url: "https://eu1-renewed-albacore-38555.upstash.io",
+  token: process.env.UPSTASH_TOKEN as string,
+});
 
 export const migration = createRoute({
   migrate: createProcedure({
     async query() {
+      setClientPromise(process.env.MONGO_URL!);
       if (process.env.NODE_ENV === "development") {
+        /*
+        await copyCollection({
+          collection: "documents",
+          fromDb: "kfs-hyz7",
+          toDb: "kfs-abcd",
+          transform(el) {
+            if ("versions" in el) {
+              el.versions = Object.fromEntries(
+                Object.entries(el.versions).map(([key, value]) => [
+                  key,
+                  typeof value === "number" ? [value] : value,
+                ])
+              );
+            }
+            if ("label" in el) {
+              el.values["00000e000000"] = [el.label];
+              delete el.label;
+            }
+            return el;
+          },
+        });
+
+        await copyCollection({
+          collection: "counters",
+          fromDb: "kfs-hyz7",
+          toDb: "kfs-abcd",
+        });
+
+        await copyCollection({
+          collection: "files",
+          fromDb: "kfs-hyz7",
+          toDb: "kfs-abcd",
+        });
+        */
         type Package = [
           queue: string,
           user: string,
@@ -18,16 +77,19 @@ export const migration = createRoute({
 
         type Operation =
           | { add: any }
+          | { _id: any; label: string }
           | { index: number; insert: any }
           | { index: number; remove: number }
           | { name: "domains"; value: string[] }
           | { name: "termplate"; value: string };
 
         const result = (await client.lrange(
-          `semper:folders`,
+          `kfs_backup:folders`,
           0,
           -1
         )) as Package[];
+
+        let failed: any[] = [];
 
         const transactions = result
           .map((el) => {
@@ -41,6 +103,9 @@ export const migration = createRoute({
                 if ("add" in el) {
                   return [el.add._id, [["label", el.add.label]]];
                 }
+                if ("_id" in el) {
+                  return [el._id, [["label", el.label]]];
+                }
                 if ("insert" in el) {
                   return [queue.replace("/", ":"), [[el.index, 0, el.insert]]];
                 }
@@ -50,21 +115,15 @@ export const migration = createRoute({
                 if ("name" in el) {
                   return [queue.replace("/", ":"), [[el.name, el.value]]];
                 }
+                failed.push(el);
               });
           })
           .flat(1);
 
-        /*
-        const pipeline = client.pipeline();
-        pipeline.del("kfs:folders");
-        pipeline.rpush(`kfs:folders`, ...array.map((el) => JSON.stringify(el)));
-        await (pipeline as any).exec();
-        */
+        client.del(`kfs:folders`);
+        client.rpush(`kfs:folders`, ["", 0, "047mpcup", transactions]);
 
-        client.del(`semper2:folders`);
-        client.rpush(`semper2:folders`, ["", 0, "047mpcup", transactions]);
-
-        return success(["", 0, "047mpcup", transactions]);
+        return success({ failed });
       } else {
         return error({
           message: "This function can only be run in development.",

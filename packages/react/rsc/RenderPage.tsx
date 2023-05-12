@@ -276,15 +276,12 @@ const RenderElement = ({
               key={newIndex}
               loopCtx={loopCtx}
               {...props}
-              renderChildren={(
-                value: ValueArray | undefined,
-                options?: ConfigRecord
-              ) => {
+              renderChildren={(value: ValueArray | undefined) => {
                 return (
                   <RenderChildren
                     value={value ?? []}
                     record={record}
-                    options={options}
+                    options={options} // WE ARE USING PARENT OPTIONS ON PURPOSE!
                     ctx={{
                       ...ctx,
                       spread: true,
