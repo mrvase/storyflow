@@ -2,7 +2,5 @@ packages:
   - "apps/*"
   - "cms/*"
   - "packages/*"
-  - "frontend/*"
-  - "utils/*"
+  - "core/*"
   - "setup/*"
-  - "rpc/*"

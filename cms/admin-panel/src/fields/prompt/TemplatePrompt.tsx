@@ -1,33 +1,34 @@
-import type { DocumentId } from "@storyflow/shared/types";
+import type { DocumentId, FieldId } from "@storyflow/shared/types";
 import {
   getDocumentId,
   getRawDocumentId,
   getRawFieldId,
-} from "@storyflow/fields-core/ids";
+} from "@storyflow/cms/ids";
 import { DocumentDuplicateIcon } from "@heroicons/react/24/outline";
 import React from "react";
 import { Option } from "./Option";
 import { useFieldId } from "../FieldIdContext";
 import { markMatchingString } from "./helpers";
-import { useOptimisticDocumentList } from "../../documents";
-import { TEMPLATE_FOLDER } from "@storyflow/fields-core/constants";
-import { FieldOperation } from "operations/actions";
-import { useDocumentMutate } from "../../documents/collab/DocumentCollabContext";
+import { useDocumentList } from "../../documents";
+import { TEMPLATE_FOLDER } from "@storyflow/cms/constants";
 import { usePath } from "../Path";
-import { useClientConfig } from "../../client-config";
+import { useAppConfig } from "../../AppConfigContext";
 import { $exitPromptNode } from "./utils";
 import { useEditorContext } from "../../editor/react/EditorProvider";
+import { FieldTransactionEntry } from "../../operations/actions";
+import { usePush } from "../../collab/CollabContext";
+import { createTransaction } from "@storyflow/collab/utils";
+import { getDocumentLabel } from "../../documents/useDocumentLabel";
 
 export function TemplatePrompt({ prompt }: { prompt: string }) {
   const fieldId = useFieldId();
 
-  const { push } = useDocumentMutate<FieldOperation>(
-    getDocumentId(fieldId),
+  const push = usePush<FieldTransactionEntry>(
+    getDocumentId<DocumentId>(fieldId),
     getRawFieldId(fieldId)
   );
 
-  const { documents: templates = [] } =
-    useOptimisticDocumentList(TEMPLATE_FOLDER);
+  const { documents: templates = [] } = useDocumentList(TEMPLATE_FOLDER);
 
   const path = usePath();
   const dataFieldId = path.slice(-1)[0];
@@ -35,31 +36,39 @@ export function TemplatePrompt({ prompt }: { prompt: string }) {
   console.log("ELEMENT ID", dataFieldId);
 
   const editor = useEditorContext();
-  const { libraries } = useClientConfig();
+  const { configs } = useAppConfig();
 
   const onEnter = React.useCallback(
     (id: DocumentId | null) => {
       editor.update(() => {
-        $exitPromptNode(libraries);
+        $exitPromptNode(configs);
       });
-      push([
-        dataFieldId,
-        [
-          {
+      push(
+        createTransaction((t) =>
+          t.target(dataFieldId as FieldId).toggle({
             name: "template",
             value: id === null ? null : getRawDocumentId(id),
-          },
-        ],
-      ]);
+          })
+        )
+      );
     },
-    [push, dataFieldId, libraries]
+    [push, dataFieldId, configs]
   );
 
-  const options = templates
-    .filter((el) => el.label!.toLowerCase().startsWith(prompt.toLowerCase()))
+  const templatesWithLabels = React.useMemo(() => {
+    return templates
+      .filter((el) => el.folder)
+      .map((el) => ({
+        ...el,
+        label: getDocumentLabel(el)!,
+      }));
+  }, [templates]);
+
+  const options = templatesWithLabels
+    .filter((el) => el.label.toLowerCase().startsWith(prompt.toLowerCase()))
     .map((el) => ({
       value: el._id,
-      label: markMatchingString(el.label!, prompt),
+      label: markMatchingString(el.label, prompt),
     }));
 
   return (

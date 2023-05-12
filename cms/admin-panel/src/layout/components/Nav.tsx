@@ -1,16 +1,15 @@
 import cl from "clsx";
 import {
   ArrowDownCircleIcon,
+  ArrowRightOnRectangleIcon,
   ArrowUpCircleIcon,
   CheckCircleIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  Cog6ToothIcon,
   DocumentDuplicateIcon,
   FolderIcon,
   MinusCircleIcon,
   MoonIcon,
-  PencilIcon,
   PhotoIcon,
   PlusIcon,
   SunIcon,
@@ -18,12 +17,10 @@ import {
 } from "@heroicons/react/24/outline";
 import React from "react";
 import { useLocalStorage } from "../../state/useLocalStorage";
-import Dialog from "../../elements/Dialog";
-import { SettingsDialog } from "./SettingsDialog";
-import { usePanelActions } from "../../panel-router/PanelRouter";
-import { useDocumentCollab } from "../../documents/collab/DocumentCollabContext";
-import { useLocation, useNavigate } from "@storyflow/router";
-import { replacePanelPath } from "../../panel-router/utils";
+import { usePanelActions } from "../panel-router/PanelRouter";
+import { useCollab } from "../../collab/CollabContext";
+import { Link, useLocation, useNavigate } from "@storyflow/router";
+import { replacePanelPath } from "../panel-router/utils";
 import { DropShadow, Sortable } from "@storyflow/dnd";
 
 export default function Nav() {
@@ -33,10 +30,6 @@ export default function Nav() {
 
   const [darkMode, setDarkMode] = useLocalStorage<boolean>("dark-mode", true);
   const DarkIcon = darkMode ? MoonIcon : SunIcon;
-
-  React.useEffect(() => {
-    document.body.classList[darkMode ? "add" : "remove"]("dark");
-  }, [darkMode]);
 
   const actions = usePanelActions();
 
@@ -58,6 +51,7 @@ export default function Nav() {
 
   return (
     <>
+      {/*
       <Dialog
         isOpen={dialog === "settings"}
         close={() => setDialog(null)}
@@ -65,41 +59,42 @@ export default function Nav() {
       >
         <SettingsDialog close={() => setDialog(null)} />
       </Dialog>
+      */}
       <div
         className={cl(
           "group h-screen flex flex-col shrink-0 grow-0 overflow-hidden transition-[width] ease-out",
-          isOpen ? "w-48" : "w-9 menu-closed",
-          "dark:text-white font-medium"
+          isOpen ? "w-60" : "w-10 menu-closed",
+          "dark:text-white"
         )}
       >
-        <div className="h-full flex flex-col pl-2 py-4 w-48">
+        <div className="h-full flex flex-col pl-2 py-4 w-60">
           <div className="flex flex-col gap-2">
             <NavButton
               onClick={() => {
-                actions.open({ path: "/", index: -1 });
+                actions.open({ path: "/", index: 0 });
               }}
               icon={PlusIcon}
             >
               Åbn nyt panel
             </NavButton>
-            <NavButton
+            {/*<NavButton
               onClick={() => {
                 setToolbarIsOpen((ps) => !ps);
               }}
               icon={toolbarIsOpen ? EditingOffIcon : EditingIcon}
             >
               Slå redigering {toolbarIsOpen ? "fra" : "til"}
-            </NavButton>
+            </NavButton>*/}
           </div>
-          <div className="lex flex-col gap-1 mt-6">
-            <div
+          <div className="lex flex-col gap-2 mt-6">
+            {/*<div
               className={cl(
                 "text-xs ml-1 font-bold text-gray-500 mb-1 transition-[opacity,height]",
                 isOpen ? "opacity-100 h-4" : "opacity-0 h-0"
               )}
             >
               Dine mapper
-            </div>
+            </div>*/}
             <NavButton
               onClick={() => {
                 navigatePanel("/");
@@ -122,7 +117,7 @@ export default function Nav() {
             </Sortable>
           </div>
           <div className="w-full grow" onClick={() => setIsOpen((ps) => !ps)} />
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-2">
             <div
               className={cl(
                 "text-xs ml-1 font-bold text-gray-500 mb-1 transition-[opacity,height]",
@@ -149,7 +144,7 @@ export default function Nav() {
             >
               Filer
             </NavButton>
-            <div className="flex justify-between mt-3">
+            <div className="flex justify-between mt-3 gap-8">
               <NavButton
                 onClick={() => {
                   setIsOpen((ps) => !ps);
@@ -157,73 +152,15 @@ export default function Nav() {
                 icon={MenuIcon}
                 className="important [.menu-closed_&.important]:opacity-80 [.menu-closed:hover_&.important]:opacity-80"
               />
+              <NavButton icon={ArrowRightOnRectangleIcon} to="/" />
               <NavButton
                 onClick={() => setDarkMode((ps) => !ps)}
                 icon={DarkIcon}
-              />
-              <NavButton icon={UserIcon} onClick={() => {}} />
-              <NavButton
-                icon={Cog6ToothIcon}
-                onClick={() => setDialog("settings")}
               />
               <StatusButton />
             </div>
           </div>
         </div>
-        {/*
-        <div className="h-full flex flex-col justify-between pl-2 py-2 w-48">
-          <div className="mt-auto flex justify-end gap-2">
-            <button
-              className="flex-center w-10 h-10 hover:bg-gray-400/25 dark:hover:bg-gray-850 rounded transition-colors"
-              onClick={() => actions.open({ path: "/folders", index: 0 })}
-            >
-              <FolderIcon className="w-5 h-5" />
-            </button>
-            <button
-              className="flex-center w-10 h-10 hover:bg-gray-400/25 dark:hover:bg-gray-850 rounded transition-colors"
-              onClick={() => actions.open({ path: "/templates", index: 0 })}
-            >
-              <DocumentIcon className="w-5 h-5" />
-            </button>
-            <button
-              className="flex-center w-10 h-10 hover:bg-gray-400/25 dark:hover:bg-gray-850 rounded transition-colors"
-              onClick={() => actions.open({ path: "/files", index: 0 })}
-            >
-              <PhotoIcon className="w-5 h-5" />
-            </button>
-          </div>
-          <div className="flex gap-2 mt-2">
-            <button
-              className="flex-center w-10 h-10 hover:bg-gray-400/25 dark:hover:bg-gray-850 rounded transition-colors"
-              onClick={() => setIsOpen(false)}
-            >
-              <ChevronLeftIcon className="w-5 h-5" />
-            </button>
-            <a
-              className="flex-center w-10 h-10 hover:bg-gray-400/25 dark:hover:bg-gray-850 rounded transition-colors"
-              href="/bruger"
-            >
-              <UserIcon className="w-5 h-5" />
-            </a>
-            <button
-              className="flex-center w-10 h-10 hover:bg-gray-400/25 dark:hover:bg-gray-850 rounded transition-colors"
-              onClick={() => setDarkMode((ps) => !ps)}
-            >
-              <DarkIcon className="w-5 h-5" />
-            </button>
-            <button
-              className="flex-center w-10 h-10 hover:bg-gray-400/25 dark:hover:bg-gray-850 rounded transition-colors"
-              onClick={() => setDialog("settings")}
-            >
-              <CogIcon className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-        */}
-        {/*<div className="w-full h-11 mt-auto px-3 flex-center font-black tracking-wider text-sm">
-          <span className="text-white">Storyflow</span>
-        </div>
-        */}
       </div>
     </>
   );
@@ -231,26 +168,35 @@ export default function Nav() {
 
 function NavButton({
   children,
-  onClick,
   className,
   icon: Icon,
+  ...action
 }: {
   children?: React.ReactNode;
-  onClick: () => void;
   className?: string;
   icon: React.ComponentType<{ className: string }>;
-}) {
+} & (
+  | {
+      onClick: () => void;
+    }
+  | {
+      to: string;
+    }
+)) {
+  const Component = "to" in action ? Link : "button";
+
   return (
-    <button
+    <Component
       className={cl(
-        "w-full h-7 px-1.5 rounded flex gap-2.5 items-center [.menu-closed_&]:opacity-40 [.menu-closed:hover_&]:opacity-75 opacity-75 hover:opacity-100 [.menu-closed:hover_&]:hover:opacity-100 transition-opacity text-sm",
+        "w-full h-7 px-1.5 rounded flex gap-4 items-center [.menu-closed_&]:opacity-40 [.menu-closed:hover_&]:opacity-75 opacity-75 hover:opacity-100 [.menu-closed:hover_&]:hover:opacity-100 transition-opacity",
+        "font-medium",
         className
       )}
-      onClick={onClick}
+      {...(action as any)}
     >
-      {<Icon className="w-4 h-4" />}
+      {<Icon className="w-5 h-5" />}
       {children && <div>{children}</div>}
-    </button>
+    </Component>
   );
 }
 
@@ -359,7 +305,7 @@ function StatusButton() {
     }
   };
 
-  const collab = useDocumentCollab();
+  const collab = useCollab();
 
   React.useEffect(() => {
     return collab.registerEventListener((event) => {
@@ -370,6 +316,7 @@ function StatusButton() {
     });
   }, [isModified, collabState]);
 
+  /*
   React.useEffect(() => {
     return collab.registerMutationListener(() => {
       changeState({
@@ -377,6 +324,7 @@ function StatusButton() {
       });
     });
   }, [isModified, collabState]);
+  */
 
   const icon = {
     uploading: ArrowUpCircleIcon,
@@ -393,7 +341,7 @@ function StatusButton() {
           ? "text-yellow-400"
           : "text-green-400"
       }
-      onClick={() => collab.sync()}
+      onClick={() => collab.sync(0)}
     />
   );
 }

@@ -1,40 +1,41 @@
-import { PartialConfig } from "@storyflow/react/config";
-import { HeaderPopoverCTA } from "../HeaderPopoverCTA";
-import { HeaderPopoverItem } from "../HeaderPopoverItem";
+import { HeaderPopover } from ".";
+import { HeaderPopoverCTAConfig } from "../HeaderPopoverCTA";
+import { HeaderPopoverItemConfig } from "../HeaderPopoverItem";
+import { Config, Props } from "@storyflow/react";
 
 export const HeaderPopoverConfig = {
   label: "Menulistepunkt",
   hidden: true,
-  props: [
-    {
-      name: "label",
+  props: {
+    label: {
       label: "Label",
       type: "string",
     },
-    {
-      name: "items",
+    items: {
       label: "Punkter",
       type: "children",
       options: {
-        HeaderPopoverItem,
+        HeaderPopoverItemConfig,
       },
     },
-    {
-      name: "callsToAction",
+    callsToAction: {
       label: "Call To Action-knapper",
       type: "children",
       options: {
-        HeaderPopoverCTA,
+        HeaderPopoverCTAConfig,
       },
     },
-  ] as const,
-  stories: [
-    {
+  },
+  stories: {
+    "": {
       props: {
         label: "Løsninger",
-        items: [HeaderPopoverItem as any],
-        callsToAction: [HeaderPopoverCTA as any],
+        items: [HeaderPopoverItemConfig],
+        callsToAction: [HeaderPopoverCTAConfig],
       },
     },
-  ],
-} satisfies PartialConfig;
+  },
+  component: HeaderPopover,
+} satisfies Config;
+
+export type HeaderPopoverProps = Props<(typeof HeaderPopoverConfig)["props"]>;

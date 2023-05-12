@@ -6,9 +6,10 @@ import {
   FieldId,
   NestedDocumentId,
   NestedElement,
+  Options,
 } from "@storyflow/shared/types";
-import type { SyntaxTree } from "@storyflow/fields-core/types";
-import { getConfigFromType, useClientConfig } from "../../../client-config";
+import type { SyntaxTree } from "@storyflow/cms/types";
+import { getConfigFromType, useAppConfig } from "../../../AppConfigContext";
 import {
   ArrowPathRoundedSquareIcon,
   ChevronUpDownIcon,
@@ -31,16 +32,23 @@ import {
   useAttributesContext,
 } from "../../Attributes";
 import { ExtendPath, usePath, useSelectedPath } from "../../Path";
-import type { PropConfig, RegularOptions } from "@storyflow/shared/types";
+import type { PropConfig } from "@storyflow/shared/types";
 import { flattenPropsWithIds } from "../../../utils/flattenProps";
-import { DefaultField } from "../../default/DefaultField";
-import { getIdFromString } from "@storyflow/fields-core/ids";
+import { getIdFromString } from "@storyflow/cms/ids";
 import { useEditorContext } from "../../../editor/react/EditorProvider";
 import $createRangeSelection from "../../../editor/createRangeSelection";
 import { useGlobalState } from "../../../state/state";
-import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
-import { tokens } from "@storyflow/fields-core/tokens";
-import { traverseSyntaxTree } from "@storyflow/fields-core/syntax-tree";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/cms/constants";
+import { tokens } from "@storyflow/cms/tokens";
+import { traverseSyntaxTree } from "@storyflow/cms/syntax-tree";
+
+export const LayoutElementCircularImport = {
+  DefaultField: null as React.FC<{
+    id: FieldId;
+    showPromptButton?: boolean;
+    showTemplateHeader?: boolean;
+  }> | null,
+};
 
 const LevelContext = React.createContext(0);
 
@@ -69,10 +77,10 @@ function Decorator({
 
   const { isSelected, select } = useIsSelected(nodeKey);
 
-  const { libraries } = useClientConfig();
-  const config = getConfigFromType(value.element, libraries);
+  const { configs } = useAppConfig();
+  const config = getConfigFromType(value.element, configs);
 
-  let props = flattenPropsWithIds(value.id, config?.props ?? []);
+  let props = flattenPropsWithIds(value.id, config?.props ?? {});
 
   const Icon =
     value.element === "Loop"
@@ -236,8 +244,8 @@ function useParentPropConfig() {
       }
     }
   );
-  const { libraries } = useClientConfig();
-  const config = element ? getConfigFromType(element, libraries) : undefined;
+  const { configs } = useAppConfig();
+  const config = element ? getConfigFromType(element, configs) : undefined;
   if (!config) return;
   return flattenPropsWithIds(documentId, config.props).find(
     (el) => el.id === fieldId
@@ -249,7 +257,7 @@ function FieldSpecification({
   isLoop,
   children,
 }: {
-  props: (PropConfig<RegularOptions> & { id: FieldId })[];
+  props: (PropConfig & { id: FieldId })[];
   isLoop: boolean;
   children: React.ReactNode;
 }) {
@@ -262,7 +270,7 @@ function FieldSpecification({
 
   const config = props.find((el) => el.id === propId)!;
 
-  let options: RegularOptions | undefined =
+  let options: Options | undefined =
     "options" in config ? config.options : undefined;
 
   if (isLoop) {
@@ -297,11 +305,13 @@ function NestedDefaultField({
     ) : null;
   }
 
+  const Field = LayoutElementCircularImport.DefaultField!;
+
   return (
     <ExtendPath id={documentId} type="document">
       <ExtendPath id={propId} type="field">
         <div className="cursor-auto pl-[2.875rem] pr-2.5">
-          <DefaultField
+          <Field
             id={propId}
             showPromptButton
             showTemplateHeader={propId.endsWith(getIdFromString("data"))}

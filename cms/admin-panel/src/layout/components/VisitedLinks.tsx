@@ -1,11 +1,11 @@
 import React from "react";
 import cl from "clsx";
-import type { PanelData } from "../../panel-router/types";
+import type { PanelData } from "../panel-router/types";
 import { fetchDocument } from "../../documents";
-import { useClient } from "../../client";
+import { useClient } from "../../RPCProvider";
 import { getDocumentLabel } from "../../documents/useDocumentLabel";
 import { Link, useLocation } from "@storyflow/router";
-import { replacePanelPath } from "../../panel-router/utils";
+import { replacePanelPath } from "../panel-router/utils";
 
 export function VisitedLinks({ data: { path, index } }: { data: PanelData }) {
   const [visited, setVisited] = React.useState<
@@ -27,7 +27,7 @@ export function VisitedLinks({ data: { path, index } }: { data: PanelData }) {
     if (type === "d" || type === "t") {
       fetchDocument(id, client).then((doc) => {
         if (!mounted) return;
-        const label = doc?.label ?? getDocumentLabel(doc);
+        const label = getDocumentLabel(doc);
         if (!label) return;
         setVisited((ps) =>
           [

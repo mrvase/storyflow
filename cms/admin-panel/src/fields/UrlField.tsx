@@ -1,21 +1,16 @@
 import React from "react";
 import { useGlobalContext } from "../state/context";
 import { addContext, addImport } from "../custom-events";
-import { useClient } from "../client";
 import type { DocumentId, FieldId, ValueArray } from "@storyflow/shared/types";
-import type { DBDocument } from "@storyflow/db-core/types";
-import type { SyntaxTree, NestedField } from "@storyflow/fields-core/types";
+import type { DBDocument } from "@storyflow/cms/types";
+import type { SyntaxTree, NestedField } from "@storyflow/cms/types";
 import {
   createTemplateFieldId,
   getDocumentId,
   getRawFieldId,
-} from "@storyflow/fields-core/ids";
-import {
-  useDocumentCollab,
-  useDocumentMutate,
-} from "../documents/collab/DocumentCollabContext";
+} from "@storyflow/cms/ids";
+import { usePush } from "../collab/CollabContext";
 import { HomeIcon, LinkIcon, StarIcon } from "@heroicons/react/24/outline";
-import { useAppPageContext } from "../folders/AppPageContext";
 import { Link } from "@storyflow/router";
 import { useDocument, useDocumentList } from "../documents";
 import { getDocumentLabel } from "../documents/useDocumentLabel";
@@ -24,25 +19,20 @@ import { useDocumentPageContext } from "../documents/DocumentPageContext";
 import {
   calculate,
   calculateRootFieldFromRecord,
-} from "@storyflow/fields-core/calculate-server";
-import {
-  DEFAULT_FIELDS,
-  isDefaultField,
-} from "@storyflow/fields-core/default-fields";
+} from "@storyflow/cms/calculate-server";
+import { DEFAULT_FIELDS, isDefaultField } from "@storyflow/cms/default-fields";
 import { useDocumentIdGenerator } from "../id-generator";
-import { usePanel, useRoute } from "../panel-router/Routes";
-import { FieldOperation } from "operations/actions";
+import { usePanel, useRoute } from "../layout/panel-router/Routes";
 import { useDefaultState } from "./default/useDefaultState";
 import type { FieldProps } from "./types";
-
-export const toSlug = (value: string) =>
-  value
-    .toLowerCase()
-    .replace(/æ/g, "ae")
-    .replace(/ø/g, "oe")
-    .replace(/å/g, "aa")
-    .replace(/\s/g, "-")
-    .replace(/[^\w\/\*\-]/g, "");
+import { FieldTransactionEntry } from "../operations/actions";
+import { createTransaction } from "@storyflow/collab/utils";
+import { useCurrentFolder } from "../folders/FolderPageContext";
+import {
+  AddDocumentDialog,
+  useAddDocumentDialog,
+} from "../folders/AddDocumentDialog";
+import { createSlug } from "../utils/createSlug";
 
 const getUrlStringFromValue = (value: ValueArray | SyntaxTree) => {
   const getString = (val: any[]) => {
@@ -57,9 +47,9 @@ const getUrlStringFromValue = (value: ValueArray | SyntaxTree) => {
   );
 };
 
-const useRelatedPages = (documentId: DocumentId, initialUrl: string) => {
-  const { doc } = useDocument(documentId);
-  const { data: list } = useDocumentList(doc?.folder);
+const useRelatedPages = (initialUrl: string) => {
+  const folderId = useCurrentFolder()!._id;
+  const { documents: list } = useDocumentList(folderId);
 
   const getUrl = (doc: DBDocument) => {
     return (
@@ -74,11 +64,11 @@ const useRelatedPages = (documentId: DocumentId, initialUrl: string) => {
 
   const parents = slugs.map((_, i, arr) => {
     const path = `/${arr.slice(1, i + 1).join("/")}`;
-    return list?.documents.find((el) => getUrl(el) === path);
+    return list?.find((el) => getUrl(el) === path);
   });
 
   const children =
-    list?.documents.filter((el) => {
+    list?.filter((el) => {
       // "|| null" excludes the front page from being included among its on children
       const url = getUrl(el);
       if (url === "/") return false;
@@ -88,17 +78,15 @@ const useRelatedPages = (documentId: DocumentId, initialUrl: string) => {
   return [parents, children] as [DBDocument[], DBDocument[]];
 };
 
-export default function UrlField({ id, version, history }: FieldProps) {
+export default function UrlField({ id }: FieldProps) {
   const documentId = getDocumentId(id) as DocumentId;
   const { record } = useDocumentPageContext();
-  const client = useClient();
-  const collab = useDocumentCollab();
 
   const [isFocused, setIsFocused] = React.useState(false);
 
-  const ctx = useAppPageContext();
   const generateDocumentId = useDocumentIdGenerator();
 
+  /*
   React.useLayoutEffect(() => {
     collab
       .getOrAddQueue<FieldOperation>(getDocumentId(id), getRawFieldId(id), {
@@ -106,57 +94,52 @@ export default function UrlField({ id, version, history }: FieldProps) {
       })
       .initialize(version, history ?? []);
   }, [collab, version]);
+  */
 
-  const { value } = useDefaultState(id, version);
+  const { value } = useDefaultState(id);
 
   const url = getUrlStringFromValue(value);
 
-  const actions = useDocumentMutate<FieldOperation>(
-    documentId,
-    getRawFieldId(id)
-  );
+  const push = usePush<FieldTransactionEntry>(documentId, getRawFieldId(id));
 
   const parentUrl = url.split("/").slice(0, -1).join("/");
   const slug = url.split("/").slice(-1)[0];
 
   const handleChange = (value: string) => {
     if (value === "") {
-      actions.push([
-        "",
-        [
-          {
+      push(
+        createTransaction((t) =>
+          t.target(id).splice({
             index: 3,
             insert: [{ ",": true }, ""],
             remove: slug.length + 1,
-          },
-        ],
-      ]);
+          })
+        )
+      );
       return;
     }
     if (value === "*") {
-      actions.push([
-        "",
-        [
-          {
+      push(
+        createTransaction((t) =>
+          t.target(id).splice({
             index: 4,
             insert: [{ x: 0, value: "*" }],
             remove: slug.length,
-          },
-        ],
-      ]);
+          })
+        )
+      );
       return;
     }
-    const newSlug = toSlug(value);
-    actions.push([
-      "",
-      [
-        {
+    const newSlug = createSlug(value);
+    push(
+      createTransaction((t) =>
+        t.target(id).splice({
           index: 4,
           insert: [newSlug],
           remove: slug.length,
-        },
-      ],
-    ]);
+        })
+      )
+    );
   };
 
   const [values, setValues] = useGlobalContext(getDocumentId(id), {
@@ -166,7 +149,6 @@ export default function UrlField({ id, version, history }: FieldProps) {
   });
 
   const [parents, children] = useRelatedPages(
-    documentId,
     getUrlStringFromValue(calculateRootFieldFromRecord(id, record))
   );
 
@@ -182,16 +164,15 @@ export default function UrlField({ id, version, history }: FieldProps) {
           field: externalId as FieldId,
           inline: true,
         };
-        actions.push([
-          "",
-          [
-            {
+        push(
+          createTransaction((t) =>
+            t.target(id).splice({
               index: 0,
               insert: [parentField, { ",": true }],
               remove: 2,
-            },
-          ],
-        ]);
+            })
+          )
+        );
       });
     }
   }, [isFocused]);
@@ -214,8 +195,20 @@ export default function UrlField({ id, version, history }: FieldProps) {
     parentSlugs.unshift("");
   }
 
+  const [dialogUrl, addDocumentWithUrl, close] = useAddDocumentDialog();
+  const folder = useCurrentFolder();
+
   return (
     <div className="pb-2.5">
+      {folder && (
+        <AddDocumentDialog
+          isOpen={Boolean(dialogUrl)}
+          close={close}
+          folder={folder._id}
+          parentUrl={dialogUrl}
+          type="app"
+        />
+      )}
       <div className="outline-none rounded flex items-center px-3 mb-2.5 bg-gray-50 dark:bg-gray-800 ring-button">
         <Link
           to={replacePage(parents[0]?._id ?? "")}
@@ -320,7 +313,7 @@ export default function UrlField({ id, version, history }: FieldProps) {
             <button
               className="group text-sm flex-center gap-2"
               onClick={() =>
-                ctx.addDocumentWithUrl({
+                addDocumentWithUrl({
                   _id: documentId,
                   record,
                 })

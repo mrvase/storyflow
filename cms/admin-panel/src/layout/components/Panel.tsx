@@ -1,7 +1,7 @@
 import React from "react";
 import cl from "clsx";
 import { ErrorBoundary, FallbackProps } from "react-error-boundary";
-import type { PanelData } from "../../panel-router/types";
+import type { PanelData } from "../panel-router/types";
 import useIsFocused from "../../utils/useIsFocused";
 import { BranchFocusContext } from "./BranchFocusContext";
 import { LocationBar } from "./LocationBar";

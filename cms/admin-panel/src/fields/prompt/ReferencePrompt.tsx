@@ -6,8 +6,8 @@ import {
   FieldId,
   NestedDocumentId,
 } from "@storyflow/shared/types";
-import type { FieldConfig, NestedField } from "@storyflow/fields-core/types";
-import type { TokenStream, HasSelect } from "operations/types";
+import type { FieldConfig, NestedField } from "@storyflow/cms/types";
+import type { TokenStream, HasSelect } from "../../operations/types";
 import {
   computeFieldId,
   createRawTemplateFieldId,
@@ -16,26 +16,26 @@ import {
   getIdFromString,
   getRawDocumentId,
   getRawFieldId,
-} from "@storyflow/fields-core/ids";
+} from "@storyflow/cms/ids";
 import {
   Bars3BottomLeftIcon,
   ComputerDesktopIcon,
   DocumentIcon,
 } from "@heroicons/react/24/outline";
 import React from "react";
-import { useFolders } from "../../folders/collab/hooks";
 import { Option } from "./Option";
 import { useFieldId } from "../FieldIdContext";
 import { useDocumentIdGenerator } from "../../id-generator";
 import { markMatchingString } from "./helpers";
-import { SWRClient } from "../../client";
-import { calculateRootFieldFromRecord } from "@storyflow/fields-core/calculate-server";
-import { DEFAULT_FIELDS } from "@storyflow/fields-core/default-fields";
+import { SWRClient } from "../../RPCProvider";
+import { calculateRootFieldFromRecord } from "@storyflow/cms/calculate-server";
+import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
 import Loader from "../../elements/Loader";
-import { useFieldConfig } from "../../documents/collab/hooks";
+import { useFieldConfig } from "../../documents/document-config";
 import { usePath, useSelectedPath } from "../Path";
 import { useLoopTemplate } from "../default/LoopTemplateContext";
 import { useTemplate } from "../default/useFieldTemplate";
+import { useFolders } from "../../folders/FoldersContext";
 
 export function ReferencePrompt({
   prompt,
@@ -199,7 +199,7 @@ function FolderPrompt({
   const documentId = getDocumentId(fieldId) as DocumentId;
   const generateDocumentId = useDocumentIdGenerator();
 
-  const folders = useFolders();
+  const folders = Array.from(useFolders().values());
 
   const [fieldConfig, setFieldConfig] = useFieldConfig(fieldId);
 
@@ -257,7 +257,7 @@ function DocumentPrompt({
 }) {
   const [search, setSearch] = React.useState("");
 
-  const { data, isLoading } = SWRClient.documents.getByLabel.useQuery(search, {
+  const { data, isLoading } = SWRClient.documents.findByLabel.useQuery(search, {
     inactive: search === "",
   });
 
@@ -290,7 +290,7 @@ function DocumentPrompt({
     [replacePromptWithStream, fieldConfig, setFieldConfig]
   );
 
-  const folders = useFolders();
+  const folders = Array.from(useFolders().values());
 
   const options = React.useMemo(
     () =>

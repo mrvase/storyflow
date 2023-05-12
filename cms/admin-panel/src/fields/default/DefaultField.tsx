@@ -1,18 +1,17 @@
 import React from "react";
 import cl from "clsx";
-import type { FieldId } from "@storyflow/shared/types";
-import type { TokenStream } from "operations/types";
-import { getDocumentId, getRawFieldId } from "@storyflow/fields-core/ids";
+import type { DocumentId, FieldId } from "@storyflow/shared/types";
+import { getDocumentId, getRawFieldId } from "@storyflow/cms/ids";
 import { useFieldId } from "../FieldIdContext";
-import { createTokenStream } from "operations/parse-token-stream";
-import { useDocumentCollab } from "../../documents/collab/DocumentCollabContext";
+import { createTokenStream } from "../../operations/parse-token-stream";
+import { usePush } from "../../collab/CollabContext";
 import { ContentEditable } from "../../editor/react/ContentEditable";
 import Editor from "../Editor/Editor";
 import { getPreview } from "./getPreview";
 import { Placeholder } from "./Placeholder";
 import { PromptButton } from "../prompt/PromptButton";
 import { TemplateHeader } from "./TemplateHeader";
-import { tools } from "operations/stream-methods";
+import { tools } from "../../operations/stream-methods";
 import { useDefaultState } from "./useDefaultState";
 import { useEditorContext } from "../../editor/react/EditorProvider";
 import { $getRoot, BLUR_COMMAND, COMMAND_PRIORITY_EDITOR } from "lexical";
@@ -21,46 +20,87 @@ import { Overlay } from "../prompt/Overlay";
 import { Option } from "../prompt/Option";
 import { useMathMode } from "../Editor/useMathMode";
 import { Bars2Icon, VariableIcon } from "@heroicons/react/24/outline";
-import {
-  FieldOperation,
-  StreamAction,
-  isSpliceAction,
-} from "operations/actions";
-import { useFieldVersion } from "./VersionContext";
 import { FieldTemplateIdContext } from "./FieldTemplateContext";
+import {
+  FieldTransactionEntry,
+  StreamOperation,
+  TransformOperation,
+} from "../../operations/actions";
+import { SpliceOperation, Transaction } from "@storyflow/collab/types";
+import { createTransaction, isSpliceOperation } from "@storyflow/collab/utils";
+import { PushFunction } from "@storyflow/collab/Queue";
+import { HeadingNode } from "../../editor/react/HeadingNode";
+import nodes from "../Editor/decorators/nodes";
+import { CreatorCircularImport } from "../Editor/decorators/CreatorNode";
+import { LayoutElementCircularImport } from "../Editor/decorators/LayoutElementNode";
+import { FolderCircularImport } from "../Editor/decorators/FolderNode";
 
-type TextOps = [{ index: number; insert: [string]; remove?: 0 }];
-
-const isTextInsert = (ops: FieldOperation[1]): ops is TextOps => {
+const isTextInsert = (
+  transaction: Transaction<FieldTransactionEntry>
+): transaction is [[FieldId, [[number, number, [string]]]]] => {
+  if (!isSingleSpliceTransaction(transaction)) return false;
+  const op = transaction[0][1][0];
   return (
-    ops.length === 1 &&
-    isSpliceAction(ops[0]) &&
-    Array.isArray(ops[0].insert) &&
-    ops[0].insert.length === 1 &&
-    !ops[0].remove &&
-    typeof ops[0].insert[0] === "string"
+    Array.isArray(op[2]) &&
+    op[2].length === 1 &&
+    typeof op[2][0] === "string" &&
+    !op[1]
   );
 };
 
+const isTextDeletion = (
+  transaction: Transaction<FieldTransactionEntry>
+): transaction is [[FieldId, [[number, number]]]] => {
+  if (!isSingleSpliceTransaction(transaction)) return false;
+  const op = transaction[0][1][0];
+  return Boolean((!op[2] || !op[2].length) && op[1]);
+};
+
+const isSingleSpliceTransaction = (
+  value: Transaction<FieldTransactionEntry>
+): value is [[FieldId, [SpliceOperation]]] => {
+  return (
+    value.length === 1 &&
+    value[0][1].length === 1 &&
+    isSpliceOperation(value[0][1][0])
+  );
+};
+
+const createObjectKey = (() => {
+  const ids = new WeakMap();
+
+  return function createObjectKey(object: object) {
+    let key = ids.get(object);
+    if (!key) {
+      key = Math.random().toString(36).slice(2, 10);
+      ids.set(object, key);
+    }
+    return key;
+  };
+})();
+
 const isAdjacent = (
-  prev: FieldOperation[1],
-  next: FieldOperation[1]
+  prev: Transaction<FieldTransactionEntry>,
+  next: Transaction<FieldTransactionEntry>
 ): boolean => {
-  if (
-    prev.length !== 1 ||
-    next.length !== 1 ||
-    !isSpliceAction(prev[0]) ||
-    !isSpliceAction(next[0])
-  ) {
+  if (!isSingleSpliceTransaction(prev) || !isSingleSpliceTransaction(next)) {
     return false;
   }
-  const prevEndingIndex =
-    prev[0].index +
-    tools.getLength(prev[0].insert ?? []) -
-    (prev[0].remove ?? 0);
-  const nextStartingIndex = next[0].index + (next[0].remove ?? 0);
+
+  const prevOp = prev[0][1][0];
+  const nextOp = next[0][1][0];
+
+  const prevEndingIndex = prevOp[0] + tools.getLength(prevOp[2] ?? []); // - (prevOp[1] ?? 0);
+  const nextStartingIndex = nextOp[0] + (nextOp[1] ?? 0);
+
   return prevEndingIndex === nextStartingIndex;
 };
+
+CreatorCircularImport.DefaultField = DefaultField;
+LayoutElementCircularImport.DefaultField = DefaultField;
+FolderCircularImport.DefaultField = DefaultField;
+
+const allNodes = [HeadingNode, ...nodes];
 
 export function DefaultField({
   id,
@@ -72,115 +112,85 @@ export function DefaultField({
   showTemplateHeader?: boolean;
 }) {
   const rootId = useFieldId();
-  const version = useFieldVersion();
 
   const { target, initialValue, value, isPrimitive, templateId, transforms } =
-    useDefaultState(id, version);
+    useDefaultState(id);
 
-  const initialEditorValue = createTokenStream(initialValue);
+  const initialEditorValue = React.useMemo(
+    () => createTokenStream(initialValue),
+    [initialValue]
+  );
 
   const preview = getPreview(value);
 
-  const collab = useDocumentCollab();
-  const actions = React.useMemo(
-    () =>
-      collab.boundMutate<FieldOperation>(
-        getDocumentId(rootId),
-        getRawFieldId(rootId)
-      ),
-    [collab]
-  );
+  const tracker = React.useMemo(() => ({}), []);
 
-  const push = React.useCallback(
-    (
-      payload:
-        | FieldOperation[1]
-        | ((
-            prev: FieldOperation[1] | undefined,
-            noop: FieldOperation[1]
-          ) => FieldOperation[1][])
-    ) => {
-      return actions.mergeablePush((_prev, noop) => {
-        const result = [];
-        let prev = _prev;
-        if (_prev?.[0] !== target) {
-          if (prev === noop) {
-            prev = noop;
-          } else {
-            prev = undefined;
-            result.push(prev);
-          }
-        }
-        const newOps =
-          typeof payload === "function"
-            ? payload(prev?.[1], noop[1])
-            : [payload];
-        return newOps.map((ops) => (ops === noop[1] ? noop : [target, ops]));
-      });
-    },
-    [actions, target]
+  const push = usePush<FieldTransactionEntry>(
+    getDocumentId<DocumentId>(rootId),
+    getRawFieldId(rootId)
   );
 
   const hasLocalPush = React.useRef(false);
 
-  const pushWithBatching = React.useCallback(
-    (next: FieldOperation[1]) => {
+  const mergePush = React.useCallback(
+    (ops: StreamOperation[] | TransformOperation[]) => {
       hasLocalPush.current = true;
-      return push((prev, noop) => {
-        let result: FieldOperation[1][] = [];
-        if (!prev || prev === noop) {
+      return push((prev) => {
+        let result: Transaction<FieldTransactionEntry>[] = [];
+
+        const next: Transaction<FieldTransactionEntry> = [
+          [id, ops] as FieldTransactionEntry,
+        ];
+
+        if (!prev) {
           result = [next];
         } else {
           result = [prev, next];
-          if (
-            isSpliceAction(prev[0]) &&
-            isSpliceAction(next[0]) &&
-            isAdjacent(prev, next) &&
-            (isTextInsert(prev) || !isTextInsert(next)) &&
-            !(isTextInsert(next) && next[0].insert[0] === " ")
-          ) {
-            let insert: TokenStream = [];
-            let remove = 0;
-            let index = prev[0].index;
 
-            // if prev has insert and next has remove, remove from insert first
-            if ((prev[0].insert ?? []).length > 0 && next[0].remove) {
-              const prevInsertLength = tools.getLength(prev[0].insert!);
-              if (next[0].remove > prevInsertLength) {
-                const diff = next[0].remove - prevInsertLength;
-                insert = next[0].insert ?? [];
-                remove = (prev[0].remove ?? 0) + diff;
-                index = index - diff; // or just next[0].index ??
-              } else {
-                const prevInsert = tools.slice(
-                  prev[0].insert!,
-                  0,
-                  -1 * next[0].remove
-                );
-                insert = tools.concat(prevInsert, next[0].insert ?? []);
-                remove = 0;
-              }
-            } else {
-              insert = tools.concat(prev[0].insert ?? [], next[0].insert ?? []);
-              remove = (prev[0].remove ?? 0) + (next[0].remove ?? 0);
+          if (isAdjacent(prev, next)) {
+            if (
+              isTextInsert(prev) &&
+              isTextInsert(next) &&
+              next[0][1][0][2][0] !== " "
+            ) {
+              const prevOp = prev[0][1][0];
+              const nextOp = next[0][1][0];
+              result = [
+                createTransaction((t) =>
+                  t.target(id).splice({
+                    index: prevOp[0],
+                    insert: tools.concat(prevOp[2], nextOp[2]),
+                  })
+                ),
+              ];
+            } else if (isTextDeletion(prev) && isTextDeletion(next)) {
+              const prevOp = prev[0][1][0];
+              const nextOp = next[0][1][0];
+              result = [
+                createTransaction((t) =>
+                  t.target(id).splice({
+                    index: nextOp[0],
+                    remove: prevOp[1] + nextOp[1],
+                  })
+                ),
+              ];
             }
-
-            const merged: StreamAction[] = [
-              {
-                index,
-              },
-            ];
-            if (insert.length) merged[0].insert = insert;
-            if (remove) merged[0].remove = remove;
-            result = [merged];
           }
         }
+
         const latest = result[result.length - 1];
-        if (!isTextInsert(latest)) {
-          result.push(noop);
+
+        if (isTextInsert(latest) || isTextDeletion(latest)) {
+          return {
+            await: latest,
+            push: result.slice(0, -1),
+          };
         }
-        return result;
-      });
+
+        return {
+          push: result,
+        };
+      }, tracker);
     },
     [push]
   );
@@ -195,11 +205,12 @@ export function DefaultField({
         />
       )}
       <Editor
-        key={version}
+        key={createObjectKey(initialEditorValue)}
         target={target}
-        push={pushWithBatching}
-        register={actions.register}
+        push={mergePush}
+        tracker={tracker}
         initialValue={initialEditorValue}
+        nodes={allNodes}
       >
         <div className={cl("relative")}>
           <Placeholder />
@@ -217,7 +228,11 @@ export function DefaultField({
             </div>
           )}
           {showPromptButton && <PromptButton />}
-          <PushOnBlurPlugin push={push} hasLocalPush={hasLocalPush} />
+          <PushOnBlurPlugin
+            push={push}
+            tracker={tracker}
+            hasLocalPush={hasLocalPush}
+          />
           <OverlayWrapper />
           <BottomSelectionArea />
           <div className="absolute right-0 top-0">
@@ -295,30 +310,24 @@ function OverlayWrapper() {
 
 function PushOnBlurPlugin({
   push,
+  tracker,
   hasLocalPush,
 }: {
   push: (
-    payload:
-      | FieldOperation[1]
-      | ((
-          prev: FieldOperation[1] | undefined,
-          noop: FieldOperation[1]
-        ) => FieldOperation[1][])
+    payload: PushFunction<FieldTransactionEntry>,
+    tracker?: object
   ) => void;
+  tracker: object;
   hasLocalPush: React.MutableRefObject<boolean>;
 }) {
   const editor = useEditorContext();
 
   const escapePush = React.useCallback(() => {
-    push((prev, noop) => {
-      if (!prev) {
-        return [];
-      }
-      if (prev === noop) {
-        return [prev];
-      }
-      return [prev, noop];
-    });
+    push((latest) => {
+      return {
+        push: latest ? [latest] : [],
+      };
+    }, tracker);
   }, [push]);
 
   React.useEffect(() => {

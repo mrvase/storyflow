@@ -4,9 +4,9 @@ import { useIsSelected } from "./useIsSelected";
 import cl from "clsx";
 import { caretClasses } from "./caret";
 import type { NestedElement, ValueArray } from "@storyflow/shared/types";
-import { getConfigFromType, useClientConfig } from "../../../client-config";
+import { getConfigFromType, useAppConfig } from "../../../AppConfigContext";
 import { useGlobalState } from "../../../state/state";
-import { computeFieldId, getIdFromString } from "@storyflow/fields-core/ids";
+import { computeFieldId, getIdFromString } from "@storyflow/cms/ids";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 import { usePath, useSelectedPath } from "../../Path";
 
@@ -28,8 +28,8 @@ function Decorator({
 
   const selectClick = React.useRef(false);
 
-  const { libraries } = useClientConfig();
-  const config = getConfigFromType(value.element, libraries);
+  const { configs } = useAppConfig();
+  const config = getConfigFromType(value.element, configs);
 
   const text =
     typeof output?.[0] === "string"
@@ -41,7 +41,7 @@ function Decorator({
       className={cl(
         "text-gray-100/90 rounded-sm selection:bg-transparent relative z-0 bg-gray-50 dark:bg-gray-400/20",
         "after:absolute after:-z-10 after:w-full after:left-0 after:-bottom-0.5 after:border-b-2 after:border-b-green-300/50 after:rounded-b-sm",
-        isSelected ? "ring-1 ring-amber-300" : "dark:ring-gray-600",
+        isSelected ? "ring-1 ring-white" : "dark:ring-gray-600",
         isPseudoSelected && caretClasses
       )}
       onMouseDown={() => {

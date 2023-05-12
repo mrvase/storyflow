@@ -1,16 +1,18 @@
 import React from "react";
 import Dialog from "../elements/Dialog";
-import {
-  useOptimisticDocumentList,
-  useDocumentListMutation,
-} from "../documents";
-import { useFolderCollab } from "./collab/FolderCollabContext";
+import { useDocumentList } from "../documents";
+import { useAddDocument } from "../documents/useAddDocument";
 import { DialogOption } from "../elements/DialogOption";
 import { DocumentDuplicateIcon, PlusIcon } from "@heroicons/react/24/outline";
 import { useTemplateFolder } from "./FoldersContext";
-import { useTemplateIdGenerator } from "../id-generator";
-import type { DocumentId } from "@storyflow/shared/types";
-import { usePanel, useRoute } from "../panel-router/Routes";
+import type { DocumentId, FolderId } from "@storyflow/shared/types";
+import { usePush } from "../collab/CollabContext";
+import { createTransaction } from "@storyflow/collab/utils";
+import { FolderTransactionEntry } from "../operations/actions";
+import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/cms/constants";
+import { createTemplateFieldId } from "@storyflow/cms/ids";
+import { getDocumentLabel } from "../documents/useDocumentLabel";
 
 export function AddTemplateDialog({
   isOpen,
@@ -20,15 +22,12 @@ export function AddTemplateDialog({
 }: {
   isOpen: boolean;
   close: () => void;
-  folderId: string;
+  folderId: FolderId;
   currentTemplate?: string;
 }) {
-  const mutateDocuments = useDocumentListMutation();
-  const generateTemplateId = useTemplateIdGenerator();
-  const [, navigate] = usePanel();
-  const route = useRoute();
+  const addDocument = useAddDocument({ type: "template", navigate: true });
 
-  const collab = useFolderCollab();
+  const push = usePush<FolderTransactionEntry>("folders");
 
   const templateFolder = useTemplateFolder()?._id;
 
@@ -36,47 +35,43 @@ export function AddTemplateDialog({
     async (type: string, data: FormData) => {
       const label = (data.get("value") as string) ?? "";
       if (!label) return;
-      const id = type === "new" ? generateTemplateId() : (label as DocumentId);
-      collab.mutate("folders", folderId).push([
-        "",
-        [
-          {
-            name: "template",
-            value: id,
-          },
-        ],
-      ]);
+
+      let id: DocumentId;
       if (type === "new") {
-        mutateDocuments({
+        id = await addDocument({
           folder: templateFolder,
-          actions: [
-            {
-              type: "insert",
-              id,
-              label,
-              record: {},
-            },
-          ],
+          createRecord: (id) => {
+            return {
+              [createTemplateFieldId(id, DEFAULT_FIELDS.creation_date.id)]: {
+                ...DEFAULT_SYNTAX_TREE,
+                children: [new Date()],
+              },
+              [createTemplateFieldId(id, DEFAULT_FIELDS.template_label.id)]: {
+                ...DEFAULT_SYNTAX_TREE,
+                children: [label],
+              },
+            };
+          },
         });
-        navigate(`${route}/t${id}`, { navigate: true });
+      } else {
+        id = label as DocumentId;
       }
+
+      push(
+        createTransaction((t) =>
+          t.target(folderId).toggle({ name: "template", value: id })
+        )
+      );
       close();
     },
-    [
-      collab,
-      folderId,
-      generateTemplateId,
-      mutateDocuments,
-      templateFolder,
-      close,
-    ]
+    [push, folderId, addDocument, templateFolder, close]
   );
 
-  const { documents: templates } = useOptimisticDocumentList(templateFolder);
+  const { documents: templates } = useDocumentList(templateFolder);
 
   const templateOptions = (templates ?? []).map((el) => ({
     value: el._id,
-    label: el.label ?? el._id,
+    label: getDocumentLabel(el) ?? el._id,
   }));
 
   return (

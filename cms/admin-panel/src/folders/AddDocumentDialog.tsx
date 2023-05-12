@@ -1,30 +1,54 @@
 import React from "react";
 import Dialog from "../elements/Dialog";
-import { useDocumentListMutation } from "../documents";
-import { getDefaultValuesFromTemplateAsync } from "../documents/template-fields";
-import { createTemplateFieldId } from "@storyflow/fields-core/ids";
-import type { DocumentId, FieldId, FolderId } from "@storyflow/shared/types";
-import type { SyntaxTreeRecord } from "@storyflow/fields-core/types";
-import { useClient } from "../client";
-import { toSlug } from "../fields/UrlField";
+import { createTemplateFieldId } from "@storyflow/cms/ids";
+import type { FieldId, FolderId } from "@storyflow/shared/types";
+import type { DBDocument, SyntaxTreeRecord } from "@storyflow/cms/types";
 import { useDocumentIdGenerator } from "../id-generator";
-import { DEFAULT_FIELDS } from "@storyflow/fields-core/default-fields";
-import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
-import { insertRootInTransforms } from "@storyflow/fields-core/transform";
-import { usePanel, useRoute } from "../panel-router/Routes";
+import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/cms/constants";
+import { insertRootInTransforms } from "@storyflow/cms/transform";
+import { useAddDocument } from "../documents/useAddDocument";
+import { calculateRootFieldFromRecord } from "@storyflow/cms/calculate-server";
+import { getFieldRecord, getGraph } from "@storyflow/cms/graph";
+import { createSlug } from "../utils/createSlug";
+
+export function useAddDocumentDialog() {
+  const [parentUrl, setParentUrl] = React.useState<{
+    id: FieldId;
+    record: SyntaxTreeRecord;
+    url: string;
+  }>();
+
+  const addDocumentWithUrl = (parent: Pick<DBDocument, "_id" | "record">) => {
+    const urlId = createTemplateFieldId(parent._id, DEFAULT_FIELDS.url.id);
+    setParentUrl({
+      id: urlId,
+      url:
+        (calculateRootFieldFromRecord(urlId, parent.record)?.[0] as string) ??
+        "",
+      record: getFieldRecord(parent.record, urlId, getGraph(parent.record)),
+    });
+  };
+
+  const close = () => setParentUrl(undefined);
+
+  return [parentUrl, addDocumentWithUrl, close] as [
+    typeof parentUrl,
+    typeof addDocumentWithUrl,
+    typeof close
+  ];
+}
 
 export function AddDocumentDialog({
   isOpen,
   close,
   folder,
-  template,
   parentUrl,
   type,
 }: {
   isOpen: boolean;
   close: () => void;
   folder: FolderId;
-  template?: DocumentId;
   parentUrl?: {
     id: FieldId;
     record: SyntaxTreeRecord;
@@ -32,11 +56,9 @@ export function AddDocumentDialog({
   };
   type: "app" | "folder";
 }) {
-  const mutateDocuments = useDocumentListMutation();
+  const addDocument = useAddDocument({ navigate: true });
+
   const generateDocumentId = useDocumentIdGenerator();
-  const [, navigate] = usePanel();
-  const route = useRoute();
-  const client = useClient();
 
   const [label, setLabel] = React.useState("");
   const [slug, setSlug] = React.useState("");
@@ -51,57 +73,40 @@ export function AddDocumentDialog({
         onSubmit={async (ev) => {
           try {
             ev.preventDefault();
-            const id = generateDocumentId();
-            const record = template
-              ? await getDefaultValuesFromTemplateAsync(id, template, {
-                  client,
-                  generateDocumentId,
-                })
-              : {};
-
-            record[createTemplateFieldId(id, DEFAULT_FIELDS.creation_date.id)] =
-              {
-                ...DEFAULT_SYNTAX_TREE,
-                children: [new Date()],
-              };
-
-            if (parentUrl) {
-              Object.assign(record, parentUrl.record);
-
-              record[createTemplateFieldId(id, DEFAULT_FIELDS.url.id)] =
-                insertRootInTransforms(
-                  {
-                    ...DEFAULT_SYNTAX_TREE,
-                    children: [
-                      {
-                        id: generateDocumentId(id),
-                        field: parentUrl.id,
-                        inline: true,
-                      },
-                      "/",
-                      slug,
-                    ],
-                  },
-                  DEFAULT_FIELDS.url.initialValue.transforms
-                );
-
-              record[createTemplateFieldId(id, DEFAULT_FIELDS.label.id)] = {
-                ...DEFAULT_SYNTAX_TREE,
-                children: [label],
-              };
-            }
-
-            mutateDocuments({
+            addDocument({
               folder,
-              actions: [
-                {
-                  type: "insert",
-                  id,
-                  record,
+              createRecord: (id) => ({
+                [createTemplateFieldId(id, DEFAULT_FIELDS.creation_date.id)]: {
+                  ...DEFAULT_SYNTAX_TREE,
+                  children: [new Date()],
                 },
-              ],
+                ...(parentUrl
+                  ? {
+                      ...parentUrl.record,
+                      [createTemplateFieldId(id, DEFAULT_FIELDS.url.id)]:
+                        insertRootInTransforms(
+                          {
+                            ...DEFAULT_SYNTAX_TREE,
+                            children: [
+                              {
+                                id: generateDocumentId(id),
+                                field: parentUrl.id,
+                                inline: true,
+                              },
+                              "/",
+                              slug,
+                            ],
+                          },
+                          DEFAULT_FIELDS.url.initialValue.transforms
+                        ),
+                      [createTemplateFieldId(id, DEFAULT_FIELDS.label.id)]: {
+                        ...DEFAULT_SYNTAX_TREE,
+                        children: [label],
+                      },
+                    }
+                  : {}),
+              }),
             });
-            navigate(`${route}/d${id}`, { navigate: true });
             close();
           } catch (err) {
             console.log(err);
@@ -117,8 +122,8 @@ export function AddDocumentDialog({
             onChange={(ev) => {
               const newLabel = ev.target.value;
               setLabel(newLabel);
-              if (toSlug(label) === slug) {
-                setSlug(toSlug(newLabel));
+              if (createSlug(label) === slug) {
+                setSlug(createSlug(newLabel));
               }
             }}
             className="bg-white/5 rounded py-2 px-2.5 outline-none w-full"

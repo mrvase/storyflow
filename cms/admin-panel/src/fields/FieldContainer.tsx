@@ -9,28 +9,25 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import React from "react";
-import { useFieldFocus } from "../field-focus";
+import { useFieldFocus } from "../FieldFocusContext";
 import { addImport } from "../custom-events";
-import { useLabel } from "../documents/collab/hooks";
+import { useLabel } from "../documents/document-config";
 import type { FieldId, NestedDocumentId } from "@storyflow/shared/types";
-import type { FieldConfig } from "@storyflow/fields-core/types";
+import type { FieldConfig } from "@storyflow/cms/types";
 import { getTranslateDragEffect } from "../utils/dragEffects";
 import useIsFocused from "../utils/useIsFocused";
 import { useIsFocused as useIsEditorFocused } from "../editor/react/useIsFocused";
-import {
-  getDefaultField,
-  isDefaultField,
-} from "@storyflow/fields-core/default-fields";
-import { getConfigFromType, useClientConfig } from "../client-config";
-import { isTemplateField } from "@storyflow/fields-core/ids";
+import { getDefaultField, isDefaultField } from "@storyflow/cms/default-fields";
+import { getConfigFromType, useAppConfig } from "../AppConfigContext";
+import { isTemplateField } from "@storyflow/cms/ids";
 import { FieldToolbarPortal } from "../documents/FieldToolbar";
 import { EditorFocusProvider } from "../editor/react/useIsFocused";
 import { Attributes, AttributesProvider } from "./Attributes";
 import { SelectedPathProvider, useNestedEntity, useSelectedPath } from "./Path";
-import { useFolder } from "../folders/collab/hooks";
-import { usePanel, useRoute } from "../panel-router/Routes";
+import { usePanel, useRoute } from "../layout/panel-router/Routes";
 import { useLocalStorage } from "../state/useLocalStorage";
 import { useFieldRestriction } from "./FieldIdContext";
+import { useFolder } from "../folders/FoldersContext";
 
 type Props = {
   fieldConfig: FieldConfig;
@@ -89,7 +86,7 @@ export function FieldContainer({
           <FieldToolbarPortal show={isFocused} />
           <div
             {...props}
-            {...(isOpen ? handlers : {})}
+            {...handlers}
             className={cl(
               "relative grow shrink basis-0 group/container px-2.5 mt-8"
             )}
@@ -122,15 +119,17 @@ function FocusContainer({
 
   const [isOpen] = useLocalStorage<boolean>("toolbar-open", true);
 
-  if (isEditorFocused) {
-    ring = "ring-transparent";
-    // ring = isOpen ? " dark:ring-yellow-200/60" : " dark:ring-gray-600";
-  } else if (isFieldFocused) {
-    ring = "ring-yellow-200/40";
-  } else {
-    ring = isOpen
-      ? "ring-transparent group-hover/container:ring-gray-700/50"
-      : "ring-transparent";
+  ring = "ring-transparent";
+
+  if (isOpen) {
+    if (isEditorFocused) {
+      ring = "ring-transparent";
+      // ring = isOpen ? " dark:ring-yellow-200/60" : " dark:ring-gray-600";
+    } else if (isFieldFocused) {
+      ring = "ring-yellow-200/40";
+    } else {
+      ring = "ring-transparent group-hover/container:ring-gray-700/50";
+    }
   }
 
   return (
@@ -283,7 +282,7 @@ function ElementLabel(props: {
   const [, setPath] = useSelectedPath();
   const entity = useNestedEntity(props);
 
-  const { libraries } = useClientConfig();
+  const { configs } = useAppConfig();
 
   if (!entity) {
     return null;
@@ -312,7 +311,7 @@ function ElementLabel(props: {
   }
 
   if ("element" in entity) {
-    const config = getConfigFromType(entity.element, libraries);
+    const config = getConfigFromType(entity.element, configs);
 
     return (
       <button
@@ -405,7 +404,11 @@ function Label({ id }: { id: FieldId }) {
       }}
     >
       {label || "Ingen label"}
-      {isLink && <LinkIcon className="w-3 h-3 opacity-50" />}
+      {isLink && (
+        <button className="rounded-full font-medium px-2 py-0.5 text-xs ring-button-teal text-teal-400 opacity-40 hover:opacity-100 ml-1 mr-3 flex-center gap-1">
+          <LinkIcon className="w-3 h-3 opacity-50" /> Referer
+        </button>
+      )}
     </div>
   );
 }

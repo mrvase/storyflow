@@ -11,7 +11,7 @@ import {
   LexicalNode,
 } from "lexical";
 import React from "react";
-import { tools } from "operations/stream-methods";
+import { tools } from "../../operations/stream-methods";
 import { useEditorContext } from "../../editor/react/EditorProvider";
 import ColorNode, { $isColorNode } from "../Editor/decorators/ColorNode";
 import PromptNode, {
@@ -31,10 +31,10 @@ import FileNode, { $isFileNode } from "../Editor/decorators/FileNode";
 import { Options, OptionEventsPlugin } from "./OptionsContext";
 import { FilePrompt } from "./FilePrompt";
 import type { FileToken } from "@storyflow/shared/types";
-import type { TokenStream } from "operations/types";
+import type { TokenStream } from "../../operations/types";
 import { useIsFocused } from "../../editor/react/useIsFocused";
 import { useFieldRestriction } from "../FieldIdContext";
-import { useClientConfig } from "../../client-config";
+import { useAppConfig } from "../../AppConfigContext";
 
 const matchers: ((
   node: LexicalNode
@@ -278,7 +278,7 @@ function FileOverlay({
   holdActions: HoldActions;
 }) {
   const editor = useEditorContext();
-  const { libraries } = useClientConfig();
+  const { configs } = useAppConfig();
 
   const replacePromptWithStream = React.useCallback(
     (stream: TokenStream) => {
@@ -287,12 +287,12 @@ function FileOverlay({
         if (node) {
           node.setToken(token);
         } else {
-          const blocks = $createBlocksFromStream(stream, libraries);
+          const blocks = $createBlocksFromStream(stream, configs);
           $replaceWithBlocks(blocks);
         }
       });
     },
-    [editor, node, libraries]
+    [editor, node, configs]
   );
 
   return (

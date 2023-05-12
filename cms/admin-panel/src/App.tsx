@@ -1,42 +1,82 @@
 import { DragDropContext } from "@storyflow/dnd";
-import { Router } from "@storyflow/router";
+import { Router, useLocation } from "@storyflow/router";
 import { SWRConfig } from "swr";
-import { provider, QueryContextProvider } from "./client";
-import { ClientConfigProvider } from "./client-config";
-import { FieldFocusProvider } from "./field-focus";
-import { FoldersProvider } from "./folders/FoldersContext";
+import { provider, RPCProvider } from "./RPCProvider";
+import { AppConfigProvider } from "./AppConfigContext";
+import { FieldFocusProvider } from "./FieldFocusContext";
 import { IdGenerator } from "./id-generator";
-import { Preload } from "./preload";
-import { DocumentCollabProvider } from "./documents/collab/DocumentCollabContext";
-import { FolderCollabProvider } from "./folders/collab/FolderCollabContext";
-import { PanelRouter } from "./panel-router/PanelRouter";
+import { DataProvider, Preload } from "./DataProvider";
+import { CollabProvider } from "./collab/CollabContext";
+import { PanelRouter } from "./layout/panel-router/PanelRouter";
 import { Layout } from "./layout/components/Layout";
+import { Panels } from "./layout/components/Panels";
+import { routes } from "./pages/routes";
+import { AuthProvider, SignedIn, SignedOut, SignIn } from "./Auth";
+import React from "react";
+import { useLocalStorage } from "./state/useLocalStorage";
+import { Organizations } from "./Organizations";
 
-export function App() {
+export function App({
+  organization,
+}: {
+  organization?: { slug: string; url: string };
+}) {
+  const [darkMode] = useLocalStorage<boolean>("dark-mode", true);
+
+  React.useLayoutEffect(() => {
+    document.body.classList[darkMode ? "add" : "remove"]("dark");
+  }, [darkMode]);
+
   return (
-    <SWRConfig value={{ provider }}>
-      <Router>
-        <PanelRouter>
-          <QueryContextProvider>
-            <Preload />
-            <FoldersProvider>
-              <FieldFocusProvider>
-                <DragDropContext>
-                  <FolderCollabProvider>
-                    <DocumentCollabProvider>
-                      <ClientConfigProvider>
-                        <IdGenerator>
-                          <Layout />
-                        </IdGenerator>
-                      </ClientConfigProvider>
-                    </DocumentCollabProvider>
-                  </FolderCollabProvider>
-                </DragDropContext>
-              </FieldFocusProvider>
-            </FoldersProvider>
-          </QueryContextProvider>
-        </PanelRouter>
-      </Router>
-    </SWRConfig>
+    <div className="w-full h-full bg-gray-100 dark:bg-gray-950 text-gray-800 dark:text-white">
+      <SWRConfig value={{ provider }}>
+        <Router>
+          <PanelRouter>
+            <AuthProvider organization={organization}>
+              <SignedIn>
+                <FrontPage>
+                  <Organizations preset={organization} />
+                </FrontPage>
+                <PanelPage>
+                  <RPCProvider>
+                    <Preload />
+                    <CollabProvider>
+                      <DataProvider>
+                        <AppConfigProvider>
+                          <IdGenerator>
+                            <FieldFocusProvider>
+                              <DragDropContext>
+                                <Layout>
+                                  <Panels routes={routes} />
+                                </Layout>
+                              </DragDropContext>
+                            </FieldFocusProvider>
+                          </IdGenerator>
+                        </AppConfigProvider>
+                      </DataProvider>
+                    </CollabProvider>
+                  </RPCProvider>
+                </PanelPage>
+              </SignedIn>
+              <SignedOut>
+                <SignIn />
+              </SignedOut>
+            </AuthProvider>
+          </PanelRouter>
+        </Router>
+      </SWRConfig>
+    </div>
   );
+}
+
+function FrontPage({ children }: { children: React.ReactNode }) {
+  const { pathname } = useLocation();
+
+  return pathname === "/" || pathname === "logout" ? <>{children}</> : null;
+}
+
+function PanelPage({ children }: { children: React.ReactNode }) {
+  const { pathname } = useLocation();
+
+  return pathname === "/" || pathname === "logout" ? null : <>{children}</>;
 }

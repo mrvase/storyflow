@@ -1,14 +1,14 @@
 import cl from "clsx";
 import React from "react";
-import { Sortable, useSortableItem } from "@storyflow/dnd";
+import { Sortable } from "@storyflow/dnd";
 import { PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-import { usePanels, usePanelActions } from "../../panel-router/PanelRouter";
+import { usePanels, usePanelActions } from "../panel-router/PanelRouter";
 import { Panel } from "./Panel";
-import { routes } from "./routes";
-import { Routes } from "../../panel-router/Routes";
+import { Routes } from "../panel-router/Routes";
 import { LinkReceiver } from "./LinkReceiver";
+import { RouteConfig } from "../panel-router/types";
 
-export function Panels() {
+export function Panels({ routes }: { routes: RouteConfig[] }) {
   const panels = usePanels();
   const panelActions = usePanelActions();
 

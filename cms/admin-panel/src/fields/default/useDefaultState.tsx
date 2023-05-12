@@ -5,47 +5,32 @@ import {
   ValueArray,
   ClientSyntaxTree,
   RawDocumentId,
+  DocumentId,
 } from "@storyflow/shared/types";
-import type { SyntaxTree, FieldTransform } from "@storyflow/fields-core/types";
-import type { TokenStream } from "operations/types";
-import { getDocumentId, getRawFieldId } from "@storyflow/fields-core/ids";
+import type { SyntaxTree, FieldTransform } from "@storyflow/cms/types";
+import type { TokenStream } from "../../operations/types";
+import { getDocumentId, getRawFieldId } from "@storyflow/cms/ids";
 import { useFieldId } from "../FieldIdContext";
 import { useDocumentPageContext } from "../../documents/DocumentPageContext";
 import {
   createTokenStream,
   parseTokenStream,
-} from "operations/parse-token-stream";
-import { useClient } from "../../client";
-import { useDocumentCollab } from "../../documents/collab/DocumentCollabContext";
-import { useFieldConfig } from "../../documents/collab/hooks";
+} from "../../operations/parse-token-stream";
+import { useClient } from "../../RPCProvider";
+import { useCollab } from "../../collab/CollabContext";
+import { useFieldConfig } from "../../documents/document-config";
 import { useSingular } from "../../state/useSingular";
 import { calculateFn } from "./calculateFn";
-import { splitTransformsAndRoot } from "@storyflow/fields-core/transform";
-import { applyFieldOperation } from "operations/apply";
-import { createQueueCache } from "../../state/collaboration";
-import { FieldOperation } from "operations/actions";
-import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
+import { splitTransformsAndRoot } from "@storyflow/cms/transform";
+import { applyFieldTransaction } from "../../operations/apply";
+import { createQueueCache } from "../../collab/createQueueCache";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/cms/constants";
+import { FieldTransactionEntry } from "../../operations/actions";
 
 export function useDefaultStateCore(id: FieldId) {
   const rootId = useFieldId();
   const { record } = useDocumentPageContext();
   const client = useClient();
-
-  /*
-  if (id === rootId) {
-    let [config] = useFieldConfig(rootId);
-    if (!config) {
-      // dragged component
-      const defaultFieldConfig = getDefaultField(rootId);
-      config = {
-        id: rootId,
-        ui: defaultFieldConfig?.ui,
-        type2: defaultFieldConfig?.type2,
-        label: defaultFieldConfig?.label ?? "",
-      };
-    }
-  }
-  */
 
   const initialValue = record[id] ?? DEFAULT_SYNTAX_TREE;
 
@@ -82,24 +67,20 @@ export function useDefaultStateCore(id: FieldId) {
   return { initialValue, tree, value, setState };
 }
 
-export function useDefaultState(id: FieldId, version: number) {
+export function useDefaultState(id: FieldId) {
   const rootId = useFieldId();
 
   const { initialValue, tree, value, setState } = useDefaultStateCore(id);
 
-  const collab = useDocumentCollab();
+  const collab = useCollab();
 
-  const target = id === rootId ? "" : id;
+  const target = id;
   const singular = useSingular(id);
 
   React.useEffect(() => {
-    // we assume it has been initialized in a useLayoutEffect in the component or its parent.
-    // we do not initialize it here, because this hook is also for nested fields that use their
-    // parent's queue.
-    const queue = collab.getQueue<FieldOperation>(
-      getDocumentId(rootId),
-      getRawFieldId(rootId)
-    )!;
+    const queue = collab
+      .getTimeline(getDocumentId<DocumentId>(rootId))!
+      .getQueue<FieldTransactionEntry>(getRawFieldId(rootId));
 
     const [transforms, root] = splitTransformsAndRoot(initialValue);
 
@@ -108,26 +89,17 @@ export function useDefaultState(id: FieldId, version: number) {
       stream: createTokenStream(root),
     });
 
-    return queue.register((params) => {
+    return queue.register(() => {
       singular(() => {
-        if (params.stale) {
-          // ??
-        }
-        if (version !== params.version) {
-          console.warn("Invalid version", {
-            instance: version,
-            queue: params.version,
-          });
-          return;
-        }
-
         let update = false;
 
-        const result = cache(params.forEach, (prev, { operation }) => {
-          if (operation[0] === target) {
-            prev = applyFieldOperation(prev, operation);
-            update = true;
-          }
+        const result = cache(queue.forEach, (prev, { transaction }) => {
+          transaction.forEach((entry) => {
+            if (entry[0] === target) {
+              prev = applyFieldTransaction(prev, entry);
+              update = true;
+            }
+          });
           return prev;
         });
 
@@ -136,7 +108,7 @@ export function useDefaultState(id: FieldId, version: number) {
         }
       });
     });
-  }, [collab, version]);
+  }, [collab]);
 
   const isPrimitive = Array.isArray(value) && value[0] === tree.children[0];
 

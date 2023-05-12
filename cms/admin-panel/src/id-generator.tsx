@@ -1,11 +1,10 @@
 import React from "react";
-import { SWRClient, useClient } from "./client";
+import { SWRClient, useClient } from "./RPCProvider";
 import {
   DocumentId,
   FolderId,
   NestedDocumentId,
 } from "@storyflow/shared/types";
-import { useUrlInfo } from "./users";
 import { z } from "zod";
 import {
   getRawDocumentId,
@@ -13,7 +12,8 @@ import {
   createDocumentId,
   USER_DOCUMENT_OFFSET,
   USER_TEMPLATE_OFFSET,
-} from "@storyflow/fields-core/ids";
+} from "@storyflow/cms/ids";
+import { useAuth } from "./Auth";
 
 /*
 [organisation]:ids {
@@ -84,25 +84,23 @@ const IdContext = React.createContext<{
 } | null>(null);
 
 export function IdGenerator({ children }: { children: React.ReactNode }) {
-  const { organization } = useUrlInfo();
+  const { organization } = useAuth();
+  const workspaceId = organization!.workspaces[0].name;
 
-  const { data: workspaceId } = SWRClient.ids.getWorkspaceId.useQuery();
-
-  const getName = (name: string = "ids") => `${organization}:${name}`;
+  const getName = (name: string = "ids") => `${organization!.slug}:${name}`;
 
   const getItem = (name: string): string | null => {
-    if (!workspaceId) {
-      throw new Error("Tried to get value before initialization");
-    }
     if (typeof window === "undefined") return null;
     return localStorage.getItem(name) ?? null;
   };
 
   const initialize = async () => {
     if (getObject()) return;
-    const id_offset = await fetchOffset("id");
-    const template_offset = await fetchOffset("template");
-    const field_offset = await fetchOffset("field");
+    const [id_offset, template_offset, field_offset] = await Promise.all([
+      fetchOffset("id"),
+      fetchOffset("template"),
+      fetchOffset("field"),
+    ]);
     const object = {
       workspace: workspaceId,
       id: id_offset,
@@ -248,7 +246,7 @@ export function IdGenerator({ children }: { children: React.ReactNode }) {
 
   const fetchOffset = async (name: "id" | "template" | "field") => {
     if (!promises.current[name]) {
-      const promise = client.ids.getOffset.query({
+      const promise = client.admin.getOffset.query({
         name,
         size: batchSizes[name],
       });

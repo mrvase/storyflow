@@ -17,9 +17,9 @@ import useLayoutEffect from "./useLayoutEffect";
 
 type Props = {
   children: React.ReactNode;
+  nodes?: ReadonlyArray<Klass<LexicalNode>>;
   initialConfig: Readonly<{
     namespace: string;
-    nodes?: ReadonlyArray<Klass<LexicalNode>>;
     onError: (error: Error, editor: LexicalEditor) => void;
     editable?: boolean;
     theme?: EditorThemeClasses;
@@ -45,11 +45,12 @@ export function EditorProvider({
   initialConfig,
   children,
   initialize,
+  nodes,
 }: Props): JSX.Element {
   const parent = React.useContext(EditorContext);
 
   const editor = React.useMemo(() => {
-    const { theme, namespace, nodes, onError } = initialConfig;
+    const { theme, namespace, onError } = initialConfig;
 
     const editor = createEditor({
       editable: false,

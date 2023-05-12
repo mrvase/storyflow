@@ -1,4 +1,4 @@
-import type { LibraryConfig } from "@storyflow/shared/types";
+import type { LibraryConfigRecord } from "@storyflow/shared/types";
 import { $getSelection, $isRangeSelection } from "lexical";
 import PromptNode, { $isPromptNode } from "../Editor/decorators/PromptNode";
 import { $replaceWithBlocks } from "../Editor/insertComputation";
@@ -17,7 +17,7 @@ export const $getPromptNode = () => {
 };
 
 export const $exitPromptNode = (
-  libraries: LibraryConfig[],
+  configs: LibraryConfigRecord,
   node_?: PromptNode
 ) => {
   const node = node_ ?? $getPromptNode();
@@ -29,7 +29,7 @@ export const $exitPromptNode = (
   const stream = node.getTokenStream();
   if (stream.length) {
     node.select(0);
-    $replaceWithBlocks($createBlocksFromStream(stream, libraries));
+    $replaceWithBlocks($createBlocksFromStream(stream, configs));
   } else {
     node.remove();
   }

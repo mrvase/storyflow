@@ -49,7 +49,7 @@ import {
 
 import { CAN_USE_BEFORE_INPUT, IS_IOS, IS_SAFARI } from "./utils/environment";
 import { mergeRegister } from "./utils/mergeRegister";
-import type { LibraryConfig } from "@storyflow/shared/types";
+import type { LibraryConfigRecord } from "@storyflow/shared/types";
 
 /**
  * Tre scenarier for tekst
@@ -60,7 +60,6 @@ import type { LibraryConfig } from "@storyflow/shared/types";
 
 export function registerPlainText(
   editor: LexicalEditor,
-  libraries: LibraryConfig[],
   options: { allowLineBreaks?: boolean } = {}
 ): () => void {
   const removeListener = mergeRegister(

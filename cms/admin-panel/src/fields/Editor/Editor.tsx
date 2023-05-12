@@ -3,60 +3,59 @@ import { DecoratorPlugin } from "./DecoratorPlugin";
 import { EditorProvider } from "../../editor/react/EditorProvider";
 import React from "react";
 import { $initializeEditor } from "./transforms";
-import type { TokenStream } from "operations/types";
+import type { TokenStream } from "../../operations/types";
 import { Reconciler } from "./reconciler/Reconciler";
 import {
   EditorFocusPlugin,
   useIsFocused,
 } from "../../editor/react/useIsFocused";
-import { useClientConfig } from "../../client-config";
-import { useFieldFocus } from "../../field-focus";
-import { type QueueListener } from "@storyflow/state";
+import { useAppConfig } from "../../AppConfigContext";
+import { useFieldFocus } from "../../FieldFocusContext";
 import { useFieldId } from "../FieldIdContext";
-
-import { HeadingNode } from "../../editor/react/HeadingNode";
-import nodes from "./decorators/nodes";
 import { CopyPastePlugin } from "./CopyPastePlugin";
-import { FieldOperation } from "operations/actions";
+import { StreamOperation, TransformOperation } from "../../operations/actions";
+import { Klass, LexicalNode } from "lexical";
 
 const editorConfig = {
   namespace: "EDITOR",
   theme: {},
   onError: () => {},
-  nodes: [HeadingNode, ...nodes],
 };
 
 export default function Editor({
+  nodes,
   push,
-  register,
+  tracker,
   initialValue,
   children = null,
   target,
 }: {
+  nodes: ReadonlyArray<Klass<LexicalNode>>;
   target?: string;
-  push?: (ops: FieldOperation[1]) => void;
-  register?: (listener: QueueListener<FieldOperation>) => () => void;
+  push?: (ops: StreamOperation[] | TransformOperation[]) => void;
+  tracker?: object;
   initialValue: TokenStream;
   children?: React.ReactNode;
 }) {
-  const { libraries } = useClientConfig();
+  const { configs } = useAppConfig();
 
   return (
     <EditorProvider
+      nodes={nodes}
       initialConfig={editorConfig}
       initialize={() => {
-        $initializeEditor(initialValue ?? [], libraries);
+        $initializeEditor(initialValue ?? [], configs);
       }}
     >
       <ContentPlugin />
       <CopyPastePlugin />
       <EditorFocusPlugin />
       <FieldFocusPlugin />
-      {push && register && typeof target === "string" && (
+      {push && typeof target === "string" && (
         <Reconciler
           target={target}
           push={push}
-          register={register}
+          tracker={tracker}
           initialValue={initialValue}
         />
       )}

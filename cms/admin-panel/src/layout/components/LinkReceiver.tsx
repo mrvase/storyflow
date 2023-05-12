@@ -4,8 +4,8 @@ import {
   ArrowPathRoundedSquareIcon,
   PlusIcon,
 } from "@heroicons/react/24/outline";
-import { usePanelActions } from "../../panel-router/PanelRouter";
-import { replacePanelPath } from "../../panel-router/utils";
+import { usePanelActions } from "../panel-router/PanelRouter";
+import { replacePanelPath } from "../panel-router/utils";
 import { useLocation, useNavigate } from "@storyflow/router";
 import React from "react";
 

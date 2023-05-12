@@ -12,6 +12,10 @@ export function useGlobalState<T>(
 ): [T, (fn: (value: T | undefined) => Promise<T> | T) => void];
 export function useGlobalState<T>(
   id: string | undefined,
+  fn: ((value: T | undefined) => Promise<T> | T) | undefined
+): [T | undefined, (fn: (value: T | undefined) => Promise<T> | T) => void];
+export function useGlobalState<T>(
+  id: string | undefined,
   fn?: ((value: T | undefined) => Promise<T> | T) | undefined
 ): [T | undefined, (fn: (value: T | undefined) => Promise<T> | T) => void] {
   const s = React.useMemo(() => {

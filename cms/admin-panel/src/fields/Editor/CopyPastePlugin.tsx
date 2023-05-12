@@ -18,35 +18,33 @@ import {
 import { mergeRegister } from "../../editor/utils/mergeRegister";
 import { useEditorContext } from "../../editor/react/EditorProvider";
 import { copyRecord } from "../../documents/template-fields";
-import { useClientConfig } from "../../client-config";
+import { useAppConfig } from "../../AppConfigContext";
 import { useFieldId } from "../FieldIdContext";
 import {
   getDocumentId,
   getRawDocumentId,
   getRawFieldId,
-} from "@storyflow/fields-core/ids";
+} from "@storyflow/cms/ids";
 import type { DocumentId, FieldId } from "@storyflow/shared/types";
-import type {
-  SyntaxTree,
-  SyntaxTreeRecord,
-} from "@storyflow/fields-core/types";
-import type { TokenStream } from "operations/types";
+import type { SyntaxTree, SyntaxTreeRecord } from "@storyflow/cms/types";
+import type { TokenStream } from "../../operations/types";
 import { useDocumentIdGenerator } from "../../id-generator";
 import {
   createTokenStream,
   parseTokenStream,
-} from "operations/parse-token-stream";
+} from "../../operations/parse-token-stream";
 import { store } from "../../state/state";
-import { useClient } from "../../client";
-import { tokens } from "@storyflow/fields-core/tokens";
-import { useDocumentCollab } from "../../documents/collab/DocumentCollabContext";
-import { tools } from "operations/stream-methods";
+import { tokens } from "@storyflow/cms/tokens";
+import { useCollab, usePush } from "../../collab/CollabContext";
+import { tools } from "../../operations/stream-methods";
 import {
   $isTokenStreamNode,
   TokenStreamNode,
 } from "./decorators/TokenStreamNode";
 import { $replaceWithBlocks } from "./insertComputation";
-import { FieldOperation } from "operations/actions";
+import { createTransaction } from "@storyflow/collab/utils";
+import { FieldTransactionEntry } from "../../operations/actions";
+import { getSyntaxTreeEntries } from "@storyflow/cms/syntax-tree";
 
 const EVENT_LATENCY = 50;
 let clipboardEventTimeout: null | number = null;
@@ -113,13 +111,13 @@ const emulateCopyEvent = (
 
 export function CopyPastePlugin() {
   const editor = useEditorContext();
-  const { libraries } = useClientConfig();
+  const { configs } = useAppConfig();
   const id = useFieldId();
   const documentId = getDocumentId(id) as DocumentId;
   const generateDocumentId = useDocumentIdGenerator();
-  const client = useClient();
 
-  const collab = useDocumentCollab();
+  const collab = useCollab();
+  const push = usePush(documentId, getRawFieldId(id));
 
   React.useLayoutEffect(() => {
     return mergeRegister(
@@ -268,27 +266,24 @@ export function CopyPastePlugin() {
 
                 console.log("PAYLOAD 2", { entry, record });
 
-                const actions = collab.mutate<FieldOperation>(
-                  documentId,
-                  getRawFieldId(id)
-                );
-
-                // initialize states for record entries
-                Object.entries(record).forEach(([fieldId, value]) => {
-                  actions.push([
-                    fieldId,
-                    [
-                      {
-                        index: 0,
-                        insert: createTokenStream(value),
-                      },
-                    ],
-                  ]);
+                const transaction = createTransaction<
+                  FieldTransactionEntry,
+                  string
+                >((t) => {
+                  getSyntaxTreeEntries(record).forEach(([fieldId, value]) => {
+                    t.target(fieldId).splice({
+                      index: 0,
+                      insert: createTokenStream(value),
+                    });
+                  });
+                  return t;
                 });
+
+                push(transaction);
 
                 const stream = createTokenStream(entry);
 
-                const blocks = $createBlocksFromStream(stream, libraries);
+                const blocks = $createBlocksFromStream(stream, configs);
                 $replaceWithBlocks(blocks);
                 /*
                 const lastNode = $getLastBlock(selection, libraries);
@@ -348,6 +343,6 @@ export function CopyPastePlugin() {
         COMMAND_PRIORITY_EDITOR
       )
     );
-  }, [editor, libraries, documentId, id, collab]);
+  }, [editor, configs, documentId, id, collab]);
   return null;
 }

@@ -5,16 +5,13 @@ import {
   NestedDocumentId,
   NestedEntity,
 } from "@storyflow/shared/types";
-import type { FieldConfig } from "@storyflow/fields-core/types";
+import type { FieldConfig } from "@storyflow/cms/types";
 import { useFieldId } from "./FieldIdContext";
-import { getConfigFromType, useClientConfig } from "../client-config";
-import {
-  createTemplateFieldId,
-  getDocumentId,
-} from "@storyflow/fields-core/ids";
+import { getConfigFromType, useAppConfig } from "../AppConfigContext";
+import { createTemplateFieldId, getDocumentId } from "@storyflow/cms/ids";
 import { useGlobalState } from "../state/state";
-import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
-import { useClient } from "../client";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/cms/constants";
+import { useClient } from "../RPCProvider";
 import { useDocumentPageContext } from "../documents/DocumentPageContext";
 import { calculateFn } from "./default/calculateFn";
 import { useContextWithError } from "../utils/contextError";
@@ -60,7 +57,7 @@ export function Attributes({
   color?: "gray" | "red" | "pink" | "yellow";
 }) {
   const [currentProp, setCurrentProp] = useAttributesContext();
-  const { libraries } = useClientConfig();
+  const { configs } = useAppConfig();
 
   let templateId = useFieldTemplateId();
   const template = useTemplate(templateId) ?? noTemplate;
@@ -72,12 +69,12 @@ export function Attributes({
 
   let props: { id: FieldId; label: React.ReactNode }[] = React.useMemo(() => {
     if (entity && "element" in entity) {
-      const config = getConfigFromType(entity.element, libraries);
+      const config = getConfigFromType(entity.element, configs);
 
       let result: { id: FieldId; label: React.ReactNode; type?: string }[] =
         flattenPropsWithIds(
           entity!.id as NestedDocumentId,
-          config?.props ?? []
+          config?.props ?? {}
         );
       if (hideChildrenProps) {
         result = result.filter((el) => el.type !== "children");

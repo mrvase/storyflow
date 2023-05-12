@@ -19,8 +19,11 @@ import {
   $getStartAndEnd,
   $isTextBlockNode,
 } from "./transforms";
-import type { TokenStream } from "operations/types";
-import type { LibraryConfig } from "@storyflow/shared/types";
+import type { TokenStream } from "../../operations/types";
+import type {
+  LibraryConfig,
+  LibraryConfigRecord,
+} from "@storyflow/shared/types";
 import { $isPromptNode } from "./decorators/PromptNode";
 import { $isHeadingNode, HeadingNode } from "../../editor/react/HeadingNode";
 
@@ -596,10 +599,10 @@ export function $replaceWithBlocks(newBlocks: LexicalNode[]) {
 export function replaceWithComputation(
   editor: LexicalEditor,
   insert: TokenStream,
-  libraries: LibraryConfig[]
+  configs: LibraryConfigRecord
 ) {
   editor.update(() => {
-    const newBlocks = $createBlocksFromStream(insert, libraries);
+    const newBlocks = $createBlocksFromStream(insert, configs);
     return $replaceWithBlocks(newBlocks);
   });
 }

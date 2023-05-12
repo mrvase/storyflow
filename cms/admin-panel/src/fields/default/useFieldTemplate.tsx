@@ -1,8 +1,8 @@
 import React from "react";
 import { getTemplateFieldsAsync } from "../../documents/template-fields";
 import type { DocumentId, RawDocumentId } from "@storyflow/shared/types";
-import type { FieldConfig } from "@storyflow/fields-core/types";
-import { useClient } from "../../client";
+import type { FieldConfig } from "@storyflow/cms/types";
+import { useClient } from "../../RPCProvider";
 import { useDocument } from "../../documents";
 
 // TODO - make sure all templates are fetched and then make this sync!

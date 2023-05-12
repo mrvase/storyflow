@@ -1,9 +1,10 @@
 import cl from "clsx";
-import type { FieldId, RawDocumentId } from "@storyflow/shared/types";
 import type {
-  GetFunctionData,
-  FieldTransform,
-} from "@storyflow/fields-core/types";
+  DocumentId,
+  FieldId,
+  RawDocumentId,
+} from "@storyflow/shared/types";
+import type { GetFunctionData, FieldTransform } from "@storyflow/cms/types";
 import {
   ChevronDownIcon,
   ChevronUpIcon,
@@ -16,20 +17,22 @@ import {
   getDocumentId,
   getRawDocumentId,
   getRawFieldId,
-} from "@storyflow/fields-core/ids";
+} from "@storyflow/cms/ids";
 import { useTemplate } from "./useFieldTemplate";
-import { useFieldFocus } from "../../field-focus";
+import { useFieldFocus } from "../../FieldFocusContext";
 import { Checkbox } from "../../elements/Checkbox";
 import { Range } from "../../elements/Range";
 import { Menu as HeadlessMenu } from "@headlessui/react";
-import { useDocumentMutate } from "../../documents/collab/DocumentCollabContext";
-import { FieldOperation } from "operations/actions";
+import { usePush } from "../../collab/CollabContext";
 import { useFieldId } from "../FieldIdContext";
-import { Menu } from "../../layout/components/Menu";
+import { Menu } from "../../elements/Menu";
 import { useTemplateFolder } from "../../folders/FoldersContext";
 import React from "react";
-import { useOptimisticDocumentList } from "../../documents";
+import { useDocumentList } from "../../documents";
 import { useFieldTemplateId } from "./FieldTemplateContext";
+import { FieldTransactionEntry } from "../../operations/actions";
+import { createTransaction } from "@storyflow/collab/utils";
+import { getDocumentLabel } from "../../documents/useDocumentLabel";
 
 export function TemplateHeader({
   id,
@@ -126,12 +129,10 @@ function TransformMenu({
 
   const current = transforms.find((el) => el.type === "fetch");
 
-  const { push } = useDocumentMutate<FieldOperation>(
-    getDocumentId(rootId),
+  const push = usePush<FieldTransactionEntry>(
+    getDocumentId<DocumentId>(rootId),
     getRawFieldId(rootId)
   );
-
-  const target = id === rootId ? "" : id;
 
   return (
     <div className="p-2 flex flex-col gap-2">
@@ -139,15 +140,14 @@ function TransformMenu({
         <Checkbox
           value={current !== undefined}
           setValue={(value) => {
-            push([
-              target,
-              [
-                {
+            push(
+              createTransaction((t) =>
+                t.target(id).toggle({
                   name: "fetch",
-                  value: value ? ([50] as [number]) : null,
-                },
-              ],
-            ]);
+                  value: value ? [50] : null,
+                })
+              )
+            );
           }}
           label="Hent dokumenter fra mapper"
           small
@@ -162,15 +162,14 @@ function TransformMenu({
             <Range
               value={(current.data as GetFunctionData<"fetch">)[0]}
               setValue={(limit) => {
-                push([
-                  target,
-                  [
-                    {
+                push(
+                  createTransaction((t) =>
+                    t.target(id).toggle({
                       name: "fetch",
-                      value: [limit] as [number],
-                    },
-                  ],
-                ]);
+                      value: [limit],
+                    })
+                  )
+                );
               }}
             />
           </div>
@@ -189,22 +188,22 @@ function TemplateMenu({
 }) {
   const rootId = useFieldId();
 
-  const { push } = useDocumentMutate<FieldOperation>(
-    getDocumentId(rootId),
+  const push = usePush<FieldTransactionEntry>(
+    getDocumentId<DocumentId>(rootId),
     getRawFieldId(rootId)
   );
 
-  const target = id === rootId ? "" : id;
-
   const templateFolder = useTemplateFolder()?._id;
-  const { documents: templates } = useOptimisticDocumentList(templateFolder);
+  const { documents: templates } = useDocumentList(templateFolder);
 
   const options = React.useMemo(
     () =>
-      (templates ?? []).map((el) => ({
-        id: el._id,
-        label: el.label ?? el._id,
-      })),
+      (templates ?? [])
+        .filter((el) => el.folder)
+        .map((el) => ({
+          id: el._id,
+          label: getDocumentLabel(el)!,
+        })),
     [templates]
   );
 
@@ -217,15 +216,14 @@ function TemplateMenu({
       {current && (
         <Menu.Item
           onClick={() => {
-            push([
-              target,
-              [
-                {
+            push(
+              createTransaction((t) =>
+                t.target(id).toggle({
                   name: "template",
                   value: null,
-                },
-              ],
-            ]);
+                })
+              )
+            );
           }}
           label="Fjern"
         />
@@ -235,15 +233,14 @@ function TemplateMenu({
           key={el.label}
           // selected={current === getRawDocumentId(el.id)}
           onClick={(ev) => {
-            push([
-              target,
-              [
-                {
+            push(
+              createTransaction((t) =>
+                t.target(id).toggle({
                   name: "template",
                   value: getRawDocumentId(el.id),
-                },
-              ],
-            ]);
+                })
+              )
+            );
           }}
           label={el.label}
         />

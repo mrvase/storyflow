@@ -1,16 +1,21 @@
 import React from "react";
 import Dialog from "../elements/Dialog";
-import type { DBFolder } from "@storyflow/db-core/types";
-import type { DocumentId } from "@storyflow/shared/types";
-import { useFolderCollab } from "./collab/FolderCollabContext";
-import { useDocumentListMutation } from "../documents";
-import { createTemplateFieldId } from "@storyflow/fields-core/ids";
+import type { SpaceId } from "@storyflow/cms/types";
+import type { FolderId } from "@storyflow/shared/types";
+import { createTemplateFieldId } from "@storyflow/cms/ids";
 import { ComputerDesktopIcon, FolderIcon } from "@heroicons/react/24/outline";
 import { DialogOption } from "../elements/DialogOption";
 import { useDocumentIdGenerator, useFolderIdGenerator } from "../id-generator";
-import { DEFAULT_FIELDS } from "@storyflow/fields-core/default-fields";
-import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
-import { insertRootInTransforms } from "@storyflow/fields-core/transform";
+import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/cms/constants";
+import { insertRootInTransforms } from "@storyflow/cms/transform";
+import { usePush } from "../collab/CollabContext";
+import { createTransaction } from "@storyflow/collab/utils";
+import {
+  FolderTransactionEntry,
+  SpaceTransactionEntry,
+} from "../operations/actions";
+import { useAddDocument } from "../documents/useAddDocument";
 
 export function AddFolderDialog({
   isOpen,
@@ -20,73 +25,71 @@ export function AddFolderDialog({
 }: {
   isOpen: boolean;
   close: () => void;
-  folderId: string;
-  spaceId: string;
+  folderId: FolderId;
+  spaceId: SpaceId;
 }) {
-  const mutateDocuments = useDocumentListMutation();
   const generateFolderId = useFolderIdGenerator();
   const generateDocumentId = useDocumentIdGenerator();
 
-  const collab = useFolderCollab();
+  const addDocument = useAddDocument();
+
+  const push = usePush<FolderTransactionEntry | SpaceTransactionEntry>(
+    "folders"
+  );
 
   const onSubmit = React.useCallback(
     async (type: string, data: FormData) => {
       const label = (data.get("value") as string) ?? "";
       if (!label) return;
-      const [id, frontId] = await Promise.all([
-        generateFolderId(),
-        type === "app" ? generateDocumentId() : ("" as DocumentId),
-      ]);
+      const newFolderId = generateFolderId();
+      /*
       const folder: DBFolder = {
-        _id: id,
+        _id: folderId,
         label,
         type: type as "app" | "data",
         spaces: [],
       };
-      collab.mutate("folders", "").push(["", [{ add: folder }]]);
-      collab.mutate("folders", `${folderId}/${spaceId}`).push([
-        "",
-        [
-          {
-            index: 0,
-            insert: [id],
-          },
-        ],
-      ]);
-      if (frontId) {
-        mutateDocuments({
-          folder: id,
-          actions: [
-            {
-              type: "insert",
-              id: frontId,
-              record: {
-                [createTemplateFieldId(frontId, DEFAULT_FIELDS.label.id)]: {
-                  ...DEFAULT_SYNTAX_TREE,
-                  children: ["Forside"],
-                },
-                [createTemplateFieldId(frontId, DEFAULT_FIELDS.url.id)]:
-                  insertRootInTransforms(
-                    {
-                      ...DEFAULT_SYNTAX_TREE,
-                      children: DEFAULT_FIELDS.url.initialValue.children,
-                    },
-                    DEFAULT_FIELDS.url.initialValue.transforms
-                  ),
-              },
+      */
+      push(
+        createTransaction((t) =>
+          t
+            .target(`${folderId}:${spaceId}`)
+            .splice({
+              index: 0,
+              insert: [newFolderId],
+            })
+            .target(newFolderId)
+            .toggle({ name: "label", value: label })
+        )
+      );
+      if (type === "app") {
+        addDocument({
+          folder: newFolderId,
+          createRecord: (id) => ({
+            [createTemplateFieldId(id, DEFAULT_FIELDS.label.id)]: {
+              ...DEFAULT_SYNTAX_TREE,
+              children: ["Forside"],
             },
-          ],
+            [createTemplateFieldId(id, DEFAULT_FIELDS.url.id)]:
+              insertRootInTransforms(
+                {
+                  ...DEFAULT_SYNTAX_TREE,
+                  children: DEFAULT_FIELDS.url.initialValue.children,
+                },
+                DEFAULT_FIELDS.url.initialValue.transforms
+              ),
+          }),
         });
       }
       close();
     },
     [
-      collab,
+      push,
       folderId,
       spaceId,
       generateDocumentId,
       generateFolderId,
-      mutateDocuments,
+      addDocument,
       close,
     ]
   );

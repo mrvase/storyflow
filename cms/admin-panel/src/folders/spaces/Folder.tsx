@@ -8,11 +8,13 @@ import {
 } from "@heroicons/react/24/outline";
 import { useDragItem, useSortableItem } from "@storyflow/dnd";
 import { getTranslateDragEffect } from "../../utils/dragEffects";
-import type { DBFolder } from "@storyflow/db-core/types";
+import type { DBFolder } from "@storyflow/cms/types";
 import type { FolderId } from "@storyflow/shared/types";
-import { DragIcon } from "./DragIcon";
-import { useFolder } from "../collab/hooks";
-import { usePanel, useRoute } from "../../panel-router/Routes";
+import { DragIcon } from "../../elements/DragIcon";
+import { usePanel, useRoute } from "../../layout/panel-router/Routes";
+import { useFolder } from "../FoldersContext";
+import { getFolderData } from "../getFolderData";
+import { useLocalStorage } from "../../state/useLocalStorage";
 
 export function FolderItem({
   index,
@@ -25,24 +27,20 @@ export function FolderItem({
   const route = useRoute();
 
   const folder = typeof folder_ === "string" ? useFolder(folder_) : folder_;
+  const { type } = getFolderData(folder);
 
-  const typeCode = { data: "f", app: "a" }[folder.type as "data"] ?? "f";
+  const isOpen = path.startsWith(`${route}/f${folder._id}`);
 
-  const isOpen = path.startsWith(`${route}/${typeCode}${folder._id}`);
-
-  const to = `${route}/${typeCode}${parseInt(folder._id, 16).toString(16)}`;
+  const to = `${route}/f${parseInt(folder._id, 16).toString(16)}`;
 
   if (!folder) {
     return null;
   }
 
-  const Icon =
-    {
-      data: isOpen ? FolderOpenIcon : FolderIcon,
-      app: ComputerDesktopIcon,
-      root: () => null,
-      templates: () => null,
-    }[folder.type ?? "data"] ?? React.Fragment;
+  const Icon = {
+    data: isOpen ? FolderOpenIcon : FolderIcon,
+    app: ComputerDesktopIcon,
+  }[type];
 
   const label = folder.label;
 
@@ -67,9 +65,7 @@ export function FolderItem({
         ? "border-yellow-300 dark:border-yellow-600"
         : "border-yellow-100 hover:border-yellow-300 hover:dark:border-yellow-300"
     ),
-    root: "",
-    templates: "",
-  }[folder.type];
+  }[type];
 
   const { dragHandleProps: linkDragHandleProps } = useDragItem({
     type: `link:${panelIndex}`,
@@ -77,26 +73,30 @@ export function FolderItem({
     mode: "link",
   });
 
+  const [isEditing] = useLocalStorage<boolean>("toolbar-open", true);
+
   return (
     <Link
       {...linkDragHandleProps}
       ref={ref as any}
       to={navigate(to, { navigate: false })}
       className={cl(
-        "group flex items-center px-3 py-4 rounded-md text-lg transition-colors border",
+        "group flex items-center px-3 py-4 rounded-md text-lg transition-[border] border",
         colors
       )}
       style={style}
     >
-      <div
-        className="w-4 h-4 mr-3 shrink-0 opacity-25 hover:opacity-100 transition-opacity cursor-grab"
-        {...dragHandleProps}
-      >
-        <DragIcon className="w-4 h-4" />
-      </div>
-      <span className="truncate">{label}</span>
+      {isEditing && (
+        <div
+          className="w-5 h-5 shrink-0 opacity-75 hover:opacity-100 transition-opacity cursor-grab"
+          {...dragHandleProps}
+        >
+          <DragIcon className="w-5 h-5 text-yellow-200" />
+        </div>
+      )}
+      <span className="ml-3 truncate">{label}</span>
       <div className="ml-auto transition-opacity w-8 h-8 flex-center rounded-md">
-        <Icon className="w-5 h-5 shrink-0 opacity-25 group-hover:opacity-75 transition-opacity" />{" "}
+        <Icon className="w-6 h-6 shrink-0 opacity-25 group-hover:opacity-50 transition-opacity" />{" "}
       </div>
     </Link>
   );

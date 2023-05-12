@@ -9,22 +9,21 @@ import {
   NestedFolder,
   RawDocumentId,
 } from "@storyflow/shared/types";
-import type { FieldConfig, NestedField } from "@storyflow/fields-core/types";
-import { getConfigFromType, useClientConfig } from "../../client-config";
+import type { FieldConfig, NestedField } from "@storyflow/cms/types";
+import { getConfigFromType, useAppConfig } from "../../AppConfigContext";
 import { useTemplate } from "./useFieldTemplate";
 import {
   computeFieldId,
   createTemplateFieldId,
   getIdFromString,
-} from "@storyflow/fields-core/ids";
+} from "@storyflow/cms/ids";
 import { useFieldId } from "../FieldIdContext";
 import { useDocumentPageContext } from "../../documents/DocumentPageContext";
-import { tokens } from "@storyflow/fields-core/tokens";
-import { getChildrenDocuments } from "@storyflow/fields-core/graph";
+import { tokens } from "@storyflow/cms/tokens";
+import { getChildrenDocuments } from "@storyflow/cms/graph";
 import { useDefaultState } from "./useDefaultState";
-import { splitTransformsAndRoot } from "@storyflow/fields-core/transform";
+import { splitTransformsAndRoot } from "@storyflow/cms/transform";
 import { useLoopTemplate } from "./LoopTemplateContext";
-import { useFieldVersion } from "./VersionContext";
 import { extendPath } from "../../utils/extendPath";
 
 const noTemplate: FieldConfig[] = [];
@@ -36,8 +35,7 @@ export function PreloadFieldState({
   id: FieldId;
   createTemplateContext?: NestedDocumentId;
 }) {
-  const version = useFieldVersion();
-  const { tree, templateId } = useDefaultState(id, version);
+  const { tree, templateId } = useDefaultState(id);
 
   if (createTemplateContext) {
     const template = React.useMemo(() => {
@@ -103,28 +101,28 @@ function PreloadNestedState({
   } else if (tokens.isNestedField(entity)) {
     // missing
   } else if (tokens.isNestedElement(entity)) {
-    const { libraries } = useClientConfig();
+    const { configs } = useAppConfig();
     const { record } = useDocumentPageContext();
 
-    const config = getConfigFromType(entity.element, libraries);
-    const props = config?.props ?? [];
+    const config = getConfigFromType(entity.element, configs);
+    const props = config?.props ?? {};
 
     ids = React.useMemo(() => {
       const keyId = computeFieldId(entity.id, getIdFromString("key"));
 
-      return props.reduce(
-        (acc: FieldId[], prop) => {
+      return Object.entries(props).reduce(
+        (acc: FieldId[], [name, prop]) => {
           if (prop.type === "group") {
-            const nestedIds = prop.props.map((innerProp) => {
+            const nestedIds = Object.entries(prop.props).map(([innerName]) => {
               const id = computeFieldId(
                 entity.id,
-                getIdFromString(extendPath(prop.name, innerProp.name, "#"))
+                getIdFromString(extendPath(name, innerName, "#"))
               );
               return id;
             });
             acc.push(...nestedIds);
           } else {
-            const id = computeFieldId(entity.id, getIdFromString(prop.name));
+            const id = computeFieldId(entity.id, getIdFromString(name));
             acc.push(id);
           }
           return acc;

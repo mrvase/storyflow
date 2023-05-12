@@ -8,20 +8,21 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import type { DocumentId, FieldId } from "@storyflow/shared/types";
-import type { FieldType2 } from "@storyflow/fields-core/types";
+import type { FieldType2 } from "@storyflow/cms/types";
 import React from "react";
 import ReactDOM from "react-dom";
-import { useOptimisticDocumentList } from ".";
+import { useDocumentList } from ".";
 import { useTemplateFolder } from "../folders/FoldersContext";
-import Content from "../layout/components/Content";
-import { useDocumentMutate } from "./collab/DocumentCollabContext";
-import { useFieldConfig } from "./collab/hooks";
+import Content from "../pages/Content";
+import { usePush } from "../collab/CollabContext";
+import { useFieldConfig } from "./document-config";
 import { useContextWithError } from "../utils/contextError";
 import { useFieldId } from "../fields/FieldIdContext";
-import { getDocumentId } from "@storyflow/fields-core/ids";
-import { Menu } from "../layout/components/Menu";
+import { getDocumentId } from "@storyflow/cms/ids";
+import { Menu } from "../elements/Menu";
 import { useTopFieldIndex } from "./FieldIndexContext";
-import { DocumentOperation } from "operations/actions";
+import { DocumentTransactionEntry } from "../operations/actions";
+import { getDocumentLabel } from "./useDocumentLabel";
 
 const FieldToolbarPortalContext = React.createContext<
   [HTMLDivElement | null, React.Dispatch<HTMLDivElement | null>] | null
@@ -68,28 +69,30 @@ const restrictToOptions = [
 export function FieldToolbar() {
   const fieldId = useFieldId();
   const topIndex = useTopFieldIndex();
-  const documentId = getDocumentId(fieldId);
+  const documentId = getDocumentId<DocumentId>(fieldId);
 
   const [config, setConfig] = useFieldConfig(fieldId);
 
-  const { push } = useDocumentMutate<DocumentOperation>(documentId, documentId);
+  const push = usePush<DocumentTransactionEntry>(documentId, "config");
 
   const templateFolder = useTemplateFolder()?._id;
-  const { documents: templates } = useOptimisticDocumentList(templateFolder);
+  const { documents: templates } = useDocumentList(templateFolder);
 
   const templateOptions = React.useMemo(
     () =>
-      (templates ?? []).map((el) => ({
-        id: el._id,
-        label: el.label ?? el._id,
-      })),
+      (templates ?? [])
+        .filter((el) => el.folder)
+        .map((el) => ({
+          id: el._id,
+          label: getDocumentLabel(el)!,
+        })),
     [templates]
   );
 
   return (
-    <Content.Toolbar>
-      <div className="h-6 px-2 flex-center gap-1.5 rounded dark:bg-yellow-400/10 dark:text-yellow-200/75 ring-1 ring-yellow-200/50 text-xs whitespace-nowrap pointer-events-none">
-        1 valgt
+    <>
+      <div className="h-7 mx-2.5 px-2 flex-center gap-1.5 rounded dark:bg-yellow-400/10 dark:text-yellow-200/75 ring-1 ring-yellow-200/50 ring-inset text-sm whitespace-nowrap pointer-events-none font-medium">
+        1 felt valgt
         <XMarkIcon className="w-3 h-3" />
       </div>
       <FieldLabel id={fieldId} label={config?.label ?? ""} />
@@ -123,38 +126,22 @@ export function FieldToolbar() {
         <Content.ToolbarButton
           data-focus-remain="true"
           onClick={() => {
-            push([
-              "",
-              [
-                {
-                  index: topIndex,
-                  remove: 1,
-                },
-              ],
-            ]);
+            push([["", [[topIndex, 1]]]]);
           }}
         >
           <TrashIcon className="w-4 h-4" />
         </Content.ToolbarButton>
       )}
-    </Content.Toolbar>
+    </>
   );
 }
 
 function FieldLabel({ id, label }: { id: FieldId; label: string }) {
-  const documentId = getDocumentId(id);
-  const { push } = useDocumentMutate<DocumentOperation>(documentId, documentId);
+  const documentId = getDocumentId<DocumentId>(id);
+  const push = usePush<DocumentTransactionEntry>(documentId, "config");
 
   const onChange = (value: string) => {
-    push([
-      id,
-      [
-        {
-          name: "label",
-          value: value,
-        },
-      ],
-    ]);
+    push([[id, [["label", value]]]]);
   };
   return <EditableLabel value={label} onChange={onChange} />;
 }
@@ -224,7 +211,7 @@ function EditableLabel({
   return (
     <div
       className={cl(
-        " text-xs text-gray-300 flex h-6 ring-1 rounded",
+        "text-sm text-gray-300 flex h-7 ring-1 ring-inset rounded mx-2.5",
         isEditing ? "ring-gray-600" : "ring-button"
       )}
       data-focus-remain="true"
@@ -242,7 +229,7 @@ function EditableLabel({
           onChange={handleChange}
           type="text"
           className={cl(
-            "outline-none padding-0 margin-0 bg-transparent h-6 items-center px-2",
+            "outline-none padding-0 margin-0 bg-transparent h-7 items-center px-2.5 font-medium",
             className
           )}
           placeholder="Ingen label"
@@ -266,29 +253,29 @@ function EditableLabel({
         />
         {!isEditing && (
           <div className="mr-2 h-full flex-center cursor-text">
-            <PencilSquareIcon className="w-3 h-3" />
+            <PencilSquareIcon className="w-4 h-4" />
           </div>
         )}
       </label>
       {isEditing && (
         <>
           <div
-            className="h-6 w-6 flex-center bg-gray-750 hover:bg-green-700/60 transition-colors rounded-l"
+            className="h-7 w-7 flex-center bg-gray-750 hover:bg-green-700/60 transition-colors rounded-l"
             onMouseDown={(ev) => {
               accept();
             }}
             onClick={(ev) => {}}
           >
-            <CheckIcon className="w-3 h-3" />
+            <CheckIcon className="w-4 h-4" />
           </div>
           <div
-            className="h-6 w-6 flex-center bg-gray-750 hover:bg-red-700/50 transition-colors rounded-r"
+            className="h-7 w-7 flex-center bg-gray-750 hover:bg-red-700/50 transition-colors rounded-r"
             onMouseDown={(ev) => {
               reject();
             }}
             onClick={(ev) => {}}
           >
-            <XMarkIcon className="w-3 h-3" />
+            <XMarkIcon className="w-4 h-4" />
           </div>
         </>
       )}

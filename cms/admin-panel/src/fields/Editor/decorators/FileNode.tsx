@@ -5,7 +5,7 @@ import React from "react";
 import { useFileLabel } from "../../../data/files";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 import { useIsSelected } from "./useIsSelected";
-import { useUrlInfo } from "../../../users";
+import { useAuth } from "../../../Auth";
 
 function Decorator({ nodeKey, value }: { nodeKey: string; value: FileToken }) {
   const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
@@ -36,11 +36,11 @@ function Decorator({ nodeKey, value }: { nodeKey: string; value: FileToken }) {
 }
 
 function Image({ src }: { src: string }) {
-  const { organization } = useUrlInfo();
+  const { organization } = useAuth();
   return (
     <div className="flex-center h-10 w-10 rounded overflow-hidden bg-white/5">
       <img
-        src={`https://cdn.storyflow.dk/${organization}/${src}`}
+        src={`https://cdn.storyflow.dk/${organization!.slug}/${src}`}
         className="max-w-full max-h-full w-auto h-auto"
         loading="lazy"
       />

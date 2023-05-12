@@ -5,38 +5,35 @@ import {
 import cl from "clsx";
 import React from "react";
 import { calculateFn } from "./default/calculateFn";
-import { tools } from "operations/stream-methods";
+import { tools } from "../operations/stream-methods";
 import { store, useGlobalState } from "../state/state";
 import {
   DocumentId,
   FieldId,
   ValueArray,
   ClientSyntaxTree,
+  LibraryConfigRecord,
+  Config,
 } from "@storyflow/shared/types";
-import type {
-  SyntaxTreeRecord,
-  SyntaxTree,
-} from "@storyflow/fields-core/types";
-import Content from "../layout/components/Content";
+import type { SyntaxTreeRecord, SyntaxTree } from "@storyflow/cms/types";
+import Content from "../pages/Content";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-import { useClientConfig } from "../client-config";
+import { useAppConfig } from "../AppConfigContext";
 import { createComponent } from "./Editor/createComponent";
-import { useDocumentMutate } from "../documents/collab/DocumentCollabContext";
 import { useDocumentPageContext } from "../documents/DocumentPageContext";
 import { fetchDocumentSync } from "../documents";
-import { Client, useClient } from "../client";
+import { Client, useClient } from "../RPCProvider";
 import {
   computeFieldId,
   getDocumentId,
   getIdFromString,
   getParentDocumentId,
   getRawFieldId,
-} from "@storyflow/fields-core/ids";
-import type { ComponentConfig, LibraryConfig } from "@storyflow/shared/types";
+} from "@storyflow/cms/ids";
 import { useDocumentIdGenerator } from "../id-generator";
-import { tokens } from "@storyflow/fields-core/tokens";
-import { DEFAULT_SYNTAX_TREE } from "@storyflow/fields-core/constants";
-import { createTokenStream } from "operations/parse-token-stream";
+import { tokens } from "@storyflow/cms/tokens";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/cms/constants";
+import { createTokenStream } from "../operations/parse-token-stream";
 import {
   Attributes,
   AttributesProvider,
@@ -48,12 +45,14 @@ import { SelectedPathProvider, SyncBuilderPath, useSelectedPath } from "./Path";
 import { DefaultField } from "./default/DefaultField";
 import { FieldIdContext } from "./FieldIdContext";
 import { EditorFocusProvider } from "../editor/react/useIsFocused";
-import { useRoute } from "../panel-router/Routes";
+import { useRoute } from "../layout/panel-router/Routes";
 import { parseSegment } from "../layout/components/parseSegment";
 import { splitStreamByBlocks } from "./Editor/transforms";
-import { FieldOperation } from "operations/actions";
-import { VersionProvider } from "./default/VersionContext";
 import { extendPath } from "../utils/extendPath";
+import { usePush } from "../collab/CollabContext";
+import { FieldTransactionEntry } from "../operations/actions";
+import { Transaction } from "@storyflow/collab/types";
+import { createTransaction } from "@storyflow/collab/utils";
 
 const useBuilderRendered = ({
   listeners,
@@ -84,7 +83,7 @@ const ElementActions = ({
 }: {
   id: FieldId;
   listeners: ReturnType<typeof createEventsFromIframeToCMS>;
-  push: (op: FieldOperation) => void;
+  push: (op: Transaction<FieldTransactionEntry>) => void;
 }) => {
   const [{ selectedDocument, selectedField }, setBuilderPath] =
     useSelectedPath();
@@ -127,25 +126,25 @@ const ElementActions = ({
   const documentId = getDocumentId(id) as DocumentId;
   const generateDocumentId = useDocumentIdGenerator();
 
-  const { libraries } = useClientConfig();
+  const { configs } = useAppConfig();
   React.useEffect(() => {
     return listeners.createComponent.subscribe(({ path, name, library }) => {
-      push([
-        path.split(".").slice(-1)[0],
-        [
-          {
+      const target = path.split(".").slice(-1)[0] as FieldId;
+      push(
+        createTransaction((t) =>
+          t.target(target).splice({
             index: 0,
             insert: [
               createComponent(generateDocumentId(documentId), name, {
                 library,
-                libraries,
+                configs,
               }),
             ],
-          },
-        ],
-      ]);
+          })
+        )
+      );
     });
-  }, [libraries, generateDocumentId]);
+  }, [configs, generateDocumentId]);
 
   React.useEffect(() => {
     return listeners.changeComponent.subscribe(({ library, name }) => {
@@ -167,23 +166,22 @@ const ElementActions = ({
 
       if (index < 0) return;
 
-      push([
-        parentId === id ? "" : parentId,
-        [
-          {
+      push(
+        createTransaction((t) =>
+          t.target(parentId).splice({
             index,
             insert: [
               createComponent(generateDocumentId(documentId), name, {
                 library,
-                libraries,
+                configs,
               }),
             ],
             remove: 1,
-          },
-        ],
-      ]);
+          })
+        )
+      );
     });
-  }, [id, libraries, tokenStream, parentId, elementId, generateDocumentId]);
+  }, [id, configs, tokenStream, parentId, elementId, generateDocumentId]);
 
   React.useEffect(() => {
     return listeners.deleteComponent.subscribe(() => {
@@ -203,25 +201,24 @@ const ElementActions = ({
 
       if (index < 0) return;
 
-      push([
-        parentId === id ? "" : parentId,
-        [
-          {
+      push(
+        createTransaction((t) =>
+          t.target(parentId).splice({
             index,
             remove: 1,
-          },
-        ],
-      ]);
+          })
+        )
+      );
 
       setBuilderPath((ps) => ps.slice(0, -1));
     });
-  }, [id, libraries, tokenStream, parentId, elementId]);
+  }, [id, configs, tokenStream, parentId, elementId]);
 
   React.useEffect(() => {
     return listeners.moveComponent.subscribe(({ parent, from, to }) => {
       console.log("MOVE", parent, from, to, tokenStream);
       if (!tokenStream || !parentId) return;
-      const blocks = splitStreamByBlocks(tokenStream, libraries);
+      const blocks = splitStreamByBlocks(tokenStream, configs);
 
       let length = 0;
       let fromIndex = 0;
@@ -281,20 +278,21 @@ const ElementActions = ({
       }
       */
 
-      push([
-        parentId === id ? "" : parentId,
-        [
-          {
-            index: fromIndex,
-            remove: length,
-          },
-          {
-            index: toIndex,
-          },
-        ],
-      ]);
+      push(
+        createTransaction((t) =>
+          t.target(parentId).splice(
+            {
+              index: fromIndex,
+              remove: length,
+            },
+            {
+              index: toIndex,
+            }
+          )
+        )
+      );
     });
-  }, [id, tokenStream, parentId, libraries]);
+  }, [id, tokenStream, parentId, configs]);
 
   return null;
 };
@@ -350,72 +348,65 @@ export function FieldPage({ children }: { children?: React.ReactNode }) {
   const segment = parseSegment<"field">(route);
   const id = segment.id;
 
-  const documentId = getDocumentId(id);
+  const documentId = getDocumentId<DocumentId>(id);
   const templateFieldId = getRawFieldId(id);
 
   const { iframeProps, listeners, dispatchers } = useIframe();
 
   const rendered = useBuilderRendered({ listeners });
 
-  const { push } = useDocumentMutate<FieldOperation>(
-    documentId,
-    templateFieldId
-  );
-
-  const { versions } = useDocumentPageContext();
+  const push = usePush<FieldTransactionEntry>(documentId, templateFieldId);
 
   return (
     <FieldIdContext.Provider value={id}>
-      <VersionProvider version={versions?.[getRawFieldId(id)] ?? 0}>
-        <AttributesProvider>
-          <SelectedPathProvider
-            id={id}
-            onChange={(path) => {
-              // dispatch
-            }}
-          >
-            <SyncBuilderPath listeners={listeners} id={id} />
-            <ElementActions id={id} listeners={listeners} push={push} />
-            <Content className="relative h-full">
-              <PropagateStatePlugin
-                id={id}
-                rendered={rendered}
-                dispatchers={dispatchers}
+      <AttributesProvider>
+        <SelectedPathProvider
+          id={id}
+          onChange={(path) => {
+            // dispatch
+          }}
+        >
+          <SyncBuilderPath listeners={listeners} id={id} />
+          <ElementActions id={id} listeners={listeners} push={push} />
+          <Content className="relative h-full">
+            <PropagateStatePlugin
+              id={id}
+              rendered={rendered}
+              dispatchers={dispatchers}
+            />
+            <PanelGroup direction="horizontal" autoSaveId="panels">
+              <Panel collapsible>
+                <div className="relative h-full bg-gray-200">
+                  <div
+                    className={cl(
+                      "h-full transition-opacity duration-300",
+                      rendered ? "opacity-100" : "opacity-0"
+                    )}
+                  >
+                    <BuilderIframe
+                      {...iframeProps}
+                      heightListener={listeners.updateFrameHeight.subscribe}
+                    />
+                  </div>
+                  <FieldOverlay id={id} />
+                </div>
+              </Panel>
+              <PanelResizeHandle
+                className={cl(
+                  "group relative bg-white/10 opacity-50 hover:opacity-100 transition-opacity",
+                  "w-1"
+                )}
               />
-              <PanelGroup direction="horizontal" autoSaveId="panels">
-                <Panel collapsible>
-                  <div className="relative h-full bg-gray-200">
-                    <div
-                      className={cl(
-                        "h-full transition-opacity duration-300",
-                        rendered ? "opacity-100" : "opacity-0"
-                      )}
-                    >
-                      <BuilderIframe
-                        {...iframeProps}
-                        heightListener={listeners.updateFrameHeight.subscribe}
-                      />
-                    </div>
-                    <FieldOverlay id={id} />
-                  </div>
-                </Panel>
-                <PanelResizeHandle
-                  className={cl(
-                    "group relative bg-white/10 opacity-50 hover:opacity-100 transition-opacity",
-                    "w-1"
-                  )}
-                />
-                <Panel collapsible>
-                  <div className="p-2.5 h-full overflow-y-auto overflow-x-hidden no-scrollbar">
-                    <FieldPanel id={id} />
-                  </div>
-                </Panel>
-              </PanelGroup>
-            </Content>
-            {children}
-          </SelectedPathProvider>
-        </AttributesProvider>
-      </VersionProvider>
+              <Panel collapsible minSize={35} className="hidden @3xl:block">
+                <div className="p-2.5 h-full overflow-y-auto overflow-x-hidden no-scrollbar">
+                  <FieldPanel id={id} />
+                </div>
+              </Panel>
+            </PanelGroup>
+          </Content>
+          {children}
+        </SelectedPathProvider>
+      </AttributesProvider>
     </FieldIdContext.Provider>
   );
 }
@@ -437,18 +428,29 @@ function FieldOverlay({ id }: { id: FieldId }) {
     <EditorFocusProvider>
       <div
         className={cl(
-          "absolute max-h-[calc(100%-1.25rem)] min-h-[5.25rem] bg-gray-850 shadow-lg shadow-black/20 w-[calc(100%-1.25rem)] rounded-md bottom-2.5 left-2.5 overflow-y-auto no-scrollbar transition-[transform,opacity] ease-out duration-200 origin-bottom",
+          "absolute w-[calc(100%-1.25rem)] bottom-2.5 left-2.5",
+          "transition-[transform,opacity] ease-out duration-200 origin-bottom",
           !currentId
             ? "opacity-0 pointer-events-none scale-[0.98]"
             : "opacity-100 scale-100"
         )}
       >
-        <div className={cl("relative grow shrink basis-0 p-2.5")}>
-          <div className="flex items-center text-sm gap-2 mb-2.5">
-            <Attributes hideChildrenProps />
+        <div
+          className={cl(
+            "w-full max-w-xl mx-auto max-h-[calc(100%-1.25rem)] bg-gray-850 shadow-lg shadow-black/20 rounded-md overflow-y-auto no-scrollbar"
+          )}
+        >
+          <div
+            className={cl(
+              "relative grow shrink basis-0 p-2.5 pb-0.5 min-h-[4.75rem]"
+            )}
+          >
+            <div className="flex items-center text-sm gap-2 mb-2.5">
+              <Attributes hideChildrenProps />
+            </div>
+            {/* we assume queue has been initialized by previous page, so no need for root */}
+            {currentId && <DefaultField key={currentId} id={currentId} />}
           </div>
-          {/* we assume queue has been initialized by previous page, so no need for root */}
-          {currentId && <DefaultField key={currentId} id={currentId} />}
         </div>
       </div>
     </EditorFocusProvider>
@@ -462,11 +464,11 @@ const getRecordSnapshot = (
   {
     record = {},
     client,
-    libraries,
+    configs,
   }: {
     record?: SyntaxTreeRecord;
     client: Client;
-    libraries: LibraryConfig[];
+    configs: LibraryConfigRecord;
   }
 ) => {
   const finalRecord: ValueRecord = {};
@@ -549,34 +551,43 @@ const getRecordSnapshot = (
           // this should propably just flat it infinitely out
           return Object.assign(acc, getChildren(element));
         } else if (tokens.isNestedElement(element)) {
-          const components = libraries
+          const components = Object.entries(configs)
             .reduce(
-              (acc: ComponentConfig[], library) =>
+              (acc: (Config & { name: string })[], [libraryName, library]) =>
                 acc.concat(
-                  Object.values(library.components).map((el) => ({
-                    ...el,
-                    name: extendPath(library.name, el.name, ":"),
+                  Object.entries(library.configs).map(([name, config]) => ({
+                    ...config,
+                    name: extendPath(
+                      libraryName,
+                      name.replace(/Config$/, ""),
+                      ":"
+                    ),
                   }))
                 ),
               []
             )
             .flat(1);
 
-          const propConfigArray = components.find(
+          const propConfigRecord = components.find(
             (el) => el.name === element.element
           )?.props;
 
           const propKeys =
-            propConfigArray?.reduce((acc: string[], el) => {
-              if (el.type === "group") {
-                acc.push(
-                  ...el.props.map((child) => `${el.name}#${child.name}`)
-                );
+            Object.entries(propConfigRecord ?? {}).reduce(
+              (acc: string[], [name, el]) => {
+                if (el.type === "group") {
+                  acc.push(
+                    ...Object.keys(el.props).map(
+                      (childName) => `${name}#${childName}`
+                    )
+                  );
+                  return acc;
+                }
+                acc.push(name);
                 return acc;
-              }
-              acc.push(el.name);
-              return acc;
-            }, []) ?? [];
+              },
+              []
+            ) ?? [];
 
           propKeys.push("key");
 
@@ -616,14 +627,14 @@ function PropagateStatePlugin({
 
   const client = useClient();
 
-  const { libraries } = useClientConfig();
+  const { configs } = useAppConfig();
 
   // state initialized in ComponentField
   const [tree, setTree] = useGlobalState<ValueRecord>(`${id}/record`, () => {
     return getRecordSnapshot(id, {
       record,
       client,
-      libraries,
+      configs,
     });
   });
 

@@ -1,5 +1,5 @@
 import cl from "clsx";
-import type { TokenStream } from "operations/types";
+import type { TokenStream } from "../../operations/types";
 import React from "react";
 import {
   getFileExtension,
@@ -10,10 +10,10 @@ import {
 } from "../../data/files/file";
 import { useFiles } from "../../data/files";
 import { Spinner } from "../../elements/Spinner";
-import { useUrlInfo } from "../../users";
 import { useOptionEvents } from "./Option";
 import { useOption } from "./OptionsContext";
 import { HoldActions } from "./useRestorableSelection";
+import { useAuth } from "../../Auth";
 
 function useFileInput(setLabel?: (label: string) => void) {
   const [dragging, setDragging] = React.useState(false);
@@ -110,7 +110,7 @@ export function FilePrompt({
   holdActions: HoldActions;
   replacePromptWithStream: (stream: TokenStream) => void;
 }) {
-  const { organization } = useUrlInfo();
+  const { organization } = useAuth();
 
   const [files, upload] = useFiles();
 
@@ -150,7 +150,7 @@ export function FilePrompt({
         <FileContainer
           name={name}
           label={label}
-          organization={organization}
+          organization={organization!.slug}
           onEnter={onEnter}
         />
       ))}

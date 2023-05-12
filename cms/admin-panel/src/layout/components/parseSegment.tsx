@@ -1,13 +1,9 @@
 import type { DocumentId, FieldId, FolderId } from "@storyflow/shared/types";
-import { ROOT_FOLDER } from "@storyflow/fields-core/constants";
+import { ROOT_FOLDER } from "@storyflow/cms/constants";
 
 type SegmentType =
   | {
       type: "folder";
-      id: FolderId;
-    }
-  | {
-      type: "app";
       id: FolderId;
     }
   | {
@@ -43,7 +39,6 @@ export function parseSegment<T extends SegmentType["type"]>(
   return {
     type: {
       f: "folder",
-      a: "app",
       d: "document",
       t: "template",
       c: "field",

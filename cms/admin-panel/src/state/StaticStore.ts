@@ -13,7 +13,7 @@ export const createStaticStore = <
 >(
   createStore: (old?: Store) => Store
 ) => {
-  let store = createStore();
+  let store: Store | undefined = undefined;
 
   const subscribers = new Map<string, Set<() => void>>();
 
@@ -30,6 +30,9 @@ export const createStaticStore = <
   };
 
   const get = (key: string) => {
+    if (!store) {
+      store = createStore();
+    }
     return store.get(key);
   };
 
@@ -37,24 +40,28 @@ export const createStaticStore = <
     subscribers.get(key)?.forEach((el) => el());
     const root = subscribers.get("");
     if (root && root.size) {
+      // re-create store to trigger re-render
       store = createStore(store);
       root.forEach((el) => el());
     }
   };
 
   const deleteOne = (key: string) => {
+    if (!store) return;
     store.delete(key);
   };
 
   const deleteMany = (callback: (key: string) => boolean) => {
+    if (!store) return;
     new Set(store.keys()).forEach((key) => {
-      if (callback(key)) {
+      if (store && callback(key)) {
         store.delete(key);
       }
     });
   };
 
   const set = (key: string, value: State) => {
+    if (!store) store = createStore();
     const current = store.get(key);
     if (current !== value) {
       store.set(key, value);
@@ -62,15 +69,28 @@ export const createStaticStore = <
     }
   };
 
-  function useStore() {
+  function useStore(initialState?: Store | (() => Store)) {
+    const setInitialState = React.useCallback(() => {
+      if (initialState !== undefined && store === undefined) {
+        store =
+          typeof initialState === "function" ? initialState() : initialState;
+      } else if (store === undefined) {
+        store = createStore();
+      }
+    }, [initialState]);
+
     const state = React.useSyncExternalStore(
       (callback) => {
+        setInitialState();
         return subscribe("", callback);
       },
-      () => store
+      () => {
+        setInitialState();
+        return store;
+      }
     );
 
-    return state;
+    return state!;
   }
 
   function useKey<InitialState extends State | undefined>(

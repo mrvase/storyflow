@@ -6,7 +6,7 @@ import {
   $createParagraphNode,
 } from "lexical";
 import React from "react";
-import { useClientConfig } from "../../client-config";
+import { useAppConfig } from "../../AppConfigContext";
 import { useEditorContext } from "../../editor/react/EditorProvider";
 import {
   $createHeadingNode,
@@ -18,7 +18,7 @@ import { $exitPromptNode } from "./utils";
 export function ParagraphStylePrompt({ prompt }: { prompt: string }) {
   const editor = useEditorContext();
 
-  const { libraries } = useClientConfig();
+  const { configs } = useAppConfig();
 
   const formatHeading = React.useCallback(
     (arg: "h1" | "h2" | "h3" | "p") => {
@@ -44,11 +44,11 @@ export function ParagraphStylePrompt({ prompt }: { prompt: string }) {
             targetElement.setIndent(node.getIndent());
             node.replace(targetElement, true);
           }
-          $exitPromptNode(libraries);
+          $exitPromptNode(configs);
         }
       });
     },
-    [editor, libraries]
+    [editor, configs]
   );
 
   const options = React.useMemo(

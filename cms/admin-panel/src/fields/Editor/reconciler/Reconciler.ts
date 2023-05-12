@@ -1,33 +1,33 @@
-import { QueueListener } from "@storyflow/state";
-import {
-  $getRoot,
-  $getSelection,
-  $isTextNode,
-  $setSelection,
-  LexicalEditor,
-} from "lexical";
+import { $getRoot, $getSelection, $setSelection, LexicalEditor } from "lexical";
 import React from "react";
-import { useClientConfig } from "../../../client-config";
-import $createRangeSelection from "../../../editor/createRangeSelection";
+import { useAppConfig } from "../../../AppConfigContext";
 import {
   INITIALIZATION_TAG,
   useEditorContext,
 } from "../../../editor/react/EditorProvider";
 import { getComputationDiff } from "./getComputationDiff";
-import { tools } from "operations/stream-methods";
-import { applyFieldOperation } from "operations/apply";
-import { FieldOperation, InferAction } from "operations/actions";
-import { createQueueCache } from "../../../state/collaboration";
-import type { TokenStream } from "operations/types";
-import type { LibraryConfig } from "@storyflow/shared/types";
+import { tools } from "../../../operations/stream-methods";
+import { applyFieldTransaction } from "../../../operations/apply";
+import { createQueueCache } from "../../../collab/createQueueCache";
+import type { TokenStream } from "../../../operations/types";
+import type { DocumentId, LibraryConfigRecord } from "@storyflow/shared/types";
 import {
   $createBlocksFromStream,
   $getComputation,
   $getIndexesFromSelection,
-  $getPointFromIndex,
   $isSelection,
 } from "../transforms";
 import { createDiffOperations } from "./getBlocksDiff";
+import {
+  FieldTransactionEntry,
+  StreamOperation,
+  TransformOperation,
+} from "../../../operations/actions";
+import { useCollab } from "../../../collab/CollabContext";
+import { useFieldId } from "../../FieldIdContext";
+import { getDocumentId, getRawFieldId } from "@storyflow/cms/ids";
+import { isSpliceOperation } from "@storyflow/collab/utils";
+import { usePanel } from "../../../layout/panel-router/Routes";
 
 const RECONCILIATION_TAG = "reconciliation";
 
@@ -35,50 +35,62 @@ export function Reconciler({
   target,
   initialValue,
   push,
-  register,
+  tracker,
 }: {
   initialValue: TokenStream;
-  // history: CollabHistory<TextOp | FunctionOp>;
   target: string;
-  push: (ops: FieldOperation[1]) => void;
-  register: (listener: QueueListener<FieldOperation>) => () => void;
+  push: (ops: StreamOperation[] | TransformOperation[]) => void;
+  tracker?: object;
 }) {
   const editor = useEditorContext();
 
-  const { libraries } = useClientConfig();
+  const fieldId = useFieldId();
+  const { configs } = useAppConfig();
+
+  const collab = useCollab();
+
+  const [{ index }] = usePanel();
 
   React.useEffect(() => {
-    const cache = createQueueCache({ stream: initialValue, transforms: [] });
+    const queue = collab
+      .getTimeline(getDocumentId<DocumentId>(fieldId))!
+      .getQueue<FieldTransactionEntry>(getRawFieldId(fieldId));
 
-    return register(({ trackedForEach, forEach }) => {
+    const cache = createQueueCache(
+      { stream: initialValue, transforms: [] },
+      tracker
+    );
+
+    return queue.register(() => {
       // trackedForEach only adds any unique operation a single time.
       // Since we are using the bound register, it does not provide
       // the operations pushed from this specific field.
 
-      const newOps: InferAction<FieldOperation>[] = [];
-      trackedForEach(({ operation }) => {
-        if (operation[0] === target) {
-          newOps.push(...operation[1]);
-        }
-      });
+      let newOps: StreamOperation[] = [];
 
-      if (newOps.length === 0) return;
-
-      const result = cache(forEach, (prev, { operation }) => {
-        if (operation[0] === target) {
-          prev.stream = applyFieldOperation(prev, operation).stream;
-        }
+      const result = cache(queue.forEach, (prev, { transaction, trackers }) => {
+        transaction.map((entry) => {
+          if (entry[0] === target) {
+            prev.stream = applyFieldTransaction(prev, entry).stream;
+            if (!tracker || !trackers?.has(tracker)) {
+              newOps.push(
+                ...(entry[1] as StreamOperation[]).filter((el) =>
+                  isSpliceOperation(el)
+                )
+              );
+            }
+          }
+        });
         return prev;
       });
 
-      editor.update(
-        () => $reconcile(editor, result.stream, newOps, libraries),
-        {
-          tag: RECONCILIATION_TAG,
-        }
-      );
+      if (!newOps.length) return;
+
+      editor.update(() => $reconcile(editor, result.stream, configs), {
+        tag: RECONCILIATION_TAG,
+      });
     });
-  }, [editor, libraries]);
+  }, [editor, configs]);
 
   React.useEffect(() => {
     return editor.registerUpdateListener(
@@ -94,15 +106,15 @@ export function Reconciler({
         const prev = prevEditorState.read(() => $getComputation($getRoot()));
         const next = editorState.read(() => $getComputation($getRoot()));
 
-        const action = getComputationDiff(prev, next);
+        const operations = getComputationDiff(prev, next);
 
-        console.log("DIFF", action);
+        console.log("DIFF", operations);
 
-        if (!action) {
+        if (!operations) {
           return;
         }
 
-        push(action.map((el) => ({ ...el })));
+        push(operations.map((el) => [...el]));
       }
     );
   }, [editor, push]);
@@ -113,8 +125,7 @@ export function Reconciler({
 function $reconcile(
   editor: LexicalEditor,
   value: TokenStream,
-  actions: InferAction<FieldOperation>[],
-  libraries: LibraryConfig[]
+  configs: LibraryConfigRecord
 ) {
   /** SAVE CURRENT SELECTION */
   try {
@@ -129,7 +140,7 @@ function $reconcile(
     const root = $getRoot();
 
     const oldBlocks = root.getChildren();
-    const newBlocks = $createBlocksFromStream(value, libraries);
+    const newBlocks = $createBlocksFromStream(value, configs);
 
     /** UPDATE CONTENT */
     const operations = createDiffOperations(oldBlocks, newBlocks, {
@@ -149,6 +160,8 @@ function $reconcile(
     */
 
     /** UPDATE SELECTION */
+
+    /*
     if (
       anchor !== null &&
       focus !== null &&
@@ -156,8 +169,9 @@ function $reconcile(
     ) {
       anchor = actions.reduce((acc: number, cur) => {
         if ("name" in cur) return acc;
-        if (cur.index > acc) return acc;
-        return acc + tools.getLength(cur.insert ?? []) - (cur.remove ?? 0);
+        const [index, remove, insert] = cur;
+        if (index > acc) return acc;
+        return acc + tools.getLength(insert ?? []) - (remove ?? 0);
       }, anchor);
 
       focus = anchor;
@@ -178,6 +192,7 @@ function $reconcile(
       }
     }
 
+    */
     $setSelection(null);
   } catch (err) {
     console.error(err);
