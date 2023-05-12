@@ -33,12 +33,18 @@ export const createAPIRoute = <T extends API>(
 
     const { init, data } = await handleRequest(request, router, options);
 
-    const headers: string[] = [];
-    init.headers.forEach((_, key) => headers.push(key));
-
+    const cookies: string[] = [];
     init.headers.forEach((value, key) => {
-      res.setHeader(key, value);
+      if (key.toLowerCase() === "set-cookie") {
+        cookies.push(value);
+      } else {
+        res.setHeader(key, value);
+      }
     });
+
+    if (cookies.length) {
+      res.setHeader("Set-Cookie", cookies);
+    }
 
     if (typeof init.redirect === "string") {
       res.redirect(init.redirect);
