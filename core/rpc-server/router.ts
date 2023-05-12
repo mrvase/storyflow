@@ -82,7 +82,12 @@ export function createProcedure<
   | MutationObject<Unwrap<I>, Promisify<O>> {
   const type = "query" in action ? "query" : "mutation";
 
-  const handleProcedure = async function (input: any) {
+  const handleProcedure = async function (
+    this:
+      | { method: string; context: Context }
+      | { method?: undefined; context?: undefined },
+    input: any
+  ) {
     const context = Object.create({ use });
     Object.assign(context, this.context ?? errorProxy);
 
@@ -124,7 +129,7 @@ export function createProcedure<
 
     const redirect = action.redirect?.(result as Awaited<O>);
 
-    if (typeof redirect === "string") {
+    if (this.method && typeof redirect === "string") {
       console.log("REDIRECT RESULT", result);
       this.context.response.redirect = redirect;
       return result;
@@ -148,7 +153,7 @@ export function createAPI<T extends API>(router: T): T {
 }
 */
 
-const use: MiddlewareContext["use"] = async function use(...fns) {
+const use: MiddlewareContext["use"] = async function use(this: any, ...fns) {
   for (const fn of fns) {
     const result = await fn(this);
     Object.assign(this, result);
