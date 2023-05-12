@@ -67,8 +67,7 @@ function useToken() {
   return [getToken, updateToken] as [typeof getToken, typeof updateToken];
 }
 
-function useOrganizationSlug() {
-  const { pathname } = useLocation();
+function useOrganizationSlug(pathname: string) {
   const segments = trimLeadingSlash(pathname).split("/");
   const first = segments[0];
   return !first || first === "" || first.startsWith("~") ? null : first;
@@ -81,7 +80,8 @@ export function AuthProvider({
   organization?: { slug: string; url: string };
   children?: React.ReactNode;
 }) {
-  const slug = preset ? preset.slug : useOrganizationSlug();
+  const { pathname } = useLocation();
+  const slug = preset ? preset.slug : useOrganizationSlug(pathname);
 
   const [getToken, updateToken] = useToken();
 
@@ -123,7 +123,9 @@ export function AuthProvider({
     run(true).then((result) => {
       const data = unwrap(result);
       if (!data) {
-        navigate(slug ? `/?next=${slug}` : "/");
+        if (pathname !== "/") {
+          navigate(slug ? `/?next=${slug}` : "/");
+        }
       } else {
         // we check previous state, because there is no need to trigger reference rerender
         // if user is already set
@@ -143,11 +145,9 @@ export function AuthProvider({
     });
 
     return onInterval(() => run(), { duration: 30000 });
-  }, [slug]);
+  }, [slug, pathname]);
 
   const navigate = useNavigate();
-
-  const { pathname } = useLocation();
 
   React.useEffect(() => {
     if (pathname === "/logout") {

@@ -125,6 +125,7 @@ export function createProcedure<
     const redirect = action.redirect?.(result as Awaited<O>);
 
     if (typeof redirect === "string") {
+      console.log("REDIRECT RESULT", result);
       this.context.response.redirect = redirect;
       return result;
     }

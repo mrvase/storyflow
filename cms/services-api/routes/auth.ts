@@ -217,7 +217,6 @@ export const auth = createRoute({
       return success(null);
     },
     redirect(result) {
-      console.log("ERROR", result);
       return isError(result) ? `${domain}/?success=false` : undefined;
     },
   }),
