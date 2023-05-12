@@ -12,7 +12,8 @@ import { useContextWithError } from "./utils/contextError";
 import { useAuth } from "./Auth";
 import { ScopedMutator } from "swr/_internal";
 
-const servicesUrl = "http://localhost:3000/api";
+const servicesUrl =
+  process.env.NODE_ENV === "production" ? `/api` : `http://localhost:3000/api`;
 
 /* cache */
 

@@ -100,7 +100,7 @@ export const auth = createRoute({
 
       const token = encode(payload, { encrypt: true });
 
-      const path = "http://localhost:3000/verify";
+      const path = `${process.env.BASE_URL}/verify`;
 
       const url = new URL(path);
       url.searchParams.set("token", token);
@@ -217,6 +217,7 @@ export const auth = createRoute({
       return success(null);
     },
     redirect(result) {
+      console.log("ERROR", result);
       return isError(result) ? `${domain}/?success=false` : undefined;
     },
   }),
