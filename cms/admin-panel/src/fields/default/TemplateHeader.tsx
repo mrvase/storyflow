@@ -32,6 +32,7 @@ import { useDocumentList } from "../../documents";
 import { useFieldTemplateId } from "./FieldTemplateContext";
 import { FieldTransactionEntry } from "../../operations/actions";
 import { createTransaction } from "@storyflow/collab/utils";
+import { getDocumentLabel } from "../../documents/useDocumentLabel";
 
 export function TemplateHeader({
   id,
@@ -197,10 +198,12 @@ function TemplateMenu({
 
   const options = React.useMemo(
     () =>
-      (templates ?? []).map((el) => ({
-        id: el._id,
-        label: el.label ?? el._id,
-      })),
+      (templates ?? [])
+        .filter((el) => el.folder)
+        .map((el) => ({
+          id: el._id,
+          label: getDocumentLabel(el)!,
+        })),
     [templates]
   );
 

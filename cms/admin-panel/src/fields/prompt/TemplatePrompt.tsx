@@ -56,10 +56,12 @@ export function TemplatePrompt({ prompt }: { prompt: string }) {
   );
 
   const templatesWithLabels = React.useMemo(() => {
-    return templates.map((el) => ({
-      ...el,
-      label: getDocumentLabel(el) ?? "",
-    }));
+    return templates
+      .filter((el) => el.folder)
+      .map((el) => ({
+        ...el,
+        label: getDocumentLabel(el)!,
+      }));
   }, [templates]);
 
   const options = templatesWithLabels

@@ -27,7 +27,7 @@ export function VisitedLinks({ data: { path, index } }: { data: PanelData }) {
     if (type === "d" || type === "t") {
       fetchDocument(id, client).then((doc) => {
         if (!mounted) return;
-        const label = doc?.label ?? getDocumentLabel(doc);
+        const label = getDocumentLabel(doc);
         if (!label) return;
         setVisited((ps) =>
           [

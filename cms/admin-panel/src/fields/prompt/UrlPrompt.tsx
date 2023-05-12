@@ -19,6 +19,7 @@ import { tokens } from "@storyflow/cms/tokens";
 import { useDocumentList } from "../../documents";
 import { markMatchingString } from "./helpers";
 import { useFolders } from "../../folders/FoldersContext";
+import { getFolderData } from "../../folders/getFolderData";
 
 export function UrlPrompt({
   prompt,
@@ -54,7 +55,7 @@ export function UrlPrompt({
   const combinedPrompt = parentUrl?.[0] ? `${parentUrl[0]}/${prompt}` : prompt;
 
   const apps = Array.from(useFolders().values()).filter(
-    (el) => el.type === "app"
+    (el) => getFolderData(el).type === "app"
   );
 
   return (
