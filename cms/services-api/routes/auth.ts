@@ -87,7 +87,7 @@ export const auth = createRoute({
     schema() {
       return z.object({ email: z.string(), next: z.string().optional() });
     },
-    async query({ email, next }, { response, encode }) {
+    async mutation({ email, next }, { response, encode }) {
       if (!/.+@.+/u.test(email)) {
         throw new Error("A valid email is required.");
       }

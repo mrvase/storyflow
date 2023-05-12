@@ -222,7 +222,7 @@ export function SignIn() {
           const next = new URLSearchParams(search).get("next") ?? undefined;
 
           const result =
-            await servicesClientWithoutContext.auth.sendEmail.query({
+            await servicesClientWithoutContext.auth.sendEmail.mutation({
               email: data.get("email") as string,
               // get next url from query params
               ...(next && encodeURIComponent(next) === next && next.length < 50
