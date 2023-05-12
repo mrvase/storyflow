@@ -18,7 +18,6 @@ import {
   serializeAuthToken,
   parseAuthToken,
   LOCAL_TOKEN,
-  KeyCookie,
 } from "@storyflow/server/auth";
 import { createTransport } from "nodemailer";
 import postgres from "postgres";
@@ -113,7 +112,7 @@ export const auth = createRoute({
 
       response.cookies<AuthCookies>().set(LINK_COOKIE, link, {
         path: "/",
-        sameSite: "strict",
+        sameSite: "lax",
         secure: true,
         httpOnly: true,
         encrypt: true,

@@ -3,10 +3,10 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { App } from "admin-panel";
 
-const organization = (import.meta as any).env.dev
+const organization = (import.meta as any).env.DEV
   ? {
-      slug: "http://localhost:3001",
-      url: "kfs",
+      slug: "kfs",
+      url: "http://localhost:3001",
     }
   : undefined;
 
