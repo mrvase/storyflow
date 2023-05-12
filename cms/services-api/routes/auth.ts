@@ -204,20 +204,22 @@ export const auth = createRoute({
       /*
       response.cookies<AuthCookies>().delete(LINK_COOKIE, {
         path: "/",
-        sameSite: "strict",
+        sameSite: "lax",
         secure: true,
         httpOnly: true,
         encrypt: true,
       });
       */
 
-      response.redirect = `${domain}/${next ?? ""}?success=true`;
+      // response.redirect = `${domain}/${next ?? ""}?success=true`;
 
       return success(null);
     },
+    /*
     redirect(result) {
       return isError(result) ? `${domain}/?success=false` : undefined;
     },
+    */
   }),
 
   addOrganization: createProcedure({
