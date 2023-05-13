@@ -112,7 +112,7 @@ export const useSaveDocument = (
 
     const configQueue = queues["config"];
 
-    const updatedVersions = versions;
+    const updatedVersions: Partial<DocumentVersionRecord> = {};
 
     if (configQueue?.length) {
       config = updateDocumentConfig(config, configQueue);
