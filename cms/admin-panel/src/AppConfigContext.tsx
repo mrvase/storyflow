@@ -103,8 +103,9 @@ export function AppConfigProvider({
     (async () => {
       const fetchedConfigs = await Promise.all(
         organization!.apps.map(async ({ name, baseURL }) => {
+          const normalizedBaseURL = normalizeProtocol(baseURL);
           const result = await appClient.app.config.query(undefined, {
-            url: `${normalizeProtocol(baseURL)}/api`,
+            url: `${normalizedBaseURL}/api`,
           });
 
           if (isError(result)) {
@@ -117,7 +118,7 @@ export function AppConfigProvider({
             name,
             {
               ...config,
-              baseURL: normalizeProtocol(baseURL),
+              baseURL: normalizedBaseURL,
               configs: {
                 "": defaultLibraryConfig,
                 ...config.configs,

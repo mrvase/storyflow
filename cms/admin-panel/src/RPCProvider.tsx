@@ -51,8 +51,10 @@ export function useAppClient(config?: AppConfig) {
   const { getToken, organization } = useAuth();
   const cache = React.useMemo(() => createCache(mutate), []);
 
+  const url = config ? `${config.baseURL}/api` : undefined;
+
   // url might not be set, but then it can be set directly on the methods
-  return createClient<AppAPI>(config?.baseURL, {
+  return createClient<AppAPI>(url, {
     context: { slug: organization?.slug },
     generateHeaders: (): Record<string, string> => ({
       "x-storyflow-token": getToken() ?? "",
