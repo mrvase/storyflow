@@ -11,8 +11,10 @@ export const auth =
   (key: string) =>
   async ({ request, client }: MiddlewareContext) => {
     const tokenHeader = request.headers.get("x-storyflow-token");
+    /*
     const headers: string[][] = [];
     request.headers.forEach((value, name) => headers.push([name, value]));
+    */
     const token = parseAuthToken(LOCAL_TOKEN, tokenHeader, key);
 
     if (!token) {

@@ -1,5 +1,10 @@
 import { error, success } from "@storyflow/rpc-server/result";
-import type { DocumentId, FieldId, ValueArray } from "@storyflow/shared/types";
+import type {
+  DocumentId,
+  FieldId,
+  RawFieldId,
+  ValueArray,
+} from "@storyflow/shared/types";
 import type {
   DocumentConfig,
   DocumentVersionRecord,
@@ -68,7 +73,11 @@ export async function save(
   ids are computed from other imports (with "pick" function).
   */
 
-  const updatedFieldsIds = new Set(Object.keys(input.record) as FieldId[]);
+  const updatedFieldIds = new Set(Object.keys(input.record) as FieldId[]);
+
+  const updatedRawFieldIdsAtRoot = Object.keys(input.versions).filter(
+    (el) => el !== "config"
+  ) as RawFieldId[];
 
   let record = extractRootRecord(
     documentId,
@@ -80,8 +89,6 @@ export async function save(
 
   Object.assign(record, input.record);
   Object.assign(versions, input.versions);
-
-  console.log("VERSION VERSIONS", versions, input.versions);
 
   // trim to not include removed nested fields
   record = extractRootRecord(documentId, record, {
@@ -134,7 +141,7 @@ export async function save(
   // 1') the updated fields that resolve to drefs should be used to produce derivatives
   // 2) the updated fields that picks from an external field should be used to produce field import ids.
 
-  updatedFieldsIds.forEach((fieldId) => {
+  updatedFieldIds.forEach((fieldId) => {
     // even though we are not concerned with picked document ids,
     // we can use the same function to get drefs
     drefs.push(...getPickedDocumentIds(fieldId, record));
@@ -194,7 +201,7 @@ export async function save(
   const newDrefs: DocumentId[] = [];
   const newExternalFieldIds: FieldId[] = [];
 
-  updatedFieldsIds.forEach((fieldId) => {
+  updatedFieldIds.forEach((fieldId) => {
     // 1')
     getPickedDocumentIds(fieldId, fullRecord).forEach((id) => {
       if (!drefs.includes(id)) {
@@ -315,8 +322,10 @@ export async function save(
   const cached: DBId<FieldId>[] = [];
   const timestamp = Date.now();
   const updated: Record<string, number> = {};
-  updatedFieldsIds.forEach((id) => {
-    updated[`updated.${getRawFieldId(id)}`] = timestamp;
+
+  updatedRawFieldIdsAtRoot.forEach((rawId) => {
+    updated[`updated.${rawId}`] = timestamp;
+    const id = computeFieldId(documentId, rawId);
     if (!(id in values) && !isTemplateField(id)) {
       cached.push(createObjectId(id));
     }
@@ -356,7 +365,8 @@ export async function save(
 
     // create updates
 
-    const updates: Update[] = Array.from(updatedFieldsIds, (id) => {
+    const updates: Update[] = Array.from(updatedRawFieldIdsAtRoot, (rawId) => {
+      const id = computeFieldId(documentId, rawId);
       const value = createSyntaxStream(record[id], (id) => createObjectId(id));
       const objectId = createObjectId(id);
       const _imports = getFieldBlocksWithDepths(id, record).filter(
@@ -366,7 +376,7 @@ export async function save(
         k: objectId,
         v: value,
         depth: 0,
-        result: doc.values[getRawFieldId(id)] ?? cachedRecord[id] ?? [],
+        result: doc.values[rawId] ?? cachedRecord[id] ?? [],
         _imports,
         // imports: [], // should just be empty
         // nested: [],
