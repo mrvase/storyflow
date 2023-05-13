@@ -4,7 +4,7 @@ import {
   createClient,
   createSWRClient,
 } from "@storyflow/rpc-client";
-import type { AppAPI, DefaultAPI } from "@storyflow/api";
+import type { AppAPI, AppConfig, DefaultAPI } from "@storyflow/api";
 import type { BucketAPI, CollabAPI } from "services-api";
 import type {} from "@storyflow/rpc-client/types-shared";
 import useSWR, { useSWRConfig } from "swr";
@@ -46,11 +46,13 @@ const ServicesClientContext = React.createContext<ServicesClient | null>(null);
 export const useServicesClient = () =>
   useContextWithError(ServicesClientContext, "ServicesClient");
 
-export function useAppClient() {
+export function useAppClient(config?: AppConfig) {
   const { mutate } = useSWRConfig();
   const { getToken, organization } = useAuth();
   const cache = React.useMemo(() => createCache(mutate), []);
-  return createClient<AppAPI>(undefined, {
+
+  // url might not be set, but then it can be set directly on the methods
+  return createClient<AppAPI>(config?.baseURL, {
     context: { slug: organization?.slug },
     generateHeaders: (): Record<string, string> => ({
       "x-storyflow-token": getToken() ?? "",

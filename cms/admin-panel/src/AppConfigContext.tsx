@@ -1,16 +1,11 @@
 import React from "react";
-import type {
-  Config,
-  LibraryConfig,
-  AppConfig,
-  LibraryRecord,
-  LibraryConfigRecord,
-} from "@storyflow/shared/types";
+import type { AppConfig, LibraryConfigRecord } from "@storyflow/shared/types";
 import { useFolderDomains } from "./folders/FolderDomainsContext";
 import { useAuth } from "./Auth";
 import { useAppClient } from "./RPCProvider";
 import { isError, unwrap } from "@storyflow/rpc-client/result";
 import { defaultLibraryConfig } from "@storyflow/shared/defaultLibraryConfig";
+import { normalizeProtocol } from "./utils/normalizeProtocol";
 
 const AppConfigContext = React.createContext<Record<string, AppConfig> | null>(
   null
@@ -108,17 +103,9 @@ export function AppConfigProvider({
     (async () => {
       const fetchedConfigs = await Promise.all(
         organization!.apps.map(async ({ name, baseURL }) => {
-          const protocol =
-            process.env.NODE_ENV === "development" ? "http://" : "https://";
-          baseURL = `${protocol}${baseURL.replace(/https?:\/\//, "")}`;
           const result = await appClient.app.config.query(undefined, {
-            url: `${baseURL}/api`,
+            url: `${normalizeProtocol(baseURL)}/api`,
           });
-          /*
-          const config = await fetch(configURL, {
-            signal: abortController.signal,
-          }).then((res) => res.json() as Promise<AppConfig>);
-          */
 
           if (isError(result)) {
             return;
@@ -130,6 +117,7 @@ export function AppConfigProvider({
             name,
             {
               ...config,
+              baseURL: normalizeProtocol(baseURL),
               configs: {
                 "": defaultLibraryConfig,
                 ...config.configs,

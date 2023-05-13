@@ -482,7 +482,7 @@ function RefreshButton({
   });
 
   const client = useClient();
-  const appClient = useAppClient();
+  const appClient = useAppClient(config);
 
   const number = data?.length ?? 0;
 
