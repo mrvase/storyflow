@@ -34,7 +34,7 @@ yarn-error.log*
 
 .vscode
 
-apps/web/public/dashboard
-!apps/web/public/dashboard/favicon.ico
+apps/panel/public/dashboard
+!apps/panel/public/dashboard/favicon.ico
 
 dist

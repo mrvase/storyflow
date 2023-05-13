@@ -108,6 +108,9 @@ export function AppConfigProvider({
     (async () => {
       const fetchedConfigs = await Promise.all(
         organization!.apps.map(async ({ name, baseURL }) => {
+          const protocol =
+            process.env.NODE_ENV === "development" ? "http://" : "https://";
+          baseURL = `${protocol}${baseURL.replace(/https?:\/\//, "")}`;
           const result = await appClient.app.config.query(undefined, {
             url: `${baseURL}/api`,
           });
