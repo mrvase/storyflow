@@ -42,5 +42,5 @@ export const getPreview = (value: ValueArray | ClientSyntaxTree) => {
   }
 
   // return `[${output.length} elementer]`;
-  return `${value.map((el) => valueAsString(el, true)).join(", ")}`;
+  return `${value.map((el) => valueAsString(el, true)).join(", ")}`.trim();
 };

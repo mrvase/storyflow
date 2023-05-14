@@ -76,7 +76,7 @@ export function RPCProvider({ children }: { children: React.ReactNode }) {
         "x-storyflow-token": getToken() ?? "",
       }),
     }),
-    [organization, apiUrl]
+    [organization?.slug, apiUrl]
   );
 
   const cache = React.useMemo(() => createCache(mutate), []);

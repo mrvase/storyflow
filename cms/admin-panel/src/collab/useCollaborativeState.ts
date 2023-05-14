@@ -44,7 +44,6 @@ export function useCollaborativeState<Data, TE extends TransactionEntry>(
       console.log("HAS QUEUE READY", queue);
       if (queue) {
         queue.forEach((entry) => {
-          console.log("-> HAS QUEUE READY", entry);
           callback(entry);
         });
       }

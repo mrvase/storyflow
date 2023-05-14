@@ -101,6 +101,11 @@ export function AuthProvider({
     setApiUrl(null);
   };
 
+  const pathnameRef = React.useRef(pathname);
+  React.useEffect(() => {
+    // give next effect access to pathname without re-running on each navigation
+    pathnameRef.current = pathname;
+  }, [pathname]);
   React.useEffect(() => {
     // authentication for panel
     if (slug === "logout") return;
@@ -123,7 +128,7 @@ export function AuthProvider({
     run(true).then((result) => {
       const data = unwrap(result);
       if (!data) {
-        if (pathname !== "/") {
+        if (pathnameRef.current !== "/") {
           navigate(slug ? `/?next=${slug}` : "/");
         }
       } else {
@@ -145,7 +150,7 @@ export function AuthProvider({
     });
 
     return onInterval(() => run(), { duration: 30000 });
-  }, [slug, pathname]);
+  }, [slug]);
 
   const navigate = useNavigate();
 
@@ -169,6 +174,10 @@ export function AuthProvider({
     }),
     [user, organization]
   );
+
+  React.useEffect(() => {
+    console.log("%c updated organization", "color: #bada55", organization);
+  }, [organization]);
 
   if (isLoading) {
     return <div></div>;

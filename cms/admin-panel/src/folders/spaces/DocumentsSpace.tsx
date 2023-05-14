@@ -69,6 +69,7 @@ export function DocumentsSpace({
         versions: { config: [0] },
       })
     );
+    console.log("DOCS NOW", [...docs]);
     (documents ?? []).forEach((el) => docs.push(el));
     return docs;
   }, [newDocuments, documents, template]);

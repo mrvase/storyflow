@@ -34,19 +34,22 @@ export default function Table({
       border={0}
     >
       {columns && (
-        <thead>
+        <thead className="">
           <tr className="font-medium text-gray-600 dark:text-gray-300">
-            <td className="w-9"></td>
-            {columns.map(({ label }) => (
+            <td className="w-9 hidden @sm:table-cell"></td>
+            {columns.map(({ label }, index) => (
               <td
                 key={label}
-                className="p-2.5 truncate"
+                className={cl(
+                  "p-2.5 truncate",
+                  index !== 0 && "hidden @sm:table-cell"
+                )}
                 style={{ width: `calc(100% / ${columns.length})` }}
               >
                 {label}
               </td>
             ))}
-            {button && <td className="w-40"></td>}
+            {button && <td className="w-11 @md:w-40"></td>}
           </tr>
         </thead>
       )}
@@ -104,7 +107,7 @@ function Row({
 
   return (
     <tr
-      className="border-t border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition-[background-color]"
+      className="border-t border-gray-100 dark:border-gray-750 hover:bg-gray-50 dark:hover:bg-gray-800 transition-[background-color]"
       {...dragHandleProps}
       onClick={() => {
         navigate(to, {
@@ -112,7 +115,7 @@ function Row({
         });
       }}
     >
-      <td className="w-9 text-[0px] border-0 p-0">
+      <td className="hidden @sm:table-cell w-9 text-[0px] border-0 p-0">
         <Checkbox id={doc._id} />
       </td>
       {columns.map(({ id }, index) => {
@@ -128,7 +131,13 @@ function Row({
             )
           );
         return (
-          <td key={index} className={cl("p-2.5 truncate")}>
+          <td
+            key={index}
+            className={cl(
+              "p-2.5 truncate",
+              index !== 0 && "hidden @sm:table-cell"
+            )}
+          >
             {index === 0 && indent ? (
               <div className="mr-3 flex items-center">
                 <svg
@@ -158,13 +167,14 @@ function Row({
       {button && (
         <td className={cl("p-2.5")}>
           <button
-            className="ml-auto rounded px-2 py-0.5 text-sm text-gray-800 dark:text-white text-opacity-50 hover:text-opacity-100 dark:text-opacity-50 dark:hover:text-opacity-100 ring-button flex items-center gap-2 whitespace-nowrap"
+            className="ml-auto rounded-full px-1 @md:px-2 py-1 -my-1 text-xs font-medium text-gray-800 dark:text-white text-opacity-50 hover:text-opacity-100 dark:text-opacity-50 dark:hover:text-opacity-100 ring-button flex items-center gap-2 whitespace-nowrap"
             onClick={(ev) => {
               ev.stopPropagation();
               button.onClick(doc);
             }}
           >
-            <button.icon className="w-3 h-3" /> {button.label}
+            <button.icon className="w-3 h-3" />
+            <span className="hidden @md:inline">{button.label}</span>
           </button>
         </td>
       )}
@@ -177,7 +187,9 @@ function LabelColumn({ doc }: { doc: DBDocument }) {
 
   return (
     <div className="flex items-center">
-      <span className="truncate">{label}</span>
+      <span className="truncate -my-2.5 py-2.5">
+        {label.trim() || "Unavngivet dokument"}
+      </span>
       {isModified && (
         <div
           className={cl(

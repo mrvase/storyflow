@@ -93,6 +93,7 @@ export const DocumentContent = ({
         </div>
       }
       toolbar={toolbar}
+      hasSidebar
     >
       {children}
     </Content>

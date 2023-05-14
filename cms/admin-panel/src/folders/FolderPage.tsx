@@ -50,6 +50,7 @@ import { useAppConfig } from "../AppConfigContext";
 import { SWRClient, useClient, useAppClient } from "../RPCProvider";
 import { isSuccess } from "@storyflow/rpc-client/result";
 import { getFolderData } from "./getFolderData";
+import { getPanelsFromUrl } from "../layout/panel-router/utils";
 
 const spaces: { label: string; item: Omit<Space, "id"> }[] = [
   {
@@ -82,6 +83,7 @@ export default function FolderPage({
 
   const [{ path }] = usePanel();
   const isSelected = (path || "/") === (route || "/");
+  const nextIsDocument = path.slice(route.length).startsWith("/d");
 
   const push = usePush<FolderTransactionEntry>("folders");
   const mutateProp = <T extends "label" | "domains">(
@@ -197,6 +199,7 @@ export default function FolderPage({
       <FolderDomainsProvider domains={folder?.domains}>
         <FocusOrchestrator>
           <Content
+            small={!isSelected && nextIsDocument}
             icon={type === "app" ? ComputerDesktopIcon : FolderIcon}
             header={
               <FolderLabel
@@ -445,8 +448,6 @@ export function DomainsButton({
   );
 
   if (!organization?.apps.length) return null;
-
-  console.log("SELECTED", selected);
 
   return (
     <Menu<{ id: string; label: string }>

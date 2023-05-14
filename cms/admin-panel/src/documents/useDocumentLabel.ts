@@ -82,7 +82,6 @@ export const useDocumentLabel = <T extends DBDocument | undefined>(
   React.useEffect(() => {
     if (!doc || !id || !initialValue) return;
     let mounted = true;
-    console.log("UPDATING HERE ON LABEL", parseInt(doc._id, 16).toString(16));
     (async () => {
       /**
        * We only want to know what the live value is at this moment, and

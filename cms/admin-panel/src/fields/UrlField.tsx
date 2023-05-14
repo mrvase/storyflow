@@ -289,7 +289,7 @@ export default function UrlField({ id }: FieldProps) {
           />
         )}
       </div>
-      {isDefaultField(id, "url") && (
+      {/* isDefaultField(id, "url") && (
         <div className="flex items-center ml-5">
           <div className="flex flex-wrap gap-2">
             {children.map((el, index) => (
@@ -327,7 +327,7 @@ export default function UrlField({ id }: FieldProps) {
             </button>
           </div>
         </div>
-      )}
+      )*/}
     </div>
   );
 }

@@ -114,7 +114,7 @@ export function useDocumentWithTimeline(documentId: DocumentId) {
     // TODO: This should be made synchronous to avoid flickering
     if (!data) return;
 
-    console.log("UPDATED! ON STALE?", hasCalledStaleHook.current);
+    console.log("UPDATED! ON STALE?", hasCalledStaleHook.current, documentId);
 
     collab.initializeTimeline(documentId, {
       versions: data.versions,

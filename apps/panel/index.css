@@ -33,6 +33,10 @@
   @apply text-gray-800 dark:text-white text-opacity-90 dark:text-opacity-60 hover:text-opacity-100 dark:hover:text-opacity-100 font-medium;
 }
 
+button {
+  user-select: none;
+}
+
 button,
 a {
   @apply outline-2 outline-offset-2 focus-visible:outline focus-visible:outline-teal-600;

@@ -20,7 +20,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
 
   React.useLayoutEffect(() => {
     const timeline = collab.getTimeline("documents")!;
-    timeline.registerStaleListener(() => {
+    return timeline.registerStaleListener(() => {
       timeline.initialize(
         async () => [],
         { versions: null },

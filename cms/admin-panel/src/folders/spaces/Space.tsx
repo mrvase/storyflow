@@ -55,7 +55,7 @@ function Space({
       <div className="flex items-center mb-3.5 h-7">
         <div
           className={cl(
-            "cursor-grab transition-opacity w-4 mr-5",
+            "cursor-grab transition-opacity w-4 mr-5 hidden @sm:block",
             isOpen
               ? "opacity-75 hover:opacity-100"
               : "opacity-0 pointer-events-none"
@@ -89,7 +89,7 @@ const Button = React.forwardRef<
       ref={ref}
       {...props}
       className={cl(
-        "rounded-full ring-button p-0.5",
+        "shrink-0 w-5 h-5 rounded-full ring-button p-1",
         selected === false
           ? "text-gray-800 dark:text-white text-opacity-50 dark:text-opacity-50"
           : "text-button",
@@ -98,7 +98,7 @@ const Button = React.forwardRef<
         props.className
       )}
     >
-      {Icon && <Icon className="w-4 h-4" />}
+      {Icon && <Icon className="w-3 h-3" />}
       {props.children}
     </button>
   );

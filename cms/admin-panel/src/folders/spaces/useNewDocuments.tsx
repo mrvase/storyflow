@@ -12,9 +12,11 @@ export function useNewDocuments(folderId: FolderId) {
     const queue = collab
       .getTimeline("documents")!
       .getQueue<DocumentAddTransactionEntry>();
+    console.log("%c JUST REGISTERING", "background: #00e600");
     return queue.register(() => {
       const docs = new Set<DocumentId>();
       queue.forEach(({ transaction }) => {
+        console.log("%c transaction", "background: #00e600", transaction);
         transaction.forEach((entry) => {
           if (entry[0] === folderId) {
             entry[1].forEach((operation) => {
@@ -28,6 +30,7 @@ export function useNewDocuments(folderId: FolderId) {
         });
       });
       const array = Array.from(docs).reverse();
+      console.log("NEW ARRAY", array);
       setDocs((ps) => {
         if (
           array.length !== ps.length ||

@@ -103,8 +103,6 @@ export function FoldersProvider({
 
       forEach(({ transaction }) => {
         transaction.forEach((entry) => {
-          console.log("ENTRY", entry);
-
           const [folderId, spaceId] = entry[0].split(":") as [
             FolderId,
             SpaceId | undefined
@@ -117,8 +115,6 @@ export function FoldersProvider({
                 (el) => el.id === spaceId
               );
               const space = newFolder.spaces[spaceIndex] as FolderSpace;
-
-              console.log("space", { newFolder, spaceId, space });
 
               if (!space) return;
 
@@ -137,7 +133,6 @@ export function FoldersProvider({
           } else {
             (entry as FolderTransactionEntry)[1].forEach((operation) => {
               const newFolder = getInitialFolder(folderId);
-              console.log("folder", { newFolder });
               if (isSpliceOperation(operation)) {
                 const [index, remove, insert] = operation;
                 newFolder.spaces!.splice(index, remove ?? 0, ...(insert ?? []));

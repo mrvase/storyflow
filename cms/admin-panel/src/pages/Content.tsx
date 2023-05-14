@@ -2,15 +2,10 @@ import React from "react";
 import cl from "clsx";
 import { useBranchIsFocused } from "../layout/components/BranchFocusContext";
 import {
-  ArrowsPointingOutIcon,
   ArrowsUpDownIcon,
   ChevronDownIcon,
-  ChevronLeftIcon,
   ChevronUpIcon,
-  ComputerDesktopIcon,
-  DocumentDuplicateIcon,
   StopIcon,
-  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { useLocalStorage } from "../state/useLocalStorage";
 import {
@@ -48,6 +43,8 @@ function Content({
   toolbar,
   className,
   icon: Icon,
+  small,
+  hasSidebar,
 }: {
   children: React.ReactNode;
   header?: React.ReactNode;
@@ -55,6 +52,8 @@ function Content({
   toolbar?: React.ReactNode;
   icon?: React.FC<{ className: string }>;
   className?: string;
+  small?: boolean;
+  hasSidebar?: boolean;
 }) {
   const { isFocused } = useBranchIsFocused();
 
@@ -78,19 +77,25 @@ function Content({
           !status.endsWith("replace")
           ? "translate-x-10"
           : "translate-x-0",
-        !isSelected && "pointer-events-none"
+        hasSidebar && "@3xl:ml-64 @3xl:border-l @3xl:border-gray-750"
+        // !isSelected && "pointer-events-none"
       )}
     >
       {header && (
         <div
           className={cl(
-            "mb-6 sticky -top-16 z-50 border-b border-gray-100 dark:border-gray-800",
+            "sticky -top-16 z-50 border-b border-gray-100 dark:border-gray-750",
             "bg-white", // need bg color because it is sticky
             "bg-gradient-to-b dark:from-gray-800 dark:to-[#1b2533]"
-            // "bg-gradient-to-b from-gray-850 to-rose-800"
+            // "bg-gradient-to-b from-gray-850 to-rose-800",
           )}
         >
-          <div className="w-full max-w-6xl pt-[4.5rem] pb-12 px-5">
+          <div
+            className={cl(
+              "w-full max-w-6xl pt-[4.5rem] pb-12 px-5",
+              !isSelected ? "opacity-0" : "transition-opacity"
+            )}
+          >
             <div
               className={cl(
                 "flex justify-between",
@@ -115,14 +120,21 @@ function Content({
           </div>
         </div>
       )}
-      {!header && toolbar && (
+      {/*!header && toolbar && (
         <div
           className={cl("px-5 py-0", isFocused ? "opacxity-100" : "opacity-50")}
         >
           {toolbar}
         </div>
-      )}
-      <div className={cl(className ?? "max-w-6xl")}>{children}</div>
+      )*/}
+      <div
+        className={cl(
+          className ?? "pt-6 min-h-full max-w-6xl",
+          small && "@container w-64"
+        )}
+      >
+        {children}
+      </div>
     </div>
   );
 }
