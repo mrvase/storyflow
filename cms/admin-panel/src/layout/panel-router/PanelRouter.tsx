@@ -76,12 +76,13 @@ const move = (data: PanelData[], start: number, end: number): PanelData[] => {
 const reducers = {
   reconcile({ prefix, data }, url: string) {
     const newState = getPanelsFromUrl(url);
+
     if (data.length !== newState.data.length) {
       return newState;
     }
 
     return {
-      prefix,
+      prefix: newState.prefix,
       data: data.map((el) => ({
         key: el.key,
         index: el.index,
@@ -149,6 +150,7 @@ export function PanelRouter({ children }: { children: React.ReactNode }) {
 
   React.useLayoutEffect(() => {
     if (!isLocalNavigation.current) {
+      console.log("NEW PATH", location.pathname);
       actions.reconcile(location.pathname);
     } else {
       isLocalNavigation.current = false;

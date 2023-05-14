@@ -28,7 +28,7 @@ export const getPanelsFromUrl = (url: string): Panels => {
 };
 
 export const getUrlFromPanels = ({ prefix, data }: Panels): string => {
-  return `${prefix}${data
+  return `${prefix === "/" ? "" : prefix}${data
     .slice()
     .sort((a, b) => a.index - b.index)
     .reduce((a, c) => a + `/~${c.path === "/" ? "" : c.path}`, "")}`;

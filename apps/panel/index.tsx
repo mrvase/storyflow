@@ -5,8 +5,8 @@ import { App } from "admin-panel";
 
 const organization = (import.meta as any).env.DEV
   ? {
-      slug: "semper",
-      url: "http://localhost:3003",
+      slug: "dashboard",
+      url: "http://localhost:4000",
     }
   : undefined;
 
