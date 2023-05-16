@@ -77,8 +77,8 @@ function Content({
           !status.endsWith("replace")
           ? "translate-x-10"
           : "translate-x-0",
-        hasSidebar && "@3xl:ml-64 @3xl:border-l @3xl:border-gray-750"
-        // !isSelected && "pointer-events-none"
+        hasSidebar && "@3xl:ml-64 @3xl:border-l @3xl:border-gray-750",
+        !isSelected && !small && "pointer-events-none"
       )}
     >
       {header && (
@@ -90,12 +90,7 @@ function Content({
             // "bg-gradient-to-b from-gray-850 to-rose-800",
           )}
         >
-          <div
-            className={cl(
-              "w-full max-w-6xl pt-[4.5rem] pb-12 px-5",
-              !isSelected ? "opacity-0" : "transition-opacity"
-            )}
-          >
+          <div className={cl("w-full max-w-6xl pt-[4.5rem] pb-12 px-5")}>
             <div
               className={cl(
                 "flex justify-between",
@@ -103,12 +98,30 @@ function Content({
               )}
             >
               <div className="text-gray-800 dark:text-white text-3xl flex-center font-medium">
-                <div className="opacity-75 w-4 mt-0.5 mr-5">
+                <div
+                  className={cl(
+                    "shrink-0 w-4 h-4 mr-5",
+                    small ? "opacity-0" : "opacity-75"
+                  )}
+                >
                   {Icon && <Icon className="w-5 h-5 -ml-0.5" />}
                 </div>
-                {header}
+                <div
+                  className={cl(
+                    "h-9",
+                    // "transition-transform ease-out",
+                    small ? "-translate-x-9" : "translate-x-0"
+                  )}
+                >
+                  {header}
+                </div>
               </div>
-              <div className="absolute w-full h-7 translate-y-[2.675rem] text-sm flex items-center">
+              <div
+                className={cl(
+                  "absolute w-full h-7 translate-y-[2.675rem] text-sm flex items-center",
+                  small ? "opacity-0" : "transition-opacity"
+                )}
+              >
                 <ArrangeButton />
                 <div className="relative h-7 flex items-center w-full ml-2.5">
                   {toolbar}
