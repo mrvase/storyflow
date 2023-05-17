@@ -26,13 +26,6 @@ import { useNewDocuments } from "./useNewDocuments";
 import DocumentTable from "../../documents/components/DocumentTable";
 import { useTranslation } from "../../translation/TranslationContext";
 
-const columns = [
-  {
-    id: DEFAULT_FIELDS.label.id,
-    label: "Titel",
-  },
-];
-
 export function PagesSpace({
   space,
   folderId,
@@ -119,6 +112,15 @@ export function PagesSpace({
         addDocumentWithUrl(doc);
       },
     };
+  }, []);
+
+  const columns = React.useMemo(() => {
+    return [
+      {
+        id: DEFAULT_FIELDS.label.id,
+        label: t.general.title(),
+      },
+    ];
   }, []);
 
   return (

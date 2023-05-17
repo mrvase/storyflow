@@ -23,6 +23,7 @@ import { Menu } from "../elements/Menu";
 import { useTopFieldIndex } from "./FieldIndexContext";
 import { DocumentTransactionEntry } from "../operations/actions";
 import { getDocumentLabel } from "./useDocumentLabel";
+import { useTranslation } from "../translation/TranslationContext";
 
 const FieldToolbarPortalContext = React.createContext<
   [HTMLDivElement | null, React.Dispatch<HTMLDivElement | null>] | null
@@ -67,6 +68,7 @@ const restrictToOptions = [
 ];
 
 export function FieldToolbar() {
+  const t = useTranslation();
   const fieldId = useFieldId();
   const topIndex = useTopFieldIndex();
   const documentId = getDocumentId<DocumentId>(fieldId);
@@ -84,7 +86,7 @@ export function FieldToolbar() {
         .filter((el) => el.folder)
         .map((el) => ({
           id: el._id,
-          label: getDocumentLabel(el)!,
+          label: getDocumentLabel(el, t),
         })),
     [templates]
   );

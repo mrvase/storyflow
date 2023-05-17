@@ -13,6 +13,7 @@ import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/cms/constants";
 import { createTemplateFieldId } from "@storyflow/cms/ids";
 import { getDocumentLabel } from "../documents/useDocumentLabel";
+import { useTranslation } from "../translation/TranslationContext";
 
 export function AddTemplateDialog({
   isOpen,
@@ -25,6 +26,8 @@ export function AddTemplateDialog({
   folderId: FolderId;
   currentTemplate?: string;
 }) {
+  const t = useTranslation();
+
   const addDocument = useAddDocument({ type: "template", navigate: true });
 
   const push = usePush<FolderTransactionEntry>("folders");
@@ -71,20 +74,20 @@ export function AddTemplateDialog({
 
   const templateOptions = (templates ?? []).map((el) => ({
     value: el._id,
-    label: getDocumentLabel(el) ?? el._id,
+    label: getDocumentLabel(el, t) ?? el._id,
   }));
 
   return (
-    <Dialog isOpen={isOpen} close={close} title="Angiv skabelon">
+    <Dialog isOpen={isOpen} close={close} title={t.documents.chooseTemplate()}>
       <div className="flex flex-col gap-2">
         <DialogOption
           type="existing"
           icon={DocumentDuplicateIcon}
-          label="Vælg eksisterende"
+          label={t.documents.chooseExistingTemplate()}
           input={{
             options: templateOptions,
-            label: "Skabeloner",
-            button: "Accepter",
+            label: t.documents.templates(),
+            button: t.general.accept(),
             defaultValue: currentTemplate,
           }}
           onSubmit={onSubmit}
@@ -92,7 +95,7 @@ export function AddTemplateDialog({
         <DialogOption
           type="new"
           icon={PlusIcon}
-          label="Tilføj ny"
+          label={t.documents.createNewTemplate()}
           onSubmit={onSubmit}
           defaultChecked
         />

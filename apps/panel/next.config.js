@@ -7,8 +7,14 @@ module.exports = {
       },
       {
         source: "/((?!api).*)",
+        destination: "/",
+      },
+      /*
+      {
+        source: "/((?!api).*)",
         destination: "/dashboard/index.html",
       },
+      */
     ];
   },
   reactStrictMode: true,

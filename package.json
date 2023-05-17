@@ -15,7 +15,7 @@
     "dev": "turbo run dev --parallel",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "start": "pnpm --filter=web start",
+    "start": "pnpm --filter=panel start",
     "publish-packages": "pnpm --filter \"./packages/**\" publish"
   },
   "devDependencies": {

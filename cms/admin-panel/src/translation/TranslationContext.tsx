@@ -25,10 +25,14 @@ const createModifiers = ({
 type BaseModifiers = ReturnType<typeof createModifiers>;
 type BaseTranslation = typeof en;
 
-const TranslationContext = React.createContext<TranslationFunction<
+export type BaseTranslationFunction = TranslationFunction<
   BaseTranslation,
   BaseModifiers
-> | null>(null);
+>;
+
+const TranslationContext = React.createContext<BaseTranslationFunction | null>(
+  null
+);
 
 export function TranslationProvider({
   children,

@@ -13,6 +13,10 @@ type DerivedTranslation = {
 };
 
 export const da = {
+  general: {
+    accept: "Accepter",
+    title: "Titel",
+  },
   folders: {
     folders: "Mapper",
     noFolders: "Ingen mapper",
@@ -30,6 +34,8 @@ export const da = {
   },
   documents: {
     documents: "(Dokument|Dokumenter)",
+    templates: "(Skabelon|Skabeloner)",
+    allTemplates: "Alle skabeloner",
     pages: "(Side|Sider)",
     noDocuments: "Ingen dokumenter",
     addDocuments: "Tilføj(|)",
@@ -40,6 +46,11 @@ export const da = {
     unsavedTemplate: "Ugemt skabelon",
     addSubPage: "Tilføj underside",
     addFrontPage: "Tilføj forside",
+    removeTemplate: "Fjern",
+    applyTemplate: "Anvend",
+    chooseTemplate: "Vælg skabelon",
+    chooseExistingTemplate: "Vælg eksisterende",
+    createNewTemplate: "Tilføj ny",
   },
   numerals: {
     1: "en",

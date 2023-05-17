@@ -6,8 +6,10 @@ import { useClient } from "../../RPCProvider";
 import { getDocumentLabel } from "../../documents/useDocumentLabel";
 import { Link, useLocation } from "@storyflow/router";
 import { replacePanelPath } from "../panel-router/utils";
+import { useTranslation } from "../../translation/TranslationContext";
 
 export function VisitedLinks({ data: { path, index } }: { data: PanelData }) {
+  const t = useTranslation();
   const [visited, setVisited] = React.useState<
     { path: string; label: string; type: "t" | "d" }[]
   >([]);
@@ -27,7 +29,7 @@ export function VisitedLinks({ data: { path, index } }: { data: PanelData }) {
     if (type === "d" || type === "t") {
       fetchDocument(id, client).then((doc) => {
         if (!mounted) return;
-        const label = getDocumentLabel(doc);
+        const label = getDocumentLabel(doc, t);
         if (!label) return;
         setVisited((ps) =>
           [

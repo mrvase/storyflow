@@ -23,12 +23,24 @@ import {
   createTokenStream,
   parseTokenStream,
 } from "../operations/parse-token-stream";
-import { useTranslation } from "../translation/TranslationContext";
+import { BaseTranslationFunction } from "../translation/TranslationContext";
 
-export const getDocumentLabel = (doc: DBDocument | undefined) => {
-  const t = useTranslation();
-
-  if (!doc) return t.documents.unnamedDocument();
+export function getDocumentLabel(
+  doc: DBDocument,
+  t: BaseTranslationFunction
+): string;
+export function getDocumentLabel(
+  doc: DBDocument | undefined,
+  t: BaseTranslationFunction
+): string | undefined;
+export function getDocumentLabel(
+  doc: DBDocument | undefined
+): string | undefined;
+export function getDocumentLabel(
+  doc: DBDocument | undefined,
+  t?: BaseTranslationFunction
+): string | undefined {
+  if (!doc) return t ? t.documents.unnamedDocument() : undefined;
 
   const isTemplate = isTemplateDocument(doc?._id);
   const label = isTemplate ? "template_label" : "label";
@@ -41,8 +53,8 @@ export const getDocumentLabel = (doc: DBDocument | undefined) => {
   defaultLabel =
     typeof defaultLabel === "string" ? defaultLabel.trim() : undefined;
   const fallback = isTemplate
-    ? t.documents.unsavedTemplate()
-    : t.documents.unnamedDocument();
+    ? t?.documents?.unsavedTemplate()
+    : t?.documents?.unnamedDocument();
   return defaultLabel ?? fallback;
   /*
   const creationDateString = calculateRootFieldFromRecord(
@@ -58,7 +70,7 @@ export const getDocumentLabel = (doc: DBDocument | undefined) => {
     }).format(creationDate)})`
   );
   */
-};
+}
 
 export const useDocumentLabel = <T extends DBDocument | undefined>(
   doc: T

@@ -33,6 +33,7 @@ import { useFieldTemplateId } from "./FieldTemplateContext";
 import { FieldTransactionEntry } from "../../operations/actions";
 import { createTransaction } from "@storyflow/collab/utils";
 import { getDocumentLabel } from "../../documents/useDocumentLabel";
+import { useTranslation } from "../../translation/TranslationContext";
 
 export function TemplateHeader({
   id,
@@ -186,6 +187,7 @@ function TemplateMenu({
   id: FieldId;
   transforms: FieldTransform[];
 }) {
+  const t = useTranslation();
   const rootId = useFieldId();
 
   const push = usePush<FieldTransactionEntry>(
@@ -202,7 +204,7 @@ function TemplateMenu({
         .filter((el) => el.folder)
         .map((el) => ({
           id: el._id,
-          label: getDocumentLabel(el)!,
+          label: getDocumentLabel(el, t),
         })),
     [templates]
   );
@@ -225,7 +227,7 @@ function TemplateMenu({
               )
             );
           }}
-          label="Fjern"
+          label={t.documents.removeTemplate()}
         />
       )}
       {options.map((el) => (

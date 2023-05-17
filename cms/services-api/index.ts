@@ -7,6 +7,6 @@ export { bucket } from "./routes/bucket";
 import { collab } from "./routes/collab";
 export { collab } from "./routes/collab";
 
-export type AuthAPI = { auth: typeof auth };
+export type AuthAPI = { auth: ReturnType<typeof auth> };
 export type BucketAPI = { bucket: typeof bucket };
 export type CollabAPI = { collab: typeof collab };

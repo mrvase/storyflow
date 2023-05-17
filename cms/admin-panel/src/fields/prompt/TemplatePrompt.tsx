@@ -19,8 +19,10 @@ import { FieldTransactionEntry } from "../../operations/actions";
 import { usePush } from "../../collab/CollabContext";
 import { createTransaction } from "@storyflow/collab/utils";
 import { getDocumentLabel } from "../../documents/useDocumentLabel";
+import { useTranslation } from "../../translation/TranslationContext";
 
 export function TemplatePrompt({ prompt }: { prompt: string }) {
+  const t = useTranslation();
   const fieldId = useFieldId();
 
   const push = usePush<FieldTransactionEntry>(
@@ -60,7 +62,7 @@ export function TemplatePrompt({ prompt }: { prompt: string }) {
       .filter((el) => el.folder)
       .map((el) => ({
         ...el,
-        label: getDocumentLabel(el)!,
+        label: getDocumentLabel(el, t),
       }));
   }, [templates]);
 
@@ -73,13 +75,15 @@ export function TemplatePrompt({ prompt }: { prompt: string }) {
 
   return (
     <div className="p-2.5">
-      <div className="font-medium text-gray-400 mb-1 ml-1">Skabeloner</div>
+      <div className="font-medium text-gray-400 mb-1 ml-1">
+        {t.documents.templates()}
+      </div>
       {options.map(({ value, label }) => (
         <Option
           key={value}
           value={value}
           onEnter={onEnter}
-          onEnterLabel={"Anvend"}
+          onEnterLabel={t.documents.applyTemplate()}
           Icon={DocumentDuplicateIcon}
         >
           {label}
@@ -88,10 +92,10 @@ export function TemplatePrompt({ prompt }: { prompt: string }) {
       <Option
         value={null}
         onEnter={onEnter}
-        onEnterLabel={"Anvend"}
+        onEnterLabel={t.documents.applyTemplate()}
         Icon={DocumentDuplicateIcon}
       >
-        Fjern
+        {t.documents.removeTemplate()}
       </Option>
     </div>
   );

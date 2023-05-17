@@ -4,8 +4,8 @@
   "version": "0.0.0",
   "scripts": {
     "build:vite": "rm -rf public/dashboard && vite build && mv public/index.html public/dashboard/index.html",
-    "dev": "pnpm build:vite && (next dev & vite dev)",
-    "build": "pnpm build:vite && next build",
+    "dev": "next dev",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "keys": "node key-pair.js"

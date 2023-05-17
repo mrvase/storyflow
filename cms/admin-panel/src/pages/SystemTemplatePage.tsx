@@ -10,8 +10,10 @@ import { useDocumentList } from "../documents";
 import Loader from "../elements/Loader";
 import type { SpaceId } from "@storyflow/cms/types";
 import { getDocumentLabel } from "../documents/useDocumentLabel";
+import { useTranslation } from "../translation/TranslationContext";
 
 export function SystemTemplatePage() {
+  const t = useTranslation();
   const folder = useTemplateFolder();
   const { form, handleDelete } = useDeleteForm({ folderId: folder._id });
 
@@ -21,17 +23,17 @@ export function SystemTemplatePage() {
     id: el._id,
     columns: [
       {
-        value: getDocumentLabel(el),
+        value: getDocumentLabel(el, t),
       },
     ],
   }));
 
   return (
     <FolderContext.Provider value={folder}>
-      <Content icon={DocumentDuplicateIcon} header="Alle skabeloner">
+      <Content icon={DocumentDuplicateIcon} header={t.documents.allTemplates()}>
         <Space
           index={0}
-          label="Sider"
+          label={t.documents.pages()}
           space={{ id: "system-template" as SpaceId, type: "documents" }}
           buttons={<Space.Button icon={TrashIcon} onClick={handleDelete} />}
         >
@@ -48,7 +50,7 @@ export function SystemTemplatePage() {
               !documents ? "opacity-0" : "opacity-100"
             )}
           >
-            <Table labels={["Navn"]} rows={rows} />
+            <Table labels={[t.general.title()]} rows={rows} />
           </form>
         </Space>
       </Content>
