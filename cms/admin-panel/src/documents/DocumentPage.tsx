@@ -109,7 +109,7 @@ function Toolbar({ id }: { id: DocumentId }) {
     return (
       <Content.Toolbar>
         <div className="h-7 px-2 mx-2.5 flex-center gap-1.5 rounded dark:bg-yellow-400/10 dark:text-yellow-200/75 ring-1 ring-yellow-200/50 text-sm font-medium whitespace-nowrap">
-          {ids.length} felter valgt
+          {ids.length} fields selected
           <XMarkIcon className="w-3 h-3" />
         </div>
       </Content.Toolbar>

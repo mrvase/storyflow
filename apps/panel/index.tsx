@@ -5,8 +5,8 @@ import { App } from "admin-panel";
 
 const organization = (import.meta as any).env.DEV
   ? {
-      slug: "dashboard",
-      url: "http://localhost:4000",
+      slug: "kfs",
+      url: "http://localhost:3001",
     }
   : undefined;
 
