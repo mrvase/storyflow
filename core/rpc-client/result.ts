@@ -1,5 +1,5 @@
-import type { Failure, Result, Success } from "./types";
-export type { Failure, Result, Success };
+import type { Failure, Result, Success, UnwrapSuccess } from "./types";
+export type { Failure, Result, Success, UnwrapSuccess };
 
 export function success<T>(data: T): Success<T> {
   return {
@@ -42,7 +42,6 @@ export function isError<T>(result: Result<T>): result is Failure {
   return isResult(result) && !result.success;
 }
 
-type UnwrapSuccess<S, Or = never> = S extends Success<infer U> ? U : Or;
 export function unwrap<T extends Result, X>(
   result: T
 ): UnwrapSuccess<T, undefined>;

@@ -15,11 +15,14 @@ import { AuthProvider, SignedIn, SignedOut, SignIn } from "./Auth";
 import React from "react";
 import { useLocalStorage } from "./state/useLocalStorage";
 import { Organizations } from "./Organizations";
+import { TranslationProvider } from "./translation/TranslationContext";
 
 export function App({
   organization,
+  lang,
 }: {
   organization?: { slug: string; url: string };
+  lang?: "da" | "en";
 }) {
   const [darkMode] = useLocalStorage<boolean>("dark-mode", true);
 
@@ -30,40 +33,42 @@ export function App({
   return (
     <div className="w-full h-full bg-gray-100 dark:bg-gray-950 text-gray-800 dark:text-white">
       <SWRConfig value={{ provider }}>
-        <Router>
-          <PanelRouter>
-            <AuthProvider organization={organization}>
-              <SignedIn>
-                <FrontPage>
-                  <Organizations preset={organization} />
-                </FrontPage>
-                <PanelPage>
-                  <RPCProvider>
-                    <Preload />
-                    <CollabProvider>
-                      <DataProvider>
-                        <AppConfigProvider>
-                          <IdGenerator>
-                            <FieldFocusProvider>
-                              <DragDropContext>
-                                <Layout>
-                                  <Panels routes={routes} />
-                                </Layout>
-                              </DragDropContext>
-                            </FieldFocusProvider>
-                          </IdGenerator>
-                        </AppConfigProvider>
-                      </DataProvider>
-                    </CollabProvider>
-                  </RPCProvider>
-                </PanelPage>
-              </SignedIn>
-              <SignedOut>
-                <SignIn />
-              </SignedOut>
-            </AuthProvider>
-          </PanelRouter>
-        </Router>
+        <TranslationProvider lang={lang}>
+          <Router>
+            <PanelRouter>
+              <AuthProvider organization={organization}>
+                <SignedIn>
+                  <FrontPage>
+                    <Organizations preset={organization} />
+                  </FrontPage>
+                  <PanelPage>
+                    <RPCProvider>
+                      <Preload />
+                      <CollabProvider>
+                        <DataProvider>
+                          <AppConfigProvider>
+                            <IdGenerator>
+                              <FieldFocusProvider>
+                                <DragDropContext>
+                                  <Layout>
+                                    <Panels routes={routes} />
+                                  </Layout>
+                                </DragDropContext>
+                              </FieldFocusProvider>
+                            </IdGenerator>
+                          </AppConfigProvider>
+                        </DataProvider>
+                      </CollabProvider>
+                    </RPCProvider>
+                  </PanelPage>
+                </SignedIn>
+                <SignedOut>
+                  <SignIn />
+                </SignedOut>
+              </AuthProvider>
+            </PanelRouter>
+          </Router>
+        </TranslationProvider>
       </SWRConfig>
     </div>
   );

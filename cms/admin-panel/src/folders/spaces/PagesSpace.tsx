@@ -24,6 +24,7 @@ import { DEFAULT_SYNTAX_TREE } from "@storyflow/cms/constants";
 import { insertRootInTransforms } from "@storyflow/cms/transform";
 import { useNewDocuments } from "./useNewDocuments";
 import DocumentTable from "../../documents/components/DocumentTable";
+import { useTranslation } from "../../translation/TranslationContext";
 
 const columns = [
   {
@@ -43,6 +44,8 @@ export function PagesSpace({
   hidden: boolean;
   index: number;
 }) {
+  const t = useTranslation();
+
   const newDocuments = useNewDocuments(folderId);
   const { form, handleDelete } = useDeleteForm({ folderId, newDocuments });
   const { documents } = useDocumentList(folderId);
@@ -110,7 +113,7 @@ export function PagesSpace({
 
   const button = React.useMemo(() => {
     return {
-      label: "Tilføj underside",
+      label: t.documents.addSubPage(),
       icon: PlusIcon,
       onClick(doc: DBDocument) {
         addDocumentWithUrl(doc);
@@ -124,7 +127,7 @@ export function PagesSpace({
       index={index}
       label={
         <>
-          Sider
+          {t.documents.pages()}
           {rows.length === 0 ? <AddFrontPageButton folder={folderId} /> : null}
         </>
       }
@@ -133,7 +136,7 @@ export function PagesSpace({
           <Space.Button icon={TrashIcon} onClick={handleDelete} />
           <Menu as={Space.Button} icon={EllipsisHorizontalIcon} align="right">
             <Menu.Item
-              label="Slet space"
+              label={t.folders.deleteSpace()}
               icon={TrashIcon}
               onClick={handleDeleteSpace}
             />
@@ -170,6 +173,8 @@ export function PagesSpace({
 }
 
 function AddFrontPageButton({ folder }: { folder: FolderId }) {
+  const t = useTranslation();
+
   const addDocument = useAddDocument({ navigate: true });
 
   return (
@@ -202,7 +207,7 @@ function AddFrontPageButton({ folder }: { folder: FolderId }) {
         })
       }
     >
-      <PlusIcon className="w-3 h-3" /> Tilføj forside
+      <PlusIcon className="w-3 h-3" /> {t.documents.addFrontPage()}
     </button>
   );
 }

@@ -20,6 +20,7 @@ import {
   FolderTransactionEntry,
   SpaceTransactionEntry,
 } from "../../operations/actions";
+import { useTranslation } from "../../translation/TranslationContext";
 
 export function FoldersSpace({
   space,
@@ -32,6 +33,8 @@ export function FoldersSpace({
   hidden: boolean;
   index: number;
 }) {
+  const t = useTranslation();
+
   const [dialogIsOpen, setDialogIsOpen] = React.useState<null | string>(null);
 
   const push = usePush<FolderTransactionEntry>("folders");
@@ -66,7 +69,7 @@ export function FoldersSpace({
             />*/}
             <Menu as={Space.Button} icon={EllipsisHorizontalIcon} align="right">
               <Menu.Item
-                label="Slet space"
+                label={t.folders.deleteSpace()}
                 icon={TrashIcon}
                 onClick={handleDeleteSpace}
               />
@@ -89,6 +92,8 @@ function FolderGrid({
   folderId: FolderId;
   hidden: boolean;
 }) {
+  const t = useTranslation();
+
   const push = usePush<SpaceTransactionEntry>("folders");
 
   const onChange = React.useCallback(
@@ -134,7 +139,9 @@ function FolderGrid({
         )}
       >
         {space.items.length === 0 && (
-          <div className="absolute text-gray-400 text-sm">Ingen mapper</div>
+          <div className="absolute text-gray-400 text-sm">
+            {t.folders.noFolders()}
+          </div>
         )}
         {space.items.map((id, index) => (
           <FolderItem folder={id} index={index} key={id} />
@@ -150,6 +157,7 @@ function FolderGrid({
 }
 
 function AddFolderButton({ onClick }: { onClick: any }) {
+  const t = useTranslation();
   return (
     <button
       className={cl(
@@ -158,7 +166,7 @@ function AddFolderButton({ onClick }: { onClick: any }) {
       )}
       onClick={onClick}
     >
-      <PlusIcon className="w-3 h-3" /> Tilføj
+      <PlusIcon className="w-3 h-3" /> {t.folders.addFolder()}
     </button>
   );
 }

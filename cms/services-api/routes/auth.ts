@@ -2,12 +2,10 @@ import {
   Result,
   error,
   isError,
-  isSuccess,
   success,
   unwrap,
 } from "@storyflow/rpc-server/result";
 import { createProcedure, createRoute } from "@storyflow/rpc-server";
-import { cors as corsFactory } from "@storyflow/server/middleware";
 import { z } from "zod";
 import {
   GLOBAL_SESSION_COOKIE,

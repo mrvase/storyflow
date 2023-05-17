@@ -16,7 +16,7 @@ export const storyflowConfig: StoryflowConfig = {
     storyflowKey: process.env.STORYFLOW_PUBLIC_KEY as string,
     cors:
       process.env.NODE_ENV === "development"
-        ? ["http://localhost:5173"]
+        ? ["http://localhost:5173", "http://localhost:3000"]
         : ["https://www.app.storyflow.dk"],
   },
   apps: [

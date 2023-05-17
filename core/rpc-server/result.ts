@@ -1,5 +1,5 @@
-import { Failure, Result, Success, UnwrapSuccess } from "./types";
-export type { Failure, Result, Success };
+import type { Failure, Result, Success, UnwrapSuccess } from "./types";
+export type { Failure, Result, Success, UnwrapSuccess };
 
 export function success<T>(data: T): Success<T> {
   return {

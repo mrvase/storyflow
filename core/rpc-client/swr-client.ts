@@ -142,14 +142,6 @@ export function createSWRClient<UserAPI extends API>(
                           let cached = cache.get(key);
                           if (!cached) {
                             mutate(key, data);
-                            /*
-                            cache.set(key, {
-                              data,
-                              isValidating: false,
-                              isLoading: false,
-                              error: undefined,
-                            });
-                            */
                           }
                         };
 

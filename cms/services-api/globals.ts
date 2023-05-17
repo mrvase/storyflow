@@ -5,7 +5,9 @@ import { AuthCookies, KEY_COOKIE } from "@storyflow/server/auth";
 import { cors as corsFactory, auth } from "@storyflow/server/middleware";
 
 export const cors = corsFactory(
-  process.env.NODE_ENV === "production" ? undefined : ["http://localhost:5173"]
+  process.env.NODE_ENV === "production"
+    ? undefined
+    : ["http://localhost:5173", "http://localhost:3000"]
 );
 
 const injectKeyFromCookie = (middleware: typeof auth) => {

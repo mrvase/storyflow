@@ -16,6 +16,7 @@ import {
   SpaceTransactionEntry,
 } from "../operations/actions";
 import { createStaticStore } from "../state/StaticStore";
+import { useTranslation } from "../translation/TranslationContext";
 
 const folders = createStaticStore<DBFolder, Map<string, DBFolder>>(
   (old?) => new Map(old ?? [])
@@ -47,11 +48,13 @@ export function FoldersProvider({
   folders: DBFolderRecord;
   children: React.ReactNode;
 }) {
+  const t = useTranslation();
+
   const initialFolders: DBFolderRecord = React.useMemo(() => {
     return {
       [getRawFolderId(ROOT_FOLDER)]: {
         _id: ROOT_FOLDER,
-        label: "Hjem",
+        label: t.folders.home(),
         spaces: [
           {
             id: "00000000",
@@ -62,7 +65,7 @@ export function FoldersProvider({
       },
       [getRawFolderId(TEMPLATE_FOLDER)]: {
         _id: TEMPLATE_FOLDER,
-        label: "Skabeloner",
+        label: t.folders.templates(),
         spaces: [
           {
             id: "00000001",
