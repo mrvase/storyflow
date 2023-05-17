@@ -51,6 +51,7 @@ import { SWRClient, useClient, useAppClient } from "../RPCProvider";
 import { isSuccess } from "@storyflow/rpc-client/result";
 import { getFolderData } from "./getFolderData";
 import { getPanelsFromUrl } from "../layout/panel-router/utils";
+import { useTranslation } from "../translation/TranslationContext";
 
 const spaces: { label: string; item: Omit<Space, "id"> }[] = [
   {
@@ -360,6 +361,7 @@ export function FolderTemplateButton({
   template?: DocumentId;
   openDialog: () => void;
 }) {
+  const t = useTranslation();
   const route = useRoute();
   const [{ path }, navigate] = usePanel();
 
@@ -375,7 +377,7 @@ export function FolderTemplateButton({
         }}
         icon={DocumentDuplicateIcon}
       >
-        Tilføj skabelon
+        {t.folders.addTemplate()}
       </Content.ToolbarButton>
     );
   }
@@ -384,7 +386,7 @@ export function FolderTemplateButton({
     <Menu as={Content.ToolbarButton} label={label} icon={DocumentDuplicateIcon}>
       <Menu.Item
         icon={PencilIcon}
-        label={`Rediger skabelon "${label}"`}
+        label={t.folders.editTemplate({ label: label ?? "" })}
         onClick={() => {
           if (template) {
             navigate(`${route}/t${parseInt(template, 16).toString(16)}`, {
@@ -396,7 +398,7 @@ export function FolderTemplateButton({
       />
       <Menu.Item
         icon={ArrowPathRoundedSquareIcon}
-        label="Skift skabelon"
+        label={t.folders.changeTemplate()}
         onClick={() => {
           openDialog();
         }}
@@ -414,6 +416,8 @@ export function DomainsButton({
   domains?: string[];
   mutate: (domains: string[]) => void;
 }) {
+  const t = useTranslation();
+
   const { organization } = useAuth();
 
   const getLabel = (domain: string) => {
@@ -428,7 +432,7 @@ export function DomainsButton({
       .filter((el) => !organization!.apps.some((app) => app.name === el))
       .map((name) => ({
         id: name,
-        label: "Ukendt",
+        label: t.folders.unknownDomain(),
         disabled: false,
       }));
 
@@ -453,7 +457,7 @@ export function DomainsButton({
     <Menu<{ id: string; label: string }>
       as={Content.ToolbarButton}
       icon={GlobeAltIcon}
-      label="Hjemmesider"
+      label={t.folders.websites()}
       onSelect={(selected) => {
         const newDomains = domains.includes(selected.id)
           ? domains.filter((el) => el !== selected.id)
@@ -474,6 +478,8 @@ function RefreshButton({
   namespace: string;
   domain?: string;
 }) {
+  const t = useTranslation();
+
   const config = useAppConfig(domain);
 
   const [isLoading, setIsLoading] = React.useState(false);
@@ -485,18 +491,18 @@ function RefreshButton({
   const client = useClient();
   const appClient = useAppClient(config);
 
-  const number = data?.length ?? 0;
+  const count = data?.length ?? 0;
 
   if (!config) return null;
 
   return (
     <>
-      {number > 0 && (
+      {count > 0 && (
         <span
           title={(data ?? []).join(", ")}
           className="text-xs opacity-50 ml-5 cursor-default hover:underline"
         >
-          {number} {number === 1 ? "side" : "sider"} ændret
+          {t.folders.pagesChanged({ count })}
         </span>
       )}
       <div className="relative ml-5">
@@ -525,7 +531,7 @@ function RefreshButton({
             </div>
           )}
           <ArrowPathIcon className="w-3 h-3" />
-          Opdater
+          {t.folders.refresh()}
         </button>
       </div>
     </>

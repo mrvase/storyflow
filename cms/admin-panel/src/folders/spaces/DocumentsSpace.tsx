@@ -29,6 +29,7 @@ import { FolderTransactionEntry } from "../../operations/actions";
 import { createTransaction } from "@storyflow/collab/utils";
 import { useNewDocuments } from "./useNewDocuments";
 import DocumentTable from "../../documents/components/DocumentTable";
+import { useTranslation } from "../../translation/TranslationContext";
 
 export function DocumentsSpace({
   space,
@@ -41,6 +42,8 @@ export function DocumentsSpace({
   hidden: boolean;
   index: number;
 }) {
+  const t = useTranslation();
+
   const newDocuments = useNewDocuments(folderId);
   const { form, handleDelete } = useDeleteForm({ folderId, newDocuments });
   const { documents } = useDocumentList(folderId);
@@ -88,7 +91,7 @@ export function DocumentsSpace({
         index={index}
         label={
           <>
-            Dokumenter
+            {t.documents.documents()}
             <AddDocumentButton folder={folderId} />
           </>
         }
@@ -99,7 +102,7 @@ export function DocumentsSpace({
               <ImportButton />
               <ExportButton />
               <Menu.Item
-                label="Slet space"
+                label={t.folders.deleteSpace()}
                 icon={TrashIcon}
                 onClick={handleDeleteSpace}
               />
@@ -160,11 +163,12 @@ function LinkableLabel({
 }
 
 function ImportButton() {
+  const t = useTranslation();
   const handleImport = () => {};
 
   return (
     <Menu.Item
-      label="Importer dokumenter"
+      label={t.documents.importDocuments()}
       icon={ArrowUpTrayIcon}
       onClick={handleImport}
     />
@@ -172,6 +176,8 @@ function ImportButton() {
 }
 
 function ExportButton() {
+  const t = useTranslation();
+
   const folder = useCurrentFolder();
 
   const { documents } = useDocumentList(folder?._id);
@@ -210,7 +216,7 @@ function ExportButton() {
 
   return (
     <Menu.Item
-      label="Eksporter dokumenter"
+      label={t.documents.exportDocuments()}
       icon={ArrowDownTrayIcon}
       onClick={handleExport}
     />
@@ -218,6 +224,7 @@ function ExportButton() {
 }
 
 function AddDocumentButton({ folder }: { folder: FolderId }) {
+  const t = useTranslation();
   const template = useCurrentFolder()?.template;
   const addDocument = useAddDocument({ navigate: true });
 
@@ -229,7 +236,7 @@ function AddDocumentButton({ folder }: { folder: FolderId }) {
       )}
       onClick={() => addDocument({ folder, template })}
     >
-      <PlusIcon className="w-3 h-3" /> Tilføj
+      <PlusIcon className="w-3 h-3" /> {t.documents.addDocuments({ count: 1 })}
     </button>
   );
 }

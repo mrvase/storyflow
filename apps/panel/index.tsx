@@ -12,6 +12,6 @@ const organization = (import.meta as any).env.DEV
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <App organization={organization} />
+    <App organization={organization} lang="da" />
   </React.StrictMode>
 );

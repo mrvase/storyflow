@@ -23,9 +23,12 @@ import {
   createTokenStream,
   parseTokenStream,
 } from "../operations/parse-token-stream";
+import { useTranslation } from "../translation/TranslationContext";
 
 export const getDocumentLabel = (doc: DBDocument | undefined) => {
-  if (!doc) return "Unavngivet dokument";
+  const t = useTranslation();
+
+  if (!doc) return t.documents.unnamedDocument();
 
   const isTemplate = isTemplateDocument(doc?._id);
   const label = isTemplate ? "template_label" : "label";
@@ -37,7 +40,9 @@ export const getDocumentLabel = (doc: DBDocument | undefined) => {
 
   defaultLabel =
     typeof defaultLabel === "string" ? defaultLabel.trim() : undefined;
-  const fallback = isTemplate ? "Ugemt skabelon" : "Unavngivet dokument";
+  const fallback = isTemplate
+    ? t.documents.unsavedTemplate()
+    : t.documents.unnamedDocument();
   return defaultLabel ?? fallback;
   /*
   const creationDateString = calculateRootFieldFromRecord(

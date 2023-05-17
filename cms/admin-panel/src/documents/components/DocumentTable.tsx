@@ -9,6 +9,7 @@ import { calculateRootFieldFromRecord } from "@storyflow/cms/calculate-server";
 import { createTemplateFieldId } from "@storyflow/cms/ids";
 import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
 import { useDocumentLabel } from "../useDocumentLabel";
+import { useTranslation } from "../../translation/TranslationContext";
 
 export default function Table({
   columns,
@@ -26,6 +27,8 @@ export default function Table({
     icon: React.FC<{ className?: string }>;
   };
 }) {
+  const t = useTranslation();
+
   return (
     <table
       className={cl(
@@ -68,7 +71,9 @@ export default function Table({
             <td className="w-9 p-3 text-[0px]">
               <div className="w-3" />
             </td>
-            <td className="p-3 text-sm text-gray-400">Ingen elementer</td>
+            <td className="p-3 text-sm text-gray-400">
+              {t.documents.noDocuments()}
+            </td>
           </tr>
         ) : null}
       </tbody>
