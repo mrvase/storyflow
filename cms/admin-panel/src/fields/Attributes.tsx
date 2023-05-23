@@ -101,7 +101,7 @@ export function Attributes({
       return props;
     }
     return [];
-  }, [entity, template]);
+  }, [entity, template, configs]);
 
   React.useLayoutEffect(() => {
     if (!hideAsDefault) {

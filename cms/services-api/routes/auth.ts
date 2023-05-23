@@ -31,10 +31,7 @@ type LinkPayload = {
   date: string;
 };
 
-export const auth = ({
-  sendEmail,
-  organizations,
-}: {
+type AuthOptions = {
   sendEmail: (link: string, payload: LinkPayload) => Promise<void>;
   organizations: {
     insertUser: (email: string) => Promise<void>;
@@ -52,8 +49,10 @@ export const auth = ({
       organizations: { url: string; slug: string }[];
     }>;
   };
-}) =>
-  createRoute({
+};
+
+export const auth = ({ sendEmail, organizations }: AuthOptions) => {
+  return createRoute({
     sendEmail: createProcedure({
       middleware(ctx) {
         return ctx.use(cors);
@@ -414,3 +413,4 @@ export const auth = ({
       },
     }),
   });
+};

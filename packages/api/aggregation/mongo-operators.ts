@@ -434,10 +434,10 @@ export const createOperators = () => {
     },
     sortArray(input, sortBy) {
       /* TODO: mongo 5.2
-    return {
-      $sortArray: { input, sortBy }
-    }
-    */
+      return {
+        $sortArray: { input, sortBy }
+      }
+      */
       const [key, order] = Object.entries(sortBy)[0];
       return operators.reduce(
         input,

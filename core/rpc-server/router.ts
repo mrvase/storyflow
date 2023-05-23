@@ -31,13 +31,15 @@ type MutationObjectServer<
   mutation: (input: I, context: Context & C) => O;
 };
 
-type APIObject<
-  C extends UserContext,
-  I extends SchemaInput,
-  O extends Output
-> = {
-  schema?: () => I;
+type MiddlewareMethod<C extends UserContext> = {
   middleware?: (ctx: MiddlewareContext) => Promise<C>;
+};
+
+type SchemaMethod<I extends SchemaInput> = {
+  schema?: () => I;
+};
+
+type RedirectMethod<O extends Output> = {
   redirect?: (result: Awaited<O> | Failure) => string | void;
 };
 
@@ -56,31 +58,76 @@ const errorProxy = new Proxy(
   }
 );
 
+const getProcedureType = (
+  action: { query: unknown } | { mutation: unknown }
+) => {
+  if ("query" in action) {
+    return "query";
+  }
+  if ("mutation" in action) {
+    return "mutation";
+  }
+  throw new Error("Invalid procedure");
+};
+
+export function preconfigure<C1 extends UserContext>(
+  object: MiddlewareMethod<C1>
+) {
+  return function <
+    C2 extends UserContext,
+    I extends SchemaInput,
+    O extends Output
+  >(
+    action: Methods<C2, I, O> &
+      (
+        | QueryObjectServer<C1 & C2, Unwrap<I>, O>
+        | MutationObjectServer<C1 & C2, Unwrap<I>, O>
+      )
+  ) {
+    return createProcedure<C1 & C2, I, O>({
+      async middleware(ctx: MiddlewareContext) {
+        return ctx.use(
+          ...[object.middleware, action.middleware].filter(
+            (el): el is Exclude<typeof el, undefined> => Boolean(el)
+          )
+        );
+      },
+      ...action,
+    } as any);
+  };
+}
+
+type Methods<
+  C extends UserContext,
+  I extends SchemaInput,
+  O extends Output
+> = MiddlewareMethod<C> & SchemaMethod<I> & RedirectMethod<O>;
+
 export function createProcedure<
   C extends UserContext,
   I extends SchemaInput,
   O extends Output
 >(
-  action: APIObject<C, I, O> & QueryObjectServer<C, Unwrap<I>, O>
+  action: Methods<C, I, O> & QueryObjectServer<C, Unwrap<I>, O>
 ): QueryObject<Unwrap<I>, Promisify<O>>;
 export function createProcedure<
   C extends UserContext,
   I extends SchemaInput,
   O extends Output
 >(
-  action: APIObject<C, I, O> & MutationObjectServer<C, Unwrap<I>, O>
+  action: Methods<C, I, O> & MutationObjectServer<C, Unwrap<I>, O>
 ): MutationObject<Unwrap<I>, Promisify<O>>;
 export function createProcedure<
   C extends UserContext,
   I extends SchemaInput,
   O extends Output
 >(
-  action: APIObject<C, I, O> &
+  action: Methods<C, I, O> &
     (QueryObjectServer<C, Unwrap<I>, O> | MutationObjectServer<C, Unwrap<I>, O>)
 ):
   | QueryObject<Unwrap<I>, Promisify<O>>
   | MutationObject<Unwrap<I>, Promisify<O>> {
-  const type = "query" in action ? "query" : "mutation";
+  const type = getProcedureType(action);
 
   const handleProcedure = async function (
     this:
@@ -88,13 +135,15 @@ export function createProcedure<
       | { method?: undefined; context?: undefined },
     input: any
   ) {
+    const isHTTPRequest = this.method !== "undefined";
+
     const context = Object.create({ use });
     Object.assign(context, this.context ?? errorProxy);
 
     let result: Result<any>;
 
     try {
-      if (this.method) {
+      if (isHTTPRequest) {
         await action.middleware?.(context);
       }
 
@@ -129,8 +178,7 @@ export function createProcedure<
 
     const redirect = action.redirect?.(result as Awaited<O>);
 
-    if (this.method && typeof redirect === "string") {
-      console.log("REDIRECT RESULT", result);
+    if (isHTTPRequest && this.context && typeof redirect === "string") {
       this.context.response.redirect = redirect;
       return result;
     }
@@ -146,12 +194,6 @@ export function createProcedure<
 export function createRoute<T extends APIRoute>(route: T): T {
   return route;
 }
-
-/*
-export function createAPI<T extends API>(router: T): T {
-  return router;
-}
-*/
 
 const use: MiddlewareContext["use"] = async function use(this: any, ...fns) {
   for (const fn of fns) {

@@ -81,6 +81,7 @@ function Decorator({
   const config = getConfigFromType(value.element, configs);
 
   let props = flattenPropsWithIds(value.id, config?.props ?? {});
+  console.log("CONFIG CONFIG", config, props);
 
   const Icon =
     value.element === "Loop"

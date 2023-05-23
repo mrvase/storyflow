@@ -73,7 +73,7 @@ const createDedupedFetcher = () => {
     ReturnType<typeof createThrottledFetch<any>>
   > = {};
 
-  const fetcher = async (
+  const dedupedFetch = async (
     key: string,
     options: {
       abortController?: AbortController;
@@ -112,7 +112,7 @@ const createDedupedFetcher = () => {
   ) => {
     if (!(throttle.key in THROTTLED)) {
       THROTTLED[throttle.key] = createThrottledFetch(
-        (key) => fetcher(key, options),
+        (key) => dedupedFetch(key, options),
         throttle.ms
       );
     }
@@ -136,7 +136,7 @@ const createDedupedFetcher = () => {
       if (options.throttle) {
         return throttledFetcher(key, options.throttle, options);
       }
-      return fetcher(key, options);
+      return dedupedFetch(key, options);
     },
     delete: (key: string) => key in FETCH && delete FETCH[key],
   };
