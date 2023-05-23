@@ -48,7 +48,7 @@ export function fetchDocumentSync(
   if (typeof exists !== "undefined") {
     return {
       then(callback) {
-        return callback ? callback(exists.doc) : exists.doc;
+        return callback ? callback(exists) : exists;
       },
     };
   }

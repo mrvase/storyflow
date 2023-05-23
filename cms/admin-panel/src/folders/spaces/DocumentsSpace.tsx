@@ -44,9 +44,13 @@ export function DocumentsSpace({
 }) {
   const t = useTranslation();
 
-  const newDocuments = useNewDocuments(folderId);
-  const { form, handleDelete } = useDeleteForm({ folderId, newDocuments });
   const { documents } = useDocumentList(folderId);
+
+  const newDocuments = useNewDocuments(folderId);
+  const { form, handleDelete } = useDeleteForm({
+    folderId,
+    newDocuments: newDocuments.map(({ id }) => id),
+  });
 
   const folder = useFolder(folderId);
   const template = useTemplate(folder.template) ?? [];
@@ -63,13 +67,14 @@ export function DocumentsSpace({
   );
 
   const rows = React.useMemo(() => {
-    const docs: DBDocument[] = [];
-    newDocuments.forEach((_id) =>
+    const docs: (DBDocument & { label?: string })[] = [];
+    newDocuments.forEach(({ id, label }) =>
       docs.push({
-        _id,
+        _id: id,
         record: {},
         config: [],
         versions: { config: [0] },
+        label,
       })
     );
     console.log("DOCS NOW", [...docs]);

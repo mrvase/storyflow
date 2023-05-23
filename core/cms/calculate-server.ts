@@ -1,4 +1,4 @@
-import { computeFieldId, createFieldId } from "./ids";
+import { computeFieldId, createFieldId, getDocumentId } from "./ids";
 import { tokens } from "./tokens";
 import {
   NestedFolder,
@@ -322,21 +322,50 @@ export function calculate(
   return value;
 }
 
+export function calculateField(
+  tree: SyntaxTree,
+  getRecord: (id: DocumentId) => SyntaxTreeRecord | undefined
+) {
+  const getter: StateGetter = (id, { external, tree }): any => {
+    if (typeof id === "object") {
+      return [];
+    }
+    const importedDocumentId = getDocumentId<DocumentId>(id);
+
+    const externalRecord = getRecord(importedDocumentId);
+    const value = externalRecord?.[id];
+
+    if (!value) return;
+
+    if (tree) return value;
+    return calculate(value, getter, { ignoreClientState: true });
+  };
+  const result = calculate(tree, getter, { ignoreClientState: true });
+  if (!Array.isArray(result)) {
+    throw new Error(
+      "It should not be possible to have client state in root field"
+    );
+  }
+  return result;
+}
+
 export function calculateRootFieldFromRecord(
-  id: FieldId,
+  fieldId: FieldId,
   record: SyntaxTreeRecord
 ) {
   const getter: StateGetter = (id, { external, tree }): any => {
     if (typeof id === "object") {
       return [];
     }
-    const value = record[id];
+    const value: SyntaxTree | undefined = record[id];
+
     if (!value) return;
+
     if (tree) return value;
     return calculate(value, getter, { ignoreClientState: true });
   };
 
-  const tree = record[id];
+  const tree = record[fieldId];
 
   if (!tree) return [];
 

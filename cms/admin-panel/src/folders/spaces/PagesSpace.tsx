@@ -39,9 +39,17 @@ export function PagesSpace({
 }) {
   const t = useTranslation();
 
-  const newDocuments = useNewDocuments(folderId);
-  const { form, handleDelete } = useDeleteForm({ folderId, newDocuments });
   const { documents } = useDocumentList(folderId);
+
+  const newDocuments = useNewDocuments(folderId, {
+    includeUrl: true,
+    externalDocuments: documents,
+  });
+
+  const { form, handleDelete } = useDeleteForm({
+    folderId,
+    newDocuments: newDocuments.map(({ id }) => id),
+  });
 
   const rows = React.useMemo(() => {
     if (!documents) return [];
@@ -50,36 +58,42 @@ export function PagesSpace({
       return url === "/" ? 0 : url.split("/").length - 1;
     };
 
-    const documentsWithLengths = documents
-      .map((el) => {
-        const urlId = createTemplateFieldId(el._id, DEFAULT_FIELDS.url.id);
-        const url =
-          (calculateRootFieldFromRecord(urlId, el.record)?.[0] as string) ?? "";
-        return {
-          ...el,
-          url,
-          indent: getUrlLength(url),
-        };
+    const documentsWithLengths: (DBDocument & {
+      indent: number;
+      url: string;
+      label?: string;
+    })[] = documents.map((el) => {
+      const urlId = createTemplateFieldId(el._id, DEFAULT_FIELDS.url.id);
+      const url =
+        (calculateRootFieldFromRecord(urlId, el.record)?.[0] as string) ?? "";
+      return {
+        ...el,
+        url,
+        indent: getUrlLength(url),
+      };
+    });
+
+    newDocuments.forEach(({ id, label, url }) =>
+      documentsWithLengths.push({
+        _id: id,
+        record: {},
+        config: [],
+        versions: { config: [0] },
+        url: url!,
+        indent: getUrlLength(url!),
+        label,
       })
-      .sort((a, b) => {
-        return a.indent - b.indent || (a._id > b._id ? -1 : 1);
-      });
+    );
+
+    documentsWithLengths.sort((a, b) => {
+      return a.indent - b.indent || (a._id > b._id ? -1 : 1);
+    });
 
     const docs: (DBDocument & {
       indent: number;
       url: string;
+      label?: string;
     })[] = [];
-
-    newDocuments.forEach((_id) =>
-      docs.push({
-        _id,
-        record: {},
-        config: [],
-        versions: { config: [0] },
-        indent: 0,
-        url: "",
-      })
-    );
 
     documentsWithLengths.forEach((doc) => {
       const parentIndex = docs.findIndex(

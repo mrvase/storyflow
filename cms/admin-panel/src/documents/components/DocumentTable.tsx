@@ -20,7 +20,7 @@ export default function Table({
     id: FieldId;
     label: string;
   }[];
-  documents: (DBDocument & { indent?: number })[];
+  documents: (DBDocument & { indent?: number; label?: string })[];
   button?: {
     label: string;
     onClick: (doc: DBDocument) => void;
@@ -146,17 +146,17 @@ function Row({
             {index === 0 && indent ? (
               <div className="mr-3 flex items-center">
                 <svg
-                  viewBox="0 0 8 5"
+                  viewBox="0 0 7 5"
                   strokeWidth={0.25}
                   stroke="currentColor"
                   fill="none"
-                  className="h-5 w-8 shrink-0 opacity-25 mr-2"
+                  className="h-5 w-7 shrink-0 opacity-25 mr-1.5"
                   style={{
-                    marginLeft: `${(indent - 1) * 2.5}rem`,
+                    marginLeft: `${(indent - 1) * 2}rem`,
                   }}
                 >
                   <path
-                    d="M 1 1.5 L 1 3 L 7 3"
+                    d="M 1 1.5 L 1 3 L 6 3"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   />
@@ -192,8 +192,13 @@ function LabelColumn({ doc }: { doc: DBDocument }) {
 
   return (
     <div className="flex items-center">
-      <span className="truncate -my-2.5 py-2.5">
-        {label.trim() || "Unavngivet dokument"}
+      <span
+        className={cl(
+          "truncate -my-2.5 py-2.5",
+          isModified && !doc.folder && "text-yellow-400"
+        )}
+      >
+        {label || "Unavngivet dokument"}
       </span>
       {isModified && (
         <div
