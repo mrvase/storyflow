@@ -86,7 +86,7 @@ export function PagesSpace({
     );
 
     documentsWithLengths.sort((a, b) => {
-      return a.indent - b.indent || (a._id > b._id ? -1 : 1);
+      return a.indent - b.indent || (a._id > b._id ? 1 : -1);
     });
 
     const docs: (DBDocument & {

@@ -4,23 +4,20 @@ export function createKey() {
   return Math.random().toString(36).substring(2, 10);
 }
 
-export const joinPaths = (paths: string[]): string =>
-  paths.join("/").replace(/\/\/+/g, "/");
-
 export function parsePath(path: string): Partial<Path> {
   let parsedPath: Partial<Path> = {};
 
   if (path) {
     let hashIndex = path.indexOf("#");
     if (hashIndex >= 0) {
-      parsedPath.hash = path.substr(hashIndex);
-      path = path.substr(0, hashIndex);
+      parsedPath.hash = path.substring(hashIndex);
+      path = path.substring(0, hashIndex);
     }
 
     let searchIndex = path.indexOf("?");
     if (searchIndex >= 0) {
-      parsedPath.search = path.substr(searchIndex);
-      path = path.substr(0, searchIndex);
+      parsedPath.search = path.substring(searchIndex);
+      path = path.substring(0, searchIndex);
     }
 
     if (path) {
@@ -53,7 +50,7 @@ export function resolveTo(toArg: To, from: string): Path {
   return path;
 }
 
-export function resolvePath(to: To, fromPathname = "/"): Path {
+function resolvePath(to: To, fromPathname = "/"): Path {
   let {
     pathname: toPathname,
     search = "",
@@ -89,21 +86,20 @@ function resolvePathname(relativePath: string, fromPathname: string): string {
   return segments.length > 1 ? segments.join("/") : "/";
 }
 
-export const normalizePathname = (pathname: string): string =>
-  pathname.replace(/\/+$/, "").replace(/^\/*/, "/");
+// export const normalizePathname = (pathname: string): string =>
+//   pathname.replace(/\/+$/, "").replace(/^\/*/, "/");
 
-/**
- * @private
- */
-export const normalizeSearch = (search: string): string =>
-  !search || search === "?"
+const normalizeSearch = (search: string): string => {
+  return !search || search === "?"
     ? ""
     : search.startsWith("?")
     ? search
     : "?" + search;
+};
 
-export const normalizeHash = (hash: string): string =>
-  !hash || hash === "#" ? "" : hash.startsWith("#") ? hash : "#" + hash;
+const normalizeHash = (hash: string): string => {
+  return !hash || hash === "#" ? "" : hash.startsWith("#") ? hash : "#" + hash;
+};
 
 export function createPath({
   pathname = "/",
@@ -116,3 +112,6 @@ export function createPath({
     pathname += hash.charAt(0) === "#" ? hash : "#" + hash;
   return pathname;
 }
+
+// export const joinPaths = (paths: string[]): string =>
+//   paths.join("/").replace(/\/\/+/g, "/");

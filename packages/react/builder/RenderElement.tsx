@@ -300,7 +300,14 @@ function RenderElementWithProps({
 
   return (
     <NoEditor>
-      <Component {...resolvedProps} />
+      <Component
+        {...resolvedProps}
+        serverContext={Object.assign([], {
+          useContext() {
+            return {};
+          },
+        })}
+      />
     </NoEditor>
   );
 }

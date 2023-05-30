@@ -11,6 +11,8 @@ import type {
   ApiConfig,
   AppConfig,
   LibraryConfig,
+  PropConfigRecord,
+  PropGroup,
 } from "@storyflow/shared/types";
 import type { DBDocumentRaw } from "../types";
 import { parseDocument } from "../convert";
@@ -39,6 +41,35 @@ const modifyValues = <Result, V extends Record<string, any>>(
     ])
   ) as Record<string, Result>;
 
+const handleContext = (
+  context: Record<string, any> | ((arg: any) => Record<string, any>),
+  props: PropConfigRecord
+): Record<string, any> => {
+  if (typeof context === "function") {
+    const createProxy = (group?: string): any =>
+      new Proxy(
+        {},
+        {
+          get(_, prop: string) {
+            const localProps = group
+              ? (props[group] as PropGroup).props
+              : props;
+            if (!(prop in localProps)) {
+              throw new Error(`Context property ${prop} not found`);
+            }
+            if (localProps[prop].type === "group") {
+              return createProxy(prop);
+            }
+            return `{{${["props", group, prop].filter(Boolean).join(".")}}}`;
+          },
+        }
+      );
+
+    return context(createProxy());
+  }
+  return context;
+};
+
 export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
   const dbName = undefined; // config.workspaces[0].db;
   return createRoute({
@@ -57,7 +88,7 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
             let i = 0;
             while (i < entries.length) {
               const entry = entries[i];
-              const { component, stories, props, ...data } = entry[1];
+              const { component, stories, props, context, ...data } = entry[1];
               entries[i] = [
                 entry[0],
                 {
@@ -85,6 +116,7 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
                       }),
                     };
                   }),
+                  ...(context && { context: handleContext(context, props) }),
                 },
               ];
               i++;
@@ -124,6 +156,7 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
 
     getPage: createProcedure({
       middleware(ctx) {
+        console.log("CONTEXT", ctx.request);
         return ctx.use(cors(apiConfig.cors));
       },
       schema() {

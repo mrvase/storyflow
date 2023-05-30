@@ -95,45 +95,6 @@ export function Router({ children, window }: BrowserRouterProps) {
 
   React.useLayoutEffect(() => navigator.listen(setState), [history]);
 
-  /*
-  if (typeof locationProp === "string") {
-    locationProp = parsePath(locationProp) as Location;
-  }
-
-  const {
-    pathname = "/",
-    search = "",
-    hash = "",
-    state = null,
-    key = "default",
-  } = locationProp;
-
-  const location = React.useMemo(() => {
-    let trailingPathname = pathname;
-
-    if (trailingPathname === null) {
-      return null;
-    }
-
-    return {
-      pathname: trailingPathname,
-      search,
-      hash,
-      state,
-      key,
-    };
-  }, [pathname, search, hash, state, key]);
-
-  if (location === null) {
-    return null;
-  }
-
-  const locationContext = React.useMemo(
-    () => ({ location: location!, action }),
-    [location, action]
-  );
-  */
-
   return (
     <NavigationContext.Provider value={navigator}>
       <LocationContext.Provider value={state}>

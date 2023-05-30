@@ -6,7 +6,12 @@ import {
   cms,
 } from "@storyflow/react";
 
-export const Content = ({ content, style }: Props<typeof props>) => {
+export const Content = ({
+  content,
+  style,
+  serverContext,
+}: Props<typeof props>) => {
+  console.log("CONTEXT", serverContext);
   return (
     <cms.div className="p-20" style={style}>
       {content}
@@ -66,5 +71,9 @@ export const ContentConfig = {
   label,
   props,
   stories,
+  context: (props) => ({
+    parentColor: props.style.color,
+    test: "hello",
+  }),
   component: Content,
 } satisfies Config<typeof props>;

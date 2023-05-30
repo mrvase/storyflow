@@ -135,7 +135,7 @@ export function createProcedure<
       | { method?: undefined; context?: undefined },
     input: any
   ) {
-    const isHTTPRequest = this.method !== "undefined";
+    const isHTTPRequest = typeof this.method !== "undefined";
 
     const context = Object.create({ use });
     Object.assign(context, this.context ?? errorProxy);

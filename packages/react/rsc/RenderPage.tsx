@@ -2,12 +2,14 @@ import { createRenderArray } from "@storyflow/client/render";
 import {
   ClientSyntaxTree,
   Component,
+  Config,
   ConfigRecord,
   FileToken,
   Library,
   LibraryConfig,
   LibraryConfigRecord,
   LibraryRecord,
+  NestedDocumentId,
   PropConfig,
   PropConfigRecord,
   ValueArray,
@@ -35,39 +37,51 @@ const getImageObject = (name: string, url: string) => {
   };
 };
 
+type ComponentContext = {
+  element: symbol;
+  index: number;
+  context?: Record<string, any>;
+};
+
+type RSCContext = {
+  spread: boolean;
+  loop: Record<string, number>;
+  configs: Record<string, LibraryConfig>;
+  libraries: Record<string, Library>;
+  children?: React.ReactNode;
+  contexts: ComponentContext[];
+};
+
+const resolveStatefulProp = (
+  prop: ValueArray | ClientSyntaxTree,
+  loopCtx: Record<string, number>
+) => {
+  const isStateful = !Array.isArray(prop);
+
+  if (isStateful) {
+    return calculateClient(
+      prop,
+      (token) => {
+        if ("state" in token) {
+          return 0;
+        }
+        return 0;
+      },
+      (id) => loopCtx[id]
+    );
+  }
+  return prop;
+};
+
 const normalizeProp = (
   config: PropConfig,
-  prop: ValueArray | ClientSyntaxTree,
-  loopCtx: Record<string, number>,
+  prop: ValueArray,
   transforms: {
-    children: (
-      value: ValueArray | undefined,
-      options?: ConfigRecord
-    ) => React.ReactElement;
     file?: (value: FileToken | undefined) => any;
   }
 ) => {
   const type = config.type;
-
-  const array: ValueArray = (() => {
-    const isStateful = !Array.isArray(prop);
-
-    if (isStateful) {
-      return calculateClient(
-        prop,
-        (token) => {
-          if ("state" in token) {
-            return 0;
-          }
-          return 0;
-        },
-        (id) => loopCtx[id]
-      );
-    }
-    return prop;
-  })();
-
-  const value = array[0];
+  const value = prop[0];
 
   if (value !== null && typeof value === "object" && "name" in value) {
     const option = Array.isArray(config.options)
@@ -95,12 +109,6 @@ const normalizeProp = (
     return Number(value || 0);
   } else if (type === "string") {
     return String(value || "");
-  } else if (type === "children") {
-    const children = Array.isArray(value) ? value : array;
-    return transforms.children(
-      children,
-      config.options as ConfigRecord | undefined
-    );
   }
 
   return value;
@@ -115,14 +123,7 @@ const RenderChildren = ({
   value: ValueArray;
   record: Record<string, ValueArray | ClientSyntaxTree>;
   options?: ConfigRecord;
-  ctx: {
-    index: number;
-    spread: boolean;
-    loop: Record<string, number>;
-    configs: Record<string, LibraryConfig>;
-    libraries: Record<string, Library>;
-    children?: React.ReactNode;
-  };
+  ctx: RSCContext;
 }) => {
   const libraries = ctx.libraries;
   const configs = ctx.configs;
@@ -145,21 +146,22 @@ const RenderChildren = ({
 
   const renderArray = createRenderArray(value, getDisplayType);
 
-  console.log("RENDER", value, renderArray);
-
   return (
     <>
       {renderArray.reduce((acc, block, arrayIndex) => {
         const renderChildren = "$children" in block ? block.$children : [block];
 
+        let blockIndex = 0;
+
         acc.push(
           ...renderChildren.map((block, childIndex) => {
             if ("element" in block && block.element === "Outlet") {
+              blockIndex++;
               return (
                 <React.Fragment key="Outlet">{ctx.children}</React.Fragment>
               );
-            }
-            if ("$heading" in block) {
+            } else if ("$heading" in block) {
+              blockIndex++;
               const type = `H${block.$heading[0]}`;
               const Component = getDefaultComponent(type, libraries)!;
               const string = String(block.$heading[1]);
@@ -168,8 +170,8 @@ const RenderChildren = ({
                   <ParseRichText>{string}</ParseRichText>
                 </Component>
               );
-            }
-            if ("$text" in block) {
+            } else if ("$text" in block) {
+              blockIndex++;
               const type = "Text";
               const Component = getDefaultComponent(type, libraries)!;
               return (
@@ -183,10 +185,8 @@ const RenderChildren = ({
                           type={el.element}
                           record={record}
                           options={options}
-                          ctx={{
-                            ...ctx,
-                            index: 0,
-                          }}
+                          index={blockIndex}
+                          ctx={ctx}
                         />
                       );
                     }
@@ -200,20 +200,20 @@ const RenderChildren = ({
                   })}
                 </Component>
               );
+            } else {
+              blockIndex++;
+              return (
+                <RenderElement
+                  key={`${arrayIndex}-${childIndex}`}
+                  id={block.id}
+                  type={block.element}
+                  record={record}
+                  options={options}
+                  index={blockIndex}
+                  ctx={ctx}
+                />
+              );
             }
-            return (
-              <RenderElement
-                key={`${arrayIndex}-${childIndex}`}
-                id={block.id}
-                type={block.element}
-                record={record}
-                options={options}
-                ctx={{
-                  ...ctx,
-                  index: 0,
-                }}
-              />
-            );
           })
         );
 
@@ -229,19 +229,14 @@ const RenderElement = ({
   type,
   options,
   ctx,
+  index,
 }: {
-  id: string;
+  id: NestedDocumentId;
   record: Record<string, ValueArray | ClientSyntaxTree>;
   type: string;
   options?: ConfigRecord;
-  ctx: {
-    index: number;
-    spread: boolean;
-    loop: Record<string, number>;
-    configs: Record<string, LibraryConfig>;
-    libraries: Record<string, Library>;
-    children?: React.ReactNode;
-  };
+  ctx: RSCContext;
+  index: number;
 }) => {
   let { config, component } = getConfigByType(type, {
     configs: ctx.configs,
@@ -249,15 +244,30 @@ const RenderElement = ({
     options,
   });
 
-  console.log("RENDER ELEMENT", id, type, options, config, component);
-
   if (!config || !component) return null;
+
+  let symbol: symbol;
+  if (!(config as any).symbol) {
+    symbol = (config as any).symbol = Symbol();
+  } else {
+    symbol = (config as any).symbol;
+  }
 
   let props = {
     props: config.props,
     component,
     record,
-    elementId: id,
+    id,
+    type,
+    createComponentContext: (regularProps: Record<string, any>) => {
+      let context: Record<string, any>;
+      if (typeof config?.context === "function") {
+        context = config.context(regularProps);
+      } else {
+        context = config?.context ?? {};
+      }
+      return context;
+    },
   };
 
   if (type === "Loop") {
@@ -271,26 +281,19 @@ const RenderElement = ({
             ...ctx.loop,
             [rawDocumentId]: newIndex,
           };
+          const newCtx = {
+            ...ctx,
+            spread: true,
+            loop: loopCtx,
+          };
           return (
             <RenderElementWithProps
+              // not really the accurate block index - this creates its own order
+              index={newIndex}
               key={newIndex}
-              loopCtx={loopCtx}
+              ctx={newCtx}
+              symbol={symbol}
               {...props}
-              renderChildren={(value: ValueArray | undefined) => {
-                return (
-                  <RenderChildren
-                    value={value ?? []}
-                    record={record}
-                    options={options} // WE ARE USING PARENT OPTIONS ON PURPOSE!
-                    ctx={{
-                      ...ctx,
-                      spread: true,
-                      index: newIndex,
-                      loop: loopCtx,
-                    }}
-                  />
-                );
-              }}
             />
           );
         })}
@@ -300,21 +303,10 @@ const RenderElement = ({
 
   return (
     <RenderElementWithProps
-      loopCtx={ctx.loop}
+      ctx={ctx}
+      symbol={symbol}
+      index={index}
       {...props}
-      renderChildren={(
-        value: ValueArray | undefined,
-        options?: ConfigRecord
-      ) => {
-        return (
-          <RenderChildren
-            value={value ?? []}
-            record={record}
-            ctx={ctx}
-            options={options}
-          />
-        );
-      }}
     />
   );
 };
@@ -330,44 +322,100 @@ const fileTransform = (value: FileToken | undefined) => {
 };
 
 function RenderElementWithProps({
-  elementId,
+  id,
+  type,
+  symbol,
   record,
-  loopCtx,
+  ctx,
   props,
   component: Component,
-  renderChildren,
+  createComponentContext,
+  index,
 }: {
-  elementId: string;
+  id: NestedDocumentId;
+  type: string;
+  symbol: symbol;
   record: Record<string, ValueArray | ClientSyntaxTree>;
-  loopCtx: Record<string, number>;
+  ctx: RSCContext;
   props: PropConfigRecord;
   component: Component<PropConfigRecord>;
-  renderChildren: (value: ValueArray | undefined) => React.ReactElement;
+  createComponentContext: (
+    regularProps: Record<string, any>
+  ) => Record<string, any>;
+  index: number;
 }) {
-  console.log("RESOLVE", elementId, props);
-
   const resolveProps = (props: PropConfigRecord, group?: string) => {
-    return Object.fromEntries(
-      Object.entries(props).map(([name, config]): [string, any] => {
+    const propEntries = Object.entries(props);
+    const regularPropEntries = group
+      ? propEntries
+      : propEntries.filter(([, value]) => value.type !== "children");
+    const regularProps = Object.fromEntries(
+      regularPropEntries.map(([name, config]): [string, any] => {
         if (config.type === "group") {
           return [name, resolveProps(config.props, name)];
         }
 
         const key = extendPath(group ?? "", name, "#");
 
-        const id = `${elementId.slice(12, 24)}${getIdFromString(key)}`;
+        const fieldId = `${id.slice(12, 24)}${getIdFromString(key)}`;
 
         const transforms = {
-          children: renderChildren,
           file: fileTransform,
         };
 
-        return [
-          name,
-          normalizeProp(config, record[id] ?? [], loopCtx, transforms),
-        ];
+        const value = resolveStatefulProp(record[fieldId] ?? [], ctx.loop);
+
+        return [name, normalizeProp(config, value, transforms)];
       })
     );
+
+    if (group) {
+      return regularProps;
+    }
+
+    const contextsArray = [
+      ...ctx.contexts,
+      {
+        element: symbol,
+        index,
+        context: createComponentContext(regularProps),
+      },
+    ];
+    const contexts = Object.assign(contextsArray, {
+      useContext(config: Config) {
+        const symbol = (config as any).symbol;
+        return (
+          contextsArray.findLast((el) => el.element === symbol)?.context ?? {}
+        );
+      },
+    });
+
+    const childrenPropEntries = group
+      ? []
+      : propEntries.filter(([, value]) => value.type === "children");
+
+    const childrenProps = Object.fromEntries(
+      childrenPropEntries.map(([name, config]): [string, any] => {
+        const fieldId = `${id.slice(12, 24)}${getIdFromString(name)}`;
+        const value = resolveStatefulProp(record[fieldId] ?? [], ctx.loop);
+
+        const children = (
+          <RenderChildren
+            value={Array.isArray(value[0]) ? value[0] : value}
+            record={record}
+            options={(config as PropConfig).options as ConfigRecord | undefined} // WE ARE USING PARENT OPTIONS ON PURPOSE!
+            ctx={{
+              ...ctx,
+              contexts,
+            }}
+          />
+        );
+
+        return [name, children];
+      })
+    );
+
+    return { ...regularProps, ...childrenProps, serverContext: contexts };
   };
 
   const resolvedProps = resolveProps(props);
@@ -402,12 +450,12 @@ export const RenderPage = <T extends LibraryConfigRecord>({
       value={data.entry as ValueArray}
       record={data.record}
       ctx={{
-        index: 0,
         spread: false,
         loop: {},
         children: undefined,
         configs,
         libraries,
+        contexts: [],
       }}
     />
   ) : null;
@@ -441,12 +489,12 @@ export const RenderLayout = <T extends LibraryConfigRecord>({
       value={data.entry as ValueArray}
       record={data.record}
       ctx={{
-        index: 0,
         spread: false,
         loop: {},
         children,
         configs,
         libraries,
+        contexts: [],
       }}
     />
   ) : (

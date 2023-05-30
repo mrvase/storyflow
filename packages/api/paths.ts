@@ -8,6 +8,7 @@ import { parseDocument } from "./convert";
 import { DBDocument } from "@storyflow/cms/types";
 import { DBDocumentRaw } from "./types";
 import { FolderId, RawFieldId, ValueArray } from "@storyflow/shared/types";
+import { DEFAULT_SYNTAX_TREE } from "@storyflow/cms/constants";
 
 export async function getPaths(
   docs: DBDocumentRaw[],
@@ -45,7 +46,9 @@ export async function getPaths(
     await Promise.all(
       dynamicUrls.map(async ({ _id, url, record }) => {
         const fieldId = createTemplateFieldId(_id, DEFAULT_FIELDS.params.id);
-        const tree = record[fieldId];
+
+        // it might not exist yet
+        const tree = record[fieldId] ?? DEFAULT_SYNTAX_TREE;
 
         const toUrl = (slug: string) => `${url.slice(0, -1)}${slug}`;
 

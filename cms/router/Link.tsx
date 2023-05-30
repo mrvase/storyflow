@@ -27,19 +27,23 @@ export const Link = React.forwardRef<HTMLAnchorElement, LinkProps>(
     ref
   ) => {
     const href = useHref(to);
-    const internalOnClick = useLinkClickHandler(to, {
-      replace,
-      target,
-      state,
-    });
-    function handleClick(
-      event: React.MouseEvent<HTMLAnchorElement, MouseEvent>
-    ) {
-      if (onClick) onClick(event);
-      if (!event.defaultPrevented) {
-        internalOnClick(event);
-      }
-    }
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    const handleClick = React.useCallback(
+      (event: React.MouseEvent<HTMLAnchorElement>) => {
+        if (onClick) onClick(event);
+        if (!event.defaultPrevented && shouldHandleLinkClick(event, target)) {
+          event.preventDefault();
+
+          navigate(to, {
+            replace: replace ?? createPath(location) === href,
+            state,
+          });
+        }
+      },
+      [location, navigate, href, replace, target, to, onClick]
+    );
 
     return (
       <a
@@ -53,49 +57,18 @@ export const Link = React.forwardRef<HTMLAnchorElement, LinkProps>(
   }
 );
 
-export function useLinkClickHandler<E extends Element = HTMLAnchorElement>(
-  to: To,
-  {
-    target,
-    replace: replaceProp,
-    state,
-  }: {
-    target?: React.HTMLAttributeAnchorTarget;
-    replace?: boolean;
-    state?: any;
-  } = {}
-): (event: React.MouseEvent<E, MouseEvent>) => void {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const href = useHref(to);
-
-  return React.useCallback(
-    (event: React.MouseEvent<E, MouseEvent>) => {
-      if (shouldProcessLinkClick(event, target)) {
-        event.preventDefault();
-
-        let replace = replaceProp ?? createPath(location) === href;
-
-        navigate(to, { replace, state });
-      }
-    },
-    [location, navigate, href, replaceProp, target, to]
-  );
-}
-
 type LimitedMouseEvent = Pick<
   MouseEvent,
   "button" | "metaKey" | "altKey" | "ctrlKey" | "shiftKey"
 >;
 
-function isModifiedEvent(event: LimitedMouseEvent) {
-  return !!(event.metaKey || event.altKey || event.ctrlKey || event.shiftKey);
-}
-
-function shouldProcessLinkClick(event: LimitedMouseEvent, target?: string) {
+function shouldHandleLinkClick(event: LimitedMouseEvent, target?: string) {
   return (
-    event.button === 0 && // Ignore everything but left clicks
-    (!target || target === "_self") && // Let browser handle "target=_blank" etc.
-    !isModifiedEvent(event) // Ignore clicks with modifier keys
+    // Ignore clicks with modifier keys
+    !(event.metaKey || event.altKey || event.ctrlKey || event.shiftKey) &&
+    // Ignore everything but left clicks
+    event.button === 0 &&
+    // Let browser handle other target types
+    (!target || target === "_self")
   );
 }

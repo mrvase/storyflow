@@ -6,8 +6,8 @@ import React from "react";
 const organization =
   process.env.NODE_ENV === "development"
     ? {
-        slug: "kfs",
-        url: "http://localhost:3001",
+        slug: "dashboard",
+        url: "http://localhost:4000",
       }
     : undefined;
 

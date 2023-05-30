@@ -167,8 +167,8 @@ export type Option =
         }
     ));
 
-export type PropConfig = {
-  type: keyof PropTypes;
+export type PropConfig<PropType = keyof PropTypes> = {
+  type: PropType;
   label: string;
   defaultValue?: any;
   searchable?: boolean;
@@ -184,7 +184,7 @@ export type Options =
 export type PropGroup = {
   type: "group";
   label: string;
-  props: Record<string, PropConfig>;
+  props: Record<string, PropConfig<Exclude<keyof PropTypes, "children">>>;
   searchable?: boolean;
 };
 
@@ -199,10 +199,24 @@ type Type<T extends PropConfig | PropGroup> = T extends { type: "group" }
 // The logic tests if the generic passed to props is just "PropConfigRecord" and not a more specific type.
 // If it is the case, we get errors on configs in options, where we pass a component with very specific
 // props to a type with general props. E.G.: "label" and "href" does not exists on Props<PropConfigRecord>.
-export type Props<T extends PropConfigRecord> = string extends keyof T
+export type Props<T extends PropConfigRecord> = {
+  serverContext: any[] & {
+    useContext: (config: Config) => Record<string, any>;
+  };
+} & (string extends keyof T
   ? any
   : {
       [Key in keyof T]: Type<T[Key]>;
+    });
+
+type Placeholders<T extends PropConfigRecord> = string extends keyof T
+  ? any
+  : {
+      [Key in keyof T as T[Key] extends { type: "children" }
+        ? never
+        : Key]: T[Key] extends { type: "group" }
+        ? Placeholders<T[Key]["props"]>
+        : Placeholder<Type<T[Key]>>;
     };
 
 type PartialType<T extends PropConfig | PropGroup> = T extends { type: "group" }
@@ -233,10 +247,16 @@ export type Story<T extends PropConfigRecord = PropConfigRecord> = {
 
 export type Stories<T extends PropConfigRecord> = Record<string, Story<T>>;
 
+export type Context = Record<string, any>;
+
+export declare const placeholder: unique symbol;
+export type Placeholder<Type> = string & { [placeholder]: Type };
+
 export type Config<T extends PropConfigRecord = PropConfigRecord> = {
   label: string;
   props: T;
   stories?: Stories<T>;
+  context?: Context | ((props: Placeholders<T>) => Context);
   inline?: boolean;
   hidden?: boolean;
   component?: Component<T>;
