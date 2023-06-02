@@ -1,39 +1,27 @@
 import React from "react";
 import { DropShadow, Sortable, useSortableItem } from "@storyflow/dnd";
-import {
-  createTemplateFieldId,
-  getDocumentId,
-  getRawFieldId,
-} from "@storyflow/cms/ids";
-import type { DocumentId, FieldId } from "@storyflow/shared/types";
+import { createTemplateFieldId } from "@storyflow/cms/ids";
+import type { DocumentId } from "@storyflow/shared/types";
 import type {
   DocumentConfigItem,
   HeadingConfig,
   DBDocument,
-  SyntaxTreeRecord,
 } from "@storyflow/cms/types";
-import type { SyntaxTree } from "@storyflow/cms/types";
 import { getTranslateDragEffect } from "../utils/dragEffects";
 import { RenderField } from "../fields/RenderField";
 import { useCollab, usePush } from "../collab/CollabContext";
 import { GetDocument } from "./GetDocument";
 import { ExtendTemplatePath } from "./TemplatePathContext";
 import { TopFieldIndexProvider } from "./FieldIndexContext";
-import { useClient } from "../RPCProvider";
 import { useDocumentIdGenerator } from "../id-generator";
 import {
   getDefaultValuesFromTemplateAsync,
   pushDefaultValues,
 } from "./template-fields";
-import { splitTransformsAndRoot } from "@storyflow/cms/transform";
-import { createTokenStream } from "../operations/parse-token-stream";
 import {
   DocumentSpliceOperation,
   DocumentTransactionEntry,
-  FieldTransactionEntry,
 } from "../operations/actions";
-import { createTransaction } from "@storyflow/collab/utils";
-import { Timeline } from "@storyflow/collab/Timeline";
 
 export function RenderTemplate({
   id,
@@ -56,7 +44,6 @@ export function RenderTemplate({
 
   const collab = useCollab();
 
-  const client = useClient();
   const generateDocumentId = useDocumentIdGenerator();
 
   const onChange = React.useCallback(
@@ -73,7 +60,6 @@ export function RenderTemplate({
           ops.push([index, 0, [templateItem]]);
 
           getDefaultValuesFromTemplateAsync(owner, templateItem.template, {
-            client,
             generateDocumentId,
           }).then((defaultValues) => {
             const timeline = collab.getTimeline(owner);
@@ -93,7 +79,7 @@ export function RenderTemplate({
       }
       push([["", ops]]);
     },
-    [config, push, client, generateDocumentId, collab, owner]
+    [config, push, generateDocumentId, collab, owner]
   );
 
   let dragHandleProps: any = undefined;

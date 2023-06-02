@@ -27,7 +27,6 @@ import { Option } from "./Option";
 import { useFieldId } from "../FieldIdContext";
 import { useDocumentIdGenerator } from "../../id-generator";
 import { markMatchingString } from "./helpers";
-import { SWRClient } from "../../RPCProvider";
 import { calculateRootFieldFromRecord } from "@storyflow/cms/calculate-server";
 import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
 import Loader from "../../elements/Loader";
@@ -36,6 +35,8 @@ import { usePath, useSelectedPath } from "../Path";
 import { useLoopTemplate } from "../default/LoopTemplateContext";
 import { useTemplate } from "../default/useFieldTemplate";
 import { useFolders } from "../../folders/FoldersContext";
+import { useQuery } from "@nanorpc/client/swr";
+import { query } from "../../clients/client";
 
 export function ReferencePrompt({
   prompt,
@@ -257,9 +258,9 @@ function DocumentPrompt({
 }) {
   const [search, setSearch] = React.useState("");
 
-  const { data, isLoading } = SWRClient.documents.findByLabel.useQuery(search, {
-    inactive: search === "",
-  });
+  const { data, isLoading } = useQuery(
+    search === "" ? undefined : query.documents.findByLabel(search)
+  );
 
   React.useEffect(() => {
     if (prompt === "") {

@@ -1,8 +1,6 @@
-import type { MiddlewareContext } from "@storyflow/rpc-server";
+import { procedure, auth, cors } from "@storyflow/server/rpc";
 
-import { auth, cors } from "@storyflow/server/middleware";
 import { ApiConfig } from "@storyflow/shared/types";
 
-export const globals = (config: ApiConfig) => (ctx: MiddlewareContext) => {
-  return ctx.use(cors(config.cors ?? []), auth(config.publicKey));
-};
+export const globals = (config: ApiConfig) =>
+  procedure.use(cors(config.cors ?? [])).use(auth(config.publicKey));

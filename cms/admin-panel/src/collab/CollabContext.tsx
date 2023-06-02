@@ -1,10 +1,10 @@
 import React from "react";
 import { useContextWithError } from "../utils/contextError";
-import { useServicesClient } from "../RPCProvider";
 import { createCollaboration } from "./collaboration";
 import { Queue } from "@storyflow/collab/Queue";
 import { TransactionEntry } from "@storyflow/collab/types";
 import { DocumentId } from "@storyflow/shared/types";
+import { servicesMutate } from "../clients/client-services";
 
 export const DocumentCollabContext = React.createContext<ReturnType<
   typeof createCollaboration
@@ -14,18 +14,16 @@ export const useCollab = () =>
   useContextWithError(DocumentCollabContext, "Collab");
 
 export function CollabProvider({ children }: { children: React.ReactNode }) {
-  const client = useServicesClient();
-
   const collab = React.useMemo(() => {
     return createCollaboration({
-      sync: client.collab.sync.mutation,
-      update: client.collab.update.mutation,
+      sync: servicesMutate.collab.sync,
+      update: servicesMutate.collab.update,
     });
-  }, [client]);
+  }, []);
 
   React.useLayoutEffect(() => {
     return collab.syncOnInterval();
-  }, [client]);
+  }, []);
 
   return (
     <DocumentCollabContext.Provider value={collab}>

@@ -192,7 +192,7 @@ export type PartialFieldConfig = Partial<Omit<FieldConfig, "id" | "type">> &
 
 export type PartialDocumentConfig = PartialFieldConfig[];
 
-type CollabVersion = [index: number, prev: number, user: string] | [0];
+export type CollabVersion = [index: number, prev: number, user: string] | [0];
 
 export type DocumentVersionRecord = Record<
   "config" | RawFieldId,

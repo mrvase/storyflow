@@ -4,8 +4,9 @@ import { TEMPLATE_FOLDER } from "@storyflow/cms/constants";
 import { useDocumentList } from "./documents";
 import { useCollab } from "./collab/CollabContext";
 import React from "react";
-import { SWRClient } from "./RPCProvider";
 import { FoldersProvider } from "./folders/FoldersContext";
+import { useQuery } from "@nanorpc/client/swr";
+import { query } from "./clients/client";
 
 export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const collab = useCollab();
@@ -29,11 +30,13 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     });
   }, [collab]);
 
-  const { data: folders } = SWRClient.admin.getFolders.useQuery(undefined, {
-    onSuccess(data) {
-      collab.initializeTimeline("folders", { versions: data.version });
-    },
-  });
+  const { data: folders } = useQuery(
+    query.admin.getFolders(undefined, {
+      onSuccess(data) {
+        collab.initializeTimeline("folders", { versions: data.version });
+      },
+    })
+  );
 
   if (!folders) return null;
 

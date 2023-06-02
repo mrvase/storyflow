@@ -341,7 +341,7 @@ function StatusButton() {
           ? "text-yellow-400"
           : "text-green-400"
       }
-      onClick={() => collab.sync(0)}
+      onClick={() => collab.sync()}
     />
   );
 }

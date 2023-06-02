@@ -5,6 +5,7 @@ export function onInterval(
   ) => void,
   options: {
     duration?: number;
+    delay?: number;
   } = {}
 ) {
   let { duration = 2000 } = options;

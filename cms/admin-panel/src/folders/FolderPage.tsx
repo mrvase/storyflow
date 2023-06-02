@@ -43,15 +43,16 @@ import { usePush } from "../collab/CollabContext";
 import { createTransaction } from "@storyflow/collab/utils";
 import { FolderTransactionEntry } from "../operations/actions";
 import { useFolder } from "./FoldersContext";
-import { useAuth } from "../Auth";
 import { DropShadow, Sortable } from "@storyflow/dnd";
 import { PagesSpace } from "./spaces/PagesSpace";
 import { useAppConfig } from "../AppConfigContext";
-import { SWRClient, useClient, useAppClient } from "../RPCProvider";
-import { isSuccess } from "@storyflow/rpc-client/result";
 import { getFolderData } from "./getFolderData";
-import { getPanelsFromUrl } from "../layout/panel-router/utils";
 import { useTranslation } from "../translation/TranslationContext";
+import { useOrganization } from "../clients/auth";
+import { mutate, query } from "../clients/client";
+import { useQuery } from "@nanorpc/client/swr";
+import { appMutate } from "../clients/client-app";
+import { isError } from "@nanorpc/client";
 
 const spaces: { label: string; item: Omit<Space, "id"> }[] = [
   {
@@ -418,7 +419,7 @@ export function DomainsButton({
 }) {
   const t = useTranslation();
 
-  const { organization } = useAuth();
+  const organization = useOrganization();
 
   const getLabel = (domain: string) => {
     domain = domain.replace("https://", "");
@@ -484,12 +485,11 @@ function RefreshButton({
 
   const [isLoading, setIsLoading] = React.useState(false);
 
-  const { data, mutate } = SWRClient.documents.getUpdatedUrls.useQuery({
-    namespace,
-  });
-
-  const client = useClient();
-  const appClient = useAppClient(config);
+  const { data, revalidate } = useQuery(
+    query.documents.getUpdatedUrls({
+      namespace,
+    })
+  );
 
   const count = data?.length ?? 0;
 
@@ -516,10 +516,10 @@ function RefreshButton({
           onClick={async () => {
             if (config.baseURL && data?.length) {
               setIsLoading(true);
-              const result = await appClient.app.revalidate.mutation(data);
-              if (isSuccess(result)) {
-                await client.documents.registerRevalidation.mutation();
-                mutate();
+              const result = await appMutate.app.revalidatePaths(data);
+              if (!isError(result)) {
+                await mutate.documents.registerRevalidation();
+                revalidate();
               }
               setIsLoading(false);
             }

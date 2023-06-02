@@ -1,12 +1,13 @@
 import cl from "clsx";
 import React from "react";
-import {
-  servicesClientWithoutContext,
-  servicesClientSWR,
-  useAuth,
-} from "./Auth";
 import Loader from "./elements/Loader";
 import { Link } from "@storyflow/router";
+import { useUser } from "./clients/auth";
+import { useImmutableQuery } from "@nanorpc/client/swr";
+import {
+  authServicesMutate,
+  authServicesQuery,
+} from "./clients/client-auth-services";
 
 export function Organizations({
   preset,
@@ -20,16 +21,13 @@ export function Organizations({
   if (preset) {
     organizations = [preset];
   } else {
-    const { data } = servicesClientSWR.auth.getOrganizations.useQuery(
-      undefined,
-      {
-        immutable: true,
-      }
+    const { data } = useImmutableQuery(
+      authServicesQuery.auth.getOrganizations()
     );
     organizations = data?.organizations ?? organizations;
   }
 
-  const { user } = useAuth();
+  const user = useUser();
 
   return (
     <div className="w-full h-full flex flex-col">
@@ -115,7 +113,7 @@ export function AddOrganization({ index }: { index: number }) {
           ev.preventDefault();
           const data = new FormData(ev.currentTarget);
           setIsLoading(true);
-          await servicesClientWithoutContext.auth.addOrganization.mutation({
+          await authServicesMutate.auth.addOrganization({
             slug: data.get("slug") as string,
             url: (data.get("url") as string) || undefined,
           });

@@ -11,7 +11,6 @@ import { getConfigFromType, useAppConfig } from "../AppConfigContext";
 import { createTemplateFieldId, getDocumentId } from "@storyflow/cms/ids";
 import { useGlobalState } from "../state/state";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/cms/constants";
-import { useClient } from "../RPCProvider";
 import { useDocumentPageContext } from "../documents/DocumentPageContext";
 import { calculateFn } from "./default/calculateFn";
 import { useContextWithError } from "../utils/contextError";
@@ -140,14 +139,12 @@ function PropPreview({
   color?: "gray" | "red" | "pink" | "yellow";
 }) {
   const rootId = useFieldId();
-  const client = useClient();
   const { record } = useDocumentPageContext();
   const initialValue = record[prop.id] ?? DEFAULT_SYNTAX_TREE;
 
   const [output] = useGlobalState(prop.id, () =>
     calculateFn(initialValue, {
       record,
-      client,
       documentId: getDocumentId(rootId),
     })
   );

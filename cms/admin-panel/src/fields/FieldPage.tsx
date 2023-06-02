@@ -22,7 +22,6 @@ import { useAppConfig } from "../AppConfigContext";
 import { createComponent } from "./Editor/createComponent";
 import { useDocumentPageContext } from "../documents/DocumentPageContext";
 import { fetchDocumentSync } from "../documents";
-import { Client, useClient } from "../RPCProvider";
 import {
   computeFieldId,
   getDocumentId,
@@ -463,11 +462,9 @@ const getRecordSnapshot = (
   entry: FieldId,
   {
     record = {},
-    client,
     configs,
   }: {
     record?: SyntaxTreeRecord;
-    client: Client;
     configs: LibraryConfigRecord;
   }
 ) => {
@@ -487,14 +484,13 @@ const getRecordSnapshot = (
       let initialValue = record[fieldId];
 
       if (!initialValue && propDocumentId !== documentId) {
-        fetchDocumentSync(propDocumentId, client).then((doc) => {
+        fetchDocumentSync(propDocumentId).then((doc) => {
           if (!doc) return undefined;
           const value = doc.record[fieldId];
           if (!value) return undefined;
           prop.set(() => {
             return calculateFn(value, {
               record: doc.record,
-              client,
               documentId: propDocumentId,
             });
           });
@@ -507,7 +503,6 @@ const getRecordSnapshot = (
         prop.set(() =>
           calculateFn(initialValue ?? DEFAULT_SYNTAX_TREE, {
             record,
-            client,
             documentId,
           })
         );
@@ -625,15 +620,12 @@ function PropagateStatePlugin({
 }) {
   const { record } = useDocumentPageContext();
 
-  const client = useClient();
-
   const { configs } = useAppConfig();
 
   // state initialized in ComponentField
   const [tree, setTree] = useGlobalState<ValueRecord>(`${id}/record`, () => {
     return getRecordSnapshot(id, {
       record,
-      client,
       configs,
     });
   });

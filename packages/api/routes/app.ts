@@ -1,10 +1,6 @@
-import { createProcedure, createRoute } from "@storyflow/rpc-server";
+import { RPCError } from "@nanorpc/server";
 import { getClientPromise } from "../mongoClient";
 import { z } from "zod";
-
-import { cors } from "@storyflow/server/middleware";
-
-import { error, success } from "@storyflow/rpc-server/result";
 import { createFieldRecordGetter } from "@storyflow/cms/get-field-record";
 import { calculateRootFieldFromRecord } from "@storyflow/cms/calculate-server";
 import type {
@@ -25,6 +21,7 @@ import {
 import { createObjectId } from "@storyflow/server/mongo";
 import { createFetcher } from "../create-fetcher";
 import { globals } from "../globals";
+import { cors, procedure } from "@storyflow/server/rpc";
 
 const modifyValues = <Result, V extends Record<string, any>>(
   obj: V,
@@ -72,99 +69,89 @@ const handleContext = (
 
 export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
   const dbName = undefined; // config.workspaces[0].db;
-  return createRoute({
-    config: createProcedure({
-      middleware(ctx) {
-        return ctx.use(cors(apiConfig.cors));
-      },
+  return {
+    config: procedure.use(cors(apiConfig.cors)).query(() => {
+      const configs: Record<string, LibraryConfig> = modifyValues(
+        appConfig.configs,
+        (libraryConfig, libraryName) => {
+          const exists = new Set(Object.keys(libraryConfig.configs));
+          const entries = Object.entries(libraryConfig.configs);
 
-      async query() {
-        const configs: Record<string, LibraryConfig> = modifyValues(
-          appConfig.configs,
-          (libraryConfig, libraryName) => {
-            const exists = new Set(Object.keys(libraryConfig.configs));
-            const entries = Object.entries(libraryConfig.configs);
+          let i = 0;
+          while (i < entries.length) {
+            const entry = entries[i];
+            const { component, stories, props, context, ...data } = entry[1];
+            entries[i] = [
+              entry[0],
+              {
+                ...data,
+                props: modifyValues(props, (el) => {
+                  if (
+                    !("options" in el) ||
+                    typeof el.options !== "object" ||
+                    Array.isArray(el.options)
+                  ) {
+                    return el;
+                  }
 
-            let i = 0;
-            while (i < entries.length) {
-              const entry = entries[i];
-              const { component, stories, props, context, ...data } = entry[1];
-              entries[i] = [
-                entry[0],
-                {
-                  ...data,
-                  props: modifyValues(props, (el) => {
-                    if (
-                      !("options" in el) ||
-                      typeof el.options !== "object" ||
-                      Array.isArray(el.options)
-                    ) {
-                      return el;
-                    }
+                  Object.entries(el.options).forEach((entry) => {
+                    if (exists.has(entry[0])) return;
+                    entries.push(entry);
+                    exists.add(entry[0]);
+                  });
 
-                    Object.entries(el.options).forEach((entry) => {
-                      if (exists.has(entry[0])) return;
-                      entries.push(entry);
-                      exists.add(entry[0]);
-                    });
-
-                    return {
-                      ...el,
-                      options: Object.keys(el.options).map((el) => {
-                        const name = el.replace(/Config$/, "");
-                        return libraryName ? `${libraryName}:${name}` : name;
-                      }),
-                    };
-                  }),
-                  ...(context && { context: handleContext(context, props) }),
-                },
-              ];
-              i++;
-            }
-
-            return {
-              ...libraryConfig,
-              configs: Object.fromEntries(entries),
-            };
+                  return {
+                    ...el,
+                    options: Object.keys(el.options).map((el) => {
+                      const name = el.replace(/Config$/, "");
+                      return libraryName ? `${libraryName}:${name}` : name;
+                    }),
+                  };
+                }),
+                ...(context && { context: handleContext(context, props) }),
+              },
+            ];
+            i++;
           }
-        );
 
-        return success({
-          ...appConfig,
-          configs,
-        });
-      },
+          return {
+            ...libraryConfig,
+            configs: Object.fromEntries(entries),
+          };
+        }
+      );
+
+      return {
+        ...appConfig,
+        configs,
+      };
     }),
 
-    revalidate: createProcedure({
-      middleware(ctx) {
-        return ctx.use(globals(apiConfig));
-      },
-      schema() {
-        return z.array(z.string());
-      },
-      async mutation(paths) {
+    revalidatePaths: procedure
+      .use(globals(apiConfig))
+      .schema(z.array(z.string()))
+      .mutate(async (paths) => {
         try {
           await Promise.all(paths.map((path) => apiConfig.revalidate?.(path)));
-          return success({ revalidated: true });
+          return { revalidated: true };
         } catch (err) {
-          console.log("REVALIDATION ERROR", err);
-          return error({ message: "Failed to revalidate" });
+          return new RPCError({
+            code: "SERVER_ERROR",
+            message: "Failed to revalidate",
+          });
         }
-      },
-    }),
+      }),
 
-    getPage: createProcedure({
-      middleware(ctx) {
-        console.log("CONTEXT", ctx.request);
-        return ctx.use(cors(apiConfig.cors));
-      },
-      schema() {
-        return z.string();
-      },
-      async query(url) {
+    getPage: procedure
+      .use(cors(apiConfig.cors))
+      .schema(z.string())
+      .query(async (url) => {
         if (!url.startsWith("/")) {
-          return error({ message: "Invalid url" });
+          return new RPCError({
+            status: 403,
+            code: "INVALID_INPUT",
+            message: "Invalid url",
+          });
         }
         console.log("REQUESTING PAGE", dbName, url);
 
@@ -197,7 +184,7 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
 
         if (!docRaw) {
           console.log("NO PAGE");
-          return success(null);
+          return null;
         }
 
         const doc = parseDocument(docRaw);
@@ -246,50 +233,43 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
       );
       */
 
-        return success(result);
-      },
-    }),
+        return result;
+      }),
 
-    getPaths: createProcedure({
-      middleware(ctx) {
-        return ctx.use(cors(apiConfig.cors));
-      },
-      async query() {
-        console.log("REQUESTING PATHS");
+    getPaths: procedure.use(cors(apiConfig.cors)).query(async () => {
+      console.log("REQUESTING PATHS");
 
-        const client = await getClientPromise();
-        const articles = await client
-          .db(dbName)
-          .collection<DBDocumentRaw>("documents")
-          .find({
-            ...(appConfig.namespaces
-              ? {
-                  folder: {
-                    $in: appConfig.namespaces.map((n) =>
-                      createObjectId(`${n}`.padStart(24, "0"))
-                    ),
-                  },
-                }
-              : {
-                  [`values.${createRawTemplateFieldId(DEFAULT_FIELDS.url.id)}`]:
-                    {
-                      $exists: true,
-                    },
-                }),
-            /*
+      const client = await getClientPromise();
+      const articles = await client
+        .db(dbName)
+        .collection<DBDocumentRaw>("documents")
+        .find({
+          ...(appConfig.namespaces
+            ? {
+                folder: {
+                  $in: appConfig.namespaces.map((n) =>
+                    createObjectId(`${n}`.padStart(24, "0"))
+                  ),
+                },
+              }
+            : {
+                [`values.${createRawTemplateFieldId(DEFAULT_FIELDS.url.id)}`]: {
+                  $exists: true,
+                },
+              }),
+          /*
           [`values.${URL_ID}`]: namespace
             ? { $regex: `^${namespace}` }
             : { $exists: true },
           */
-          })
-          .toArray();
+        })
+        .toArray();
 
-        const paths = await getPaths(articles, createFetcher(dbName));
+      const paths = await getPaths(articles, createFetcher(dbName));
 
-        // console.log("PATHS", paths);
+      // console.log("PATHS", paths);
 
-        return success(paths);
-      },
+      return paths;
     }),
-  });
+  };
 };

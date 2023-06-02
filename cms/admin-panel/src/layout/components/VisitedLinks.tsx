@@ -2,7 +2,6 @@ import React from "react";
 import cl from "clsx";
 import type { PanelData } from "../panel-router/types";
 import { fetchDocument } from "../../documents";
-import { useClient } from "../../RPCProvider";
 import { getDocumentLabel } from "../../documents/useDocumentLabel";
 import { Link, useLocation } from "@storyflow/router";
 import { replacePanelPath } from "../panel-router/utils";
@@ -13,8 +12,6 @@ export function VisitedLinks({ data: { path, index } }: { data: PanelData }) {
   const [visited, setVisited] = React.useState<
     { path: string; label: string; type: "t" | "d" }[]
   >([]);
-
-  const client = useClient();
 
   const prev = React.useRef<string | null>(null);
 
@@ -27,7 +24,7 @@ export function VisitedLinks({ data: { path, index } }: { data: PanelData }) {
     const id = last.slice(1).padStart(24, "0");
     let mounted = true;
     if (type === "d" || type === "t") {
-      fetchDocument(id, client).then((doc) => {
+      fetchDocument(id).then((doc) => {
         if (!mounted) return;
         const label = getDocumentLabel(doc, t);
         if (!label) return;

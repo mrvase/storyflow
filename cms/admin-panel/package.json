@@ -14,7 +14,7 @@
     "@heroicons/react": "^2.0.11",
     "@lexical/selection": "^0.9.1",
     "@lexical/utils": "^0.9.1",
-    "@storyflow/rpc-client": "workspace:*",
+    "@nanorpc/client": "^0.0.13",
     "@storyflow/collab": "workspace:*",
     "@storyflow/dnd": "workspace:*",
     "@storyflow/cms": "workspace:*",
@@ -27,11 +27,12 @@
     "react-colorful": "^5.6.1",
     "react-error-boundary": "^3.1.4",
     "react-resizable-panels": "^0.0.29",
-    "swr": "^2.0.1",
+    "swr": "^2.1.5",
     "zod": "^3.20.2"
   },
   "devDependencies": {
     "@storyflow/api": "workspace:*",
+    "@nanorpc/server": "^0.0.13",
     "@tailwindcss/container-queries": "^0.1.1",
     "@types/react": "^18.2.1",
     "@types/react-dom": "^18.2.2",

@@ -7,7 +7,8 @@ import { createTemplateFieldId } from "@storyflow/cms/ids";
 import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
 import { DBDocument, SyntaxTree } from "@storyflow/cms/types";
 import { calculateField } from "@storyflow/cms/calculate-server";
-import { readFromCache, useClient } from "../../RPCProvider";
+import { cache } from "@nanorpc/client/swr";
+import { query } from "../../clients/client";
 
 export function useNewDocuments(
   folderId: FolderId,
@@ -18,7 +19,6 @@ export function useNewDocuments(
   >([]);
 
   const collab = useCollab();
-  const client = useClient();
 
   const handleDocs = React.useCallback(
     async (ids: DocumentId[]) => {
@@ -61,14 +61,13 @@ export function useNewDocuments(
         setDocs(newState);
       }
     },
-    [docs, collab, client]
+    [docs, collab]
   );
 
   const calculatedDocs = React.useMemo(() => {
     const getCalculatedFieldValue = (tree: SyntaxTree) => {
       const getRecord = (id: DocumentId) => {
-        const key = client.documents.findById.key(id);
-        const exists = readFromCache(key);
+        const exists = cache.read(query.documents.findById(id));
         return exists?.record ?? {};
       };
 

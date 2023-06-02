@@ -20,7 +20,6 @@ import {
   getDocumentId,
   isNestedDocumentId,
 } from "@storyflow/cms/ids";
-import { useClient } from "../../../RPCProvider";
 import { getPreview } from "../../default/getPreview";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 import { useFieldTemplateId } from "../../default/FieldTemplateContext";
@@ -155,15 +154,12 @@ export function ValueDisplay({
   initialValue: SyntaxTree;
   record: SyntaxTreeRecord;
 }) {
-  const client = useClient();
-
   let output: undefined | ValueArray | ClientSyntaxTree;
 
   if (initialValue) {
     [output] = useGlobalState(id, () =>
       calculateFn(initialValue, {
         record,
-        client,
         documentId: getDocumentId(id),
       })
     );

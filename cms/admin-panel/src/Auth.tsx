@@ -1,51 +1,12 @@
 import React from "react";
 import cl from "clsx";
-import { onInterval } from "./collab/interval";
-import { isSuccess, unwrap } from "@storyflow/rpc-client/result";
-import { createClient, createSWRClient } from "@storyflow/rpc-client";
 import Loader from "./elements/Loader";
-import useSWR, { useSWRConfig } from "swr";
-import type { AuthAPI, CollabAPI, BucketAPI } from "services-api";
-import { AppReference } from "@storyflow/api";
-import { useLocation, useNavigate } from "@storyflow/router";
-import { trimLeadingSlash } from "./utils/trimSlashes";
+import { useLocation } from "@storyflow/router";
+import { useUser } from "./clients/auth";
+import { authServicesMutate } from "./clients/client-auth-services";
+import { isError } from "@nanorpc/client";
 
-const url =
-  process.env.NODE_ENV === "production" ? `/api` : `http://localhost:3000/api`;
-
-export const servicesClientWithoutContext = createClient<
-  AuthAPI & BucketAPI & CollabAPI
->(url);
-
-export const servicesClientSWR = createSWRClient<
-  AuthAPI & BucketAPI & CollabAPI
->(url, {
-  useSWR,
-  useSWRConfig,
-});
-
-type Organization = {
-  slug: string;
-  apps: AppReference[];
-  workspaces: { name: string }[];
-};
-
-const AuthContext = React.createContext<{
-  user: {
-    email: string;
-  } | null;
-  getToken: () => string | undefined;
-  organization: Organization | null;
-  apiUrl: string | null;
-}>({
-  user: null,
-  organization: null,
-  apiUrl: null,
-  getToken: () => undefined,
-});
-
-export const useAuth = () => React.useContext(AuthContext);
-
+/*
 function useToken() {
   const cachedToken = React.useRef<string | null>(null);
 
@@ -185,14 +146,16 @@ export function AuthProvider({
 
   return <AuthContext.Provider value={ctx}>{children}</AuthContext.Provider>;
 }
+*/
 
 export function SignedIn({ children }: { children?: React.ReactNode }) {
-  const { user } = useAuth();
+  const user = useUser();
+  console.log("USER", user);
   return user ? <>{children}</> : null;
 }
 
 export function SignedOut({ children }: { children?: React.ReactNode }) {
-  const { user } = useAuth();
+  const user = useUser();
   return user ? null : <>{children}</>;
 }
 
@@ -230,16 +193,15 @@ export function SignIn() {
 
           const next = new URLSearchParams(search).get("next") ?? undefined;
 
-          const result =
-            await servicesClientWithoutContext.auth.sendEmail.mutation({
-              email: data.get("email") as string,
-              // get next url from query params
-              ...(next && encodeURIComponent(next) === next && next.length < 50
-                ? { next }
-                : {}),
-            });
+          const result = await authServicesMutate.auth.sendEmail({
+            email: data.get("email") as string,
+            // get next url from query params
+            ...(next && encodeURIComponent(next) === next && next.length < 50
+              ? { next }
+              : {}),
+          });
           setIsLoading(false);
-          if (isSuccess(result)) {
+          if (!isError(result)) {
             setIsDone(true);
           }
         }}

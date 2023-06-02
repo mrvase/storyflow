@@ -1,12 +1,10 @@
-import { isError, unwrap } from "@storyflow/rpc-client/result";
-import { SWRClient, useServicesClient } from "../../RPCProvider";
+import { useImmutableQuery, useQuery } from "@nanorpc/client/swr";
+import { query } from "../../clients/client";
+import { isError } from "@nanorpc/client";
+import { servicesQuery } from "../../clients/client-services";
 
 function useFilesQuery() {
-  return SWRClient.files.getAll.useQuery(undefined, {
-    revalidateOnFocus: false,
-    revalidateOnReconnect: false,
-    revalidateIfStale: false,
-  });
+  return useImmutableQuery(query.files.getAll(undefined));
 }
 
 export function useFileLabel(name: string) {
@@ -17,17 +15,15 @@ export function useFileLabel(name: string) {
 }
 
 export function useFiles() {
-  const { data, mutate } = useFilesQuery();
-
-  const client = useServicesClient();
+  const { data, setData } = useFilesQuery();
 
   const upload = async (
     file: File,
     label: string,
     metadata: { width?: number; height?: number; size?: number } = {}
   ) => {
-    const newState = await mutate(async (ps) => {
-      const response = await client.bucket.getUploadLink.query({
+    const newState = await setData(async (ps) => {
+      const response = await servicesQuery.bucket.getUploadLink({
         label,
         type: file.type,
         size: file.size,
@@ -40,7 +36,7 @@ export function useFiles() {
         return ps;
       }
 
-      const { name, url, headers } = unwrap(response);
+      const { name, url, headers } = response;
 
       const upload = await fetch(url, {
         method: "PUT",

@@ -34,7 +34,6 @@ import {
   FieldToolbarPortalProvider,
   useFieldToolbarPortal,
 } from "./FieldToolbar";
-import { SWRClient } from "../RPCProvider";
 import { ExtendTemplatePath } from "./TemplatePathContext";
 import { useRoute } from "../layout/panel-router/Routes";
 import { parseSegment } from "../layout/components/parseSegment";
@@ -42,6 +41,8 @@ import { Menu } from "../elements/Menu";
 import { DocumentTransactionEntry } from "../operations/actions";
 import { useCurrentFolder } from "../folders/FolderPageContext";
 import { getFolderData } from "../folders/getFolderData";
+import { query } from "../clients/client";
+import { useImmutableQuery } from "@nanorpc/client/swr";
 
 function useIsModified(id: DocumentId) {
   const [isModified, setIsModified] = React.useState(false);
@@ -361,15 +362,11 @@ function SaveButton({ id, folderId }: { id: DocumentId; folderId: FolderId }) {
   const [isLoading, setIsLoading] = React.useState(false);
   const saveDocument = useSaveDocument(id, folderId);
 
-  const { mutate: mutateUpdatedUrls } =
-    SWRClient.documents.getUpdatedUrls.useQuery(
-      {
-        namespace: folderId,
-      },
-      {
-        immutable: true,
-      }
-    );
+  const updatedUrlsQuery = useImmutableQuery(
+    query.documents.getUpdatedUrls({
+      namespace: folderId,
+    })
+  );
 
   /*
   const searchable: SearchableProps = React.useMemo(() => {
@@ -411,7 +408,7 @@ function SaveButton({ id, folderId }: { id: DocumentId; folderId: FolderId }) {
           if (isLoading) return;
           setIsLoading(true);
           await collab.saveTimeline(id, saveDocument);
-          mutateUpdatedUrls();
+          updatedUrlsQuery.revalidate();
           setIsLoading(false);
         }}
       >

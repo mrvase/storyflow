@@ -1,15 +1,15 @@
-import { error, success } from "@storyflow/rpc-server/result";
-import { createProcedure, createRoute } from "@storyflow/rpc-server/router";
-import { cors as corsFactory } from "@storyflow/server/middleware";
+import { RPCError } from "@nanorpc/server";
+import { cors as corsFactory } from "@storyflow/server/rpc";
 import { serializeAuthToken } from "@storyflow/server/auth";
 import { GLOBAL_TOKEN, parseAuthToken } from "@storyflow/server/auth";
 import { globals } from "../globals";
 import { z } from "zod";
 import { getClientPromise } from "../mongoClient";
-import { DBFolderRecord } from "@storyflow/cms/types";
+import { CollabVersion, DBFolderRecord } from "@storyflow/cms/types";
 import { StoryflowConfig } from "@storyflow/shared/types";
 import { createRawTemplateFieldId } from "@storyflow/cms/ids";
 import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
+import { procedure } from "@storyflow/server/rpc";
 
 const validate = async (email: string, admin: string) => {
   console.log("validate", email, admin);
@@ -28,22 +28,32 @@ const validate = async (email: string, admin: string) => {
 
 export const admin = (config: StoryflowConfig) => {
   const dbName = undefined; // config.workspaces[0].db;
-  return createRoute({
-    authenticate: createProcedure({
-      middleware(ctx) {
-        return ctx.use(corsFactory(config.api.cors));
-      },
-      schema() {
-        return z.object({
+  return {
+    authenticate: procedure
+      .use(corsFactory(config.api.cors))
+      .schema(
+        z.object({
           key: z.boolean(),
           config: z.boolean(),
-        });
-      },
-      async mutation(include, { request, response }) {
+        })
+      )
+      .middleware(async (input, ctx, next) => {
+        const req = ctx.req;
+        const res = ctx.res;
+        if (!req || !res) {
+          return new RPCError({
+            code: "SERVER_ERROR",
+            message: "This endpoint should only be used with an API request",
+          });
+        }
+        return await next(input, { ...ctx, req, res });
+      })
+      .mutate(async (include, { req }) => {
         try {
-          const tokenHeader = (
-            request.headers.get("authorization") ?? ""
-          ).replace("Bearer ", "");
+          const tokenHeader = (req.headers.get("authorization") ?? "").replace(
+            "Bearer ",
+            ""
+          );
 
           const token = parseAuthToken(
             GLOBAL_TOKEN,
@@ -52,7 +62,8 @@ export const admin = (config: StoryflowConfig) => {
           );
 
           if (!token) {
-            return error({
+            return new RPCError({
+              code: "UNAUTHORIZED",
               message: tokenHeader ? "Token not valid" : "Not authenticated",
             });
           }
@@ -62,10 +73,14 @@ export const admin = (config: StoryflowConfig) => {
           const isValidated = await validate(email, config.auth.admin);
 
           if (!isValidated) {
-            return error({ message: "Not authenticated", status: 401 });
+            return new RPCError({
+              code: "UNAUTHORIZED",
+              message: "Not authenticated",
+              status: 401,
+            });
           }
 
-          return success({
+          return {
             token: serializeAuthToken({ email }, config.auth.privateKey),
             ...(include.config && {
               config: {
@@ -74,29 +89,29 @@ export const admin = (config: StoryflowConfig) => {
               },
             }),
             ...(include.key && { key: config.api.publicKey }),
-          });
+          };
         } catch (err) {
           console.log(err);
-          return error({ message: "Lykkedes ikke", detail: err });
+          return new RPCError({
+            code: "SERVER_ERROR",
+            message: "Lykkedes ikke",
+          });
         }
-      },
-    }),
+      }),
 
-    getOffset: createProcedure({
-      middleware(ctx) {
-        return ctx.use(globals(config.api));
-      },
-      schema() {
-        return z.object({
+    getOffset: procedure
+      .use(globals(config.api))
+      .schema(
+        z.object({
           name: z.union([
             z.literal("id"),
             z.literal("template"),
             z.literal("field"),
           ]),
           size: z.number(),
-        });
-      },
-      async query({ name, size }) {
+        })
+      )
+      .query(async ({ name, size }) => {
         const db = (await getClientPromise()).db(dbName);
 
         const counter = await db
@@ -105,35 +120,32 @@ export const admin = (config: StoryflowConfig) => {
 
         if (!counter.ok) {
           console.log("failed");
-          throw new Error("Failed creating folder");
+          return new RPCError({
+            code: "SERVER_ERROR",
+            message: "Failed creating folder",
+          });
         }
 
         const result = (counter.value ?? { counter: 0 }).counter;
 
-        return success(result);
-      },
+        return result;
+      }),
+
+    getFolders: procedure.use(globals(config.api)).query(async () => {
+      const db = (await getClientPromise()).db(dbName);
+
+      const folders = await db
+        .collection<{
+          name: "folders";
+          value: DBFolderRecord;
+          version: CollabVersion;
+        }>("counters")
+        .findOne({ name: "folders" });
+
+      return {
+        record: folders?.value ?? {},
+        version: folders?.version ?? ([0] as [0]),
+      };
     }),
-
-    getFolders: createProcedure({
-      middleware(ctx) {
-        return ctx.use(globals(config.api));
-      },
-      async query(_) {
-        const db = (await getClientPromise()).db(dbName);
-
-        const folders = await db
-          .collection<{
-            name: "folders";
-            value: DBFolderRecord;
-            version: number;
-          }>("counters")
-          .findOne({ name: "folders" });
-
-        return success({
-          record: folders?.value ?? {},
-          version: folders?.version ?? 0,
-        });
-      },
-    }),
-  });
+  };
 };

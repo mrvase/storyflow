@@ -1,7 +1,6 @@
 import { DragDropContext } from "@storyflow/dnd";
 import { Router, useLocation } from "@storyflow/router";
 import { SWRConfig } from "swr";
-import { provider, RPCProvider } from "./RPCProvider";
 import { AppConfigProvider } from "./AppConfigContext";
 import { FieldFocusProvider } from "./FieldFocusContext";
 import { IdGenerator } from "./id-generator";
@@ -11,11 +10,12 @@ import { PanelRouter } from "./layout/panel-router/PanelRouter";
 import { Layout } from "./layout/components/Layout";
 import { Panels } from "./layout/components/Panels";
 import { routes } from "./pages/routes";
-import { AuthProvider, SignedIn, SignedOut, SignIn } from "./Auth";
+import { SignedIn, SignedOut, SignIn } from "./Auth";
 import React from "react";
 import { useLocalStorage } from "./state/useLocalStorage";
 import { Organizations } from "./Organizations";
 import { TranslationProvider } from "./translation/TranslationContext";
+import { checkToken } from "./clients/auth";
 
 export function App({
   organization,
@@ -30,46 +30,44 @@ export function App({
     document.body.classList[darkMode ? "add" : "remove"]("dark");
   }, [darkMode]);
 
+  React.useLayoutEffect(() => {
+    checkToken();
+  }, []);
+
   return (
     <div className="w-full h-full bg-gray-100 dark:bg-gray-950 text-gray-800 dark:text-white">
-      <SWRConfig value={{ provider }}>
-        <TranslationProvider lang={lang}>
-          <Router>
-            <PanelRouter>
-              <AuthProvider organization={organization}>
-                <SignedIn>
-                  <FrontPage>
-                    <Organizations preset={organization} />
-                  </FrontPage>
-                  <PanelPage>
-                    <RPCProvider>
-                      <Preload />
-                      <CollabProvider>
-                        <DataProvider>
-                          <AppConfigProvider>
-                            <IdGenerator>
-                              <FieldFocusProvider>
-                                <DragDropContext>
-                                  <Layout>
-                                    <Panels routes={routes} />
-                                  </Layout>
-                                </DragDropContext>
-                              </FieldFocusProvider>
-                            </IdGenerator>
-                          </AppConfigProvider>
-                        </DataProvider>
-                      </CollabProvider>
-                    </RPCProvider>
-                  </PanelPage>
-                </SignedIn>
-                <SignedOut>
-                  <SignIn />
-                </SignedOut>
-              </AuthProvider>
-            </PanelRouter>
-          </Router>
-        </TranslationProvider>
-      </SWRConfig>
+      <TranslationProvider lang={lang}>
+        <Router>
+          <PanelRouter>
+            <SignedIn>
+              <FrontPage>
+                <Organizations preset={organization} />
+              </FrontPage>
+              <PanelPage>
+                <Preload />
+                <CollabProvider>
+                  <DataProvider>
+                    <AppConfigProvider>
+                      <IdGenerator>
+                        <FieldFocusProvider>
+                          <DragDropContext>
+                            <Layout>
+                              <Panels routes={routes} />
+                            </Layout>
+                          </DragDropContext>
+                        </FieldFocusProvider>
+                      </IdGenerator>
+                    </AppConfigProvider>
+                  </DataProvider>
+                </CollabProvider>
+              </PanelPage>
+            </SignedIn>
+            <SignedOut>
+              <SignIn />
+            </SignedOut>
+          </PanelRouter>
+        </Router>
+      </TranslationProvider>
     </div>
   );
 }

@@ -1,5 +1,4 @@
 import React from "react";
-import { SWRClient, useClient } from "./RPCProvider";
 import {
   DocumentId,
   FolderId,
@@ -13,7 +12,9 @@ import {
   USER_DOCUMENT_OFFSET,
   USER_TEMPLATE_OFFSET,
 } from "@storyflow/cms/ids";
-import { useAuth } from "./Auth";
+import { useOrganization } from "./clients/auth";
+import { query } from "./clients/client";
+import { isError } from "@nanorpc/client";
 
 /*
 [organisation]:ids {
@@ -84,7 +85,7 @@ const IdContext = React.createContext<{
 } | null>(null);
 
 export function IdGenerator({ children }: { children: React.ReactNode }) {
-  const { organization } = useAuth();
+  const organization = useOrganization();
   const workspaceId = organization!.workspaces[0].name;
 
   const getName = (name: string = "ids") => `${organization!.slug}:${name}`;
@@ -227,8 +228,6 @@ export function IdGenerator({ children }: { children: React.ReactNode }) {
     field: null as (Promise<number> & { abort: () => void }) | null,
   });
 
-  const client = useClient();
-
   const commitOffset = (
     name: "id" | "template" | "field",
     offset: number | null
@@ -246,20 +245,32 @@ export function IdGenerator({ children }: { children: React.ReactNode }) {
 
   const fetchOffset = async (name: "id" | "template" | "field") => {
     if (!promises.current[name]) {
-      const promise = client.admin.getOffset.query({
-        name,
-        size: batchSizes[name],
-      });
+      const abortController = new AbortController();
+
+      const promise = query.admin.getOffset(
+        {
+          name,
+          size: batchSizes[name],
+        },
+        {
+          signal: abortController.signal,
+        }
+      );
 
       const promiseExtended = promise
-        .then((result) => result.result)
+        .then((result) => {
+          if (isError(result)) {
+            throw new Error(result.error);
+          }
+          return result;
+        })
         .finally(() => {
           promises.current[name] = null;
         });
 
       const abortablePromise = Object.assign(promiseExtended, {
         abort() {
-          promise.abort();
+          abortController.abort();
         },
       });
 

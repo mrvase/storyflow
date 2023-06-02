@@ -1,4 +1,3 @@
-import { Client } from "../RPCProvider";
 import type {
   DocumentId,
   FieldId,
@@ -136,14 +135,13 @@ export const getDefaultValuesFromTemplateAsync = async (
   newDocumentId: DocumentId,
   templateId: DocumentId,
   options: {
-    client: Client;
     generateDocumentId: {
       (): DocumentId;
       (parent: DocumentId): NestedDocumentId;
     };
   }
 ) => {
-  const doc = await fetchDocument(templateId, options.client);
+  const doc = await fetchDocument(templateId);
 
   if (doc) {
     return copyRecord(doc.record, {
@@ -158,10 +156,7 @@ export const getDefaultValuesFromTemplateAsync = async (
   return {};
 };
 
-export const getTemplateFieldsAsync = async (
-  template: DocumentConfig,
-  client: Client
-) => {
+export const getTemplateFieldsAsync = async (template: DocumentConfig) => {
   const templates = new Set();
 
   const getFields = async (
@@ -175,7 +170,7 @@ export const getTemplateFieldsAsync = async (
           return [el];
         } else if ("template" in el && !templates.has(el.template)) {
           templates.add(el.template);
-          const doc = await fetchDocument(el.template, client);
+          const doc = await fetchDocument(el.template);
           if (!doc) return [];
           return await getFields(doc.config);
         }

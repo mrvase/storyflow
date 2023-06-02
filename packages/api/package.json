@@ -10,11 +10,10 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@nanorpc/server": "^0.0.13",
     "@storyflow/cms": "workspace:*",
-    "@storyflow/rpc-server": "workspace:*",
     "@storyflow/server": "workspace:*",
     "@storyflow/shared": "workspace:*",
-    "qs": "^6.11.0",
     "zod": "^3.20.2"
   },
   "devDependencies": {

@@ -1,5 +1,4 @@
-import { createProcedure, createRoute } from "@storyflow/rpc-server";
-import { error, success } from "@storyflow/rpc-server/result";
+import { RPCError } from "@nanorpc/server";
 import { z } from "zod";
 import type { DBDocumentRaw } from "../types";
 import type { DBDocument } from "@storyflow/cms/types";
@@ -19,23 +18,29 @@ import { getPaths } from "../paths";
 import { createObjectId } from "../mongo";
 import { save } from "../fields/save";
 import { createFetcher } from "../create-fetcher";
+import { procedure } from "@storyflow/server/rpc";
 
 export const documents = (config: StoryflowConfig) => {
   const dbName = undefined; // config.workspaces[0].db;
-  return createRoute({
-    find: createProcedure({
-      middleware(ctx) {
-        return ctx.use(globals(config.api));
-      },
-      schema() {
-        return z.object({
-          folder: z.string(),
-          sort: z.array(z.string()).optional(),
-          limit: z.number(),
-          filters: z.record(z.string(), z.array(z.any())).optional(),
-        });
-      },
-      async query({ folder, filters, limit, sort }) {
+  return {
+    find: procedure
+      .use(globals(config.api))
+      .schema((input) => {
+        try {
+          return z
+            .object({
+              folder: z.string(),
+              limit: z.number(),
+              sort: z.array(z.string()).optional(),
+              filters: z.record(z.string(), z.array(z.any())).optional(),
+            })
+            .parse(input);
+        } catch (e) {
+          console.log("HERE IS THE ERROR:", input, e);
+          return new RPCError({ code: "SERVER_ERROR" });
+        }
+      })
+      .query(async ({ folder, filters, limit, sort }) => {
         const documents = await createFetcher(dbName!)({
           folder: folder as FolderId,
           filters: filters as Record<FieldId, ValueArray>,
@@ -43,18 +48,13 @@ export const documents = (config: StoryflowConfig) => {
           sort,
         });
 
-        return success(documents);
-      },
-    }),
+        return documents;
+      }),
 
-    findByLabel: createProcedure({
-      middleware(ctx) {
-        return ctx.use(globals(config.api));
-      },
-      schema() {
-        return z.string();
-      },
-      async query(string) {
+    findByLabel: procedure
+      .use(globals(config.api))
+      .schema(z.string())
+      .query(async (string) => {
         const db = (await getClientPromise()).db(dbName);
 
         const articles = (
@@ -69,18 +69,13 @@ export const documents = (config: StoryflowConfig) => {
             .toArray()) ?? []
         ).map((el) => parseDocument(el));
 
-        return success(articles);
-      },
-    }),
+        return articles;
+      }),
 
-    findById: createProcedure({
-      middleware(ctx) {
-        return ctx.use(globals(config.api));
-      },
-      schema() {
-        return z.string();
-      },
-      async query(id) {
+    findById: procedure
+      .use(globals(config.api))
+      .schema(z.string())
+      .query(async (id) => {
         const db = (await getClientPromise()).db(dbName);
 
         const documentRaw = await db
@@ -95,42 +90,34 @@ export const documents = (config: StoryflowConfig) => {
             config: [],
             record: {},
           };
-          return success(initialDoc);
+          return initialDoc;
           // return error({ message: "No article found" });
         }
 
         const doc = parseDocument(documentRaw);
 
-        return success(doc);
-      },
-    }),
+        return doc;
+      }),
 
-    update: createProcedure({
-      middleware(ctx) {
-        return ctx.use(globals(config.api));
-      },
-      schema() {
-        return z.object({
+    update: procedure
+      .use(globals(config.api))
+      .schema(
+        z.object({
           id: z.string(),
           folder: z.string(),
           config: z.array(z.any()),
           record: z.record(z.string(), z.any()),
           versions: z.record(z.string(), z.any()),
-        });
-      },
-      async mutation(input) {
+        })
+      )
+      .mutate(async (input) => {
         return await save(input, dbName);
-      },
-    }),
+      }),
 
-    deleteMany: createProcedure({
-      middleware(ctx) {
-        return ctx.use(globals(config.api));
-      },
-      schema() {
-        return z.array(z.string());
-      },
-      async mutation(ids) {
+    deleteMany: procedure
+      .use(globals(config.api))
+      .schema(z.array(z.string()))
+      .mutate(async (ids) => {
         const db = (await getClientPromise()).db(dbName);
 
         const removes = ids.map((el) => createObjectId(el));
@@ -140,23 +127,23 @@ export const documents = (config: StoryflowConfig) => {
           .deleteMany({ _id: { $in: removes } });
 
         if (!result.acknowledged) {
-          return error({ message: "Failed to delete" });
+          return new RPCError({
+            code: "SERVER_ERROR",
+            message: "Failed to delete",
+          });
         }
 
-        return success(result.acknowledged);
-      },
-    }),
+        return result.acknowledged;
+      }),
 
-    getUpdatedUrls: createProcedure({
-      middleware(ctx) {
-        return ctx.use(globals(config.api));
-      },
-      schema() {
-        return z.object({
+    getUpdatedUrls: procedure
+      .use(globals(config.api))
+      .schema(
+        z.object({
           namespace: z.string(),
-        });
-      },
-      async query({ namespace }) {
+        })
+      )
+      .query(async ({ namespace }) => {
         const db = (await getClientPromise()).db(dbName);
 
         const lastBuildCounter =
@@ -220,17 +207,14 @@ export const documents = (config: StoryflowConfig) => {
       });
       */
 
-        return success(paths);
+        return paths;
 
         // check update timestamp
-      },
-    }),
+      }),
 
-    registerRevalidation: createProcedure({
-      middleware(ctx) {
-        return ctx.use(globals(config.api));
-      },
-      async mutation(_) {
+    registerRevalidation: procedure
+      .use(globals(config.api))
+      .mutate(async () => {
         const db = (await getClientPromise()).db(dbName);
 
         await db
@@ -249,8 +233,7 @@ export const documents = (config: StoryflowConfig) => {
             }
           );
 
-        return success(null);
-      },
-    }),
-  });
+        return null;
+      }),
+  };
 };

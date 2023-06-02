@@ -1,5 +1,4 @@
 import React from "react";
-import { useClient } from "../RPCProvider";
 import { DocumentId, FolderId, FieldId } from "@storyflow/shared/types";
 import type { SyntaxTreeRecord } from "@storyflow/cms/types";
 import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
@@ -26,7 +25,6 @@ export const useAddDocument = (
   const generateTemplateId = useTemplateIdGenerator();
   const [, navigate] = usePanel();
   const route = useRoute();
-  const client = useClient();
 
   const collab = useCollab();
   const push = usePush<DocumentAddTransactionEntry>("documents");
@@ -49,7 +47,6 @@ export const useAddDocument = (
 
       const record = data.template
         ? await getDefaultValuesFromTemplateAsync(id, data.template, {
-            client,
             generateDocumentId,
           })
         : {};
@@ -90,15 +87,7 @@ export const useAddDocument = (
       }
       return id;
     },
-    [
-      push,
-      options.navigate,
-      route,
-      navigate,
-      client,
-      generateDocumentId,
-      collab,
-    ]
+    [push, options.navigate, route, navigate, generateDocumentId, collab]
   );
 
   return addDocument;

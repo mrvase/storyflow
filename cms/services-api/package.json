@@ -10,7 +10,7 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@storyflow/rpc-server": "workspace:*",
+    "@nanorpc/server": "^0.0.13",
     "@storyflow/server": "workspace:*",
     "@storyflow/collab": "workspace:*",
     "@storyflow/cms": "workspace:*",
@@ -18,7 +18,6 @@
     "@storyflow/state": "workspace:*",
     "@upstash/redis": "^1.16.0",
     "openai": "^3.2.1",
-    "qs": "^6.11.0",
     "zod": "^3.20.2"
   },
   "devDependencies": {

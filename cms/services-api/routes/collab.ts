@@ -1,10 +1,10 @@
-import { error, success } from "@storyflow/rpc-server/result";
-import { createProcedure, createRoute } from "@storyflow/rpc-server";
 import { globals } from "../globals";
 import { z } from "zod";
 import { TimelineEntry, ToggleOperation } from "@storyflow/collab/types";
 import { getId, read } from "@storyflow/collab/utils";
 import { Redis } from "@upstash/redis";
+import { procedure } from "@storyflow/server/rpc";
+import { RPCError } from "@nanorpc/server";
 
 const ZodTimelineEntry = <T extends z.ZodType>(Transaction: T) =>
   z.tuple([z.string(), z.number(), z.string()]).rest(Transaction);
@@ -50,13 +50,11 @@ const createDocumentsTimeline = (set: string[] | undefined) => {
     : [];
 };
 
-export const collab = createRoute({
-  sync: createProcedure({
-    middleware(ctx) {
-      return ctx.use(globals);
-    },
-    schema() {
-      return z.record(
+export const collab = {
+  sync: procedure
+    .use(globals)
+    .schema(
+      z.record(
         z.string(), // timeline
         z.object({
           entries: z.array(
@@ -73,14 +71,14 @@ export const collab = createRoute({
           startId: z.string().nullable(),
           length: z.number(),
         })
-      );
-    },
-    async mutation(input, { slug }) {
+      )
+    )
+    .mutate(async (input, { slug }) => {
       try {
         const inputEntries = Object.entries(input);
 
         if (inputEntries.length === 0) {
-          return success({});
+          return {};
         }
 
         const pipeline = client.pipeline();
@@ -159,24 +157,21 @@ export const collab = createRoute({
           };
         });
 
-        return success(output);
+        return output;
       } catch (err) {
         console.log(err);
-        return error({ message: "Lykkedes ikke", detail: err });
+        return new RPCError({ code: "SERVER_ERROR", message: "Lykkedes ikke" });
       }
-    },
-  }),
-  update: createProcedure({
-    middleware(ctx) {
-      return ctx.use(globals);
-    },
-    schema() {
-      return z.object({
+    }),
+  update: procedure
+    .use(globals)
+    .schema(
+      z.object({
         id: z.string(), // timeline
         index: z.number(),
-      });
-    },
-    async mutation(input, { slug }) {
+      })
+    )
+    .mutate(async (input, { slug }) => {
       const pipeline = client.pipeline();
 
       pipeline.ltrim(`${slug}:${input.id}`, input.index, -1);
@@ -184,7 +179,6 @@ export const collab = createRoute({
 
       const result = await pipeline.exec();
 
-      return success(result[1] as []);
-    },
-  }),
-});
+      return result[1] as [];
+    }),
+};

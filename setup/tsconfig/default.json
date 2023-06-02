@@ -4,7 +4,9 @@
   "compilerOptions": {
     "target": "ESNext",
     "module": "ESNext",
-    "lib": ["ESNext", "DOM"]
+    "lib": ["ESNext", "DOM"],
+    "declarationMap": false,
+    "declaration": false
   },
   "exclude": ["node_modules"]
 }

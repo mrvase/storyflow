@@ -2,7 +2,7 @@ import React from "react";
 import { useAppConfig } from "../../AppConfigContext";
 import { useBranchIsFocused } from "../../layout/components/BranchFocusContext";
 import { trimTrailingSlash } from "../../utils/trimSlashes";
-import { useAuth } from "../../Auth";
+import { useOrganization } from "../../clients/auth";
 
 export const BuilderIframe = React.forwardRef<
   HTMLIFrameElement,
@@ -13,7 +13,7 @@ export const BuilderIframe = React.forwardRef<
 >(({ uniqueId }, ref) => {
   const { baseURL, builderPath } = useAppConfig();
   const { id } = useBranchIsFocused();
-  const { organization } = useAuth();
+  const organization = useOrganization();
 
   const scrollRef = React.useRef<HTMLDivElement>(null);
 

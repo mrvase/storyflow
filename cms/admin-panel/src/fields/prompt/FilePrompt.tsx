@@ -13,7 +13,7 @@ import { Spinner } from "../../elements/Spinner";
 import { useOptionEvents } from "./Option";
 import { useOption } from "./OptionsContext";
 import { HoldActions } from "./useRestorableSelection";
-import { useAuth } from "../../Auth";
+import { useOrganization } from "../../clients/auth";
 
 function useFileInput(setLabel?: (label: string) => void) {
   const [dragging, setDragging] = React.useState(false);
@@ -110,7 +110,7 @@ export function FilePrompt({
   holdActions: HoldActions;
   replacePromptWithStream: (stream: TokenStream) => void;
 }) {
-  const { organization } = useAuth();
+  const organization = useOrganization();
 
   const [files, upload] = useFiles();
 
