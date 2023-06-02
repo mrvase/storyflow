@@ -1,7 +1,6 @@
-import { error, success } from "@storyflow/rpc-server/result";
-import { createProcedure, createRoute } from "@storyflow/rpc-server";
 import { getClientPromise, setClientPromise } from "../mongoClient";
 import { Redis } from "@upstash/redis";
+import { RPCError, createProcedure } from "@nanorpc/server";
 
 const copyCollection = async <T extends object = any>(options: {
   collection: string;
@@ -29,12 +28,11 @@ export const client = new Redis({
   token: process.env.UPSTASH_TOKEN as string,
 });
 
-export const migration = createRoute({
-  migrate: createProcedure({
-    async query() {
-      setClientPromise(process.env.MONGO_URL!);
-      if (process.env.NODE_ENV === "development") {
-        /*
+export const migration = {
+  migrate: createProcedure().query(async () => {
+    setClientPromise(process.env.MONGO_URL!);
+    if (process.env.NODE_ENV === "development") {
+      /*
         await copyCollection({
           collection: "documents",
           fromDb: "kfs-hyz7",
@@ -68,70 +66,70 @@ export const migration = createRoute({
           toDb: "kfs-abcd",
         });
         */
-        type Package = [
-          queue: string,
-          user: string,
-          index: number,
-          transactions: [target: string, ops: Operation[]][]
-        ];
+      type Package = [
+        queue: string,
+        user: string,
+        index: number,
+        transactions: [target: string, ops: Operation[]][]
+      ];
 
-        type Operation =
-          | { add: any }
-          | { _id: any; label: string }
-          | { index: number; insert: any }
-          | { index: number; remove: number }
-          | { name: "domains"; value: string[] }
-          | { name: "termplate"; value: string };
+      type Operation =
+        | { add: any }
+        | { _id: any; label: string }
+        | { index: number; insert: any }
+        | { index: number; remove: number }
+        | { name: "domains"; value: string[] }
+        | { name: "termplate"; value: string };
 
-        const result = (await client.lrange(
-          `kfs_backup:folders`,
-          0,
-          -1
-        )) as Package[];
+      const result = (await client.lrange(
+        `kfs_backup:folders`,
+        0,
+        -1
+      )) as Package[];
 
-        let failed: any[] = [];
+      let failed: any[] = [];
 
-        const transactions = result
-          .map((el) => {
-            const queue = el[0];
-            return el[3]
-              .map((el) => {
-                return el[1];
-              })
-              .flat(1)
-              .map((el) => {
-                if ("add" in el) {
-                  return [el.add._id, [["label", el.add.label]]];
-                }
-                if ("_id" in el) {
-                  return [el._id, [["label", el.label]]];
-                }
-                if ("insert" in el) {
-                  return [queue.replace("/", ":"), [[el.index, 0, el.insert]]];
-                }
-                if ("remove" in el) {
-                  return [queue.replace("/", ":"), [[el.index, el.remove]]];
-                }
-                if ("name" in el) {
-                  return [queue.replace("/", ":"), [[el.name, el.value]]];
-                }
-                failed.push(el);
-              });
-          })
-          .flat(1);
+      const transactions = result
+        .map((el) => {
+          const queue = el[0];
+          return el[3]
+            .map((el) => {
+              return el[1];
+            })
+            .flat(1)
+            .map((el) => {
+              if ("add" in el) {
+                return [el.add._id, [["label", el.add.label]]];
+              }
+              if ("_id" in el) {
+                return [el._id, [["label", el.label]]];
+              }
+              if ("insert" in el) {
+                return [queue.replace("/", ":"), [[el.index, 0, el.insert]]];
+              }
+              if ("remove" in el) {
+                return [queue.replace("/", ":"), [[el.index, el.remove]]];
+              }
+              if ("name" in el) {
+                return [queue.replace("/", ":"), [[el.name, el.value]]];
+              }
+              failed.push(el);
+            });
+        })
+        .flat(1);
 
-        client.del(`kfs:folders`);
-        client.rpush(`kfs:folders`, ["", 0, "047mpcup", transactions]);
+      client.del(`kfs:folders`);
+      client.rpush(`kfs:folders`, ["", 0, "047mpcup", transactions]);
 
-        return success({ failed });
-      } else {
-        return error({
-          message: "This function can only be run in development.",
-        });
-      }
-    },
+      return { failed };
+    } else {
+      return new RPCError({
+        code: "SERVER_ERROR",
+        message: "This function can only be run in development.",
+      });
+    }
   }),
-});
+};
 
 /*
 const transformField = (field: DBSyntaxStreamBlock): DBSyntaxStreamBlock => {

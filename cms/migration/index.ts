@@ -1,3 +1,3 @@
 export { migration } from "./routes/migration";
 
-export { createAPIRoute } from "@storyflow/server/next";
+export { createAPIRoute } from "@nanorpc/server/adapters/next";

@@ -254,8 +254,8 @@ importers:
 
   cms/migration:
     specifiers:
+      '@nanorpc/server': ^0.0.13
       '@storyflow/cms': workspace:*
-      '@storyflow/rpc-server': workspace:*
       '@storyflow/server': workspace:*
       '@storyflow/shared': workspace:*
       '@upstash/redis': ^1.16.0
@@ -270,8 +270,8 @@ importers:
       vitest: ^0.31.0
       zod: ^3.20.2
     dependencies:
+      '@nanorpc/server': 0.0.13_zod@3.21.4
       '@storyflow/cms': link:../../core/cms
-      '@storyflow/rpc-server': link:../../core/rpc-server
       '@storyflow/server': link:../../core/server
       '@storyflow/shared': link:../../core/shared
       '@upstash/redis': 1.19.3
