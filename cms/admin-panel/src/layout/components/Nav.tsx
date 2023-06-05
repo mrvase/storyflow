@@ -17,11 +17,10 @@ import {
 } from "@heroicons/react/24/outline";
 import React from "react";
 import { useLocalStorage } from "../../state/useLocalStorage";
-import { usePanelActions } from "../panel-router/PanelRouter";
-import { useCollab } from "../../collab/CollabContext";
-import { Link, useLocation, useNavigate } from "@storyflow/router";
-import { replacePanelPath } from "../panel-router/utils";
+import { collab } from "../../collab/CollabContext";
+import { Link, useLocation, useNavigate } from "@nanokit/router";
 import { DropShadow, Sortable } from "@storyflow/dnd";
+import { actions } from "../../pages/routes";
 
 export default function Nav() {
   const [isOpen, setIsOpen] = useLocalStorage<boolean>("nav-is-open", true);
@@ -31,15 +30,13 @@ export default function Nav() {
   const [darkMode, setDarkMode] = useLocalStorage<boolean>("dark-mode", true);
   const DarkIcon = darkMode ? MoonIcon : SunIcon;
 
-  const actions = usePanelActions();
-
   const MenuIcon = isOpen ? ChevronLeftIcon : ChevronRightIcon;
 
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const navigatePanel = React.useCallback(
     (path: string) => {
-      navigate(replacePanelPath(pathname, { path, index: 0 }));
+      navigate(path);
     },
     [pathname, navigate]
   );
@@ -71,7 +68,7 @@ export default function Nav() {
           <div className="flex flex-col gap-2">
             <NavButton
               onClick={() => {
-                actions.open({ path: "/", index: 0 });
+                actions.open({ path: "/~", index: 0 });
               }}
               icon={PlusIcon}
             >
@@ -304,8 +301,6 @@ function StatusButton() {
       setCurrent(getIcon(state));
     }
   };
-
-  const collab = useCollab();
 
   React.useEffect(() => {
     return collab.registerEventListener((event) => {

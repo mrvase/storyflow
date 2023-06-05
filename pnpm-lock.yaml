@@ -157,13 +157,13 @@ importers:
       '@heroicons/react': ^2.0.11
       '@lexical/selection': ^0.9.1
       '@lexical/utils': ^0.9.1
-      '@nanorpc/client': ^0.0.13
-      '@nanorpc/server': ^0.0.13
+      '@nanokit/router': 0.0.7
+      '@nanorpc/client': ^0.0.15
+      '@nanorpc/server': ^0.0.15
       '@storyflow/api': workspace:*
       '@storyflow/cms': workspace:*
       '@storyflow/collab': workspace:*
       '@storyflow/dnd': workspace:*
-      '@storyflow/router': workspace:*
       '@storyflow/shared': workspace:*
       '@storyflow/state': workspace:*
       '@tailwindcss/container-queries': ^0.1.1
@@ -193,11 +193,11 @@ importers:
       '@heroicons/react': 2.0.13_react@18.2.0
       '@lexical/selection': 0.9.1_lexical@0.9.1
       '@lexical/utils': 0.9.1_lexical@0.9.1
-      '@nanorpc/client': 0.0.13_mhuczuvpa6vzqraczvy3uwv7zm
+      '@nanokit/router': 0.0.7
+      '@nanorpc/client': 0.0.15_mhuczuvpa6vzqraczvy3uwv7zm
       '@storyflow/cms': link:../../core/cms
       '@storyflow/collab': link:../collab
       '@storyflow/dnd': link:../dnd
-      '@storyflow/router': link:../router
       '@storyflow/shared': link:../../core/shared
       '@storyflow/state': link:../state
       clsx: 1.2.1
@@ -209,7 +209,7 @@ importers:
       swr: 2.1.5_react@18.2.0
       zod: 3.21.4
     devDependencies:
-      '@nanorpc/server': 0.0.13_zod@3.21.4
+      '@nanorpc/server': 0.0.15_zod@3.21.4
       '@storyflow/api': link:../../packages/api
       '@tailwindcss/container-queries': 0.1.1_tailwindcss@3.2.4
       '@types/react': 18.2.1
@@ -254,7 +254,7 @@ importers:
 
   cms/migration:
     specifiers:
-      '@nanorpc/server': ^0.0.13
+      '@nanorpc/server': ^0.0.15
       '@storyflow/cms': workspace:*
       '@storyflow/server': workspace:*
       '@storyflow/shared': workspace:*
@@ -270,7 +270,7 @@ importers:
       vitest: ^0.31.0
       zod: ^3.20.2
     dependencies:
-      '@nanorpc/server': 0.0.13_zod@3.21.4
+      '@nanorpc/server': 0.0.15_zod@3.21.4
       '@storyflow/cms': link:../../core/cms
       '@storyflow/server': link:../../core/server
       '@storyflow/shared': link:../../core/shared
@@ -307,7 +307,7 @@ importers:
     specifiers:
       '@aws-sdk/client-s3': ^3.328.0
       '@aws-sdk/s3-request-presigner': ^3.328.0
-      '@nanorpc/server': ^0.0.13
+      '@nanorpc/server': ^0.0.15
       '@storyflow/cms': workspace:*
       '@storyflow/collab': workspace:*
       '@storyflow/server': workspace:*
@@ -323,7 +323,7 @@ importers:
       vitest: ^0.31.0
       zod: ^3.20.2
     dependencies:
-      '@nanorpc/server': 0.0.13_zod@3.21.4
+      '@nanorpc/server': 0.0.15_zod@3.21.4
       '@storyflow/cms': link:../../core/cms
       '@storyflow/collab': link:../collab
       '@storyflow/server': link:../../core/server
@@ -369,49 +369,9 @@ importers:
       vite: 4.3.7
       vitest: 0.31.0
 
-  core/rpc-client:
-    specifiers:
-      '@storyflow/rpc-server': workspace:*
-      '@types/qs': ^6.9.7
-      '@types/react': ^18.2.1
-      qs: ^6.11.0
-      react: 18.2.0
-      swr: ^2.0.1
-      tsconfig: workspace:*
-      typescript: ^5.0.4
-    devDependencies:
-      '@storyflow/rpc-server': link:../rpc-server
-      '@types/qs': 6.9.7
-      '@types/react': 18.2.1
-      qs: 6.11.0
-      react: 18.2.0
-      swr: 2.0.1_react@18.2.0
-      tsconfig: link:../../setup/tsconfig
-      typescript: 5.0.4
-
-  core/rpc-server:
-    specifiers:
-      '@types/cookie': ^0.5.1
-      '@types/node': ^17.0.45
-      '@types/qs': ^6.9.7
-      cookie: ^0.5.0
-      qs: ^6.11.0
-      tsconfig: workspace:*
-      typescript: ^5.0.4
-      zod: ^3.20.2
-    devDependencies:
-      '@types/cookie': 0.5.1
-      '@types/node': 17.0.45
-      '@types/qs': 6.9.7
-      cookie: 0.5.0
-      qs: 6.11.0
-      tsconfig: link:../../setup/tsconfig
-      typescript: 5.0.4
-      zod: 3.21.4
-
   core/server:
     specifiers:
-      '@nanorpc/server': ^0.0.13
+      '@nanorpc/server': ^0.0.15
       '@storyflow/cms': workspace:*
       '@storyflow/shared': workspace:*
       '@types/cookie': ^0.5.1
@@ -436,7 +396,7 @@ importers:
       cookie: 0.5.0
       jsonwebtoken: 9.0.0
     devDependencies:
-      '@nanorpc/server': 0.0.13_zod@3.21.4
+      '@nanorpc/server': 0.0.15_zod@3.21.4
       '@types/cookie': 0.5.1
       '@types/jsonwebtoken': 9.0.2
       '@types/node': 17.0.45
@@ -470,7 +430,7 @@ importers:
 
   packages/api:
     specifiers:
-      '@nanorpc/server': ^0.0.13
+      '@nanorpc/server': ^0.0.15
       '@storyflow/cms': workspace:*
       '@storyflow/server': workspace:*
       '@storyflow/shared': workspace:*
@@ -483,7 +443,7 @@ importers:
       vitest: ^0.31.0
       zod: ^3.20.2
     dependencies:
-      '@nanorpc/server': 0.0.13_zod@3.21.4
+      '@nanorpc/server': 0.0.15_zod@3.21.4
       '@storyflow/cms': link:../../core/cms
       '@storyflow/server': link:../../core/server
       '@storyflow/shared': link:../../core/shared
@@ -2654,8 +2614,12 @@ packages:
       lexical: 0.9.1
     dev: false
 
-  /@nanorpc/client/0.0.13_mhuczuvpa6vzqraczvy3uwv7zm:
-    resolution: {integrity: sha512-5Cvxqn7nolMp1QmcF+v4YWCeHHnnQh9AvwNuMnO2u44vlkIycGnuRNmF3jAm06MTqsu71P9mdXBStNV4VncxTA==}
+  /@nanokit/router/0.0.7:
+    resolution: {integrity: sha512-UVBkuwnBwjoyKZG7eajfmM1DvrRZzFo3y+hNNQoloDMhSUdsgBNYAWWhNw+kS1Gm2n1heg7X/IiK/UJOm6+DwA==}
+    dev: false
+
+  /@nanorpc/client/0.0.15_mhuczuvpa6vzqraczvy3uwv7zm:
+    resolution: {integrity: sha512-tBNzCkh5UU0tUsjtEO1GVuyZzLH6psPbkXFVdNOEb+8/i19gtY9HQLLxc9ncmPVbeatxQ9BLp6gk7rYwUN0qKQ==}
     peerDependencies:
       react: ^18.2.0
       react-dom: ^18.2.0
@@ -2666,8 +2630,8 @@ packages:
       swr: 2.1.5_react@18.2.0
     dev: false
 
-  /@nanorpc/server/0.0.13_zod@3.21.4:
-    resolution: {integrity: sha512-3NAZRFcy1FQc2V8P8w2smSULDA6tAmEn0pptkxekiUAeDkjnY0ZXLosMsdouXZXeV0z3fTK+moBiD8kG03VfWg==}
+  /@nanorpc/server/0.0.15_zod@3.21.4:
+    resolution: {integrity: sha512-+fjDVe7GUudBcRr3flHaeX2swxTDJc9NpsRWAWUBPBffwpUDuwmhagkuZckHfT2HimetYg5Gmkr7XnfV4Dzc6A==}
     peerDependencies:
       zod: ^3.21.4
     dependencies:
@@ -2878,10 +2842,6 @@ packages:
 
   /@types/prop-types/15.7.5:
     resolution: {integrity: sha512-JCB8C6SnDoQf0cNycqd/35A7MjcnK+ZTqE7judS6o7utxUCg6imJg3QK2qzHKszlTjcj2cn+NwMB2i96ubpj7w==}
-    dev: true
-
-  /@types/qs/6.9.7:
-    resolution: {integrity: sha512-FGa1F62FT09qcrueBA6qYTrJPVDzah9a+493+o2PCXsesWHIn27G98TsSMs3WPNbZIEj4+VJf6saSFpvD+3Zsw==}
     dev: true
 
   /@types/react-dom/18.2.2:
@@ -3300,6 +3260,7 @@ packages:
     dependencies:
       function-bind: 1.1.1
       get-intrinsic: 1.2.0
+    dev: false
 
   /callsites/3.1.0:
     resolution: {integrity: sha512-P8BjAsXvZS+VIDUI11hHCQEv74YT67YUi5JJFNWIqL235sBmjX4+qx9Muvls5ivyNENctx46xQLQ3aTuE7ssaQ==}
@@ -3415,6 +3376,7 @@ packages:
   /cookie/0.5.0:
     resolution: {integrity: sha512-YZ3GUyn/o8gfKJlnlX7g7xq4gyO6OSuhGPKaaGssGB2qgDUS0gPgtTvoyZLTt9Ab6dC4hfc9dV5arkvc/OCmrw==}
     engines: {node: '>= 0.6'}
+    dev: false
 
   /cross-spawn/7.0.3:
     resolution: {integrity: sha512-iRDPJKUPVEND7dHPO8rkbOnPpyDygcDFtWjpeWNCgy8WP2rXcxXL8TskReQl6OrB2G7+UJrags1q15Fudc7G6w==}
@@ -4143,6 +4105,7 @@ packages:
       function-bind: 1.1.1
       has: 1.0.3
       has-symbols: 1.0.3
+    dev: false
 
   /get-symbol-description/1.0.0:
     resolution: {integrity: sha512-2EmdH1YvIQiZpltCNgkuiUnyukzxM/R6NDJX31Ke3BG1Nq5b0S2PhX59UKi9vZpPDQVdqn+1IcaAwnzTT5vCjw==}
@@ -4247,6 +4210,7 @@ packages:
   /has-symbols/1.0.3:
     resolution: {integrity: sha512-l3LCuF6MgDNwTDKkdYGEihYjt5pRPbEg46rtlmnSPlUbgmB8LOIrKJbYYFBSbnPaJexMKtiPO8hmeRjRz2Td+A==}
     engines: {node: '>= 0.4'}
+    dev: false
 
   /has-tostringtag/1.0.0:
     resolution: {integrity: sha512-kFjcSNhnlGV1kyoGk7OXKSawH5JOb/LzUc5w9B02hOTO0dfFRjbHQKvg1d6cf3HbeUmtU9VbbV3qzZ2Teh97WQ==}
@@ -4851,6 +4815,7 @@ packages:
 
   /object-inspect/1.12.3:
     resolution: {integrity: sha512-geUvdk7c+eizMNUDkRpW1wJwgfOiOeHbxBR/hLXK1aT6zmVSO0jsQcs7fj6MGw89jC/cjGfLcNOrtMYtGqm81g==}
+    dev: false
 
   /object-is/1.1.5:
     resolution: {integrity: sha512-3cyDsyHgtmi7I7DfSSI2LDp6SK2lwvtbg0p0R1e0RvTqF5ceGx+K2dfSjm1bKDMVCFEDAQvy+o8c6a7VujOddw==}
@@ -5122,6 +5087,7 @@ packages:
     engines: {node: '>=0.6'}
     dependencies:
       side-channel: 1.0.4
+    dev: false
 
   /queue-microtask/1.2.3:
     resolution: {integrity: sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==}
@@ -5363,6 +5329,7 @@ packages:
       call-bind: 1.0.2
       get-intrinsic: 1.2.0
       object-inspect: 1.12.3
+    dev: false
 
   /siginfo/2.0.0:
     resolution: {integrity: sha512-ybx0WO1/8bSBLEWXZvEd7gMW3Sn3JFlW3TvX1nREbDLRNQNaeNN8WK0meBwPdAaOI7TtRRRJn/Es1zhrrCHu7g==}
@@ -5535,16 +5502,6 @@ packages:
   /supports-preserve-symlinks-flag/1.0.0:
     resolution: {integrity: sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w==}
     engines: {node: '>= 0.4'}
-
-  /swr/2.0.1_react@18.2.0:
-    resolution: {integrity: sha512-6z4FpS9dKAay7axedlStsPahEw25nuMlVh4GHkuPpGptbmEEP8v/+kr0GkAE/7ErUs25U2VFOnZQz3AWfkmXdw==}
-    engines: {pnpm: '7'}
-    peerDependencies:
-      react: ^16.11.0 || ^17.0.0 || ^18.0.0
-    dependencies:
-      react: 18.2.0
-      use-sync-external-store: 1.2.0_react@18.2.0
-    dev: true
 
   /swr/2.1.5_react@18.2.0:
     resolution: {integrity: sha512-/OhfZMcEpuz77KavXST5q6XE9nrOBOVcBLWjMT+oAE/kQHyE3PASrevXCtQDZ8aamntOfFkbVJp7Il9tNBQWrw==}
@@ -5795,6 +5752,7 @@ packages:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0
     dependencies:
       react: 18.2.0
+    dev: false
 
   /util-deprecate/1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}

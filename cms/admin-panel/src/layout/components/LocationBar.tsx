@@ -13,39 +13,31 @@ import {
 } from "@heroicons/react/24/outline";
 import React from "react";
 import Loader from "../../elements/Loader";
-import type { PanelData } from "../panel-router/types";
-import { usePanel } from "../panel-router/Routes";
-import { usePanelActions } from "../panel-router/PanelRouter";
 import { useDragItem } from "@storyflow/dnd";
-import { parseSegment } from "./parseSegment";
+import { parseMatch } from "./parseSegment";
 import { useDocumentList, useDocument } from "../../documents";
 import { useLabel } from "../../documents/document-config";
 import { useDocumentLabel } from "../../documents/useDocumentLabel";
 import { useFolder } from "../../folders/FoldersContext";
-import { Link } from "@storyflow/router";
+import { Link } from "@nanokit/router";
 import { getFolderData } from "../../folders/getFolderData";
+import { useNavigate, usePath, useRoute, useMatches } from "@nanokit/router";
+import { actions } from "../../pages/routes";
 
 export function LocationBar({
   isFocused,
   dragHandleProps,
-  data,
+  matches = [],
 }: {
   isFocused: boolean;
   dragHandleProps: any;
-  data: PanelData;
+  matches?: ReturnType<typeof useMatches>;
 }) {
-  const actions = usePanelActions();
-  const [{ path, index: panelIndex }, navigate, close] = usePanel(data);
+  const { pathname } = usePath();
+  const route = useRoute();
 
-  const segments = [
-    "",
-    ...path
-      .split("/")
-      .filter(Boolean)
-      .map((_, index, arr) => arr.slice(0, index + 1).join("/")),
-  ];
-
-  const isSystemWindow = path.endsWith("folders") || path.endsWith("templates");
+  const isSystemWindow =
+    pathname.endsWith("folders") || pathname.endsWith("templates");
 
   if (isSystemWindow) {
     return (
@@ -60,7 +52,7 @@ export function LocationBar({
           onMouseDown={(ev) => ev.stopPropagation()} // prevent focus
           onClick={(ev) => {
             ev.stopPropagation();
-            close();
+            actions.close(route.index);
           }}
         >
           <XMarkIcon className="w-4 h-4" />
@@ -84,23 +76,21 @@ export function LocationBar({
         )}
         {...dragHandleProps}
       >
-        {segments.length > 1 && (
+        {matches.length > 1 && (
           <Link
-            to={navigate("/", { navigate: false })}
+            to="/~"
             className="h-11 flex-center ml-2 w-10 text-gray-500 hover:text-white transition-colors"
           >
             <HomeIcon className="w-4 h-4" />
           </Link>
         )}
         <div className="flex gap-6 pl-2 h-full overflow-x-auto no-scrollbar grow">
-          {segments.slice(1).map((segment, index) => (
+          {matches.slice(1).map((match, index) => (
             <LocationBarItem
-              key={segment}
-              segment={segment}
-              isCurrent={index === segments.length - 2}
-              onHover={() => {}}
-              navigate={navigate}
-              panelIndex={panelIndex}
+              key={match.accumulated}
+              match={match}
+              isCurrent={index === matches.length - 2}
+              panelIndex={route.index}
             />
           ))}
         </div>
@@ -120,8 +110,8 @@ export function LocationBar({
           onClick={(ev) => {
             ev.stopPropagation();
             actions.open({
-              path,
-              index: data.index + 1,
+              path: pathname,
+              index: route.index + 1,
             });
           }}
         >
@@ -135,7 +125,7 @@ export function LocationBar({
           onMouseDown={(ev) => ev.stopPropagation()} // prevent focus
           onClick={(ev) => {
             ev.stopPropagation();
-            close();
+            actions.close(route.index);
           }}
         >
           <XMarkIcon className="w-4 h-4" />
@@ -151,25 +141,15 @@ const loadingState = {
 };
 
 function LocationBarItem({
-  segment,
+  match,
   isCurrent,
-  navigate,
   panelIndex,
-  onHover,
 }: {
-  segment: string;
+  match: ReturnType<typeof useMatches>[number];
   isCurrent: boolean;
-  navigate: (
-    path: string,
-    options?: {
-      navigate?: boolean | undefined;
-    }
-  ) => string;
   panelIndex: number;
-  onHover: () => void;
 }) {
-  const data = parseSegment(segment);
-
+  const data = parseMatch(match);
   const type = data.type;
 
   let loading = false;
@@ -213,13 +193,15 @@ function LocationBarItem({
 
   React.useEffect(() => clearTimer);
 
-  const to = `/${segment}`;
+  const to = match.accumulated;
 
   const { dragHandleProps } = useDragItem({
     type: `link:${panelIndex}`,
     item: to,
     mode: "link",
   });
+
+  const navigate = useNavigate();
 
   return (
     <button
@@ -234,7 +216,7 @@ function LocationBarItem({
       )}
       // onMouseEnter={onMouseEnter}
       // onMouseLeave={onMouseLeave}
-      onClick={() => navigate(to, { navigate: true })}
+      onClick={() => navigate(to)}
     >
       {loading ? (
         <Loader />

@@ -1,7 +1,7 @@
 import cl from "clsx";
 import React from "react";
 import Loader from "./elements/Loader";
-import { Link } from "@storyflow/router";
+import { Link } from "@nanokit/router";
 import { useUser } from "./clients/auth";
 import { useImmutableQuery } from "@nanorpc/client/swr";
 import {
@@ -93,7 +93,7 @@ export function Organization({
   return (
     <OrganizationCard
       index={index}
-      to={`/${data.slug}`}
+      to={`/${data.slug}/~`}
       className={cl("flex flex-col justify-center gap-3")}
     >
       <div className="text-3xl">{data.slug}</div>

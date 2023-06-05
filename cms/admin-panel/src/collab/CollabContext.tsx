@@ -6,13 +6,39 @@ import { TransactionEntry } from "@storyflow/collab/types";
 import { DocumentId } from "@storyflow/shared/types";
 import { servicesMutate } from "../clients/client-services";
 
+/*
 export const DocumentCollabContext = React.createContext<ReturnType<
   typeof createCollaboration
 > | null>(null);
 
 export const useCollab = () =>
   useContextWithError(DocumentCollabContext, "Collab");
+*/
 
+export const collab = createCollaboration({
+  sync: servicesMutate.collab.sync,
+  update: servicesMutate.collab.update,
+});
+
+collab.syncOnInterval();
+
+collab.initializeTimeline("folders");
+
+// initialized immediately (no external data)
+collab.initializeTimeline("documents", { versions: null });
+
+(() => {
+  const timeline = collab.getTimeline("documents")!;
+  return timeline.registerStaleListener(() => {
+    timeline.initialize(
+      async () => [],
+      { versions: null },
+      { resetLocalState: true, keepListeners: true }
+    );
+  });
+})();
+
+/*
 export function CollabProvider({ children }: { children: React.ReactNode }) {
   const collab = React.useMemo(() => {
     return createCollaboration({
@@ -31,18 +57,18 @@ export function CollabProvider({ children }: { children: React.ReactNode }) {
     </DocumentCollabContext.Provider>
   );
 }
+*/
 
 export function usePush<TE extends TransactionEntry>(
   timelineId: DocumentId | "folders" | "documents",
   queueId?: string
 ) {
-  const collab = useCollab();
   return React.useCallback(
     (...args: Parameters<Queue<TE>["push"]>) =>
       collab
         .getTimeline(timelineId)!
         .getQueue<TE>(queueId)
         .push(...args),
-    [collab, timelineId, queueId]
+    [timelineId, queueId]
   );
 }

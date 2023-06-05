@@ -16,7 +16,7 @@ import {
   createTokenStream,
   parseTokenStream,
 } from "../../operations/parse-token-stream";
-import { useCollab } from "../../collab/CollabContext";
+import { collab } from "../../collab/CollabContext";
 import { useFieldConfig } from "../../documents/document-config";
 import { useSingular } from "../../state/useSingular";
 import { calculateFn } from "./calculateFn";
@@ -68,8 +68,6 @@ export function useDefaultState(id: FieldId) {
 
   const { initialValue, tree, value, setState } = useDefaultStateCore(id);
 
-  const collab = useCollab();
-
   const target = id;
   const singular = useSingular(id);
 
@@ -104,7 +102,7 @@ export function useDefaultState(id: FieldId) {
         }
       });
     });
-  }, [collab]);
+  }, []);
 
   const isPrimitive = Array.isArray(value) && value[0] === tree.children[0];
 

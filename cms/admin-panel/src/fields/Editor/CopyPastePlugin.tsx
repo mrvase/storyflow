@@ -35,7 +35,7 @@ import {
 } from "../../operations/parse-token-stream";
 import { store } from "../../state/state";
 import { tokens } from "@storyflow/cms/tokens";
-import { useCollab, usePush } from "../../collab/CollabContext";
+import { usePush } from "../../collab/CollabContext";
 import { tools } from "../../operations/stream-methods";
 import {
   $isTokenStreamNode,
@@ -116,7 +116,6 @@ export function CopyPastePlugin() {
   const documentId = getDocumentId(id) as DocumentId;
   const generateDocumentId = useDocumentIdGenerator();
 
-  const collab = useCollab();
   const push = usePush(documentId, getRawFieldId(id));
 
   React.useLayoutEffect(() => {
@@ -343,6 +342,6 @@ export function CopyPastePlugin() {
         COMMAND_PRIORITY_EDITOR
       )
     );
-  }, [editor, configs, documentId, id, collab]);
+  }, [editor, configs, documentId, id]);
   return null;
 }

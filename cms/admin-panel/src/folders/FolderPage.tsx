@@ -15,7 +15,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { EditableLabel } from "../elements/EditableLabel";
 import cl from "clsx";
-import type { DocumentId, FolderId } from "@storyflow/shared/types";
+import type { DocumentId } from "@storyflow/shared/types";
 import type {
   DBFolder,
   FolderSpace,
@@ -35,8 +35,7 @@ import { useDocumentLabel } from "../documents/useDocumentLabel";
 import { FolderContext } from "./FolderPageContext";
 import { useFieldFocus } from "../FieldFocusContext";
 import { addNestedFolder } from "../custom-events";
-import { usePanel, useRoute } from "../layout/panel-router/Routes";
-import { parseSegment } from "../layout/components/parseSegment";
+import { parseMatch } from "../layout/components/parseSegment";
 import { Menu } from "../elements/Menu";
 import { FocusOrchestrator } from "../utils/useIsFocused";
 import { usePush } from "../collab/CollabContext";
@@ -53,6 +52,8 @@ import { mutate, query } from "../clients/client";
 import { useQuery } from "@nanorpc/client/swr";
 import { appMutate } from "../clients/client-app";
 import { isError } from "@nanorpc/client";
+import { useNavigate, usePath, useRoute } from "@nanokit/router";
+import { ROOT_FOLDER } from "@storyflow/cms/constants";
 
 const spaces: { label: string; item: Omit<Space, "id"> }[] = [
   {
@@ -79,13 +80,15 @@ export default function FolderPage({
   children?: React.ReactNode;
 }) {
   const route = useRoute();
-  const segment = parseSegment<"folder">(route);
-  const folder = useFolder(segment.id);
+  const folder = useFolder(parseMatch<"folder">(route).id);
   const { type } = getFolderData(folder);
 
-  const [{ path }] = usePanel();
-  const isSelected = (path || "/") === (route || "/");
-  const nextIsDocument = path.slice(route.length).startsWith("/d");
+  const { pathname } = usePath();
+
+  const isSelected = (pathname || "/") === (route.accumulated || "/");
+  const nextIsDocument = pathname
+    .slice(route.accumulated.length)
+    .startsWith("/d");
 
   const push = usePush<FolderTransactionEntry>("folders");
   const mutateProp = <T extends "label" | "domains">(
@@ -164,17 +167,16 @@ export default function FolderPage({
 
   const renderSpace = (space: Space, index: number) => {
     const props = {
-      key: space.id,
       index,
       folderId: folder._id,
       hidden: !isSelected,
     };
     if (space.type === "folders") {
-      return <FoldersSpace space={space} {...props} />;
+      return <FoldersSpace space={space} key={space.id} {...props} />;
     } else if (space.type === "documents") {
-      return <DocumentsSpace space={space} {...props} />;
+      return <DocumentsSpace space={space} key={space.id} {...props} />;
     } else if (space.type === "pages") {
-      return <PagesSpace space={space} {...props} />;
+      return <PagesSpace space={space} key={space.id} {...props} />;
     }
     return null;
   };
@@ -364,7 +366,7 @@ export function FolderTemplateButton({
 }) {
   const t = useTranslation();
   const route = useRoute();
-  const [{ path }, navigate] = usePanel();
+  const navigate = useNavigate();
 
   const { doc } = useDocument(template);
   const { label } = useDocumentLabel(doc);
@@ -390,9 +392,9 @@ export function FolderTemplateButton({
         label={t.folders.editTemplate({ label: label ?? "" })}
         onClick={() => {
           if (template) {
-            navigate(`${route}/t${parseInt(template, 16).toString(16)}`, {
-              navigate: true,
-            });
+            navigate(
+              `${route.accumulated}/t${parseInt(template, 16).toString(16)}`
+            );
             return;
           }
         }}

@@ -1,7 +1,6 @@
 import React from "react";
 import cl from "clsx";
 import { ErrorBoundary, FallbackProps } from "react-error-boundary";
-import type { PanelData } from "../panel-router/types";
 import useIsFocused from "../../utils/useIsFocused";
 import { BranchFocusContext } from "./BranchFocusContext";
 import { LocationBar } from "./LocationBar";
@@ -10,6 +9,7 @@ import { useSortableItem } from "@storyflow/dnd";
 import { getTranslateDragEffect } from "../../utils/dragEffects";
 import { LinkReceiver } from "./LinkReceiver";
 import { VisitedLinks } from "./VisitedLinks";
+import { useRoute } from "@nanokit/router";
 
 function ErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
   const [showMessage, toggleMessage] = React.useReducer((ps) => !ps, false);
@@ -49,21 +49,21 @@ function ErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
 }
 
 export function Panel({
-  data,
   single,
   children,
 }: {
-  data: PanelData;
   single: boolean;
   children: React.ReactNode;
 }) {
   const { isFocused: _isFocused, handlers, id: focusId } = useIsFocused();
   const isFocused = _isFocused || single;
 
+  const route = useRoute();
+
   const { dragHandleProps, ref, state } = useSortableItem({
-    id: data.key,
-    index: data.index,
-    item: data,
+    id: route.accumulated,
+    index: route.index,
+    item: route,
   });
 
   const style = getTranslateDragEffect(state);
@@ -77,15 +77,15 @@ export function Panel({
     >
       <ResizablePanel
         className="relative h-full py-2"
-        id={data.key}
-        order={data.index}
-        style={{ ...style, order: data.index }}
+        id={route.accumulated}
+        order={route.index}
+        style={{ ...style, order: route.index }}
         minSize={25}
       >
         <LinkReceiver
-          id={`existing-${data.key}`}
+          id={`existing-${route.accumulated}`}
           type="existing"
-          index={data.index}
+          index={route.index}
         />
         <div
           ref={ref}
@@ -95,16 +95,16 @@ export function Panel({
           )}
         >
           <LocationBar
-            data={data}
             isFocused={isFocused}
             dragHandleProps={dragHandleProps}
+            matches={route.children}
           />
           <ErrorBoundary FallbackComponent={ErrorFallback}>
             <div className="h-[calc(100vh-48px)] relative overflow-hidden bg-white dark:bg-gray-850">
               {children}
             </div>
           </ErrorBoundary>
-          <VisitedLinks data={data} />
+          <VisitedLinks />
         </div>
       </ResizablePanel>
     </BranchFocusContext.Provider>

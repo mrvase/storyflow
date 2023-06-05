@@ -9,7 +9,7 @@ import type {
 } from "@storyflow/cms/types";
 import { getTranslateDragEffect } from "../utils/dragEffects";
 import { RenderField } from "../fields/RenderField";
-import { useCollab, usePush } from "../collab/CollabContext";
+import { collab, usePush } from "../collab/CollabContext";
 import { GetDocument } from "./GetDocument";
 import { ExtendTemplatePath } from "./TemplatePathContext";
 import { TopFieldIndexProvider } from "./FieldIndexContext";
@@ -41,8 +41,6 @@ export function RenderTemplate({
   const push = isMain
     ? usePush<DocumentTransactionEntry>(owner, "config")
     : () => {};
-
-  const collab = useCollab();
 
   const generateDocumentId = useDocumentIdGenerator();
 
@@ -79,7 +77,7 @@ export function RenderTemplate({
       }
       push([["", ops]]);
     },
-    [config, push, generateDocumentId, collab, owner]
+    [config, push, generateDocumentId, owner]
   );
 
   let dragHandleProps: any = undefined;

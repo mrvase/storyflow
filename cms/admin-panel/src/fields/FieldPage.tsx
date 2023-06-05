@@ -44,14 +44,14 @@ import { SelectedPathProvider, SyncBuilderPath, useSelectedPath } from "./Path";
 import { DefaultField } from "./default/DefaultField";
 import { FieldIdContext } from "./FieldIdContext";
 import { EditorFocusProvider } from "../editor/react/useIsFocused";
-import { useRoute } from "../layout/panel-router/Routes";
-import { parseSegment } from "../layout/components/parseSegment";
 import { splitStreamByBlocks } from "./Editor/transforms";
 import { extendPath } from "../utils/extendPath";
 import { usePush } from "../collab/CollabContext";
 import { FieldTransactionEntry } from "../operations/actions";
 import { Transaction } from "@storyflow/collab/types";
 import { createTransaction } from "@storyflow/collab/utils";
+import { useRoute } from "@nanokit/router";
+import { parseMatch } from "../layout/components/parseSegment";
 
 const useBuilderRendered = ({
   listeners,
@@ -344,8 +344,7 @@ const useIframe = () => {
 
 export function FieldPage({ children }: { children?: React.ReactNode }) {
   const route = useRoute();
-  const segment = parseSegment<"field">(route);
-  const id = segment.id;
+  const { id } = parseMatch<"field">(route);
 
   const documentId = getDocumentId<DocumentId>(id);
   const templateFieldId = getRawFieldId(id);

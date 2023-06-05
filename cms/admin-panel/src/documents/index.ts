@@ -9,7 +9,7 @@ import {
 import type { Sorting } from "@storyflow/cms/types";
 import type { DBDocument } from "@storyflow/cms/types";
 import { normalizeDocumentId } from "@storyflow/cms/ids";
-import { useCollab } from "../collab/CollabContext";
+import { collab } from "../collab/CollabContext";
 import { createDocumentTransformer } from "../operations/apply";
 import { TEMPLATES } from "./templates";
 import { query } from "../clients/client";
@@ -89,14 +89,12 @@ export function useDocument(
 }
 
 export function useDocumentWithTimeline(documentId: DocumentId) {
-  const collab = useCollab();
-
   React.useLayoutEffect(() => {
     // for prefetching
     console.log("PREFETCHING");
     collab.initializeTimeline(documentId);
     hasCalledStaleHook.current = false;
-  }, [collab]);
+  }, []);
 
   const doc = useImmutableQuery(query.documents.findById(documentId));
 

@@ -23,7 +23,7 @@ import { useSaveDocument } from "./useSaveDocument";
 import { getDocumentLabel, useDocumentLabel } from "./useDocumentLabel";
 import { useTemplateFolder } from "../folders/FoldersContext";
 import Content from "../pages/Content";
-import { useCollab, usePush } from "../collab/CollabContext";
+import { collab, usePush } from "../collab/CollabContext";
 import { useDocumentConfig } from "./document-config";
 import { FocusOrchestrator, useFocusedIds } from "../utils/useIsFocused";
 import { DocumentPageContext } from "./DocumentPageContext";
@@ -35,24 +35,24 @@ import {
   useFieldToolbarPortal,
 } from "./FieldToolbar";
 import { ExtendTemplatePath } from "./TemplatePathContext";
-import { useRoute } from "../layout/panel-router/Routes";
-import { parseSegment } from "../layout/components/parseSegment";
 import { Menu } from "../elements/Menu";
 import { DocumentTransactionEntry } from "../operations/actions";
 import { useCurrentFolder } from "../folders/FolderPageContext";
 import { getFolderData } from "../folders/getFolderData";
 import { query } from "../clients/client";
 import { useImmutableQuery } from "@nanorpc/client/swr";
+import { useRoute } from "@nanokit/router";
+import { parseMatch } from "../layout/components/parseSegment";
+import { TEMPLATE_FOLDER } from "@storyflow/cms/constants";
 
 function useIsModified(id: DocumentId) {
   const [isModified, setIsModified] = React.useState(false);
 
-  const collab = useCollab();
   React.useEffect(() => {
     return collab.getTimeline(id)!.registerMutationListener((isModified) => {
       setIsModified(isModified);
     });
-  }, [collab]);
+  }, []);
 
   return isModified;
 }
@@ -191,8 +191,7 @@ function Toolbar({ id }: { id: DocumentId }) {
 }
 
 export function TemplateMenu({ id }: { id?: DocumentId }) {
-  const templateFolder = useTemplateFolder()?._id;
-  const { documents: templates } = useDocumentList(templateFolder);
+  const { documents: templates } = useDocumentList(TEMPLATE_FOLDER);
 
   return (
     <Menu
@@ -222,13 +221,15 @@ export function TemplateMenu({ id }: { id?: DocumentId }) {
 
 export function DocumentPage({ children }: { children?: React.ReactNode }) {
   const route = useRoute();
-  const segment = parseSegment<"document" | "template">(route);
-  let { doc, error } = useDocumentWithTimeline(segment.id);
+  const parsed = parseMatch<"document" | "template">(route);
+  let { doc, error } = useDocumentWithTimeline(parsed.id);
+
+  console.log("DOC DOC", parsed, route, doc);
 
   return (
     <>
       {!error && doc && (
-        <Page type={segment.type} doc={doc}>
+        <Page type={parsed.type} doc={doc}>
           {children}
         </Page>
       )}
@@ -358,7 +359,6 @@ function TemplateSelect({ documentId }: { documentId: DocumentId }) {
 }
 
 function SaveButton({ id, folderId }: { id: DocumentId; folderId: FolderId }) {
-  const collab = useCollab();
   const [isLoading, setIsLoading] = React.useState(false);
   const saveDocument = useSaveDocument(id, folderId);
 

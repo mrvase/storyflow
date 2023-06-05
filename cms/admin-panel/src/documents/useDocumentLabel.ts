@@ -5,7 +5,6 @@ import { createTemplateFieldId, isTemplateDocument } from "@storyflow/cms/ids";
 import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
 import { calculateRootFieldFromRecord } from "@storyflow/cms/calculate-server";
 import React from "react";
-import { useCollab } from "../collab/CollabContext";
 import { calculateFn } from "../fields/default/calculateFn";
 import { BaseTranslationFunction } from "../translation/TranslationContext";
 import { getUpdatedFieldValue } from "./getUpdatedFieldValue";
@@ -61,11 +60,9 @@ export const useDocumentLabel = <T extends DBDocument | undefined>(
   const [isModified, setIsModified] = React.useState(false);
   const [output, setOutput] = useGlobalState<ValueArray | ClientSyntaxTree>(id);
 
-  const collab = useCollab();
-
   React.useEffect(() => {
     if (!doc || !id) return;
-    getUpdatedFieldValue(id, doc, collab).then(({ tree, isModified }) => {
+    getUpdatedFieldValue(id, doc).then(({ tree, isModified }) => {
       setOutput(() =>
         calculateFn(tree, {
           record: doc.record,
@@ -74,7 +71,7 @@ export const useDocumentLabel = <T extends DBDocument | undefined>(
       );
       setIsModified(isModified);
     });
-  }, [doc, collab]);
+  }, [doc]);
 
   if (typeof doc === "undefined") {
     return {

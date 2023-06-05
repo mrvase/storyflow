@@ -23,11 +23,10 @@ import {
   StreamOperation,
   TransformOperation,
 } from "../../../operations/actions";
-import { useCollab } from "../../../collab/CollabContext";
+import { collab } from "../../../collab/CollabContext";
 import { useFieldId } from "../../FieldIdContext";
 import { getDocumentId, getRawFieldId } from "@storyflow/cms/ids";
 import { isSpliceOperation } from "@storyflow/collab/utils";
-import { usePanel } from "../../../layout/panel-router/Routes";
 
 const RECONCILIATION_TAG = "reconciliation";
 
@@ -46,10 +45,6 @@ export function Reconciler({
 
   const fieldId = useFieldId();
   const { configs } = useAppConfig();
-
-  const collab = useCollab();
-
-  const [{ index }] = usePanel();
 
   React.useEffect(() => {
     const queue = collab

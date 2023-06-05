@@ -8,14 +8,11 @@ import {
   StopIcon,
 } from "@heroicons/react/24/outline";
 import { useLocalStorage } from "../state/useLocalStorage";
-import {
-  usePanel,
-  useRoute,
-  useRouteTransition,
-} from "../layout/panel-router/Routes";
 import { Menu } from "../elements/Menu";
 import { Space, FolderSpace } from "@storyflow/cms/types";
 import { useDragItem } from "@storyflow/dnd";
+import { useRouteTransition } from "@nanokit/router/routes/nested-transition";
+import { usePath, useRoute } from "@nanokit/router";
 
 const spaces: { label: string; item: Omit<Space, "id"> }[] = [
   {
@@ -58,8 +55,8 @@ function Content({
   const { isFocused } = useBranchIsFocused();
 
   const route = useRoute();
-  const [{ path }] = usePanel();
-  const isSelected = (path || "/") === (route || "/");
+  const { pathname } = usePath();
+  const isSelected = (pathname || "/") === (route.accumulated || "/");
 
   const status = useRouteTransition();
 

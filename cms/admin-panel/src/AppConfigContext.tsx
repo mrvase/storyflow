@@ -112,6 +112,8 @@ export function AppConfigProvider({
 
           const config = result;
 
+          console.log("CONFIG", { baseURL, config });
+
           return [
             name,
             {

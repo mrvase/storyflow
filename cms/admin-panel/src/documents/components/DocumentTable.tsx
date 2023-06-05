@@ -1,7 +1,6 @@
 import cl from "clsx";
 import { CheckIcon } from "@heroicons/react/24/outline";
 import { useDragItem } from "@storyflow/dnd";
-import { usePanel, useRoute } from "../../layout/panel-router/Routes";
 import { DBDocument } from "@storyflow/cms/types";
 import { FieldId, RawFieldId } from "@storyflow/shared/types";
 import { getPreview } from "../../fields/default/getPreview";
@@ -10,6 +9,7 @@ import { createTemplateFieldId } from "@storyflow/cms/ids";
 import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
 import { useDocumentLabel } from "../useDocumentLabel";
 import { useTranslation } from "../../translation/TranslationContext";
+import { useNavigate, useRoute } from "@nanokit/router";
 
 export default function Table({
   columns,
@@ -99,10 +99,11 @@ function Row({
     icon: React.FC<{ className?: string }>;
   };
 }) {
-  const [{ index: panelIndex }, navigate] = usePanel();
   const route = useRoute();
+  const { index: panelIndex } = useRoute("parallel");
+  const navigate = useNavigate();
 
-  const to = `${route}/d${parseInt(doc._id, 16).toString(16)}`;
+  const to = `${route.accumulated}/d/${parseInt(doc._id, 16).toString(16)}`;
 
   const { dragHandleProps } = useDragItem({
     type: `link:${panelIndex}`,
@@ -115,9 +116,7 @@ function Row({
       className="border-t border-gray-100 dark:border-gray-750 hover:bg-gray-50 dark:hover:bg-gray-800 transition-[background-color]"
       {...dragHandleProps}
       onClick={() => {
-        navigate(to, {
-          navigate: true,
-        });
+        navigate(to);
       }}
     >
       <td className="hidden @sm:table-cell w-9 text-[0px] border-0 p-0">

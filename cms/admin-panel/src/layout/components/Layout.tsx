@@ -4,15 +4,7 @@ import { useLocalStorage } from "../../state/useLocalStorage";
 import Nav from "./Nav";
 import Sidebar from "./Sidebar";
 
-export function Layout({
-  left,
-  right,
-  children,
-}: {
-  children: React.ReactNode;
-  left?: React.ReactNode;
-  right?: React.ReactNode;
-}) {
+export function Layout({ children }: { children: React.ReactNode }) {
   const [sidebarIsOpen] = useLocalStorage<boolean>("sidebar-is-open", false);
   const [navIsOpen] = useLocalStorage<boolean>("nav-is-open", true);
   const [isMounted, setIsMounted] = React.useState(false);

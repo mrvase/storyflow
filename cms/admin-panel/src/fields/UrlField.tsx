@@ -11,9 +11,8 @@ import {
 } from "@storyflow/cms/ids";
 import { usePush } from "../collab/CollabContext";
 import { HomeIcon, LinkIcon, StarIcon } from "@heroicons/react/24/outline";
-import { Link } from "@storyflow/router";
-import { useDocument, useDocumentList } from "../documents";
-import { getDocumentLabel } from "../documents/useDocumentLabel";
+import { Link, useNavigate, usePath, useRoute } from "@nanokit/router";
+import { useDocumentList } from "../documents";
 import cl from "clsx";
 import { useDocumentPageContext } from "../documents/DocumentPageContext";
 import {
@@ -22,7 +21,6 @@ import {
 } from "@storyflow/cms/calculate-server";
 import { DEFAULT_FIELDS, isDefaultField } from "@storyflow/cms/default-fields";
 import { useDocumentIdGenerator } from "../id-generator";
-import { usePanel, useRoute } from "../layout/panel-router/Routes";
 import { useDefaultState } from "./default/useDefaultState";
 import type { FieldProps } from "./types";
 import { FieldTransactionEntry } from "../operations/actions";
@@ -177,14 +175,15 @@ export default function UrlField({ id }: FieldProps) {
     }
   }, [isFocused]);
 
-  const [, navigate] = usePanel();
-  const route = useRoute();
+  const navigate = useNavigate();
+  const { pathname } = usePath();
 
   const replacePage = (id: string) =>
     navigate(
-      `${route.split("/").slice(0, -1).join("/")}/d${parseInt(id, 16).toString(
+      `${pathname.split("/").slice(0, -1).join("/")}/d${parseInt(
+        id,
         16
-      )}`,
+      ).toString(16)}`,
       {
         navigate: false,
       }

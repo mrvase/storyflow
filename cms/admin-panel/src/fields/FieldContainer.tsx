@@ -24,10 +24,10 @@ import { FieldToolbarPortal } from "../documents/FieldToolbar";
 import { EditorFocusProvider } from "../editor/react/useIsFocused";
 import { Attributes, AttributesProvider } from "./Attributes";
 import { SelectedPathProvider, useNestedEntity, useSelectedPath } from "./Path";
-import { usePanel, useRoute } from "../layout/panel-router/Routes";
 import { useLocalStorage } from "../state/useLocalStorage";
 import { useFieldRestriction } from "./FieldIdContext";
 import { useFolder } from "../folders/FoldersContext";
+import { useNavigate, usePath, useRoute } from "@nanokit/router";
 
 type Props = {
   fieldConfig: FieldConfig;
@@ -158,20 +158,23 @@ function LabelBar({
 
   const [isEditing] = [true]; //useLocalStorage<boolean>("editing-articles", false);
 
-  const [{ path, index: panelIndex }, navigate] = usePanel();
   const route = useRoute();
+  const { pathname } = usePath();
+  const navigate = useNavigate();
 
-  const isOpen = path.endsWith(`/c${id}`);
+  const isOpen = pathname.endsWith(`/c${id}`);
 
   const specialFieldConfig = getDefaultField(id);
 
-  const to = isOpen ? route : `${route}/c${id}`;
+  const to = isOpen ? route.accumulated : `${route.accumulated}/c${id}`;
 
   const fullscreen = () => {
     navigate(to, {
       navigate: true,
     });
   };
+
+  const { index: panelIndex } = useRoute("parallel");
 
   const { dragHandleProps: linkDragHandleProps } = useDragItem({
     type: `link:${panelIndex}`,

@@ -1,6 +1,6 @@
 import type { DocumentId, FieldId, FolderId } from "@storyflow/shared/types";
 import React from "react";
-import { useCollab } from "../../collab/CollabContext";
+import { collab } from "../../collab/CollabContext";
 import { DocumentAddTransactionEntry } from "../../operations/actions";
 import { getUpdatedFieldValue } from "../../documents/getUpdatedFieldValue";
 import { createTemplateFieldId } from "@storyflow/cms/ids";
@@ -17,8 +17,6 @@ export function useNewDocuments(
   const [docs, setDocs] = React.useState<
     { id: DocumentId; label: SyntaxTree; url: SyntaxTree | undefined }[]
   >([]);
-
-  const collab = useCollab();
 
   const handleDocs = React.useCallback(
     async (ids: DocumentId[]) => {
@@ -37,8 +35,7 @@ export function useNewDocuments(
 
         const { tree } = await getUpdatedFieldValue(
           createTemplateFieldId(id, defaulFieldId),
-          doc,
-          collab
+          doc
         );
 
         return tree;
@@ -61,7 +58,7 @@ export function useNewDocuments(
         setDocs(newState);
       }
     },
-    [docs, collab]
+    [docs]
   );
 
   const calculatedDocs = React.useMemo(() => {
@@ -109,7 +106,7 @@ export function useNewDocuments(
       const array = Array.from(docs).reverse();
       handleDocs(array);
     });
-  }, [collab, handleDocs]);
+  }, [handleDocs]);
 
   return calculatedDocs;
 }

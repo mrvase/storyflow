@@ -1,7 +1,6 @@
 import type { FieldId } from "@storyflow/shared/types";
 import type { DBDocument } from "@storyflow/cms/types";
 import { getRawFieldId } from "@storyflow/cms/ids";
-import { useCollab } from "../collab/CollabContext";
 import {
   applyFieldTransaction,
   createDocumentTransformer,
@@ -13,11 +12,11 @@ import {
   createTokenStream,
   parseTokenStream,
 } from "../operations/parse-token-stream";
+import { collab } from "../collab/CollabContext";
 
 export const getUpdatedFieldValue = async (
   fieldId: FieldId,
-  doc: Pick<DBDocument, "_id" | "versions" | "config" | "record">,
-  collab: ReturnType<typeof useCollab>
+  doc: Pick<DBDocument, "_id" | "versions" | "config" | "record">
 ) => {
   /**
    * We only want to know what the live value is at this moment, and

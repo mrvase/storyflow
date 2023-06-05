@@ -37,7 +37,7 @@ const authHandler = () => {
 
   let promise: ReturnType<typeof updateToken> | null = null;
 
-  let slug = "dashboard";
+  let slug = "";
 
   const setOrganizationSlug = (newSlug: string) => {
     if (slug !== newSlug) {
@@ -49,7 +49,6 @@ const authHandler = () => {
   };
 
   const call = (returnConfig: boolean = false) => {
-    console.log("CALLING HERE");
     return authServicesMutate.auth.authenticate({
       organization: {
         slug,
@@ -140,4 +139,5 @@ export const {
   useUser,
   checkToken,
   useOrganization,
+  setOrganizationSlug,
 } = authHandler();

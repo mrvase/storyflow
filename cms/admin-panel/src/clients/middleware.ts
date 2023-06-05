@@ -1,5 +1,5 @@
 import { Options, Fetcher } from "@nanorpc/client";
-import { createSWRMiddleware } from "@nanorpc/client/swr";
+import { SWRMiddleware } from "@nanorpc/client/swr";
 import { AuthOptions, authMiddleware } from "./auth";
 import type { ErrorCodes } from "@storyflow/api";
 
@@ -11,8 +11,6 @@ const prettifyMiddleware = <TOptions>(fetcher: Fetcher<TOptions>) => {
     return await fetcher(key, options);
   };
 };
-
-const SWRMiddleware = createSWRMiddleware();
 
 export const middleware = <TOptions extends Options & AuthOptions>(
   fetcher: Fetcher<TOptions>
