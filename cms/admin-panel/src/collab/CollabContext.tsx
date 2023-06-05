@@ -20,24 +20,6 @@ export const collab = createCollaboration({
   update: servicesMutate.collab.update,
 });
 
-collab.syncOnInterval();
-
-collab.initializeTimeline("folders");
-
-// initialized immediately (no external data)
-collab.initializeTimeline("documents", { versions: null });
-
-(() => {
-  const timeline = collab.getTimeline("documents")!;
-  return timeline.registerStaleListener(() => {
-    timeline.initialize(
-      async () => [],
-      { versions: null },
-      { resetLocalState: true, keepListeners: true }
-    );
-  });
-})();
-
 /*
 export function CollabProvider({ children }: { children: React.ReactNode }) {
   const collab = React.useMemo(() => {

@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import type { NextApiRequest, NextApiResponse } from "next";
 import { CreateContext, Router } from "@nanorpc/server";
 import { CookieSerializeOptions, parse, serialize } from "cookie";
+export type { CookieSerializeOptions } from "cookie";
 import { decode, encode } from "./rpc/crypto";
 
 const cryptoCtx = (secret?: string) => ({

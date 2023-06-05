@@ -10,7 +10,7 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@nanorpc/server": "^0.0.15",
+    "@nanorpc/server": "^0.0.16",
     "@storyflow/cms": "workspace:*",
     "@storyflow/server": "workspace:*",
     "@storyflow/shared": "workspace:*",

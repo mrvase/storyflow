@@ -158,6 +158,8 @@ const topParallelPanelsRoute = {
   subroutes: [panelRoute],
 };
 
+let cancelSync: (() => void) | null = null;
+
 export const routes: Route[] = [
   {
     match: "/:slug/:version([^~/]+)",
@@ -187,6 +189,25 @@ export const routes: Route[] = [
           },
         }
       );
+
+      cancelSync?.();
+      cancelSync = collab.syncOnInterval();
+
+      collab.initializeTimeline("folders");
+
+      // initialized immediately (no external data)
+      collab.initializeTimeline("documents", { versions: null });
+
+      (() => {
+        const timeline = collab.getTimeline("documents")!;
+        return timeline.registerStaleListener(() => {
+          timeline.initialize(
+            async () => [],
+            { versions: null },
+            { resetLocalState: true, keepListeners: true }
+          );
+        });
+      })();
 
       return Promise.all([folders, documents]);
     },

@@ -157,9 +157,9 @@ importers:
       '@heroicons/react': ^2.0.11
       '@lexical/selection': ^0.9.1
       '@lexical/utils': ^0.9.1
-      '@nanokit/router': 0.0.7
-      '@nanorpc/client': ^0.0.15
-      '@nanorpc/server': ^0.0.15
+      '@nanokit/router': 0.0.8
+      '@nanorpc/client': ^0.0.16
+      '@nanorpc/server': ^0.0.16
       '@storyflow/api': workspace:*
       '@storyflow/cms': workspace:*
       '@storyflow/collab': workspace:*
@@ -193,8 +193,8 @@ importers:
       '@heroicons/react': 2.0.13_react@18.2.0
       '@lexical/selection': 0.9.1_lexical@0.9.1
       '@lexical/utils': 0.9.1_lexical@0.9.1
-      '@nanokit/router': 0.0.7
-      '@nanorpc/client': 0.0.15_mhuczuvpa6vzqraczvy3uwv7zm
+      '@nanokit/router': 0.0.8
+      '@nanorpc/client': 0.0.16_mhuczuvpa6vzqraczvy3uwv7zm
       '@storyflow/cms': link:../../core/cms
       '@storyflow/collab': link:../collab
       '@storyflow/dnd': link:../dnd
@@ -209,7 +209,7 @@ importers:
       swr: 2.1.5_react@18.2.0
       zod: 3.21.4
     devDependencies:
-      '@nanorpc/server': 0.0.15_zod@3.21.4
+      '@nanorpc/server': 0.0.16_zod@3.21.4
       '@storyflow/api': link:../../packages/api
       '@tailwindcss/container-queries': 0.1.1_tailwindcss@3.2.4
       '@types/react': 18.2.1
@@ -254,7 +254,7 @@ importers:
 
   cms/migration:
     specifiers:
-      '@nanorpc/server': ^0.0.15
+      '@nanorpc/server': ^0.0.16
       '@storyflow/cms': workspace:*
       '@storyflow/server': workspace:*
       '@storyflow/shared': workspace:*
@@ -270,7 +270,7 @@ importers:
       vitest: ^0.31.0
       zod: ^3.20.2
     dependencies:
-      '@nanorpc/server': 0.0.15_zod@3.21.4
+      '@nanorpc/server': 0.0.16_zod@3.21.4
       '@storyflow/cms': link:../../core/cms
       '@storyflow/server': link:../../core/server
       '@storyflow/shared': link:../../core/shared
@@ -287,27 +287,11 @@ importers:
       vite: 4.3.7
       vitest: 0.31.0
 
-  cms/router:
-    specifiers:
-      '@types/react': ^18.2.1
-      '@types/react-dom': ^18.2.1
-      react: ^18.2.0
-      react-dom: ^18.2.0
-      tsconfig: workspace:*
-      typescript: ^5.0.4
-    devDependencies:
-      '@types/react': 18.2.1
-      '@types/react-dom': 18.2.2
-      react: 18.2.0
-      react-dom: 18.2.0_react@18.2.0
-      tsconfig: link:../../setup/tsconfig
-      typescript: 5.0.4
-
   cms/services-api:
     specifiers:
       '@aws-sdk/client-s3': ^3.328.0
       '@aws-sdk/s3-request-presigner': ^3.328.0
-      '@nanorpc/server': ^0.0.15
+      '@nanorpc/server': ^0.0.16
       '@storyflow/cms': workspace:*
       '@storyflow/collab': workspace:*
       '@storyflow/server': workspace:*
@@ -323,7 +307,7 @@ importers:
       vitest: ^0.31.0
       zod: ^3.20.2
     dependencies:
-      '@nanorpc/server': 0.0.15_zod@3.21.4
+      '@nanorpc/server': 0.0.16_zod@3.21.4
       '@storyflow/cms': link:../../core/cms
       '@storyflow/collab': link:../collab
       '@storyflow/server': link:../../core/server
@@ -371,7 +355,7 @@ importers:
 
   core/server:
     specifiers:
-      '@nanorpc/server': ^0.0.15
+      '@nanorpc/server': ^0.0.16
       '@storyflow/cms': workspace:*
       '@storyflow/shared': workspace:*
       '@types/cookie': ^0.5.1
@@ -396,7 +380,7 @@ importers:
       cookie: 0.5.0
       jsonwebtoken: 9.0.0
     devDependencies:
-      '@nanorpc/server': 0.0.15_zod@3.21.4
+      '@nanorpc/server': 0.0.16_zod@3.21.4
       '@types/cookie': 0.5.1
       '@types/jsonwebtoken': 9.0.2
       '@types/node': 17.0.45
@@ -430,7 +414,7 @@ importers:
 
   packages/api:
     specifiers:
-      '@nanorpc/server': ^0.0.15
+      '@nanorpc/server': ^0.0.16
       '@storyflow/cms': workspace:*
       '@storyflow/server': workspace:*
       '@storyflow/shared': workspace:*
@@ -443,7 +427,7 @@ importers:
       vitest: ^0.31.0
       zod: ^3.20.2
     dependencies:
-      '@nanorpc/server': 0.0.15_zod@3.21.4
+      '@nanorpc/server': 0.0.16_zod@3.21.4
       '@storyflow/cms': link:../../core/cms
       '@storyflow/server': link:../../core/server
       '@storyflow/shared': link:../../core/shared
@@ -2614,12 +2598,12 @@ packages:
       lexical: 0.9.1
     dev: false
 
-  /@nanokit/router/0.0.7:
-    resolution: {integrity: sha512-UVBkuwnBwjoyKZG7eajfmM1DvrRZzFo3y+hNNQoloDMhSUdsgBNYAWWhNw+kS1Gm2n1heg7X/IiK/UJOm6+DwA==}
+  /@nanokit/router/0.0.8:
+    resolution: {integrity: sha512-D0sjiCCInG4hKkaZhqlJBm8v/LVfDUiJGr/szCSuVB2kKq2vs3kln2pV0wWnrohUTMTWSRtEPFs76Oo6ZVtUgA==}
     dev: false
 
-  /@nanorpc/client/0.0.15_mhuczuvpa6vzqraczvy3uwv7zm:
-    resolution: {integrity: sha512-tBNzCkh5UU0tUsjtEO1GVuyZzLH6psPbkXFVdNOEb+8/i19gtY9HQLLxc9ncmPVbeatxQ9BLp6gk7rYwUN0qKQ==}
+  /@nanorpc/client/0.0.16_mhuczuvpa6vzqraczvy3uwv7zm:
+    resolution: {integrity: sha512-AXROIo7SIl8A7yOzXaJNY9laHJmA8jVeR+GNiwDdxne4lt4h1G79N0hqsuKkDkNc3vszHC2ejEJbh4i7z9pVvw==}
     peerDependencies:
       react: ^18.2.0
       react-dom: ^18.2.0
@@ -2630,8 +2614,8 @@ packages:
       swr: 2.1.5_react@18.2.0
     dev: false
 
-  /@nanorpc/server/0.0.15_zod@3.21.4:
-    resolution: {integrity: sha512-+fjDVe7GUudBcRr3flHaeX2swxTDJc9NpsRWAWUBPBffwpUDuwmhagkuZckHfT2HimetYg5Gmkr7XnfV4Dzc6A==}
+  /@nanorpc/server/0.0.16_zod@3.21.4:
+    resolution: {integrity: sha512-wsOYG763frEPcswA3Z3ZXr68haAHfkUWFLAJ1KRHIUDn54ac3BKCq/7EgZi3tEs8UG1nBZcCHBrgu8+7nbqiBQ==}
     peerDependencies:
       zod: ^3.21.4
     dependencies:
