@@ -1,7 +1,7 @@
 import { createClient, Options } from "@nanorpc/client";
 import type { AppAPI, ErrorCodes } from "@storyflow/api";
 import { middleware } from "./middleware";
-import { AuthOptions } from "./auth";
+import { AuthOptions, registerUrlListener } from "./auth";
 
 const baseFetcher = async (
   key: string,
@@ -16,5 +16,5 @@ const baseFetcher = async (
 
 const fetcher = middleware(baseFetcher);
 
-export const { mutate: appMutate, query: appQuery } =
-  createClient<AppAPI>("")(fetcher);
+export const { query: appQuery, mutate: appMutate } =
+  createClient<AppAPI>()(fetcher);

@@ -162,11 +162,11 @@ function LabelBar({
   const { pathname } = usePath();
   const navigate = useNavigate();
 
-  const isOpen = pathname.endsWith(`/c${id}`);
+  const isOpen = pathname.endsWith(`/c/${id}`);
 
   const specialFieldConfig = getDefaultField(id);
 
-  const to = isOpen ? route.accumulated : `${route.accumulated}/c${id}`;
+  const to = isOpen ? route.accumulated : `${route.accumulated}/c/${id}`;
 
   const fullscreen = () => {
     navigate(to, {

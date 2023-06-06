@@ -1,10 +1,10 @@
 import { MongoClient, MongoClientOptions } from "mongodb";
 
-let client;
-let clientPromise: ClientPromise;
+let mongoClient: MongoClient;
+let clientPromise: Promise<MongoClient> | null = null;
 
 declare global {
-  var _mongoClientPromise: ClientPromise;
+  var _mongoClientPromise: Promise<MongoClient>;
 }
 
 export const createClient = (url: string) => {
@@ -20,17 +20,29 @@ export const createClient = (url: string) => {
     // In development mode, use a global variable so that the value
     // is preserved across module reloads caused by HMR (Hot Module Replacement).
     if (!global._mongoClientPromise) {
-      client = new MongoClient(uri, options);
-      global._mongoClientPromise = client.connect();
+      mongoClient = new MongoClient(uri, options);
+      global._mongoClientPromise = mongoClient.connect();
     }
     clientPromise = global._mongoClientPromise;
   } else {
     // In production mode, it's best to not use a global variable.
-    client = new MongoClient(uri, options);
-    clientPromise = client.connect();
+    mongoClient = new MongoClient(uri, options);
+    clientPromise = mongoClient.connect();
   }
 
   return clientPromise;
 };
 
-export type ClientPromise = Promise<MongoClient>;
+export const client = {
+  async get(string?: string) {
+    if (!clientPromise) {
+      throw new Error("Mongo client not initialized");
+    }
+    return (await clientPromise).db(string);
+  },
+  set(url: string) {
+    if (clientPromise === null) {
+      createClient(url);
+    }
+  },
+};

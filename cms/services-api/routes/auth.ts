@@ -14,9 +14,6 @@ import { AppReference } from "@storyflow/shared/types";
 import { emailAuth, procedure } from "@storyflow/server/rpc";
 import { RPCError, isError } from "@nanorpc/server";
 
-const domain =
-  process.env.NODE_ENV === "development" ? "http://localhost:5173" : "";
-
 type LinkPayload = {
   email: string;
   invite?: string;
@@ -24,7 +21,7 @@ type LinkPayload = {
   date: string;
 };
 
-type AuthOptions = {
+export type AuthOptions = {
   sendEmail: (link: string, payload: LinkPayload) => Promise<void>;
   organizations: {
     insertUser: (email: string) => Promise<void>;
@@ -37,10 +34,13 @@ type AuthOptions = {
       email: string,
       organization: { slug: string }
     ) => Promise<void>;
-    getUserWithOrganizations: (email: string) => Promise<{
-      email: string;
-      organizations: { url: string; slug: string }[];
-    }>;
+    getUserWithOrganizations: (email: string) => Promise<
+      | {
+          email: string;
+          organizations: { url: string; slug: string }[];
+        }
+      | undefined
+    >;
   };
 };
 
@@ -198,10 +198,10 @@ export const auth = ({ sendEmail, organizations }: AuthOptions) => {
       const result = await tryVerifying();
 
       if (isError(result)) {
-        res!.headers.set("Location", `${domain}/?success=false`);
+        res!.headers.set("Location", `/?success=false`);
       } else {
         const slug = result;
-        res!.headers.set("Location", `${domain}/${slug ?? ""}?success=true`);
+        res!.headers.set("Location", `/${slug ?? ""}?success=true`);
       }
 
       return null;
@@ -230,22 +230,22 @@ export const auth = ({ sendEmail, organizations }: AuthOptions) => {
         }
       }),
 
-    getOrganizations: procedure
+    authenticateUser: procedure
       .use(cors)
       .use(emailAuth)
       .query(async (_, { email }) => {
         const data = await organizations.getUserWithOrganizations(email);
-        return data;
+        return {
+          email,
+          organizations: data?.organizations ?? [],
+        };
       }),
 
-    authenticate: procedure
+    authenticateOrganization: procedure
       .use(cors)
       .schema(
         z.object({
-          organization: z.object({
-            slug: z.string().nullable(),
-            url: z.string().nullable(),
-          }),
+          organization: z.string(),
           returnConfig: z.boolean(),
         })
       )
@@ -267,40 +267,47 @@ export const auth = ({ sendEmail, organizations }: AuthOptions) => {
           });
         }
 
-        try {
-          const getData = async (url: string, key: string | undefined) => {
-            const token = serializeAuthToken(
-              { email: user.email },
-              process.env.STORYFLOW_PRIVATE_KEY as string
-            );
+        const getData = async (url: string, key: string | undefined) => {
+          const token = serializeAuthToken(
+            { email: user.email },
+            process.env.STORYFLOW_PRIVATE_KEY as string
+          );
 
-            const data = await fetch(`${url}/api/admin/authenticate`, {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({
-                input: { key: !key, config: returnConfig },
-              }),
-            }).then(
-              (res) =>
-                res.json() as Promise<
-                  | {
-                      token: string;
-                      key?: string;
-                      config?: {
-                        apps: AppReference[];
-                        workspaces: {
-                          name: string;
-                        }[];
-                      };
-                    }
-                  | { error: string }
-                >
-            );
+          try {
+            const protocol = url.startsWith("localhost")
+              ? "http://"
+              : "https://";
+            console.log("FETCHING", `${protocol}${url}/api/admin/authenticate`);
+            const data = await fetch(
+              `${protocol}${url}/api/admin/authenticate`,
+              {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  input: { key: !key, config: returnConfig },
+                }),
+              }
+            ).then((res) => {
+              return res.json() as Promise<
+                | {
+                    token: string;
+                    key?: string;
+                    config?: {
+                      apps: AppReference[];
+                      workspaces: {
+                        name: string;
+                      }[];
+                    };
+                  }
+                | { error: string }
+              >;
+            });
 
             if ("error" in data) {
-              return;
+              console.log("auth error: from remote server:", data.error);
+              throw "";
             }
 
             if (
@@ -309,7 +316,11 @@ export const auth = ({ sendEmail, organizations }: AuthOptions) => {
               !("token" in data) ||
               typeof data.token !== "string"
             ) {
-              return;
+              console.error(
+                "auth error: invalid response from remote server [1]",
+                data
+              );
+              throw "";
             }
 
             if (!key) {
@@ -318,7 +329,11 @@ export const auth = ({ sendEmail, organizations }: AuthOptions) => {
                 !data.key ||
                 typeof data.key !== "string"
               ) {
-                return;
+                console.error(
+                  "auth error: invalid response from remote server [2]",
+                  data
+                );
+                throw "";
               }
               key = data.key;
             }
@@ -326,85 +341,85 @@ export const auth = ({ sendEmail, organizations }: AuthOptions) => {
             const validated = parseAuthToken(LOCAL_TOKEN, data.token, key);
 
             if (!validated || validated.email !== user.email) {
-              return;
+              console.error(
+                "auth error: invalid response from remote server [3]",
+                validated,
+                user
+              );
+              throw "";
             }
 
             if (
               returnConfig &&
               (!("config" in data) || typeof data.config !== "object")
             ) {
-              return;
+              console.error(
+                "auth error: invalid response from remote server [4]",
+                data
+              );
+              throw "";
             }
 
             return data;
-          };
-
-          const keyCookie = cookies.req.get(KEY_COOKIE)?.value;
-
-          const hasKey =
-            keyCookie &&
-            keyCookie.slug === organization.slug &&
-            (!organization.url || keyCookie.url === organization.url);
-
-          let url: string | undefined;
-
-          if (hasKey) {
-            // we only get here if organization.slug is something
-            url = keyCookie.url;
-          } else if (organization.slug && organization.url) {
-            // and the same here
-            // THIS IS IF URL IS PRESET
-            url = organization.url;
-          } else if (organization.slug) {
-            // and the same here
-            url = await organizations.getOrganizationUrl(organization.slug);
+          } catch (err) {
+            console.error(err);
+            return new RPCError({ code: "UNAUTHORIZED" });
           }
+        };
 
-          // so now organization.slug is defined
+        const keyCookie = cookies.req.get(KEY_COOKIE)?.value;
 
-          if (!url) {
-            // catched below
-            throw "";
-          }
+        const hasKey = keyCookie && keyCookie.slug === organization;
 
-          const data = await getData(url, hasKey ? keyCookie.key : undefined);
+        let url: string | undefined;
 
-          if (!data) {
-            // catched below
-            throw "";
-          }
-
-          if (!hasKey && data.key) {
-            // stays on the server
-            cookies.res.set(
-              KEY_COOKIE,
-              {
-                key: data.key,
-                url,
-                slug: organization.slug!,
-              },
-              { path: "/", sameSite: "strict", secure: true, httpOnly: true }
-            );
-          }
-
-          cookies.res.set(LOCAL_TOKEN, data.token, {
-            path: "/",
-            sameSite: "strict",
-            secure: true,
-          });
-
-          return {
-            user: { email: user.email },
-            config: data.config ?? null,
-            url,
-          };
-        } catch (err) {
-          return {
-            user: { email: user.email },
-            config: null,
-            url: null,
-          };
+        if (hasKey) {
+          // we only get here if organization.slug is something
+          url = keyCookie.url;
+        } else if (organization) {
+          // and the same here
+          url = await organizations.getOrganizationUrl(organization);
         }
+
+        // so now organization.slug is defined
+
+        if (!url) {
+          // catched below
+          return new RPCError({ code: "UNAUTHORIZED" });
+        }
+
+        console.log("DATA", url);
+
+        const data = await getData(url, hasKey ? keyCookie.key : undefined);
+
+        if (data instanceof RPCError) {
+          return data;
+        }
+
+        if (!hasKey && data.key) {
+          // stays on the server
+          cookies.res.set(
+            KEY_COOKIE,
+            {
+              key: data.key,
+              url,
+              slug: organization,
+            },
+            { path: "/", sameSite: "strict", secure: true, httpOnly: true }
+          );
+        }
+
+        cookies.res.set(LOCAL_TOKEN, data.token, {
+          path: "/",
+          sameSite: "strict",
+          secure: true,
+        });
+
+        return {
+          user: { email: user.email },
+          config: data.config ?? null,
+          url,
+        };
       }),
 
     logout: procedure.use(cors).mutate(async (_, { res }) => {

@@ -4,7 +4,7 @@ import {
   createRouteHandler as createRouteHandler_,
 } from "@nanorpc/server/adapters/next";
 import { auth } from "./routes/auth";
-export { auth } from "./routes/auth";
+export { auth, type AuthOptions } from "./routes/auth";
 import { bucket } from "./routes/bucket";
 export { bucket } from "./routes/bucket";
 import { collab } from "./routes/collab";

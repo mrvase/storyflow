@@ -4,7 +4,7 @@ import { SystemTemplatePage } from "./SystemTemplatePage";
 import FolderPage from "../folders/FolderPage";
 import { DocumentPage } from "../documents/DocumentPage";
 import { FieldPage } from "../fields/FieldPage";
-import { Route, useLocation, useRoute } from "@nanokit/router";
+import { Route, createHistory, useLocation, useRoute } from "@nanokit/router";
 import { ParallelRoutes, createEvents } from "@nanokit/router/routes/parallel";
 import { Layout } from "../layout/components/Layout";
 import { NestedTransitionRoutes } from "@nanokit/router/routes/nested-transition";
@@ -13,12 +13,18 @@ import { Sortable } from "@storyflow/dnd";
 import { PanelResizeHandle, PanelGroup } from "react-resizable-panels";
 import { LinkReceiver } from "../layout/components/LinkReceiver";
 import { Panel } from "../layout/components/Panel";
-import { setOrganizationSlug } from "../clients/auth";
+import { updateOrganization } from "../clients/auth";
 import { query } from "../clients/client";
 import { collab } from "../collab/CollabContext";
 import { TEMPLATE_FOLDER } from "@storyflow/cms/constants";
 import { cache } from "@nanorpc/client/swr";
+import { cache as SWRCache, mutate } from "swr/_internal";
 import { DocumentId } from "@storyflow/shared/types";
+import {
+  authServicesMutate,
+  authServicesQuery,
+} from "../clients/client-auth-services";
+import { isError } from "@nanorpc/client";
 
 const ordinaryRoutes: Record<string, Route> = {
   home: {
@@ -160,7 +166,23 @@ const topParallelPanelsRoute = {
 
 let cancelSync: (() => void) | null = null;
 
-export const routes: Route[] = [
+const clearCache = (exclude?: string[]) => {
+  Array.from(SWRCache.keys()).forEach((key) => {
+    if (exclude && exclude.includes(key)) return;
+    mutate(key, undefined, { revalidate: false });
+  });
+};
+
+const routes: Route[] = [
+  {
+    match: "/logout",
+    async loader() {
+      clearCache();
+      await authServicesMutate.auth.logout();
+      history.navigate("/");
+    },
+    await: true,
+  },
   {
     match: "/:slug/:version([^~/]+)",
     render: Layout,
@@ -170,8 +192,14 @@ export const routes: Route[] = [
     match: "/:slug",
     render: Layout,
     next: () => [topParallelPanelsRoute],
-    loader(params) {
-      setOrganizationSlug(params.slug);
+    async loader(params) {
+      clearCache(["/auth/authenticateUser"]);
+      const result = await updateOrganization(params.slug);
+      if (isError(result)) {
+        console.log("IS ERRROR", result);
+        history.navigate({ pathname: "/", search: "unauthorized=true" });
+        return;
+      }
 
       const folders = query.admin.getFolders(undefined, {
         onSuccess(data) {
@@ -209,11 +237,25 @@ export const routes: Route[] = [
         });
       })();
 
-      return Promise.all([folders, documents]);
+      const result2 = await Promise.all([folders, documents]);
+
+      console.log(result2);
+
+      const failure = result2.some((r) => isError(r));
+
+      if (failure) {
+        history.navigate({ pathname: "/", search: "unauthorized=true" });
+      }
     },
     await: true,
   },
 ];
+
+const history = createHistory({
+  routes,
+});
+
+export const history_: any = history;
 
 /*
 export const routes: RouteConfig[] = [

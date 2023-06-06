@@ -13,4 +13,4 @@ const authBaseFetcher = async (key: string, options: Options) => {
 };
 
 export const { query: authServicesQuery, mutate: authServicesMutate } =
-  createClient<AuthAPI>("")(authBaseFetcher);
+  createClient<AuthAPI>()(authBaseFetcher);

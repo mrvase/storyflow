@@ -1,13 +1,21 @@
 import { createProcedure } from "@nanorpc/server";
-import { Context } from "../next";
 import type {} from "zod";
+import { getCookieFunction, setCookiesFunction } from "../cookies";
+import { decode, encode } from "../crypto";
 
-export const baseProcedure = createProcedure<Context>();
+export type Context = {
+  req: {
+    url: string;
+    method: "GET" | "POST" | "OPTIONS";
+    headers: Headers;
+    cookies: ReturnType<typeof getCookieFunction>;
+  };
+  res: {
+    headers: Headers;
+    cookies: ReturnType<typeof setCookiesFunction>;
+  };
+  encode: typeof encode;
+  decode: typeof decode;
+};
 
-const commitHeaders = baseProcedure.middleware(async (input, ctx, next) => {
-  const result = await next(input, ctx);
-  ctx.res?.commit();
-  return result;
-});
-
-export const procedure = baseProcedure.use(commitHeaders);
+export const procedure = createProcedure<Context>();

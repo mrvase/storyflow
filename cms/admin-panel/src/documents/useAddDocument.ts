@@ -77,7 +77,7 @@ export const useAddDocument = (
         navigate(
           `${route.accumulated}/${
             options.type === "template" ? "t" : "d"
-          }${parseInt(id, 16).toString(16)}`
+          }/${parseInt(id, 16).toString(16)}`
         );
       }
       return id;

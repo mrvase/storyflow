@@ -1,5 +1,5 @@
 import { RPCError } from "@nanorpc/server";
-import { getClientPromise } from "../mongoClient";
+import { client } from "../mongo";
 import { z } from "zod";
 import { createFieldRecordGetter } from "@storyflow/cms/get-field-record";
 import { calculateRootFieldFromRecord } from "@storyflow/cms/calculate-server";
@@ -18,7 +18,7 @@ import {
   createRawTemplateFieldId,
   createTemplateFieldId,
 } from "@storyflow/cms/ids";
-import { createObjectId } from "@storyflow/server/mongo";
+import { createObjectId } from "../mongo";
 import { createFetcher } from "../create-fetcher";
 import { globals } from "../globals";
 import { cors, procedure } from "@storyflow/server/rpc";
@@ -155,32 +155,29 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
         }
         console.log("REQUESTING PAGE", dbName, url);
 
-        const client = await getClientPromise();
+        const db = await client.get(dbName);
 
         const regex = `^${url
           .split("/")
           .map((el, index) => (index === 0 ? el : `(${el}|\\*)`))
           .join("/")}$`;
 
-        const docRaw = await client
-          .db(dbName)
-          .collection("documents")
-          .findOne<DBDocumentRaw>({
-            ...(appConfig.namespaces &&
-              appConfig.namespaces.length > 0 && {
-                folder: {
-                  $in: appConfig.namespaces.map((el) =>
-                    createObjectId(`${el}`.padStart(24, "0"))
-                  ),
+        const docRaw = await db.collection("documents").findOne<DBDocumentRaw>({
+          ...(appConfig.namespaces &&
+            appConfig.namespaces.length > 0 && {
+              folder: {
+                $in: appConfig.namespaces.map((el) =>
+                  createObjectId(`${el}`.padStart(24, "0"))
+                ),
+              },
+            }),
+          [`values.${createRawTemplateFieldId(DEFAULT_FIELDS.url.id)}`]:
+            url.indexOf("/") < 0
+              ? url
+              : {
+                  $regex: regex,
                 },
-              }),
-            [`values.${createRawTemplateFieldId(DEFAULT_FIELDS.url.id)}`]:
-              url.indexOf("/") < 0
-                ? url
-                : {
-                    $regex: regex,
-                  },
-          });
+        });
 
         if (!docRaw) {
           console.log("NO PAGE");
@@ -239,9 +236,8 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
     getPaths: procedure.use(cors(apiConfig.cors)).query(async () => {
       console.log("REQUESTING PATHS");
 
-      const client = await getClientPromise();
-      const articles = await client
-        .db(dbName)
+      const db = await client.get(dbName);
+      const articles = await db
         .collection<DBDocumentRaw>("documents")
         .find({
           ...(appConfig.namespaces

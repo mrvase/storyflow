@@ -19,7 +19,7 @@ const ZodSpliceOperation = <T extends z.ZodType>(Value: T) =>
 const ZodToggleOperation = <T extends z.ZodType>(Value: T) =>
   z.tuple([z.string(), Value]);
 
-export const client = new Redis({
+const client = new Redis({
   url: "https://eu1-renewed-albacore-38555.upstash.io",
   token: process.env.UPSTASH_TOKEN as string,
 });

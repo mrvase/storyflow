@@ -1,4 +1,4 @@
-import { getClientPromise } from "../mongoClient";
+import { client } from "../mongo";
 import { globals } from "../globals";
 import { StoryflowConfig } from "@storyflow/shared/types";
 import { procedure } from "@storyflow/server/rpc";
@@ -7,7 +7,7 @@ export const files = (config: StoryflowConfig) => {
   const dbName = undefined; // config.workspaces[0].db;
   return {
     getAll: procedure.use(globals(config.api)).query(async (_) => {
-      const db = (await getClientPromise()).db(dbName);
+      const db = await client.get(dbName);
 
       const files = await db
         .collection("files")

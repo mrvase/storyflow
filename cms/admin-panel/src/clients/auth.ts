@@ -1,11 +1,13 @@
 import { onInterval } from "../collab/interval";
-import { authServicesMutate } from "./client-auth-services";
+import { authServicesMutate, authServicesQuery } from "./client-auth-services";
+import type { ErrorCodes } from "@storyflow/api";
 import { Fetcher, isError } from "@nanorpc/client";
 import { AppReference } from "@storyflow/shared/types";
 import {
   createGlobalState,
   useImmutableGlobalState,
 } from "../state/useSubject";
+import { useImmutableQuery } from "@nanorpc/client/swr";
 
 type Organization = {
   slug: string;
@@ -13,7 +15,7 @@ type Organization = {
   workspaces: { name: string }[];
 };
 
-export type AuthOptions = { url: string; token: string };
+export type AuthOptions = { token: string };
 
 const getCookie = (name: string) => {
   const value = `; ${document.cookie}`;
@@ -23,84 +25,58 @@ const getCookie = (name: string) => {
   }
 };
 
-const authHandler = () => {
-  // global user
-  const userState = createGlobalState<{ email: string } | null>(null);
-  const [, setUser] = userState;
+export const useUser = () => {
+  return useImmutableQuery(authServicesQuery.auth.authenticateUser());
+};
 
+const authHandler = () => {
   let token: string | null = null;
 
   const organizationState = createGlobalState<Organization | null>(null);
   const [, setOrganization] = organizationState;
 
-  let url: string | null = null;
-
-  let promise: ReturnType<typeof updateToken> | null = null;
+  const urlState = createGlobalState<string | null>(null);
+  const [, setUrl, registerUrlListener] = urlState;
 
   let slug = "";
 
-  const setOrganizationSlug = (newSlug: string) => {
+  const updateOrganization = (newSlug: string) => {
     if (slug !== newSlug) {
       slug = newSlug;
       token = null;
-      url = null;
+      setUrl(null);
       setOrganization(null);
     }
+    return updateToken(true);
   };
 
-  const call = (returnConfig: boolean = false) => {
-    return authServicesMutate.auth.authenticate({
-      organization: {
-        slug,
-        url: null, // preset?.url ?? null
-      },
+  const authenticateOrganization = (returnConfig: boolean = false) => {
+    return authServicesMutate.auth.authenticateOrganization({
+      organization: slug,
       returnConfig,
     });
   };
 
   const updateToken = async (initial: boolean = false) => {
-    const result = await call(initial);
+    const result = await authenticateOrganization(initial);
     token = getCookie("sf.c.local-token") ?? token;
 
     if (initial) {
       if (isError(result)) {
-        // window.location.assign(slug ? `/?next=${slug}` : "/");
-        throw new Error(result.error);
+        return result;
       }
-
-      setUser(result.user);
 
       if (result.config) {
         setOrganization({
-          slug: slug!, // we do not get a config, if there was no slug
-          ...result.config!,
+          slug, // we do not get a config, if there was no slug
+          ...result.config,
         });
-      } else if (slug) {
-        // window.location.assign(`/?unauthorized=${slug}`);
       }
 
-      url = "url" in result ? `${result.url}/api` : null;
+      setUrl("url" in result && result.url ? `${result.url}/api` : null);
     }
 
     return result;
-  };
-
-  const getAuthData = async () => {
-    if (url && token) {
-      return { url, token };
-    }
-
-    if (!promise) {
-      console.log("INITIAL");
-      promise = updateToken(true).then((res) => {
-        promise = null;
-        return res;
-      });
-    }
-
-    await promise;
-
-    return { url, token };
   };
 
   setTimeout(() => onInterval(() => updateToken(), { duration: 30000 }), 30000);
@@ -109,12 +85,8 @@ const authHandler = () => {
     fetcher: Fetcher<TOptions>
   ) => {
     return async (key: string, options: Omit<TOptions, keyof AuthOptions>) => {
-      // get the needed things...
-      const { url, token } = await getAuthData();
-
       return await fetcher(key, {
         ...options,
-        url,
         token,
       } as TOptions);
     };
@@ -122,22 +94,15 @@ const authHandler = () => {
 
   return {
     middleware,
-    setOrganizationSlug,
-    checkToken: async () => {
-      const result = await call();
-      if (!isError(result)) {
-        setUser(result.user);
-      }
-    },
-    useUser: () => useImmutableGlobalState(userState),
+    updateOrganization,
     useOrganization: () => useImmutableGlobalState(organizationState),
+    registerUrlListener,
   };
 };
 
 export const {
   middleware: authMiddleware,
-  useUser,
-  checkToken,
   useOrganization,
-  setOrganizationSlug,
+  updateOrganization,
+  registerUrlListener,
 } = authHandler();

@@ -15,7 +15,7 @@ import type {
   NestedField,
 } from "@storyflow/cms/types";
 import { getSyntaxTreeRecord, parseDocument } from "../convert";
-import { getClientPromise } from "../mongoClient";
+import { client } from "../mongo";
 import { isSyntaxTree } from "@storyflow/cms/syntax-tree";
 import {
   extractRootRecord,
@@ -50,7 +50,7 @@ export async function save(
 ) {
   const documentId = input.id as DocumentId;
 
-  const db = (await getClientPromise()).db(dbName);
+  const db = await client.get(dbName);
 
   let doc = (await db
     .collection<DBDocumentRaw>("documents")

@@ -7,7 +7,7 @@ import { AuthOptions, authMiddleware } from "./auth";
 const url = !isDev ? `/api` : `http://localhost:3000/api`;
 
 const baseFetcher = async (key: string, options: Options & AuthOptions) => {
-  const { url: organizationUrl, token, ...rest } = options;
+  const { token, ...rest } = options;
   return await fetch(`${url}${key}`, {
     ...rest,
     credentials: "include",
@@ -19,7 +19,7 @@ const baseFetcher = async (key: string, options: Options & AuthOptions) => {
 
 export const { query: servicesQuery, mutate: servicesMutate } = createClient<
   BucketAPI & CollabAPI
->("")(authMiddleware(baseFetcher));
+>()(authMiddleware(baseFetcher));
 
 /*
 export type ServicesClient = CreateClient<

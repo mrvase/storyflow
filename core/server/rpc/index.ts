@@ -1,3 +1,3 @@
 export { cors } from "./cors";
 export { auth, emailAuth } from "./auth";
-export { procedure } from "./procedure";
+export { procedure, type Context } from "./procedure";

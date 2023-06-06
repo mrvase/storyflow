@@ -9,7 +9,7 @@ import type {
   StoryflowConfig,
   ValueArray,
 } from "@storyflow/shared/types";
-import { getClientPromise } from "../mongoClient";
+import { client } from "../mongo";
 import { globals } from "../globals";
 import { createRawTemplateFieldId } from "@storyflow/cms/ids";
 import { parseDocument } from "../convert";
@@ -55,7 +55,7 @@ export const documents = (config: StoryflowConfig) => {
       .use(globals(config.api))
       .schema(z.string())
       .query(async (string) => {
-        const db = (await getClientPromise()).db(dbName);
+        const db = await client.get(dbName);
 
         const articles = (
           (await db
@@ -76,7 +76,7 @@ export const documents = (config: StoryflowConfig) => {
       .use(globals(config.api))
       .schema(z.string())
       .query(async (id) => {
-        const db = (await getClientPromise()).db(dbName);
+        const db = await client.get(dbName);
 
         const documentRaw = await db
           .collection<DBDocumentRaw>("documents")
@@ -118,7 +118,7 @@ export const documents = (config: StoryflowConfig) => {
       .use(globals(config.api))
       .schema(z.array(z.string()))
       .mutate(async (ids) => {
-        const db = (await getClientPromise()).db(dbName);
+        const db = await client.get(dbName);
 
         const removes = ids.map((el) => createObjectId(el));
 
@@ -144,7 +144,7 @@ export const documents = (config: StoryflowConfig) => {
         })
       )
       .query(async ({ namespace }) => {
-        const db = (await getClientPromise()).db(dbName);
+        const db = await client.get(dbName);
 
         const lastBuildCounter =
           (
@@ -215,7 +215,7 @@ export const documents = (config: StoryflowConfig) => {
     registerRevalidation: procedure
       .use(globals(config.api))
       .mutate(async () => {
-        const db = (await getClientPromise()).db(dbName);
+        const db = await client.get(dbName);
 
         await db
           .collection<{ name: string; counter: number }>("counters")

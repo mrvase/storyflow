@@ -4,9 +4,7 @@ import { RPCError } from "@nanorpc/server";
 import { cors as corsFactory, auth, procedure } from "@storyflow/server/rpc";
 
 export const cors = corsFactory(
-  process.env.NODE_ENV === "production"
-    ? undefined
-    : ["http://localhost:5173", "http://localhost:3000"]
+  process.env.NODE_ENV === "production" ? undefined : ["http://localhost:3000"]
 );
 
 const authWithCookieKey = procedure

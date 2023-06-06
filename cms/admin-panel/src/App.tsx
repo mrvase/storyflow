@@ -1,53 +1,34 @@
 import { DragDropContext } from "@storyflow/dnd";
-import {
-  Router,
-  createHistory,
-  useLocation,
-  useRouterIsLoading,
-} from "@nanokit/router";
+import { Router, useLocation, useRouterIsLoading } from "@nanokit/router";
 import { AppConfigProvider } from "./AppConfigContext";
 import { FieldFocusProvider } from "./FieldFocusContext";
 import { IdGenerator } from "./id-generator";
 import { Preload } from "./DataProvider";
-import { routes } from "./pages/routes";
+import { history_ } from "./pages/routes";
 import { SignedIn, SignedOut, SignIn } from "./Auth";
 import React from "react";
 import { useLocalStorage } from "./state/useLocalStorage";
 import { Organizations } from "./Organizations";
 import { TranslationProvider } from "./translation/TranslationContext";
-import { checkToken } from "./clients/auth";
 import { NestedRoutes } from "@nanokit/router/routes/nested";
 import { FoldersProvider } from "./folders/FoldersContext";
 import Loader from "./elements/Loader";
+import { useUser } from "./clients/auth";
 
-const history = createHistory({
-  routes,
-});
-
-export function App({
-  organization,
-  lang,
-}: {
-  organization?: { slug: string; url: string };
-  lang?: "da" | "en";
-}) {
+export function App({ lang }: { lang?: "da" | "en" }) {
   const [darkMode] = useLocalStorage<boolean>("dark-mode", true);
 
   React.useLayoutEffect(() => {
     document.body.classList[darkMode ? "add" : "remove"]("dark");
   }, [darkMode]);
 
-  React.useLayoutEffect(() => {
-    checkToken();
-  }, []);
-
   return (
     <div className="w-full h-full bg-gray-100 dark:bg-gray-950 text-gray-800 dark:text-white">
       <TranslationProvider lang={lang}>
-        <Router history={history}>
+        <Router history={history_}>
           <SignedIn>
             <FrontPage>
-              <Organizations preset={organization} />
+              <Organizations />
             </FrontPage>
             <PanelPage>
               <Preload />
@@ -76,9 +57,10 @@ export function App({
 function FrontPage({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
 
+  const { isLoading: userIsLoading } = useUser();
   const isLoading = useRouterIsLoading();
 
-  if (isLoading) {
+  if (userIsLoading || isLoading) {
     return (
       <div className="w-full h-full flex-center">
         <Loader size="lg" />
@@ -86,11 +68,11 @@ function FrontPage({ children }: { children: React.ReactNode }) {
     );
   }
 
-  return pathname === "/" || pathname === "logout" ? <>{children}</> : null;
+  return pathname === "/" || pathname === "/logout" ? <>{children}</> : null;
 }
 
 function PanelPage({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
 
-  return pathname === "/" || pathname === "logout" ? null : <>{children}</>;
+  return pathname === "/" || pathname === "/logout" ? null : <>{children}</>;
 }

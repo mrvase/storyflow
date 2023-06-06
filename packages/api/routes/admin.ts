@@ -4,7 +4,7 @@ import { serializeAuthToken } from "@storyflow/server/auth";
 import { GLOBAL_TOKEN, parseAuthToken } from "@storyflow/server/auth";
 import { globals } from "../globals";
 import { z } from "zod";
-import { getClientPromise } from "../mongoClient";
+import { client } from "../mongo";
 import { CollabVersion, DBFolderRecord } from "@storyflow/cms/types";
 import { StoryflowConfig } from "@storyflow/shared/types";
 import { createRawTemplateFieldId } from "@storyflow/cms/ids";
@@ -16,13 +16,10 @@ const validate = async (email: string, admin: string) => {
   if (email === admin) {
     return true;
   }
-  const promise = await getClientPromise();
-  const result = await promise
-    .db()
-    .collection("documents")
-    .findOne({
-      [`values.${createRawTemplateFieldId(DEFAULT_FIELDS.user.id)}`]: email,
-    });
+  const db = await client.get();
+  const result = await db.collection("documents").findOne({
+    [`values.${createRawTemplateFieldId(DEFAULT_FIELDS.user.id)}`]: email,
+  });
   return Boolean(result);
 };
 
@@ -50,6 +47,8 @@ export const admin = (config: StoryflowConfig) => {
       })
       .mutate(async (include, { req }) => {
         try {
+          console.log("authenticating");
+
           const tokenHeader = (req.headers.get("authorization") ?? "").replace(
             "Bearer ",
             ""
@@ -112,7 +111,7 @@ export const admin = (config: StoryflowConfig) => {
         })
       )
       .query(async ({ name, size }) => {
-        const db = (await getClientPromise()).db(dbName);
+        const db = await client.get(dbName);
 
         const counter = await db
           .collection<{ name: string; counter: number }>("counters")
@@ -132,7 +131,7 @@ export const admin = (config: StoryflowConfig) => {
       }),
 
     getFolders: procedure.use(globals(config.api)).query(async () => {
-      const db = (await getClientPromise()).db(dbName);
+      const db = await client.get(dbName);
 
       const folders = await db
         .collection<{

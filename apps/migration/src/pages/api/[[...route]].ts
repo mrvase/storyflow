@@ -1,4 +1,4 @@
-import { getClientPromise, setClientPromise } from "../mongoClient";
+import { client } from "../../mongo";
 import { Redis } from "@upstash/redis";
 import { RPCError, createProcedure } from "@nanorpc/server";
 
@@ -8,8 +8,8 @@ const copyCollection = async <T extends object = any>(options: {
   toDb: string;
   transform?: (doc: T) => T;
 }) => {
-  const db1 = (await getClientPromise()).db(options.fromDb);
-  const db2 = (await getClientPromise()).db(options.toDb);
+  const db1 = await client.get(options.fromDb);
+  const db2 = await client.get(options.toDb);
 
   let docs = (await db1.collection(options.collection).find().toArray()) as T[];
 
@@ -23,14 +23,14 @@ const copyCollection = async <T extends object = any>(options: {
   return docs.length;
 };
 
-export const client = new Redis({
+export const redisClient = new Redis({
   url: "https://eu1-renewed-albacore-38555.upstash.io",
   token: process.env.UPSTASH_TOKEN as string,
 });
 
 export const migration = {
   migrate: createProcedure().query(async () => {
-    setClientPromise(process.env.MONGO_URL!);
+    client.set(process.env.MONGO_URL!);
     if (process.env.NODE_ENV === "development") {
       /*
         await copyCollection({
@@ -81,7 +81,7 @@ export const migration = {
         | { name: "domains"; value: string[] }
         | { name: "termplate"; value: string };
 
-      const result = (await client.lrange(
+      const result = (await redisClient.lrange(
         `kfs_backup:folders`,
         0,
         -1
@@ -118,8 +118,8 @@ export const migration = {
         })
         .flat(1);
 
-      client.del(`kfs:folders`);
-      client.rpush(`kfs:folders`, ["", 0, "047mpcup", transactions]);
+      redisClient.del(`kfs:folders`);
+      redisClient.rpush(`kfs:folders`, ["", 0, "047mpcup", transactions]);
 
       return { failed };
     } else {
@@ -256,3 +256,12 @@ export const migration = createRoute({
   }),
 });
 */
+
+import { createAPIRoute as createAPIRoute_ } from "@nanorpc/server/adapters/next";
+import { createAPIRouteContext } from "@storyflow/server/next";
+
+export default createAPIRoute_(migration, {
+  createContext: createAPIRouteContext({
+    secret: process.env.SECRET_KEY,
+  }),
+});

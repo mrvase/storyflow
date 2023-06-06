@@ -16,5 +16,5 @@ const App = dynamic(() => import("admin-panel").then((mod) => mod.App), {
 });
 
 export default function Page() {
-  return <App organization={organization} lang="da" />;
+  return <App lang="da" />;
 }

@@ -393,7 +393,7 @@ export function FolderTemplateButton({
         onClick={() => {
           if (template) {
             navigate(
-              `${route.accumulated}/t${parseInt(template, 16).toString(16)}`
+              `${route.accumulated}/t/${parseInt(template, 16).toString(16)}`
             );
             return;
           }

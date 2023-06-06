@@ -1,7 +1,7 @@
 import { Options, createClient } from "@nanorpc/client";
 import { middleware } from "./middleware";
 import type { DefaultAPI, ErrorCodes } from "@storyflow/api";
-import { AuthOptions } from "./auth";
+import { AuthOptions, registerUrlListener } from "./auth";
 
 const baseFetcher = async (
   key: string,
@@ -10,8 +10,9 @@ const baseFetcher = async (
     headers: Record<string, string>;
   } & AuthOptions
 ) => {
-  const { url, token, ...rest } = options;
-  return await fetch(`${url}${key}`, {
+  const { token, ...rest } = options;
+  const protocol = key.startsWith("localhost") ? "http://" : "https://";
+  return await fetch(`${protocol}${key}`, {
     ...rest,
     credentials: "include",
     headers: {
@@ -22,8 +23,7 @@ const baseFetcher = async (
 
 const fetcher = middleware(baseFetcher);
 
-/*
-export type Client = CreateClient<DefaultAPI, typeof fetcher>;
-*/
+const options = { url: undefined as string | undefined };
+registerUrlListener((newUrl) => (options.url = newUrl ?? undefined));
 
-export const { query, mutate } = createClient<DefaultAPI>("")(fetcher);
+export const { query, mutate } = createClient<DefaultAPI>(options)(fetcher);

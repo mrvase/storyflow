@@ -3,44 +3,31 @@ import React from "react";
 import Loader from "./elements/Loader";
 import { Link } from "@nanokit/router";
 import { useUser } from "./clients/auth";
-import { useImmutableQuery } from "@nanorpc/client/swr";
-import {
-  authServicesMutate,
-  authServicesQuery,
-} from "./clients/client-auth-services";
+import { authServicesMutate } from "./clients/client-auth-services";
 
-export function Organizations({
-  preset,
-}: {
-  preset?: { slug: string; url: string };
-}) {
-  let organizations: {
-    slug: string;
-    url: string;
-  }[] = [];
-  if (preset) {
-    organizations = [preset];
-  } else {
-    const { data } = useImmutableQuery(
-      authServicesQuery.auth.getOrganizations()
-    );
-    organizations = data?.organizations ?? organizations;
+export function Organizations() {
+  const { data, error } = useUser();
+
+  if (error) {
+    return <>failed</>;
   }
 
-  const user = useUser();
+  if (!data) {
+    return <>loading</>;
+  }
 
   return (
     <div className="w-full h-full flex flex-col">
       <div className="w-full flex-center p-5 grow">
         <div className="grid grid-cols-3 w-full max-w-4xl gap-5">
           <AddOrganization index={0} />
-          {organizations.map((data, index) => (
+          {data.organizations.map((data, index) => (
             <Organization index={index + 1} key={data.slug} data={data} />
           ))}
         </div>
       </div>
       <div className="w-full py-5 flex flex-col gap-3 items-center text-sm">
-        <div className="text-gray-600">Logget ind som {user?.email}</div>
+        <div className="text-gray-600">Logget ind som {data.email}</div>
         <Link to="/logout" className="rounded px-4 py-2 ring-button">
           Log ud
         </Link>
