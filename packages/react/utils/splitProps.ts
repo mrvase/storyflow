@@ -69,8 +69,8 @@ export const normalizeProp = (
   if (value !== null && typeof value === "object" && "name" in value) {
     const option = Array.isArray(config.options)
       ? config.options.find(
-          (el): el is { value: any } | { name: any } =>
-            typeof el === "object" && el.name === value.name
+          (el): el is { alias: string; value: any } =>
+            typeof el === "object" && el.alias === value.name
         )
       : undefined;
     if (option && "value" in option) return option.value;

@@ -3,7 +3,7 @@ import { Router, useLocation, useRouterIsLoading } from "@nanokit/router";
 import { AppConfigProvider } from "./AppConfigContext";
 import { FieldFocusProvider } from "./FieldFocusContext";
 import { IdGenerator } from "./id-generator";
-import { Preload } from "./DataProvider";
+import { Preload } from "./Preload";
 import { history_ } from "./pages/routes";
 import { SignedIn, SignedOut, SignIn } from "./Auth";
 import React from "react";

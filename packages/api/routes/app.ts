@@ -23,49 +23,16 @@ import { createFetcher } from "../create-fetcher";
 import { globals } from "../globals";
 import { cors, procedure } from "@storyflow/server/rpc";
 
-const modifyValues = <Result, V extends Record<string, any>>(
-  obj: V,
-  callback: (
-    val: V extends Record<string, infer U> ? U : never,
-    key: string,
-    index: number
-  ) => Result
-): Record<string, Result> =>
+const modifyValues = <Input, Output>(
+  obj: Record<string, Input>,
+  callback: (val: Input, key: string, index: number) => Output
+): Record<string, Output> =>
   Object.fromEntries(
     Object.entries(obj).map(([key, value], index) => [
       key,
       callback(value, key, index),
     ])
-  ) as Record<string, Result>;
-
-const handleContext = (
-  context: Record<string, any> | ((arg: any) => Record<string, any>),
-  props: PropConfigRecord
-): Record<string, any> => {
-  if (typeof context === "function") {
-    const createProxy = (group?: string): any =>
-      new Proxy(
-        {},
-        {
-          get(_, prop: string) {
-            const localProps = group
-              ? (props[group] as PropGroup).props
-              : props;
-            if (!(prop in localProps)) {
-              throw new Error(`Context property ${prop} not found`);
-            }
-            if (localProps[prop].type === "group") {
-              return createProxy(prop);
-            }
-            return `{{${["props", group, prop].filter(Boolean).join(".")}}}`;
-          },
-        }
-      );
-
-    return context(createProxy());
-  }
-  return context;
-};
+  );
 
 export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
   const dbName = undefined; // config.workspaces[0].db;
@@ -77,6 +44,49 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
           const exists = new Set(Object.keys(libraryConfig.configs));
           const entries = Object.entries(libraryConfig.configs);
 
+          const modifyProps = (props: PropConfigRecord): PropConfigRecord => {
+            return modifyValues(props, (el) => {
+              if (el.type === "group") {
+                return {
+                  ...el,
+                  props: modifyProps(el.props) as typeof el.props,
+                };
+              }
+
+              if (!("options" in el) || el.options === undefined) {
+                return el;
+              }
+
+              if (Array.isArray(el.options)) {
+                return {
+                  ...el,
+                  options: el.options.map((el) => {
+                    if (typeof el === "object") {
+                      return el;
+                    }
+                    return { value: el };
+                  }),
+                };
+              }
+
+              Object.entries(el.options).forEach((entry) => {
+                if (exists.has(entry[0])) return;
+                entries.push(entry);
+                exists.add(entry[0]);
+              });
+
+              return {
+                ...el,
+                options: Object.keys(el.options).map((el) => {
+                  const name = el.replace(/Config$/, "");
+                  return {
+                    value: libraryName ? `${libraryName}:${name}` : name,
+                  };
+                }),
+              };
+            });
+          };
+
           let i = 0;
           while (i < entries.length) {
             const entry = entries[i];
@@ -86,30 +96,7 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
               entry[0],
               {
                 ...data,
-                props: modifyValues(props, (el) => {
-                  if (
-                    !("options" in el) ||
-                    typeof el.options !== "object" ||
-                    Array.isArray(el.options)
-                  ) {
-                    return el;
-                  }
-
-                  Object.entries(el.options).forEach((entry) => {
-                    if (exists.has(entry[0])) return;
-                    entries.push(entry);
-                    exists.add(entry[0]);
-                  });
-
-                  return {
-                    ...el,
-                    options: Object.keys(el.options).map((el) => {
-                      const name = el.replace(/Config$/, "");
-                      return libraryName ? `${libraryName}:${name}` : name;
-                    }),
-                  };
-                }),
-                // ...(context && { context: handleContext(context, props) }),
+                props: modifyProps(props),
               },
             ];
             i++;

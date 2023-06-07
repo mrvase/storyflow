@@ -10,8 +10,6 @@ import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 import { LexicalNode, NodeKey } from "lexical";
 import { ColorDecorator } from "./ColorNode";
 
-type OptionObject = { name: string; label?: string; value?: string };
-
 function Decorator({
   nodeKey,
   value,
@@ -23,8 +21,7 @@ function Decorator({
 
   const options = useFieldOptions();
   const option = (options as Option[]).find(
-    (option): option is OptionObject =>
-      typeof option === "object" && option.name === value.name
+    (option) => typeof option === "object" && option.alias === value.name
   );
 
   if (restrictTo === "color" && option) {
@@ -47,8 +44,7 @@ function CustomDecorator({
   const options = useFieldOptions();
 
   const option = (options as Option[]).find(
-    (option): option is { name: string; label?: string } =>
-      typeof option === "object" && option.name === value.name
+    (option) => typeof option === "object" && option.alias === value.name
   );
 
   let label = option && "label" in option ? option.label : value.name;
@@ -57,7 +53,7 @@ function CustomDecorator({
     <span
       className={cl(
         "bg-gray-50 dark:bg-sky-400/20 text-sky-100/90 rounded-sm selection:bg-transparent relative px-2",
-        isSelected ? "ring-1 ring-amber-300" : "dark:ring-gray-600",
+        isSelected ? "ring-1 ring-white" : "dark:ring-gray-600",
         isPseudoSelected && caretClasses
       )}
       onMouseDown={() => {
@@ -91,6 +87,10 @@ export default class ChildNode extends TokenStreamNode<typeof type, TokenType> {
     super(type, token, key);
   }
 
+  isInline(): true {
+    return true;
+  }
+
   exportJSON(): SerializedTokenStreamNode<typeof type, TokenType> {
     return super.exportJSON();
   }
@@ -110,6 +110,6 @@ export function $createCustomTokenNode(value: TokenType): ChildNode {
   return new ChildNode(value);
 }
 
-export function $isCustomTokenNode(node: LexicalNode): boolean {
+export function $isCustomTokenNode(node: LexicalNode): node is ChildNode {
   return node instanceof ChildNode;
 }

@@ -1,6 +1,6 @@
 import cl from "clsx";
 import { SwatchIcon } from "@heroicons/react/24/outline";
-import type { ColorToken } from "@storyflow/shared/types";
+import type { ColorToken, Option } from "@storyflow/shared/types";
 import { LexicalNode, NodeKey } from "lexical";
 import React from "react";
 import { getColorName } from "../../../data/colors";
@@ -14,7 +14,7 @@ function Decorator({
   value,
 }: {
   nodeKey: string;
-  value: ColorToken | { name: string; label?: string; value?: string };
+  value: ColorToken | Option;
 }) {
   const { data } = useSWR("COLORS", {
     revalidateOnMount: false,
@@ -30,8 +30,8 @@ function Decorator({
   let color: string;
 
   if (!("color" in value)) {
-    label = "label" in value ? value.label : value.name;
-    color = "value" in value ? value.value! : "#ffffff";
+    label = "label" in value ? value.label : value.alias;
+    color = "value" in value ? (value.value! as string) : "#ffffff";
   } else {
     color = value.color;
     label = getColorName(color.slice(1), data[0], data[1]).split(" / ")[0];
@@ -41,7 +41,7 @@ function Decorator({
     <span
       className={cl(
         "bg-gray-50 dark:bg-sky-400/20 text-sky-100/90 rounded-sm selection:bg-transparent relative px-2",
-        isSelected ? "ring-1 ring-amber-300" : "dark:ring-gray-600",
+        isSelected ? "ring-1 ring-white" : "dark:ring-gray-600",
         isPseudoSelected && caretClasses
       )}
       onMouseDown={() => {
@@ -104,6 +104,6 @@ export function $createColorNode(value: TokenType): ChildNode {
   return new ChildNode(value);
 }
 
-export function $isColorNode(node: LexicalNode): boolean {
+export function $isColorNode(node: LexicalNode): node is ChildNode {
   return node instanceof ChildNode;
 }

@@ -35,6 +35,7 @@ import type { TokenStream } from "../../operations/types";
 import { useIsFocused } from "../../editor/react/useIsFocused";
 import { useFieldRestriction } from "../FieldIdContext";
 import { useAppConfig } from "../../AppConfigContext";
+import { $isCustomTokenNode } from "../Editor/decorators/CustomTokenNode";
 
 const matchers: ((
   node: LexicalNode
@@ -44,6 +45,14 @@ const matchers: ((
       return {
         type: "prompt",
         prompt: node.getTextContent().replace(/\uFEFF/g, ""),
+      };
+    }
+  },
+  (node: LexicalNode) => {
+    if ($isCustomTokenNode(node)) {
+      return {
+        type: "custom",
+        prompt: "",
       };
     }
   },
@@ -76,8 +85,6 @@ export function Overlay({ children }: { children?: React.ReactNode }) {
     y: number;
     x: number;
   } | null>(null);
-
-  const isOpen = position !== null;
 
   const reset = () => {
     setType(null);
@@ -123,21 +130,12 @@ export function Overlay({ children }: { children?: React.ReactNode }) {
           }
         }
 
-        if (match === undefined) {
-          const type = {
-            image: "file",
-            color: "color",
-          }[(restrictTo as string) || ""];
-
-          if (type && isFocused) {
-            match = {
-              type,
-              prompt: "",
-            };
-          } else {
-            reset();
-            return;
-          }
+        if (
+          match === undefined &&
+          (!["file", "color"].includes(restrictTo!) || !isFocused)
+        ) {
+          reset();
+          return;
         }
 
         const rootRect = editor.getRootElement()?.getBoundingClientRect();
@@ -170,8 +168,11 @@ export function Overlay({ children }: { children?: React.ReactNode }) {
           };
         });
         setNode(newNode);
-        setType(match.type);
-        setPrompt(match.prompt);
+
+        if (match) {
+          setType(match.type);
+          setPrompt(match.prompt);
+        }
       });
     });
   }, [editor, isHolded, restrictTo, isFocused]);
@@ -236,6 +237,8 @@ export function Overlay({ children }: { children?: React.ReactNode }) {
     });
   }, [editor, promptIsOpen, isFocused, restrictTo]);
 
+  console.log("NODE!!!", node);
+
   return (
     <div
       className={cl(
@@ -260,8 +263,10 @@ export function Overlay({ children }: { children?: React.ReactNode }) {
           {children}
         </Prompt>
       )}
-      {type === "color" && <ColorOverlay node={node as ColorNode} />}
-      {type === "file" && (
+      {(type === "color" || (restrictTo === "color" && isFocused)) && (
+        <ColorOverlay node={node as ColorNode} />
+      )}
+      {(type === "file" || (restrictTo === "image" && isFocused)) && (
         <FileOverlay node={node as FileNode} holdActions={holdActions} />
       )}
     </div>

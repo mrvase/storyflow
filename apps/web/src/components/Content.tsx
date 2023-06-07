@@ -55,8 +55,8 @@ const props = {
         type: "color",
         label: "Tekstfarve",
         options: [
-          { name: "theme1", label: "Temafarve 1", value: "#f0f" },
-          { name: "theme2", label: "Temafarve 2", value: "#0f0" },
+          { alias: "theme1", label: "Temafarve 1", value: "#f0f" },
+          { alias: "theme2", label: "Temafarve 2", value: "#0f0" },
         ],
       },
     },

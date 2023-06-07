@@ -1,8 +1,7 @@
 import { CubeIcon } from "@heroicons/react/24/outline";
 import { getDocumentId } from "@storyflow/cms/ids";
-import type { ConfigRecord, DocumentId } from "@storyflow/shared/types";
+import type { DocumentId } from "@storyflow/shared/types";
 import type { TokenStream } from "../../operations/types";
-import type { Options, Option as PropOption } from "@storyflow/shared/types";
 import React from "react";
 import { useAppConfig } from "../../AppConfigContext";
 import { useDocumentIdGenerator } from "../../id-generator";
@@ -17,12 +16,14 @@ export function ElementPrompt({
   replacePromptWithStream,
 }: {
   prompt: string;
-  options?: string[];
+  options?: { value: string | number }[];
   replacePromptWithStream: (stream: TokenStream) => void;
 }) {
   const id = useFieldId();
   const documentId = getDocumentId(id) as DocumentId;
   const generateDocumentId = useDocumentIdGenerator();
+
+  const optionNames = new Set(optionsFromProps.map(({ value }) => value));
 
   const { configs } = useAppConfig();
 
@@ -40,7 +41,7 @@ export function ElementPrompt({
   if (optionsFromProps.length > 0) {
     const defaultOptions = options.filter((el) => el.libraryName === "");
     options = options.filter((el) =>
-      optionsFromProps.includes(`${el.libraryName}:${el.name}`)
+      optionNames.has(`${el.libraryName}:${el.name}`)
     );
     options.push(...defaultOptions);
   } else {

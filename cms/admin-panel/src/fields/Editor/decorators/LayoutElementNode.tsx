@@ -6,7 +6,7 @@ import {
   FieldId,
   NestedDocumentId,
   NestedElement,
-  Options,
+  Option,
 } from "@storyflow/shared/types";
 import type { SyntaxTree } from "@storyflow/cms/types";
 import { getConfigFromType, useAppConfig } from "../../../AppConfigContext";
@@ -270,11 +270,11 @@ function FieldSpecification({
 
   const config = props.find((el) => el.id === propId)!;
 
-  let options: Options | undefined =
-    "options" in config ? config.options : undefined;
+  let options: Option[] | undefined =
+    "options" in config ? (config.options as Option[]) : undefined;
 
   if (isLoop) {
-    options = parentPropConfig?.options;
+    options = parentPropConfig?.options as Option[];
   }
 
   return (

@@ -152,20 +152,11 @@ type PropTypes = {
   data: any[];
 };
 
-export type Option =
-  | string
-  | number
-  | ({
-      label?: string;
-    } & (
-      | {
-          value: string | number;
-          name?: string;
-        }
-      | {
-          name: string;
-        }
-    ));
+export type Option = {
+  value: string | number;
+  label?: string;
+  alias?: string;
+};
 
 export type PropConfig<PropType = keyof PropTypes> = {
   type: PropType;
@@ -176,7 +167,7 @@ export type PropConfig<PropType = keyof PropTypes> = {
 };
 
 export type Options =
-  | Option[]
+  | (string | number | Option)[]
   | {
       [key: keyof ConfigRecord]: Config & { component: Config["component"] };
     };

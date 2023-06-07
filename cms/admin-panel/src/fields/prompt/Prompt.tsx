@@ -39,6 +39,7 @@ import { TokenPrompt } from "./TokenPrompt";
 import { ReferencePrompt } from "./ReferencePrompt";
 import { TemplatePrompt } from "./TemplatePrompt";
 import { ConfigRecord } from "@storyflow/shared/types";
+import { Option } from "./Option";
 
 const panes = [
   {
@@ -323,9 +324,7 @@ export function Prompt({
             {currentPane === "elements" && (
               <ElementPrompt
                 prompt={prompt}
-                options={
-                  restrictTo === "children" ? (options as string[]) : undefined
-                }
+                options={restrictTo === "children" ? options : undefined}
                 replacePromptWithStream={replacePromptWithStream}
               />
             )}
@@ -347,6 +346,18 @@ export function Prompt({
                 replacePromptWithStream={replacePromptWithStream}
                 holdActions={holdActions}
               />
+            )}
+            {options && ["string", "number"].includes(restrictTo!) && (
+              <div className="p-2.5">
+                <div className="font-medium text-gray-400 mb-1 ml-1">
+                  Muligheder
+                </div>
+                {(options as Extract<typeof options, any[]>).map((el) => (
+                  <Option key={el.value} value={el.value} onEnter={() => {}}>
+                    {el.label ?? el.alias ?? el.value}
+                  </Option>
+                ))}
+              </div>
             )}
           </>
         )}
