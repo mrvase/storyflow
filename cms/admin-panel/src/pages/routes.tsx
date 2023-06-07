@@ -166,9 +166,9 @@ const topParallelPanelsRoute = {
 
 let cancelSync: (() => void) | null = null;
 
-const clearCache = (exclude?: string[]) => {
+const clearCache = (opts: { exclude?: string[] } = {}) => {
   Array.from(SWRCache.keys()).forEach((key) => {
-    if (exclude && exclude.includes(key)) return;
+    if (opts.exclude && opts.exclude.includes(key)) return;
     mutate(key, undefined, { revalidate: false });
   });
 };
@@ -193,7 +193,7 @@ const routes: Route[] = [
     render: Layout,
     next: () => [topParallelPanelsRoute],
     async loader(params) {
-      clearCache(["/auth/authenticateUser"]);
+      clearCache({ exclude: ["/auth/authenticateUser"] });
       const result = await updateOrganization(params.slug);
       if (isError(result)) {
         console.log("IS ERRROR", result);
@@ -238,8 +238,6 @@ const routes: Route[] = [
       })();
 
       const result2 = await Promise.all([folders, documents]);
-
-      console.log(result2);
 
       const failure = result2.some((r) => isError(r));
 

@@ -80,7 +80,8 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
           let i = 0;
           while (i < entries.length) {
             const entry = entries[i];
-            const { component, stories, props, context, ...data } = entry[1];
+            const { component, stories, props, provideContext, ...data } =
+              entry[1];
             entries[i] = [
               entry[0],
               {
@@ -108,7 +109,7 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
                     }),
                   };
                 }),
-                ...(context && { context: handleContext(context, props) }),
+                // ...(context && { context: handleContext(context, props) }),
               },
             ];
             i++;

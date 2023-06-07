@@ -1,7 +1,6 @@
 import { AuthOptions } from "services-api";
 import { client } from "../../../mongo";
-
-const orgs = [{ slug: "kfs", url: "localhost:3001" }];
+import { orgs } from "./orgs";
 
 export const organizations: AuthOptions["organizations"] = {
   async insertUser(email: string) {

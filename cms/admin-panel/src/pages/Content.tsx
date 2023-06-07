@@ -156,7 +156,7 @@ function ArrangeButton() {
     <button
       className={cl(
         "relative",
-        "shrink-0 h-7 rounded text-sm transition-all px-2.5 font-medium",
+        "shrink-0 h-7 rounded text-sm transition-all px-2.5",
         isOpen
           ? "mx-0 bg-yellow-400/25 text-yellow-200 w-[6.5rem]"
           : "-mx-2.5 w-9 text-gray-500 hover:text-gray-200"
@@ -284,7 +284,7 @@ const ToolbarButton = React.forwardRef<
       ref={ref}
       {...props}
       className={cl(
-        "h-7 flex-center gap-2 transition-colors rounded px-2.5 font-medium",
+        "h-7 flex-center gap-2 transition-colors rounded px-2.5",
         active && "active",
         props.className
       )}

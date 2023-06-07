@@ -224,8 +224,6 @@ export function DocumentPage({ children }: { children?: React.ReactNode }) {
   const parsed = parseMatch<"document" | "template">(route);
   let { doc, error } = useDocumentWithTimeline(parsed.id);
 
-  console.log("DOC DOC", parsed, route, doc);
-
   return (
     <>
       {!error && doc && (

@@ -68,7 +68,7 @@ const authHandler = () => {
 
       if (result.config) {
         setOrganization({
-          slug, // we do not get a config, if there was no slug
+          slug,
           ...result.config,
         });
       }

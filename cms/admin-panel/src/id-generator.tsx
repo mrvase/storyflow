@@ -4,7 +4,6 @@ import {
   FolderId,
   NestedDocumentId,
 } from "@storyflow/shared/types";
-import { z } from "zod";
 import {
   getRawDocumentId,
   createFieldId,
@@ -15,6 +14,7 @@ import {
 import { useOrganization } from "./clients/auth";
 import { query } from "./clients/client";
 import { isError } from "@nanorpc/client";
+import { z } from "./utils/parse";
 
 /*
 [organisation]:ids {
@@ -37,13 +37,13 @@ const batchSizes = {
 };
 
 const schema = z.object({
-  workspace: z.string(),
-  id: z.number(),
-  template: z.number(),
-  id_offsets: z.array(z.number()),
-  template_offsets: z.array(z.number()),
-  field_offsets: z.array(z.number()),
-  docs: z.array(z.string()),
+  workspace: "string",
+  id: "number",
+  template: "number",
+  id_offsets: z.array("number"),
+  template_offsets: z.array("number"),
+  field_offsets: z.array("number"),
+  docs: z.array("string"),
 });
 
 const getNextValue = (
@@ -97,28 +97,40 @@ export function IdGenerator({ children }: { children: React.ReactNode }) {
 
   const initialize = async () => {
     if (getObject()) return;
-    const [id_offset, template_offset, field_offset] = await Promise.all([
-      fetchOffset("id"),
-      fetchOffset("template"),
-      fetchOffset("field"),
-    ]);
-    const object = {
-      workspace: workspaceId,
-      id: id_offset,
-      template: template_offset,
-      id_offsets: [id_offset],
-      template_offsets: [template_offset],
-      field_offsets: [field_offset],
-      docs: [],
-    };
-    localStorage.setItem(getName(), JSON.stringify(object));
+    try {
+      const [id_offset, template_offset, field_offset] = await Promise.all([
+        fetchOffset("id"),
+        fetchOffset("template"),
+        fetchOffset("field"),
+      ]);
+      const object = {
+        workspace: workspaceId,
+        id: id_offset,
+        template: template_offset,
+        id_offsets: [id_offset],
+        template_offsets: [template_offset],
+        field_offsets: [field_offset],
+        docs: [],
+      };
+      localStorage.setItem(getName(), JSON.stringify(object));
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const getObject = () => {
     const string = getItem(getName());
     if (!string) return null;
     try {
-      const value = schema.parse(JSON.parse(string));
+      const value = schema.parse(JSON.parse(string)) as {
+        workspace: string;
+        id: number;
+        template: number;
+        id_offsets: number[];
+        template_offsets: number[];
+        field_offsets: number[];
+        docs: string[];
+      };
       if (value.workspace !== workspaceId) {
         throw new Error("Workspace mismatch");
       }

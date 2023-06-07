@@ -26,8 +26,7 @@
     "react-colorful": "^5.6.1",
     "react-error-boundary": "^3.1.4",
     "react-resizable-panels": "^0.0.29",
-    "swr": "^2.1.5",
-    "zod": "^3.20.2"
+    "swr": "^2.1.5"
   },
   "devDependencies": {
     "@storyflow/api": "workspace:*",

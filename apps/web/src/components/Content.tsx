@@ -4,16 +4,32 @@ import {
   Props,
   Stories,
   cms,
+  createServerContext,
 } from "@storyflow/react";
+
+const ContentContext = createServerContext<{
+  parentColor: string;
+  test: string;
+}>();
 
 export const Content = ({
   content,
   style,
-  serverContext,
+  useServerContext,
 }: Props<typeof props>) => {
-  console.log("CONTEXT", serverContext);
+  const result = useServerContext(ContentContext);
+  console.log("PARENT CONTEXT", style, result);
+
   return (
-    <cms.div className="p-20" style={style}>
+    <cms.div
+      className="p-20"
+      style={{
+        ...style,
+        border: result?.parentColor
+          ? `1px ${result.parentColor} solid`
+          : undefined,
+      }}
+    >
       {content}
     </cms.div>
   );
@@ -71,9 +87,8 @@ export const ContentConfig = {
   label,
   props,
   stories,
-  context: (props) => ({
-    parentColor: props.style.color,
-    test: "hello",
-  }),
+  provideContext: (props) => {
+    return ContentContext({ parentColor: props.style.color, test: "hello" });
+  },
   component: Content,
 } satisfies Config<typeof props>;

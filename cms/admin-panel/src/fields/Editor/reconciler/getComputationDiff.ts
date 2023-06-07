@@ -24,7 +24,6 @@ export const getComputationDiff = (
     newLength === oldLength &&
     newValue.every((el, i) => el === oldValue[i])
   ) {
-    console.timeEnd("a");
     return null;
   }
 

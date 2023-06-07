@@ -151,8 +151,6 @@ export function Overlay({ children }: { children?: React.ReactNode }) {
 
         const DOMNode: HTMLElement | null = editor.getElementByKey(node.__key);
 
-        console.log("DOM NODE", DOMNode, rootY, rootX);
-
         if (!DOMNode) {
           reset();
           return;
