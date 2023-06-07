@@ -1,4 +1,3 @@
-import { Client } from "../RPCProvider";
 import type {
   DocumentId,
   FieldId,
@@ -12,6 +11,7 @@ import type {
 } from "@storyflow/cms/types";
 import type { DocumentConfig } from "@storyflow/cms/types";
 import {
+  createRawTemplateFieldId,
   createTemplateFieldId,
   getDocumentId,
   getIdFromString,
@@ -28,6 +28,7 @@ import { Timeline } from "@storyflow/collab/Timeline";
 import { createTransaction } from "@storyflow/collab/utils";
 import { FieldTransactionEntry } from "../operations/actions";
 import { createTokenStream } from "../operations/parse-token-stream";
+import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
 
 export const copyRecord = (
   originalRecord: SyntaxTreeRecord,
@@ -53,67 +54,74 @@ export const copyRecord = (
     return options.generateTemplateFieldId!(key);
   };
 
-  let record: SyntaxTreeRecord = Object.fromEntries(
-    getSyntaxTreeEntries(originalRecord).map(([key, value]) => {
-      // fix template field ids
-      let newKey = key;
+  let record: SyntaxTreeRecord = {};
 
-      if (
-        options.generateTemplateFieldId &&
-        getDocumentId(key) === options.oldDocumentId
-      ) {
-        newKey = getNewKey(key);
-      }
+  const modifyNode = (node: SyntaxTree): SyntaxTree => {
+    return {
+      ...node,
+      children: node.children.map((token) => {
+        if (isSyntaxTree(token)) {
+          const newToken = { ...token };
+          if (newToken.type === "loop") {
+            newToken.data = getRawDocumentId(getNewNestedId(token.data!));
+          }
+          return modifyNode(newToken);
+        } else if (
+          tokens.isNestedEntity(token) &&
+          isNestedDocumentId(token.id)
+        ) {
+          const newNestedId = getNewNestedId(getRawDocumentId(token.id));
+          const newToken = { ...token };
+          newToken.id = newNestedId;
 
-      const modifyNode = (node: SyntaxTree): SyntaxTree => {
-        return {
-          ...node,
-          children: node.children.map((token) => {
-            if (isSyntaxTree(token)) {
-              const newToken = { ...token };
-              if (newToken.type === "loop") {
-                newToken.data = getRawDocumentId(getNewNestedId(token.data!));
-              }
-              return modifyNode(newToken);
-            } else if (
-              tokens.isNestedEntity(token) &&
-              isNestedDocumentId(token.id)
-            ) {
-              const newNestedId = getNewNestedId(getRawDocumentId(token.id));
-              const newToken = { ...token };
-              newToken.id = newNestedId;
+          // replace references to the old template fields with references to the new ones
+          if (
+            options.generateTemplateFieldId &&
+            "field" in newToken &&
+            getDocumentId(newToken.field) === options.oldDocumentId
+          ) {
+            newToken.field = getNewKey(newToken.field);
+          } else if (
+            "field" in newToken &&
+            newToken.field.endsWith(getIdFromString("data"))
+          ) {
+            newToken.field = replaceDocumentId(
+              newToken.field,
+              getNewNestedId(getRawDocumentId(getDocumentId(newToken.field)))
+            );
+          }
 
-              // replace references to the old template fields with references to the new ones
-              if (
-                options.generateTemplateFieldId &&
-                "field" in newToken &&
-                getDocumentId(newToken.field) === options.oldDocumentId
-              ) {
-                newToken.field = getNewKey(newToken.field);
-              } else if (
-                "field" in newToken &&
-                newToken.field.endsWith(getIdFromString("data"))
-              ) {
-                newToken.field = replaceDocumentId(
-                  newToken.field,
-                  getNewNestedId(
-                    getRawDocumentId(getDocumentId(newToken.field))
-                  )
-                );
-              }
+          return newToken;
+        }
+        return token;
+      }),
+    };
+  };
 
-              return newToken;
-            }
-            return token;
-          }),
-        };
-      };
-
-      const newValue = modifyNode(value);
-
-      return [newKey, newValue];
-    })
+  const exludeFields = new Set(
+    [DEFAULT_FIELDS.creation_date.id, DEFAULT_FIELDS.template_label.id].map(
+      createRawTemplateFieldId
+    )
   );
+
+  getSyntaxTreeEntries(originalRecord).forEach(([key, value]) => {
+    // fix template field ids
+    let newKey = key;
+
+    if (exludeFields.has(getRawFieldId(key))) {
+      console.log("EXCLUDING FIELD!!", key, value);
+      return;
+    }
+
+    if (
+      options.generateTemplateFieldId &&
+      getDocumentId(key) === options.oldDocumentId
+    ) {
+      newKey = getNewKey(key);
+    }
+
+    record[newKey] = modifyNode(value);
+  });
 
   // fix nested record keys
   record = Object.fromEntries(
@@ -136,14 +144,13 @@ export const getDefaultValuesFromTemplateAsync = async (
   newDocumentId: DocumentId,
   templateId: DocumentId,
   options: {
-    client: Client;
     generateDocumentId: {
       (): DocumentId;
       (parent: DocumentId): NestedDocumentId;
     };
   }
 ) => {
-  const doc = await fetchDocument(templateId, options.client);
+  const doc = await fetchDocument(templateId);
 
   if (doc) {
     return copyRecord(doc.record, {
@@ -158,10 +165,7 @@ export const getDefaultValuesFromTemplateAsync = async (
   return {};
 };
 
-export const getTemplateFieldsAsync = async (
-  template: DocumentConfig,
-  client: Client
-) => {
+export const getTemplateFieldsAsync = async (template: DocumentConfig) => {
   const templates = new Set();
 
   const getFields = async (
@@ -175,7 +179,7 @@ export const getTemplateFieldsAsync = async (
           return [el];
         } else if ("template" in el && !templates.has(el.template)) {
           templates.add(el.template);
-          const doc = await fetchDocument(el.template, client);
+          const doc = await fetchDocument(el.template);
           if (!doc) return [];
           return await getFields(doc.config);
         }

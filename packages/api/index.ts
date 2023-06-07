@@ -1,12 +1,15 @@
-import type {} from "@storyflow/rpc-server/types-shared";
-import { createAPIRoute, createRouteHandler } from "@storyflow/server/next";
-
 import { documents } from "./routes/documents";
 import { admin } from "./routes/admin";
 import { files } from "./routes/files";
 import { app } from "./routes/app";
 import { ApiConfig, AppConfig, StoryflowConfig } from "@storyflow/shared/types";
-import { setClientPromise } from "./mongoClient";
+import { client } from "./mongo";
+import { createRouteHandler as createRouteHandler_ } from "@nanorpc/server/adapters/next";
+import { createRouteHandlerContext } from "@storyflow/server/next";
+
+export type * from "@nanorpc/server";
+
+export { isError } from "@nanorpc/server";
 
 const createAPI = (config: StoryflowConfig) => ({
   admin: admin(config),
@@ -18,33 +21,11 @@ export type DefaultAPI = ReturnType<typeof createAPI>;
 
 export type AppAPI = { app: ReturnType<typeof app> };
 
-export const createHandler = (config: StoryflowConfig) => {
-  setClientPromise(config.api.mongoURL);
-  return createRouteHandler(createAPI(config), { secret: config.auth.secret });
-};
-
 export const createLocalAPI = (appConfig: AppConfig, apiConfig: ApiConfig) => {
-  setClientPromise(apiConfig.mongoURL);
+  client.set(apiConfig.mongoURL);
   return {
     app: app(appConfig, apiConfig),
   };
-};
-
-export const createAppHandler = (
-  appConfig: AppConfig,
-  apiConfig: ApiConfig,
-  procedure?: string
-) => {
-  setClientPromise(apiConfig.mongoURL);
-  return createRouteHandler(
-    {
-      app: app(appConfig, apiConfig),
-    },
-    {
-      route: "app",
-      procedure,
-    }
-  );
 };
 
 export type {
@@ -54,4 +35,39 @@ export type {
   ApiConfig,
 } from "@storyflow/shared/types";
 
-export * from "@storyflow/rpc-server/result";
+export const createRouteHandler = (config: StoryflowConfig) => {
+  client.set(config.api.mongoURL);
+  return createRouteHandler_(createAPI(config), {
+    createContext: createRouteHandlerContext({
+      secret: config.auth.secret,
+    }),
+  });
+};
+
+/*
+export const createAPIRoute = (config: StoryflowConfig) => {
+  setClientPromise(config.api.mongoURL);
+  return createAPIRouteInner(createAPI(config), {
+    createContext: createAPIRouteContext({
+      secret: config.auth.secret,
+    }),
+  });
+};
+*/
+
+export const createAppHandler = (
+  appConfig: AppConfig,
+  apiConfig: ApiConfig,
+  route: string
+) => {
+  client.set(apiConfig.mongoURL);
+  return createRouteHandler_(
+    {
+      app: app(appConfig, apiConfig),
+    },
+    {
+      createContext: createRouteHandlerContext(),
+      route: route ? ["app", route] : ["app"],
+    }
+  );
+};

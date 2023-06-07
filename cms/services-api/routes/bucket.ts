@@ -1,9 +1,9 @@
-import { error, success } from "@storyflow/rpc-server/result";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { createProcedure, createRoute } from "@storyflow/rpc-server";
 import { globals } from "../globals";
 import { z } from "zod";
+import { procedure } from "@storyflow/server/rpc";
+import { RPCError } from "@nanorpc/server";
 
 const settingNumber = {
   private: 0,
@@ -54,13 +54,11 @@ const createFileName = ({
   return name;
 };
 
-export const bucket = createRoute({
-  getUploadLink: createProcedure({
-    middleware(ctx) {
-      return ctx.use(globals);
-    },
-    schema() {
-      return z.object({
+export const bucket = {
+  getUploadLink: procedure
+    .use(globals)
+    .schema(
+      z.object({
         type: z.string(),
         label: z.string(),
         size: z.number(),
@@ -73,49 +71,53 @@ export const bucket = createRoute({
           })
           .optional(),
         access: z.union([z.literal("private"), z.literal("public")]).optional(),
-      });
-    },
-    async query(
-      { type, label, size, extension, metadata = {}, access = "public" },
-      { slug }
-    ) {
-      const name = createFileName({
-        type,
-        extension,
-        metadata,
-        access,
-      });
-
-      const client = new S3Client({
-        region: "auto",
-        endpoint: `https://${process.env.S3_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-        credentials: {
-          accessKeyId: process.env.S3_ACCESS_KEY ?? "",
-          secretAccessKey: process.env.S3_SECRET_KEY ?? "",
-        },
-      });
-
-      try {
-        const command = new PutObjectCommand({
-          Bucket: process.env.S3_BUCKET_NAME,
-          Key: `${slug}/${name}`,
-          ContentLength: size,
-          ContentType: type,
+      })
+    )
+    .query(
+      async (
+        { type, label, size, extension, metadata = {}, access = "public" },
+        { slug }
+      ) => {
+        const name = createFileName({
+          type,
+          extension,
+          metadata,
+          access,
         });
 
-        const url = await getSignedUrl(client, command, {
-          expiresIn: 60,
+        const client = new S3Client({
+          region: "auto",
+          endpoint: `https://${process.env.S3_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+          credentials: {
+            accessKeyId: process.env.S3_ACCESS_KEY ?? "",
+            secretAccessKey: process.env.S3_SECRET_KEY ?? "",
+          },
         });
 
-        return success({
-          name,
-          url,
-          headers: {},
-        });
-      } catch (err) {
-        console.error(err);
-        return error({ message: "Failed getting upload link.", detail: err });
+        try {
+          const command = new PutObjectCommand({
+            Bucket: process.env.S3_BUCKET_NAME,
+            Key: `${slug}/${name}`,
+            ContentLength: size,
+            ContentType: type,
+          });
+
+          const url = await getSignedUrl(client, command, {
+            expiresIn: 60,
+          });
+
+          return {
+            name,
+            url,
+            headers: {},
+          };
+        } catch (err) {
+          console.error(err);
+          return new RPCError({
+            code: "SERVER_ERROR",
+            message: "Failed getting upload link.",
+          });
+        }
       }
-    },
-  }),
-});
+    ),
+};

@@ -4,10 +4,9 @@ import {
   ArrowPathRoundedSquareIcon,
   PlusIcon,
 } from "@heroicons/react/24/outline";
-import { usePanelActions } from "../panel-router/PanelRouter";
-import { replacePanelPath } from "../panel-router/utils";
-import { useLocation, useNavigate } from "@storyflow/router";
+import { useLocation, useNavigate } from "@nanokit/router";
 import React from "react";
+import { actions } from "../../pages/routes";
 
 export function LinkReceiver({
   id,
@@ -20,7 +19,6 @@ export function LinkReceiver({
   type?: "new" | "existing";
   edge?: "right" | "left";
 }) {
-  const actions = usePanelActions();
   const { pathname } = useLocation();
   const navigate = useNavigate();
 
@@ -36,8 +34,7 @@ export function LinkReceiver({
       if (type === "new") {
         actions.open({ path: action.item, index });
       } else {
-        const url = replacePanelPath(pathname, { path: action.item, index });
-        navigate(url);
+        navigate(action.item);
       }
     },
     [pathname, actions, navigate, index]

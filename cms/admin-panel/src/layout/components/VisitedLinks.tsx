@@ -1,62 +1,58 @@
 import React from "react";
 import cl from "clsx";
-import type { PanelData } from "../panel-router/types";
 import { fetchDocument } from "../../documents";
-import { useClient } from "../../RPCProvider";
 import { getDocumentLabel } from "../../documents/useDocumentLabel";
-import { Link, useLocation } from "@storyflow/router";
-import { replacePanelPath } from "../panel-router/utils";
+import { Link } from "@nanokit/router";
 import { useTranslation } from "../../translation/TranslationContext";
+import { usePath } from "@nanokit/router";
 
-export function VisitedLinks({ data: { path, index } }: { data: PanelData }) {
+export function VisitedLinks() {
   const t = useTranslation();
   const [visited, setVisited] = React.useState<
     { path: string; label: string; type: "t" | "d" }[]
   >([]);
 
-  const client = useClient();
+  const { pathname } = usePath();
 
   const prev = React.useRef<string | null>(null);
 
   React.useEffect(() => {
     const prevPath = prev.current;
-    prev.current = path;
-    if (!prevPath || prevPath === path) return;
+    prev.current = pathname;
+    if (!prevPath || prevPath === pathname) return;
     const last = prevPath.split("/").slice(-1)[0];
     const type = last.slice(0, 1);
     const id = last.slice(1).padStart(24, "0");
     let mounted = true;
     if (type === "d" || type === "t") {
-      fetchDocument(id, client).then((doc) => {
+      fetchDocument(id).then((doc) => {
         if (!mounted) return;
         const label = getDocumentLabel(doc, t);
         if (!label) return;
         setVisited((ps) =>
           [
             { path: prevPath, label, type: type as "d" | "t" },
-            ...ps.filter((el) => el.path !== prevPath && el.path !== path),
+            ...ps.filter((el) => el.path !== prevPath && el.path !== pathname),
           ].slice(0, 5)
         );
       });
     } else {
       setVisited((ps) =>
-        ps.filter((el) => el.path !== prevPath && el.path !== path).slice(0, 5)
+        ps
+          .filter((el) => el.path !== prevPath && el.path !== pathname)
+          .slice(0, 5)
       );
     }
     return () => {
       mounted = false;
     };
-  }, [path]);
-
-  const { pathname } = useLocation();
-  const getHref = (path: string) =>
-    replacePanelPath(pathname, { path, index: 0 });
+  }, [pathname]);
 
   return (
     <div className="h-7 bg-white dark:bg-gray-850 text-xs px-2 flex gap-3">
       {visited.map((el) => (
         <Link
-          to={getHref(el.path)}
+          to={el.path}
           key={el.path}
           className={cl(
             "h-7 flex items-center transition-colors",

@@ -1,7 +1,7 @@
 import cl from "clsx";
 import { CheckIcon } from "@heroicons/react/24/outline";
 import { useDragItem } from "@storyflow/dnd";
-import { usePanel, useRoute } from "../../layout/panel-router/Routes";
+import { useNavigate, useRoute } from "@nanokit/router";
 
 export default function Table({
   labels,
@@ -63,10 +63,11 @@ function Row({
   columns: { name?: string; value?: any; width?: string }[];
   indent?: number;
 }) {
-  const [{ index: panelIndex }, navigate] = usePanel();
+  const navigate = useNavigate();
+  const { index: panelIndex } = useRoute("parallel");
   const route = useRoute();
 
-  const to = `${route}/d${parseInt(id, 16).toString(16)}`;
+  const to = `${route.accumulated}/d/${parseInt(id, 16).toString(16)}`;
 
   const { dragHandleProps } = useDragItem({
     type: `link:${panelIndex}`,
@@ -79,9 +80,7 @@ function Row({
       className="border-t border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition-[background-color]"
       {...dragHandleProps}
       onClick={() => {
-        navigate(to, {
-          navigate: true,
-        });
+        navigate(to);
       }}
     >
       <td className="w-9 text-[0px] border-0 p-0">

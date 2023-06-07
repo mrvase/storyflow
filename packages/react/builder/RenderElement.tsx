@@ -4,11 +4,13 @@ import {
   Component,
   Config,
   ConfigRecord,
-  Library,
-  LibraryConfig,
+  Context,
+  ContextProvider,
   PropConfig,
   PropConfigRecord,
+  PropGroup,
   ValueArray,
+  context,
 } from "@storyflow/shared/types";
 import { ExtendPath, useConfig, usePath } from "./contexts";
 import {
@@ -23,13 +25,21 @@ import { extendPath } from "../utils/extendPath";
 import RenderChildren from "./RenderChildren";
 import { getIdFromString } from "@storyflow/shared/getIdFromString";
 import { NoEditor } from "./editor";
-import { calculateClient } from "@storyflow/client/calculate-client";
+import {
+  fileTransform,
+  getComponentContextCreator,
+  normalizeProp,
+  resolveStatefulProp,
+  splitProps,
+} from "../utils/splitProps";
 
 type LoopIndexRecord = Record<string, number>;
 
 export const LoopContext = React.createContext<LoopIndexRecord>({});
 export const IndexContext = React.createContext(0);
 export const SpreadContext = React.createContext(false);
+
+const ServerContextsContext = React.createContext<Context[]>([]);
 
 const initialLoop = {};
 
@@ -52,99 +62,6 @@ function LoopProvider({
     </LoopContext.Provider>
   );
 }
-
-const slug =
-  typeof window !== "undefined"
-    ? new URLSearchParams(window.location.search).get("slug")!
-    : "";
-
-const getImageObject = (name: string) => {
-  const src = slug ? `https://cdn.storyflow.dk/${slug}/${name}` : "";
-
-  const width = name ? parseInt(name.split("-")[4] ?? "0", 16) : 0;
-  const height = name ? parseInt(name.split("-")[5] ?? "0", 16) : 0;
-
-  return {
-    src,
-    width,
-    height,
-  };
-};
-
-const calculateProp = (
-  id: string,
-  config: PropConfig,
-  prop: ValueArray | ClientSyntaxTree,
-  loopCtx: LoopIndexRecord,
-  parentOptions?: ConfigRecord
-) => {
-  const type = config.type;
-
-  const array: ValueArray = (() => {
-    const isStateful = !Array.isArray(prop);
-
-    if (isStateful) {
-      return calculateClient(
-        prop,
-        (token) => {
-          if ("state" in token) {
-            return 0;
-          }
-          return 0;
-        },
-        (id) => loopCtx[id]
-      );
-    }
-    return prop;
-  })();
-
-  const value = array[0];
-
-  if (value !== null && typeof value === "object" && "name" in value) {
-    const option = Array.isArray(config.options)
-      ? config.options.find(
-          (el): el is { value: any } | { name: any } =>
-            typeof el === "object" && el.name === value.name
-        )
-      : undefined;
-    if (option && "value" in option) return option.value;
-  }
-  if (value !== null && typeof value === "object" && "color" in value) {
-    return value.color;
-  }
-  if (["image", "video"].includes(type)) {
-    const src =
-      typeof value === "object" ? (value as { src: string })?.src ?? "" : "";
-    if (
-      !src.match(/\.(png|jpg|jpeg|gif)$/) &&
-      !src.match(/\.(mp4|mov|wmv|avi)$/)
-    ) {
-      return {
-        src: "",
-        width: 0,
-        height: 0,
-      };
-    }
-    return getImageObject(src);
-  } else if (type === "boolean") {
-    return value === "false" ? false : Boolean(value);
-  } else if (type === "number") {
-    return Number(value || 0);
-  } else if (type === "string") {
-    return String(value || "");
-  } else if (type === "children") {
-    const children = Array.isArray(value) ? value : array;
-    return (
-      <ExtendPath id={id}>
-        <RenderChildren
-          value={children}
-          options={parentOptions ?? (config.options as ConfigRecord)}
-        />
-      </ExtendPath>
-    );
-  }
-  return value;
-};
 
 export default function RenderElement({
   type,
@@ -220,6 +137,14 @@ export default function RenderElement({
     };
   }, []);
 
+  const props = {
+    props: config.props,
+    component,
+    record: uncomputedProps,
+    id: elementId,
+    createComponentContext: getComponentContextCreator(config?.provideContext),
+  };
+
   if (type === "Loop") {
     const rawDocumentId = elementId.slice(12, 24);
     const dataId = `${rawDocumentId}${getIdFromString("data")}`;
@@ -228,13 +153,7 @@ export default function RenderElement({
         {(uncomputedProps[dataId] as ValueArray).map((_, index) => {
           return (
             <LoopProvider key={index} id={rawDocumentId} index={index}>
-              <RenderElementWithProps
-                elementId={elementId}
-                props={config!.props}
-                component={component!}
-                values={uncomputedProps}
-                parentOptions={options}
-              />
+              <RenderElementWithProps parentOptions={options} {...props} />
             </LoopProvider>
           );
         })}
@@ -242,72 +161,108 @@ export default function RenderElement({
     );
   }
 
-  return (
-    <RenderElementWithProps
-      elementId={elementId}
-      component={component}
-      props={config.props}
-      values={uncomputedProps}
-    />
-  );
+  return <RenderElementWithProps {...props} />;
 }
 
 function RenderElementWithProps({
-  elementId,
-  values,
+  id,
+  record,
   props,
   component: Component,
+  createComponentContext,
   parentOptions,
 }: {
-  elementId: string;
-  values: Record<string, ValueArray | ClientSyntaxTree>;
+  id: string;
+  record: Record<string, ValueArray | ClientSyntaxTree>;
   props: Config["props"];
   component: Component<PropConfigRecord>;
+  createComponentContext: (regularProps: Record<string, any>) => Context[];
   parentOptions?: ConfigRecord;
 }) {
   const loopCtx = React.useContext(LoopContext);
   // const index = React.useContext(IndexContext);
 
-  const calculatePropsFromConfig = (
-    props: PropConfigRecord,
-    group?: string
-  ) => {
-    return Object.fromEntries(
-      Object.entries(props).map(([name, config]): [string, any] => {
-        const key = extendPath(group ?? "", name, "#");
-        const id = `${elementId.slice(12, 24)}${getIdFromString(key)}`;
-        return [
-          name,
-          config.type === "group"
-            ? calculatePropsFromConfig(config.props, name)
-            : calculateProp(
-                id,
-                config,
-                values?.[id] ?? [],
-                loopCtx,
-                parentOptions
-              ) ?? [],
-        ];
-      })
-    );
-  };
+  const prevContexts = React.useContext(ServerContextsContext);
+
+  const [regularEntries, childrenEntries] = React.useMemo(
+    () => splitProps(props),
+    [props]
+  );
+
+  const regularProps = React.useMemo(() => {
+    const resolveProps = (
+      entries: [string, PropConfig | PropGroup][],
+      group: string = ""
+    ) => {
+      return Object.fromEntries(
+        entries.map(([name, config]): [string, any] => {
+          if (config.type === "group") {
+            return [name, resolveProps(Object.entries(config.props), name)];
+          }
+          const key = extendPath(group ?? "", name, "#");
+          const fieldId = `${id.slice(12, 24)}${getIdFromString(key)}`;
+
+          const transforms = {
+            file: fileTransform,
+          };
+
+          const prop = resolveStatefulProp(record[fieldId] ?? [], loopCtx);
+
+          return [name, normalizeProp(config, prop, transforms)];
+        })
+      );
+    };
+    return resolveProps(regularEntries);
+  }, [record, loopCtx, regularEntries]);
+
+  const contexts = React.useMemo(() => {
+    const newContexts = createComponentContext(regularProps);
+    // this early return is important for stable object reference in spite of prop changes
+    if (!newContexts.length) return prevContexts;
+    return [...prevContexts, ...newContexts];
+  }, [prevContexts, regularProps]);
+
+  const childrenProps = React.useMemo(
+    () =>
+      Object.fromEntries(
+        childrenEntries.map(([name, config]): [string, any] => {
+          const fieldId = `${id.slice(12, 24)}${getIdFromString(name)}`;
+          const value = resolveStatefulProp(record[fieldId] ?? [], loopCtx);
+
+          const children = (
+            <ServerContextsContext.Provider value={contexts}>
+              <ExtendPath id={fieldId}>
+                <RenderChildren
+                  value={Array.isArray(value[0]) ? value[0] : value}
+                  options={parentOptions ?? (config.options as ConfigRecord)}
+                />
+              </ExtendPath>
+            </ServerContextsContext.Provider>
+          );
+
+          return [name, children];
+        })
+      ),
+    [record, loopCtx, childrenEntries, contexts]
+  );
 
   const resolvedProps = React.useMemo(() => {
-    return calculatePropsFromConfig(props);
-  }, [values, props, loopCtx, parentOptions]);
+    return {
+      ...regularProps,
+      ...childrenProps,
+      useServerContext: (provider: ContextProvider) => {
+        console.log("PREV", { prevContexts, contexts, regularProps });
+        return prevContexts.findLast((c) => c[context] === provider[context])
+          ?.value;
+      },
+    };
+  }, [prevContexts, regularProps, childrenProps]);
 
   log("PROPS PROPS", resolvedProps);
 
   return (
     <NoEditor>
-      <Component
-        {...resolvedProps}
-        serverContext={Object.assign([], {
-          useContext() {
-            return {};
-          },
-        })}
-      />
+      <Component {...resolvedProps} />
     </NoEditor>
   );
 }

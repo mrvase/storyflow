@@ -17,7 +17,6 @@ import {
   getParentDocumentId,
   getRawFieldId,
 } from "@storyflow/cms/ids";
-import { Client } from "../../RPCProvider";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/cms/constants";
 
 type FetcherResult = { _id: DocumentId; record: SyntaxTreeRecord }[];
@@ -26,11 +25,9 @@ export const calculateFn = (
   value: SyntaxTree,
   {
     record = {},
-    client,
     documentId,
   }: {
     documentId: DocumentId;
-    client: Client;
     record?: SyntaxTreeRecord;
   }
 ): ValueArray | ClientSyntaxTree => {
@@ -50,7 +47,6 @@ export const calculateFn = (
           const state = store.use<ValueArray | ClientSyntaxTree>(fieldId, () =>
             calculateFn(record[id as FieldId] ?? DEFAULT_SYNTAX_TREE, {
               record,
-              client,
               documentId: getParentDocumentId(importId.folder.id),
             })
           );
@@ -78,7 +74,6 @@ export const calculateFn = (
             sort: importId.sort ?? [],
             filters,
           },
-          client,
           importId.folder.id
         ); // fetcherStore.get(importId.folder.id, string, client);
         promise.then((result) =>
@@ -110,7 +105,6 @@ export const calculateFn = (
               ? value
               : calculateFn(value, {
                   record,
-                  client,
                   documentId: getDocumentId(importId),
                 })
         : undefined;
@@ -118,28 +112,25 @@ export const calculateFn = (
       return store.use(stateId, fn).value;
     }
 
-    const asyncFn = fetchDocumentSync(getDocumentId(importId), client).then(
-      (doc) => {
-        // returning undefined makes sure that the field is not initialized,
-        // so that if the field is initialized elsewhere, this field will react to it.
-        // (e.g. a not yet saved article)
-        if (!doc) return undefined;
-        const value = doc.record[importId as FieldId];
-        if (!value) return undefined;
+    const asyncFn = fetchDocumentSync(getDocumentId(importId)).then((doc) => {
+      // returning undefined makes sure that the field is not initialized,
+      // so that if the field is initialized elsewhere, this field will react to it.
+      // (e.g. a not yet saved article)
+      if (!doc) return undefined;
+      const value = doc.record[importId as FieldId];
+      if (!value) return undefined;
 
-        // TODO when returning tree, I should somehow give access to this record as well.
+      // TODO when returning tree, I should somehow give access to this record as well.
 
-        const fn = () =>
-          tree
-            ? value
-            : calculateFn(value, {
-                record: doc.record,
-                client,
-                documentId: getDocumentId(importId),
-              });
-        return fn;
-      }
-    );
+      const fn = () =>
+        tree
+          ? value
+          : calculateFn(value, {
+              record: doc.record,
+              documentId: getDocumentId(importId),
+            });
+      return fn;
+    });
 
     return store.useAsync(stateId, asyncFn).value;
   };

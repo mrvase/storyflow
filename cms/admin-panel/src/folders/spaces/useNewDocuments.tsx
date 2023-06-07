@@ -1,13 +1,14 @@
 import type { DocumentId, FieldId, FolderId } from "@storyflow/shared/types";
 import React from "react";
-import { useCollab } from "../../collab/CollabContext";
+import { collab } from "../../collab/CollabContext";
 import { DocumentAddTransactionEntry } from "../../operations/actions";
 import { getUpdatedFieldValue } from "../../documents/getUpdatedFieldValue";
 import { createTemplateFieldId } from "@storyflow/cms/ids";
 import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
 import { DBDocument, SyntaxTree } from "@storyflow/cms/types";
 import { calculateField } from "@storyflow/cms/calculate-server";
-import { readFromCache, useClient } from "../../RPCProvider";
+import { cache } from "@nanorpc/client/swr";
+import { query } from "../../clients/client";
 
 export function useNewDocuments(
   folderId: FolderId,
@@ -16,9 +17,6 @@ export function useNewDocuments(
   const [docs, setDocs] = React.useState<
     { id: DocumentId; label: SyntaxTree; url: SyntaxTree | undefined }[]
   >([]);
-
-  const collab = useCollab();
-  const client = useClient();
 
   const handleDocs = React.useCallback(
     async (ids: DocumentId[]) => {
@@ -37,8 +35,7 @@ export function useNewDocuments(
 
         const { tree } = await getUpdatedFieldValue(
           createTemplateFieldId(id, defaulFieldId),
-          doc,
-          collab
+          doc
         );
 
         return tree;
@@ -61,14 +58,13 @@ export function useNewDocuments(
         setDocs(newState);
       }
     },
-    [docs, collab, client]
+    [docs]
   );
 
   const calculatedDocs = React.useMemo(() => {
     const getCalculatedFieldValue = (tree: SyntaxTree) => {
       const getRecord = (id: DocumentId) => {
-        const key = client.documents.findById.key(id);
-        const exists = readFromCache(key);
+        const exists = cache.read(query.documents.findById(id));
         return exists?.record ?? {};
       };
 
@@ -110,7 +106,7 @@ export function useNewDocuments(
       const array = Array.from(docs).reverse();
       handleDocs(array);
     });
-  }, [collab, handleDocs]);
+  }, [handleDocs]);
 
   return calculatedDocs;
 }

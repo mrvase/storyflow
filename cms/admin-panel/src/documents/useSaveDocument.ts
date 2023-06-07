@@ -1,4 +1,3 @@
-import { SWRClient } from "../RPCProvider";
 import {
   DocumentId,
   FolderId,
@@ -10,15 +9,12 @@ import { useDocument } from ".";
 import {
   createTransaction,
   filterTimeline,
-  isSpliceOperation,
-  isToggleOperation,
   read,
 } from "@storyflow/collab/utils";
 import {
   DBDocument,
   DocumentConfig,
   DocumentVersionRecord,
-  TemplateRef,
 } from "@storyflow/cms/types";
 import {
   FieldTransform,
@@ -42,9 +38,11 @@ import {
   createTokenStream,
   parseTokenStream,
 } from "../operations/parse-token-stream";
-import { isSuccess } from "@storyflow/rpc-client/result";
 import { usePush } from "../collab/CollabContext";
 import { isTemplateDocument } from "@storyflow/cms/ids";
+import { cache, useMutation } from "@nanorpc/client/swr";
+import { mutate, query } from "../clients/client";
+import { isError } from "@nanorpc/client";
 
 const splitIntoQueues = (
   array: TimelineEntry[]
@@ -70,30 +68,23 @@ export const useSaveDocument = (
 
   const push = usePush<DocumentAddTransactionEntry>("documents");
 
-  const mutate = SWRClient.documents.update.useMutation({
-    cacheUpdate: ({ id }, mutate) => {
-      mutate(
-        ["documents/find", { folder: folderId, limit: 50 }],
-        (ps, result) => {
-          if (!result) {
-            return ps;
-          }
-          const index = ps.findIndex((el) => el._id === id);
-          const newDocuments = [...ps];
-          if (index >= 0) {
-            newDocuments[index] = { ...newDocuments[index], ...result };
-          } else {
-            newDocuments.unshift(result);
-          }
-          return newDocuments;
-        }
-      );
-      mutate(["documents/findById", id], (ps, result) => {
-        if (!result) {
+  const func = useMutation(mutate.documents.update, {
+    onSuccess(result, input) {
+      cache.set(query.documents.find({ folder: folderId, limit: 50 }), (ps) => {
+        if (!ps) {
           return ps;
         }
-        return result;
+        const index = ps.findIndex((el) => el._id === input.id);
+        const newDocuments = [...ps];
+        if (index >= 0) {
+          newDocuments[index] = { ...newDocuments[index], ...result };
+        } else {
+          newDocuments.unshift(result);
+        }
+        return newDocuments;
       });
+
+      cache.set(query.documents.findById(input.id), result);
     },
   });
 
@@ -154,11 +145,9 @@ export const useSaveDocument = (
       })
     );
 
-    const result = await mutate(input);
+    const result = await func(input);
 
-    const succeeded = isSuccess(result);
-
-    if (!succeeded) {
+    if (isError(result)) {
       push(
         createTransaction((t) => {
           t.target(folderId);
@@ -168,7 +157,7 @@ export const useSaveDocument = (
       );
     }
 
-    return succeeded;
+    return true;
   };
 };
 

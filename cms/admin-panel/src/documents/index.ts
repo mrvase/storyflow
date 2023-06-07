@@ -1,6 +1,4 @@
-import { unwrap } from "@storyflow/rpc-client/result";
 import React from "react";
-import { Client, SWRClient, readFromCache } from "../RPCProvider";
 import {
   DocumentId,
   FolderId,
@@ -11,26 +9,28 @@ import {
 import type { Sorting } from "@storyflow/cms/types";
 import type { DBDocument } from "@storyflow/cms/types";
 import { normalizeDocumentId } from "@storyflow/cms/ids";
-import { useCollab } from "../collab/CollabContext";
+import { collab } from "../collab/CollabContext";
 import { createDocumentTransformer } from "../operations/apply";
 import { TEMPLATES } from "./templates";
+import { query } from "../clients/client";
+import { cache, useImmutableQuery } from "@nanorpc/client/swr";
+import { isError } from "@nanorpc/client";
 
 export async function fetchDocument(
-  id: string,
-  client: Client
+  id: string
 ): Promise<DBDocument | undefined> {
   const defaultTemplate = TEMPLATES.find((el) => el._id === id);
   if (defaultTemplate) {
     return defaultTemplate;
   }
 
-  const result = await client.documents.findById.query(id);
-  return unwrap(result);
+  const result = await query.documents.findById(id);
+  if (isError(result)) return undefined;
+  return result;
 }
 
 export function fetchDocumentSync(
-  id: string,
-  client: Client
+  id: string
 ): PromiseLike<DBDocument | undefined> {
   const defaultTemplate = TEMPLATES.find((el) => el._id === id) as any;
 
@@ -42,17 +42,18 @@ export function fetchDocumentSync(
     };
   }
 
-  const key = client.documents.findById.key(id);
-  const exists = readFromCache(key);
+  const exists = cache.read(query.documents.findById(id));
 
   if (typeof exists !== "undefined") {
     return {
       then(callback) {
-        return callback ? callback(exists) : exists;
+        return callback ? callback(exists) : (exists as any);
       },
     };
   }
-  const result = client.documents.findById.query(id).then((res) => unwrap(res));
+  const result = query.documents
+    .findById(id)
+    .then((res) => (isError(res) ? undefined : res));
   return result;
 }
 
@@ -77,12 +78,8 @@ export function useDocument(
     );
   }
 
-  const { data, error } = SWRClient.documents.findById.useQuery(
-    documentId as string,
-    {
-      inactive: !documentId, // maybe: || Boolean(initialArticle),
-      immutable: true,
-    }
+  const { data, error } = useImmutableQuery(
+    documentId ? query.documents.findById(documentId) : undefined
   );
 
   return {
@@ -92,23 +89,16 @@ export function useDocument(
 }
 
 export function useDocumentWithTimeline(documentId: DocumentId) {
-  const collab = useCollab();
-
   React.useLayoutEffect(() => {
     // for prefetching
     console.log("PREFETCHING");
     collab.initializeTimeline(documentId);
     hasCalledStaleHook.current = false;
-  }, [collab]);
+  }, []);
 
-  const { data, error, mutate } = SWRClient.documents.findById.useQuery(
-    documentId,
-    {
-      immutable: true,
-      // only running on fetch, not cache update!
-      // onSuccess(data) {}
-    }
-  );
+  const doc = useImmutableQuery(query.documents.findById(documentId));
+
+  const data = doc.data;
 
   React.useLayoutEffect(() => {
     // TODO: This should be made synchronous to avoid flickering
@@ -129,15 +119,15 @@ export function useDocumentWithTimeline(documentId: DocumentId) {
     const timeline = collab.getTimeline(documentId)!;
     return timeline.registerStaleListener(() => {
       if (!hasCalledStaleHook.current) {
-        mutate();
+        doc.revalidate();
         hasCalledStaleHook.current = true;
       }
     });
-  }, [mutate]);
+  }, [doc.revalidate]);
 
   return {
     doc: data,
-    error: data ? undefined : error,
+    error: data ? undefined : doc.error,
   };
 }
 
@@ -148,26 +138,23 @@ export async function fetchDocumentList(
     sort?: Sorting[];
     filters?: Record<RawFieldId, ValueArray>;
   },
-  client: Client,
   throttleKey?: string
 ) {
-  const result = unwrap(
-    await client.documents.find.query(params, {
-      cachePreload: (result, preload) => {
-        result.forEach((doc) => {
-          preload(["findById", doc._id], () => {
-            return doc;
-          });
-        });
-      },
-      throttle: throttleKey
-        ? {
-            key: throttleKey,
-            ms: 250,
-          }
-        : undefined,
-    })
-  );
+  const result = await query.documents.find(params, {
+    onSuccess(result) {
+      result.forEach((doc) => {
+        cache.set(query.documents.findById(doc._id), doc);
+      });
+    },
+    throttle: throttleKey
+      ? {
+          key: throttleKey,
+          ms: 250,
+        }
+      : undefined,
+  });
+
+  if (isError(result)) return undefined;
 
   return result;
 }
@@ -184,26 +171,28 @@ export function useDocumentList(
     | undefined,
   throttleKey?: string
 ) {
-  const { data, error } = SWRClient.documents.find.useQuery(
-    typeof arg === "object" ? arg : { folder: arg!, limit: 50 },
-    {
-      inactive: typeof arg === "undefined",
-      immutable: true,
-      cachePreload: (result, preload) => {
-        result.forEach((doc) => {
-          preload(["findById", doc._id], () => {
-            return doc;
+  const getPromise = () => {
+    if (!arg) return;
+
+    return query.documents.find(
+      typeof arg === "object" ? arg : { folder: arg, limit: 50 },
+      {
+        onSuccess(result) {
+          result.forEach((doc) => {
+            cache.set(query.documents.findById(doc._id), doc);
           });
-        });
-      },
-      throttle: throttleKey
-        ? {
-            key: throttleKey,
-            ms: 250,
-          }
-        : undefined,
-    }
-  );
+        },
+        throttle: throttleKey
+          ? {
+              key: throttleKey,
+              ms: 250,
+            }
+          : undefined,
+      }
+    );
+  };
+
+  const { data, error } = useImmutableQuery(getPromise());
 
   return { documents: data, error };
 }

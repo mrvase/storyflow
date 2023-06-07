@@ -17,6 +17,8 @@ import {
 } from "../operations/actions";
 import { createStaticStore } from "../state/StaticStore";
 import { useTranslation } from "../translation/TranslationContext";
+import { useImmutableQuery, useQuery } from "@nanorpc/client/swr";
+import { query } from "../clients/client";
 
 const folders = createStaticStore<DBFolder, Map<string, DBFolder>>(
   (old?) => new Map(old ?? [])
@@ -41,13 +43,13 @@ const stateInitializer = (callback: () => Map<string, DBFolder>) => {
   return [store, setStore] as [typeof store, typeof setStore];
 };
 
-export function FoldersProvider({
-  folders: initialFoldersFromProps,
-  children,
-}: {
-  folders: DBFolderRecord;
-  children: React.ReactNode;
-}) {
+export function FoldersProvider({ children }: { children: React.ReactNode }) {
+  const { data: initialFoldersFromProps, error } = useImmutableQuery(
+    query.admin.getFolders()
+  );
+
+  console.log("DATA DATA", initialFoldersFromProps, error);
+
   const t = useTranslation();
 
   const initialFolders: DBFolderRecord = React.useMemo(() => {
@@ -73,9 +75,11 @@ export function FoldersProvider({
           },
         ],
       },
-      ...initialFoldersFromProps,
+      ...initialFoldersFromProps!.record,
     };
   }, [initialFoldersFromProps]);
+
+  console.log("INITIAL FOLDERS", initialFolders);
 
   const operator = React.useCallback(
     (

@@ -1,4 +1,3 @@
-import { error, success } from "@storyflow/rpc-server/result";
 import type {
   DocumentId,
   FieldId,
@@ -16,7 +15,7 @@ import type {
   NestedField,
 } from "@storyflow/cms/types";
 import { getSyntaxTreeRecord, parseDocument } from "../convert";
-import { getClientPromise } from "../mongoClient";
+import { client } from "../mongo";
 import { isSyntaxTree } from "@storyflow/cms/syntax-tree";
 import {
   extractRootRecord,
@@ -37,6 +36,7 @@ import {
 import { deduplicate, getImports, getSortedValues } from "./helpers";
 import { createSyntaxStream } from "../parse-syntax-stream";
 import { createObjectId } from "../mongo";
+import { RPCError } from "@nanorpc/server";
 
 export async function save(
   input: {
@@ -50,7 +50,7 @@ export async function save(
 ) {
   const documentId = input.id as DocumentId;
 
-  const db = (await getClientPromise()).db(dbName);
+  const db = await client.get(dbName);
 
   let doc = (await db
     .collection<DBDocumentRaw>("documents")
@@ -409,10 +409,13 @@ export async function save(
       }
     );
 
-    return success(parseDocument(result1.value!));
+    return parseDocument(result1.value!);
   }
 
-  return error({ message: "did not succeed" });
+  return new RPCError({
+    code: "SERVER_ERROR",
+    message: "Save failed.",
+  });
 }
 
 const getFieldBlocksWithDepths = (

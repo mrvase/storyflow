@@ -1,7 +1,7 @@
 import React from "react";
 import { useSingular } from "../state/useSingular";
 import { QueueEntry, TransactionEntry } from "@storyflow/collab/types";
-import { useCollab } from "./CollabContext";
+import { collab } from "./CollabContext";
 import { DocumentId } from "@storyflow/shared/types";
 import { Queue } from "@storyflow/collab/Queue";
 
@@ -23,8 +23,6 @@ export function useCollaborativeState<Data, TE extends TransactionEntry>(
     target?: string;
   }
 ) {
-  const collab = useCollab();
-
   const singular = useSingular(
     ["collab", timelineId, queueId, target ?? ""].filter(Boolean).join("-")
   );

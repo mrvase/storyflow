@@ -9,12 +9,15 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "migration-api": "workspace:*",
+    "@nanorpc/server": "^0.0.18",
+    "@storyflow/server": "workspace:*",
     "mongodb": "^4.13.0",
     "next": "^13.4.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "server-only": "^0.0.1"
+    "server-only": "^0.0.1",
+    "@upstash/redis": "^1.16.0",
+    "zod": "^3.20.2"
   },
   "devDependencies": {
     "@babel/core": "^7.0.0",

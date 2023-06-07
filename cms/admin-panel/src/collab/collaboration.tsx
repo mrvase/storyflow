@@ -1,4 +1,4 @@
-import { useSubject } from "../state/useSubject";
+import { createGlobalState } from "../state/useSubject";
 import {
   CollabVersion,
   TimelineEntry,
@@ -7,15 +7,16 @@ import {
 import { Timeline, createTimeline } from "@storyflow/collab/Timeline";
 import { purgeTimelines, batchSyncTimelines } from "./batching";
 import { DocumentId } from "@storyflow/shared/types";
-import { Result, isError, unwrap } from "@storyflow/rpc-client/result";
 import { onInterval } from "./interval";
+import type { ErrorCodes } from "@storyflow/api";
+import { isError } from "@nanorpc/client";
 
 export function createCollaboration(options: {
   sync: Parameters<typeof batchSyncTimelines>[1];
   update: (input: {
     id: string;
     index: number;
-  }) => Promise<Result<TimelineEntry[]>>;
+  }) => Promise<TimelineEntry[] | ErrorCodes<string>>;
   duration?: number;
 }) {
   const { duration = 5000 } = options;
@@ -27,24 +28,24 @@ export function createCollaboration(options: {
     if (isError(result)) {
       return [];
     }
-    return unwrap(result)[id].updates;
+    return result[id].updates;
   };
 
   const foldersTimeline = createTimeline({ debugId: "folders" });
   const newDocumentsTimeline = createTimeline({ debugId: "documents" });
   const documentTimelines = new Map<DocumentId, Timeline>();
 
-  const [registerEventListener, emitEvent] = useSubject<"loading" | "done">(
-    "done"
-  );
+  const [, emitEvent, registerEventListener] = createGlobalState<
+    "loading" | "done"
+  >("done");
 
-  const sync = async (index: number, force?: boolean) => {
+  const sync = async (index?: number, force?: boolean) => {
     emitEvent("loading");
     const map = new Map<DocumentId | "documents" | "folders", Timeline>(
       documentTimelines
     );
     map.set("documents", newDocumentsTimeline);
-    if (index % 3 === 0) {
+    if (index === undefined || index % 3 === 0) {
       // only sync folders every 3rd sync
       map.set("folders", foldersTimeline);
     }
@@ -58,7 +59,9 @@ export function createCollaboration(options: {
     registerEventListener,
     registerMutationListener() {},
 
-    sync,
+    sync: () => {
+      sync();
+    },
     syncOnInterval() {
       return onInterval(
         (index, event) =>
@@ -136,7 +139,7 @@ export function createCollaboration(options: {
         if (isError(result)) {
           return { status: "error" };
         }
-        return unwrap(result)[id];
+        return result[id];
       });
 
       if (!success) return false;
@@ -156,7 +159,7 @@ export function createCollaboration(options: {
 
         return {
           status: "success",
-          updated: unwrap(updated),
+          updated,
         };
       });
     },

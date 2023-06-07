@@ -116,7 +116,7 @@ FRONTEND
 */
 
 export interface Component<P extends Config["props"]> {
-  (value: Props<P>): any;
+  (props: Props<P> & {}): any;
 }
 
 type ExtendableTypes = "Element";
@@ -191,23 +191,23 @@ export type PropGroup = {
 export type PropConfigRecord = Record<string, PropConfig | PropGroup>;
 
 type Type<T extends PropConfig | PropGroup> = T extends { type: "group" }
-  ? Props<T["props"]>
+  ? NestedProps<T["props"]>
   : T["type"] extends keyof PropTypes
   ? PropTypes[T["type"]]
   : never;
 
-// The logic tests if the generic passed to props is just "PropConfigRecord" and not a more specific type.
-// If it is the case, we get errors on configs in options, where we pass a component with very specific
-// props to a type with general props. E.G.: "label" and "href" does not exists on Props<PropConfigRecord>.
-export type Props<T extends PropConfigRecord> = {
-  serverContext: any[] & {
-    useContext: (config: Config) => Record<string, any>;
-  };
-} & (string extends keyof T
+export type NestedProps<T extends PropConfigRecord> = string extends keyof T
   ? any
   : {
       [Key in keyof T]: Type<T[Key]>;
-    });
+    } & {};
+
+// The logic tests if the generic passed to props is just "PropConfigRecord" and not a more specific type.
+// If it is the case, we get errors on configs in options, where we pass a component with very specific
+// props to a type with general props. E.G.: "label" and "href" does not exists on Props<PropConfigRecord>.
+export type Props<T extends PropConfigRecord> = NestedProps<T> & {
+  useServerContext?: <Value>(config: ContextProvider<Value>) => Value;
+} & {};
 
 type Placeholders<T extends PropConfigRecord> = string extends keyof T
   ? any
@@ -247,16 +247,28 @@ export type Story<T extends PropConfigRecord = PropConfigRecord> = {
 
 export type Stories<T extends PropConfigRecord> = Record<string, Story<T>>;
 
-export type Context = Record<string, any>;
-
 export declare const placeholder: unique symbol;
 export type Placeholder<Type> = string & { [placeholder]: Type };
+
+export const context = Symbol("context");
+
+export type Context<Value = unknown> = { value: Value; [context]: symbol };
+
+export type ContextProvider<Value = unknown> = ((
+  value: Value
+) => Context<Value>) & {
+  defaultValue: Value;
+  [context]: symbol;
+};
 
 export type Config<T extends PropConfigRecord = PropConfigRecord> = {
   label: string;
   props: T;
   stories?: Stories<T>;
-  context?: Context | ((props: Placeholders<T>) => Context);
+  provideContext?:
+    | Context
+    | Context[]
+    | ((props: Placeholders<T>) => Context | Context[]);
   inline?: boolean;
   hidden?: boolean;
   component?: Component<T>;

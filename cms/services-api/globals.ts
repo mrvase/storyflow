@@ -1,28 +1,20 @@
-import { MiddlewareContext } from "@storyflow/rpc-server";
-import { error } from "@storyflow/rpc-server/result";
 import { AuthCookies, KEY_COOKIE } from "@storyflow/server/auth";
+import { RPCError } from "@nanorpc/server";
 
-import { cors as corsFactory, auth } from "@storyflow/server/middleware";
+import { cors as corsFactory, auth, procedure } from "@storyflow/server/rpc";
 
 export const cors = corsFactory(
-  process.env.NODE_ENV === "production"
-    ? undefined
-    : ["http://localhost:5173", "http://localhost:3000"]
+  process.env.NODE_ENV === "production" ? undefined : ["http://localhost:3000"]
 );
 
-const injectKeyFromCookie = (middleware: typeof auth) => {
-  return (ctx: MiddlewareContext) => {
-    const cookie = ctx.request.cookies<AuthCookies>().get(KEY_COOKIE)?.value;
+const authWithCookieKey = procedure
+  .middleware(async (input, ctx, next) => {
+    const cookie = ctx.req?.cookies<AuthCookies>().get(KEY_COOKIE)?.value;
     if (!cookie) {
-      throw error({
-        message: "Not authorized.",
-        status: 401,
-      });
+      return new RPCError({ code: "UNAUTHORIZED", status: 401 });
     }
-    return middleware(cookie.key)(ctx);
-  };
-};
+    return await next(input, { ...ctx, key: cookie.key, slug: cookie.slug });
+  })
+  .use(auth());
 
-export const globals = (ctx: MiddlewareContext) => {
-  return ctx.use(cors, injectKeyFromCookie(auth));
-};
+export const globals = procedure.use(cors).use(authWithCookieKey);

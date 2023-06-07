@@ -16,8 +16,7 @@ import {
   createTokenStream,
   parseTokenStream,
 } from "../../operations/parse-token-stream";
-import { useClient } from "../../RPCProvider";
-import { useCollab } from "../../collab/CollabContext";
+import { collab } from "../../collab/CollabContext";
 import { useFieldConfig } from "../../documents/document-config";
 import { useSingular } from "../../state/useSingular";
 import { calculateFn } from "./calculateFn";
@@ -30,7 +29,6 @@ import { FieldTransactionEntry } from "../../operations/actions";
 export function useDefaultStateCore(id: FieldId) {
   const rootId = useFieldId();
   const { record } = useDocumentPageContext();
-  const client = useClient();
 
   const initialValue = record[id] ?? DEFAULT_SYNTAX_TREE;
 
@@ -44,7 +42,6 @@ export function useDefaultStateCore(id: FieldId) {
     () =>
       calculateFn(initialValue, {
         record,
-        client,
         documentId: getDocumentId(rootId),
       })
   );
@@ -55,7 +52,6 @@ export function useDefaultStateCore(id: FieldId) {
       setTree(() => tree);
       setValue(() =>
         calculateFn(tree, {
-          client,
           record,
           documentId: getDocumentId(rootId),
         })
@@ -71,8 +67,6 @@ export function useDefaultState(id: FieldId) {
   const rootId = useFieldId();
 
   const { initialValue, tree, value, setState } = useDefaultStateCore(id);
-
-  const collab = useCollab();
 
   const target = id;
   const singular = useSingular(id);
@@ -108,7 +102,7 @@ export function useDefaultState(id: FieldId) {
         }
       });
     });
-  }, [collab]);
+  }, []);
 
   const isPrimitive = Array.isArray(value) && value[0] === tree.children[0];
 

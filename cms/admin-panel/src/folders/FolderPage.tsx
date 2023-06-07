@@ -15,7 +15,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { EditableLabel } from "../elements/EditableLabel";
 import cl from "clsx";
-import type { DocumentId, FolderId } from "@storyflow/shared/types";
+import type { DocumentId } from "@storyflow/shared/types";
 import type {
   DBFolder,
   FolderSpace,
@@ -35,23 +35,25 @@ import { useDocumentLabel } from "../documents/useDocumentLabel";
 import { FolderContext } from "./FolderPageContext";
 import { useFieldFocus } from "../FieldFocusContext";
 import { addNestedFolder } from "../custom-events";
-import { usePanel, useRoute } from "../layout/panel-router/Routes";
-import { parseSegment } from "../layout/components/parseSegment";
+import { parseMatch } from "../layout/components/parseSegment";
 import { Menu } from "../elements/Menu";
 import { FocusOrchestrator } from "../utils/useIsFocused";
 import { usePush } from "../collab/CollabContext";
 import { createTransaction } from "@storyflow/collab/utils";
 import { FolderTransactionEntry } from "../operations/actions";
 import { useFolder } from "./FoldersContext";
-import { useAuth } from "../Auth";
 import { DropShadow, Sortable } from "@storyflow/dnd";
 import { PagesSpace } from "./spaces/PagesSpace";
 import { useAppConfig } from "../AppConfigContext";
-import { SWRClient, useClient, useAppClient } from "../RPCProvider";
-import { isSuccess } from "@storyflow/rpc-client/result";
 import { getFolderData } from "./getFolderData";
-import { getPanelsFromUrl } from "../layout/panel-router/utils";
 import { useTranslation } from "../translation/TranslationContext";
+import { useOrganization } from "../clients/auth";
+import { mutate, query } from "../clients/client";
+import { useQuery } from "@nanorpc/client/swr";
+import { appMutate } from "../clients/client-app";
+import { isError } from "@nanorpc/client";
+import { useNavigate, usePath, useRoute } from "@nanokit/router";
+import { ROOT_FOLDER } from "@storyflow/cms/constants";
 
 const spaces: { label: string; item: Omit<Space, "id"> }[] = [
   {
@@ -78,13 +80,15 @@ export default function FolderPage({
   children?: React.ReactNode;
 }) {
   const route = useRoute();
-  const segment = parseSegment<"folder">(route);
-  const folder = useFolder(segment.id);
+  const folder = useFolder(parseMatch<"folder">(route).id);
   const { type } = getFolderData(folder);
 
-  const [{ path }] = usePanel();
-  const isSelected = (path || "/") === (route || "/");
-  const nextIsDocument = path.slice(route.length).startsWith("/d");
+  const { pathname } = usePath();
+
+  const isSelected = (pathname || "/") === (route.accumulated || "/");
+  const nextIsDocument = pathname
+    .slice(route.accumulated.length)
+    .startsWith("/d");
 
   const push = usePush<FolderTransactionEntry>("folders");
   const mutateProp = <T extends "label" | "domains">(
@@ -163,17 +167,16 @@ export default function FolderPage({
 
   const renderSpace = (space: Space, index: number) => {
     const props = {
-      key: space.id,
       index,
       folderId: folder._id,
       hidden: !isSelected,
     };
     if (space.type === "folders") {
-      return <FoldersSpace space={space} {...props} />;
+      return <FoldersSpace space={space} key={space.id} {...props} />;
     } else if (space.type === "documents") {
-      return <DocumentsSpace space={space} {...props} />;
+      return <DocumentsSpace space={space} key={space.id} {...props} />;
     } else if (space.type === "pages") {
-      return <PagesSpace space={space} {...props} />;
+      return <PagesSpace space={space} key={space.id} {...props} />;
     }
     return null;
   };
@@ -363,7 +366,7 @@ export function FolderTemplateButton({
 }) {
   const t = useTranslation();
   const route = useRoute();
-  const [{ path }, navigate] = usePanel();
+  const navigate = useNavigate();
 
   const { doc } = useDocument(template);
   const { label } = useDocumentLabel(doc);
@@ -389,9 +392,9 @@ export function FolderTemplateButton({
         label={t.folders.editTemplate({ label: label ?? "" })}
         onClick={() => {
           if (template) {
-            navigate(`${route}/t${parseInt(template, 16).toString(16)}`, {
-              navigate: true,
-            });
+            navigate(
+              `${route.accumulated}/t/${parseInt(template, 16).toString(16)}`
+            );
             return;
           }
         }}
@@ -418,7 +421,7 @@ export function DomainsButton({
 }) {
   const t = useTranslation();
 
-  const { organization } = useAuth();
+  const organization = useOrganization();
 
   const getLabel = (domain: string) => {
     domain = domain.replace("https://", "");
@@ -484,12 +487,11 @@ function RefreshButton({
 
   const [isLoading, setIsLoading] = React.useState(false);
 
-  const { data, mutate } = SWRClient.documents.getUpdatedUrls.useQuery({
-    namespace,
-  });
-
-  const client = useClient();
-  const appClient = useAppClient(config);
+  const { data, revalidate } = useQuery(
+    query.documents.getUpdatedUrls({
+      namespace,
+    })
+  );
 
   const count = data?.length ?? 0;
 
@@ -516,10 +518,10 @@ function RefreshButton({
           onClick={async () => {
             if (config.baseURL && data?.length) {
               setIsLoading(true);
-              const result = await appClient.app.revalidate.mutation(data);
-              if (isSuccess(result)) {
-                await client.documents.registerRevalidation.mutation();
-                mutate();
+              const result = await appMutate.app.revalidatePaths(data);
+              if (!isError(result)) {
+                await mutate.documents.registerRevalidation();
+                revalidate();
               }
               setIsLoading(false);
             }

@@ -5,7 +5,7 @@ import React from "react";
 import { useFileLabel } from "../../../data/files";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 import { useIsSelected } from "./useIsSelected";
-import { useAuth } from "../../../Auth";
+import { useOrganization } from "../../../clients/auth";
 
 function Decorator({ nodeKey, value }: { nodeKey: string; value: FileToken }) {
   const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
@@ -36,7 +36,7 @@ function Decorator({ nodeKey, value }: { nodeKey: string; value: FileToken }) {
 }
 
 function Image({ src }: { src: string }) {
-  const { organization } = useAuth();
+  const organization = useOrganization();
   return (
     <div className="flex-center h-10 w-10 rounded overflow-hidden bg-white/5">
       <img

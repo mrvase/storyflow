@@ -1,11 +1,3 @@
-import {
-  Result,
-  error,
-  isError,
-  success,
-  unwrap,
-} from "@storyflow/rpc-server/result";
-import { createProcedure, createRoute } from "@storyflow/rpc-server";
 import { z } from "zod";
 import {
   GLOBAL_SESSION_COOKIE,
@@ -19,10 +11,8 @@ import {
 } from "@storyflow/server/auth";
 import { cors } from "../globals";
 import { AppReference } from "@storyflow/shared/types";
-import { emailAuth } from "@storyflow/server/middleware/auth";
-
-const domain =
-  process.env.NODE_ENV === "development" ? "http://localhost:5173" : "";
+import { emailAuth, procedure } from "@storyflow/server/rpc";
+import { RPCError, isError } from "@nanorpc/server";
 
 type LinkPayload = {
   email: string;
@@ -31,7 +21,7 @@ type LinkPayload = {
   date: string;
 };
 
-type AuthOptions = {
+export type AuthOptions = {
   sendEmail: (link: string, payload: LinkPayload) => Promise<void>;
   organizations: {
     insertUser: (email: string) => Promise<void>;
@@ -44,25 +34,28 @@ type AuthOptions = {
       email: string,
       organization: { slug: string }
     ) => Promise<void>;
-    getUserWithOrganizations: (email: string) => Promise<{
-      email: string;
-      organizations: { url: string; slug: string }[];
-    }>;
+    getUserWithOrganizations: (email: string) => Promise<
+      | {
+          email: string;
+          organizations: { url: string; slug: string }[];
+        }
+      | undefined
+    >;
   };
 };
 
 export const auth = ({ sendEmail, organizations }: AuthOptions) => {
-  return createRoute({
-    sendEmail: createProcedure({
-      middleware(ctx) {
-        return ctx.use(cors);
-      },
-      schema() {
-        return z.object({ email: z.string(), next: z.string().optional() });
-      },
-      async mutation({ email, next }, { response, encode }) {
+  return {
+    sendEmail: procedure
+      .use(cors)
+      .schema(z.object({ email: z.string(), next: z.string().optional() }))
+      .mutate(async ({ email, next }, { res, encode }) => {
         if (!/.+@.+/u.test(email)) {
-          throw new Error("A valid email is required.");
+          return new RPCError({
+            code: "INVALID_INPUT",
+            status: 403,
+            message: "A valid email is required.",
+          });
         }
 
         const payload: LinkPayload = {
@@ -70,7 +63,7 @@ export const auth = ({ sendEmail, organizations }: AuthOptions) => {
           date: new Date().toISOString(),
         };
 
-        const token = encode(payload, { encrypt: true });
+        const token = encode!(payload, { encrypt: true });
 
         const path = `${process.env.BASE_URL}/verify`;
 
@@ -83,7 +76,7 @@ export const auth = ({ sendEmail, organizations }: AuthOptions) => {
 
         await sendEmail(link, payload);
 
-        response.cookies<AuthCookies>().set(LINK_COOKIE, link, {
+        res!.cookies<AuthCookies>().set(LINK_COOKIE, link, {
           path: "/",
           sameSite: "lax",
           secure: true,
@@ -91,31 +84,36 @@ export const auth = ({ sendEmail, organizations }: AuthOptions) => {
           encrypt: true,
         });
 
-        return success(null);
-      },
-    }),
+        return null;
+      }),
 
-    verify: createProcedure({
-      middleware(ctx) {
-        return ctx.use(cors);
-      },
-      async query(_, { request, response, decode }) {
-        let token: string;
+    verify: procedure.use(cors).query(async (_, { req, res, decode }) => {
+      const tryVerifying = async () => {
         let next: string | null;
+        let token: string;
+
         try {
-          const url = new URL(`https://storyflow.dk${request.url}`);
+          const url = new URL(`https://storyflow.dk${req!.url}`);
           token = url.searchParams.get("token") ?? "";
           next = url.searchParams.get("next") ?? "";
         } catch {
-          return error({ message: "Invalid token." });
+          return new RPCError({
+            code: "UNAUTHORIZED",
+            status: 401,
+            message: "Invalid token.",
+          });
         }
 
-        const link = request.cookies<AuthCookies>().get(LINK_COOKIE)?.value;
+        const link = req!.cookies<AuthCookies>().get(LINK_COOKIE)?.value;
 
         console.log("LINK", link);
 
         if (!link) {
-          return error({ message: "Invalid link" });
+          return new RPCError({
+            code: "SERVER_ERROR",
+            status: 400,
+            message: "Invalid link.",
+          });
         }
 
         let serverToken: string;
@@ -123,34 +121,45 @@ export const auth = ({ sendEmail, organizations }: AuthOptions) => {
           const url = new URL(link);
           serverToken = url.searchParams.get("token") ?? "";
         } catch {
-          return error({ message: "Invalid device" });
+          return new RPCError({
+            code: "SERVER_ERROR",
+            status: 500,
+            message: "Invalid device.",
+          });
         }
 
         console.log("* LINK", { token, serverToken });
 
         if (token !== serverToken) {
-          return error({ message: "Invalid token" });
+          return new RPCError({
+            code: "UNAUTHORIZED",
+            status: 401,
+            message: "Invalid token.",
+          });
         }
 
         let email: string;
         let date: string;
 
         try {
-          ({ email, date } = decode(token, { decrypt: true }) as LinkPayload);
+          ({ email, date } = decode!(token, { decrypt: true }) as LinkPayload);
         } catch (err: unknown) {
-          return error({
+          return new RPCError({
+            code: "SERVER_ERROR",
             message: "Sign in link invalid. Please request a new one. [1]",
           });
         }
 
         if (typeof email !== "string") {
-          return error({
+          return new RPCError({
+            code: "SERVER_ERROR",
             message: "Sign in link invalid. Please request a new one. [2]",
           });
         }
 
         if (typeof date !== "string") {
-          return error({
+          return new RPCError({
+            code: "SERVER_ERROR",
             message: "Sign in link invalid. Please request a new one. [4]",
           });
         }
@@ -159,14 +168,15 @@ export const auth = ({ sendEmail, organizations }: AuthOptions) => {
         const expirationTime = linkCreationDate.getTime() + 10 * 60 * 1000;
 
         if (Date.now() > expirationTime) {
-          return error({
+          return new RPCError({
+            code: "SERVER_ERROR",
             message: "Magic link expired. Please request a new one. [5]",
           });
         }
 
         await organizations.insertUser(email);
 
-        response
+        res!
           .cookies<AuthCookies>()
           .set(
             GLOBAL_SESSION_COOKIE,
@@ -174,7 +184,7 @@ export const auth = ({ sendEmail, organizations }: AuthOptions) => {
             { path: "/", sameSite: "lax", secure: true, httpOnly: true }
           );
 
-        response.cookies<AuthCookies>().delete(LINK_COOKIE, {
+        res!.cookies<AuthCookies>().delete(LINK_COOKIE, {
           path: "/",
           sameSite: "lax",
           secure: true,
@@ -182,95 +192,106 @@ export const auth = ({ sendEmail, organizations }: AuthOptions) => {
           encrypt: true,
         });
 
-        response.redirect = `${domain}/${next ?? ""}?success=true`;
+        return next;
+      };
 
-        return success(null);
-      },
-      redirect(result) {
-        return isError(result) ? `${domain}/?success=false` : undefined;
-      },
+      const result = await tryVerifying();
+
+      if (isError(result)) {
+        res!.headers.set("Location", `/?success=false`);
+      } else {
+        const slug = result;
+        res!.headers.set("Location", `/${slug ?? ""}?success=true`);
+      }
+
+      return null;
     }),
 
-    addOrganization: createProcedure({
-      middleware(ctx) {
-        return ctx.use(cors, emailAuth);
-      },
-      schema() {
-        return z.object({
+    addOrganization: procedure
+      .use(cors)
+      .use(emailAuth)
+      .schema(
+        z.object({
           slug: z.string(),
           url: z.string().optional(),
-        });
-      },
-      async mutation({ slug, url }, { request, email }) {
+        })
+      )
+      .mutate(async ({ slug, url }, { req, email }) => {
         try {
           if (url) {
             await organizations.addNewOrganizationToUser(email, { slug, url });
           } else {
             await organizations.addExistingOrganizationToUser(email, { slug });
           }
-          return success(null);
+          return null;
         } catch (err) {
           console.log(slug, url, err);
-          return error({ message: "Failed", detail: err });
+          return new RPCError({ code: "SERVER_ERROR" });
         }
-      },
-    }),
+      }),
 
-    getOrganizations: createProcedure({
-      middleware(ctx) {
-        return ctx.use(cors, emailAuth);
-      },
-      async query(_, { request, response, email }) {
+    authenticateUser: procedure
+      .use(cors)
+      .use(emailAuth)
+      .query(async (_, { email }) => {
         const data = await organizations.getUserWithOrganizations(email);
+        return {
+          email,
+          organizations: data?.organizations ?? [],
+        };
+      }),
 
-        return success(data);
-      },
-    }),
-
-    authenticate: createProcedure({
-      middleware(ctx) {
-        return ctx.use(cors);
-      },
-      schema() {
-        return z.object({
-          organization: z.object({
-            slug: z.string().nullable(),
-            url: z.string().nullable(),
-          }),
+    authenticateOrganization: procedure
+      .use(cors)
+      .schema(
+        z.object({
+          organization: z.string(),
           returnConfig: z.boolean(),
-        });
-      },
-      async mutation({ organization, returnConfig }, { request, response }) {
+        })
+      )
+      .mutate(async ({ organization, returnConfig }, { req, res }) => {
+        console.log("AUTHENTICATING");
+
         const cookies = {
-          req: request.cookies<AuthCookies>(),
-          res: response.cookies<AuthCookies>(),
+          req: req!.cookies<AuthCookies>(),
+          res: res!.cookies<AuthCookies>(),
         };
 
         const user = cookies.req.get(GLOBAL_SESSION_COOKIE)?.value;
 
         if (!user) {
-          return error({ message: "Not authenticated", status: 401 });
+          return new RPCError({
+            code: "UNAUTHORIZED",
+            message: "Not authenticated",
+            status: 401,
+          });
         }
 
-        try {
-          const getData = async (url: string, key: string | undefined) => {
-            const token = serializeAuthToken(
-              { email: user.email },
-              process.env.STORYFLOW_PRIVATE_KEY as string
-            );
+        const getData = async (url: string, key: string | undefined) => {
+          const token = serializeAuthToken(
+            { email: user.email },
+            process.env.STORYFLOW_PRIVATE_KEY as string
+          );
 
-            const json = await fetch(`${url}/api/admin/authenticate`, {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({
-                query: { key: !key, config: returnConfig },
-              }),
-            }).then(
-              (res) =>
-                res.json() as Promise<
-                  Result<{
+          try {
+            const protocol = url.startsWith("localhost")
+              ? "http://"
+              : "https://";
+            console.log("FETCHING", `${protocol}${url}/api/admin/authenticate`);
+            const data = await fetch(
+              `${protocol}${url}/api/admin/authenticate`,
+              {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                  input: { key: !key, config: returnConfig },
+                }),
+              }
+            ).then((res) => {
+              return res.json() as Promise<
+                | {
                     token: string;
                     key?: string;
                     config?: {
@@ -279,15 +300,15 @@ export const auth = ({ sendEmail, organizations }: AuthOptions) => {
                         name: string;
                       }[];
                     };
-                  }>
-                >
-            );
+                  }
+                | { error: string }
+              >;
+            });
 
-            if (isError(json)) {
-              return;
+            if ("error" in data) {
+              console.log("auth error: from remote server:", data.error);
+              throw "";
             }
-
-            const data = unwrap(json);
 
             if (
               !data ||
@@ -295,7 +316,11 @@ export const auth = ({ sendEmail, organizations }: AuthOptions) => {
               !("token" in data) ||
               typeof data.token !== "string"
             ) {
-              return;
+              console.error(
+                "auth error: invalid response from remote server [1]",
+                data
+              );
+              throw "";
             }
 
             if (!key) {
@@ -304,7 +329,11 @@ export const auth = ({ sendEmail, organizations }: AuthOptions) => {
                 !data.key ||
                 typeof data.key !== "string"
               ) {
-                return;
+                console.error(
+                  "auth error: invalid response from remote server [2]",
+                  data
+                );
+                throw "";
               }
               key = data.key;
             }
@@ -312,105 +341,100 @@ export const auth = ({ sendEmail, organizations }: AuthOptions) => {
             const validated = parseAuthToken(LOCAL_TOKEN, data.token, key);
 
             if (!validated || validated.email !== user.email) {
-              return;
+              console.error(
+                "auth error: invalid response from remote server [3]",
+                validated,
+                user
+              );
+              throw "";
             }
 
             if (
               returnConfig &&
               (!("config" in data) || typeof data.config !== "object")
             ) {
-              return;
+              console.error(
+                "auth error: invalid response from remote server [4]",
+                data
+              );
+              throw "";
             }
 
             return data;
-          };
-
-          const keyCookie = cookies.req.get(KEY_COOKIE)?.value;
-
-          const hasKey =
-            keyCookie &&
-            keyCookie.slug === organization.slug &&
-            (!organization.url || keyCookie.url === organization.url);
-
-          let url: string | undefined;
-
-          if (hasKey) {
-            // we only get here if organization.slug is something
-            url = keyCookie.url;
-          } else if (organization.slug && organization.url) {
-            // and the same here
-            url = organization.url;
-          } else if (organization.slug) {
-            // and the same here
-            url = await organizations.getOrganizationUrl(organization.slug);
+          } catch (err) {
+            console.error(err);
+            return new RPCError({ code: "UNAUTHORIZED" });
           }
+        };
 
-          // so now organization.slug is defined
+        const keyCookie = cookies.req.get(KEY_COOKIE)?.value;
 
-          if (!url) {
-            // catched below
-            throw "";
-          }
+        const hasKey = keyCookie && keyCookie.slug === organization;
 
-          const data = await getData(url, hasKey ? keyCookie.key : undefined);
+        let url: string | undefined;
 
-          if (!data) {
-            // catched below
-            throw "";
-          }
-
-          if (!hasKey && data.key) {
-            // stays on the server
-            cookies.res.set(
-              KEY_COOKIE,
-              {
-                key: data.key,
-                url,
-                slug: organization.slug!,
-              },
-              { path: "/", sameSite: "strict", secure: true, httpOnly: true }
-            );
-          }
-
-          cookies.res.set(LOCAL_TOKEN, data.token, {
-            path: "/",
-            sameSite: "strict",
-            secure: true,
-          });
-
-          return success({
-            user: { email: user.email },
-            config: data.config ?? null,
-            url,
-          });
-        } catch (err) {
-          return success({
-            user: { email: user.email },
-            config: null,
-            url: null,
-          });
+        if (hasKey) {
+          // we only get here if organization.slug is something
+          url = keyCookie.url;
+        } else if (organization) {
+          // and the same here
+          url = await organizations.getOrganizationUrl(organization);
         }
-      },
-    }),
 
-    logout: createProcedure({
-      middleware(ctx) {
-        return ctx.use(cors);
-      },
-      async mutation(_, { response }) {
-        response.cookies<AuthCookies>().delete(GLOBAL_SESSION_COOKIE, {
-          path: "/",
-          sameSite: "lax",
-          secure: true,
-          httpOnly: true,
-        });
-        response.cookies<AuthCookies>().delete(GLOBAL_TOKEN, {
+        // so now organization.slug is defined
+
+        if (!url) {
+          // catched below
+          return new RPCError({ code: "UNAUTHORIZED" });
+        }
+
+        console.log("DATA", url);
+
+        const data = await getData(url, hasKey ? keyCookie.key : undefined);
+
+        if (data instanceof RPCError) {
+          return data;
+        }
+
+        if (!hasKey && data.key) {
+          // stays on the server
+          cookies.res.set(
+            KEY_COOKIE,
+            {
+              key: data.key,
+              url,
+              slug: organization,
+            },
+            { path: "/", sameSite: "strict", secure: true, httpOnly: true }
+          );
+        }
+
+        cookies.res.set(LOCAL_TOKEN, data.token, {
           path: "/",
           sameSite: "strict",
           secure: true,
         });
-        return success(null);
-      },
+
+        return {
+          user: { email: user.email },
+          config: data.config ?? null,
+          url,
+        };
+      }),
+
+    logout: procedure.use(cors).mutate(async (_, { res }) => {
+      res!.cookies<AuthCookies>().delete(GLOBAL_SESSION_COOKIE, {
+        path: "/",
+        sameSite: "lax",
+        secure: true,
+        httpOnly: true,
+      });
+      res!.cookies<AuthCookies>().delete(GLOBAL_TOKEN, {
+        path: "/",
+        sameSite: "strict",
+        secure: true,
+      });
+      return null;
     }),
-  });
+  };
 };

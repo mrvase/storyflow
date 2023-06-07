@@ -12,7 +12,6 @@ import React from "react";
 import { fetchDocument, useDocumentList } from "../../documents";
 import { useAddDocument } from "../../documents/useAddDocument";
 import { getTemplateFieldsAsync } from "../../documents/template-fields";
-import { useClient } from "../../RPCProvider";
 import { addDocumentImport } from "../../custom-events";
 import { useFieldFocus } from "../../FieldFocusContext";
 import { useCurrentFolder } from "../FolderPageContext";
@@ -187,16 +186,11 @@ function ExportButton() {
 
   const { documents } = useDocumentList(folder?._id);
 
-  const client = useClient();
-
   const handleExport = async () => {
     if (!documents || !folder?.template) return;
-    const templateDocument = await fetchDocument(folder.template, client);
+    const templateDocument = await fetchDocument(folder.template);
     if (!templateDocument) return;
-    const fields = await getTemplateFieldsAsync(
-      templateDocument.config,
-      client
-    );
+    const fields = await getTemplateFieldsAsync(templateDocument.config);
     const ids = fields.map((el) => el.id);
     const header = fields.map((el) => el.label);
     const rows = documents.map((el) =>

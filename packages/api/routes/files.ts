@@ -1,32 +1,38 @@
-import { createProcedure, createRoute } from "@storyflow/rpc-server";
-import { success } from "@storyflow/rpc-server/result";
-import { getClientPromise } from "../mongoClient";
+import { client } from "../mongo";
 import { globals } from "../globals";
 import { StoryflowConfig } from "@storyflow/shared/types";
+import { procedure } from "@storyflow/server/rpc";
+import { z } from "zod";
+import { RPCError } from "@nanorpc/server";
 
 export const files = (config: StoryflowConfig) => {
   const dbName = undefined; // config.workspaces[0].db;
-  return createRoute({
-    getAll: createProcedure({
-      middleware(ctx) {
-        return ctx.use(globals(config.api));
-      },
-      async query(_) {
-        const db = (await getClientPromise()).db(dbName);
+  return {
+    getAll: procedure.use(globals(config.api)).query(async (_) => {
+      const db = await client.get(dbName);
 
-        const files = await db
-          .collection("files")
-          .find()
-          .sort({ _id: -1 })
-          .toArray();
+      const files = await db
+        .collection("files")
+        .find()
+        .sort({ _id: -1 })
+        .toArray();
 
-        return success(
-          files.map(({ _id, ...rest }) => rest) as {
-            name: string;
-            label: string;
-          }[]
-        );
-      },
+      return files.map(({ _id, ...rest }) => rest) as {
+        name: string;
+        label: string;
+      }[];
     }),
-  });
+    saveFile: procedure
+      .use(globals(config.api))
+      .schema(z.object({ name: z.string(), label: z.string() }))
+      .mutate(async (file) => {
+        const db = await client.get(dbName);
+        const result = await db.collection("files").insertOne(file);
+        if (!result.acknowledged) {
+          return new RPCError({ code: "FAILED" });
+        } else {
+          return null;
+        }
+      }),
+  };
 };

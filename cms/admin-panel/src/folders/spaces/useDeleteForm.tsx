@@ -3,20 +3,24 @@ import React from "react";
 import { usePush } from "../../collab/CollabContext";
 import { createTransaction } from "@storyflow/collab/utils";
 import { DocumentAddTransactionEntry } from "../../operations/actions";
-import { SWRClient } from "../../RPCProvider";
-import { isSuccess } from "@storyflow/rpc-client/result";
+import { useImmutableQuery, useMutation } from "@nanorpc/client/swr";
+import { mutate, query } from "../../clients/client";
+import { isError } from "@nanorpc/client";
 
 export const useDeleteManyMutation = (folderId: string) => {
-  const { mutate: mutateList } = SWRClient.documents.find.useQuery({
-    folder: folderId,
-    limit: 50,
-  });
-  const deleteMany = SWRClient.documents.deleteMany.useMutation();
+  const { revalidate } = useImmutableQuery(
+    query.documents.find({
+      folder: folderId,
+      limit: 50,
+    })
+  );
+
+  const deleteMany = useMutation(mutate.documents.deleteMany);
 
   return async (ids: DocumentId[]) => {
     const result = await deleteMany(ids);
-    if (isSuccess(result)) {
-      mutateList();
+    if (!isError(result)) {
+      revalidate();
     }
   };
 };

@@ -4,6 +4,8 @@ import {
   Component,
   Config,
   ConfigRecord,
+  Context,
+  ContextProvider,
   FileToken,
   Library,
   LibraryConfig,
@@ -13,6 +15,7 @@ import {
   PropConfig,
   PropConfigRecord,
   ValueArray,
+  context,
 } from "@storyflow/shared/types";
 import React from "react";
 import { getConfigByType } from "../src/getConfigByType";
@@ -20,27 +23,20 @@ import { ParseRichText } from "../src/ParseRichText";
 import { extendPath } from "../utils/extendPath";
 import { getDefaultComponent } from "../src/getDefaultComponent";
 import { getIdFromString } from "@storyflow/shared/getIdFromString";
-import { calculateClient } from "@storyflow/client/calculate-client";
 import { defaultLibrary } from "../src/defaultLibrary";
 import { defaultLibraryConfig } from "@storyflow/shared/defaultLibraryConfig";
-
-const getImageObject = (name: string, url: string) => {
-  const src = `${url}/${name}`;
-
-  const width = name ? parseInt(name.split("-")[4] ?? "0", 16) : 0;
-  const height = name ? parseInt(name.split("-")[5] ?? "0", 16) : 0;
-
-  return {
-    src,
-    width,
-    height,
-  };
-};
+import {
+  fileTransform,
+  getComponentContextCreator,
+  normalizeProp,
+  resolveStatefulProp,
+  splitProps,
+} from "../utils/splitProps";
 
 type ComponentContext = {
   element: symbol;
   index: number;
-  context?: Record<string, any>;
+  serverContexts: Context[];
 };
 
 type RSCContext = {
@@ -50,68 +46,6 @@ type RSCContext = {
   libraries: Record<string, Library>;
   children?: React.ReactNode;
   contexts: ComponentContext[];
-};
-
-const resolveStatefulProp = (
-  prop: ValueArray | ClientSyntaxTree,
-  loopCtx: Record<string, number>
-) => {
-  const isStateful = !Array.isArray(prop);
-
-  if (isStateful) {
-    return calculateClient(
-      prop,
-      (token) => {
-        if ("state" in token) {
-          return 0;
-        }
-        return 0;
-      },
-      (id) => loopCtx[id]
-    );
-  }
-  return prop;
-};
-
-const normalizeProp = (
-  config: PropConfig,
-  prop: ValueArray,
-  transforms: {
-    file?: (value: FileToken | undefined) => any;
-  }
-) => {
-  const type = config.type;
-  const value = prop[0];
-
-  if (value !== null && typeof value === "object" && "name" in value) {
-    const option = Array.isArray(config.options)
-      ? config.options.find(
-          (el): el is { value: any } | { name: any } =>
-            typeof el === "object" && el.name === value.name
-        )
-      : undefined;
-    if (option && "value" in option) return option.value;
-  }
-
-  if (value !== null && typeof value === "object" && "color" in value) {
-    return value.color;
-  }
-
-  if (["image", "video"].includes(type)) {
-    return (
-      transforms.file?.(value as FileToken | undefined) ??
-      (value as FileToken | undefined)?.src ??
-      ""
-    );
-  } else if (type === "boolean") {
-    return value === "false" ? false : Boolean(value);
-  } else if (type === "number") {
-    return Number(value || 0);
-  } else if (type === "string") {
-    return String(value || "");
-  }
-
-  return value;
 };
 
 const RenderChildren = ({
@@ -127,18 +61,6 @@ const RenderChildren = ({
 }) => {
   const libraries = ctx.libraries;
   const configs = ctx.configs;
-
-  /*
-  let array: ValueArray = [];
-  if (ctx.spread) {
-    const valueAtIndex = value[ctx.index];
-    array = Array.isArray(valueAtIndex) ? valueAtIndex : [valueAtIndex];
-  } else if (value.length === 1 && Array.isArray(value[0])) {
-    array = value[0];
-  } else {
-    array = value;
-  }
-  */
 
   const getDisplayType = (type: string) => {
     return Boolean(getConfigByType(type, { configs })?.config?.inline);
@@ -259,15 +181,7 @@ const RenderElement = ({
     record,
     id,
     type,
-    createComponentContext: (regularProps: Record<string, any>) => {
-      let context: Record<string, any>;
-      if (typeof config?.context === "function") {
-        context = config.context(regularProps);
-      } else {
-        context = config?.context ?? {};
-      }
-      return context;
-    },
+    createComponentContext: getComponentContextCreator(config?.provideContext),
   };
 
   if (type === "Loop") {
@@ -277,14 +191,13 @@ const RenderElement = ({
     return (
       <>
         {(record[dataId] as ValueArray).map((_, newIndex) => {
-          const loopCtx = {
-            ...ctx.loop,
-            [rawDocumentId]: newIndex,
-          };
           const newCtx = {
             ...ctx,
+            loop: {
+              ...ctx.loop,
+              [rawDocumentId]: newIndex,
+            },
             spread: true,
-            loop: loopCtx,
           };
           return (
             <RenderElementWithProps
@@ -311,16 +224,6 @@ const RenderElement = ({
   );
 };
 
-const fileTransform = (value: FileToken | undefined) => {
-  if (!value)
-    return {
-      src: "",
-      width: 0,
-      height: 0,
-    };
-  return getImageObject(value.src, process.env.IMAGE_URL ?? "");
-};
-
 function RenderElementWithProps({
   id,
   type,
@@ -339,33 +242,27 @@ function RenderElementWithProps({
   ctx: RSCContext;
   props: PropConfigRecord;
   component: Component<PropConfigRecord>;
-  createComponentContext: (
-    regularProps: Record<string, any>
-  ) => Record<string, any>;
+  createComponentContext: (regularProps: Record<string, any>) => Context[];
   index: number;
 }) {
-  const resolveProps = (props: PropConfigRecord, group?: string) => {
-    const propEntries = Object.entries(props);
-    const regularPropEntries = group
-      ? propEntries
-      : propEntries.filter(([, value]) => value.type !== "children");
+  const resolveProps = (props: PropConfigRecord, group: string = "") => {
+    const [regularEntries, childrenEntries] = splitProps(props);
     const regularProps = Object.fromEntries(
-      regularPropEntries.map(([name, config]): [string, any] => {
+      regularEntries.map(([name, config]): [string, any] => {
         if (config.type === "group") {
           return [name, resolveProps(config.props, name)];
         }
 
-        const key = extendPath(group ?? "", name, "#");
-
+        const key = extendPath(group, name, "#");
         const fieldId = `${id.slice(12, 24)}${getIdFromString(key)}`;
 
         const transforms = {
           file: fileTransform,
         };
 
-        const value = resolveStatefulProp(record[fieldId] ?? [], ctx.loop);
+        const prop = resolveStatefulProp(record[fieldId] ?? [], ctx.loop);
 
-        return [name, normalizeProp(config, value, transforms)];
+        return [name, normalizeProp(config, prop, transforms)];
       })
     );
 
@@ -373,29 +270,19 @@ function RenderElementWithProps({
       return regularProps;
     }
 
-    const contextsArray = [
-      ...ctx.contexts,
+    const prevContexts = ctx.contexts;
+
+    const contexts = [
+      ...prevContexts,
       {
         element: symbol,
         index,
-        context: createComponentContext(regularProps),
+        serverContexts: createComponentContext(regularProps),
       },
     ];
-    const contexts = Object.assign(contextsArray, {
-      useContext(config: Config) {
-        const symbol = (config as any).symbol;
-        return (
-          contextsArray.findLast((el) => el.element === symbol)?.context ?? {}
-        );
-      },
-    });
-
-    const childrenPropEntries = group
-      ? []
-      : propEntries.filter(([, value]) => value.type === "children");
 
     const childrenProps = Object.fromEntries(
-      childrenPropEntries.map(([name, config]): [string, any] => {
+      childrenEntries.map(([name, config]): [string, any] => {
         const fieldId = `${id.slice(12, 24)}${getIdFromString(name)}`;
         const value = resolveStatefulProp(record[fieldId] ?? [], ctx.loop);
 
@@ -415,7 +302,24 @@ function RenderElementWithProps({
       })
     );
 
-    return { ...regularProps, ...childrenProps, serverContext: contexts };
+    const useServerContext = (provider: ContextProvider) => {
+      for (let i = prevContexts.length - 1; i >= 0; i--) {
+        const result = prevContexts[i].serverContexts.findLast(
+          (c) => c[context] === provider[context]
+        );
+        if (result) {
+          return result.value;
+        }
+      }
+    };
+
+    const isServerComponent = typeof (Component as any).$$typeof !== "symbol";
+
+    return {
+      ...regularProps,
+      ...childrenProps,
+      ...(isServerComponent ? { useServerContext } : {}),
+    };
   };
 
   const resolvedProps = resolveProps(props);

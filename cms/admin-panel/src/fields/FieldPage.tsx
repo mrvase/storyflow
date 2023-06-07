@@ -22,7 +22,6 @@ import { useAppConfig } from "../AppConfigContext";
 import { createComponent } from "./Editor/createComponent";
 import { useDocumentPageContext } from "../documents/DocumentPageContext";
 import { fetchDocumentSync } from "../documents";
-import { Client, useClient } from "../RPCProvider";
 import {
   computeFieldId,
   getDocumentId,
@@ -45,14 +44,14 @@ import { SelectedPathProvider, SyncBuilderPath, useSelectedPath } from "./Path";
 import { DefaultField } from "./default/DefaultField";
 import { FieldIdContext } from "./FieldIdContext";
 import { EditorFocusProvider } from "../editor/react/useIsFocused";
-import { useRoute } from "../layout/panel-router/Routes";
-import { parseSegment } from "../layout/components/parseSegment";
 import { splitStreamByBlocks } from "./Editor/transforms";
 import { extendPath } from "../utils/extendPath";
 import { usePush } from "../collab/CollabContext";
 import { FieldTransactionEntry } from "../operations/actions";
 import { Transaction } from "@storyflow/collab/types";
 import { createTransaction } from "@storyflow/collab/utils";
+import { useRoute } from "@nanokit/router";
+import { parseMatch } from "../layout/components/parseSegment";
 
 const useBuilderRendered = ({
   listeners,
@@ -345,8 +344,7 @@ const useIframe = () => {
 
 export function FieldPage({ children }: { children?: React.ReactNode }) {
   const route = useRoute();
-  const segment = parseSegment<"field">(route);
-  const id = segment.id;
+  const { id } = parseMatch<"field">(route);
 
   const documentId = getDocumentId<DocumentId>(id);
   const templateFieldId = getRawFieldId(id);
@@ -463,11 +461,9 @@ const getRecordSnapshot = (
   entry: FieldId,
   {
     record = {},
-    client,
     configs,
   }: {
     record?: SyntaxTreeRecord;
-    client: Client;
     configs: LibraryConfigRecord;
   }
 ) => {
@@ -487,14 +483,13 @@ const getRecordSnapshot = (
       let initialValue = record[fieldId];
 
       if (!initialValue && propDocumentId !== documentId) {
-        fetchDocumentSync(propDocumentId, client).then((doc) => {
+        fetchDocumentSync(propDocumentId).then((doc) => {
           if (!doc) return undefined;
           const value = doc.record[fieldId];
           if (!value) return undefined;
           prop.set(() => {
             return calculateFn(value, {
               record: doc.record,
-              client,
               documentId: propDocumentId,
             });
           });
@@ -507,7 +502,6 @@ const getRecordSnapshot = (
         prop.set(() =>
           calculateFn(initialValue ?? DEFAULT_SYNTAX_TREE, {
             record,
-            client,
             documentId,
           })
         );
@@ -625,15 +619,12 @@ function PropagateStatePlugin({
 }) {
   const { record } = useDocumentPageContext();
 
-  const client = useClient();
-
   const { configs } = useAppConfig();
 
   // state initialized in ComponentField
   const [tree, setTree] = useGlobalState<ValueRecord>(`${id}/record`, () => {
     return getRecordSnapshot(id, {
       record,
-      client,
       configs,
     });
   });

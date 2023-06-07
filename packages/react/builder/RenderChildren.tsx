@@ -18,18 +18,6 @@ export default function RenderChildren({
   const { configs, libraries } = useConfig();
 
   const renderArray = React.useMemo(() => {
-    /*
-    let array: ValueArray = [];
-    if (spread) {
-      const valueAtIndex = value[index];
-      array = Array.isArray(valueAtIndex) ? valueAtIndex : [valueAtIndex];
-    } else if (value.length === 1 && Array.isArray(value[0])) {
-      array = value[0];
-    } else {
-      array = value;
-    }
-    if (!value) return [];
-    */
     return createRenderArray(value, (type: string) =>
       Boolean(getConfigByType(type, { configs })?.config?.inline)
     );

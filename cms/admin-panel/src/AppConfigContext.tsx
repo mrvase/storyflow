@@ -1,11 +1,11 @@
 import React from "react";
 import type { AppConfig, LibraryConfigRecord } from "@storyflow/shared/types";
 import { useFolderDomains } from "./folders/FolderDomainsContext";
-import { useAuth } from "./Auth";
-import { useAppClient } from "./RPCProvider";
-import { isError, unwrap } from "@storyflow/rpc-client/result";
 import { defaultLibraryConfig } from "@storyflow/shared/defaultLibraryConfig";
 import { normalizeProtocol } from "./utils/normalizeProtocol";
+import { useOrganization } from "./clients/auth";
+import { appQuery } from "./clients/client-app";
+import { isError } from "@nanorpc/client";
 
 const AppConfigContext = React.createContext<Record<string, AppConfig> | null>(
   null
@@ -90,11 +90,9 @@ export function AppConfigProvider({
 }: {
   children?: React.ReactNode;
 }) {
-  const { organization } = useAuth();
+  const organization = useOrganization();
 
   const [configs, setConfigs] = React.useState<Record<string, AppConfig>>({});
-
-  const appClient = useAppClient();
 
   React.useLayoutEffect(() => {
     let isMounted = true;
@@ -104,15 +102,17 @@ export function AppConfigProvider({
       const fetchedConfigs = await Promise.all(
         organization!.apps.map(async ({ name, baseURL }) => {
           const normalizedBaseURL = normalizeProtocol(baseURL);
-          const result = await appClient.app.config.query(undefined, {
-            url: `${normalizedBaseURL}/api`,
+          const result = await appQuery.app.config(undefined, {
+            baseURL: normalizedBaseURL,
           });
 
           if (isError(result)) {
             return;
           }
 
-          const config = unwrap(result);
+          const config = result;
+
+          console.log("CONFIG", { baseURL, config });
 
           return [
             name,

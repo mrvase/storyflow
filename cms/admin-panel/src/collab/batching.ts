@@ -1,4 +1,5 @@
-import { isError, Result, unwrap } from "@storyflow/rpc-client/result";
+import { isError } from "@nanorpc/client";
+import type { ErrorCodes } from "@storyflow/api";
 import type { Timeline } from "@storyflow/collab/Timeline";
 import type { TimelineEntry } from "@storyflow/collab/types";
 
@@ -31,9 +32,8 @@ export async function batchSyncTimelines(
       { entries: TimelineEntry[]; startId: string | null; length: number }
     >
   ) => Promise<
-    Result<
-      Record<string, { status: "success" | "stale"; updates: TimelineEntry[] }>
-    >
+    | Record<string, { status: "success" | "stale"; updates: TimelineEntry[] }>
+    | ErrorCodes<string>
   >
 ) {
   type Response =
@@ -87,7 +87,7 @@ export async function batchSyncTimelines(
     if (isError(result)) {
       promise.resolve({ status: "error" });
     } else {
-      promise.resolve(unwrap(result)[id] ?? { status: "success", updates: [] });
+      promise.resolve(result[id] ?? { status: "success", updates: [] });
     }
   });
 

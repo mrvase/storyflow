@@ -1,48 +1,33 @@
 import cl from "clsx";
 import React from "react";
-import {
-  servicesClientWithoutContext,
-  servicesClientSWR,
-  useAuth,
-} from "./Auth";
 import Loader from "./elements/Loader";
-import { Link } from "@storyflow/router";
+import { Link } from "@nanokit/router";
+import { useUser } from "./clients/auth";
+import { authServicesMutate } from "./clients/client-auth-services";
 
-export function Organizations({
-  preset,
-}: {
-  preset?: { slug: string; url: string };
-}) {
-  let organizations: {
-    slug: string;
-    url: string;
-  }[] = [];
-  if (preset) {
-    organizations = [preset];
-  } else {
-    const { data } = servicesClientSWR.auth.getOrganizations.useQuery(
-      undefined,
-      {
-        immutable: true,
-      }
-    );
-    organizations = data?.organizations ?? organizations;
+export function Organizations() {
+  const { data, error } = useUser();
+
+  if (error) {
+    return <>failed</>;
   }
 
-  const { user } = useAuth();
+  if (!data) {
+    return <>loading</>;
+  }
 
   return (
     <div className="w-full h-full flex flex-col">
       <div className="w-full flex-center p-5 grow">
         <div className="grid grid-cols-3 w-full max-w-4xl gap-5">
           <AddOrganization index={0} />
-          {organizations.map((data, index) => (
+          {data.organizations.map((data, index) => (
             <Organization index={index + 1} key={data.slug} data={data} />
           ))}
         </div>
       </div>
       <div className="w-full py-5 flex flex-col gap-3 items-center text-sm">
-        <div className="text-gray-600">Logget ind som {user?.email}</div>
+        <div className="text-gray-600">Logget ind som {data.email}</div>
         <Link to="/logout" className="rounded px-4 py-2 ring-button">
           Log ud
         </Link>
@@ -95,7 +80,7 @@ export function Organization({
   return (
     <OrganizationCard
       index={index}
-      to={`/${data.slug}`}
+      to={`/${data.slug}/~`}
       className={cl("flex flex-col justify-center gap-3")}
     >
       <div className="text-3xl">{data.slug}</div>
@@ -115,7 +100,7 @@ export function AddOrganization({ index }: { index: number }) {
           ev.preventDefault();
           const data = new FormData(ev.currentTarget);
           setIsLoading(true);
-          await servicesClientWithoutContext.auth.addOrganization.mutation({
+          await authServicesMutate.auth.addOrganization({
             slug: data.get("slug") as string,
             url: (data.get("url") as string) || undefined,
           });

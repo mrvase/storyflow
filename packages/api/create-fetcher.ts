@@ -1,7 +1,7 @@
 import { FolderId, RawFieldId, ValueArray } from "@storyflow/shared/types";
 import { parseDocument } from "./convert";
 import { createObjectId } from "./mongo";
-import { getClientPromise } from "./mongoClient";
+import { client } from "./mongo";
 import { DBDocumentRaw } from "./types";
 
 export const createFetcher =
@@ -20,9 +20,8 @@ export const createFetcher =
         })
     );
 
-    const client = await getClientPromise();
-    const result = await client
-      .db(dbName)
+    const db = await client.get(dbName);
+    const result = await db
       .collection<DBDocumentRaw>("documents")
       .find({
         folder: createObjectId(fetchObject.folder),

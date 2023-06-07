@@ -1,29 +1,21 @@
 import { DragDropContext } from "@storyflow/dnd";
-import { Router, useLocation } from "@storyflow/router";
-import { SWRConfig } from "swr";
-import { provider, RPCProvider } from "./RPCProvider";
+import { Router, useLocation, useRouterIsLoading } from "@nanokit/router";
 import { AppConfigProvider } from "./AppConfigContext";
 import { FieldFocusProvider } from "./FieldFocusContext";
 import { IdGenerator } from "./id-generator";
-import { DataProvider, Preload } from "./DataProvider";
-import { CollabProvider } from "./collab/CollabContext";
-import { PanelRouter } from "./layout/panel-router/PanelRouter";
-import { Layout } from "./layout/components/Layout";
-import { Panels } from "./layout/components/Panels";
-import { routes } from "./pages/routes";
-import { AuthProvider, SignedIn, SignedOut, SignIn } from "./Auth";
+import { Preload } from "./DataProvider";
+import { history_ } from "./pages/routes";
+import { SignedIn, SignedOut, SignIn } from "./Auth";
 import React from "react";
 import { useLocalStorage } from "./state/useLocalStorage";
 import { Organizations } from "./Organizations";
 import { TranslationProvider } from "./translation/TranslationContext";
+import { NestedRoutes } from "@nanokit/router/routes/nested";
+import { FoldersProvider } from "./folders/FoldersContext";
+import Loader from "./elements/Loader";
+import { useUser } from "./clients/auth";
 
-export function App({
-  organization,
-  lang,
-}: {
-  organization?: { slug: string; url: string };
-  lang?: "da" | "en";
-}) {
+export function App({ lang }: { lang?: "da" | "en" }) {
   const [darkMode] = useLocalStorage<boolean>("dark-mode", true);
 
   React.useLayoutEffect(() => {
@@ -32,44 +24,32 @@ export function App({
 
   return (
     <div className="w-full h-full bg-gray-100 dark:bg-gray-950 text-gray-800 dark:text-white">
-      <SWRConfig value={{ provider }}>
-        <TranslationProvider lang={lang}>
-          <Router>
-            <PanelRouter>
-              <AuthProvider organization={organization}>
-                <SignedIn>
-                  <FrontPage>
-                    <Organizations preset={organization} />
-                  </FrontPage>
-                  <PanelPage>
-                    <RPCProvider>
-                      <Preload />
-                      <CollabProvider>
-                        <DataProvider>
-                          <AppConfigProvider>
-                            <IdGenerator>
-                              <FieldFocusProvider>
-                                <DragDropContext>
-                                  <Layout>
-                                    <Panels routes={routes} />
-                                  </Layout>
-                                </DragDropContext>
-                              </FieldFocusProvider>
-                            </IdGenerator>
-                          </AppConfigProvider>
-                        </DataProvider>
-                      </CollabProvider>
-                    </RPCProvider>
-                  </PanelPage>
-                </SignedIn>
-                <SignedOut>
-                  <SignIn />
-                </SignedOut>
-              </AuthProvider>
-            </PanelRouter>
-          </Router>
-        </TranslationProvider>
-      </SWRConfig>
+      <TranslationProvider lang={lang}>
+        <Router history={history_}>
+          <SignedIn>
+            <FrontPage>
+              <Organizations />
+            </FrontPage>
+            <PanelPage>
+              <Preload />
+              <FoldersProvider>
+                <AppConfigProvider>
+                  <IdGenerator>
+                    <FieldFocusProvider>
+                      <DragDropContext>
+                        <NestedRoutes />
+                      </DragDropContext>
+                    </FieldFocusProvider>
+                  </IdGenerator>
+                </AppConfigProvider>
+              </FoldersProvider>
+            </PanelPage>
+          </SignedIn>
+          <SignedOut>
+            <SignIn />
+          </SignedOut>
+        </Router>
+      </TranslationProvider>
     </div>
   );
 }
@@ -77,11 +57,22 @@ export function App({
 function FrontPage({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
 
-  return pathname === "/" || pathname === "logout" ? <>{children}</> : null;
+  const { isLoading: userIsLoading } = useUser();
+  const isLoading = useRouterIsLoading();
+
+  if (userIsLoading || isLoading) {
+    return (
+      <div className="w-full h-full flex-center">
+        <Loader size="lg" />
+      </div>
+    );
+  }
+
+  return pathname === "/" || pathname === "/logout" ? <>{children}</> : null;
 }
 
 function PanelPage({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
 
-  return pathname === "/" || pathname === "logout" ? null : <>{children}</>;
+  return pathname === "/" || pathname === "/logout" ? null : <>{children}</>;
 }

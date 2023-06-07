@@ -1,5 +1,4 @@
 import React from "react";
-import { useClient } from "../RPCProvider";
 import { DocumentId, FolderId, FieldId } from "@storyflow/shared/types";
 import type { SyntaxTreeRecord } from "@storyflow/cms/types";
 import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
@@ -7,28 +6,26 @@ import { DEFAULT_SYNTAX_TREE } from "@storyflow/cms/constants";
 import { createTemplateFieldId } from "@storyflow/cms/ids";
 import { createTransaction } from "@storyflow/collab/utils";
 import { DocumentAddTransactionEntry } from "../operations/actions";
-import { useCollab, usePush } from "../collab/CollabContext";
+import { collab, usePush } from "../collab/CollabContext";
 import {
   useDocumentIdGenerator,
   useTemplateIdGenerator,
 } from "../id-generator";
-import { usePanel, useRoute } from "../layout/panel-router/Routes";
 import {
   getDefaultValuesFromTemplateAsync,
   pushDefaultValues,
 } from "./template-fields";
 import { createDocumentTransformer } from "../operations/apply";
+import { useNavigate, useRoute } from "@nanokit/router";
 
 export const useAddDocument = (
   options: { type?: "template" | "document"; navigate?: boolean } = {}
 ) => {
   const generateDocumentId = useDocumentIdGenerator();
   const generateTemplateId = useTemplateIdGenerator();
-  const [, navigate] = usePanel();
+  const navigate = useNavigate();
   const route = useRoute();
-  const client = useClient();
 
-  const collab = useCollab();
   const push = usePush<DocumentAddTransactionEntry>("documents");
 
   const addDocument = React.useCallback(
@@ -49,7 +46,6 @@ export const useAddDocument = (
 
       const record = data.template
         ? await getDefaultValuesFromTemplateAsync(id, data.template, {
-            client,
             generateDocumentId,
           })
         : {};
@@ -79,26 +75,14 @@ export const useAddDocument = (
 
       if (options.navigate) {
         navigate(
-          `${route}/${options.type === "template" ? "t" : "d"}${parseInt(
-            id,
-            16
-          ).toString(16)}`,
-          {
-            navigate: true,
-          }
+          `${route.accumulated}/${
+            options.type === "template" ? "t" : "d"
+          }/${parseInt(id, 16).toString(16)}`
         );
       }
       return id;
     },
-    [
-      push,
-      options.navigate,
-      route,
-      navigate,
-      client,
-      generateDocumentId,
-      collab,
-    ]
+    [push, options.navigate, route, navigate, generateDocumentId]
   );
 
   return addDocument;
