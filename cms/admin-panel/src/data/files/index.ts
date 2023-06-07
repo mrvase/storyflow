@@ -1,5 +1,5 @@
 import { useImmutableQuery, useQuery } from "@nanorpc/client/swr";
-import { query } from "../../clients/client";
+import { mutate, query } from "../../clients/client";
 import { isError } from "@nanorpc/client";
 import { servicesQuery } from "../../clients/client-services";
 
@@ -44,19 +44,26 @@ export function useFiles() {
         mode: "cors",
       });
 
-      if (upload.ok) {
-        console.log("Uploaded successfully!");
-        return [
-          {
-            name,
-            label,
-          },
-          ...(ps ?? []),
-        ];
-      } else {
+      if (!upload.ok) {
         console.error("Upload failed.");
         return ps;
       }
+      console.log("Uploaded successfully!");
+
+      const save = await mutate.files.saveFile({ name, label });
+
+      if (isError(save)) {
+        console.error("Saving file failed.");
+        return ps;
+      }
+
+      return [
+        {
+          name,
+          label,
+        },
+        ...(ps ?? []),
+      ];
     });
     if (newState && newState !== data) {
       return newState[0].name;

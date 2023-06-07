@@ -148,6 +148,7 @@ export function FilePrompt({
       </div>
       {filteredFiles.map(({ name, label }) => (
         <FileContainer
+          key={name}
           name={name}
           label={label}
           organization={organization!.slug}

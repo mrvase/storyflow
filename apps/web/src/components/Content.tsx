@@ -17,7 +17,7 @@ export const Content = ({
   style,
   useServerContext,
 }: Props<typeof props>) => {
-  const result = useServerContext(ContentContext);
+  const result = useServerContext!(ContentContext);
   console.log("PARENT CONTEXT", style, result);
 
   return (

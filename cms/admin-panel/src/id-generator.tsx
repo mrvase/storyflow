@@ -298,10 +298,6 @@ export function IdGenerator({ children }: { children: React.ReactNode }) {
 
   const ctx = React.useMemo(() => getters, [workspace]);
 
-  if (!workspace) {
-    return null;
-  }
-
   return <IdContext.Provider value={ctx}>{children}</IdContext.Provider>;
 }
 
