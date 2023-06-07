@@ -89,16 +89,17 @@ function createThrottledFetch<T>(
 }
 
 export const throttleMiddleware = <TOptions>(fetcher: Fetcher<TOptions>) => {
+  const THROTTLED: Record<
+    string,
+    ReturnType<typeof createThrottledFetch<any>>
+  > = {};
+
   return async (
     key: string,
     options: TOptions & { throttle?: { key: string; ms: number } }
   ) => {
-    const THROTTLED: Record<
-      string,
-      ReturnType<typeof createThrottledFetch<any>>
-    > = {};
-
     const { throttle, ...rest } = options;
+
     if (throttle) {
       if (!(throttle.key in THROTTLED)) {
         THROTTLED[throttle.key] = createThrottledFetch(

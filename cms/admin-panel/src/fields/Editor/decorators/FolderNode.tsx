@@ -140,7 +140,7 @@ function NestedDefaultField({ documentId }: { documentId: NestedDocumentId }) {
   const Field = FolderCircularImport.DefaultField!;
 
   return (
-    <ExtendPath id={documentId} type="document">
+    <ExtendPath key={propId} id={documentId} type="document">
       <ExtendPath id={propId} type="field">
         <div className="cursor-auto mt-1.5 pl-[2.875rem] pr-2.5">
           <Field id={propId} showPromptButton />
