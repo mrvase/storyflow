@@ -9,7 +9,7 @@ import {
 } from "../state/useSubject";
 import { useImmutableQuery } from "@nanorpc/client/swr";
 
-type Organization = {
+export type Organization = {
   slug: string;
   apps: AppReference[];
   workspaces: { name: string }[];

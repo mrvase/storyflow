@@ -84,27 +84,48 @@ const IdContext = React.createContext<{
   getFieldNumber: (documentId: DocumentId) => number;
 } | null>(null);
 
-export function IdGenerator({ children }: { children: React.ReactNode }) {
-  const organization = useOrganization();
-  const workspaceId = organization!.workspaces[0].name;
-
-  const getName = (name: string = "ids") => `${organization!.slug}:${name}`;
+const createIdManager = ({
+  slug,
+  workspace,
+}: {
+  slug: string;
+  workspace: string;
+}) => {
+  const getName = (name: string = "ids") => `${slug}:${name}`;
 
   const getItem = (name: string): string | null => {
     if (typeof window === "undefined") return null;
     return localStorage.getItem(name) ?? null;
   };
 
-  const initialize = async () => {
+  let initialized: boolean = false;
+
+  const fetchOffset = async (name: "id" | "template" | "field") => {
+    return query.admin
+      .getOffset({
+        name,
+        size: batchSizes[name],
+      })
+      .then((result) => {
+        if (isError(result)) {
+          throw new Error(result.error);
+        }
+        return result;
+      });
+  };
+
+  const initialize = () => {
+    if (initialized) return;
+    initialized = true;
     if (getObject()) return;
-    try {
+    const createObject = async () => {
       const [id_offset, template_offset, field_offset] = await Promise.all([
         fetchOffset("id"),
         fetchOffset("template"),
         fetchOffset("field"),
       ]);
-      const object = {
-        workspace: workspaceId,
+      return {
+        workspace,
         id: id_offset,
         template: template_offset,
         id_offsets: [id_offset],
@@ -112,10 +133,12 @@ export function IdGenerator({ children }: { children: React.ReactNode }) {
         field_offsets: [field_offset],
         docs: [],
       };
-      localStorage.setItem(getName(), JSON.stringify(object));
-    } catch (err) {
-      console.error(err);
-    }
+    };
+    createObject()
+      .then((object) => {
+        localStorage.setItem(getName(), JSON.stringify(object));
+      })
+      .catch(console.error);
   };
 
   const getObject = () => {
@@ -131,7 +154,7 @@ export function IdGenerator({ children }: { children: React.ReactNode }) {
         field_offsets: number[];
         docs: string[];
       };
-      if (value.workspace !== workspaceId) {
+      if (value.workspace !== workspace) {
         throw new Error("Workspace mismatch");
       }
       return value;
@@ -234,12 +257,6 @@ export function IdGenerator({ children }: { children: React.ReactNode }) {
     return value;
   };
 
-  const promises = React.useRef({
-    id: null as (Promise<number> & { abort: () => void }) | null,
-    template: null as (Promise<number> & { abort: () => void }) | null,
-    field: null as (Promise<number> & { abort: () => void }) | null,
-  });
-
   const commitOffset = (
     name: "id" | "template" | "field",
     offset: number | null
@@ -255,65 +272,33 @@ export function IdGenerator({ children }: { children: React.ReactNode }) {
     );
   };
 
-  const fetchOffset = async (name: "id" | "template" | "field") => {
-    if (!promises.current[name]) {
-      const abortController = new AbortController();
-
-      const promise = query.admin.getOffset(
-        {
-          name,
-          size: batchSizes[name],
-        },
-        {
-          signal: abortController.signal,
-        }
-      );
-
-      const promiseExtended = promise
-        .then((result) => {
-          if (isError(result)) {
-            throw new Error(result.error);
-          }
-          return result;
-        })
-        .finally(() => {
-          promises.current[name] = null;
-        });
-
-      const abortablePromise = Object.assign(promiseExtended, {
-        abort() {
-          abortController.abort();
-        },
-      });
-
-      promises.current[name] = abortablePromise;
-    }
-    return await promises.current[name];
-  };
-
-  React.useEffect(() => {
-    if (!workspaceId) return;
-    initialize();
-    return () => {
-      promises.current.id?.abort();
-      promises.current.id = null;
-      promises.current.template?.abort();
-      promises.current.template = null;
-      promises.current.field?.abort();
-      promises.current.field = null;
-    };
-  }, [workspaceId]);
-
-  const ctx = React.useMemo(
-    () => ({
+  return {
+    initialize,
+    getters: {
       getDocumentNumber,
       getTemplateNumber,
       getFieldNumber,
-    }),
-    [workspaceId]
+    },
+  };
+};
+
+export function IdGenerator({ children }: { children: React.ReactNode }) {
+  const organization = useOrganization();
+  const workspace = organization!.workspaces[0].name;
+
+  const { initialize, getters } = React.useMemo(
+    () => createIdManager({ workspace, slug: organization!.slug }),
+    [organization]
   );
 
-  if (!workspaceId) {
+  React.useEffect(() => {
+    if (!workspace) return;
+    return initialize();
+  }, [workspace]);
+
+  const ctx = React.useMemo(() => getters, [workspace]);
+
+  if (!workspace) {
     return null;
   }
 
