@@ -158,7 +158,7 @@ export function useValue(key: string) {
 export function RenderBuilder<T extends LibraryConfigRecord>({
   configs,
   libraries,
-  transforms = {},
+  transforms = {} as any,
 }: {} extends CustomTransforms
   ? {
       configs: T;

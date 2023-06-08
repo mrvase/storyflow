@@ -340,7 +340,7 @@ export const RenderPage = <T extends LibraryConfigRecord>({
   data,
   configs: configsFromProps,
   libraries: librariesFromProps,
-  transforms = {},
+  transforms = {} as any,
 }: {
   data:
     | {
@@ -382,7 +382,7 @@ export const RenderLayout = <T extends LibraryConfigRecord>({
   children,
   configs: configsFromProps,
   libraries: librariesFromProps,
-  transforms = {},
+  transforms = {} as any,
 }: {
   data:
     | {

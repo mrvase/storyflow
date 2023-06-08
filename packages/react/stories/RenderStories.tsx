@@ -4,6 +4,7 @@ import React from "react";
 import { getIdFromString } from "@storyflow/shared/getIdFromString";
 import { RenderPage } from "../rsc";
 import {
+  CustomTransforms,
   PartialProps,
   PropConfigRecord,
   PropGroup,
@@ -74,6 +75,7 @@ export function RenderStories<T extends LibraryConfigRecord>({
   story,
   libraries,
   configs,
+  transforms = {} as any,
   Link,
 }: {
   story: string[] | undefined;
@@ -84,7 +86,9 @@ export function RenderStories<T extends LibraryConfigRecord>({
     href: any;
     children: React.ReactNode;
   }>;
-}) {
+} & ({} extends CustomTransforms
+  ? { transforms?: CustomTransforms }
+  : { transforms: CustomTransforms })) {
   const [iframe, setIframe] = React.useState<HTMLIFrameElement>();
 
   const iframeRef = React.useCallback((node: HTMLIFrameElement) => {
@@ -315,6 +319,7 @@ export function RenderStories<T extends LibraryConfigRecord>({
               key={(story ?? []).join("/")}
               configs={configs}
               libraries={libraries}
+              transforms={transforms}
             />,
             body
           )

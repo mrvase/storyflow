@@ -2,7 +2,7 @@
 import { useSearchParams } from "next/navigation";
 
 import Link from "next/link";
-import { libraries, configs } from "../../../components";
+import { libraries, configs, transforms } from "../../../components";
 import React from "react";
 import { RenderStories } from "@storyflow/react/stories";
 
@@ -21,6 +21,7 @@ export default function Page() {
       libraries={libraries}
       configs={configs}
       Link={Link}
+      transforms={transforms}
     />
   );
 }
