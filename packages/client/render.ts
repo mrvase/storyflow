@@ -3,11 +3,16 @@ import type { RenderArray, RenderElement } from "./types";
 
 export const isRenderable = (
   el: any
-): el is string | number | { id: string; element: string } => {
+): el is
+  | string
+  | number
+  | { src: string }
+  | { id: string; element: string } => {
   // if (el === "") return false;
   return (
     ["string", "number"].includes(typeof el) ||
-    (typeof el === "object" && "element" in el)
+    (typeof el === "object" && "element" in el) ||
+    (typeof el === "object" && "src" in el)
   );
 };
 
@@ -55,6 +60,10 @@ export function createRenderArray(
       return a;
     }
     if (!isRenderable(c)) {
+      return a;
+    }
+    if (typeof c === "object" && "src" in c) {
+      a.push(c);
       return a;
     }
     const heading = isHeadingElement(c);

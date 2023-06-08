@@ -120,8 +120,8 @@ export function AppConfigProvider({
               ...config,
               baseURL: normalizedBaseURL,
               configs: {
-                "": defaultLibraryConfig,
                 ...config.configs,
+                "": defaultLibraryConfig,
               },
             },
           ] as [string, AppConfig];

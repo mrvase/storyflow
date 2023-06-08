@@ -5,8 +5,7 @@ import { useCMSElement } from "./useCMSElement";
 import { getSiblings } from "./focus";
 import type {
   ClientSyntaxTree,
-  Library,
-  LibraryConfig,
+  CustomTransforms,
   LibraryConfigRecord,
   LibraryRecord,
   ValueArray,
@@ -159,10 +158,18 @@ export function useValue(key: string) {
 export function RenderBuilder<T extends LibraryConfigRecord>({
   configs,
   libraries,
-}: {
-  configs: T;
-  libraries: LibraryRecord<T>;
-}) {
+  transforms = {},
+}: {} extends CustomTransforms
+  ? {
+      configs: T;
+      libraries: LibraryRecord<T>;
+      transforms?: CustomTransforms;
+    }
+  : {
+      configs: T;
+      libraries: LibraryRecord<T>;
+      transforms: CustomTransforms;
+    }) {
   useCSS();
 
   const { id, key } = useFullValue();
@@ -207,15 +214,16 @@ export function RenderBuilder<T extends LibraryConfigRecord>({
   const configCtx = React.useMemo(() => {
     return {
       configs: {
-        "": defaultLibraryConfig,
         ...configs,
+        "": defaultLibraryConfig,
       },
       libraries: {
-        "": defaultLibrary,
         ...libraries,
+        "": defaultLibrary,
       },
+      transforms,
     };
-  }, [configs, libraries]);
+  }, [configs, libraries, transforms]);
 
   return (
     <ConfigContext.Provider value={configCtx}>

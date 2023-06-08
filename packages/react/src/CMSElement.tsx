@@ -51,9 +51,8 @@ export const cms = new Proxy({} as CMSComponentType, {
               key={builderCtx ? "ineditable" : undefined}
               ref={ref}
               {...rest}
-            >
-              {children}
-            </Tag>
+              children={children}
+            />
           );
         }
       );

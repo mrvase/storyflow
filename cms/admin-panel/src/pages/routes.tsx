@@ -129,8 +129,6 @@ function Panels() {
   const { pathname } = useLocation();
   const length = pathname.split("/~").length - 1;
 
-  console.log("PANELS ARE HERE!");
-
   return (
     <div className="relative w-full h-full flex overflow-hidden">
       <LinkReceiver index={0} edge="left" id="link-left" />

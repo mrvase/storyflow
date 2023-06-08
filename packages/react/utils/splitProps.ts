@@ -3,10 +3,12 @@ import {
   ClientSyntaxTree,
   Config,
   Context,
+  CustomTransforms,
   FileToken,
   PropConfig,
   PropConfigRecord,
   PropGroup,
+  Transforms,
   ValueArray,
 } from "@storyflow/shared/types";
 
@@ -59,10 +61,10 @@ export const resolveStatefulProp = (
 export const normalizeProp = (
   config: PropConfig,
   prop: ValueArray,
-  transforms: {
-    file?: (value: FileToken | undefined) => any;
-  }
+  transforms_: CustomTransforms
 ) => {
+  const transforms: Transforms = transforms_;
+
   const type = config.type;
   const value = prop[0];
 
@@ -80,12 +82,12 @@ export const normalizeProp = (
     return value.color;
   }
 
-  if (["image", "video"].includes(type)) {
-    return (
-      transforms.file?.(value as FileToken | undefined) ??
-      (value as FileToken | undefined)?.src ??
-      ""
-    );
+  if (type === "image") {
+    let str = typeof value === "object" && "src" in value ? value.src : "";
+    return transforms.image ? transforms.image(str) : str;
+  } else if (type === "video") {
+    let str = typeof value === "object" && "src" in value ? value.src : "";
+    return transforms.video ? transforms.video(str) : str;
   } else if (type === "boolean") {
     return value === "false" ? false : Boolean(value);
   } else if (type === "number") {
@@ -97,28 +99,6 @@ export const normalizeProp = (
   }
 
   return value;
-};
-
-export const fileTransform = (value: FileToken | undefined) => {
-  if (!value) {
-    return {
-      src: "",
-      width: 0,
-      height: 0,
-    };
-  }
-
-  const url = process.env.IMAGE_URL ?? "";
-  const src = `${url}/${value.src}`;
-
-  const width = parseInt(value.src.split("-")[4] ?? "0", 16);
-  const height = parseInt(value.src.split("-")[5] ?? "0", 16);
-
-  return {
-    src,
-    width,
-    height,
-  };
 };
 
 export const getComponentContextCreator = (

@@ -1,6 +1,11 @@
 import * as React from "react";
 import { dispatchers } from "./events";
-import type { Library, LibraryConfig, Path } from "@storyflow/shared/types";
+import type {
+  CustomTransforms,
+  Library,
+  LibraryConfig,
+  Path,
+} from "@storyflow/shared/types";
 
 /**
  * BUILDER SELECTION CONTEXT
@@ -89,6 +94,7 @@ export function ExtendPath({
 export const ConfigContext = React.createContext<{
   configs: Record<string, LibraryConfig>;
   libraries: Record<string, Library>;
+  transforms: CustomTransforms;
 } | null>(null);
 
 export const useConfig = () => {

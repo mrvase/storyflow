@@ -237,7 +237,7 @@ export const useCMSElement = (
 ): React.ComponentProps<"div"> => {
   const path = usePath();
 
-  let children: any = (
+  let children: any = !props.children ? undefined : (
     <>
       <EventHandler path={path} />
       {props.children}

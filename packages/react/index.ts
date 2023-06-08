@@ -27,6 +27,8 @@ export type {
 
 export type { FetchPageResult } from "@storyflow/client/types";
 
+export type { CustomTypes, Transforms } from "@storyflow/shared/types";
+
 declare module "@storyflow/shared/types" {
   interface ComponentType<P> {
     (props: P): React.ReactElement<any, any> | null;

@@ -7,6 +7,8 @@ import { ParseRichText } from "../src/ParseRichText";
 import { getConfigByType } from "../src/getConfigByType";
 import { EditorProvider } from "./editor";
 import { getDefaultComponent } from "../src/getDefaultComponent";
+import { defaultLibraryConfig } from "@storyflow/shared/defaultLibraryConfig";
+import { normalizeProp } from "../utils/splitProps";
 
 export default function RenderChildren({
   value,
@@ -15,7 +17,7 @@ export default function RenderChildren({
   value: ValueArray;
   options?: ConfigRecord;
 }) {
-  const { configs, libraries } = useConfig();
+  const { configs, libraries, transforms } = useConfig();
 
   const renderArray = React.useMemo(() => {
     return createRenderArray(value, (type: string) =>
@@ -47,6 +49,19 @@ export default function RenderChildren({
                   <Component>
                     <ParseRichText>{string}</ParseRichText>
                   </Component>
+                </ExtendPath>
+              );
+            }
+            if ("src" in block) {
+              const type = "Image";
+              const Component = getDefaultComponent(type, libraries)!;
+              const config =
+                defaultLibraryConfig.configs.ImageConfig.props.image;
+              return (
+                <ExtendPath key={`${index}-${childIndex}`} id={`[${index}]`}>
+                  <Component
+                    image={normalizeProp(config, [block], transforms)}
+                  />
                 </ExtendPath>
               );
             }

@@ -6,6 +6,7 @@ import {
   ConfigRecord,
   Context,
   ContextProvider,
+  CustomTransforms,
   FileToken,
   Library,
   LibraryConfig,
@@ -26,7 +27,6 @@ import { getIdFromString } from "@storyflow/shared/getIdFromString";
 import { defaultLibrary } from "../src/defaultLibrary";
 import { defaultLibraryConfig } from "@storyflow/shared/defaultLibraryConfig";
 import {
-  fileTransform,
   getComponentContextCreator,
   normalizeProp,
   resolveStatefulProp,
@@ -44,6 +44,7 @@ type RSCContext = {
   loop: Record<string, number>;
   configs: Record<string, LibraryConfig>;
   libraries: Record<string, Library>;
+  transforms: CustomTransforms;
   children?: React.ReactNode;
   contexts: ComponentContext[];
 };
@@ -91,6 +92,18 @@ const RenderChildren = ({
                 <Component key={`${arrayIndex}-${childIndex}`}>
                   <ParseRichText>{string}</ParseRichText>
                 </Component>
+              );
+            } else if ("src" in block) {
+              blockIndex++;
+              const type = "Image";
+              const Component = getDefaultComponent(type, libraries)!;
+              const config =
+                defaultLibraryConfig.configs.ImageConfig.props.image;
+              return (
+                <Component
+                  key={`${arrayIndex}-${childIndex}`}
+                  image={normalizeProp(config, [block], ctx.transforms)}
+                />
               );
             } else if ("$text" in block) {
               blockIndex++;
@@ -256,13 +269,9 @@ function RenderElementWithProps({
         const key = extendPath(group, name, "#");
         const fieldId = `${id.slice(12, 24)}${getIdFromString(key)}`;
 
-        const transforms = {
-          file: fileTransform,
-        };
-
         const prop = resolveStatefulProp(record[fieldId] ?? [], ctx.loop);
 
-        return [name, normalizeProp(config, prop, transforms)];
+        return [name, normalizeProp(config, prop, ctx.transforms)];
       })
     );
 
@@ -331,6 +340,7 @@ export const RenderPage = <T extends LibraryConfigRecord>({
   data,
   configs: configsFromProps,
   libraries: librariesFromProps,
+  transforms = {},
 }: {
   data:
     | {
@@ -341,12 +351,14 @@ export const RenderPage = <T extends LibraryConfigRecord>({
     | undefined;
   configs: T;
   libraries: LibraryRecord<T>;
-}) => {
-  const libraries = { "": defaultLibrary, ...librariesFromProps };
+} & ({} extends CustomTransforms
+  ? { transforms?: CustomTransforms }
+  : { transforms: CustomTransforms })) => {
+  const libraries = { ...librariesFromProps, "": defaultLibrary };
 
   const configs = {
-    "": defaultLibraryConfig,
     ...configsFromProps,
+    "": defaultLibraryConfig,
   };
 
   return data ? (
@@ -359,6 +371,7 @@ export const RenderPage = <T extends LibraryConfigRecord>({
         children: undefined,
         configs,
         libraries,
+        transforms,
         contexts: [],
       }}
     />
@@ -369,6 +382,7 @@ export const RenderLayout = <T extends LibraryConfigRecord>({
   children,
   configs: configsFromProps,
   libraries: librariesFromProps,
+  transforms = {},
 }: {
   data:
     | {
@@ -380,7 +394,9 @@ export const RenderLayout = <T extends LibraryConfigRecord>({
   children: React.ReactNode;
   configs: T;
   libraries: LibraryRecord<T>;
-}) => {
+} & ({} extends CustomTransforms
+  ? { transforms?: CustomTransforms }
+  : { transforms: CustomTransforms })) => {
   const libraries = { "": defaultLibrary, ...librariesFromProps };
 
   const configs = {
@@ -398,6 +414,7 @@ export const RenderLayout = <T extends LibraryConfigRecord>({
         children,
         configs,
         libraries,
+        transforms,
         contexts: [],
       }}
     />

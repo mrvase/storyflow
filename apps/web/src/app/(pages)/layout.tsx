@@ -1,6 +1,6 @@
 import React from "react";
 import { RenderLayout } from "@storyflow/react/rsc";
-import { configs, libraries } from "../../components";
+import { configs, libraries, transforms } from "../../components";
 import { getPage } from "./localApi";
 
 export default async function Layout({
@@ -18,6 +18,7 @@ export default async function Layout({
       data={data?.layout ?? null}
       configs={configs}
       libraries={libraries}
+      transforms={transforms}
     >
       {children}
     </RenderLayout>

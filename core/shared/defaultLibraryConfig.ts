@@ -46,5 +46,11 @@ export const defaultLibraryConfig = {
         children: { type: "children", label: "Indhold" },
       },
     },
+    ImageConfig: {
+      label: "Billede",
+      props: {
+        image: { type: "image", label: "Billede" },
+      },
+    },
   },
 } satisfies LibraryConfig;

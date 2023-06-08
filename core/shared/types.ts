@@ -119,7 +119,7 @@ export interface Component<P extends Config["props"]> {
   (props: Props<P> & {}): any;
 }
 
-type ExtendableTypes = "Element";
+type ExtendableTypes = "Element" | "CustomTransforms";
 
 export interface CustomTypes {
   [key: string]: unknown;
@@ -133,24 +133,36 @@ type ExtendedType<K extends ExtendableTypes, B> = unknown extends CustomTypes[K]
 
 export type Element = ExtendedType<"Element", object>;
 
-type PropTypes = {
+export type CustomTransforms = ExtendedType<"CustomTransforms", {}>;
+
+type PropTypes = PropTypesFromTransforms<CustomTransforms>;
+
+export type Transforms = {
+  [Key in keyof DefaultPropTypes]?: (value: DefaultPropTypes[Key]) => any;
+};
+
+export type PropTypesFromTransforms<T extends Transforms> = {
+  [Key in keyof T as undefined extends T[Key] ? never : Key]: T[Key] extends (
+    value: any
+  ) => any
+    ? ReturnType<T[Key]>
+    : never;
+};
+
+type DefaultPropTypes = {
   string: string;
   color: string;
-  image: {
-    src: string;
-    width: number;
-    height: number;
-  };
-  video: {
-    src: string;
-    width: number;
-    height: number;
-  };
+  image: string;
+  video: string;
   number: number;
   boolean: boolean;
   children: (string | number | Element)[];
   data: any[];
 };
+
+type GetPropType<T extends keyof DefaultPropTypes> = T extends keyof PropTypes
+  ? PropTypes[T]
+  : DefaultPropTypes[T];
 
 export type Option = {
   value: string | number;
@@ -158,7 +170,7 @@ export type Option = {
   alias?: string;
 };
 
-export type PropConfig<PropType = keyof PropTypes> = {
+export type PropConfig<PropType = keyof DefaultPropTypes> = {
   type: PropType;
   label: string;
   defaultValue?: any;
@@ -175,7 +187,10 @@ export type Options =
 export type PropGroup = {
   type: "group";
   label: string;
-  props: Record<string, PropConfig<Exclude<keyof PropTypes, "children">>>;
+  props: Record<
+    string,
+    PropConfig<Exclude<keyof DefaultPropTypes, "children">>
+  >;
   searchable?: boolean;
 };
 
@@ -183,8 +198,8 @@ export type PropConfigRecord = Record<string, PropConfig | PropGroup>;
 
 type Type<T extends PropConfig | PropGroup> = T extends { type: "group" }
   ? NestedProps<T["props"]>
-  : T["type"] extends keyof PropTypes
-  ? PropTypes[T["type"]]
+  : T["type"] extends keyof DefaultPropTypes
+  ? GetPropType<T["type"]>
   : never;
 
 export type NestedProps<T extends PropConfigRecord> = string extends keyof T
@@ -212,15 +227,15 @@ type Placeholders<T extends PropConfigRecord> = string extends keyof T
 
 type PartialType<T extends PropConfig | PropGroup> = T extends { type: "group" }
   ? PartialProps<T["props"]>
-  : T["type"] extends keyof PropTypes
-  ? PropTypes[T["type"]]
+  : T["type"] extends keyof DefaultPropTypes
+  ? GetPropType<T["type"]>
   : never;
 
 export type PartialProps<T extends PropConfigRecord> = {
   [Key in keyof T]?: AddConfigAsChild<PartialType<T[Key]>>;
 };
 
-type AddConfigAsChild<A> = A extends PropTypes["children"]
+type AddConfigAsChild<A> = A extends GetPropType<"children">
   ? (
       | A[number]
       | Config

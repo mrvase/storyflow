@@ -26,7 +26,6 @@ import RenderChildren from "./RenderChildren";
 import { getIdFromString } from "@storyflow/shared/getIdFromString";
 import { NoEditor } from "./editor";
 import {
-  fileTransform,
   getComponentContextCreator,
   normalizeProp,
   resolveStatefulProp,
@@ -180,6 +179,7 @@ function RenderElementWithProps({
   parentOptions?: ConfigRecord;
 }) {
   const loopCtx = React.useContext(LoopContext);
+  const { transforms } = useConfig();
   // const index = React.useContext(IndexContext);
 
   const prevContexts = React.useContext(ServerContextsContext);
@@ -202,10 +202,6 @@ function RenderElementWithProps({
           const key = extendPath(group ?? "", name, "#");
           const fieldId = `${id.slice(12, 24)}${getIdFromString(key)}`;
 
-          const transforms = {
-            file: fileTransform,
-          };
-
           const prop = resolveStatefulProp(record[fieldId] ?? [], loopCtx);
 
           return [name, normalizeProp(config, prop, transforms)];
@@ -213,7 +209,7 @@ function RenderElementWithProps({
       );
     };
     return resolveProps(regularEntries);
-  }, [record, loopCtx, regularEntries]);
+  }, [record, loopCtx, regularEntries, transforms]);
 
   const contexts = React.useMemo(() => {
     const newContexts = createComponentContext(regularProps);

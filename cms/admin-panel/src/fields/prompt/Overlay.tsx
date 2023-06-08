@@ -242,8 +242,6 @@ export function Overlay({ children }: { children?: React.ReactNode }) {
     });
   }, [editor, promptIsOpen, isFocused, restrictTo]);
 
-  console.log("NODE!!!", node);
-
   const getChild = () => {
     if (type === "prompt") {
       return (

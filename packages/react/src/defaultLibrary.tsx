@@ -33,4 +33,7 @@ export const defaultLibrary = {
   H3: ({ children }) => {
     return <cms.h3>{children}</cms.h3>;
   },
+  Image: () => {
+    return <div>Image component must be implemented by user.</div>;
+  },
 } satisfies Library<typeof defaultLibraryConfig>;

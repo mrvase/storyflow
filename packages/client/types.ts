@@ -1,7 +1,12 @@
-import type { NestedElement, ValueArray } from "@storyflow/shared/types";
+import type {
+  FileToken,
+  NestedElement,
+  ValueArray,
+} from "@storyflow/shared/types";
 
 export type RenderElement =
   | NestedElement
+  | FileToken
   | { $text: (string | number | NestedElement)[] }
   | { $heading: [number, string] };
 

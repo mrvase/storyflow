@@ -133,7 +133,6 @@ export function createDiffOperations<T extends any[]>(
     for (let i = 0; i < operations.length; i++) {
       const { index, remove, insert } = operations[i];
       firstArray.splice(index, remove, ...insert);
-      console.log("spliced", firstArray.slice());
     }
   }
 

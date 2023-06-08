@@ -1,5 +1,5 @@
 import { RenderPage } from "@storyflow/react/rsc";
-import { configs, libraries } from "../../components";
+import { configs, libraries, transforms } from "../../components";
 import { getPage } from "./localApi";
 
 export default async function Page({ params }: { params: any }) {
@@ -7,7 +7,12 @@ export default async function Page({ params }: { params: any }) {
   const data = await getPage(`/${url}`); // await request(url, options);
 
   return (
-    <RenderPage data={data?.page} configs={configs} libraries={libraries} />
+    <RenderPage
+      data={data?.page}
+      configs={configs}
+      libraries={libraries}
+      transforms={transforms}
+    />
   );
 }
 

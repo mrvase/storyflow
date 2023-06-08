@@ -22,4 +22,7 @@ module.exports = {
   },
   reactStrictMode: true,
   transpilePackages: [],
+  images: {
+    domains: ["cdn.storyflow.dk"],
+  },
 };
