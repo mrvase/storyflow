@@ -36,45 +36,51 @@ export function LocationBar({
   const { pathname } = usePath();
   const route = useRoute();
 
-  const isSystemWindow =
-    pathname.endsWith("folders") || pathname.endsWith("templates");
+  const isSystemWindow = pathname !== "/~" && !pathname.match(/^\/~\/\w\//);
 
   if (isSystemWindow) {
     return (
       <div
-        className={cl(
-          "h-11 shrink-0 grow-0 flex items-center pl-5 text-sm",
-          "bg-white dark:bg-gray-850"
-        )}
+        className="shrink-0 grow-0 bg-white dark:bg-gray-800"
+        {...dragHandleProps}
       >
-        <button
-          className="shrink-0 ml-auto mr-2 flex items-center justify-center h-full px-3"
-          onMouseDown={(ev) => ev.stopPropagation()} // prevent focus
-          onClick={(ev) => {
-            ev.stopPropagation();
-            actions.close(route.index);
-          }}
+        <div
+          className={cl(
+            "h-11 flex pr-2 overflow-x-auto dark:text-white",
+            isFocused ? "opacity-100" : "opacity-25"
+          )}
         >
-          <XMarkIcon className="w-4 h-4" />
-        </button>
+          <Link
+            to="/~"
+            className="h-11 flex-center ml-2 w-10 text-gray-500 hover:text-white transition-colors"
+          >
+            <HomeIcon className="w-4 h-4" />
+          </Link>
+          <button
+            className="shrink-0 ml-auto mr-2 flex items-center justify-center h-full px-3"
+            onMouseDown={(ev) => ev.stopPropagation()} // prevent focus
+            onClick={(ev) => {
+              ev.stopPropagation();
+              actions.close(route.index);
+            }}
+          >
+            <XMarkIcon className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
     <div
-      className={cl(
-        "h-11 shrink-0 grow-0 overflow-x-auto dark:text-white",
-        "bg-white dark:bg-gray-800"
-        // isFocused ? "bg-white dark:bg-gray-850" : "bg-white dark:bg-gray-900"
-      )}
+      className="shrink-0 grow-0 bg-white dark:bg-gray-800"
+      {...dragHandleProps}
     >
       <div
         className={cl(
-          "h-full flex pr-2",
+          "h-11 flex pr-2 overflow-x-auto dark:text-white",
           isFocused ? "opacity-100" : "opacity-25"
         )}
-        {...dragHandleProps}
       >
         {matches.length > 1 && (
           <Link

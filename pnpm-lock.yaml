@@ -165,7 +165,7 @@ importers:
       '@heroicons/react': ^2.0.11
       '@lexical/selection': ^0.9.1
       '@lexical/utils': ^0.9.1
-      '@nanokit/router': 0.0.9
+      '@nanokit/router': 0.0.13
       '@nanorpc/client': ^0.0.19
       '@nanorpc/server': ^0.0.19
       '@storyflow/api': workspace:*
@@ -200,7 +200,7 @@ importers:
       '@heroicons/react': 2.0.13_react@18.2.0
       '@lexical/selection': 0.9.1_lexical@0.9.1
       '@lexical/utils': 0.9.1_lexical@0.9.1
-      '@nanokit/router': 0.0.9
+      '@nanokit/router': 0.0.13
       '@nanorpc/client': 0.0.19_mhuczuvpa6vzqraczvy3uwv7zm
       '@storyflow/cms': link:../../core/cms
       '@storyflow/collab': link:../collab
@@ -2574,8 +2574,8 @@ packages:
       lexical: 0.9.1
     dev: false
 
-  /@nanokit/router/0.0.9:
-    resolution: {integrity: sha512-4utZPZdyJJ11VxAoSnePyfbfEFOwpfC3E0EQO1qe6SSR4BPoWYbhuwFCefFnw4w3Z+e81myHZy/vnpwbpXz9Cw==}
+  /@nanokit/router/0.0.13:
+    resolution: {integrity: sha512-pxk1Da3qPFEui2Am4ZmC98gXq/rBQdAR3r6p0PhNbAPWIFoybuMMtQLHfJnscRxHdyBBOvxJTLj2j8wkmxm1ug==}
     dev: false
 
   /@nanorpc/client/0.0.19_mhuczuvpa6vzqraczvy3uwv7zm:

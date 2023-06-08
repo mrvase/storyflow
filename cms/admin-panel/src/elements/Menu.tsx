@@ -12,6 +12,7 @@ function Menu<T extends { label: string; disabled?: boolean }>({
   selected,
   onClear,
   align,
+  small,
   ...props
 }: {
   as: any;
@@ -20,6 +21,7 @@ function Menu<T extends { label: string; disabled?: boolean }>({
   selected?: T[] | T | null;
   align?: "left" | "right";
   onClear?: () => void;
+  small?: boolean;
 } & (
   | {
       options: T[];
@@ -49,7 +51,7 @@ function Menu<T extends { label: string; disabled?: boolean }>({
           >
             {selectedArray?.map((el) => el.label).join(", ") || label}
           </HeadlessMenu.Button>
-          <MenuItems open={open} align={align}>
+          <MenuItems open={open} align={align} small={small}>
             {selected && onClear && (
               <MenuItem onClick={onClear} label="Fjern" />
             )}
@@ -83,11 +85,13 @@ const MenuItems = ({
   align,
   children,
   marginTop,
+  small,
 }: {
   open: boolean;
   align?: "left" | "right";
   children: React.ReactNode;
   marginTop?: `mt-${number}`;
+  small?: boolean;
 }) => {
   return (
     <MenuTransition
@@ -97,7 +101,8 @@ const MenuItems = ({
       <HeadlessMenu.Items
         static
         className={cl(
-          "bg-button rounded shadow flex flex-col outline-none overflow-hidden w-52 ring-1 ring-gray-600",
+          "bg-gray-800 rounded shadow flex flex-col outline-none overflow-hidden ring-1 ring-gray-600",
+          small ? "w-36" : "w-52",
           marginTop ?? "mt-1"
         )}
         data-focus-remain="true"

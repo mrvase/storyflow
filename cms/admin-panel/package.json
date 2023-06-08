@@ -14,7 +14,7 @@
     "@heroicons/react": "^2.0.11",
     "@lexical/selection": "^0.9.1",
     "@lexical/utils": "^0.9.1",
-    "@nanokit/router": "0.0.9",
+    "@nanokit/router": "0.0.13",
     "@nanorpc/client": "^0.0.19",
     "@storyflow/collab": "workspace:*",
     "@storyflow/dnd": "workspace:*",

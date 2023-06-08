@@ -22,12 +22,28 @@ export const files = (config: StoryflowConfig) => {
         label: string;
       }[];
     }),
+
     saveFile: procedure
       .use(globals(config.api))
       .schema(z.object({ name: z.string(), label: z.string() }))
       .mutate(async (file) => {
         const db = await client.get(dbName);
         const result = await db.collection("files").insertOne(file);
+        if (!result.acknowledged) {
+          return new RPCError({ code: "FAILED" });
+        } else {
+          return null;
+        }
+      }),
+
+    renameFile: procedure
+      .use(globals(config.api))
+      .schema(z.object({ name: z.string(), label: z.string() }))
+      .mutate(async (file) => {
+        const db = await client.get(dbName);
+        const result = await db
+          .collection("files")
+          .updateOne({ name: file.name }, { $set: { label: file.label } });
         if (!result.acknowledged) {
           return new RPCError({ code: "FAILED" });
         } else {

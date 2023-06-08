@@ -14,6 +14,7 @@ import { useOptionEvents } from "./Option";
 import { useOption } from "./OptionsContext";
 import { HoldActions } from "./useRestorableSelection";
 import { useOrganization } from "../../clients/auth";
+import { FileContainer } from "../../elements/FileContainer";
 
 function useFileInput(setLabel?: (label: string) => void) {
   const [dragging, setDragging] = React.useState(false);
@@ -112,7 +113,7 @@ export function FilePrompt({
 }) {
   const organization = useOrganization();
 
-  const [files, upload] = useFiles();
+  const [files, actions] = useFiles();
 
   const onEnter = React.useCallback(
     (name: string) => {
@@ -138,7 +139,7 @@ export function FilePrompt({
             label: string,
             data?: { width?: number; height?: number; size?: number }
           ) => {
-            const src = await upload(file, label, data);
+            const src = await actions.uploadFile(file, label, data);
             if (!src) return false;
             replacePromptWithStream([{ src }]);
             return true;
@@ -146,11 +147,10 @@ export function FilePrompt({
           holdActions={holdActions}
         />
       </div>
-      {filteredFiles.map(({ name, label }) => (
-        <FileContainer
-          key={name}
-          name={name}
-          label={label}
+      {filteredFiles.map((file) => (
+        <File
+          key={file.name}
+          file={file}
           organization={organization!.slug}
           onEnter={onEnter}
         />
@@ -285,14 +285,12 @@ function DiscardOption({ discard }: { discard: () => void }) {
   );
 }
 
-function FileContainer({
-  name,
-  label,
+function File({
+  file,
   organization,
   onEnter,
 }: {
-  name: string;
-  label: string;
+  file: { name: string; label: string };
   organization: string;
   onEnter: (name: string) => void;
 }) {
@@ -301,53 +299,22 @@ function FileContainer({
   const { onClick } = useOptionEvents({
     isSelected,
     onEnter,
-    value: name,
+    value: file.name,
   });
 
   return (
-    <div
+    <FileContainer
       ref={ref}
-      className={cl(
-        "rounded bg-[#ffffff05] p-3 hover:bg-gray-700 transition-colors text-sm text-center w-52 shrink-0",
-        isSelected && "ring-1 ring-gray-700"
-      )}
+      src={`https://cdn.storyflow.dk/${organization}/${file.name}`}
+      label={file.label}
       onMouseDown={(ev) => {
         ev.preventDefault();
         onClick();
       }}
-    >
-      <div className="w-full aspect-[4/3] flex-center mb-2">
-        <File name={name} organization={organization} />
-      </div>
-      <div className="truncate w-full">{label}</div>
-    </div>
-  );
-}
-
-function File({ name, organization }: { name: string; organization: string }) {
-  const type = getFileTypeFromExtension(getFileExtension(name) ?? "");
-  const src = `https://cdn.storyflow.dk/${organization}/${name}`;
-  return (
-    <>
-      {type === "image" && (
-        <img
-          src={src}
-          className="max-w-full max-h-full w-auto h-auto"
-          loading="lazy"
-        />
+      className={cl(
+        "hover:bg-gray-700 transition-colors w-52 shrink-0",
+        isSelected && "ring-1 ring-gray-700"
       )}
-      {type === "video" && (
-        <video
-          style={{ width: "100%", height: "auto" }}
-          autoPlay
-          muted
-          playsInline
-          loop
-        >
-          <source src={src} id="video_here" />
-          Your browser does not support HTML5 video.
-        </video>
-      )}
-    </>
+    />
   );
 }

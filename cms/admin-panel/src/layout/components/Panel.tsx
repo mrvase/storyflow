@@ -4,12 +4,16 @@ import { ErrorBoundary, FallbackProps } from "react-error-boundary";
 import useIsFocused from "../../utils/useIsFocused";
 import { BranchFocusContext } from "./BranchFocusContext";
 import { LocationBar } from "./LocationBar";
-import { Panel as ResizablePanel } from "react-resizable-panels";
+import {
+  PanelResizeHandle,
+  Panel as ResizablePanel,
+} from "react-resizable-panels";
 import { useSortableItem } from "@storyflow/dnd";
 import { getTranslateDragEffect } from "../../utils/dragEffects";
 import { LinkReceiver } from "./LinkReceiver";
 import { VisitedLinks } from "./VisitedLinks";
-import { useRoute } from "@nanokit/router";
+import { useLocation, useRoute } from "@nanokit/router";
+import { NestedTransitionRoutes } from "@nanokit/router/routes/nested-transition";
 
 function ErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
   const [showMessage, toggleMessage] = React.useReducer((ps) => !ps, false);
@@ -48,13 +52,10 @@ function ErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
   );
 }
 
-export function Panel({
-  single,
-  children,
-}: {
-  single: boolean;
-  children: React.ReactNode;
-}) {
+export function Panel({ children }: { children: React.ReactNode }) {
+  const { pathname } = useLocation();
+  const single = pathname.split("/~").length - 1 === 1;
+
   const { isFocused: _isFocused, handlers, id: focusId } = useIsFocused();
   const isFocused = _isFocused || single;
 
@@ -69,44 +70,56 @@ export function Panel({
   const style = getTranslateDragEffect(state);
 
   return (
-    <BranchFocusContext.Provider
-      value={React.useMemo(
-        () => ({ isFocused, id: focusId }),
-        [isFocused, focusId]
-      )}
-    >
-      <ResizablePanel
-        className="relative h-full py-2"
-        id={route.accumulated}
-        order={route.index}
-        style={{ ...style, order: route.index }}
-        minSize={25}
-      >
-        <LinkReceiver
-          id={`existing-${route.accumulated}`}
-          type="existing"
-          index={route.index}
-        />
-        <div
-          ref={ref}
-          {...handlers}
-          className={cl(
-            "@container w-full h-full flex flex-col rounded-md overflow-hidden border border-gray-200 dark:border-gray-800"
-          )}
+    <>
+      {route.index !== 0 && (
+        <PanelResizeHandle
+          className={cl("group h-full relative", "w-2")}
+          style={{
+            order: route.index,
+          }}
         >
-          <LocationBar
-            isFocused={isFocused}
-            dragHandleProps={dragHandleProps}
-            matches={route.children}
+          <LinkReceiver index={route.index} id={`new-${route.accumulated}`} />
+        </PanelResizeHandle>
+      )}
+      <BranchFocusContext.Provider
+        value={React.useMemo(
+          () => ({ isFocused, id: focusId }),
+          [isFocused, focusId]
+        )}
+      >
+        <ResizablePanel
+          className="relative h-full py-2"
+          id={route.accumulated}
+          order={route.index}
+          style={{ ...style, order: route.index }}
+          minSize={25}
+        >
+          <LinkReceiver
+            id={`existing-${route.accumulated}`}
+            type="existing"
+            index={route.index}
           />
-          <ErrorBoundary FallbackComponent={ErrorFallback}>
-            <div className="h-[calc(100vh-48px)] relative overflow-hidden bg-white dark:bg-gray-850">
-              {children}
-            </div>
-          </ErrorBoundary>
-          <VisitedLinks />
-        </div>
-      </ResizablePanel>
-    </BranchFocusContext.Provider>
+          <div
+            ref={ref}
+            {...handlers}
+            className={cl(
+              "@container w-full h-full flex flex-col rounded-md overflow-hidden border border-gray-200 dark:border-gray-800"
+            )}
+          >
+            <LocationBar
+              isFocused={isFocused}
+              dragHandleProps={dragHandleProps}
+              matches={route.children}
+            />
+            <ErrorBoundary FallbackComponent={ErrorFallback}>
+              <div className="h-[calc(100vh-48px)] relative overflow-hidden bg-white dark:bg-gray-850">
+                <NestedTransitionRoutes />
+              </div>
+            </ErrorBoundary>
+            <VisitedLinks />
+          </div>
+        </ResizablePanel>
+      </BranchFocusContext.Provider>
+    </>
   );
 }

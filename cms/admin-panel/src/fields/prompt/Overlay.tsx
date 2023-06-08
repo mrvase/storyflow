@@ -25,17 +25,18 @@ import {
   $getIndexesFromSelection,
 } from "../Editor/transforms";
 import { ColorOverlay } from "./ColorOverlay";
-import { Prompt } from "./Prompt";
+import { PromptOverlay } from "./PromptOverlay";
 import { HoldActions, useRestorableSelection } from "./useRestorableSelection";
 import FileNode, { $isFileNode } from "../Editor/decorators/FileNode";
 import { Options, OptionEventsPlugin } from "./OptionsContext";
 import { FilePrompt } from "./FilePrompt";
-import type { FileToken } from "@storyflow/shared/types";
+import type { FileToken, Option as OptionType } from "@storyflow/shared/types";
 import type { TokenStream } from "../../operations/types";
 import { useIsFocused } from "../../editor/react/useIsFocused";
-import { useFieldRestriction } from "../FieldIdContext";
+import { useFieldOptions, useFieldRestriction } from "../FieldIdContext";
 import { useAppConfig } from "../../AppConfigContext";
 import { $isCustomTokenNode } from "../Editor/decorators/CustomTokenNode";
+import { OptionsPrompt } from "./OptionsPrompt";
 
 const matchers: ((
   node: LexicalNode
@@ -96,6 +97,7 @@ export function Overlay({ children }: { children?: React.ReactNode }) {
   const [isHolded, holdActions] = useRestorableSelection();
 
   const restrictTo = useFieldRestriction();
+  const options = useFieldOptions();
   const isFocused = useIsFocused();
 
   React.useLayoutEffect(() => {
@@ -132,7 +134,10 @@ export function Overlay({ children }: { children?: React.ReactNode }) {
 
         if (
           match === undefined &&
-          (!["file", "color"].includes(restrictTo!) || !isFocused)
+          (!["file", "color"].includes(restrictTo!) || !isFocused) &&
+          (!["string", "number"].includes(restrictTo!) ||
+            !options ||
+            !isFocused)
         ) {
           reset();
           return;
@@ -239,6 +244,30 @@ export function Overlay({ children }: { children?: React.ReactNode }) {
 
   console.log("NODE!!!", node);
 
+  const getChild = () => {
+    if (type === "prompt") {
+      return (
+        <PromptOverlay
+          node={node as PromptNode}
+          prompt={prompt!}
+          holdActions={holdActions}
+        >
+          {children}
+        </PromptOverlay>
+      );
+    } else if (type === "color" || (restrictTo === "color" && isFocused)) {
+      return <ColorOverlay node={node as ColorNode} />;
+    } else if (type === "file" || (restrictTo === "image" && isFocused)) {
+      return <FileOverlay node={node as FileNode} holdActions={holdActions} />;
+    } else if (
+      ["string", "number"].includes(restrictTo!) &&
+      options &&
+      isFocused
+    ) {
+      return <OptionsOverlay options={options} />;
+    }
+  };
+
   return (
     <div
       className={cl(
@@ -254,21 +283,7 @@ export function Overlay({ children }: { children?: React.ReactNode }) {
           : undefined
       }
     >
-      {type === "prompt" && (
-        <Prompt
-          node={node as PromptNode}
-          prompt={prompt!}
-          holdActions={holdActions}
-        >
-          {children}
-        </Prompt>
-      )}
-      {(type === "color" || (restrictTo === "color" && isFocused)) && (
-        <ColorOverlay node={node as ColorNode} />
-      )}
-      {(type === "file" || (restrictTo === "image" && isFocused)) && (
-        <FileOverlay node={node as FileNode} holdActions={holdActions} />
-      )}
+      {getChild()}
     </div>
   );
 }
@@ -306,6 +321,15 @@ function FileOverlay({
         holdActions={holdActions}
         replacePromptWithStream={replacePromptWithStream}
       />
+    </Options>
+  );
+}
+
+function OptionsOverlay({ options }: { options: OptionType[] }) {
+  return (
+    <Options>
+      <OptionEventsPlugin />
+      <OptionsPrompt options={options} />
     </Options>
   );
 }

@@ -34,17 +34,6 @@ export default function Nav() {
 
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const navigatePanel = React.useCallback(
-    (path: string) => {
-      navigate(path);
-    },
-    [pathname, navigate]
-  );
-
-  const [toolbarIsOpen, setToolbarIsOpen] = useLocalStorage<boolean>(
-    "toolbar-open",
-    true
-  );
 
   return (
     <>
@@ -94,7 +83,7 @@ export default function Nav() {
             </div>*/}
             <NavButton
               onClick={() => {
-                navigatePanel("/");
+                actions.open({ path: "/~", index: 0 });
               }}
               icon={FolderIcon}
             >
@@ -124,19 +113,19 @@ export default function Nav() {
               Systemarkiver
             </div>
             <NavButton
-              onClick={() => actions.open({ path: "/folders", index: 0 })}
+              onClick={() => actions.open({ path: "/~/folders", index: 0 })}
               icon={FolderIcon}
             >
               Mapper
             </NavButton>
             <NavButton
-              onClick={() => actions.open({ path: "/templates", index: 0 })}
+              onClick={() => actions.open({ path: "/~/templates", index: 0 })}
               icon={DocumentDuplicateIcon}
             >
               Skabeloner
             </NavButton>
             <NavButton
-              onClick={() => actions.open({ path: "/files", index: 0 })}
+              onClick={() => actions.open({ path: "/~/files", index: 0 })}
               icon={PhotoIcon}
             >
               Filer

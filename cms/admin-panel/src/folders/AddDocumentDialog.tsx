@@ -126,7 +126,7 @@ export function AddDocumentDialog({
                 setSlug(createSlug(newLabel));
               }
             }}
-            className="bg-white/5 rounded py-2 px-2.5 outline-none w-full"
+            className="ring-button bg-transparent rounded h-10 flex items-center px-2.5 outline-none w-full"
             autoComplete="off"
           />
         </FocusOnEnter>
@@ -136,7 +136,7 @@ export function AddDocumentDialog({
           name="slug"
           value={slug}
           onChange={(ev) => setSlug(ev.target.value)}
-          className="bg-white/5 rounded py-2 px-2.5 outline-none w-full"
+          className="ring-button bg-transparent rounded h-10 flex items-center px-2.5 outline-none w-full"
           autoComplete="off"
         />
         <div className="flex flex-row-reverse mt-5 gap-2">

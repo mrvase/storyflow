@@ -40,6 +40,7 @@ import { ReferencePrompt } from "./ReferencePrompt";
 import { TemplatePrompt } from "./TemplatePrompt";
 import { ConfigRecord } from "@storyflow/shared/types";
 import { Option } from "./Option";
+import { OptionsPrompt } from "./OptionsPrompt";
 
 const panes = [
   {
@@ -69,9 +70,7 @@ const panes = [
   },
 ] satisfies { id: string; icon: React.FC<any>; label: string }[];
 
-const emptyOptions = {};
-
-export function Prompt({
+export function PromptOverlay({
   node,
   prompt,
   children,
@@ -318,6 +317,9 @@ export function Prompt({
                   prompt={prompt}
                   replacePromptWithStream={replacePromptWithStream}
                 />
+                {options && ["string", "number"].includes(restrictTo!) && (
+                  <OptionsPrompt options={options} />
+                )}
                 {children}
               </>
             )}
@@ -346,18 +348,6 @@ export function Prompt({
                 replacePromptWithStream={replacePromptWithStream}
                 holdActions={holdActions}
               />
-            )}
-            {options && ["string", "number"].includes(restrictTo!) && (
-              <div className="p-2.5">
-                <div className="font-medium text-gray-400 mb-1 ml-1">
-                  Muligheder
-                </div>
-                {(options as Extract<typeof options, any[]>).map((el) => (
-                  <Option key={el.value} value={el.value} onEnter={() => {}}>
-                    {el.label ?? el.alias ?? el.value}
-                  </Option>
-                ))}
-              </div>
             )}
           </>
         )}

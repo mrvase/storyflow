@@ -25,6 +25,7 @@ import {
   authServicesQuery,
 } from "../clients/client-auth-services";
 import { isError } from "@nanorpc/client";
+import { SystemFilePage } from "./SystemFilePage";
 
 const ordinaryRoutes: Record<string, Route> = {
   home: {
@@ -35,7 +36,22 @@ const ordinaryRoutes: Record<string, Route> = {
       ordinaryRoutes.document,
       ordinaryRoutes.template,
       ordinaryRoutes.field,
+      ordinaryRoutes.systemFiles,
+      ordinaryRoutes.systemFolder,
+      ordinaryRoutes.systemTemplates,
     ],
+  },
+  systemFiles: {
+    match: "/files",
+    render: SystemFilePage,
+  },
+  systemFolder: {
+    match: "/folders",
+    render: SystemFolderPage,
+  },
+  systemTemplates: {
+    match: "/templates",
+    render: SystemTemplatePage,
   },
   folder: {
     match: "/f/:id",
@@ -87,40 +103,16 @@ const panelRoute: Route = {
     if (match[1] === undefined) return;
     return `/~${match[1]}`;
   },
-  render: PanelWrapper,
+  render: Panel,
   next: () => [panelRoute],
   subroutes: Object.values(ordinaryRoutes),
 };
 
-function PanelWrapper() {
-  const route = useRoute();
-  const { pathname } = useLocation();
-  const single = pathname.split("/~").length - 1 === 1;
-
-  return (
-    <>
-      {route.index !== 0 && (
-        <PanelResizeHandle
-          className={cl("group h-full relative", "w-2")}
-          style={{
-            order: route.index,
-          }}
-        >
-          <LinkReceiver index={route.index} id={`new-${route.accumulated}`} />
-        </PanelResizeHandle>
-      )}
-      <Panel single={single}>
-        <NestedTransitionRoutes />
-      </Panel>
-    </>
-  );
-}
-
 function Panels() {
-  const onChange = React.useCallback((actions: any) => {
+  const onChange = React.useCallback((acts: any) => {
     let start: number | null = null;
     let end: number | null = null;
-    for (let action of actions) {
+    for (let action of acts) {
       const { type, index } = action;
       if (type === "add") {
         end = index;
@@ -130,12 +122,14 @@ function Panels() {
       }
     }
     if (start !== null && end !== null) {
-      actions.move({ start, end });
+      actions.move({ from: start, to: end });
     }
   }, []);
 
   const { pathname } = useLocation();
   const length = pathname.split("/~").length - 1;
+
+  console.log("PANELS ARE HERE!");
 
   return (
     <div className="relative w-full h-full flex overflow-hidden">
@@ -159,7 +153,7 @@ function Panels() {
 }
 
 const topParallelPanelsRoute = {
-  match: "/~.*",
+  match: ".*",
   render: Panels,
   subroutes: [panelRoute],
 };
