@@ -31,6 +31,7 @@ import {
   useAddDocumentDialog,
 } from "../folders/AddDocumentDialog";
 import { createSlug } from "../utils/createSlug";
+import { getDocumentLabel } from "../documents/useDocumentLabel";
 
 const getUrlStringFromValue = (value: ValueArray | SyntaxTree) => {
   const getString = (val: any[]) => {
@@ -176,18 +177,13 @@ export default function UrlField({ id }: FieldProps) {
   }, [isFocused]);
 
   const navigate = useNavigate();
-  const { pathname } = usePath();
+  const route = useRoute();
 
   const replacePage = (id: string) =>
-    navigate(
-      `${pathname.split("/").slice(0, -1).join("/")}/d${parseInt(
-        id,
-        16
-      ).toString(16)}`,
-      {
-        navigate: false,
-      }
-    );
+    `${route.accumulated.split("/").slice(0, -1).join("/")}/${parseInt(
+      id,
+      16
+    ).toString(16)}`;
 
   let parentSlugs = parentUrl.split("/");
   if (parentSlugs[0] !== "") {
@@ -288,8 +284,8 @@ export default function UrlField({ id }: FieldProps) {
           />
         )}
       </div>
-      {/* isDefaultField(id, "url") && (
-        <div className="flex items-center ml-5">
+      {isDefaultField(id, "url") && (
+        <div className="flex items-center ml-5 @3xl:hidden">
           <div className="flex flex-wrap gap-2">
             {children.map((el, index) => (
               <Link
@@ -326,7 +322,7 @@ export default function UrlField({ id }: FieldProps) {
             </button>
           </div>
         </div>
-      )*/}
+      )}
     </div>
   );
 }

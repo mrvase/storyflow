@@ -95,8 +95,6 @@ export function Attributes({
     return [];
   }, [entity, template, configs]);
 
-  console.log("CURRENT", currentProp);
-
   React.useLayoutEffect(() => {
     if (!hideAsDefault) {
       setCurrentProp(props[0]?.id ?? null);
