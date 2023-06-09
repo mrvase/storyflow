@@ -167,12 +167,10 @@ export function RenderTemplate({
           }}
           disabled={!isMain}
         >
-          <div className="flex flex-col">
-            {(config ?? []).map(renderConfigElement)}
-            <DropShadow>
-              {(item) => renderConfigElement(item, (config ?? []).length)}
-            </DropShadow>
-          </div>
+          {(config ?? []).map(renderConfigElement)}
+          <DropShadow>
+            {(item) => renderConfigElement(item, (config ?? []).length)}
+          </DropShadow>
         </Sortable>
       </div>
     </ExtendTemplatePath>

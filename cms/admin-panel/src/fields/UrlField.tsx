@@ -194,7 +194,7 @@ export default function UrlField({ id }: FieldProps) {
   const folder = useCurrentFolder();
 
   return (
-    <div className="pb-2.5">
+    <div className="pt-0.5 px-2.5 pb-2.5">
       {folder && (
         <AddDocumentDialog
           isOpen={Boolean(dialogUrl)}

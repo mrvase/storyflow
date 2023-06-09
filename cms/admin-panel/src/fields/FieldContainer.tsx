@@ -136,7 +136,7 @@ function FocusContainer({
     <div
       className={cl(
         ring,
-        "relative p-2.5 pb-0 rounded ring-1",
+        "relative pb-0 rounded ring-1",
         "transition-[background-color,box-shadow]"
       )}
     >
@@ -186,7 +186,10 @@ function LabelBar({
 
   return (
     <div
-      className={cl("flex", "h-8 pb-3" /* -translate-y-2.5 */)}
+      className={cl(
+        "flex sticky top-24 z-10",
+        "h-10 p-2.5 rounded bg-gray-850" /* -translate-y-2.5 */
+      )}
       // onDoubleClick={fullscreen}
     >
       <Dot id={id} dragHandleProps={isEditing ? dragHandleProps : {}} />

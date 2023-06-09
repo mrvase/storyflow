@@ -156,7 +156,7 @@ function InterSelectionArea({ nodeKey }: { nodeKey: string }) {
 
   return (
     <div
-      className="absolute h-3 -top-3 inset-x-0 cursor-text"
+      className="absolute z-20 h-2.5 -top-2.5 inset-x-0 cursor-text"
       onMouseDown={(ev) => {
         ev.preventDefault();
         ev.stopPropagation();

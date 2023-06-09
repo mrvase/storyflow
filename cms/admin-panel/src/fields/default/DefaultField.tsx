@@ -217,7 +217,7 @@ export function DefaultField({
           <ContentEditable
             className={cl(
               "grow editor outline-none selection:bg-gray-700",
-              "text-base leading-6 pb-2.5"
+              "text-base leading-6 p-2.5 pt-1.5"
             )}
             // data-value={!isPrimitive ? preview : ""}
           />
