@@ -6,11 +6,7 @@ import {
 } from "@storyflow/shared/types";
 import { TimelineEntry } from "@storyflow/collab/types";
 import { useDocument } from ".";
-import {
-  createTransaction,
-  filterTimeline,
-  read,
-} from "@storyflow/collab/utils";
+import { createTransaction, read } from "@storyflow/collab/utils";
 import {
   DBDocument,
   DocumentConfig,
@@ -24,7 +20,6 @@ import {
 import {
   applyConfigTransaction,
   applyFieldTransaction,
-  createDocumentTransformer,
 } from "../operations/apply";
 import { TokenStream } from "../operations/types";
 import {
@@ -94,9 +89,8 @@ export const useSaveDocument = (
     let config = doc.config;
     const versions: DocumentVersionRecord = doc.versions ?? { config: [0] };
 
-    [timeline] = filterTimeline([timeline], versions);
-
-    timeline = createDocumentTransformer(doc)(timeline);
+    // [timeline] = filterTimeline([timeline], versions);
+    // timeline = createDocumentTransformer(doc)(timeline);
 
     // split timeline into queues
     const queues = splitIntoQueues(timeline);

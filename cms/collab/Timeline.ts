@@ -332,23 +332,24 @@ export function createTimeline(
   }
 
   async function save(
+    latest: TimelineEntry[],
     callback: (
-      upload: TimelineEntry[]
+      timeline: TimelineEntry[]
     ) => Promise<
       { status: "error" } | { status: "success"; updated: TimelineEntry[] }
     >
   ) {
     state.saving = true;
 
-    // sync
-
     if (state.posted.length || state.current.length) {
       return false;
     }
 
-    const promise = callback(state.shared);
+    let [shared] = filterTimeline([latest], state.versions);
+    shared = shared.filter((el) => el.length > 3);
+    shared = transform(shared);
 
-    const result = await promise;
+    const result = await callback(shared);
 
     state.saving = false;
     if (result.status === "success") {

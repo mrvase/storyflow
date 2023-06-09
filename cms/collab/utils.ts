@@ -321,7 +321,7 @@ export function filterTimeline(
 
       if (isVersionEntry) {
         newTimelines.forEach((arr) => (arr.length = 0));
-        data.index = 0;
+        data.index = data.version[0];
         return;
       }
 

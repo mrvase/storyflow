@@ -144,14 +144,18 @@ export function createCollaboration(options: {
 
       if (!success) return false;
 
-      return await timeline.save(async (timeline) => {
+      // we need to refetch to get the full length of the timeline (for deletion)
+      // not only the length stored in the timeline that has been filtered.
+      const shared = await fetchSingleTimeline(id);
+
+      return await timeline.save(shared, async (timeline) => {
         const result = await callback(timeline);
 
         if (!result) {
           return { status: "error" };
         }
 
-        const updated = await options.update({ id, index: timeline.length });
+        const updated = await options.update({ id, index: shared.length });
 
         if (isError(updated)) {
           return { status: "error" };

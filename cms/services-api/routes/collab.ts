@@ -163,6 +163,7 @@ export const collab = {
         return new RPCError({ code: "SERVER_ERROR", message: "Lykkedes ikke" });
       }
     }),
+
   update: procedure
     .use(globals)
     .schema(
