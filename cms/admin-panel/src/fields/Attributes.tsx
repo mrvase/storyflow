@@ -30,10 +30,12 @@ export function useAttributesContext() {
 
 export function AttributesProvider({
   children,
+  defaultId,
 }: {
   children: React.ReactNode;
+  defaultId?: FieldId;
 }) {
-  const state = React.useState<FieldId | null>(null);
+  const state = React.useState<FieldId | null>(defaultId ?? null);
 
   return (
     <AttributesContext.Provider value={state}>
@@ -79,15 +81,6 @@ export function Attributes({
         result = result.filter((el) => el.type !== "children");
       }
 
-      /*
-      if (result.length) {
-        result.push({
-          id: computeFieldId(entity!.id, getIdFromString("key")),
-          label: <Bars3Icon className="w-3 h-3" />,
-        });
-      }
-      */
-
       return result;
     }
     if (entity && "folder" in entity) {
@@ -101,6 +94,8 @@ export function Attributes({
     }
     return [];
   }, [entity, template, configs]);
+
+  console.log("CURRENT", currentProp);
 
   React.useLayoutEffect(() => {
     if (!hideAsDefault) {

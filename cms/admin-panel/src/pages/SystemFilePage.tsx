@@ -11,14 +11,16 @@ import { FileContainer } from "../elements/FileContainer";
 import { useOrganization } from "../clients/auth";
 import { Menu } from "../elements/Menu";
 import Dialog from "../elements/Dialog";
-import { query } from "../clients/client";
-import { useImmutableQuery } from "@nanorpc/client/swr";
 import Loader from "../elements/Loader";
 import { useFiles } from "../data/files";
+import { Link } from "@nanokit/router";
+import { addFile } from "../custom-events";
 
-export function SystemFilePage() {
+export function SystemFilePage({ params }: { params: Record<string, string> }) {
   const [files, { renameFile }] = useFiles();
   const slug = useOrganization()!.slug;
+
+  const page = parseInt((params?.page as string | undefined) ?? "1", 10) - 1;
 
   const [dialog, setAction] = React.useState<{
     action: "delete" | "rename";
@@ -30,6 +32,13 @@ export function SystemFilePage() {
       dialog ? files.find((el) => el.name === dialog.file)!.label : undefined,
     [dialog?.file, files]
   );
+
+  const paginatedFiles = React.useMemo(
+    () => files.slice(page * 12, page * 12 + 12),
+    [files, page]
+  );
+
+  const maxPage = Math.ceil(files.length / 12);
 
   return (
     <>
@@ -78,8 +87,15 @@ export function SystemFilePage() {
         )}
       </Dialog>
       <Content icon={FolderIcon} header="Alle filer">
+        <div className="p-5 flex-center">
+          {page > 0 && <Link to={`/~/files/${page}`}>&lt;</Link>}
+          <div className="mx-5">
+            Side {page + 1} af {maxPage}
+          </div>
+          {page < maxPage && <Link to={`/~/files/${page + 2}`}>&gt;</Link>}
+        </div>
         <div className="px-5 gap-5 grid grid-cols-1 @sm:grid-cols-2 @xl:grid-cols-3 @4xl:grid-cols-4">
-          {files.map((file) => (
+          {paginatedFiles.map((file) => (
             <div key={file.name} className="group relative">
               <div className="absolute -top-2.5 -right-2.5">
                 <Menu
@@ -107,6 +123,10 @@ export function SystemFilePage() {
               <FileContainer
                 src={`https://cdn.storyflow.dk/${slug}/${file.name}`}
                 label={file.label}
+                onMouseDown={(ev) => {
+                  ev.preventDefault();
+                  addFile.dispatch(file.name);
+                }}
               />
             </div>
           ))}

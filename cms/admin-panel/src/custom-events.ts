@@ -5,6 +5,7 @@ import {
   RawFieldId,
 } from "@storyflow/shared/types";
 
+export const addFile = createEvent<string>("add-file");
 export const addImport = createEvent<{
   id: FieldId;
   templateId?: RawFieldId;

@@ -143,7 +143,7 @@ export async function fetchDocumentList(
   const result = await query.documents.find(params, {
     onSuccess(result) {
       result.forEach((doc) => {
-        cache.set(query.documents.findById(doc._id), doc);
+        cache.set(query.documents.findById(doc._id), (ps) => (ps ? ps : doc));
       });
     },
     throttle: throttleKey
@@ -179,7 +179,9 @@ export function useDocumentList(
       {
         onSuccess(result) {
           result.forEach((doc) => {
-            cache.set(query.documents.findById(doc._id), doc);
+            cache.set(query.documents.findById(doc._id), (ps) =>
+              ps ? ps : doc
+            );
           });
         },
         throttle: throttleKey

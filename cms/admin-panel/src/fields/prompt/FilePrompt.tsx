@@ -125,7 +125,7 @@ export function FilePrompt({
   const filteredFiles = React.useMemo(() => {
     const queryLC = prompt.toLowerCase();
     return files.filter((file) => {
-      return file.label.toLowerCase().includes(queryLC);
+      return file.label.toString().toLowerCase().includes(queryLC);
     });
   }, [files, prompt]);
 

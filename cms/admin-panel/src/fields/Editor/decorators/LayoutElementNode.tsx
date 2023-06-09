@@ -94,7 +94,7 @@ function Decorator({
   const hide = isDeep && firstIsChildren;
 
   return (
-    <AttributesProvider>
+    <AttributesProvider defaultId={props[0]?.id}>
       <EditorFocusProvider>
         <FocusContainer isOpen={isOpen} isSelected={isSelected}>
           <div

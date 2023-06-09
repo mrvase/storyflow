@@ -45,3 +45,14 @@ export const getColorName = (
 
   return names[final];
 };
+
+export const colors = (async () => {
+  const colors: number[] = [];
+  const names: string[] = [];
+  const data = (await import("./colors.json")).default;
+  (data as [string, string][]).forEach(([el, name]: [string, string]) => {
+    colors.push(...hexColorToRgb(el));
+    names.push(name);
+  });
+  return [new Uint8Array(colors), names] as const;
+})();

@@ -13,7 +13,7 @@ import { Sortable } from "@storyflow/dnd";
 import { PanelResizeHandle, PanelGroup } from "react-resizable-panels";
 import { LinkReceiver } from "../layout/components/LinkReceiver";
 import { Panel } from "../layout/components/Panel";
-import { updateOrganization } from "../clients/auth";
+import { awaitToken, updateOrganization } from "../clients/auth";
 import { query } from "../clients/client";
 import { collab } from "../collab/CollabContext";
 import { TEMPLATE_FOLDER } from "@storyflow/cms/constants";
@@ -26,6 +26,7 @@ import {
 } from "../clients/client-auth-services";
 import { isError } from "@nanorpc/client";
 import { SystemFilePage } from "./SystemFilePage";
+import { fetchConfigs } from "../AppConfigContext";
 
 const ordinaryRoutes: Record<string, Route> = {
   home: {
@@ -36,10 +37,15 @@ const ordinaryRoutes: Record<string, Route> = {
       ordinaryRoutes.document,
       ordinaryRoutes.template,
       ordinaryRoutes.field,
+      ordinaryRoutes.systemFilesWithPage,
       ordinaryRoutes.systemFiles,
       ordinaryRoutes.systemFolder,
       ordinaryRoutes.systemTemplates,
     ],
+  },
+  systemFilesWithPage: {
+    match: "/files/:page",
+    render: SystemFilePage,
   },
   systemFiles: {
     match: "/files",
@@ -56,13 +62,16 @@ const ordinaryRoutes: Record<string, Route> = {
   folder: {
     match: "/f/:id",
     render: FolderPage,
-    loader: ({ id }) => {
-      return query.documents.find(
+    loader: async ({ id }) => {
+      await awaitToken();
+      return await query.documents.find(
         { folder: id.padStart(24, "0"), limit: 50 },
         {
           onSuccess(result) {
             result.forEach((doc) => {
-              cache.set(query.documents.findById(doc._id), doc);
+              cache.set(query.documents.findById(doc._id), (ps) =>
+                ps ? ps : doc
+              );
             });
           },
         }
@@ -78,8 +87,9 @@ const ordinaryRoutes: Record<string, Route> = {
   document: {
     match: "/d/:id",
     render: DocumentPage,
-    loader: ({ id }) => {
-      return query.documents.findById(id.padStart(24, "0") as DocumentId);
+    loader: async ({ id }) => {
+      await awaitToken();
+      return await query.documents.findById(id.padStart(24, "0") as DocumentId);
     },
     next: () => [ordinaryRoutes.field],
   },
@@ -188,10 +198,13 @@ const routes: Route[] = [
       clearCache({ exclude: ["/auth/authenticateUser"] });
       const result = await updateOrganization(params.slug);
       if (isError(result)) {
-        console.log("IS ERRROR", result);
         history.navigate({ pathname: "/", search: "unauthorized=true" });
         return;
       }
+
+      const configs = mutate(`${params.slug}/configs`, () =>
+        fetchConfigs(result.config!.apps)
+      );
 
       const folders = query.admin.getFolders(undefined, {
         onSuccess(data) {
@@ -229,7 +242,7 @@ const routes: Route[] = [
         });
       })();
 
-      const result2 = await Promise.all([folders, documents]);
+      const result2 = await Promise.all([folders, documents, configs]);
 
       const failure = result2.some((r) => isError(r));
 
@@ -246,28 +259,3 @@ const history = createHistory({
 });
 
 export const history_: any = history;
-
-/*
-export const routes: RouteConfig[] = [
-  {
-    matcher: /folders/,
-    component: () => <SystemFolderPage />,
-  },
-  {
-    matcher: /templates/,
-    component: () => <SystemTemplatePage />,
-  },
-  {
-    matcher: /^(f.*)?$/,
-    component: ({ children }) => <FolderPage>{children}</FolderPage>,
-  },
-  {
-    matcher: /^(d|t).+/,
-    component: ({ children }) => <DocumentPage>{children}</DocumentPage>,
-  },
-  {
-    matcher: /^c.+/,
-    component: ({ children }) => <FieldPage>{children}</FieldPage>,
-  },
-];
-*/

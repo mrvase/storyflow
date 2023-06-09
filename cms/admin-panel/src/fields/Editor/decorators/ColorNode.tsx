@@ -3,11 +3,11 @@ import { SwatchIcon } from "@heroicons/react/24/outline";
 import type { ColorToken, Option } from "@storyflow/shared/types";
 import { LexicalNode, NodeKey } from "lexical";
 import React from "react";
-import { getColorName } from "../../../data/colors";
+import { colors, getColorName } from "../../../data/colors";
 import { caretClasses } from "./caret";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 import { useIsSelected } from "./useIsSelected";
-import useSWR from "swr";
+import useSWRImmutable from "swr/immutable";
 
 function Decorator({
   nodeKey,
@@ -16,15 +16,10 @@ function Decorator({
   nodeKey: string;
   value: ColorToken | Option;
 }) {
-  const { data } = useSWR("COLORS", {
-    revalidateOnMount: false,
-    revalidateOnFocus: false,
-    revalidateOnReconnect: false,
-    revalidateIfStale: false,
-  });
-
   const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
   const selectClick = React.useRef(false);
+
+  const { data } = useSWRImmutable("colors", () => colors);
 
   let label: string | undefined;
   let color: string;
@@ -34,7 +29,9 @@ function Decorator({
     color = "value" in value ? (value.value! as string) : "#ffffff";
   } else {
     color = value.color;
-    label = getColorName(color.slice(1), data[0], data[1]).split(" / ")[0];
+    label = data
+      ? getColorName(color.slice(1), data[0], data[1]).split(" / ")[0]
+      : "";
   }
 
   return (

@@ -6,6 +6,7 @@ import { mergeRegister } from "../../editor/utils/mergeRegister";
 import {
   addContext,
   addDocumentImport,
+  addFile,
   addImport,
   addLayoutElement,
   addNestedDocument,
@@ -49,80 +50,90 @@ function useEditorEvents() {
   const generateDocumentId = useDocumentIdGenerator();
 
   React.useEffect(() => {
-    if (isFocused) {
-      return mergeRegister(
-        addImport.subscribe(async ({ id: externalId, templateId, imports }) => {
-          if (fieldId && imports.includes(fieldId)) {
-            console.error("Tried to add itself");
-            return;
-          }
-          const insert: TokenStream = [
-            {
-              id: generateDocumentId(documentId),
-              field: externalId,
-              ...(templateId && { select: templateId }),
-              inline: true,
-            },
-          ];
+    if (!isFocused) return;
+    return mergeRegister(
+      addFile.subscribe(async (src) => {
+        const insert = [
+          {
+            src,
+          },
+        ];
 
-          replaceWithComputation(editor, insert, configs);
-        }),
+        replaceWithComputation(editor, insert, configs);
+      }),
 
-        addContext.subscribe(async (ctx) => {
-          const insert: TokenStream = [
-            {
-              ctx,
-            },
-          ];
+      addImport.subscribe(async ({ id: externalId, templateId, imports }) => {
+        if (fieldId && imports.includes(fieldId)) {
+          console.error("Tried to add itself");
+          return;
+        }
+        const insert: TokenStream = [
+          {
+            id: generateDocumentId(documentId),
+            field: externalId,
+            ...(templateId && { select: templateId }),
+            inline: true,
+          },
+        ];
 
-          replaceWithComputation(editor, insert, configs);
-        }),
+        replaceWithComputation(editor, insert, configs);
+      }),
 
-        addNestedFolder.subscribe(async ({ folderId, templateId }) => {
-          const insert = [
-            {
-              id: generateDocumentId(documentId),
-              folder: folderId,
-            },
-          ];
+      addContext.subscribe(async (ctx) => {
+        const insert: TokenStream = [
+          {
+            ctx,
+          },
+        ];
 
-          replaceWithComputation(editor, insert, configs);
+        replaceWithComputation(editor, insert, configs);
+      }),
 
-          if (templateId && !fieldConfig?.template) {
-            setFieldConfig("template", templateId);
-          }
-        }),
+      addNestedFolder.subscribe(async ({ folderId, templateId }) => {
+        const insert = [
+          {
+            id: generateDocumentId(documentId),
+            folder: folderId,
+          },
+        ];
 
-        addDocumentImport.subscribe(async ({ documentId, templateId }) => {
-          const insert = [
-            {
-              id: documentId,
-            },
-          ];
+        replaceWithComputation(editor, insert, configs);
 
-          replaceWithComputation(editor, insert, configs);
-          /*
+        if (templateId && !fieldConfig?.template) {
+          setFieldConfig("template", templateId);
+        }
+      }),
+
+      addDocumentImport.subscribe(async ({ documentId, templateId }) => {
+        const insert = [
+          {
+            id: documentId,
+          },
+        ];
+
+        replaceWithComputation(editor, insert, configs);
+        /*
           editor.update(() => {
             addBlockElement(insert);
           });
           */
-          if (templateId && !fieldConfig?.template) {
-            setFieldConfig("template", templateId);
-          }
-        }),
+        if (templateId && !fieldConfig?.template) {
+          setFieldConfig("template", templateId);
+        }
+      }),
 
-        addLayoutElement.subscribe(async ({ library, name }) => {
-          const component = createComponent(
-            generateDocumentId(documentId),
-            name,
-            { library, configs }
-          );
+      addLayoutElement.subscribe(async ({ library, name }) => {
+        const component = createComponent(
+          generateDocumentId(documentId),
+          name,
+          { library, configs }
+        );
 
-          const insert: TokenStream = [component];
+        const insert: TokenStream = [component];
 
-          replaceWithComputation(editor, insert, configs);
+        replaceWithComputation(editor, insert, configs);
 
-          /*
+        /*
           if (isInlineElement(libraries, component)) {
             insertComputation(editor, computation, libraries);
           } else {
@@ -131,18 +142,17 @@ function useEditorEvents() {
             });
           }
           */
-        }),
+      }),
 
-        addNestedDocument.subscribe(() => {
-          const insert: TokenStream = [{ id: generateDocumentId(documentId) }];
-          replaceWithComputation(editor, insert, configs);
-          /*
+      addNestedDocument.subscribe(() => {
+        const insert: TokenStream = [{ id: generateDocumentId(documentId) }];
+        replaceWithComputation(editor, insert, configs);
+        /*
           editor.update(() => {
             addBlockElement([{ id: generateDocumentId(documentId) }]);
           });
           */
-        })
-      );
-    }
+      })
+    );
   }, [editor, configs, isFocused, fieldId, generateDocumentId]);
 }

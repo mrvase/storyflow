@@ -57,9 +57,13 @@ const authHandler = () => {
     });
   };
 
+  let promise: ReturnType<typeof authenticateOrganization> | null = null;
+
   const updateToken = async (initial: boolean = false) => {
-    const result = await authenticateOrganization(initial);
+    const result = await (promise ??
+      (promise = authenticateOrganization(initial)));
     token = getCookie("sf.c.local-token") ?? token;
+    promise = null;
 
     if (initial) {
       if (isError(result)) {
@@ -79,6 +83,11 @@ const authHandler = () => {
     return result;
   };
 
+  const awaitToken = async () => {
+    if (token) return token;
+    return await updateToken(true);
+  };
+
   setTimeout(() => onInterval(() => updateToken(), { duration: 30000 }), 30000);
 
   const middleware = <TOptions extends AuthOptions>(
@@ -93,6 +102,7 @@ const authHandler = () => {
   };
 
   return {
+    awaitToken,
     middleware,
     updateOrganization,
     useOrganization: () => useImmutableGlobalState(organizationState),
@@ -102,6 +112,7 @@ const authHandler = () => {
 
 export const {
   middleware: authMiddleware,
+  awaitToken,
   useOrganization,
   updateOrganization,
   registerUrlListener,

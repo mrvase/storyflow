@@ -1,11 +1,16 @@
 import React from "react";
-import type { AppConfig, LibraryConfigRecord } from "@storyflow/shared/types";
+import type {
+  AppConfig,
+  AppReference,
+  LibraryConfigRecord,
+} from "@storyflow/shared/types";
 import { useFolderDomains } from "./folders/FolderDomainsContext";
 import { defaultLibraryConfig } from "@storyflow/shared/defaultLibraryConfig";
 import { normalizeProtocol } from "./utils/normalizeProtocol";
 import { useOrganization } from "./clients/auth";
 import { appQuery } from "./clients/client-app";
 import { isError } from "@nanorpc/client";
+import useSWRImmutable from "swr/immutable";
 
 const AppConfigContext = React.createContext<Record<string, AppConfig> | null>(
   null
@@ -46,6 +51,41 @@ export const getConfigFromType = (
   return result;
 };
 
+export const fetchConfigs = async (apps: AppReference[]) => {
+  const fetchedConfigs = await Promise.all(
+    apps.map(async ({ name, baseURL }) => {
+      const normalizedBaseURL = normalizeProtocol(baseURL);
+      const config = await appQuery.app.config(undefined, {
+        baseURL: normalizedBaseURL,
+      });
+
+      if (isError(config)) {
+        return;
+      }
+
+      return [
+        name,
+        {
+          ...config,
+          baseURL: normalizedBaseURL,
+          configs: {
+            ...config.configs,
+            "": defaultLibraryConfig,
+          },
+        },
+      ] as [string, AppConfig];
+    })
+  );
+
+  const configs: Record<string, AppConfig> = {};
+
+  fetchedConfigs.forEach((config) => {
+    config && (configs[config[0]] = config[1]);
+  });
+
+  return configs;
+};
+
 const defaultClientConfig: AppConfig = {
   baseURL: "",
   label: "",
@@ -77,11 +117,20 @@ export function useAppConfig(key?: string): AppConfig {
 
   const main = configs[domains[0]];
 
+  if (!main) {
+    return {
+      baseURL: "",
+      label: "",
+      builderPath: undefined,
+      configs: defaultLibraries,
+    };
+  }
+
   return {
-    baseURL: main?.baseURL ?? "",
-    label: main?.label ?? "",
-    builderPath: main?.builderPath,
-    configs: main?.configs ?? defaultLibraries,
+    baseURL: main.baseURL,
+    label: main.label,
+    builderPath: main.builderPath,
+    configs: main.configs,
   };
 }
 
@@ -92,55 +141,10 @@ export function AppConfigProvider({
 }) {
   const organization = useOrganization();
 
-  const [configs, setConfigs] = React.useState<Record<string, AppConfig>>({});
-
-  React.useLayoutEffect(() => {
-    let isMounted = true;
-    const abortController = new AbortController();
-
-    (async () => {
-      const fetchedConfigs = await Promise.all(
-        organization!.apps.map(async ({ name, baseURL }) => {
-          const normalizedBaseURL = normalizeProtocol(baseURL);
-          const result = await appQuery.app.config(undefined, {
-            baseURL: normalizedBaseURL,
-          });
-
-          if (isError(result)) {
-            return;
-          }
-
-          const config = result;
-
-          console.log("CONFIG", { baseURL, config });
-
-          return [
-            name,
-            {
-              ...config,
-              baseURL: normalizedBaseURL,
-              configs: {
-                ...config.configs,
-                "": defaultLibraryConfig,
-              },
-            },
-          ] as [string, AppConfig];
-        })
-      );
-
-      if (isMounted) {
-        const configs = fetchedConfigs.filter(
-          (el): el is Exclude<typeof el, undefined> => Boolean(el)
-        );
-
-        setConfigs(Object.fromEntries(configs));
-      }
-    })();
-    return () => {
-      isMounted = false;
-      abortController.abort();
-    };
-  }, [organization?.apps]);
+  const { data: configs = {} } = useSWRImmutable(
+    `${organization!.slug}/configs`,
+    () => fetchConfigs(organization!.apps)
+  );
 
   return (
     <AppConfigContext.Provider value={configs}>
