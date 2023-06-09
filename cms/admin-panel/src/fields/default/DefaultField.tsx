@@ -222,7 +222,7 @@ export function DefaultField({
             // data-value={!isPrimitive ? preview : ""}
           />
           {!isPrimitive && (
-            <div className="-ml-9 preview hidden text-gray-400 rounded text-sm pb-2.5">
+            <div className="-ml-[1.675rem] preview hidden text-gray-400 rounded text-sm pb-2.5">
               <Bars2Icon className="shrink-0 w-4 mt-0.5 h-4 mr-5 opacity-50" />
               {preview || "[Tom]"}
             </div>

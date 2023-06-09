@@ -101,8 +101,8 @@ function Decorator({
             className={cl(
               "flex items-center font-medium text-sm p-2.5 whitespace-nowrap",
               value.element.indexOf(":") > 0
-                ? "text-yellow-400"
-                : "text-red-400"
+                ? "text-yellow-500 dark:text-yellow-400"
+                : "text-red-500 dark:text-red-400"
             )}
             onMouseDown={(ev) => {
               // preventDefault added because it prevents a conflict with lexical
@@ -310,7 +310,7 @@ function NestedDefaultField({
   return (
     <ExtendPath id={documentId} type="document">
       <ExtendPath id={propId} type="field">
-        <div className="cursor-auto pl-[2.875rem] pr-2.5">
+        <div className="cursor-auto pl-[2.375rem] pr-2.5">
           <Field
             id={propId}
             showPromptButton

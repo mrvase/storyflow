@@ -46,7 +46,7 @@ export function DialogOption({
         className="peer w-0 h-0 opacity-0"
         onFocus={() => requestAnimationFrame(() => inputRef.current?.focus())}
       />
-      <div className="absolute ring-1 ring-gray-750 peer-checked:ring-gray-700 peer-checked:bg-gray-800 inset-0 -z-10 rounded" />
+      <div className="absolute ring-1 ring-gray-200 dark:ring-gray-750 peer-checked:ring-gray-400 peer-checked:dark:ring-gray-600 inset-0 -z-10 rounded" />
       <div className="flex items-center font-medium">
         <Icon className="w-5 h-5 mr-3" />
         {label}
@@ -60,7 +60,7 @@ export function DialogOption({
       >
         <button
           type="submit"
-          className="absolute top-3 right-5 h-10 px-5 bg-gray-700 hover:bg-gray-600 rounded font-medium text-sm transition-colors"
+          className="absolute top-3 right-5 h-10 px-5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded font-medium text-sm transition-colors"
         >
           {buttonLabel}
         </button>

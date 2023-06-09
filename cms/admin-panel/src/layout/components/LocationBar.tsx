@@ -85,7 +85,7 @@ export function LocationBar({
         {matches.length > 1 && (
           <Link
             to="/~"
-            className="h-11 flex-center ml-2 w-10 text-gray-500 hover:text-white transition-colors"
+            className="h-11 flex-center ml-2 w-10 text-gray-500 hover:text-gray-850 dark:hover:text-white transition-colors"
           >
             <HomeIcon className="w-4 h-4" />
           </Link>
@@ -215,7 +215,7 @@ function LocationBarItem({
       className={cl(
         "my-2 h-7 text-sm leading-none rounded-md font-medium",
         !isCurrent
-          ? "text-gray-500 hover:text-white transition-colors"
+          ? "text-gray-500 hover:text-gray-850 dark:hover:text-white transition-colors"
           : type === "template"
           ? "text-teal-400"
           : ""

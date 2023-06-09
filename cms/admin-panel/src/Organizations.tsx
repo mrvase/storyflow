@@ -57,7 +57,7 @@ export function OrganizationCard({
     <Component
       {...(action as any)}
       className={cl(
-        "rounded bg-gray-900 p-5 h-52 transition-[transform,opacity] duration-300 ease-out",
+        "rounded bg-white dark:bg-gray-900 p-5 h-52 transition-[transform,opacity] duration-300 ease-out",
         isMounted ? "translate-y-0 opacity-100" : "translate-y-5 opacity-0",
         className
       )}

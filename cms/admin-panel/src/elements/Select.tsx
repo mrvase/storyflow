@@ -105,7 +105,7 @@ export default function Select({
             static
             className={cl(
               "absolute z-20 -mt-[1px] max-h-60 w-full overflow-auto rounded-b-md shadow-lg text-sm",
-              "bg-gray-700"
+              "bg-white dark:bg-gray-700"
             )}
           >
             <div className={cl("rounded-b-md")}>
@@ -120,7 +120,7 @@ export default function Select({
                     className={({ selected, active }) =>
                       cl(
                         "relative cursor-default select-none py-2 px-3",
-                        active && "bg-gray-600",
+                        active && "bg-gray-100 dark:bg-gray-600",
                         option.color
                       )
                     }

@@ -187,8 +187,8 @@ function LabelBar({
   return (
     <div
       className={cl(
-        "flex sticky top-24 z-10",
-        "h-10 p-2.5 rounded bg-gray-850" /* -translate-y-2.5 */
+        "flex sticky top-[5.75rem] z-10",
+        "h-10 p-2.5 rounded bg-white dark:bg-gray-850" /* -translate-y-2.5 */
       )}
       // onDoubleClick={fullscreen}
     >
@@ -205,7 +205,7 @@ function LabelBar({
           isDefaultField(id, "page") ||
           restrictTo === "children") && (
           <button
-            className="rounded-full font-medium px-2 py-0.5 text-xs ring-button text-gray-400 ml-1 mr-3 flex-center gap-1"
+            className="rounded-full font-medium px-2 py-0.5 text-xs ring-button text-gray-600 dark:text-gray-400 ml-1 mr-3 flex-center gap-1"
             onClick={fullscreen}
             {...linkDragHandleProps}
           >
@@ -411,8 +411,8 @@ function Label({ id }: { id: FieldId }) {
     >
       {label || "Ingen label"}
       {isLink && (
-        <button className="rounded-full font-medium px-2 py-0.5 text-xs ring-button-teal text-teal-400 opacity-40 hover:opacity-100 ml-1 mr-3 flex-center gap-1">
-          <LinkIcon className="w-3 h-3 opacity-50" /> Referer
+        <button className="rounded-full font-medium px-2 py-0.5 text-xs ring-button-teal text-teal-600 dark:text-teal-400 opacity-40 hover:opacity-100 ml-1 mr-3 flex-center gap-1">
+          <LinkIcon className="w-3 h-3" /> Referer
         </button>
       )}
     </div>

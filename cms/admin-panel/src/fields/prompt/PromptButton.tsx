@@ -70,7 +70,7 @@ export function PromptButton() {
     <>
       <div
         className={cl(
-          "absolute top-0 -left-[2.875rem] w-8 h-8 p-2 -m-1 mx-1 hover:opacity-100",
+          "absolute top-0 -left-[2.375rem] w-8 h-8 p-2 -m-1 mx-1 hover:opacity-100",
           isEmpty && !isFocused ? "opacity-25" : "opacity-50"
         )}
         style={{ transform: `translateY(${y}px)` }}

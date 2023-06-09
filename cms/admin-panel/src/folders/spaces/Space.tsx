@@ -94,7 +94,7 @@ const Button = React.forwardRef<
           ? "text-gray-800 dark:text-white text-opacity-50 dark:text-opacity-50"
           : "text-button",
         active &&
-          "text-opacity-100 dark:text-opacity-100 ring-gray-600 dark:ring-gray-600",
+          "text-opacity-100 dark:text-opacity-100 ring-gray-300 dark:ring-gray-600",
         props.className
       )}
     >

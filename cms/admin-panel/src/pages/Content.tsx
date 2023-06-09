@@ -74,7 +74,8 @@ function Content({
           !status.endsWith("replace")
           ? "translate-x-10"
           : "translate-x-0",
-        hasSidebar && "@3xl:ml-64 @3xl:border-l @3xl:border-gray-750",
+        hasSidebar &&
+          "@3xl:ml-64 @3xl:border-l @3xl:border-gray-100 @3xl:dark:border-gray-750",
         !isSelected && !small && "pointer-events-none"
       )}
     >
@@ -158,8 +159,8 @@ function ArrangeButton() {
         "relative",
         "shrink-0 h-7 rounded text-sm transition-all px-2.5",
         isOpen
-          ? "mx-0 bg-yellow-400/25 text-yellow-200 w-[6.5rem]"
-          : "-mx-2.5 w-9 text-gray-500 hover:text-gray-200"
+          ? "mx-0 bg-yellow-400/25 text-yellow-600 dark:text-yellow-200 w-[6.5rem]"
+          : "-mx-2.5 w-9 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
       )}
       onClick={() => setIsOpen((ps) => !ps)}
     >
@@ -222,11 +223,11 @@ const Toolbar = React.forwardRef<
     <div
       ref={ref}
       className={cl(
-        "absolute w-full flex transition-[transform,opacity] child:text-gray-500 duration-150 child:hover",
+        "absolute w-full flex transition-[transform,opacity] child:text-gray-500 duration-150",
         show ? "opacity-100" : "opacity-0 pointer-events-none",
         secondary
-          ? "[&_.active]:text-yellow-200 child:text-yellow-200/75 hover:child:text-yellow-200"
-          : "[&_.active]:text-gray-200 child:text-gray-500 hover:child:text-gray-200"
+          ? "[&_.active]:text-yellow-600 [&_.active]:dark:text-yellow-200 child:text-yellow-600/75 child:dark:text-yellow-200/75 hover:child:text-yellow-600 dark:hover:child:text-yellow-200"
+          : "[&_.active]:text-gray-800 [&_.active]:dark:text-white child:text-gray-500 hover:child:text-gray-800 dark:hover:child:text-white"
       )}
     >
       {children}

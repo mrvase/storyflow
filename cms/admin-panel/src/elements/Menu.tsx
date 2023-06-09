@@ -101,7 +101,7 @@ const MenuItems = ({
       <HeadlessMenu.Items
         static
         className={cl(
-          "bg-gray-800 rounded shadow flex flex-col outline-none overflow-hidden ring-1 ring-gray-600",
+          "bg-white dark:bg-gray-800 rounded flex flex-col outline-none overflow-hidden ring-1 ring-gray-200 dark:ring-gray-600",
           small ? "w-36" : "w-52",
           marginTop ?? "mt-1"
         )}
@@ -129,8 +129,8 @@ const MenuItem = React.forwardRef<
           {...props}
           className={cl(
             "py-2 px-2 flex items-center gap-2 text-xs transition-colors",
-            active && "rounded bg-gray-700",
-            disabled ? "text-gray-400" : "text-gray-200",
+            active && "rounded bg-gray-100 dark:bg-gray-700",
+            disabled ? "text-gray-400" : "",
             props.className
           )}
         >

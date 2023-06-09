@@ -8,7 +8,7 @@ export function Placeholder() {
   const isFocused = useIsFocused();
   const isEmpty = useIsEmpty(editor);
   return isEmpty ? (
-    <div className="absolute pointer-events-none text-gray-500 select-none p-2.5 pt-1.5">
+    <div className="absolute pointer-events-none text-gray-400 dark:text-gray-500 select-none p-2.5 pt-1.5">
       {isFocused ? 'Skriv "/" for genveje' : "Ikke udfyldt"}
     </div>
   ) : null;
