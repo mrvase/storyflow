@@ -1,6 +1,5 @@
 import cl from "clsx";
 import { SystemFolderPage } from "./SystemFolderPage";
-import { SystemTemplatePage } from "./SystemTemplatePage";
 import FolderPage from "../folders/FolderPage";
 import { DocumentPage } from "../documents/DocumentPage";
 import { FieldPage } from "../fields/FieldPage";
@@ -40,7 +39,6 @@ const ordinaryRoutes: Record<string, Route> = {
       ordinaryRoutes.systemFilesWithPage,
       ordinaryRoutes.systemFiles,
       ordinaryRoutes.systemFolder,
-      ordinaryRoutes.systemTemplates,
     ],
   },
   systemFilesWithPage: {
@@ -54,10 +52,6 @@ const ordinaryRoutes: Record<string, Route> = {
   systemFolder: {
     match: "/folders",
     render: SystemFolderPage,
-  },
-  systemTemplates: {
-    match: "/templates",
-    render: SystemTemplatePage,
   },
   folder: {
     match: "/f/:id",
@@ -140,7 +134,7 @@ function Panels() {
   const length = pathname.split("/~").length - 1;
 
   return (
-    <div className="relative w-full h-full flex overflow-hidden">
+    <div className={cl("relative w-full h-full flex overflow-hidden")}>
       <LinkReceiver index={0} edge="left" id="link-left" />
       <Sortable
         type="panels"

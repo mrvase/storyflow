@@ -202,9 +202,9 @@ function FocusContainer({
   if (isOpen) {
     ring = "ring-1 dark:ring-yellow-200/50";
   } else if (isSelected) {
-    ring = "ring-1 dark:ring-gray-200";
+    ring = "ring-1 ring-gray-800 dark:ring-gray-200";
   } else if (isFocused) {
-    ring = "ring-1 dark:ring-gray-600";
+    ring = "ring-1 ring-gray-300 dark:ring-gray-600";
   } else {
     ring = "ring-1 ring-gray-200 dark:ring-gray-700";
   }

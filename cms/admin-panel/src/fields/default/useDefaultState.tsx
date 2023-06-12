@@ -10,7 +10,7 @@ import {
 import type { SyntaxTree, FieldTransform } from "@storyflow/cms/types";
 import type { TokenStream } from "../../operations/types";
 import { getDocumentId, getRawFieldId } from "@storyflow/cms/ids";
-import { useFieldId } from "../FieldIdContext";
+import { useFieldId, useFieldIdUnsafe } from "../FieldIdContext";
 import { useDocumentPageContext } from "../../documents/DocumentPageContext";
 import {
   createTokenStream,
@@ -27,7 +27,7 @@ import { DEFAULT_SYNTAX_TREE } from "@storyflow/cms/constants";
 import { FieldTransactionEntry } from "../../operations/actions";
 
 export function useDefaultStateCore(id: FieldId) {
-  const rootId = useFieldId();
+  const rootId = useFieldIdUnsafe() ?? id;
   const { record } = useDocumentPageContext();
 
   const initialValue = record[id] ?? DEFAULT_SYNTAX_TREE;
@@ -64,7 +64,7 @@ export function useDefaultStateCore(id: FieldId) {
 }
 
 export function useDefaultState(id: FieldId) {
-  const rootId = useFieldId();
+  const rootId = useFieldIdUnsafe() ?? id;
 
   const { initialValue, tree, value, setState } = useDefaultStateCore(id);
 

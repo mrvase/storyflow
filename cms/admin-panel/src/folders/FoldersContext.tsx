@@ -125,14 +125,18 @@ export function FoldersProvider({ children }: { children: React.ReactNode }) {
 
               if (!space) return;
 
+              console.log("SPACE", space);
+
               const newSpace = {
                 ...space,
-                items: [...space.items],
+                ...(space.type === "folders" && { items: [...space.items] }),
               };
 
               if (isSpliceOperation(operation)) {
                 const [index, remove, insert] = operation;
                 newSpace.items.splice(index, remove ?? 0, ...(insert ?? []));
+              } else if (isToggleOperation(operation)) {
+                newSpace[operation[0]] = operation[1];
               }
               newFolder.spaces[spaceIndex] = newSpace;
               updates[folderId] = newFolder;

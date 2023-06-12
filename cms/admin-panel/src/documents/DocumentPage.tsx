@@ -5,10 +5,12 @@ import {
   DocumentIcon,
   PlusIcon,
   XMarkIcon,
-} from "@heroicons/react/24/outline";
+} from "@heroicons/react/24/solid";
 import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
 import {
+  createTemplateFieldId,
   getDocumentId,
+  getRawFieldId,
   getTemplateDocumentId,
   isTemplateDocument,
 } from "@storyflow/cms/ids";
@@ -36,7 +38,10 @@ import {
 } from "./FieldToolbar";
 import { ExtendTemplatePath } from "./TemplatePathContext";
 import { Menu } from "../elements/Menu";
-import { DocumentTransactionEntry } from "../operations/actions";
+import {
+  DocumentTransactionEntry,
+  FieldTransactionEntry,
+} from "../operations/actions";
 import { useCurrentFolder } from "../folders/FolderPageContext";
 import { getFolderData } from "../folders/getFolderData";
 import { query } from "../clients/client";
@@ -44,6 +49,10 @@ import { useImmutableQuery } from "@nanorpc/client/swr";
 import { useRoute } from "@nanokit/router";
 import { parseMatch } from "../layout/components/parseSegment";
 import { TEMPLATE_FOLDER } from "@storyflow/cms/constants";
+import { DragIcon } from "../elements/DragIcon";
+import { EditableLabel } from "../elements/EditableLabel";
+import { useDefaultState } from "../fields/default/useDefaultState";
+import { createTransaction } from "@storyflow/collab/utils";
 
 function useIsModified(id: DocumentId) {
   const [isModified, setIsModified] = React.useState(false);
@@ -78,9 +87,11 @@ export const DocumentContent = ({
     <Content
       icon={variant === "template" ? DocumentDuplicateIcon : DocumentIcon}
       header={
-        <span className={cl(variant === "template" && "text-teal-500")}>
-          {label}
-        </span>
+        variant === "template" ? (
+          <EditableTemplateLabel documentId={id} />
+        ) : (
+          <span>{label}</span>
+        )
       }
       buttons={
         <div
@@ -162,7 +173,7 @@ function Toolbar({ id }: { id: DocumentId }) {
           <Content.ToolbarDragButton
             id="new-field"
             type="fields"
-            icon={PlusIcon}
+            icon={DragIcon}
             label="Tilføj felt"
             item={() => ({
               id: generateFieldId(id),
@@ -177,6 +188,7 @@ function Toolbar({ id }: { id: DocumentId }) {
             {fields.map((el) => (
               <Menu.DragItem
                 key={el.label}
+                icon={DragIcon}
                 type="fields"
                 id={`ny-blok-${el.item.template}`}
                 {...el}
@@ -187,6 +199,50 @@ function Toolbar({ id }: { id: DocumentId }) {
         </NoList>
       </Content.Toolbar>
     </>
+  );
+}
+
+function EditableTemplateLabel({ documentId }: { documentId: DocumentId }) {
+  const fieldId = createTemplateFieldId(
+    documentId,
+    DEFAULT_FIELDS.template_label.id
+  );
+
+  const { value } = useDefaultState(fieldId);
+
+  const label = React.useMemo(() => {
+    if (value && Array.isArray(value) && typeof value[0] === "string") {
+      return value[0];
+    }
+    return "";
+  }, [value]);
+
+  const push = usePush<FieldTransactionEntry>(
+    documentId,
+    getRawFieldId(fieldId)
+  );
+
+  const onChange = React.useCallback(
+    (newValue: string) => {
+      push(
+        createTransaction((t) => {
+          return t.target(fieldId).splice({
+            index: 0,
+            remove: label.length,
+            insert: [newValue],
+          });
+        })
+      );
+    },
+    [push, label]
+  );
+
+  return (
+    <EditableLabel
+      value={label}
+      onChange={onChange}
+      className="text-teal-500"
+    />
   );
 }
 
@@ -206,6 +262,7 @@ export function TemplateMenu({ id }: { id?: DocumentId }) {
             {el._id === id ? null : (
               <Menu.DragItem
                 label={getDocumentLabel(el)!}
+                icon={DragIcon}
                 type="fields"
                 id={`ny-template-${el._id}`}
                 item={{
@@ -284,7 +341,7 @@ const Page = ({
             label={label ?? "Ingen label"}
             toolbar={<Toolbar id={id} />}
           >
-            <div className="pb-96 flex flex-col -mt-6">
+            <div className="pb-96 flex flex-col -mt-8">
               {folderData.type === "app" &&
                 !templateId &&
                 config.filter(
@@ -344,7 +401,7 @@ function TemplateSelect({ documentId }: { documentId: DocumentId }) {
       ].map((doc) => (
         <button
           key={doc._id}
-          className="rounded bg-button ring-button p-5 text-center"
+          className="rounded bg-gray-800 ring-button p-5 text-center"
           onClick={() => {
             push([["", [[0, 0, [{ template: doc._id }]]]]]);
           }}

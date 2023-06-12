@@ -25,6 +25,7 @@ import { insertRootInTransforms } from "@storyflow/cms/transform";
 import { useNewDocuments } from "./useNewDocuments";
 import DocumentTable from "../../documents/components/DocumentTable";
 import { useTranslation } from "../../translation/TranslationContext";
+import { InlineButton } from "../../elements/InlineButton";
 
 export function PagesSpace({
   space,
@@ -149,12 +150,16 @@ export function PagesSpace({
       }
       buttons={
         <>
-          <Space.Button icon={TrashIcon} onClick={handleDelete} />
           <Menu as={Space.Button} icon={EllipsisHorizontalIcon} align="right">
             <Menu.Item
               label={t.folders.deleteSpace()}
               icon={TrashIcon}
               onClick={handleDeleteSpace}
+            />
+            <Menu.Item
+              label={t.documents.deleteDocuments()}
+              icon={TrashIcon}
+              onClick={handleDelete}
             />
           </Menu>
         </>
@@ -194,11 +199,8 @@ function AddFrontPageButton({ folder }: { folder: FolderId }) {
   const addDocument = useAddDocument({ navigate: true });
 
   return (
-    <button
-      className={cl(
-        "rounded-full px-2 py-0.5 text-xs ring-button text-gray-600 dark:text-gray-400 ml-3 flex-center gap-1"
-        // "opacity-0 group-hover/space:opacity-100 transition-opacity"
-      )}
+    <InlineButton
+      icon={PlusIcon}
       onClick={() =>
         addDocument({
           folder,
@@ -222,8 +224,9 @@ function AddFrontPageButton({ folder }: { folder: FolderId }) {
           }),
         })
       }
+      className="ml-3"
     >
-      <PlusIcon className="w-3 h-3" /> {t.documents.addFrontPage()}
-    </button>
+      {t.documents.addFrontPage()}
+    </InlineButton>
   );
 }

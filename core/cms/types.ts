@@ -209,12 +209,14 @@ export interface DBDocument {
 
 export type FolderSpace = {
   id: SpaceId;
+  label?: string;
   type: "folders";
   items: FolderId[];
 };
 
 export type DocumentSpace = {
   id: SpaceId;
+  label?: string;
   type: "documents";
   folder?: FolderId;
 };

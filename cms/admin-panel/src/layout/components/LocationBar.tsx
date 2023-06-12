@@ -10,7 +10,7 @@ import {
   Square2StackIcon,
   WindowIcon,
   XMarkIcon,
-} from "@heroicons/react/24/outline";
+} from "@heroicons/react/24/solid";
 import React from "react";
 import Loader from "../../elements/Loader";
 import { useDragItem } from "@storyflow/dnd";
@@ -40,21 +40,18 @@ export function LocationBar({
 
   if (isSystemWindow) {
     return (
-      <div
-        className="shrink-0 grow-0 bg-white dark:bg-gray-800"
-        {...dragHandleProps}
-      >
+      <div className="relative w-full shrink-0 grow-0" {...dragHandleProps}>
         <div
           className={cl(
-            "h-11 flex pr-2 overflow-x-auto dark:text-white",
+            "h-16 flex pr-2 overflow-x-auto dark:text-white",
             isFocused ? "opacity-100" : "opacity-25"
           )}
         >
           <Link
             to="/~"
-            className="h-11 flex-center ml-2 w-10 text-gray-500 hover:text-white transition-colors"
+            className="h-12 flex-center ml-2 w-10 text-gray-500 hover:text-white transition-colors"
           >
-            <HomeIcon className="w-4 h-4" />
+            <HomeIcon className="w-5 h-5" />
           </Link>
           <button
             className="shrink-0 ml-auto mr-2 flex items-center justify-center h-full px-3"
@@ -64,7 +61,7 @@ export function LocationBar({
               actions.close(route.index);
             }}
           >
-            <XMarkIcon className="w-4 h-4" />
+            <XMarkIcon className="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -72,25 +69,22 @@ export function LocationBar({
   }
 
   return (
-    <div
-      className="shrink-0 grow-0 bg-white dark:bg-gray-800"
-      {...dragHandleProps}
-    >
+    <div className="relative w-full shrink-0 grow-0" {...dragHandleProps}>
       <div
         className={cl(
-          "h-11 flex pr-2 overflow-x-auto dark:text-white",
+          "h-12 pt-4 flex pr-2 overflow-x-auto dark:text-white",
           isFocused ? "opacity-100" : "opacity-25"
         )}
       >
         {matches.length > 1 && (
           <Link
             to="/~"
-            className="h-11 flex-center ml-2 w-10 text-gray-500 hover:text-gray-850 dark:hover:text-white transition-colors"
+            className="group h-8 flex-center ml-2.5 w-10 transition-colors"
           >
-            <HomeIcon className="w-4 h-4" />
+            <HomeIcon className="w-5 h-5 text-gray-400 group-hover:text-gray-500 dark:text-gray-500 dark:group-hover:text-gray-300" />
           </Link>
         )}
-        <div className="flex gap-6 pl-2 h-full overflow-x-auto no-scrollbar grow">
+        <div className="flex gap-6 pl-2.5 h-full overflow-x-auto no-scrollbar grow">
           {matches.slice(1).map((match, index) => (
             <LocationBarItem
               key={match.accumulated}
@@ -106,7 +100,7 @@ export function LocationBar({
             "opacity-50 hover:opacity-100 transition-opacity"
           )}
         >
-          <BookmarkIcon className="w-4 h-4" />
+          <BookmarkIcon className="w-5 h-5" />
         </button>*/}
         <button
           className={cl(
@@ -121,7 +115,7 @@ export function LocationBar({
             });
           }}
         >
-          <Square2StackIcon className="w-4 h-4" />
+          <Square2StackIcon className="w-5 h-5" />
         </button>
         <button
           className={cl(
@@ -134,7 +128,7 @@ export function LocationBar({
             actions.close(route.index);
           }}
         >
-          <XMarkIcon className="w-4 h-4" />
+          <XMarkIcon className="w-5 h-5" />
         </button>
       </div>
     </div>
@@ -213,12 +207,12 @@ function LocationBarItem({
     <button
       {...dragHandleProps}
       className={cl(
-        "my-2 h-7 text-sm leading-none rounded-md font-medium",
+        "group h-8 text-sm leading-none rounded-md",
         !isCurrent
-          ? "text-gray-500 hover:text-gray-850 dark:hover:text-white transition-colors"
+          ? "text-gray-600 dark:text-gray-200 hover:text-gray-850 dark:hover:text-white transition-colors font-semibold hover:underline"
           : type === "template"
           ? "text-teal-400"
-          : ""
+          : "text-gray-800 dark:text-gray-200 font-normal"
       )}
       // onMouseEnter={onMouseEnter}
       // onMouseLeave={onMouseLeave}
@@ -228,10 +222,15 @@ function LocationBarItem({
         <Loader />
       ) : (
         <div className="flex items-center">
-          <Icon className="w-4 h-4" />
-          <span
-            className={cl("truncate ml-2", !isCurrent && "hidden @lg:block")}
-          >
+          {/*<Icon
+            className={cl(
+              "w-5 h-5 transition-colors",
+              isCurrent
+                ? "text-gray-500 dark:text-gray-400"
+                : "text-gray-400 group-hover:text-gray-500 dark:text-gray-600 dark:group-hover:text-gray-400"
+            )}
+          />*/}
+          <span className={cl("truncate", !isCurrent && "hidden @lg:block")}>
             {label}
           </span>
           {isModified && (

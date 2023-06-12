@@ -14,13 +14,15 @@ import {
   PlusIcon,
   SunIcon,
   UserIcon,
-} from "@heroicons/react/24/outline";
+} from "@heroicons/react/24/solid";
 import React from "react";
 import { useLocalStorage } from "../../state/useLocalStorage";
 import { collab } from "../../collab/CollabContext";
 import { Link, useLocation, useNavigate } from "@nanokit/router";
 import { DropShadow, Sortable } from "@storyflow/dnd";
 import { actions } from "../../pages/routes";
+import { TEMPLATE_FOLDER } from "@storyflow/cms/constants";
+import { navigateFocusedPanel } from "../../custom-events";
 
 export default function Nav() {
   const [isOpen, setIsOpen] = useLocalStorage<boolean>("nav-is-open", true);
@@ -32,8 +34,23 @@ export default function Nav() {
 
   const MenuIcon = isOpen ? ChevronLeftIcon : ChevronRightIcon;
 
-  const navigate = useNavigate();
   const { pathname } = useLocation();
+
+  const navigateProps = (to: string) => {
+    if (pathname.indexOf("/~") < 0) {
+      return {
+        onClick() {
+          actions.open({
+            path: to,
+            index: 0,
+          });
+        },
+      };
+    }
+    return {
+      to,
+    };
+  };
 
   return (
     <>
@@ -48,13 +65,13 @@ export default function Nav() {
       */}
       <div
         className={cl(
-          "group h-screen flex flex-col shrink-0 grow-0 overflow-hidden transition-[width] ease-out",
+          "h-screen flex flex-col shrink-0 grow-0 overflow-hidden ease-out",
           isOpen ? "w-60" : "w-10 menu-closed",
-          "dark:text-white"
+          "dark:text-white text-sm font-medium"
         )}
       >
-        <div className="h-full flex flex-col pl-2 py-4 w-60">
-          <div className="flex flex-col gap-2">
+        <div className="h-full flex flex-col pl-2 w-60">
+          <div className="flex flex-col border-b border-gray-200 dark:border-gray-800 py-6">
             <NavButton
               onClick={() => {
                 actions.open({ path: "/~", index: 0 });
@@ -72,7 +89,7 @@ export default function Nav() {
               Slå redigering {toolbarIsOpen ? "fra" : "til"}
             </NavButton>*/}
           </div>
-          <div className="lex flex-col gap-2 mt-6">
+          <div className="flex flex-col py-6">
             {/*<div
               className={cl(
                 "text-xs ml-1 font-bold text-gray-500 mb-1 transition-[opacity,height]",
@@ -81,12 +98,7 @@ export default function Nav() {
             >
               Dine mapper
             </div>*/}
-            <NavButton
-              onClick={() => {
-                actions.open({ path: "/~", index: 0 });
-              }}
-              icon={FolderIcon}
-            >
+            <NavButton {...navigateProps("/~")} icon={FolderIcon}>
               Hjem
             </NavButton>
             <Sortable
@@ -102,35 +114,28 @@ export default function Nav() {
               <DropShadow>{(item) => <div>{item}</div>}</DropShadow>
             </Sortable>
           </div>
-          <div className="w-full grow" onClick={() => setIsOpen((ps) => !ps)} />
-          <div className="flex flex-col gap-2">
-            <div
-              className={cl(
-                "text-xs ml-1 font-bold text-gray-500 mb-1 transition-[opacity,height]",
-                isOpen ? "opacity-100 h-4" : "opacity-0 h-0"
-              )}
-            >
-              Systemarkiver
-            </div>
-            <NavButton
-              onClick={() => actions.open({ path: "/~/folders", index: 0 })}
-              icon={FolderIcon}
-            >
+          <div
+            className="w-full grow border-b border-gray-200 dark:border-gray-800"
+            onClick={() => setIsOpen((ps) => !ps)}
+          />
+          <div className="flex flex-col py-6 border-b border-gray-200 dark:border-gray-800">
+            <NavButton {...navigateProps("/~/folders")} icon={FolderIcon}>
               Mapper
             </NavButton>
             <NavButton
-              onClick={() => actions.open({ path: "/~/templates", index: 0 })}
+              {...navigateProps(
+                `/~/f/${parseInt(TEMPLATE_FOLDER, 16).toString(16)}`
+              )}
               icon={DocumentDuplicateIcon}
             >
               Skabeloner
             </NavButton>
-            <NavButton
-              onClick={() => actions.open({ path: "/~/files", index: 0 })}
-              icon={PhotoIcon}
-            >
+            <NavButton {...navigateProps("/~/files")} icon={PhotoIcon}>
               Filer
             </NavButton>
-            <div className="flex justify-between mt-3 gap-8">
+          </div>
+          <div className="py-3">
+            <div className="flex justify-between gap-8">
               <NavButton
                 onClick={() => {
                   setIsOpen((ps) => !ps);
@@ -160,7 +165,7 @@ function NavButton({
 }: {
   children?: React.ReactNode;
   className?: string;
-  icon: React.ComponentType<{ className: string }>;
+  icon: React.ComponentType<{ onMouseDown?: any; className?: string }>;
 } & (
   | {
       onClick: () => void;
@@ -169,20 +174,45 @@ function NavButton({
       to: string;
     }
 )) {
-  const Component = "to" in action ? Link : "button";
+  const classNameFull = cl(
+    "group w-full h-9 px-1.5 rounded flex gap-4 items-center text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white [.menu-closed:hover_&]:hover:text-white transition-colors",
+    className
+  );
+
+  const content = (
+    <>
+      <Icon className="w-5 h-5 text-gray-400 group-hover:text-gray-500 dark:text-gray-600 dark:group-hover:text-gray-400 transition-colors" />
+      {children && <div>{children}</div>}
+    </>
+  );
+
+  if ("to" in action) {
+    return (
+      <Link
+        to={action.to}
+        className={classNameFull}
+        data-focus-remain="true"
+        onClick={(ev) => {
+          if (
+            action.to.indexOf("/~") >= 0 &&
+            !ev.metaKey &&
+            !ev.ctrlKey &&
+            !ev.shiftKey
+          ) {
+            ev.preventDefault();
+            navigateFocusedPanel.dispatch(action.to);
+          }
+        }}
+      >
+        {content}
+      </Link>
+    );
+  }
 
   return (
-    <Component
-      className={cl(
-        "w-full h-7 px-1.5 rounded flex gap-4 items-center [.menu-closed_&]:opacity-40 [.menu-closed:hover_&]:opacity-75 opacity-75 hover:opacity-100 [.menu-closed:hover_&]:hover:opacity-100 transition-opacity",
-        "font-medium",
-        className
-      )}
-      {...(action as any)}
-    >
-      {<Icon className="w-5 h-5" />}
-      {children && <div>{children}</div>}
-    </Component>
+    <button className={classNameFull} {...action}>
+      {content}
+    </button>
   );
 }
 

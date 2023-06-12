@@ -3,6 +3,7 @@ import { useDragItem, useSortableItem } from "@storyflow/dnd";
 import {
   ChevronRightIcon,
   ChevronUpDownIcon,
+  EllipsisHorizontalIcon,
   LinkIcon,
   LockClosedIcon,
   WindowIcon,
@@ -12,14 +13,18 @@ import React from "react";
 import { useFieldFocus } from "../FieldFocusContext";
 import { addImport } from "../custom-events";
 import { useLabel } from "../documents/document-config";
-import type { FieldId, NestedDocumentId } from "@storyflow/shared/types";
+import type {
+  DocumentId,
+  FieldId,
+  NestedDocumentId,
+} from "@storyflow/shared/types";
 import type { FieldConfig } from "@storyflow/cms/types";
 import { getTranslateDragEffect } from "../utils/dragEffects";
 import useIsFocused from "../utils/useIsFocused";
 import { useIsFocused as useIsEditorFocused } from "../editor/react/useIsFocused";
 import { getDefaultField, isDefaultField } from "@storyflow/cms/default-fields";
 import { getConfigFromType, useAppConfig } from "../AppConfigContext";
-import { isTemplateField } from "@storyflow/cms/ids";
+import { getDocumentId, isTemplateField } from "@storyflow/cms/ids";
 import { FieldToolbarPortal } from "../documents/FieldToolbar";
 import { EditorFocusProvider } from "../editor/react/useIsFocused";
 import { Attributes, AttributesProvider } from "./Attributes";
@@ -28,6 +33,12 @@ import { useLocalStorage } from "../state/useLocalStorage";
 import { useFieldRestriction } from "./FieldIdContext";
 import { useFolder } from "../folders/FoldersContext";
 import { useNavigate, usePath, useRoute } from "@nanokit/router";
+import { EditableLabel } from "../elements/EditableLabel";
+import { usePush } from "../collab/CollabContext";
+import { DocumentTransactionEntry } from "../operations/actions";
+import { createTransaction } from "@storyflow/collab/utils";
+import { useTranslation } from "../translation/TranslationContext";
+import { InlineButton } from "../elements/InlineButton";
 
 type Props = {
   fieldConfig: FieldConfig;
@@ -187,10 +198,9 @@ function LabelBar({
   return (
     <div
       className={cl(
-        "flex sticky top-[5.75rem] z-10",
-        "h-10 p-2.5 rounded bg-white dark:bg-gray-850" /* -translate-y-2.5 */
+        "flex items-center sticky top-12 z-10",
+        "h-11 p-2.5 rounded bg-white dark:bg-gray-850/80 backdrop-blur-sm" /* -translate-y-2.5 */
       )}
-      // onDoubleClick={fullscreen}
     >
       <Dot id={id} dragHandleProps={isEditing ? dragHandleProps : {}} />
       <div
@@ -204,19 +214,20 @@ function LabelBar({
         {(isDefaultField(id, "layout") ||
           isDefaultField(id, "page") ||
           restrictTo === "children") && (
-          <button
-            className="rounded-full font-medium px-2 py-0.5 text-xs ring-button text-gray-600 dark:text-gray-400 ml-1 mr-3 flex-center gap-1"
+          <InlineButton
             onClick={fullscreen}
             {...linkDragHandleProps}
+            icon={WindowIcon}
           >
-            <WindowIcon className="w-3 h-3" /> Åbn preview
-          </button>
+            Åbn preview
+          </InlineButton>
         )}
       </div>
       {specialFieldConfig && (
         <div
           className={cl(
-            "flex-center text-xs h-6 -my-0.5 bg-yellow-300 text-yellow-800/90 dark:bg-yellow-400/10 dark:text-yellow-200/75 px-1.5 rounded whitespace-nowrap",
+            "flex-center text-xs h-6 -my-0.5 px-1.5 rounded whitespace-nowrap",
+            "bg-yellow-300 text-yellow-800/90 dark:bg-yellow-400/10 dark:text-yellow-200/75",
             isFocused
               ? "opacity-100"
               : "opacity-0 group-hover/container:opacity-80",
@@ -226,6 +237,7 @@ function LabelBar({
           {specialFieldConfig.label}
         </div>
       )}
+      <InlineButton icon={EllipsisHorizontalIcon} className="ml-2.5" />
       {/*<button
         className={cl(
           "ml-2 shrink-0 text-xs flex-center gap-2 px-2 h-6 -my-0.5 bg-white/10 rounded",
@@ -353,13 +365,13 @@ function Dot({ id, dragHandleProps }: { id: FieldId; dragHandleProps: any }) {
       <div
         {...dragHandleProps}
         className={cl(
-          "group w-6 h-6 p-1 -m-1 translate-y-0.5",
+          "group w-7 h-7 p-1 -mx-1 -my-0.5",
           isDraggable && "cursor-grab"
         )}
       >
         <div
           className={cl(
-            "flex-center w-4 h-4 rounded-full group-hover:scale-[1.5] transition-transform",
+            "flex-center w-5 h-5 rounded-full group-hover:scale-[1.5] transition-transform",
             !isNative
               ? "bg-gray-200 dark:bg-teal-600/50 dark:group-hover:bg-teal-800/50"
               : "bg-gray-200 dark:bg-gray-600/50"
@@ -367,7 +379,7 @@ function Dot({ id, dragHandleProps }: { id: FieldId; dragHandleProps: any }) {
         >
           <div
             className={cl(
-              "flex-center w-2 h-2 m-1 rounded-full group-hover:scale-[2] transition-[transform,background-color]",
+              "flex-center w-2.5 h-2.5 m-1 rounded-full group-hover:scale-[2] transition-[transform,background-color]",
               !isNative && "dark:group-hover:bg-teal-800",
               "dark:bg-white/20"
             )}
@@ -381,6 +393,8 @@ function Dot({ id, dragHandleProps }: { id: FieldId; dragHandleProps: any }) {
 }
 
 function Label({ id }: { id: FieldId }) {
+  const t = useTranslation();
+
   const [{ selectedPath }, setPath] = useSelectedPath();
   const isNative = !isTemplateField(id);
 
@@ -388,14 +402,24 @@ function Label({ id }: { id: FieldId }) {
   const isLink = focused && focused !== id;
   const label = useLabel(id);
 
+  const documentId = getDocumentId<DocumentId>(id);
+  const push = usePush<DocumentTransactionEntry>(documentId, "config");
+
+  const onChange = (value: string) => {
+    push(
+      createTransaction((t) => t.target(id).toggle({ name: "label", value }))
+    );
+  };
+
   return (
     <div
       className={cl(
         "flex items-center gap-1 px-1.5 -ml-1.5 font-medium",
-        isNative ? "text-gray-400" : "text-teal-600/90 dark:text-teal-400/90",
-        isLink ? "cursor-alias" : "cursor-default",
+        isNative ? "text-gray-400" : "text-teal-500 dark:text-teal-400/90",
+        "cursor-default",
         selectedPath.length && "hover:underline"
       )}
+      /*
       onMouseDown={(ev) => {
         if (isLink) {
           ev.preventDefault();
@@ -403,15 +427,23 @@ function Label({ id }: { id: FieldId }) {
           addImport.dispatch({ id, imports: [] });
         }
       }}
+      */
       onClick={() => {
-        if (!isLink && selectedPath.length) {
-          setPath([]);
-        }
+        setPath([]);
       }}
     >
-      {label || "Ingen label"}
+      <EditableLabel value={label} onChange={onChange} small />
       {isLink && (
-        <button className="rounded-full font-medium px-2 py-0.5 text-xs ring-button-teal text-teal-600 dark:text-teal-400 opacity-40 hover:opacity-100 ml-1 mr-3 flex-center gap-1">
+        <button
+          onMouseDown={(ev) => {
+            if (isLink) {
+              ev.preventDefault();
+              ev.stopPropagation();
+              addImport.dispatch({ id, imports: [] });
+            }
+          }}
+          className="rounded-full font-medium px-2 h-6 flex-center text-xs ring-button-teal text-teal-600 dark:text-teal-400 opacity-60 hover:opacity-100 ml-1 mr-3 flex-center gap-1"
+        >
           <LinkIcon className="w-3 h-3" /> Referer
         </button>
       )}

@@ -235,7 +235,7 @@ export function DefaultField({
           />
           <OverlayWrapper />
           <BottomSelectionArea />
-          <div className="absolute right-0 top-0">
+          <div className="absolute right-2.5 top-0">
             {transforms.length ? (
               <VariableIcon className="w-4 h-4 my-1 opacity-50" />
             ) : null}

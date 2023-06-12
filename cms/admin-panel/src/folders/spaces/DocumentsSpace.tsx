@@ -24,11 +24,16 @@ import { useTemplate } from "../../fields/default/useFieldTemplate";
 import { Menu } from "../../elements/Menu";
 import { useFolder } from "../FoldersContext";
 import { usePush } from "../../collab/CollabContext";
-import { FolderTransactionEntry } from "../../operations/actions";
+import {
+  FolderTransactionEntry,
+  SpaceTransactionEntry,
+} from "../../operations/actions";
 import { createTransaction } from "@storyflow/collab/utils";
 import { useNewDocuments } from "./useNewDocuments";
 import DocumentTable from "../../documents/components/DocumentTable";
 import { useTranslation } from "../../translation/TranslationContext";
+import { EditableLabel } from "../../elements/EditableLabel";
+import { InlineButton } from "../../elements/InlineButton";
 
 export function DocumentsSpace({
   space,
@@ -81,7 +86,9 @@ export function DocumentsSpace({
     return docs;
   }, [newDocuments, documents, template]);
 
-  const push = usePush<FolderTransactionEntry>("folders");
+  const push = usePush<FolderTransactionEntry | SpaceTransactionEntry>(
+    "folders"
+  );
   const handleDeleteSpace = () => {
     push(
       createTransaction((t) => t.target(folderId).splice({ index, remove: 1 }))
@@ -89,48 +96,62 @@ export function DocumentsSpace({
   };
 
   return (
-    <>
-      <Space
-        space={space}
-        index={index}
-        label={
-          <>
-            {t.documents.documents()}
-            <AddDocumentButton folder={folderId} />
-          </>
-        }
-        buttons={
-          <>
-            <Space.Button icon={TrashIcon} onClick={handleDelete} />
-            <Menu as={Space.Button} icon={EllipsisHorizontalIcon} align="right">
-              <ImportButton />
-              <ExportButton />
-              <Menu.Item
-                label={t.folders.deleteSpace()}
-                icon={TrashIcon}
-                onClick={handleDeleteSpace}
-              />
-            </Menu>
-          </>
-        }
-      >
-        {!documents && (
-          <div className="ml-9">
-            <Loader size="md" />
-          </div>
+    <Space
+      space={space}
+      index={index}
+      label={
+        <>
+          <EditableLabel
+            value={space.label || t.documents.documents()}
+            onChange={(value) => {
+              push(
+                createTransaction((t) =>
+                  t
+                    .target(`${folderId}:${space.id}`)
+                    .toggle({ name: "label", value })
+                )
+              );
+            }}
+            small
+          />
+          <AddDocumentButton folder={folderId} />
+        </>
+      }
+      buttons={
+        <>
+          <Menu as={Space.Button} icon={EllipsisHorizontalIcon} align="right">
+            <ImportButton />
+            <ExportButton />
+            <Menu.Item
+              label={t.folders.deleteSpace()}
+              icon={TrashIcon}
+              onClick={handleDeleteSpace}
+            />
+            <Menu.Item
+              label={t.documents.deleteDocuments()}
+              icon={TrashIcon}
+              onClick={handleDelete}
+            />
+          </Menu>
+        </>
+      }
+    >
+      {!documents && (
+        <div className="ml-9">
+          <Loader size="md" />
+        </div>
+      )}
+      <form
+        ref={form}
+        onSubmit={(ev) => ev.preventDefault()}
+        className={cl(
+          "transition-opacity duration-300",
+          !documents ? "opacity-0" : "opacity-100"
         )}
-        <form
-          ref={form}
-          onSubmit={(ev) => ev.preventDefault()}
-          className={cl(
-            "transition-opacity duration-300",
-            !documents ? "opacity-0" : "opacity-100"
-          )}
-        >
-          <DocumentTable columns={columns} documents={rows} />
-        </form>
-      </Space>
-    </>
+      >
+        <DocumentTable columns={columns} documents={rows} />
+      </form>
+    </Space>
   );
 }
 
@@ -228,14 +249,12 @@ function AddDocumentButton({ folder }: { folder: FolderId }) {
   const addDocument = useAddDocument({ navigate: true });
 
   return (
-    <button
-      className={cl(
-        "rounded-full px-2 py-0.5 text-xs ring-button text-gray-600 dark:text-gray-400 ml-3 flex-center gap-1"
-        // "opacity-0 group-hover/space:opacity-100 transition-opacity"
-      )}
+    <InlineButton
+      icon={PlusIcon}
       onClick={() => addDocument({ folder, template })}
+      className="ml-3"
     >
-      <PlusIcon className="w-3 h-3" /> {t.documents.addDocuments({ count: 1 })}
-    </button>
+      {t.documents.addDocuments({ count: 1 })}
+    </InlineButton>
   );
 }

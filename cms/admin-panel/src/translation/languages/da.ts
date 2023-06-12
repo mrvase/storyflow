@@ -16,6 +16,7 @@ export const da = {
   general: {
     accept: "Accepter",
     title: "Titel",
+    noLabel: "Ingen label",
   },
   folders: {
     folders: "Mapper",
@@ -39,7 +40,7 @@ export const da = {
     pages: "(Side|Sider)",
     noDocuments: "Ingen dokumenter",
     addDocuments: "Tilføj(|)",
-    deleteDocuments: "Slet (dokument|dokumenter)",
+    deleteDocuments: "Slet valgt(|e) (dokument|dokumenter)",
     importDocuments: "Importer (dokument|dokumenter)",
     exportDocuments: "Eksporter (dokument|dokumenter)",
     unnamedDocument: "Unavngivet dokument",

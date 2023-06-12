@@ -5,9 +5,18 @@ import Table from "../documents/components/Table";
 // import { useFolders } from "../../folders/collab/hooks";
 import { DragIcon } from "../elements/DragIcon";
 import { useDragItem } from "@storyflow/dnd";
-import type { DBFolder } from "@storyflow/cms/types";
+import type { DBFolder, DocumentSpace, SpaceId } from "@storyflow/cms/types";
+import Space from "../folders/spaces/Space";
+import { useTranslation } from "../translation/TranslationContext";
+
+const space: DocumentSpace = {
+  id: "" as SpaceId,
+  type: "documents",
+};
 
 export function SystemFolderPage() {
+  const t = useTranslation();
+
   const form = React.useRef<HTMLFormElement | null>(null);
 
   const folders = [] as DBFolder[]; // useFolders();
@@ -32,50 +41,26 @@ export function SystemFolderPage() {
 
   return (
     <Content icon={FolderIcon} header="Alle mapper">
-      <div className="px-5">
-        <div>
-          <div className="flex items-center ml-9 mb-1 justify-between">
-            <h2 className=" text-gray-400">Data</h2>
-            <button
-              className="px-3 rounded py-1.5 ring-button text-button"
-              onClick={handleDelete}
-            >
-              <TrashIcon className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-        {folders && (
-          <form ref={form} onSubmit={(ev) => ev.preventDefault()}>
-            <Table
-              labels={["Navn"]}
-              rows={folders.map((el) => ({
-                id: el._id,
-                columns: [
-                  { value: el.label },
-                  {
-                    value: <DragButton folder={el} />,
-                  },
-                ],
-              }))}
-            />
+      <div className="flex flex-col gap-8">
+        <Space
+          space={space}
+          index={0}
+          label={t.folders.folders()}
+          buttons={
+            <>
+              <Space.Button icon={TrashIcon} onClick={handleDelete} />
+            </>
+          }
+        >
+          <form
+            ref={form}
+            onSubmit={(ev) => ev.preventDefault()}
+            className="transition-opacity duration-300"
+          >
+            {/*<DocumentTable columns={columns} documents={rows} />*/}
           </form>
-        )}
+        </Space>
       </div>
     </Content>
-  );
-}
-
-function DragButton({ folder }: { folder: DBFolder }) {
-  const { ref, dragHandleProps } = useDragItem({
-    id: `new-folder-${folder._id}`,
-    type: "folders",
-    item: folder,
-    mode: "move",
-  });
-
-  return (
-    <div ref={ref} {...dragHandleProps} className="cursor-grab">
-      <DragIcon className="w-4 h-4" />
-    </div>
   );
 }

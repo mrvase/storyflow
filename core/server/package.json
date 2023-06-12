@@ -17,7 +17,7 @@
     "jsonwebtoken": "^9.0.0"
   },
   "devDependencies": {
-    "@nanorpc/server": "^0.0.19",
+    "@nanorpc/server": "^0.0.20",
     "@types/cookie": "^0.5.1",
     "@types/jsonwebtoken": "^9.0.2",
     "@types/node": "^17.0.45",
@@ -34,7 +34,7 @@
     "zod": "^3.20.2"
   },
   "peerDependencies": {
-    "@nanorpc/server": "^0.0.19",
+    "@nanorpc/server": "^0.0.20",
     "mongodb": "^4.13.0",
     "zod": "^3.20.2"
   }

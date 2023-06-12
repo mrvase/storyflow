@@ -21,7 +21,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     >
       <Nav />
       <div
-        className="flex flex-col h-screen grow-0 shrink-0 transition-[width] ease-out mx-2"
+        className="flex flex-col h-screen grow-0 shrink-0 ease-out mx-2"
         style={{
           width: `calc(${[
             "100%",

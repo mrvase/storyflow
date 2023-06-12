@@ -4,6 +4,7 @@ export const en = {
   general: {
     accept: "Accept",
     title: "Title",
+    noLabel: "No label",
   },
   folders: {
     folders: "Folders",
@@ -27,7 +28,7 @@ export const en = {
     pages: "(Page|Pages)",
     noDocuments: "No documents",
     addDocuments: "Add(|)",
-    deleteDocuments: "Delete (document|documents)",
+    deleteDocuments: "Delete selected (document|documents)",
     importDocuments: "Import (document|documents)",
     exportDocuments: "Export (document|documents)",
     unnamedDocument: "Unnamed document",

@@ -7,10 +7,12 @@ export function EditableLabel({
   value: initialValue,
   onChange,
   className,
+  small,
 }: {
   value: string;
   onChange: (value: string) => void;
   className?: string;
+  small?: boolean;
 }) {
   const ref = React.useRef<HTMLInputElement | null>(null);
 
@@ -65,8 +67,9 @@ export function EditableLabel({
     <div className="flex justify-start">
       <div
         className={cl(
-          "flex leading-none pl-2 -ml-2 rounded-full",
-          isEditing && "ring-1 ring-yellow-200 dark:ring-yellow-400"
+          "flex leading-none pl-1 -ml-1 rounded",
+          small ? "h-5" : "h-6",
+          isEditing && "ring-1 ring-gray-300 dark:ring-gray-600"
         )}
       >
         <input
@@ -75,7 +78,7 @@ export function EditableLabel({
           onChange={handleChange}
           type="text"
           className={cl(
-            "outline-none padding-0 margin-0 bg-transparent",
+            "h-full flex items-center outline-none padding-0 margin-0 bg-transparent",
             className
           )}
           placeholder="Ingen label"
@@ -99,7 +102,10 @@ export function EditableLabel({
         />
         {isEditing && (
           <div
-            className="ml-2 shrink-0 h-full aspect-square flex-center rounded-full bg-gray-100 text-gray-600 dark:bg-gray-600 dark:text-gray-100 hover:bg-red-100 hover:text-red-600"
+            className={cl(
+              "ml-2 shrink-0 aspect-square flex-center rounded bg-gray-100 text-gray-600 dark:bg-gray-750 dark:text-gray-100 hover:bg-red-100 hover:text-red-600",
+              small ? "w-5 h-5" : "w-6 h-6"
+            )}
             onMouseDown={() => {
               reject();
             }}

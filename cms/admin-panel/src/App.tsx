@@ -22,7 +22,7 @@ export function App({ lang }: { lang?: "da" | "en" }) {
   }, [darkMode]);
 
   return (
-    <div className="w-full h-full bg-gray-100 dark:bg-gray-950 text-gray-800 dark:text-white">
+    <div className="w-full h-full bg-gray-100 dark:bg-gray-950 text-gray-850 dark:text-white">
       <TranslationProvider lang={lang}>
         <Router history={history_}>
           <RouterIsLoading>

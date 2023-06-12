@@ -44,9 +44,6 @@ function Menu<T extends { label: string; disabled?: boolean }>({
             as={as}
             active={open}
             data-focus-remain="true"
-            selected={Boolean(
-              !Array.isArray(selectedArray) || selectedArray.length > 0
-            )}
             icon={icon}
           >
             {selectedArray?.map((el) => el.label).join(", ") || label}
@@ -101,8 +98,8 @@ const MenuItems = ({
       <HeadlessMenu.Items
         static
         className={cl(
-          "bg-white dark:bg-gray-800 rounded flex flex-col outline-none overflow-hidden ring-1 ring-gray-200 dark:ring-gray-600",
-          small ? "w-36" : "w-52",
+          "bg-white dark:bg-gray-800 rounded flex flex-col outline-none overflow-hidden ring-1 ring-gray-200 dark:ring-gray-700 shadow-xl shadow-black/5",
+          small ? "w-44" : "w-64",
           marginTop ?? "mt-1"
         )}
         data-focus-remain="true"
@@ -116,7 +113,7 @@ const MenuItems = ({
 const MenuItem = React.forwardRef<
   HTMLButtonElement,
   React.ComponentProps<"button"> & {
-    icon?: React.FC<{ className: string }>;
+    icon?: React.FC<{ className?: string }>;
     label: string;
     disabled?: boolean;
     selected?: boolean;
@@ -128,7 +125,7 @@ const MenuItem = React.forwardRef<
         <button
           {...props}
           className={cl(
-            "py-2 px-2 flex items-center gap-2 text-xs transition-colors",
+            "py-2 px-2 flex items-center gap-2 text-sm transition-colors",
             active && "rounded bg-gray-100 dark:bg-gray-700",
             disabled ? "text-gray-400" : "",
             props.className
@@ -158,12 +155,14 @@ function MenuDragItem<T>({
   item,
   type,
   id,
+  icon,
   onClick: onClickFromProps,
 }: {
   label: string;
   item: T;
   type: string;
   id: string;
+  icon?: React.FC<{ className?: string }>;
   onClick?: (value: T) => void;
 }) {
   const { ref, dragHandleProps } = useDragItem({
@@ -181,6 +180,7 @@ function MenuDragItem<T>({
     <Menu.Item
       ref={ref as React.MutableRefObject<HTMLButtonElement | null>}
       {...dragHandleProps}
+      icon={icon}
       onClick={onClick}
       label={label}
       className="cursor-grab"

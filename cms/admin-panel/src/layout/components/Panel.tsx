@@ -12,13 +12,14 @@ import { useSortableItem } from "@storyflow/dnd";
 import { getTranslateDragEffect } from "../../utils/dragEffects";
 import { LinkReceiver } from "./LinkReceiver";
 import { VisitedLinks } from "./VisitedLinks";
-import { useLocation, useRoute } from "@nanokit/router";
+import { useLocation, useNavigate, useRoute } from "@nanokit/router";
 import { NestedTransitionRoutes } from "@nanokit/router/routes/nested-transition";
+import { navigateFocusedPanel } from "../../custom-events";
 
 function ErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
   const [showMessage, toggleMessage] = React.useReducer((ps) => !ps, false);
   return (
-    <div className="p-5 bg-white dark:bg-gray-850 text-center h-full text-gray-700 dark:text-white">
+    <div className="p-5 bg-white dark:bg-gray-850 text-center h-full">
       Der skete en fejl 💥
       <br />
       <br />
@@ -52,7 +53,20 @@ function ErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
   );
 }
 
-export function Panel({ children }: { children: React.ReactNode }) {
+function RemoteNavigationEvents({ isFocused }: { isFocused?: boolean }) {
+  const navigate = useNavigate();
+
+  React.useEffect(() => {
+    if (!isFocused) return;
+    return navigateFocusedPanel.subscribe((path) => {
+      navigate(path);
+    });
+  }, [isFocused, navigate]);
+
+  return null;
+}
+
+export function Panel() {
   const { pathname } = useLocation();
   const single = pathname.split("/~").length - 1 === 1;
 
@@ -71,6 +85,7 @@ export function Panel({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      <RemoteNavigationEvents isFocused={isFocused} />
       {route.index !== 0 && (
         <PanelResizeHandle
           className={cl("group h-full relative", "w-2")}
@@ -103,20 +118,22 @@ export function Panel({ children }: { children: React.ReactNode }) {
             ref={ref}
             {...handlers}
             className={cl(
-              "@container w-full h-full flex flex-col rounded-md overflow-hidden border border-gray-200 dark:border-gray-800"
+              "@container w-full h-full flex flex-col rounded-md overflow-hidden"
+              // "border border-gray-200 dark:border-gray-800"
             )}
           >
+            <div className="w-full h-[11.75rem] absolute bg-white dark:bg-gray-800 border-b border-gray-750" />
+            <div className="w-full mt-[11.75rem] h-full absolute bg-white dark:bg-gray-850" />
             <LocationBar
               isFocused={isFocused}
               dragHandleProps={dragHandleProps}
               matches={route.children}
             />
             <ErrorBoundary FallbackComponent={ErrorFallback}>
-              <div className="h-[calc(100vh-48px)] relative overflow-hidden bg-white dark:bg-gray-850">
+              <div className="h-full relative overflow-hidden">
                 <NestedTransitionRoutes />
               </div>
             </ErrorBoundary>
-            <VisitedLinks />
           </div>
         </ResizablePanel>
       </BranchFocusContext.Provider>

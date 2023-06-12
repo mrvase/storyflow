@@ -6,6 +6,7 @@ import useIsFocused from "../../utils/useIsFocused";
 import { DragIcon } from "../../elements/DragIcon";
 import { useSortableItem } from "@storyflow/dnd";
 import { getTranslateDragEffect } from "../../utils/dragEffects";
+import { InlineButton } from "../../elements/InlineButton";
 
 function Space({
   space,
@@ -52,7 +53,7 @@ function Space({
       )}
       {...(isOpen ? handlers : {})}
     >
-      <div className="flex items-center mb-3.5 h-7">
+      <div className="flex items-center mb-3.5 h-6">
         <div
           className={cl(
             "cursor-grab transition-opacity w-4 mr-5 hidden @sm:block",
@@ -79,30 +80,10 @@ function Space({
 const Button = React.forwardRef<
   HTMLButtonElement,
   React.ComponentProps<"button"> & {
-    icon?: React.FC<{ className: string }>;
+    icon?: React.FC<{ className?: string }>;
     active?: boolean;
-    selected?: boolean;
   }
->(({ icon: Icon, active, selected, ...props }, ref) => {
-  return (
-    <button
-      ref={ref}
-      {...props}
-      className={cl(
-        "shrink-0 w-5 h-5 rounded-full ring-button p-1",
-        selected === false
-          ? "text-gray-800 dark:text-white text-opacity-50 dark:text-opacity-50"
-          : "text-button",
-        active &&
-          "text-opacity-100 dark:text-opacity-100 ring-gray-300 dark:ring-gray-600",
-        props.className
-      )}
-    >
-      {Icon && <Icon className="w-3 h-3" />}
-      {props.children}
-    </button>
-  );
-});
+>((props, ref) => <InlineButton ref={ref as any} {...props} />);
 
 export default Object.assign(Space, {
   Button,

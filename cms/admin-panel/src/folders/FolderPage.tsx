@@ -12,7 +12,7 @@ import {
   PencilIcon,
   PlusIcon,
   StopIcon,
-} from "@heroicons/react/24/outline";
+} from "@heroicons/react/24/solid";
 import { EditableLabel } from "../elements/EditableLabel";
 import cl from "clsx";
 import type { DocumentId } from "@storyflow/shared/types";
@@ -54,6 +54,7 @@ import { appMutate } from "../clients/client-app";
 import { isError } from "@nanorpc/client";
 import { useNavigate, usePath, useRoute } from "@nanokit/router";
 import { ROOT_FOLDER } from "@storyflow/cms/constants";
+import { DragIcon } from "../elements/DragIcon";
 
 const spaces: { label: string; item: Omit<Space, "id"> }[] = [
   {
@@ -237,14 +238,14 @@ export default function FolderPage({
                   <Content.ToolbarDragButton
                     id={`nyt-space-mapper`}
                     type="spaces"
-                    icon={StopIcon}
+                    icon={DragIcon}
                     label="Mapper"
                     item={spaces[0].item}
                   />
                   <Content.ToolbarDragButton
                     id={`nyt-space-dokumenter`}
                     type="spaces"
-                    icon={StopIcon}
+                    icon={DragIcon}
                     label="Dokumenter"
                     item={spaces[1].item}
                   />
@@ -258,6 +259,7 @@ export default function FolderPage({
                         key={el.label}
                         type="spaces"
                         id={`nyt-space-${el.label}`}
+                        icon={DragIcon}
                         onClick={onClick}
                         {...el}
                       />
@@ -350,9 +352,7 @@ function FolderLabel({
     <EditableLabel
       value={folder.label ?? ""}
       onChange={onChange}
-      className={cl(
-        isApp ? "text-yellow-400 dark:text-yellow-300" : "font-medium"
-      )}
+      className={cl("font-medium")}
     />
   );
 }
@@ -499,14 +499,6 @@ function RefreshButton({
 
   return (
     <>
-      {count > 0 && (
-        <span
-          title={(data ?? []).join(", ")}
-          className="text-xs opacity-50 ml-5 cursor-default hover:underline"
-        >
-          {t.folders.pagesChanged({ count })}
-        </span>
-      )}
       <div className="relative ml-5">
         {/*isLoading && (
         <div className="absolute inset-0 flex-center">
@@ -532,8 +524,9 @@ function RefreshButton({
               <div className="w-8 h-8 bg-teal-300 rounded-full animate-ping-lg" />
             </div>
           )}
-          <ArrowPathIcon className="w-3 h-3" />
+          <ArrowPathIcon className="w-4 h-4" />
           {t.folders.refresh()}
+          {count > 0 && <span>({count})</span>}
         </button>
       </div>
     </>

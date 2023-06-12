@@ -149,10 +149,9 @@ const Button = React.forwardRef<
       ref={ref}
       {...props}
       className={cl(
-        "rounded-full w-5 h-5 bg-gray-850 ring-1 ring-gray-600 flex-center transition-opacity",
-        active
-          ? "opacity-100"
-          : "opacity-0 group-hover:opacity-75 group-hover:hover:opacity-100"
+        "rounded-full w-5 h-5 bg-gray-800 ring-button flex-center",
+        "opacity-0 group-hover:opacity-100",
+        active && "ring-gray-300 dark:ring-gray-600"
       )}
     >
       {Icon && <Icon className="w-3 h-3" />}

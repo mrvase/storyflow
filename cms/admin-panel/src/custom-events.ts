@@ -5,6 +5,9 @@ import {
   RawFieldId,
 } from "@storyflow/shared/types";
 
+export const navigateFocusedPanel = createEvent<string>(
+  "navigate-focused-panel"
+);
 export const addFile = createEvent<string>("add-file");
 export const addImport = createEvent<{
   id: FieldId;

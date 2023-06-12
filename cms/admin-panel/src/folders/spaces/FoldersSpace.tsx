@@ -21,6 +21,8 @@ import {
   SpaceTransactionEntry,
 } from "../../operations/actions";
 import { useTranslation } from "../../translation/TranslationContext";
+import { EditableLabel } from "../../elements/EditableLabel";
+import { InlineButton } from "../../elements/InlineButton";
 
 export function FoldersSpace({
   space,
@@ -37,7 +39,10 @@ export function FoldersSpace({
 
   const [dialogIsOpen, setDialogIsOpen] = React.useState<null | string>(null);
 
-  const push = usePush<FolderTransactionEntry>("folders");
+  const push = usePush<FolderTransactionEntry | SpaceTransactionEntry>(
+    "folders"
+  );
+
   const handleDeleteSpace = () => {
     push(
       createTransaction((t) => t.target(folderId).splice({ index, remove: 1 }))
@@ -57,7 +62,19 @@ export function FoldersSpace({
         index={index}
         label={
           <>
-            Mapper
+            <EditableLabel
+              value={space.label || t.folders.folders()}
+              onChange={(value) => {
+                push(
+                  createTransaction((t) =>
+                    t
+                      .target(`${folderId}:${space.id}`)
+                      .toggle({ name: "label", value })
+                  )
+                );
+              }}
+              small
+            />
             <AddFolderButton onClick={() => setDialogIsOpen("add-folder")} />
           </>
         }
@@ -159,14 +176,8 @@ function FolderGrid({
 function AddFolderButton({ onClick }: { onClick: any }) {
   const t = useTranslation();
   return (
-    <button
-      className={cl(
-        "rounded-full px-2 py-0.5 text-xs ring-button text-gray-600 dark:text-gray-400 ml-3 flex-center gap-1"
-        // "opacity-0 group-hover/space:opacity-100 transition-opacity"
-      )}
-      onClick={onClick}
-    >
-      <PlusIcon className="w-3 h-3" /> {t.folders.addFolder()}
-    </button>
+    <InlineButton icon={PlusIcon} onClick={onClick} className="ml-3">
+      {t.folders.addFolder()}
+    </InlineButton>
   );
 }

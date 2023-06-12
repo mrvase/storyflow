@@ -10,6 +10,8 @@ import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
 import { useDocumentLabel } from "../useDocumentLabel";
 import { useTranslation } from "../../translation/TranslationContext";
 import { useNavigate, useRoute } from "@nanokit/router";
+import { TEMPLATE_FOLDER } from "@storyflow/cms/constants";
+import { InlineButton } from "../../elements/InlineButton";
 
 export default function Table({
   columns,
@@ -103,7 +105,14 @@ function Row({
   const { index: panelIndex } = useRoute("parallel");
   const navigate = useNavigate();
 
-  const to = `${route.accumulated}/d/${parseInt(doc._id, 16).toString(16)}`;
+  const type = route.accumulated.endsWith(
+    `/${parseInt(TEMPLATE_FOLDER, 16).toString(16)}`
+  )
+    ? "t"
+    : "d";
+  const to = `${route.accumulated}/${type}/${parseInt(doc._id, 16).toString(
+    16
+  )}`;
 
   const { dragHandleProps } = useDragItem({
     type: `link:${panelIndex}`,
@@ -170,16 +179,16 @@ function Row({
       })}
       {button && (
         <td className={cl("p-2.5")}>
-          <button
-            className="ml-auto rounded-full px-1 @md:px-2 py-1 -my-1 text-xs font-medium text-gray-800 dark:text-white text-opacity-50 hover:text-opacity-100 dark:text-opacity-50 dark:hover:text-opacity-100 ring-button flex items-center gap-2 whitespace-nowrap"
+          <InlineButton
+            icon={button.icon}
             onClick={(ev) => {
               ev.stopPropagation();
               button.onClick(doc);
             }}
+            className="whitespace-nowrap"
           >
-            <button.icon className="w-3 h-3" />
             <span className="hidden @md:inline">{button.label}</span>
-          </button>
+          </InlineButton>
         </td>
       )}
     </tr>

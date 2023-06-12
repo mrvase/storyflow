@@ -53,68 +53,70 @@ export function TemplateHeader({
   if (!template && !isNested) return null;
 
   return (
-    <div
-      className={cl(
-        "w-full flex divide-x divide-gray-200 dark:divide-gray-700 rounded mt-1 mb-2.5 py-1",
-        "dark:text-gray-300",
-        "text-sm",
-        "ring-1 ring-gray-200 dark:ring-gray-700"
-      )}
-    >
-      <HeadlessMenu>
-        {({ open }) => (
-          <div className="relative">
-            <HeadlessMenu.Button
-              as="button"
-              className={cl(
-                "h-full flex-center transition-opacity px-3.5 gap-2",
-                open ? "opacity-100" : "opacity-50 hover:opacity-100"
-              )}
-            >
-              {open ? (
-                <ChevronUpIcon className="w-4 h-4" />
-              ) : (
-                <ChevronDownIcon className="w-4 h-4" />
-              )}
-              {!template && "Vælg skabelon"}
-            </HeadlessMenu.Button>
-            <Menu.Items align="left" open={open} marginTop="mt-2">
-              <TransformMenu id={id} transforms={transforms} />
-              {isNested && <TemplateMenu id={id} transforms={transforms} />}
-            </Menu.Items>
-          </div>
+    <div className="px-2.5">
+      <div
+        className={cl(
+          "w-full flex divide-x divide-gray-200 dark:divide-gray-700 rounded mt-1 mb-2.5 py-1",
+          "dark:text-gray-300",
+          "text-sm",
+          "ring-1 ring-gray-200 dark:ring-gray-700"
         )}
-      </HeadlessMenu>
-      {(template ?? []).map(({ id: columnId, label }) => (
-        <div
-          key={columnId}
-          className={cl(
-            "group grow shrink basis-0 flex items-center gap-1 px-2 overflow-hidden"
+      >
+        <HeadlessMenu>
+          {({ open }) => (
+            <div className="relative">
+              <HeadlessMenu.Button
+                as="button"
+                className={cl(
+                  "h-full flex-center transition-opacity px-3.5 gap-2",
+                  open ? "opacity-100" : "opacity-50 hover:opacity-100"
+                )}
+              >
+                {open ? (
+                  <ChevronUpIcon className="w-4 h-4" />
+                ) : (
+                  <ChevronDownIcon className="w-4 h-4" />
+                )}
+                {!template && "Vælg skabelon"}
+              </HeadlessMenu.Button>
+              <Menu.Items align="left" open={open} marginTop="mt-2">
+                <TransformMenu id={id} transforms={transforms} />
+                {isNested && <TemplateMenu id={id} transforms={transforms} />}
+              </Menu.Items>
+            </div>
           )}
-        >
-          <span
-            className={cl("truncate", isLink && "cursor-alias")}
-            onMouseDown={(ev) => {
-              if (isLink) {
-                ev.preventDefault();
-                addImport.dispatch({
-                  id,
-                  templateId: createRawTemplateFieldId(columnId),
-                  imports: [],
-                });
-              }
-            }}
+        </HeadlessMenu>
+        {(template ?? []).map(({ id: columnId, label }) => (
+          <div
+            key={columnId}
+            className={cl(
+              "group grow shrink basis-0 flex items-center gap-1 px-2 overflow-hidden"
+            )}
           >
-            {label}
-          </span>
-          {isLink && <LinkIcon className="w-3 h-3 opacity-50" />}
-          {/*(
+            <span
+              className={cl("truncate", isLink && "cursor-alias")}
+              onMouseDown={(ev) => {
+                if (isLink) {
+                  ev.preventDefault();
+                  addImport.dispatch({
+                    id,
+                    templateId: createRawTemplateFieldId(columnId),
+                    imports: [],
+                  });
+                }
+              }}
+            >
+              {label}
+            </span>
+            {isLink && <LinkIcon className="w-3 h-3 opacity-50" />}
+            {/*(
               <div className="w-6 h-6 flex-center ml-auto">
                 <LinkIcon className="w-3 h-3 opacity-50 group-hover:opacity-100" />
               </div>
             )*/}
-        </div>
-      ))}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

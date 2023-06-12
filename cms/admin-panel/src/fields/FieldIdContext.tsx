@@ -7,6 +7,7 @@ import type { Option } from "@storyflow/shared/types";
 export const FieldIdContext = React.createContext<FieldId | null>(null);
 export const useFieldId = (): FieldId =>
   useContextWithError(FieldIdContext, "FieldId");
+export const useFieldIdUnsafe = () => React.useContext(FieldIdContext);
 
 export const FieldRestrictionsContext = React.createContext<FieldType2 | null>(
   null
