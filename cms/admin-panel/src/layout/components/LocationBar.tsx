@@ -23,6 +23,48 @@ import { Link } from "@nanokit/router";
 import { getFolderData } from "../../folders/getFolderData";
 import { useNavigate, usePath, useRoute, useMatches } from "@nanokit/router";
 import { actions } from "../../pages/routes";
+import {
+  ArrowLeftIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+} from "@heroicons/react/24/outline";
+import { useContextWithError } from "../../utils/contextError";
+import ReactDOM from "react-dom";
+
+type Portals = [HTMLDivElement | null, HTMLElement | null];
+
+const ToolbarPortalContext = React.createContext<
+  [Portals, React.Dispatch<React.SetStateAction<Portals>>] | null
+>(null);
+
+export function ToolbarPortalProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const state = React.useState<Portals>([null, null]);
+  return (
+    <ToolbarPortalContext.Provider value={state}>
+      {children}
+    </ToolbarPortalContext.Provider>
+  );
+}
+
+export function ToolbarPortal({
+  children,
+  show,
+  secondary,
+}: {
+  children: React.ReactNode;
+  show: boolean;
+  secondary?: boolean;
+}) {
+  const [portals] = useContextWithError(ToolbarPortalContext, "ToolbarPortal");
+
+  const portal = portals[secondary ? 1 : 0];
+
+  return portal && show ? ReactDOM.createPortal(children, portal) : null;
+}
 
 export function LocationBar({
   isFocused,
@@ -33,6 +75,11 @@ export function LocationBar({
   dragHandleProps: any;
   matches?: ReturnType<typeof useMatches>;
 }) {
+  const [, setToolbar] = useContextWithError(
+    ToolbarPortalContext,
+    "ToolbarPortal"
+  );
+
   const { pathname } = usePath();
   const route = useRoute();
 
@@ -43,15 +90,15 @@ export function LocationBar({
       <div className="relative w-full shrink-0 grow-0" {...dragHandleProps}>
         <div
           className={cl(
-            "h-16 flex pr-2 overflow-x-auto dark:text-white",
+            "h-20 flex pr-2 overflow-x-auto dark:text-white",
             isFocused ? "opacity-100" : "opacity-25"
           )}
         >
           <Link
             to="/~"
-            className="h-12 flex-center ml-2 w-10 text-gray-500 hover:text-white transition-colors"
+            className="h-20 flex-center ml-2 w-10 text-gray-500 hover:text-white transition-colors"
           >
-            <HomeIcon className="w-5 h-5" />
+            <ChevronLeftIcon className="w-5 h-5" />
           </Link>
           <button
             className="shrink-0 ml-auto mr-2 flex items-center justify-center h-full px-3"
@@ -68,33 +115,49 @@ export function LocationBar({
     );
   }
 
+  const setPrimaryPortal = React.useCallback(
+    (ref: HTMLDivElement | null) => setToolbar((ps) => [ref, ps[1]]),
+    []
+  );
+  const setSecondaryPortal = React.useCallback(
+    (ref: HTMLDivElement | null) => setToolbar((ps) => [ps[0], ref]),
+    []
+  );
+
   return (
     <div className="relative w-full shrink-0 grow-0" {...dragHandleProps}>
       <div
         className={cl(
-          "h-12 pt-4 flex pr-2 overflow-x-auto dark:text-white",
+          "h-20 flex justify-between",
           isFocused ? "opacity-100" : "opacity-25"
         )}
       >
-        {matches.length > 1 && (
+        <div className="flex">
           <Link
-            to="/~"
-            className="group h-8 flex-center ml-2.5 w-10 transition-colors"
+            to={route.accumulated.split("/").slice(0, -2).join("/")}
+            className={cl(
+              "group h-20 flex-center ml-2.5 w-10 transition-colors",
+              matches.length === 1 && "opacity-0 pointer-events-none"
+            )}
           >
-            <HomeIcon className="w-5 h-5 text-gray-400 group-hover:text-gray-500 dark:text-gray-500 dark:group-hover:text-gray-300" />
+            <ArrowLeftIcon className="w-5 h-5 text-gray-400 group-hover:text-gray-500 dark:text-gray-500 dark:group-hover:text-gray-300" />
           </Link>
-        )}
-        <div className="flex gap-6 pl-2.5 h-full overflow-x-auto no-scrollbar grow">
-          {matches.slice(1).map((match, index) => (
-            <LocationBarItem
-              key={match.accumulated}
-              match={match}
-              isCurrent={index === matches.length - 2}
-              panelIndex={route.index}
-            />
-          ))}
-        </div>
-        {/*<button
+
+          <div className="flex gap-4 pl-2.5 h-full overflow-x-auto no-scrollbar">
+            {matches.map((match, index) => (
+              <React.Fragment key={match.accumulated}>
+                {index > 0 && (
+                  <ChevronRightIcon className="w-2.5 h-2.5 self-center" />
+                )}
+                <LocationBarItem
+                  match={match}
+                  isCurrent={index === matches.length - 1}
+                  panelIndex={route.index}
+                />
+              </React.Fragment>
+            ))}
+          </div>
+          {/*<button
           className={cl(
             "shrink-0 ml-auto flex items-center justify-center h-full px-2",
             "opacity-50 hover:opacity-100 transition-opacity"
@@ -102,43 +165,40 @@ export function LocationBar({
         >
           <BookmarkIcon className="w-5 h-5" />
         </button>*/}
-        <button
-          className={cl(
-            "shrink-0 flex items-center justify-center h-full px-2",
-            "opacity-50 hover:opacity-100 transition-opacity"
-          )}
-          onClick={(ev) => {
-            ev.stopPropagation();
-            actions.open({
-              path: pathname,
-              index: route.index + 1,
-            });
-          }}
-        >
-          <Square2StackIcon className="w-5 h-5" />
-        </button>
-        <button
-          className={cl(
-            "shrink-0 flex items-center justify-center h-full px-2",
-            "opacity-50 hover:opacity-100 transition-opacity"
-          )}
-          onMouseDown={(ev) => ev.stopPropagation()} // prevent focus
-          onClick={(ev) => {
-            ev.stopPropagation();
-            actions.close(route.index);
-          }}
-        >
-          <XMarkIcon className="w-5 h-5" />
-        </button>
+        </div>
+        <div className="flex items-center pr-3.5 gap-2.5">
+          <div ref={setPrimaryPortal} className="flex h-20 items-center" />
+          <button
+            className={cl(
+              "shrink-0 flex items-center justify-center h-full px-1.5",
+              "opacity-50 hover:opacity-100 transition-opacity"
+            )}
+            onMouseDown={(ev) => ev.stopPropagation()} // prevent focus
+            onClick={(ev) => {
+              actions.open({ path: pathname, index: route.index + 1 });
+            }}
+          >
+            <Square2StackIcon className="w-5 h-5" />
+          </button>
+          <button
+            className={cl(
+              "shrink-0 flex items-center justify-center h-full px-1.5",
+              "opacity-50 hover:opacity-100 transition-opacity"
+            )}
+            onMouseDown={(ev) => ev.stopPropagation()} // prevent focus
+            onClick={(ev) => {
+              ev.stopPropagation();
+              actions.close(route.index);
+            }}
+          >
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
       </div>
+      <div ref={setSecondaryPortal} className="w-full" />
     </div>
   );
 }
-
-const loadingState = {
-  type: "loading",
-  label: "",
-};
 
 function LocationBarItem({
   match,
@@ -207,7 +267,7 @@ function LocationBarItem({
     <button
       {...dragHandleProps}
       className={cl(
-        "group h-8 text-sm leading-none rounded-md",
+        "group h-20 text-sm leading-none rounded-md",
         !isCurrent
           ? "text-gray-600 dark:text-gray-200 hover:text-gray-850 dark:hover:text-white transition-colors font-semibold hover:underline"
           : type === "template"

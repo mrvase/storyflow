@@ -7,12 +7,12 @@ export function EditableLabel({
   value: initialValue,
   onChange,
   className,
-  small,
+  large,
 }: {
   value: string;
   onChange: (value: string) => void;
   className?: string;
-  small?: boolean;
+  large?: boolean;
 }) {
   const ref = React.useRef<HTMLInputElement | null>(null);
 
@@ -68,7 +68,7 @@ export function EditableLabel({
       <div
         className={cl(
           "flex leading-none pl-1 -ml-1 rounded",
-          small ? "h-5" : "h-6",
+          large ? "h-8 text-3xl" : "h-5 text-sm",
           isEditing && "ring-1 ring-gray-300 dark:ring-gray-600"
         )}
       >
@@ -104,7 +104,7 @@ export function EditableLabel({
           <div
             className={cl(
               "ml-2 shrink-0 aspect-square flex-center rounded bg-gray-100 text-gray-600 dark:bg-gray-750 dark:text-gray-100 hover:bg-red-100 hover:text-red-600",
-              small ? "w-5 h-5" : "w-6 h-6"
+              large ? "w-8 h-8" : "w-5 h-5"
             )}
             onMouseDown={() => {
               reject();

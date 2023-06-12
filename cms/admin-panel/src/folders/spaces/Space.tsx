@@ -58,7 +58,7 @@ function Space({
           className={cl(
             "cursor-grab transition-opacity w-4 mr-5 hidden @sm:block",
             isOpen
-              ? "opacity-75 hover:opacity-100"
+              ? "opacity-50 hover:opacity-100"
               : "opacity-0 pointer-events-none"
           )}
           {...dragHandleProps}
@@ -82,6 +82,7 @@ const Button = React.forwardRef<
   React.ComponentProps<"button"> & {
     icon?: React.FC<{ className?: string }>;
     active?: boolean;
+    color?: "gray" | "teal";
   }
 >((props, ref) => <InlineButton ref={ref as any} {...props} />);
 

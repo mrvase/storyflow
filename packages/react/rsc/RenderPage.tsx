@@ -219,6 +219,7 @@ const RenderElement = ({
               key={newIndex}
               ctx={newCtx}
               symbol={symbol}
+              parentOptions={options}
               {...props}
             />
           );
@@ -247,6 +248,7 @@ function RenderElementWithProps({
   component: Component,
   createComponentContext,
   index,
+  parentOptions,
 }: {
   id: NestedDocumentId;
   type: string;
@@ -257,6 +259,7 @@ function RenderElementWithProps({
   component: Component<PropConfigRecord>;
   createComponentContext: (regularProps: Record<string, any>) => Context[];
   index: number;
+  parentOptions?: ConfigRecord;
 }) {
   const resolveProps = (props: PropConfigRecord, group: string = "") => {
     const [regularEntries, childrenEntries] = splitProps(props);
@@ -299,7 +302,10 @@ function RenderElementWithProps({
           <RenderChildren
             value={Array.isArray(value[0]) ? value[0] : value}
             record={record}
-            options={(config as PropConfig).options as ConfigRecord | undefined} // WE ARE USING PARENT OPTIONS ON PURPOSE!
+            options={
+              parentOptions ??
+              ((config as PropConfig).options as ConfigRecord | undefined)
+            } // WE ARE USING PARENT OPTIONS ON PURPOSE!
             ctx={{
               ...ctx,
               contexts,

@@ -13,6 +13,7 @@ function Menu<T extends { label: string; disabled?: boolean }>({
   onClear,
   align,
   small,
+  secondary,
   ...props
 }: {
   as: any;
@@ -22,6 +23,7 @@ function Menu<T extends { label: string; disabled?: boolean }>({
   align?: "left" | "right";
   onClear?: () => void;
   small?: boolean;
+  secondary?: boolean;
 } & (
   | {
       options: T[];
@@ -45,6 +47,8 @@ function Menu<T extends { label: string; disabled?: boolean }>({
             active={open}
             data-focus-remain="true"
             icon={icon}
+            secondary={secondary}
+            menu
           >
             {selectedArray?.map((el) => el.label).join(", ") || label}
           </HeadlessMenu.Button>
@@ -93,12 +97,12 @@ const MenuItems = ({
   return (
     <MenuTransition
       show={open}
-      className={cl("absolute z-10", align === "right" && "right-0")}
+      className={cl("absolute z-20", align === "right" && "right-0")}
     >
       <HeadlessMenu.Items
         static
         className={cl(
-          "bg-white dark:bg-gray-800 rounded flex flex-col outline-none overflow-hidden ring-1 ring-gray-200 dark:ring-gray-700 shadow-xl shadow-black/5",
+          "bg-white dark:bg-gray-850 rounded flex flex-col outline-none overflow-hidden ring-1 ring-gray-200 dark:ring-gray-700 shadow-xl shadow-black/5",
           small ? "w-44" : "w-64",
           marginTop ?? "mt-1"
         )}
@@ -126,7 +130,7 @@ const MenuItem = React.forwardRef<
           {...props}
           className={cl(
             "py-2 px-2 flex items-center gap-2 text-sm transition-colors",
-            active && "rounded bg-gray-100 dark:bg-gray-700",
+            active && "rounded bg-gray-100 dark:bg-gray-800",
             disabled ? "text-gray-400" : "",
             props.className
           )}

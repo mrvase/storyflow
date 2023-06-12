@@ -53,8 +53,9 @@ import { useQuery } from "@nanorpc/client/swr";
 import { appMutate } from "../clients/client-app";
 import { isError } from "@nanorpc/client";
 import { useNavigate, usePath, useRoute } from "@nanokit/router";
-import { ROOT_FOLDER } from "@storyflow/cms/constants";
 import { DragIcon } from "../elements/DragIcon";
+import { InlineButton } from "../elements/InlineButton";
+import { LinkIcon } from "@heroicons/react/24/outline";
 
 const spaces: { label: string; item: Omit<Space, "id"> }[] = [
   {
@@ -203,88 +204,84 @@ export default function FolderPage({
     <FolderContext.Provider value={folder}>
       <FolderDomainsProvider domains={folder?.domains}>
         <FocusOrchestrator>
-          <Content
-            small={!isSelected && nextIsDocument}
-            icon={type === "app" ? ComputerDesktopIcon : FolderIcon}
-            header={
-              <FolderLabel
-                isApp={type === "app"}
-                folder={folder}
-                onChange={(value) => {
-                  mutateProp("label", value);
-                }}
-              />
-            }
-            toolbar={
-              <>
-                <Content.Toolbar>
-                  {type === "data" && (
-                    <FolderTemplateButton
-                      template={folder?.template}
-                      openDialog={() => setTemplateDialogIsOpen(true)}
+          <Content small={!isSelected && nextIsDocument}>
+            <Content.Header>
+              <div>
+                <FolderLabel
+                  isApp={type === "app"}
+                  folder={folder}
+                  onChange={(value) => {
+                    mutateProp("label", value);
+                  }}
+                />
+              </div>
+              <Content.Toolbar>
+                {type === "data" && (
+                  <FolderTemplateButton
+                    template={folder?.template}
+                    openDialog={() => setTemplateDialogIsOpen(true)}
+                  />
+                )}
+                {folder && (
+                  <>
+                    <DomainsButton
+                      parentDomains={parentDomains ?? undefined}
+                      domains={folder.domains}
+                      mutate={(domains) => mutateProp("domains", domains)}
                     />
-                  )}
-                  {folder && (
-                    <>
-                      <DomainsButton
-                        parentDomains={parentDomains ?? undefined}
-                        domains={folder.domains}
-                        mutate={(domains) => mutateProp("domains", domains)}
-                      />
-                    </>
-                  )}
-                </Content.Toolbar>
-                <Content.Toolbar secondary>
-                  <Content.ToolbarDragButton
-                    id={`nyt-space-mapper`}
-                    type="spaces"
-                    icon={DragIcon}
-                    label="Mapper"
-                    item={spaces[0].item}
-                  />
-                  <Content.ToolbarDragButton
-                    id={`nyt-space-dokumenter`}
-                    type="spaces"
-                    icon={DragIcon}
-                    label="Dokumenter"
-                    item={spaces[1].item}
-                  />
-                  <Menu
-                    as={Content.ToolbarButton}
-                    label="Andre spaces"
-                    icon={StopIcon}
+                  </>
+                )}
+                {type === "app" && folder ? (
+                  <div
+                    className={cl(
+                      "flex-center",
+                      "transition-opacity",
+                      true ? "opacity-100" : "opacity-0 pointer-events-none"
+                    )}
                   >
-                    {spaces.slice(2).map((el) => (
-                      <Menu.DragItem
-                        key={el.label}
-                        type="spaces"
-                        id={`nyt-space-${el.label}`}
-                        icon={DragIcon}
-                        onClick={onClick}
-                        {...el}
-                      />
-                    ))}
-                  </Menu>
-                </Content.Toolbar>
-              </>
-            }
-            buttons={
-              type === "app" && folder ? (
-                <div
-                  className={cl(
-                    "flex-center",
-                    "transition-opacity",
-                    true ? "opacity-100" : "opacity-0 pointer-events-none"
-                  )}
-                >
-                  <RefreshButton
-                    namespace={folder._id}
-                    domain={folder?.domains?.[0]}
+                    <RefreshButton
+                      namespace={folder._id}
+                      domain={folder?.domains?.[0]}
+                    />
+                  </div>
+                ) : undefined}
+              </Content.Toolbar>
+            </Content.Header>
+            <Content.SecondaryToolbar>
+              <Content.ToolbarDragButton
+                id={`nyt-space-mapper`}
+                type="spaces"
+                icon={DragIcon}
+                label="Mapper"
+                item={spaces[0].item}
+                secondary
+              />
+              <Content.ToolbarDragButton
+                id={`nyt-space-dokumenter`}
+                type="spaces"
+                icon={DragIcon}
+                label="Dokumenter"
+                item={spaces[1].item}
+                secondary
+              />
+              <Menu
+                as={Content.ToolbarButton}
+                label="Andre spaces"
+                icon={StopIcon}
+                secondary
+              >
+                {spaces.slice(2).map((el) => (
+                  <Menu.DragItem
+                    key={el.label}
+                    type="spaces"
+                    id={`nyt-space-${el.label}`}
+                    icon={DragIcon}
+                    onClick={onClick}
+                    {...el}
                   />
-                </div>
-              ) : undefined
-            }
-          >
+                ))}
+              </Menu>
+            </Content.SecondaryToolbar>
             {folder && (
               <>
                 <AddTemplateDialog
@@ -334,26 +331,32 @@ function FolderLabel({
 }) {
   const [focused] = useFieldFocus();
 
-  return focused ? (
-    <div
-      className="py-0.5 cursor-alias"
-      onMouseDown={(ev) => {
-        if (!focused) return;
-        ev.preventDefault();
-        addNestedFolder.dispatch({
-          folderId: folder._id,
-          templateId: folder.template,
-        });
-      }}
-    >
-      {folder.label ?? ""}
+  return (
+    <div className="flex gap-5 items-center">
+      <EditableLabel
+        value={folder.label ?? ""}
+        onChange={onChange}
+        className="font-medium"
+        large
+      />
+      {focused && (
+        <InlineButton
+          onMouseDown={(ev) => {
+            ev.preventDefault();
+            addNestedFolder.dispatch({
+              folderId: folder._id,
+              templateId: folder.template,
+            });
+          }}
+          icon={LinkIcon}
+          color="teal"
+          data-focus-remain="true"
+          data-focus-ignore="true"
+        >
+          Referer
+        </InlineButton>
+      )}
     </div>
-  ) : (
-    <EditableLabel
-      value={folder.label ?? ""}
-      onChange={onChange}
-      className={cl("font-medium")}
-    />
   );
 }
 
@@ -380,13 +383,18 @@ export function FolderTemplateButton({
         }}
         icon={DocumentDuplicateIcon}
       >
-        {t.folders.addTemplate()}
+        {t.folders.addTemplate()}...
       </Content.ToolbarButton>
     );
   }
 
   return (
-    <Menu as={Content.ToolbarButton} label={label} icon={DocumentDuplicateIcon}>
+    <Menu
+      as={Content.ToolbarButton}
+      label={label}
+      icon={DocumentDuplicateIcon}
+      align="right"
+    >
       <Menu.Item
         icon={PencilIcon}
         label={t.folders.editTemplate({ label: label ?? "" })}
@@ -470,6 +478,7 @@ export function DomainsButton({
       selected={selected}
       options={options}
       multi
+      align="right"
     />
   );
 }

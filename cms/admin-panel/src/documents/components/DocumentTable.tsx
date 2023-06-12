@@ -122,7 +122,7 @@ function Row({
 
   return (
     <tr
-      className="border-t border-gray-100 dark:border-gray-750 hover:bg-gray-50 dark:hover:bg-gray-800 transition-[background-color]"
+      className="border-t border-gray-100 dark:border-gray-750 hover:bg-gray-50 dark:hover:bg-gray-850 transition-[background-color]"
       {...dragHandleProps}
       onClick={() => {
         navigate(to);

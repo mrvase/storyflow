@@ -53,16 +53,16 @@ export function FolderItem({
 
   const colors = {
     data: cl(
-      "text-gray-700 dark:text-white bg-gray-50 dark:bg-gray-850", // dark:bg-gradient-to-b dark:from-gray-825 dark:to-gray-835
+      "bg-gray-50 dark:bg-gray-850",
       isOpen
         ? "border-gray-300 dark:border-gray-600"
-        : "border-gray-100 hover:border-gray-300 dark:border-gray-700 hover:dark:border-gray-600"
+        : "border-gray-100 hover:border-gray-300 dark:border-gray-800 hover:dark:border-gray-600"
     ),
     app: cl(
-      "dark:text-white dark:text-yellow-300 bg-yellow-100 dark:bg-gray-850 dark:border-yellow-300/40",
+      "bg-amber-100 text-yellow-700 dark:text-yellow-200 dark:bg-yellow-400/5",
       isOpen
-        ? "border-yellow-300 dark:border-yellow-600"
-        : "border-yellow-100 hover:border-yellow-300 hover:dark:border-yellow-300"
+        ? "border-gray-300 dark:border-gray-600"
+        : "border-yellow-200 hover:border-yellow-400 dark:border-yellow-400/10 hover:dark:border-yellow-400/40"
     ),
   }[type];
 
@@ -82,7 +82,7 @@ export function FolderItem({
       ref={ref as any}
       to={to}
       className={cl(
-        "group flex items-center px-3 py-4 rounded-md text-lg transition-[border] border",
+        "group flex items-center px-4 py-5 rounded-lg text-lg transition-[border] border",
         colors
       )}
       style={style}
@@ -96,7 +96,7 @@ export function FolderItem({
         </div>
       )}
       <span className="ml-3 truncate">{label}</span>
-      <div className="ml-auto transition-opacity w-8 h-8 flex-center rounded-md">
+      <div className="ml-auto transition-opacity w-8 h-8 flex-center">
         <Icon className="w-6 h-6 shrink-0 opacity-25 group-hover:opacity-50 transition-opacity" />{" "}
       </div>
     </Link>

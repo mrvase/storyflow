@@ -169,59 +169,26 @@ function LabelBar({
 
   const [isEditing] = [true]; //useLocalStorage<boolean>("editing-articles", false);
 
-  const route = useRoute();
-  const { pathname } = usePath();
-  const navigate = useNavigate();
-
-  const isOpen = pathname.endsWith(`/c/${id}`);
-
   const specialFieldConfig = getDefaultField(id);
-
-  const to = isOpen ? route.accumulated : `${route.accumulated}/c/${id}`;
-
-  const fullscreen = () => {
-    navigate(to, {
-      navigate: true,
-    });
-  };
-
-  const { index: panelIndex } = useRoute("parallel");
-
-  const { dragHandleProps: linkDragHandleProps } = useDragItem({
-    type: `link:${panelIndex}`,
-    item: to,
-    mode: "link",
-  });
-
-  const restrictTo = useFieldRestriction();
 
   return (
     <div
       className={cl(
-        "flex items-center sticky top-12 z-10",
-        "h-11 p-2.5 rounded bg-white dark:bg-gray-850/80 backdrop-blur-sm" /* -translate-y-2.5 */
+        "flex items-center sticky top-0 z-10",
+        "h-11 p-2.5 rounded bg-white dark:bg-gray-900" /* -translate-y-2.5 */
       )}
     >
       <Dot id={id} dragHandleProps={isEditing ? dragHandleProps : {}} />
       <div
         className={cl(
-          "ml-5 mr-auto flex items-center gap-2 text-sm select-none whitespace-nowrap"
+          "ml-5 mr-auto flex items-center gap-3 text-sm select-none whitespace-nowrap"
         )}
       >
         <Label id={id} />
         <PathMap />
         <Attributes />
-        {(isDefaultField(id, "layout") ||
-          isDefaultField(id, "page") ||
-          restrictTo === "children") && (
-          <InlineButton
-            onClick={fullscreen}
-            {...linkDragHandleProps}
-            icon={WindowIcon}
-          >
-            Åbn preview
-          </InlineButton>
-        )}
+        <PreviewButton id={id} />
+        <ReferenceButton id={id} />
       </div>
       {specialFieldConfig && (
         <div
@@ -261,6 +228,72 @@ function LabelBar({
         </button>
       )}
     </div>
+  );
+}
+
+function ReferenceButton({ id }: { id: FieldId }) {
+  const [focused] = useFieldFocus();
+  const isLink = focused && focused !== id;
+
+  if (!isLink) return null;
+  return (
+    <InlineButton
+      onMouseDown={(ev) => {
+        if (isLink) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          addImport.dispatch({ id, imports: [] });
+        }
+      }}
+      icon={LinkIcon}
+      color="teal"
+    >
+      Referer
+    </InlineButton>
+  );
+}
+
+function PreviewButton({ id }: { id: FieldId }) {
+  const route = useRoute();
+  const { pathname } = usePath();
+  const navigate = useNavigate();
+
+  const isOpen = pathname.endsWith(`/c/${id}`);
+
+  const to = isOpen ? route.accumulated : `${route.accumulated}/c/${id}`;
+
+  const fullscreen = () => {
+    navigate(to, {
+      navigate: true,
+    });
+  };
+
+  const { index: panelIndex } = useRoute("parallel");
+
+  const restrictTo = useFieldRestriction();
+
+  const { dragHandleProps: linkDragHandleProps } = useDragItem({
+    type: `link:${panelIndex}`,
+    item: to,
+    mode: "link",
+  });
+
+  if (
+    !isDefaultField(id, "layout") &&
+    !isDefaultField(id, "page") &&
+    restrictTo !== "children"
+  ) {
+    return null;
+  }
+
+  return (
+    <InlineButton
+      onClick={fullscreen}
+      {...linkDragHandleProps}
+      icon={WindowIcon}
+    >
+      Åbn preview
+    </InlineButton>
   );
 }
 
@@ -398,8 +431,6 @@ function Label({ id }: { id: FieldId }) {
   const [{ selectedPath }, setPath] = useSelectedPath();
   const isNative = !isTemplateField(id);
 
-  const [focused] = useFieldFocus();
-  const isLink = focused && focused !== id;
   const label = useLabel(id);
 
   const documentId = getDocumentId<DocumentId>(id);
@@ -414,39 +445,18 @@ function Label({ id }: { id: FieldId }) {
   return (
     <div
       className={cl(
-        "flex items-center gap-1 px-1.5 -ml-1.5 font-medium",
-        isNative ? "text-gray-400" : "text-teal-500 dark:text-teal-400/90",
+        "flex items-center gap-1 px-1.5 -mx-1.5 font-medium",
+        isNative
+          ? "text-gray-600 dark:text-gray-400"
+          : "text-teal-500 dark:text-teal-400/90",
         "cursor-default",
         selectedPath.length && "hover:underline"
       )}
-      /*
-      onMouseDown={(ev) => {
-        if (isLink) {
-          ev.preventDefault();
-          ev.stopPropagation();
-          addImport.dispatch({ id, imports: [] });
-        }
-      }}
-      */
       onClick={() => {
         setPath([]);
       }}
     >
-      <EditableLabel value={label} onChange={onChange} small />
-      {isLink && (
-        <button
-          onMouseDown={(ev) => {
-            if (isLink) {
-              ev.preventDefault();
-              ev.stopPropagation();
-              addImport.dispatch({ id, imports: [] });
-            }
-          }}
-          className="rounded-full font-medium px-2 h-6 flex-center text-xs ring-button-teal text-teal-600 dark:text-teal-400 opacity-60 hover:opacity-100 ml-1 mr-3 flex-center gap-1"
-        >
-          <LinkIcon className="w-3 h-3" /> Referer
-        </button>
-      )}
+      <EditableLabel value={label} onChange={onChange} />
     </div>
   );
 }

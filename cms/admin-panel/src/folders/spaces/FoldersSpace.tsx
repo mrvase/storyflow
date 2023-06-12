@@ -73,7 +73,6 @@ export function FoldersSpace({
                   )
                 );
               }}
-              small
             />
             <AddFolderButton onClick={() => setDialogIsOpen("add-folder")} />
           </>

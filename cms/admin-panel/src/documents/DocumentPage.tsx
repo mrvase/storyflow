@@ -66,69 +66,10 @@ function useIsModified(id: DocumentId) {
   return isModified;
 }
 
-export const DocumentContent = ({
-  id,
-  folderId,
-  label,
-  children,
-  variant,
-  toolbar,
-}: {
-  id: DocumentId;
-  folderId: FolderId | undefined;
-  label: string;
-  children: React.ReactNode;
-  variant?: string;
-  toolbar: React.ReactNode;
-}) => {
-  const isModified = useIsModified(id);
-
-  return (
-    <Content
-      icon={variant === "template" ? DocumentDuplicateIcon : DocumentIcon}
-      header={
-        variant === "template" ? (
-          <EditableTemplateLabel documentId={id} />
-        ) : (
-          <span>{label}</span>
-        )
-      }
-      buttons={
-        <div
-          className={cl(
-            "flex-center",
-            "transition-opacity",
-            isModified ? "opacity-100" : "opacity-0 pointer-events-none"
-          )}
-        >
-          {folderId && <SaveButton id={id} folderId={folderId} />}
-        </div>
-      }
-      toolbar={toolbar}
-      hasSidebar
-    >
-      {children}
-    </Content>
-  );
-};
-
-function Toolbar({ id }: { id: DocumentId }) {
+function SecondaryToolbar({ id }: { id: DocumentId }) {
   const ids = useFocusedIds();
 
   const generateFieldId = useFieldIdGenerator();
-
-  if (ids.length > 1) {
-    return (
-      <Content.Toolbar>
-        <div className="h-7 px-2 mx-2.5 flex-center gap-1.5 rounded dark:bg-yellow-400/10 dark:text-yellow-200/75 ring-1 ring-yellow-200/50 text-sm font-medium whitespace-nowrap">
-          {ids.length} fields selected
-          <XMarkIcon className="w-3 h-3" />
-        </div>
-      </Content.Toolbar>
-    );
-  }
-
-  const setPortal = useFieldToolbarPortal();
 
   const fields = [
     {
@@ -164,41 +105,38 @@ function Toolbar({ id }: { id: DocumentId }) {
   ];
 
   return (
-    <>
-      <Content.Toolbar ref={setPortal}>
-        {ids.length === 0 && <div></div>}
-      </Content.Toolbar>
-      <Content.Toolbar secondary>
-        <NoList>
-          <Content.ToolbarDragButton
-            id="new-field"
-            type="fields"
-            icon={DragIcon}
-            label="Tilføj felt"
-            item={() => ({
-              id: generateFieldId(id),
-              label: "",
-            })}
-          />
-          <Menu
-            as={Content.ToolbarButton}
-            label="Specialfelter"
-            icon={BoltIcon}
-          >
-            {fields.map((el) => (
-              <Menu.DragItem
-                key={el.label}
-                icon={DragIcon}
-                type="fields"
-                id={`ny-blok-${el.item.template}`}
-                {...el}
-              />
-            ))}
-          </Menu>
-          <TemplateMenu id={id} />
-        </NoList>
-      </Content.Toolbar>
-    </>
+    <Content.SecondaryToolbar>
+      <NoList>
+        <Content.ToolbarDragButton
+          id="new-field"
+          type="fields"
+          icon={DragIcon}
+          label="Standardfelt"
+          item={() => ({
+            id: generateFieldId(id),
+            label: "",
+          })}
+          secondary
+        />
+        <Menu
+          as={Content.ToolbarButton}
+          label="Specialfelter"
+          icon={BoltIcon}
+          secondary
+        >
+          {fields.map((el) => (
+            <Menu.DragItem
+              key={el.label}
+              icon={DragIcon}
+              type="fields"
+              id={`ny-blok-${el.item.template}`}
+              {...el}
+            />
+          ))}
+        </Menu>
+        <TemplateMenu id={id} />
+      </NoList>
+    </Content.SecondaryToolbar>
   );
 }
 
@@ -241,7 +179,8 @@ function EditableTemplateLabel({ documentId }: { documentId: DocumentId }) {
     <EditableLabel
       value={label}
       onChange={onChange}
-      className="text-teal-500"
+      className="font-medium text-teal-500"
+      large
     />
   );
 }
@@ -254,6 +193,7 @@ export function TemplateMenu({ id }: { id?: DocumentId }) {
       as={Content.ToolbarButton}
       label={"Skabeloner"}
       icon={DocumentDuplicateIcon}
+      secondary
     >
       {(templates ?? [])
         .filter((el) => el.folder)
@@ -330,17 +270,28 @@ const Page = ({
     [id, doc.record, doc.versions]
   );
 
+  const isModified = useIsModified(id);
+
   return (
     <FieldToolbarPortalProvider>
       <DocumentPageContext.Provider value={ctx}>
         <FocusOrchestrator>
-          <DocumentContent
-            id={id}
-            variant={type === "template" ? "template" : undefined}
-            folderId={folder?._id}
-            label={label ?? "Ingen label"}
-            toolbar={<Toolbar id={id} />}
-          >
+          <Content hasSidebar>
+            <Content.Header>
+              {type === "template" ? (
+                <EditableTemplateLabel documentId={id} />
+              ) : (
+                <span className="text-3xl font-medium">
+                  {label || "Unavngivet dokument"}
+                </span>
+              )}
+              <Content.Toolbar>
+                {folder && isModified && (
+                  <SaveButton id={id} folderId={folder._id} />
+                )}
+              </Content.Toolbar>
+            </Content.Header>
+            <SecondaryToolbar id={id} />
             <div className="pb-96 flex flex-col -mt-8">
               {folderData.type === "app" &&
                 !templateId &&
@@ -381,7 +332,7 @@ const Page = ({
                 index={null}
               />
             </div>
-          </DocumentContent>
+          </Content>
         </FocusOrchestrator>
         {children}
       </DocumentPageContext.Provider>

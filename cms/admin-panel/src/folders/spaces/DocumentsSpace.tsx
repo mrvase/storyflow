@@ -112,7 +112,6 @@ export function DocumentsSpace({
                 )
               );
             }}
-            small
           />
           <AddDocumentButton folder={folderId} />
         </>

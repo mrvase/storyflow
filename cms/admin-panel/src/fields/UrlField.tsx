@@ -204,7 +204,7 @@ export default function UrlField({ id }: FieldProps) {
           type="app"
         />
       )}
-      <div className="outline-none rounded flex items-center px-3 mb-2.5 bg-gray-50 dark:bg-gray-800 ring-button">
+      <div className="outline-none rounded flex items-center px-3 mb-2.5 bg-gray-50 dark:bg-gray-850 ring-button">
         <Link
           to={replacePage(parents[0]?._id ?? "")}
           className="mr-5 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100 transition-colors"

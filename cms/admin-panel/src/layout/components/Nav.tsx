@@ -23,6 +23,7 @@ import { DropShadow, Sortable } from "@storyflow/dnd";
 import { actions } from "../../pages/routes";
 import { TEMPLATE_FOLDER } from "@storyflow/cms/constants";
 import { navigateFocusedPanel } from "../../custom-events";
+import { ArrowsUpDownIcon } from "@heroicons/react/24/outline";
 
 export default function Nav() {
   const [isOpen, setIsOpen] = useLocalStorage<boolean>("nav-is-open", true);
@@ -71,14 +72,14 @@ export default function Nav() {
         )}
       >
         <div className="h-full flex flex-col pl-2 w-60">
-          <div className="flex flex-col border-b border-gray-200 dark:border-gray-800 py-6">
+          <div className="flex flex-col border-b border-gray-200 dark:border-gray-800 py-8">
             <NavButton
               onClick={() => {
                 actions.open({ path: "/~", index: 0 });
               }}
               icon={PlusIcon}
             >
-              Åbn nyt panel
+              Åbn panel
             </NavButton>
             {/*<NavButton
               onClick={() => {
@@ -118,10 +119,10 @@ export default function Nav() {
             className="w-full grow border-b border-gray-200 dark:border-gray-800"
             onClick={() => setIsOpen((ps) => !ps)}
           />
-          <div className="flex flex-col py-6 border-b border-gray-200 dark:border-gray-800">
-            <NavButton {...navigateProps("/~/folders")} icon={FolderIcon}>
+          <div className="flex flex-col py-3 border-b border-gray-200 dark:border-gray-800">
+            {/*<NavButton {...navigateProps("/~/folders")} icon={FolderIcon}>
               Mapper
-            </NavButton>
+            </NavButton>*/}
             <NavButton
               {...navigateProps(
                 `/~/f/${parseInt(TEMPLATE_FOLDER, 16).toString(16)}`
@@ -133,6 +134,9 @@ export default function Nav() {
             <NavButton {...navigateProps("/~/files")} icon={PhotoIcon}>
               Filer
             </NavButton>
+          </div>
+          <div className="py-3 border-b border-gray-200 dark:border-gray-800">
+            <ArrangeButton />
           </div>
           <div className="py-3">
             <div className="flex justify-between gap-8">
@@ -154,6 +158,16 @@ export default function Nav() {
         </div>
       </div>
     </>
+  );
+}
+
+function ArrangeButton() {
+  const [isOpen, setIsOpen] = useLocalStorage<boolean>("toolbar-open", true);
+
+  return (
+    <NavButton onClick={() => setIsOpen((ps) => !ps)} icon={ArrowsUpDownIcon}>
+      Arranger
+    </NavButton>
   );
 }
 

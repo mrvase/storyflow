@@ -3,7 +3,7 @@ import cl from "clsx";
 import { ErrorBoundary, FallbackProps } from "react-error-boundary";
 import useIsFocused from "../../utils/useIsFocused";
 import { BranchFocusContext } from "./BranchFocusContext";
-import { LocationBar } from "./LocationBar";
+import { LocationBar, ToolbarPortalProvider } from "./LocationBar";
 import {
   PanelResizeHandle,
   Panel as ResizablePanel,
@@ -96,47 +96,47 @@ export function Panel() {
           <LinkReceiver index={route.index} id={`new-${route.accumulated}`} />
         </PanelResizeHandle>
       )}
-      <BranchFocusContext.Provider
-        value={React.useMemo(
-          () => ({ isFocused, id: focusId }),
-          [isFocused, focusId]
-        )}
-      >
-        <ResizablePanel
-          className="relative h-full py-2"
-          id={route.accumulated}
-          order={route.index}
-          style={{ ...style, order: route.index }}
-          minSize={25}
+      <ToolbarPortalProvider>
+        <BranchFocusContext.Provider
+          value={React.useMemo(
+            () => ({ isFocused, id: focusId }),
+            [isFocused, focusId]
+          )}
         >
-          <LinkReceiver
-            id={`existing-${route.accumulated}`}
-            type="existing"
-            index={route.index}
-          />
-          <div
-            ref={ref}
-            {...handlers}
-            className={cl(
-              "@container w-full h-full flex flex-col rounded-md overflow-hidden"
-              // "border border-gray-200 dark:border-gray-800"
-            )}
+          <ResizablePanel
+            className="relative h-full py-2"
+            id={route.accumulated}
+            order={route.index}
+            style={{ ...style, order: route.index }}
+            minSize={25}
           >
-            <div className="w-full h-[11.75rem] absolute bg-white dark:bg-gray-800 border-b border-gray-750" />
-            <div className="w-full mt-[11.75rem] h-full absolute bg-white dark:bg-gray-850" />
-            <LocationBar
-              isFocused={isFocused}
-              dragHandleProps={dragHandleProps}
-              matches={route.children}
+            <LinkReceiver
+              id={`existing-${route.accumulated}`}
+              type="existing"
+              index={route.index}
             />
-            <ErrorBoundary FallbackComponent={ErrorFallback}>
-              <div className="h-full relative overflow-hidden">
-                <NestedTransitionRoutes />
-              </div>
-            </ErrorBoundary>
-          </div>
-        </ResizablePanel>
-      </BranchFocusContext.Provider>
+            <div
+              ref={ref}
+              {...handlers}
+              className={cl(
+                "@container w-full h-full flex flex-col rounded-md overflow-hidden border border-gray-150 bg-white dark:bg-gray-900 dark:border-gray-800"
+                // "border border-gray-200 dark:border-gray-800"
+              )}
+            >
+              <LocationBar
+                isFocused={isFocused}
+                dragHandleProps={dragHandleProps}
+                matches={route.children}
+              />
+              <ErrorBoundary FallbackComponent={ErrorFallback}>
+                <div className="h-full relative overflow-hidden">
+                  <NestedTransitionRoutes />
+                </div>
+              </ErrorBoundary>
+            </div>
+          </ResizablePanel>
+        </BranchFocusContext.Provider>
+      </ToolbarPortalProvider>
     </>
   );
 }

@@ -93,10 +93,6 @@ export function FieldToolbar() {
 
   return (
     <>
-      <div className="h-7 mx-2.5 px-2 flex-center gap-1.5 rounded dark:bg-yellow-400/10 dark:text-yellow-200/75 ring-1 ring-yellow-200/50 ring-inset text-sm whitespace-nowrap pointer-events-none font-medium">
-        1 felt valgt
-        <XMarkIcon className="w-3 h-3" />
-      </div>
       {/*<FieldLabel id={fieldId} label={config?.label ?? ""} />*/}
       <Menu<{ id: DocumentId; label: string }>
         as={Content.ToolbarButton}
