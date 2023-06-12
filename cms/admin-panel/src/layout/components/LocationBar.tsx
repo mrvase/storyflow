@@ -87,21 +87,41 @@ export function LocationBar({
 
   if (isSystemWindow) {
     return (
-      <div className="relative w-full shrink-0 grow-0" {...dragHandleProps}>
-        <div
-          className={cl(
-            "h-20 flex pr-2 overflow-x-auto dark:text-white",
-            isFocused ? "opacity-100" : "opacity-25"
-          )}
-        >
+      <div
+        className={cl(
+          "h-20 flex justify-between",
+          isFocused ? "opacity-100" : "opacity-25"
+        )}
+      >
+        <div className="flex">
           <Link
-            to="/~"
-            className="h-20 flex-center ml-2 w-10 text-gray-500 hover:text-white transition-colors"
+            to={route.accumulated.split("/").slice(0, -1).join("/")}
+            className={cl(
+              "group h-20 flex-center ml-2.5 w-10 transition-colors",
+              matches.length === 1 && "opacity-0 pointer-events-none"
+            )}
           >
-            <ChevronLeftIcon className="w-5 h-5" />
+            <ArrowLeftIcon className="w-5 h-5 text-gray-400 group-hover:text-gray-500 dark:text-gray-500 dark:group-hover:text-gray-300" />
           </Link>
+        </div>
+        <div className="flex items-center pr-3.5 gap-2.5">
           <button
-            className="shrink-0 ml-auto mr-2 flex items-center justify-center h-full px-3"
+            className={cl(
+              "shrink-0 flex items-center justify-center h-full px-1.5",
+              "opacity-50 hover:opacity-100 transition-opacity"
+            )}
+            onMouseDown={(ev) => ev.stopPropagation()} // prevent focus
+            onClick={(ev) => {
+              actions.open({ path: pathname, index: route.index + 1 });
+            }}
+          >
+            <Square2StackIcon className="w-5 h-5" />
+          </button>
+          <button
+            className={cl(
+              "shrink-0 flex items-center justify-center h-full px-1.5",
+              "opacity-50 hover:opacity-100 transition-opacity"
+            )}
             onMouseDown={(ev) => ev.stopPropagation()} // prevent focus
             onClick={(ev) => {
               ev.stopPropagation();

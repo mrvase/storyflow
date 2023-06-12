@@ -5,6 +5,7 @@ import {
   EllipsisHorizontalIcon,
   FolderIcon,
   PencilIcon,
+  PencilSquareIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
 import { FileContainer } from "../elements/FileContainer";
@@ -15,6 +16,7 @@ import Loader from "../elements/Loader";
 import { useFiles } from "../data/files";
 import { Link } from "@nanokit/router";
 import { addFile } from "../custom-events";
+import { InlineButton } from "../elements/InlineButton";
 
 export function SystemFilePage({ params }: { params: Record<string, string> }) {
   const [files, { renameFile }] = useFiles();
@@ -105,14 +107,14 @@ export function SystemFilePage({ params }: { params: Record<string, string> }) {
                   small
                 >
                   <Menu.Item
-                    label="Ændr navn"
-                    icon={PencilIcon}
+                    label="Ændr navn..."
+                    icon={PencilSquareIcon}
                     onClick={() => {
                       setAction({ action: "rename", file: file.name });
                     }}
                   />
                   <Menu.Item
-                    label="Slet fil"
+                    label="Slet fil..."
                     icon={TrashIcon}
                     onClick={() => {
                       setAction({ action: "delete", file: file.name });
@@ -139,22 +141,19 @@ export function SystemFilePage({ params }: { params: Record<string, string> }) {
 const Button = React.forwardRef<
   HTMLButtonElement,
   React.ComponentProps<"button"> & {
-    icon?: React.FC<{ className: string }>;
+    icon?: React.FC<{ className?: string }>;
     active?: boolean;
-    selected?: boolean;
+    color?: "gray" | "teal";
   }
->(({ icon: Icon, active, selected, ...props }, ref) => {
+>((props, ref) => {
   return (
-    <button
-      ref={ref}
+    <InlineButton
+      ref={ref as any}
       {...props}
       className={cl(
-        "rounded-full w-5 h-5 bg-gray-800 ring-button flex-center",
-        "opacity-0 group-hover:opacity-100",
-        active && "ring-gray-300 dark:ring-gray-600"
+        !props.active && "opacity-0 group-hover:opacity-100",
+        props.className
       )}
-    >
-      {Icon && <Icon className="w-3 h-3" />}
-    </button>
+    />
   );
 });

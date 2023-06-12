@@ -406,15 +406,14 @@ function Dot({ id, dragHandleProps }: { id: FieldId; dragHandleProps: any }) {
           className={cl(
             "flex-center w-5 h-5 rounded-full group-hover:scale-[1.5] transition-transform",
             !isNative
-              ? "bg-gray-200 dark:bg-teal-600/50 dark:group-hover:bg-teal-800/50"
+              ? "bg-teal-500/60 dark:bg-teal-800"
               : "bg-gray-200 dark:bg-gray-600/50"
           )}
         >
           <div
             className={cl(
               "flex-center w-2.5 h-2.5 m-1 rounded-full group-hover:scale-[2] transition-[transform,background-color]",
-              !isNative && "dark:group-hover:bg-teal-800",
-              "dark:bg-white/20"
+              "bg-white/20"
             )}
           >
             <Icon className="w-[0.3rem] h-1.5 opacity-0 group-hover:opacity-75 transition-opacity" />

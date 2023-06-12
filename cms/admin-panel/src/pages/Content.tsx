@@ -126,7 +126,7 @@ const SecondaryToolbar = ({ children }: { children: React.ReactNode }) => {
       />
       <div
         className={cl(
-          "flex gap-5 -mt-7 mx-2.5 rounded p-2.5 sticky z-20 top-0 transition-opacity bg-gray-900",
+          "flex gap-5 -mt-7 mx-2.5 rounded p-2.5 sticky z-20 top-0 transition-opacity bg-white dark:bg-gray-900",
           isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         )}
       >

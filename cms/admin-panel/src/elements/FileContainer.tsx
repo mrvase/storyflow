@@ -47,7 +47,10 @@ export const FileContainer = React.forwardRef<
     <div
       ref={ref}
       {...props}
-      className={cl("rounded p-3 bg-gray-800", props.className)}
+      className={cl(
+        "rounded p-3 bg-gray-100 dark:bg-gray-800",
+        props.className
+      )}
     >
       <div className="w-full aspect-[4/3] flex-center mb-2">{getMedia()}</div>
       <div className="truncate w-full text-sm text-center">{label}</div>

@@ -16,10 +16,12 @@ function Decorator({ nodeKey, value }: { nodeKey: string; value: FileToken }) {
   return (
     <div
       className={cl(
-        "bg-gradient-to-b from-gray-800/90 to-gray-800/90 text-gray-200",
+        "bg-gray-100 dark:bg-gray-800",
         "rounded relative ring-1",
         "flex gap-2 items-center",
-        isSelected ? "ring-white" : "dark:ring-gray-700"
+        isSelected
+          ? "ring-black dark:ring-white"
+          : "ring-gray-200 dark:ring-gray-700"
         // isPseudoSelected && caretClasses
       )}
       onMouseDown={() => {

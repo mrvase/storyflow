@@ -145,7 +145,7 @@ const MenuItem = React.forwardRef<
             </div>
           )}
           {typeof selected !== "boolean" && Icon && (
-            <Icon className="w-3 h-3 shrink-0" />
+            <Icon className="w-4 h-4 shrink-0" />
           )}
           <span className="truncate">{label}</span>
         </button>
