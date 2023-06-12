@@ -519,7 +519,9 @@ function RefreshButton({
           onClick={async () => {
             if (config.baseURL && data?.length) {
               setIsLoading(true);
-              const result = await appMutate.app.revalidatePaths(data);
+              const result = await appMutate.app.revalidate(data, {
+                baseURL: config.baseURL,
+              });
               if (!isError(result)) {
                 await mutate.documents.registerRevalidation();
                 revalidate();

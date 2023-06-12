@@ -7,10 +7,13 @@ const baseFetcher = async (
   key: string,
   options: Options & AuthOptions & { baseURL: string }
 ) => {
-  const { baseURL, ...rest } = options;
+  const { baseURL, token, ...rest } = options;
   return await fetch(`${baseURL}/api${key}`, {
     credentials: "include",
     ...rest,
+    headers: {
+      "x-storyflow-token": token,
+    },
   }).then((res) => res.json());
 };
 

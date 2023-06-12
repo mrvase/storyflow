@@ -115,7 +115,7 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
       };
     }),
 
-    revalidatePaths: procedure
+    revalidate: procedure
       .use(globals(apiConfig))
       .schema(z.array(z.string()))
       .mutate(async (paths) => {
