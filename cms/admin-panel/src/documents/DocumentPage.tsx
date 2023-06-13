@@ -102,6 +102,12 @@ function SecondaryToolbar({ id }: { id: DocumentId }) {
         template: getTemplateDocumentId(DEFAULT_FIELDS.user.id),
       },
     },
+    {
+      label: DEFAULT_FIELDS.og_image.label,
+      item: {
+        template: getTemplateDocumentId(DEFAULT_FIELDS.og_image.id),
+      },
+    },
   ];
 
   return (

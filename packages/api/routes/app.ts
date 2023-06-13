@@ -189,12 +189,15 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
           createFetcher(dbName)
         );
 
-        const [pageRecord, layoutRecord] = await Promise.all([
+        const [pageRecord, layoutRecord, opengraphRecord] = await Promise.all([
           getFieldRecord(
             createTemplateFieldId(doc._id, DEFAULT_FIELDS.page.id)
           ),
           getFieldRecord(
             createTemplateFieldId(doc._id, DEFAULT_FIELDS.layout.id)
+          ),
+          getFieldRecord(
+            createTemplateFieldId(doc._id, DEFAULT_FIELDS.og_image.id)
           ),
         ]);
 
@@ -206,6 +209,7 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
         const result = {
           page: pageRecord,
           layout: layoutRecord,
+          opengraph: opengraphRecord,
           head: {
             ...(typeof titleArray[0] === "string" && { title: titleArray[0] }),
           },

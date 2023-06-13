@@ -87,6 +87,11 @@ export const DEFAULT_FIELDS = {
     id: generateTemplateFieldId(),
     label: "Label til template",
   },
+  og_image: {
+    id: generateTemplateFieldId(),
+    label: "Open Graph-billede",
+    type2: "children",
+  },
 } satisfies Record<string, DefaultFieldConfig>;
 
 export const getDefaultValue = (field: DefaultFieldConfig) => {

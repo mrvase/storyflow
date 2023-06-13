@@ -11,6 +11,7 @@ import { LinkConfig } from "./Link";
 import { HeaderConfig } from "./Header/Header";
 import { NavConfig } from "./Nav";
 import Image from "next/image";
+import { OpenGraphConfig } from "./OpenGraph";
 
 const parseFileString = (value: string) => {
   if (!value) {
@@ -56,6 +57,7 @@ const kfs = {
     LinkConfig,
     HeaderConfig,
     NavConfig,
+    OpenGraphConfig,
     ImageConfig: {
       label: "Billede",
       props: {
