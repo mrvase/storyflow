@@ -225,7 +225,7 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
       console.log("REQUESTING PATHS");
 
       const db = await client.get(dbName);
-      const articles = await db
+      const docs = await db
         .collection<DBDocumentRaw>("documents")
         .find({
           ...(appConfig.namespaces
@@ -241,17 +241,10 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
                   $exists: true,
                 },
               }),
-          /*
-          [`values.${URL_ID}`]: namespace
-            ? { $regex: `^${namespace}` }
-            : { $exists: true },
-          */
         })
         .toArray();
 
-      const paths = await getPaths(articles, createFetcher(dbName));
-
-      // console.log("PATHS", paths);
+      const paths = await getPaths(docs, createFetcher(dbName));
 
       return paths;
     }),

@@ -497,7 +497,7 @@ function RefreshButton({
   const [isLoading, setIsLoading] = React.useState(false);
 
   const { data, revalidate } = useQuery(
-    query.documents.getUpdatedUrls({
+    query.documents.getUpdatedPaths({
       namespace,
     })
   );
@@ -517,9 +517,15 @@ function RefreshButton({
         <button
           className="relative z-0 bg-button-yellow ring-button-yellow text-button rounded px-3 py-1 flex-center gap-2 text-sm overflow-hidden"
           onClick={async () => {
-            if (config.baseURL && data?.length) {
+            if (config.baseURL) {
               setIsLoading(true);
-              const result = await appMutate.app.revalidate(data, {
+              const paths = data?.length
+                ? data
+                : await query.documents.getPaths({ namespace });
+              if (isError(paths)) {
+                return;
+              }
+              const result = await appMutate.app.revalidate(paths, {
                 baseURL: config.baseURL,
               });
               if (!isError(result)) {

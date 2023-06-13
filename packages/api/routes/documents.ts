@@ -136,7 +136,34 @@ export const documents = (config: StoryflowConfig) => {
         return result.acknowledged;
       }),
 
-    getUpdatedUrls: procedure
+    getPaths: procedure
+      .use(globals(config.api))
+      .schema(
+        z.object({
+          namespace: z.string(),
+        })
+      )
+      .query(async ({ namespace }) => {
+        const db = await client.get(dbName);
+
+        const docs = await db
+          .collection<DBDocumentRaw>("documents")
+          .find({
+            ...(namespace
+              ? { folder: createObjectId(namespace) }
+              : {
+                  [`values.${createRawTemplateFieldId(DEFAULT_FIELDS.url.id)}`]:
+                    {
+                      $exists: true,
+                    },
+                }),
+          })
+          .toArray();
+
+        return await getPaths(docs, createFetcher(dbName));
+      }),
+
+    getUpdatedPaths: procedure
       .use(globals(config.api))
       .schema(
         z.object({
