@@ -369,7 +369,7 @@ function SaveButton({ id, folderId }: { id: DocumentId; folderId: FolderId }) {
   const saveDocument = useSaveDocument(id, folderId);
 
   const updatedUrlsQuery = useImmutableQuery(
-    query.documents.getUpdatedUrls({
+    query.documents.getUpdatedPaths({
       namespace: folderId,
     })
   );
