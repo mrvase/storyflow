@@ -101,7 +101,7 @@ function Decorator({
             className={cl(
               "flex items-center font-medium text-sm p-2.5 whitespace-nowrap",
               value.element.indexOf(":") > 0
-                ? "text-yellow-500 dark:text-yellow-400"
+                ? "text-yellow-600 dark:text-yellow-400"
                 : "text-red-500 dark:text-red-400"
             )}
             onMouseDown={(ev) => {

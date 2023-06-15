@@ -271,6 +271,7 @@ export function Overlay({ children }: { children?: React.ReactNode }) {
       className={cl(
         "absolute w-full top-0 -left-1.5 z-30 gradient-border rounded shadow-lg shadow-black/20 text-sm max-w-2xl",
         "flex flex-col divide-y divide-white/5",
+        "text-gray-850 dark:text-white", // have to be here because text in default field is dimmed
         position !== null
           ? "opacity-100 transition-opacity duration-300"
           : "opacity-0 pointer-events-none"

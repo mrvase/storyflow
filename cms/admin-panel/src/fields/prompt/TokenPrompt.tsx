@@ -30,8 +30,8 @@ export function TokenPrompt({
         className={cl(
           "p-2.5 rounded",
           "group flex items-center gap-2",
-          isSelected && "bg-gray-800",
-          "hover:ring-1 hover:ring-inset hover:ring-gray-700"
+          isSelected && "bg-gray-100 dark:bg-gray-800",
+          "hover:ring-1 hover:ring-inset hover:ring-gray-200 dark:hover:ring-gray-700"
         )}
       >
         <div className="group-hover:opacity-50 group-hover:hover:opacity-100 transition-opacity cursor-default bg-gradient-to-b from-cyan-600 to-cyan-700 shadow-sm text-sky-100/90 rounded px-2 py-0.5 flex-center gap-2">

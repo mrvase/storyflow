@@ -77,7 +77,7 @@ export function Option<T>({
       className={cl(
         "group h-10 shrink-0 rounded text-sm cursor-default",
         isSelected && "bg-gray-100 dark:bg-gray-800",
-        "hover:ring-1 hover:ring-inset hover:ring-gray-700",
+        "hover:ring-1 hover:ring-inset hover:ring-gray-200 dark:hover:ring-gray-700",
         "flex items-center justify-between"
       )}
       style={style}
@@ -93,7 +93,7 @@ export function Option<T>({
         )}
       >
         {Icon && (
-          <div className="m-1 mr-0 h-8 w-8 rounded border border-gray-750 flex-center">
+          <div className="m-1 mr-0 h-8 w-8 rounded border border-gray-200 dark:border-gray-750 flex-center">
             <Icon className="w-4 h-4" />
           </div>
         )}

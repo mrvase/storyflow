@@ -261,7 +261,7 @@ export function PromptOverlay({
     <Options>
       <OptionEventsPlugin />
       <button
-        className="absolute -right-3 -top-3 w-6 h-6 rounded-full bg-gray-800 border border-gray-700 hover:bg-gray-750 transition-colors flex-center"
+        className="absolute -right-3 -top-3 w-6 h-6 rounded-full bg-white hover:bg-gray-100 dark:bg-gray-800 border border-gray-400 dark:border-gray-700 dark:hover:bg-gray-750 transition-colors flex-center"
         onMouseDown={(ev) => {
           ev.preventDefault();
         }}
@@ -282,7 +282,7 @@ export function PromptOverlay({
                 "flex-center gap-2 rounded cursor-default py-2 px-3 transition-opacity font-medium",
                 "grow shrink basis-0",
                 currentPane === pane.id
-                  ? "bg-gray-800"
+                  ? "bg-gray-100 dark:bg-gray-800"
                   : "opacity-75 hover:opacity-100"
               )}
               onMouseDown={(ev) => {

@@ -101,8 +101,8 @@ function UploadOption({
       <label
         ref={ref as any}
         className={cl(
-          "rounded bg-[#ffffff05] p-3 m-0 hover:bg-gray-700 transition-colors text-sm text-center w-52 shrink-0",
-          isSelected && "ring-1 ring-gray-700"
+          "rounded bg-[#ffffff05] p-3 m-0 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm text-center w-52 shrink-0",
+          isSelected && "ring-1 ring-gray-200 dark:ring-gray-700"
         )}
         data-image-preview="0"
         onMouseDown={(ev) => {

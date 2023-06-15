@@ -291,7 +291,7 @@ function LocationBarItem({
         !isCurrent
           ? "text-gray-600 dark:text-gray-200 hover:text-gray-850 dark:hover:text-white transition-colors font-semibold hover:underline"
           : type === "template"
-          ? "text-teal-400"
+          ? "text-teal-600 dark:text-teal-400"
           : "text-gray-800 dark:text-gray-200 font-normal"
       )}
       // onMouseEnter={onMouseEnter}
