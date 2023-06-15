@@ -61,8 +61,6 @@ function Content({
   small?: boolean;
   hasSidebar?: boolean;
 }) {
-  const { isFocused } = useBranchIsFocused();
-
   const status = useRouteTransition();
 
   const isCurrentPage = useIsCurrentPage();
@@ -98,11 +96,20 @@ function Content({
   );
 }
 
-const Header = ({ children }: { children: React.ReactNode }) => (
-  <div className="ml-5 @sm:ml-[3.75rem] py-8 flex justify-between">
-    {children}
-  </div>
-);
+const Header = ({ children }: { children: React.ReactNode }) => {
+  const { isFocused } = useBranchIsFocused();
+
+  return (
+    <div
+      className={cl(
+        "ml-5 @sm:ml-[3.75rem] py-8 flex justify-between",
+        !isFocused && "opacity-50"
+      )}
+    >
+      {children}
+    </div>
+  );
+};
 
 const Toolbar = React.forwardRef<
   HTMLDivElement,
@@ -131,7 +138,7 @@ const SecondaryToolbar = ({ children }: { children: React.ReactNode }) => {
         )}
       >
         <div className="self-center" onClick={() => setIsOpen(false)}>
-          <XMarkIcon className="w-5 h-5 text-yellow-600/50 dark:text-yellow-200/50" />
+          <XMarkIcon className="w-5 h-5 text-yellow-600/75 dark:text-yellow-200/50" />
         </div>
         <button
           className={cl(
@@ -210,7 +217,7 @@ const ToolbarButton = React.forwardRef<
           className={cl(
             "w-5 h-5 transition-colors",
             secondary
-              ? "text-yellow-600/50 group-hover:text-yellow-600 dark:text-yellow-200/50 dark:group-hover:text-yellow-200"
+              ? "text-yellow-600/60 group-hover:text-yellow-600 dark:text-yellow-200/50 dark:group-hover:text-yellow-200"
               : "text-gray-400 group-hover:text-gray-500 dark:text-gray-600 dark:group-hover:text-gray-400"
           )}
         />

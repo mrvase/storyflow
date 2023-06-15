@@ -1,24 +1,34 @@
-import { RPCError } from "@nanorpc/server";
+import { RPCError, isError } from "@nanorpc/server";
 import { z } from "zod";
 import type { DBDocumentRaw } from "../types";
-import type { DBDocument } from "@storyflow/cms/types";
+import type { DBDocument, SyntaxTree } from "@storyflow/cms/types";
 import type {
   DocumentId,
   FieldId,
   FolderId,
+  NestedDocumentId,
   StoryflowConfig,
   ValueArray,
 } from "@storyflow/shared/types";
 import { client } from "../mongo";
 import { globals } from "../globals";
-import { createRawTemplateFieldId } from "@storyflow/cms/ids";
+import {
+  USER_DOCUMENT_OFFSET,
+  createDocumentId,
+  createRawTemplateFieldId,
+  getDocumentId,
+  replaceDocumentId,
+} from "@storyflow/cms/ids";
 import { parseDocument } from "../convert";
 import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
 import { getPaths } from "../paths";
 import { createObjectId } from "../mongo";
-import { save } from "../fields/save";
+import { saveResult, updateRecord } from "../fields/save";
 import { createFetcher } from "../create-fetcher";
 import { procedure } from "@storyflow/server/rpc";
+import { copyRecord } from "@storyflow/cms/copy-record-async";
+import { getSyntaxTreeEntries, isSyntaxTree } from "@storyflow/cms/syntax-tree";
+import { tokens } from "@storyflow/cms/tokens";
 
 export const documents = (config: StoryflowConfig) => {
   const dbName = undefined; // config.workspaces[0].db;
@@ -111,7 +121,176 @@ export const documents = (config: StoryflowConfig) => {
         })
       )
       .mutate(async (input) => {
-        return await save(input, dbName);
+        const documentId = input.id as DocumentId;
+
+        const db = await client.get(dbName);
+
+        const doc: Pick<
+          DBDocumentRaw,
+          "_id" | "fields" | "values" | "versions"
+        > = (await db
+          .collection<DBDocumentRaw>("documents")
+          .findOne({ _id: createObjectId(documentId) })) ?? {
+          _id: createObjectId(documentId),
+          fields: [],
+          values: {},
+          versions: { config: [0] },
+        };
+
+        // update record
+        const { record, derivatives } = await updateRecord({
+          documentId,
+          doc,
+          input,
+        });
+
+        // update versions
+        const versions = Object.assign(doc.versions, input.versions);
+
+        return await saveResult({
+          record,
+          derivatives,
+          versions,
+          documentId,
+          input,
+        });
+      }),
+
+    updateMany: procedure
+      .use(globals(config.api))
+      .schema(
+        z.object({
+          id: z.string(),
+          folder: z.string(),
+          config: z.array(z.any()),
+          record: z.record(z.string(), z.any()),
+          versions: z.record(z.string(), z.any()),
+          rows: z.array(z.array(z.string())),
+        })
+      )
+      .mutate(async (input) => {
+        const db = await client.get(dbName);
+
+        const documentId = input.id as DocumentId;
+
+        const doc: Pick<
+          DBDocumentRaw,
+          "_id" | "fields" | "values" | "versions"
+        > = {
+          _id: createObjectId(documentId),
+          fields: [],
+          values: {},
+          versions: { config: [0] },
+        };
+
+        // update record
+        let { record, derivatives } = await updateRecord({
+          documentId,
+          doc,
+          input,
+        });
+
+        // update versions
+        const versions = Object.assign(doc.versions, input.versions);
+
+        const ids: number[] = [];
+
+        const size = input.rows.length;
+
+        const fetchIds = async () => {
+          const counter = await db
+            .collection<{ name: string; counter: number }>("counters")
+            .findOneAndUpdate({ name: "id" }, { $inc: { counter: size } });
+          const number = (counter.value ?? { counter: 0 }).counter;
+          const first = number + USER_DOCUMENT_OFFSET + 1;
+          ids.push(
+            ...Array.from({ length: size - 1 }, (_, i) => first + 1 + i)
+          );
+          return first;
+        };
+
+        async function generateDocumentId(): Promise<DocumentId>;
+        async function generateDocumentId(
+          documentId: DocumentId
+        ): Promise<NestedDocumentId>;
+        async function generateDocumentId(
+          documentId?: DocumentId
+        ): Promise<DocumentId | NestedDocumentId> {
+          const number = ids.pop() ?? (await fetchIds());
+          if (documentId) return createDocumentId(number, documentId);
+          return createDocumentId(number);
+        }
+
+        const sharedRecord = record;
+
+        const result = await Promise.all(
+          input.rows.map(async (row, index) => {
+            const newDocumentId =
+              index === 0 ? documentId : await generateDocumentId();
+
+            /* COPY RECORD ER IKKE NOK! ÆNDRER IKKE ROOT KEYS */
+
+            // TODO replace contexts with values
+            const modifyNode = (node: SyntaxTree): SyntaxTree => {
+              return {
+                ...node,
+                children: node.children.map((child) => {
+                  if (isSyntaxTree(child)) {
+                    return modifyNode(child);
+                  } else if (tokens.isContextToken(child)) {
+                    if (child.ctx.startsWith("import:")) {
+                      const index = parseInt(child.ctx.split(":")[1], 10);
+                      const value = row[index];
+                      return value || "";
+                    }
+                    return child;
+                  }
+                  return child;
+                }),
+              };
+            };
+
+            let record = Object.fromEntries(
+              getSyntaxTreeEntries(sharedRecord).map(([key, value]) => {
+                if (getDocumentId(key) === documentId) {
+                  return [
+                    replaceDocumentId(key, newDocumentId),
+                    modifyNode(value),
+                  ];
+                }
+                return [key, modifyNode(value)];
+              })
+            );
+
+            if (index !== 0) {
+              record = await copyRecord(record, {
+                generateNestedDocumentId: () =>
+                  generateDocumentId(newDocumentId),
+                generateTemplateFieldId: (key: FieldId) =>
+                  replaceDocumentId(key, newDocumentId),
+                oldDocumentId: documentId,
+                newDocumentId,
+              });
+            }
+
+            return saveResult({
+              record,
+              derivatives,
+              versions,
+              documentId: newDocumentId,
+              input,
+            });
+          })
+        );
+
+        if (result.some((el) => el instanceof RPCError)) {
+          return new RPCError({
+            code: "SERVER_ERROR",
+            message: "Failed to update",
+          });
+        }
+
+        return result as DBDocument[];
       }),
 
     deleteMany: procedure

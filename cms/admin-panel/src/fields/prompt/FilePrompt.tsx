@@ -1,13 +1,7 @@
 import cl from "clsx";
 import type { TokenStream } from "../../operations/types";
 import React from "react";
-import {
-  getFileExtension,
-  getFileType,
-  getFileTypeFromExtension,
-  getImageSize,
-  getVideoSize,
-} from "../../data/files/file";
+import { getFileType, getImageSize, getVideoSize } from "../../data/files/file";
 import { useFiles } from "../../data/files";
 import { Spinner } from "../../elements/Spinner";
 import { useOptionEvents } from "./Option";
@@ -15,92 +9,7 @@ import { useOption } from "./OptionsContext";
 import { HoldActions } from "./useRestorableSelection";
 import { useOrganization } from "../../clients/auth";
 import { FileContainer } from "../../elements/FileContainer";
-
-function useFileInput(setLabel?: (label: string) => void) {
-  const [dragging, setDragging] = React.useState(false);
-  const [preview, setPreview] = React.useState<string | null>(null);
-  const [file, setFile] = React.useState<null | File>(null);
-
-  const state = {
-    file,
-    preview,
-  };
-
-  const enteredElement = React.useRef<HTMLLabelElement | null>(null);
-
-  const setFileOnUpload = async (newFile: File) => {
-    const type = getFileType(newFile.type);
-    if (type === null) return;
-    if (["image", "video"].includes(type)) {
-      setPreview(URL.createObjectURL(newFile));
-    }
-    setLabel?.(newFile.name.replace(/(.*)\.[^.]+$/, "$1"));
-    setFile(newFile);
-  };
-
-  const onChange = (ev: React.ChangeEvent<HTMLInputElement>) => {
-    const newFile = ev.target.files?.[0] ?? null;
-    if (newFile) {
-      setFileOnUpload(newFile);
-    }
-  };
-
-  const onDragOver = (ev: React.DragEvent<HTMLLabelElement>) => {
-    if (ev.dataTransfer.types.includes("Files")) {
-      enteredElement.current = ev.currentTarget;
-      ev.preventDefault();
-      ev.stopPropagation();
-    }
-  };
-
-  const onDrop = (ev: React.DragEvent<HTMLLabelElement>) => {
-    if (ev.dataTransfer.types.includes("Files")) {
-      ev.preventDefault();
-      ev.stopPropagation();
-      setDragging(false);
-      const newFile = ev.dataTransfer.files?.[0];
-      if (newFile) setFileOnUpload(newFile);
-    }
-  };
-
-  const onDragEnter = (ev: React.DragEvent<HTMLLabelElement>) => {
-    if (ev.dataTransfer.types.includes("Files")) {
-      ev.preventDefault();
-      ev.stopPropagation();
-      setDragging(true);
-    }
-  };
-
-  const onDragLeave = (ev: React.DragEvent<HTMLLabelElement>) => {
-    if (ev.dataTransfer.types.includes("Files")) {
-      ev.preventDefault();
-      ev.stopPropagation();
-      if (enteredElement.current === ev.target) {
-        setDragging(false);
-        enteredElement.current = null;
-      }
-    }
-  };
-
-  const resetFile = () => {
-    setFile(null);
-    setPreview(null);
-    setLabel?.("");
-  };
-
-  const actions = {
-    onChange,
-    dragEvents: {
-      onDragOver,
-      onDrop,
-      onDragEnter,
-      onDragLeave,
-    },
-    resetFile,
-  };
-
-  return [state, actions] as [typeof state, typeof actions];
-}
+import { useFileInput } from "../../data/files/useFileInput";
 
 export function FilePrompt({
   prompt,
@@ -175,9 +84,11 @@ function UploadOption({
   const [label, setLabel] = React.useState("");
 
   const [{ file, preview }, { onChange, dragEvents, resetFile }] = useFileInput(
-    (label: string) => {
-      if (!prompt) setLabel(label);
-      holdActions.release();
+    {
+      setLabel: (label: string) => {
+        if (!prompt) setLabel(label);
+        holdActions.release();
+      },
     }
   );
 

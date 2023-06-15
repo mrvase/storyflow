@@ -64,7 +64,7 @@ export function AddFolderDialog({
       );
       if (type === "app") {
         addDocument({
-          folder: newFolderId,
+          folderId: newFolderId,
           createRecord: (id) => ({
             [createTemplateFieldId(id, DEFAULT_FIELDS.label.id)]: {
               ...DEFAULT_SYNTAX_TREE,

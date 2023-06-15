@@ -17,6 +17,7 @@ export const auth = (keyFromArg?: string) =>
     if (!ctx.req || ctx.req.method === "OPTIONS") {
       return next(input, { ...ctx, email: "" });
     }
+
     const tokenHeader = ctx.req.headers.get("x-storyflow-token");
     const key = keyFromArg ?? (ctx as any).key;
     if (!key) {

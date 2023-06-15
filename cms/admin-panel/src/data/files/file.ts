@@ -130,7 +130,7 @@ export const getVideoSize = (src: string) => {
 
 export const getFileType = (fileType: string) => {
   const type = fileType.split("/")[0];
-  if (["video", "image", "application"].includes(type)) return type;
+  if (["video", "image", "text", "application"].includes(type)) return type;
   return null;
 };
 
@@ -138,6 +138,7 @@ const files = {
   image: ["png", "jpg", "jpeg", "avif", "webp"],
   video: ["mp4", "mov", "wmv", "flv", "avi"],
   application: ["pdf"],
+  text: ["csv"],
 };
 
 export const getFileTypeFromExtension = (extension: string) => {

@@ -2,7 +2,6 @@ import type {
   DocumentId,
   FieldId,
   NestedDocumentId,
-  RawDocumentId,
 } from "@storyflow/shared/types";
 import type {
   SyntaxTreeRecord,
@@ -11,134 +10,17 @@ import type {
 } from "@storyflow/cms/types";
 import type { DocumentConfig } from "@storyflow/cms/types";
 import {
-  createRawTemplateFieldId,
   createTemplateFieldId,
   getDocumentId,
-  getIdFromString,
-  getRawDocumentId,
   getRawFieldId,
-  isNestedDocumentId,
-  replaceDocumentId,
 } from "@storyflow/cms/ids";
 import { fetchDocument } from "./index";
-import { isSyntaxTree, getSyntaxTreeEntries } from "@storyflow/cms/syntax-tree";
-import { tokens } from "@storyflow/cms/tokens";
 import { splitTransformsAndRoot } from "@storyflow/cms/transform";
 import { Timeline } from "@storyflow/collab/Timeline";
 import { createTransaction } from "@storyflow/collab/utils";
 import { FieldTransactionEntry } from "../operations/actions";
 import { createTokenStream } from "../operations/parse-token-stream";
-import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
-
-export const copyRecord = (
-  originalRecord: SyntaxTreeRecord,
-  options: {
-    oldDocumentId: DocumentId;
-    newDocumentId: DocumentId;
-    generateNestedDocumentId: () => NestedDocumentId;
-    generateTemplateFieldId?: (key: FieldId) => FieldId;
-  }
-) => {
-  const newNestedIds = new Map<RawDocumentId, NestedDocumentId>();
-
-  const getNewNestedId = (oldRaw: RawDocumentId) => {
-    const existing = newNestedIds.get(oldRaw);
-    if (existing) return existing;
-    const newId = options.generateNestedDocumentId();
-    newNestedIds.set(oldRaw, newId);
-    return newId;
-  };
-
-  const getNewKey = (key: FieldId) => {
-    if (getDocumentId(key) !== options.oldDocumentId) return key;
-    return options.generateTemplateFieldId!(key);
-  };
-
-  let record: SyntaxTreeRecord = {};
-
-  const modifyNode = (node: SyntaxTree): SyntaxTree => {
-    return {
-      ...node,
-      children: node.children.map((token) => {
-        if (isSyntaxTree(token)) {
-          const newToken = { ...token };
-          if (newToken.type === "loop") {
-            newToken.data = getRawDocumentId(getNewNestedId(token.data!));
-          }
-          return modifyNode(newToken);
-        } else if (
-          tokens.isNestedEntity(token) &&
-          isNestedDocumentId(token.id)
-        ) {
-          const newNestedId = getNewNestedId(getRawDocumentId(token.id));
-          const newToken = { ...token };
-          newToken.id = newNestedId;
-
-          // replace references to the old template fields with references to the new ones
-          if (
-            options.generateTemplateFieldId &&
-            "field" in newToken &&
-            getDocumentId(newToken.field) === options.oldDocumentId
-          ) {
-            newToken.field = getNewKey(newToken.field);
-          } else if (
-            "field" in newToken &&
-            newToken.field.endsWith(getIdFromString("data"))
-          ) {
-            newToken.field = replaceDocumentId(
-              newToken.field,
-              getNewNestedId(getRawDocumentId(getDocumentId(newToken.field)))
-            );
-          }
-
-          return newToken;
-        }
-        return token;
-      }),
-    };
-  };
-
-  const exludeFields = new Set(
-    [DEFAULT_FIELDS.creation_date.id, DEFAULT_FIELDS.template_label.id].map(
-      createRawTemplateFieldId
-    )
-  );
-
-  getSyntaxTreeEntries(originalRecord).forEach(([key, value]) => {
-    // fix template field ids
-    let newKey = key;
-
-    if (exludeFields.has(getRawFieldId(key))) {
-      console.log("EXCLUDING FIELD!!", key, value);
-      return;
-    }
-
-    if (
-      options.generateTemplateFieldId &&
-      getDocumentId(key) === options.oldDocumentId
-    ) {
-      newKey = getNewKey(key);
-    }
-
-    record[newKey] = modifyNode(value);
-  });
-
-  // fix nested record keys
-  record = Object.fromEntries(
-    getSyntaxTreeEntries(record).map(([key, value]) => {
-      const parentId = getDocumentId(key);
-      const raw = getRawDocumentId(parentId);
-      let newKey = key;
-
-      if (newNestedIds.has(raw)) {
-        newKey = replaceDocumentId(key, newNestedIds.get(raw)!);
-      }
-
-      return [newKey, value];
-    })
-  );
-  return record;
-};
+import { copyRecord } from "@storyflow/cms/copy-record-async";
 
 export const getDefaultValuesFromTemplateAsync = async (
   newDocumentId: DocumentId,
@@ -153,12 +35,14 @@ export const getDefaultValuesFromTemplateAsync = async (
   const doc = await fetchDocument(templateId);
 
   if (doc) {
-    return copyRecord(doc.record, {
+    return await copyRecord(doc.record, {
       oldDocumentId: doc._id,
       newDocumentId,
-      generateNestedDocumentId: () => options.generateDocumentId(newDocumentId),
+      generateNestedDocumentId: async () =>
+        options.generateDocumentId(newDocumentId),
       generateTemplateFieldId: (key) =>
         createTemplateFieldId(newDocumentId, key),
+      excludeSpecialTemplateFields: true,
     });
   }
 

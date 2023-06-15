@@ -76,7 +76,7 @@ export function Option<T>({
       ref={ref}
       className={cl(
         "group h-10 shrink-0 rounded text-sm cursor-default",
-        isSelected && "bg-gray-800",
+        isSelected && "bg-gray-100 dark:bg-gray-800",
         "hover:ring-1 hover:ring-inset hover:ring-gray-700",
         "flex items-center justify-between"
       )}
@@ -89,7 +89,7 @@ export function Option<T>({
       <div
         className={cl(
           "flex items-center",
-          !style && "text-white text-opacity-90"
+          !style && "text-gray-800 dark:text-white text-opacity-90"
         )}
       >
         {Icon && (

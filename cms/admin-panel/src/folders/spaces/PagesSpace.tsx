@@ -145,7 +145,9 @@ export function PagesSpace({
       label={
         <>
           {t.documents.pages()}
-          {rows.length === 0 ? <AddFrontPageButton folder={folderId} /> : null}
+          {rows.length === 0 ? (
+            <AddFrontPageButton folderId={folderId} />
+          ) : null}
         </>
       }
       buttons={
@@ -169,7 +171,7 @@ export function PagesSpace({
         <AddDocumentDialog
           isOpen={Boolean(parentUrl)}
           close={close}
-          folder={folderId}
+          folderId={folderId}
           parentUrl={parentUrl}
           type="app"
         />
@@ -193,7 +195,7 @@ export function PagesSpace({
   );
 }
 
-function AddFrontPageButton({ folder }: { folder: FolderId }) {
+function AddFrontPageButton({ folderId }: { folderId: FolderId }) {
   const t = useTranslation();
 
   const addDocument = useAddDocument({ navigate: true });
@@ -203,7 +205,7 @@ function AddFrontPageButton({ folder }: { folder: FolderId }) {
       icon={PlusIcon}
       onClick={() =>
         addDocument({
-          folder,
+          folderId,
           createRecord: (id) => ({
             [createTemplateFieldId(id, DEFAULT_FIELDS.creation_date.id)]: {
               ...DEFAULT_SYNTAX_TREE,

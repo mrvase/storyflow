@@ -199,7 +199,7 @@ export default function UrlField({ id }: FieldProps) {
         <AddDocumentDialog
           isOpen={Boolean(dialogUrl)}
           close={close}
-          folder={folder._id}
+          folderId={folder._id}
           parentUrl={dialogUrl}
           type="app"
         />

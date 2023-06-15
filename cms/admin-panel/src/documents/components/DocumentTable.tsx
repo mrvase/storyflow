@@ -203,7 +203,7 @@ function LabelColumn({ doc }: { doc: DBDocument }) {
       <span
         className={cl(
           "truncate -my-2.5 py-2.5",
-          isModified && !doc.folder && "text-yellow-400"
+          isModified && !doc.folder && "text-yellow-600 dark:text-yellow-200"
         )}
       >
         {label || "Unavngivet dokument"}
@@ -212,7 +212,7 @@ function LabelColumn({ doc }: { doc: DBDocument }) {
         <div
           className={cl(
             "w-2 h-2 rounded ml-2",
-            !doc.folder ? "bg-yellow-400" : "bg-teal-400"
+            !doc.folder ? "bg-yellow-600 dark:bg-yellow-200" : "bg-teal-400"
           )}
         />
       )}

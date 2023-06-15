@@ -56,6 +56,7 @@ import { useNavigate, usePath, useRoute } from "@nanokit/router";
 import { DragIcon } from "../elements/DragIcon";
 import { InlineButton } from "../elements/InlineButton";
 import { LinkIcon } from "@heroicons/react/24/outline";
+import { ImportContextProvider } from "./ImportContext";
 
 const spaces: { label: string; item: Omit<Space, "id"> }[] = [
   {
@@ -202,120 +203,122 @@ export default function FolderPage({
 
   return (
     <FolderContext.Provider value={folder}>
-      <FolderDomainsProvider domains={folder?.domains}>
-        <FocusOrchestrator>
-          <Content small={!isSelected && nextIsDocument}>
-            <Content.Header>
-              <div>
-                <FolderLabel
-                  isApp={type === "app"}
-                  folder={folder}
-                  onChange={(value) => {
-                    mutateProp("label", value);
-                  }}
-                />
-              </div>
-              <Content.Toolbar>
-                {type === "data" && (
-                  <FolderTemplateButton
-                    template={folder?.template}
-                    openDialog={() => setTemplateDialogIsOpen(true)}
+      <ImportContextProvider>
+        <FolderDomainsProvider domains={folder?.domains}>
+          <FocusOrchestrator>
+            <Content small={!isSelected && nextIsDocument}>
+              <Content.Header>
+                <div>
+                  <FolderLabel
+                    isApp={type === "app"}
+                    folder={folder}
+                    onChange={(value) => {
+                      mutateProp("label", value);
+                    }}
                   />
-                )}
-                {folder && (
-                  <>
-                    <DomainsButton
-                      parentDomains={parentDomains ?? undefined}
-                      domains={folder.domains}
-                      mutate={(domains) => mutateProp("domains", domains)}
+                </div>
+                <Content.Toolbar>
+                  {type === "data" && (
+                    <FolderTemplateButton
+                      template={folder?.template}
+                      openDialog={() => setTemplateDialogIsOpen(true)}
                     />
-                  </>
-                )}
-                {type === "app" && folder ? (
-                  <div
-                    className={cl(
-                      "flex-center",
-                      "transition-opacity",
-                      true ? "opacity-100" : "opacity-0 pointer-events-none"
-                    )}
-                  >
-                    <RefreshButton
-                      namespace={folder._id}
-                      domain={folder?.domains?.[0]}
-                    />
-                  </div>
-                ) : undefined}
-              </Content.Toolbar>
-            </Content.Header>
-            <Content.SecondaryToolbar>
-              <Content.ToolbarDragButton
-                id={`nyt-space-mapper`}
-                type="spaces"
-                icon={DragIcon}
-                label="Mapper"
-                item={spaces[0].item}
-                secondary
-              />
-              <Content.ToolbarDragButton
-                id={`nyt-space-dokumenter`}
-                type="spaces"
-                icon={DragIcon}
-                label="Dokumenter"
-                item={spaces[1].item}
-                secondary
-              />
-              <Menu
-                as={Content.ToolbarButton}
-                label="Andre spaces"
-                icon={StopIcon}
-                secondary
-              >
-                {spaces.slice(2).map((el) => (
-                  <Menu.DragItem
-                    key={el.label}
-                    type="spaces"
-                    id={`nyt-space-${el.label}`}
-                    icon={DragIcon}
-                    onClick={onClick}
-                    {...el}
-                  />
-                ))}
-              </Menu>
-            </Content.SecondaryToolbar>
-            {folder && (
-              <>
-                <AddTemplateDialog
-                  isOpen={templateDialogIsOpen}
-                  close={() => setTemplateDialogIsOpen(false)}
-                  folderId={folder._id}
-                  currentTemplate={folder.template}
-                />
-                <Sortable
+                  )}
+                  {folder && (
+                    <>
+                      <DomainsButton
+                        parentDomains={parentDomains ?? undefined}
+                        domains={folder.domains}
+                        mutate={(domains) => mutateProp("domains", domains)}
+                      />
+                    </>
+                  )}
+                  {type === "app" && folder ? (
+                    <div
+                      className={cl(
+                        "flex-center",
+                        "transition-opacity",
+                        true ? "opacity-100" : "opacity-0 pointer-events-none"
+                      )}
+                    >
+                      <RefreshButton
+                        namespace={folder._id}
+                        domain={folder?.domains?.[0]}
+                      />
+                    </div>
+                  ) : undefined}
+                </Content.Toolbar>
+              </Content.Header>
+              <Content.SecondaryToolbar>
+                <Content.ToolbarDragButton
+                  id={`nyt-space-mapper`}
                   type="spaces"
-                  id={`${folder._id}-spaces`}
-                  onChange={onChange}
-                  canReceive={{
-                    link: () => "ignore",
-                    move: ({ type, item }) =>
-                      type === "spaces" ? "accept" : "ignore",
-                  }}
-                  disabled={!isSelected}
+                  icon={DragIcon}
+                  label="Mapper"
+                  item={spaces[0].item}
+                  secondary
+                />
+                <Content.ToolbarDragButton
+                  id={`nyt-space-dokumenter`}
+                  type="spaces"
+                  icon={DragIcon}
+                  label="Dokumenter"
+                  item={spaces[1].item}
+                  secondary
+                />
+                <Menu
+                  as={Content.ToolbarButton}
+                  label="Andre spaces"
+                  icon={StopIcon}
+                  secondary
                 >
-                  <div className="flex flex-col gap-8">
-                    {(folder.spaces ?? []).map(renderSpace)}
-                    <DropShadow>
-                      {(item) =>
-                        renderSpace(item, (folder.spaces ?? []).length)
-                      }
-                    </DropShadow>
-                  </div>
-                </Sortable>
-              </>
-            )}
-          </Content>
-        </FocusOrchestrator>
-        {children}
-      </FolderDomainsProvider>
+                  {spaces.slice(2).map((el) => (
+                    <Menu.DragItem
+                      key={el.label}
+                      type="spaces"
+                      id={`nyt-space-${el.label}`}
+                      icon={DragIcon}
+                      onClick={onClick}
+                      {...el}
+                    />
+                  ))}
+                </Menu>
+              </Content.SecondaryToolbar>
+              {folder && (
+                <>
+                  <AddTemplateDialog
+                    isOpen={templateDialogIsOpen}
+                    close={() => setTemplateDialogIsOpen(false)}
+                    folderId={folder._id}
+                    currentTemplate={folder.template}
+                  />
+                  <Sortable
+                    type="spaces"
+                    id={`${folder._id}-spaces`}
+                    onChange={onChange}
+                    canReceive={{
+                      link: () => "ignore",
+                      move: ({ type, item }) =>
+                        type === "spaces" ? "accept" : "ignore",
+                    }}
+                    disabled={!isSelected}
+                  >
+                    <div className="flex flex-col gap-8">
+                      {(folder.spaces ?? []).map(renderSpace)}
+                      <DropShadow>
+                        {(item) =>
+                          renderSpace(item, (folder.spaces ?? []).length)
+                        }
+                      </DropShadow>
+                    </div>
+                  </Sortable>
+                </>
+              )}
+            </Content>
+          </FocusOrchestrator>
+          {children}
+        </FolderDomainsProvider>
+      </ImportContextProvider>
     </FolderContext.Provider>
   );
 }

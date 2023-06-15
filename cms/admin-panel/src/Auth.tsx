@@ -67,7 +67,7 @@ export function SignIn() {
         <input
           type="text"
           name="email"
-          className="bg-gray-900 focus:bg-gray-850 px-5 py-2.5 rounded w-72 outline-none"
+          className="bg-gray-50 focus:bg-white dark:bg-gray-900 focus:dark:bg-gray-850 px-5 py-2.5 rounded w-72 outline-none"
           placeholder="email"
           autoComplete="off"
         />

@@ -307,9 +307,13 @@ input[type="range"]:focus::-moz-range-thumb {
   left: 1px;
   right: 1px;
   bottom: 1px;
-  background-color: #18212f;
+  background-color: white;
   z-index: -1;
   border-radius: 4px;
+}
+
+.dark .gradient-border:after {
+  background-color: #12161e;
 }
 
 @keyframes animatedgradient {

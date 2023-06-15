@@ -97,7 +97,7 @@ const MenuItems = ({
   return (
     <MenuTransition
       show={open}
-      className={cl("absolute z-20", align === "right" && "right-0")}
+      className={cl("absolute z-50", align === "right" && "right-0")}
     >
       <HeadlessMenu.Items
         static

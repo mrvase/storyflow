@@ -53,6 +53,7 @@ import { DragIcon } from "../elements/DragIcon";
 import { EditableLabel } from "../elements/EditableLabel";
 import { useDefaultState } from "../fields/default/useDefaultState";
 import { createTransaction } from "@storyflow/collab/utils";
+import { ImportData, useImportContext } from "../folders/ImportContext";
 
 function useIsModified(id: DocumentId) {
   const [isModified, setIsModified] = React.useState(false);
@@ -298,6 +299,7 @@ const Page = ({
               </Content.Toolbar>
             </Content.Header>
             <SecondaryToolbar id={id} />
+            <ImportData />
             <div className="pb-96 flex flex-col -mt-8">
               {folderData.type === "app" &&
                 !templateId &&
@@ -358,7 +360,7 @@ function TemplateSelect({ documentId }: { documentId: DocumentId }) {
       ].map((doc) => (
         <button
           key={doc._id}
-          className="rounded bg-gray-800 ring-button p-5 text-center"
+          className="rounded bg-gray-100 dark:bg-gray-800 ring-button p-5 text-center"
           onClick={() => {
             push([["", [[0, 0, [{ template: doc._id }]]]]]);
           }}
@@ -372,7 +374,15 @@ function TemplateSelect({ documentId }: { documentId: DocumentId }) {
 
 function SaveButton({ id, folderId }: { id: DocumentId; folderId: FolderId }) {
   const [isLoading, setIsLoading] = React.useState(false);
-  const saveDocument = useSaveDocument(id, folderId);
+  const [imports, setState] = useImportContext();
+
+  console.log("ROWS", imports);
+
+  const saveDocument = useSaveDocument({
+    documentId: id,
+    folderId,
+    rows: imports.state === "data" ? imports.rows : undefined,
+  });
 
   const updatedUrlsQuery = useImmutableQuery(
     query.documents.getUpdatedPaths({

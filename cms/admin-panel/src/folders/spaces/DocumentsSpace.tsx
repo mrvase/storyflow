@@ -34,6 +34,8 @@ import DocumentTable from "../../documents/components/DocumentTable";
 import { useTranslation } from "../../translation/TranslationContext";
 import { EditableLabel } from "../../elements/EditableLabel";
 import { InlineButton } from "../../elements/InlineButton";
+import { useImportContext } from "../ImportContext";
+import Dialog from "../../elements/Dialog";
 
 export function DocumentsSpace({
   space,
@@ -113,13 +115,13 @@ export function DocumentsSpace({
               );
             }}
           />
-          <AddDocumentButton folder={folderId} />
+          <AddDocumentButton folderId={folderId} />
         </>
       }
       buttons={
         <>
           <Menu as={Space.Button} icon={EllipsisHorizontalIcon} align="right">
-            <ImportButton />
+            <ImportButton folderId={folderId} />
             <ExportButton />
             <Menu.Item
               label={t.folders.deleteSpace()}
@@ -186,15 +188,21 @@ function LinkableLabel({
   );
 }
 
-function ImportButton() {
+function ImportButton({ folderId }: { folderId: FolderId }) {
+  const [, setImportState] = useImportContext();
+  const template = useCurrentFolder()?.template;
+  const addDocument = useAddDocument({ navigate: true });
+
   const t = useTranslation();
-  const handleImport = () => {};
 
   return (
     <Menu.Item
       label={t.documents.importDocuments()}
       icon={ArrowUpTrayIcon}
-      onClick={handleImport}
+      onClick={() => {
+        setImportState({ state: "open" });
+        addDocument({ folderId, template });
+      }}
     />
   );
 }
@@ -242,7 +250,7 @@ function ExportButton() {
   );
 }
 
-function AddDocumentButton({ folder }: { folder: FolderId }) {
+function AddDocumentButton({ folderId }: { folderId: FolderId }) {
   const t = useTranslation();
   const template = useCurrentFolder()?.template;
   const addDocument = useAddDocument({ navigate: true });
@@ -250,7 +258,7 @@ function AddDocumentButton({ folder }: { folder: FolderId }) {
   return (
     <InlineButton
       icon={PlusIcon}
-      onClick={() => addDocument({ folder, template })}
+      onClick={() => addDocument({ folderId, template })}
       className="ml-3"
     >
       {t.documents.addDocuments({ count: 1 })}

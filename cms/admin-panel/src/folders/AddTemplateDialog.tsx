@@ -32,7 +32,7 @@ export function AddTemplateDialog({
 
   const push = usePush<FolderTransactionEntry>("folders");
 
-  const templateFolder = useTemplateFolder()?._id;
+  const templateFolderId = useTemplateFolder()?._id;
 
   const onSubmit = React.useCallback(
     async (type: string, data: FormData) => {
@@ -42,7 +42,7 @@ export function AddTemplateDialog({
       let id: DocumentId;
       if (type === "new") {
         id = await addDocument({
-          folder: templateFolder,
+          folderId: templateFolderId,
           createRecord: (id) => {
             return {
               [createTemplateFieldId(id, DEFAULT_FIELDS.creation_date.id)]: {
@@ -67,10 +67,10 @@ export function AddTemplateDialog({
       );
       close();
     },
-    [push, folderId, addDocument, templateFolder, close]
+    [push, folderId, addDocument, templateFolderId, close]
   );
 
-  const { documents: templates } = useDocumentList(templateFolder);
+  const { documents: templates } = useDocumentList(templateFolderId);
 
   const templateOptions = (templates ?? []).map((el) => ({
     value: el._id,

@@ -53,23 +53,31 @@ const splitIntoQueues = (
   }, {});
 };
 
-export const useSaveDocument = (
-  documentId: DocumentId,
-  folderId_: FolderId
-) => {
+export const useSaveDocument = ({
+  documentId,
+  folderId: folderIdFromArg,
+  rows,
+}: {
+  documentId: DocumentId;
+  folderId: FolderId;
+  rows?: string[][];
+}) => {
   const { doc } = useDocument(documentId);
 
-  const folderId = isTemplateDocument(documentId) ? TEMPLATE_FOLDER : folderId_;
+  const folderId = isTemplateDocument(documentId)
+    ? TEMPLATE_FOLDER
+    : folderIdFromArg;
 
   const push = usePush<DocumentAddTransactionEntry>("documents");
 
-  const func = useMutation(mutate.documents.update, {
-    onSuccess(result, input) {
+  const onSuccess = (result: DBDocument | DBDocument[]) => {
+    const array = Array.isArray(result) ? result : [result];
+    array.map((result) => {
       cache.set(query.documents.find({ folder: folderId, limit: 50 }), (ps) => {
         if (!ps) {
           return ps;
         }
-        const index = ps.findIndex((el) => el._id === input.id);
+        const index = ps.findIndex((el) => el._id === result._id);
         const newDocuments = [...ps];
         if (index >= 0) {
           newDocuments[index] = { ...newDocuments[index], ...result };
@@ -79,8 +87,16 @@ export const useSaveDocument = (
         return newDocuments;
       });
 
-      cache.set(query.documents.findById(input.id), result);
-    },
+      cache.set(query.documents.findById(result._id), result);
+    });
+  };
+
+  const updateOne = useMutation(mutate.documents.update, {
+    onSuccess,
+  });
+
+  const updateMany = useMutation(mutate.documents.updateMany, {
+    onSuccess,
   });
 
   return async (timeline: TimelineEntry[]): Promise<boolean> => {
@@ -129,8 +145,6 @@ export const useSaveDocument = (
       versions: updatedVersions,
     };
 
-    console.log("INPUT", input);
-
     push(
       createTransaction((t) => {
         t.target(folderId);
@@ -139,7 +153,9 @@ export const useSaveDocument = (
       })
     );
 
-    const result = await func(input);
+    const result = await (rows
+      ? updateMany({ ...input, rows })
+      : updateOne(input));
 
     if (isError(result)) {
       push(

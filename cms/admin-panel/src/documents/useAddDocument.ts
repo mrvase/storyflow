@@ -30,7 +30,7 @@ export const useAddDocument = (
 
   const addDocument = React.useCallback(
     async (data: {
-      folder: FolderId;
+      folderId: FolderId;
       template?: DocumentId;
       createRecord?: (id: DocumentId) => SyntaxTreeRecord;
     }) => {
@@ -40,7 +40,7 @@ export const useAddDocument = (
           : generateDocumentId();
       push(
         createTransaction((t) =>
-          t.target(data.folder).toggle({ name: "add", value: id })
+          t.target(data.folderId).toggle({ name: "add", value: id })
         )
       );
 

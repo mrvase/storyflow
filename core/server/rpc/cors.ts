@@ -2,8 +2,10 @@ import { procedure } from "./procedure";
 
 export const cors = (allowedOrigins?: string[] | "allow-all") =>
   procedure.middleware(async (input, ctx, next) => {
-    if (!allowedOrigins || !ctx.res || !ctx.req)
+    if (!allowedOrigins || !ctx.res || !ctx.req) {
       return next(input, { ...ctx, cors: false });
+    }
+
     const headers = ctx.res.headers;
 
     const origin = ctx.req.headers.get("origin");

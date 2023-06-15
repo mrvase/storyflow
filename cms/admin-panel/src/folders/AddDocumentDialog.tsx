@@ -42,13 +42,13 @@ export function useAddDocumentDialog() {
 export function AddDocumentDialog({
   isOpen,
   close,
-  folder,
+  folderId,
   parentUrl,
   type,
 }: {
   isOpen: boolean;
   close: () => void;
-  folder: FolderId;
+  folderId: FolderId;
   parentUrl?: {
     id: FieldId;
     record: SyntaxTreeRecord;
@@ -74,7 +74,7 @@ export function AddDocumentDialog({
           try {
             ev.preventDefault();
             addDocument({
-              folder,
+              folderId,
               createRecord: (id) => ({
                 [createTemplateFieldId(id, DEFAULT_FIELDS.creation_date.id)]: {
                   ...DEFAULT_SYNTAX_TREE,

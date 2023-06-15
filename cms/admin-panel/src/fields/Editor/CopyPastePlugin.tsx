@@ -17,7 +17,7 @@ import {
 } from "lexical";
 import { mergeRegister } from "../../editor/utils/mergeRegister";
 import { useEditorContext } from "../../editor/react/EditorProvider";
-import { copyRecord } from "../../documents/template-fields";
+import { copyRecord } from "@storyflow/cms/copy-record";
 import { useAppConfig } from "../../AppConfigContext";
 import { useFieldId } from "../FieldIdContext";
 import {

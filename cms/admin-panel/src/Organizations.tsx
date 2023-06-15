@@ -20,17 +20,21 @@ export function Organizations() {
     <div className="w-full h-full flex flex-col">
       <div className="w-full flex-center p-5 grow">
         <div className="grid grid-cols-3 w-full max-w-4xl gap-5">
-          <AddOrganization index={0} />
           {data.organizations.map((data, index) => (
-            <Organization index={index + 1} key={data.slug} data={data} />
+            <Organization index={index} key={data.slug} data={data} />
           ))}
         </div>
       </div>
       <div className="w-full py-5 flex flex-col gap-3 items-center text-sm">
         <div className="text-gray-600">Logget ind som {data.email}</div>
-        <Link to="/logout" className="rounded px-4 py-2 ring-button">
-          Log ud
-        </Link>
+        <div className="flex gap-3">
+          <Link to="/logout" className="rounded px-4 py-2 ring-button">
+            Tilføj
+          </Link>
+          <Link to="/logout" className="rounded px-4 py-2 ring-button">
+            Log ud
+          </Link>
+        </div>
       </div>
     </div>
   );
