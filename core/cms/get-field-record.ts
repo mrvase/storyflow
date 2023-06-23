@@ -8,6 +8,7 @@ import {
   NestedElement,
   DocumentId,
   FolderId,
+  Sorting,
 } from "@storyflow/shared/types";
 import { FolderFetch, calculate, StateGetter } from "./calculate-server";
 import { DEFAULT_SYNTAX_TREE } from "./constants";
@@ -24,6 +25,7 @@ export const createFieldRecordGetter = (
     folder: FolderId;
     filters: Record<RawFieldId, ValueArray>;
     limit: number;
+    sort?: Sorting[];
   }) => Promise<{ _id: DocumentId; record: SyntaxTreeRecord }[]>
 ) => {
   const superRecord = { ...docRecord };
@@ -64,6 +66,7 @@ export const createFieldRecordGetter = (
             folder: el.folder.folder,
             filters,
             limit: el.limit,
+            ...(el.sort && { sort: el.sort }),
           });
 
           let list: NestedDocument[] = [];

@@ -240,6 +240,7 @@ export function calculate(
               {
                 folder: el,
                 limit,
+                ...(sort.length ? { sort } : {}),
               },
               {
                 external: true,

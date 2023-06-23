@@ -166,6 +166,7 @@ type DefaultPropTypes = {
   color: string;
   image: string;
   video: string;
+  file: string;
   number: number;
   boolean: boolean;
   children: (string | number | Element)[];

@@ -88,6 +88,9 @@ export const normalizeProp = (
   } else if (type === "video") {
     let str = typeof value === "object" && "src" in value ? value.src : "";
     return transforms.video ? transforms.video(str) : str;
+  } else if (type === "file") {
+    let str = typeof value === "object" && "src" in value ? value.src : "";
+    return transforms.file ? transforms.file(str) : str;
   } else if (type === "boolean") {
     return value === "false" ? false : Boolean(value);
   } else if (type === "number") {

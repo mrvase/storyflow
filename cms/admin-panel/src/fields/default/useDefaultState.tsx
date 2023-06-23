@@ -114,9 +114,9 @@ export function useDefaultState(id: FieldId) {
   const templateId =
     id === rootId
       ? useFieldConfig(rootId)[0]?.template
-      : (transforms.find((el) => el.type === "template")?.data as
-          | RawDocumentId
-          | undefined);
+      : transforms.find(
+          (el): el is FieldTransform<"template"> => el.type === "template"
+        )?.data;
 
   return {
     target,

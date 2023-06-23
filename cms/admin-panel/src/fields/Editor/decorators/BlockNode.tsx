@@ -33,14 +33,11 @@ export default class BlockNode extends ElementNode {
     const el = document.createElement("div");
     const name = getFunctionName(this.__func);
     const signature = name in SIGNATURES ? SIGNATURES[name] : [name];
-    if (name === "convert") {
-      const value = this.__func[name as never];
-      el.style.setProperty(`--p1`, `" ${signature[0]} ${value}"`);
-    } else {
-      signature.forEach((param, index) => {
-        el.style.setProperty(`--p${index + 1}`, `" ${param}"`);
-      });
-    }
+
+    signature.forEach((param, index) => {
+      el.style.setProperty(`--p${index + 1}`, `" ${param}"`);
+    });
+
     el.classList.add("block-node");
     return el;
   }

@@ -20,6 +20,15 @@ export const createFetcher =
         })
     );
 
+    const sort = fetchObject.sort?.length
+      ? Object.fromEntries(
+          fetchObject.sort.map((el): [string, 1 | -1] => [
+            `values.${el.slice(1)}`,
+            el.slice(0, 1) === "+" ? 1 : -1,
+          ])
+        )
+      : { _id: -1 as -1 };
+
     const db = await client.get(dbName);
     const result = await db
       .collection<DBDocumentRaw>("documents")
@@ -27,7 +36,7 @@ export const createFetcher =
         folder: createObjectId(fetchObject.folder),
         ...filters,
       })
-      .sort({ _id: -1 })
+      .sort(sort)
       .limit(fetchObject.limit)
       .toArray();
 

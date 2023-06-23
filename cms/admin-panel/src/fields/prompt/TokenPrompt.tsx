@@ -92,7 +92,12 @@ export function TokenPrompt({
       onEnter: React.useCallback(() => {
         replacePromptWithStream([true]);
       }, [replacePromptWithStream]),
-      match: "Indsæt checkboks".toLowerCase().includes(prompt.toLowerCase()),
+      match:
+        "Indsæt checkboks".toLowerCase().includes(prompt.toLowerCase()) ||
+        prompt.toLowerCase() === "ja" ||
+        prompt.toLowerCase() === "true" ||
+        prompt.toLowerCase() === "nej" ||
+        prompt.toLowerCase() === "false",
     },
   ];
 

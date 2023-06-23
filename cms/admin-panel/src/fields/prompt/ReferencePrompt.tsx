@@ -302,11 +302,14 @@ function DocumentPrompt({
           id: el._id,
           templateId: folders.find((f) => f._id === el.folder)?.template,
         },
-        label:
+        label: `${
           (calculateRootFieldFromRecord(
             createTemplateFieldId(el._id, DEFAULT_FIELDS.label.id),
             el.record
-          )?.[0] as string) ?? "",
+          )?.[0] as string) ?? ""
+        } (${
+          folders.find(({ _id }) => _id === el.folder)?.label ?? "Ukendt mappe"
+        })`,
         secondary: el._id,
         Icon: DocumentIcon,
         onEnter,

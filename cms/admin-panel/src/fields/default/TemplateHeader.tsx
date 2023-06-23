@@ -3,6 +3,7 @@ import type {
   DocumentId,
   FieldId,
   RawDocumentId,
+  RawFieldId,
 } from "@storyflow/shared/types";
 import type { GetFunctionData, FieldTransform } from "@storyflow/cms/types";
 import {
@@ -108,7 +109,15 @@ export function TemplateHeader({
             >
               {label}
             </span>
-            {isLink && <LinkIcon className="w-3 h-3 opacity-50" />}
+            {isLink ? (
+              <LinkIcon className="w-3 h-3 opacity-50" />
+            ) : (
+              <SortButton
+                id={id}
+                transforms={transforms}
+                rawFieldId={createRawTemplateFieldId(columnId)}
+              />
+            )}
             {/*(
               <div className="w-6 h-6 flex-center ml-auto">
                 <LinkIcon className="w-3 h-3 opacity-50 group-hover:opacity-100" />
@@ -121,6 +130,59 @@ export function TemplateHeader({
   );
 }
 
+function SortButton({
+  id,
+  transforms,
+  rawFieldId,
+}: {
+  id: FieldId;
+  transforms: FieldTransform[];
+  rawFieldId: RawFieldId;
+}) {
+  const rootId = useFieldId();
+
+  const currentFetch = transforms.find(
+    (el): el is FieldTransform<"fetch"> => el.type === "fetch"
+  );
+
+  const sorting = currentFetch ? currentFetch.data[1] : undefined;
+  const sortingId = sorting?.slice(1) as RawFieldId | undefined;
+  const direction = sorting?.slice(0, 1) as "+" | "-" | undefined;
+
+  const isCurrent = sortingId === rawFieldId;
+
+  const push = usePush<FieldTransactionEntry>(
+    getDocumentId<DocumentId>(rootId),
+    getRawFieldId(rootId)
+  );
+
+  const Icon = isCurrent && direction === "-" ? ChevronUpIcon : ChevronDownIcon;
+
+  return (
+    <Icon
+      className={cl(
+        "shrink-0 w-3 h-3",
+        sortingId === rawFieldId
+          ? "opacity-100 ring-1 rounded-full ring-gray-400"
+          : "opacity-25"
+      )}
+      onClick={() => {
+        if (currentFetch) {
+          const nextDirection = isCurrent && direction === "+" ? "-" : "+";
+          push(
+            createTransaction((t) =>
+              t.target(id).toggle({
+                name: "fetch",
+                value: [currentFetch.data[0], `${nextDirection}${rawFieldId}`],
+              })
+            )
+          );
+        }
+      }}
+    />
+  );
+}
+
 function TransformMenu({
   id,
   transforms,
@@ -130,7 +192,9 @@ function TransformMenu({
 }) {
   const rootId = useFieldId();
 
-  const current = transforms.find((el) => el.type === "fetch");
+  const current = transforms.find(
+    (el): el is FieldTransform<"fetch"> => el.type === "fetch"
+  );
 
   const push = usePush<FieldTransactionEntry>(
     getDocumentId<DocumentId>(rootId),
@@ -163,7 +227,7 @@ function TransformMenu({
           </div>
           <div className="py-1 pl-[1.175rem]">
             <Range
-              value={(current.data as GetFunctionData<"fetch">)[0]}
+              value={current.data[0]}
               setValue={(limit) => {
                 push(
                   createTransaction((t) =>
@@ -211,9 +275,9 @@ function TemplateMenu({
     [templates]
   );
 
-  const current = transforms.find((el) => el.type === "template")?.data as
-    | RawDocumentId
-    | undefined;
+  const current = transforms.find(
+    (el): el is FieldTransform<"template"> => el.type === "template"
+  )?.data;
 
   return (
     <>

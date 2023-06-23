@@ -35,7 +35,9 @@ import type { TokenStream } from "../../operations/types";
 import { useIsFocused } from "../../editor/react/useIsFocused";
 import { useFieldOptions, useFieldRestriction } from "../FieldIdContext";
 import { useAppConfig } from "../../AppConfigContext";
-import { $isCustomTokenNode } from "../Editor/decorators/CustomTokenNode";
+import CustomTokenNode, {
+  $isCustomTokenNode,
+} from "../Editor/decorators/CustomTokenNode";
 import { OptionsPrompt } from "./OptionsPrompt";
 
 const matchers: ((
@@ -258,11 +260,13 @@ export function Overlay({ children }: { children?: React.ReactNode }) {
     } else if (type === "file" || (restrictTo === "image" && isFocused)) {
       return <FileOverlay node={node as FileNode} holdActions={holdActions} />;
     } else if (
-      ["string", "number"].includes(restrictTo!) &&
+      (type === "custom" || ["string", "number"].includes(restrictTo!)) &&
       options &&
       isFocused
     ) {
-      return <OptionsOverlay options={options} />;
+      return (
+        <OptionsOverlay node={node as CustomTokenNode} options={options} />
+      );
     }
   };
 
@@ -324,11 +328,17 @@ function FileOverlay({
   );
 }
 
-function OptionsOverlay({ options }: { options: OptionType[] }) {
+function OptionsOverlay({
+  node,
+  options,
+}: {
+  node?: CustomTokenNode;
+  options: OptionType[];
+}) {
   return (
     <Options>
       <OptionEventsPlugin />
-      <OptionsPrompt options={options} />
+      <OptionsPrompt options={options} node={node} />
     </Options>
   );
 }

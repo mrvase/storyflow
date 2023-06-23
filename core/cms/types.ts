@@ -97,10 +97,9 @@ export type SyntaxTreeRecord = Record<FieldId, SyntaxTree<WithSyntaxError>>; // 
 
 /* FIELDS */
 
-export type FieldTransform = {
-  type: FunctionName;
-  data?: SyntaxNode["data"];
-};
+export type FieldTransform<T extends FunctionName = FunctionName> = {
+  type: T;
+} & (GetFunctionData<T> extends true ? {} : { data: GetFunctionData<T> });
 
 export type FieldUI = "url";
 
@@ -112,6 +111,7 @@ export type FieldType2 =
   | "color"
   | "image"
   | "video"
+  | "file"
   | "children"
   | "data";
 

@@ -9,6 +9,7 @@ import { DBDocument } from "@storyflow/cms/types";
 import { DBDocumentRaw } from "./types";
 import { FolderId, RawFieldId, ValueArray } from "@storyflow/shared/types";
 import { DEFAULT_SYNTAX_TREE } from "@storyflow/cms/constants";
+import { tokens } from "@storyflow/cms/tokens";
 
 export async function getPaths(
   docs: DBDocumentRaw[],
@@ -45,24 +46,29 @@ export async function getPaths(
   const staticUrls = (
     await Promise.all(
       dynamicUrls.map(async ({ _id, url, record }) => {
-        const fieldId = createTemplateFieldId(_id, DEFAULT_FIELDS.params.id);
+        const paramsFieldId = createTemplateFieldId(
+          _id,
+          DEFAULT_FIELDS.params.id
+        );
 
         // it might not exist yet
-        const tree = record[fieldId] ?? DEFAULT_SYNTAX_TREE;
+        const tree = record[paramsFieldId] ?? DEFAULT_SYNTAX_TREE;
 
         const toUrl = (slug: string) => `${url.slice(0, -1)}${slug}`;
 
-        if (tree.children.every((el): el is string => typeof el === "string")) {
-          return tree.children.map(toUrl);
+        const children = tree.children.filter((el) => !tokens.isLineBreak(el));
+
+        if (children.every((el): el is string => typeof el === "string")) {
+          return children.map(toUrl);
         }
 
         // wrap in select
-        record[fieldId] = {
+        record[paramsFieldId] = {
           type: "select",
           children: [
             {
               type: "fetch",
-              children: [record[fieldId]],
+              children: [tree],
               data: [100],
             },
           ],
@@ -71,12 +77,7 @@ export async function getPaths(
 
         const getFieldRecord = createFieldRecordGetter(record, {}, fetcher);
 
-        const slugs =
-          (
-            await getFieldRecord(
-              createTemplateFieldId(_id, DEFAULT_FIELDS.params.id)
-            )
-          )?.entry ?? [];
+        const slugs = (await getFieldRecord(paramsFieldId))?.entry ?? [];
 
         if (!Array.isArray(slugs)) {
           throw new Error("Slugs cannot rely on client state");
