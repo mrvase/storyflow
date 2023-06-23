@@ -88,7 +88,7 @@ export function SystemFilePage({ params }: { params: Record<string, string> }) {
           </form>
         )}
       </Dialog>
-      <Content icon={FolderIcon} header="Alle filer">
+      <Content icon={FolderIcon}>
         <div className="p-5 flex-center">
           {page > 0 && <Link to={`/~/files/${page}`}>&lt;</Link>}
           <div className="mx-5">

@@ -172,7 +172,7 @@ const getSecondImportSet = ({
   });
 
   const newExternalDocumentIds = [
-    ...getDocumentIds(newExternalFieldIds),
+    ...Array.from(getDocumentIds(newExternalFieldIds)),
     ...newDrefs,
   ].filter((el) => !prev.externalDocumentIds.has(el));
 

@@ -40,7 +40,7 @@ export function SystemFolderPage() {
   };
 
   return (
-    <Content icon={FolderIcon} header="Alle mapper">
+    <Content icon={FolderIcon}>
       <div className="flex flex-col gap-8">
         <Space
           space={space}

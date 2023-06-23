@@ -99,7 +99,9 @@ export type SyntaxTreeRecord = Record<FieldId, SyntaxTree<WithSyntaxError>>; // 
 
 export type FieldTransform<T extends FunctionName = FunctionName> = {
   type: T;
-} & (GetFunctionData<T> extends true ? {} : { data: GetFunctionData<T> });
+} & (GetFunctionData<T> extends true
+  ? { data?: any }
+  : { data: GetFunctionData<T> });
 
 export type FieldUI = "url";
 
