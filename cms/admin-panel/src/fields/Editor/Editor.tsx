@@ -1,6 +1,9 @@
 import { ContentPlugin } from "./ContentPlugin";
 import { DecoratorPlugin } from "./DecoratorPlugin";
-import { EditorProvider } from "../../editor/react/EditorProvider";
+import {
+  EditorProvider,
+  useEditorContext,
+} from "../../editor/react/EditorProvider";
 import React from "react";
 import { $initializeEditor } from "./transforms";
 import type { TokenStream } from "../../operations/types";
@@ -14,13 +17,66 @@ import { useFieldFocus } from "../../FieldFocusContext";
 import { useFieldId } from "../FieldIdContext";
 import { CopyPastePlugin } from "./CopyPastePlugin";
 import { StreamOperation, TransformOperation } from "../../operations/actions";
-import { Klass, LexicalNode } from "lexical";
+import { $getRoot, $setSelection, Klass, LexicalNode } from "lexical";
+import $createRangeSelection from "../../editor/createRangeSelection";
 
 const editorConfig = {
   namespace: "EDITOR",
   theme: {},
   onError: () => {},
 };
+
+function BlockNodePlugin() {
+  const editor = useEditorContext();
+
+  React.useEffect(() => {
+    const root = editor.getRootElement();
+    if (!root) return;
+    const listener = (ev: MouseEvent) => {
+      const target = ev.target;
+      if (!target || !(target instanceof HTMLElement)) return;
+      if (!target.classList.contains("block-node")) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      editor.update(() => {
+        let key: string | null = null;
+        editor._keyToDOMMap.forEach((value, nodeKey) => {
+          if (value === target) {
+            key = nodeKey;
+          }
+        });
+        console.log("BLOCK NODE KEY", key);
+        if (!key) return;
+        const node = editor.getEditorState()._nodeMap.get(key);
+        if (!node) return;
+        const parent = node.getParent();
+        const offset = node.getIndexWithinParent();
+        if (!parent || offset < 0) return;
+        const selection = $createRangeSelection(
+          {
+            node: parent,
+            offset,
+            type: "element",
+          },
+          {
+            node: parent,
+            offset,
+            type: "element",
+          }
+        );
+        editor.getRootElement()?.focus();
+        $setSelection(selection);
+      });
+    };
+
+    root.addEventListener("mousedown", listener);
+    return () => {
+      root.removeEventListener("mousedown", listener);
+    };
+  }, [editor]);
+
+  return null;
+}
 
 export default function Editor({
   nodes,
@@ -47,6 +103,7 @@ export default function Editor({
         $initializeEditor(initialValue ?? [], configs);
       }}
     >
+      <BlockNodePlugin />
       <ContentPlugin />
       <CopyPastePlugin />
       <EditorFocusPlugin />

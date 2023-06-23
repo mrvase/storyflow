@@ -96,6 +96,25 @@ export const normalizeProp = (
     return String(value || "");
   } else if (type === "color") {
     return String(value || "");
+  } else if (type === "date") {
+    if (value !== null && typeof value === "object" && "date" in value) {
+      try {
+        const date = new Date(value.date);
+        if (date.toString() !== "Invalid Date") {
+          return date;
+        }
+      } catch (err) {}
+    } else if (value instanceof Date) {
+      return value;
+    } else if (typeof value === "string" || typeof value === "number") {
+      try {
+        const date = new Date(value);
+        if (date.toString() !== "Invalid Date") {
+          return date;
+        }
+      } catch (err) {}
+    }
+    return new Date();
   }
 
   return value;

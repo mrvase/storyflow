@@ -98,10 +98,10 @@ const tokenReg = RegExp(
     dateReg.source
 );
 
-export function parseDateFromString(str: string) {
+export function parseDateFromString(str: string, now_?: Date) {
   const talord1Keys = Object.keys(talord1);
 
-  const now = new Date();
+  const now = now_ ?? new Date();
   const tokens = str
     .split(tokenReg)
     .filter(Boolean)
@@ -530,4 +530,13 @@ function parseDate(s: string) {
 
 function floorup(x: number) {
   return Math.floor(Math.round(x * 1e6) / 1e6);
+}
+
+export function serializeDate(date: Date, locale: string = "da-DK") {
+  return Intl.DateTimeFormat(locale, {
+    dateStyle: "long",
+    ...([date.getHours(), date.getMinutes(), date.getSeconds()].some(Boolean)
+      ? { timeStyle: "short" }
+      : {}),
+  }).format(date);
 }

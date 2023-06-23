@@ -6,8 +6,6 @@ import {
   PhotoIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
-import { mergeRegister } from "../../editor/utils/mergeRegister";
-import type { TokenStream } from "../../operations/types";
 import cl from "clsx";
 import {
   $createParagraphNode,
@@ -24,23 +22,24 @@ import {
 import React from "react";
 import { useAppConfig } from "../../AppConfigContext";
 import { useEditorContext } from "../../editor/react/EditorProvider";
+import { mergeRegister } from "../../editor/utils/mergeRegister";
+import type { TokenStream } from "../../operations/types";
 import PromptNode, { $isPromptNode } from "../Editor/decorators/PromptNode";
-import { useFieldOptions, useFieldRestriction } from "../FieldIdContext";
 import { $replaceWithBlocks } from "../Editor/insertComputation";
 import { $createBlocksFromStream } from "../Editor/transforms";
+import { useFieldOptions, useFieldRestriction } from "../FieldIdContext";
 import { ElementPrompt } from "./ElementPrompt";
 import { FilePrompt } from "./FilePrompt";
 import { OptionEventsPlugin, Options } from "./OptionsContext";
-import { UrlPrompt } from "./UrlPrompt";
+import { OptionsPrompt } from "./OptionsPrompt";
 import { ParagraphStylePrompt } from "./ParagraphStylePrompt";
-import { HoldActions } from "./useRestorableSelection";
-import { $exitPromptNode, $getPromptNode } from "./utils";
-import { TokenPrompt } from "./TokenPrompt";
 import { ReferencePrompt } from "./ReferencePrompt";
 import { TemplatePrompt } from "./TemplatePrompt";
-import { ConfigRecord } from "@storyflow/shared/types";
-import { Option } from "./Option";
-import { OptionsPrompt } from "./OptionsPrompt";
+import { TokenPrompt } from "./TokenPrompt";
+import { UrlPrompt } from "./UrlPrompt";
+import { HoldActions } from "./useRestorableSelection";
+import { $exitPromptNode, $getPromptNode } from "./utils";
+import { FunctionPrompt } from "./FunctionPrompt";
 
 const panes = [
   {
@@ -317,6 +316,7 @@ export function PromptOverlay({
                   prompt={prompt}
                   replacePromptWithStream={replacePromptWithStream}
                 />
+                <FunctionPrompt prompt={prompt} />
                 {options && ["string", "number"].includes(restrictTo!) && (
                   <OptionsPrompt options={options} />
                 )}

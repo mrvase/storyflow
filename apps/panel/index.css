@@ -81,11 +81,9 @@ a {
 }
 
 .editor h1 {
-  line-height: 1.5;
   font-size: 2rem;
 }
 .editor h2 {
-  line-height: 2;
   font-size: 1.5rem;
 }
 .editor h3 {
@@ -93,9 +91,22 @@ a {
   font-style: italic;
 }
 
-.editor > p + *,
-.editor > div + * {
+.block-node > p,
+.block-node > h1,
+.block-node > h2,
+.block-node > h3,
+.block-node > div {
   margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.editor > p,
+.editor > h1,
+.editor > h2,
+.editor > h3,
+.editor > div {
+  margin-top: 10px;
+  margin-bottom: 10px;
 }
 
 .editor > * {
@@ -116,37 +127,53 @@ a {
 }
 
 [data-lexical-cursor="true"] {
-  position: relative;
+  position: absolute;
   height: 0px;
   width: 100%;
-  margin: 0 !important;
+  margin: 0px !important;
+  margin-top: -10px !important;
 }
 
-[data-lexical-cursor="true"]:first-child + * {
-  margin: 0px;
+.editor [data-lexical-cursor="true"]:first-child {
+  margin-top: 0px !important;
 }
 
-.editor:focus > [data-lexical-cursor="true"]:after {
+.editor:before {
+  content: attr(data-placeholder);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  padding: 0 0.625rem;
+}
+
+.editor:focus [data-lexical-cursor="true"]:after {
   content: "";
   position: absolute;
-  top: 4px;
+  top: 5px;
   width: 40px;
   left: 0px;
   animation: blink 1000ms steps(1) infinite;
 }
 
-.dark .editor:focus > [data-lexical-cursor="true"]:after {
+.dark .editor:focus [data-lexical-cursor="true"]:after {
   border-bottom: 1px #fff solid;
 }
 
-.editor:focus > [data-lexical-cursor="true"]:after {
+.editor:focus [data-lexical-cursor="true"]:after {
   border-bottom: 1px black solid;
 }
 
-.editor:focus > [data-lexical-cursor="true"]:first-child:after {
+/*
+.editor:focus [data-lexical-cursor="true"]:first-child:after {
   top: 0px;
   transform: translateY(-5px);
 }
+*/
 
 /*
 .editor.preview:has(> p:only-child):after {
@@ -167,28 +194,28 @@ a {
   display: flex;
 }
 
-.editor > * > [data-lexical-decorator="true"] {
+.editor p [data-lexical-decorator="true"] {
   vertical-align: top;
 }
 
 .editor
-  > *
-  > [data-lexical-decorator="true"]:not([data-lexical-inline="true"]):not(
+  p
+  [data-lexical-decorator="true"]:not([data-lexical-inline="true"]):not(
     [data-lexical-layout-element="true"]
   ) {
   display: inline-flex;
 }
 
 .editor
-  > *
-  > [data-lexical-decorator="true"]:not([data-lexical-inline="true"])
+  p
+  [data-lexical-decorator="true"]:not([data-lexical-inline="true"])
   .selection-box {
   padding-right: 0.375rem;
 }
 
 .editor
-  > *
-  > :not([data-lexical-decorator="true"]:not([data-lexical-inline="true"]))
+  p
+  :not([data-lexical-decorator="true"]:not([data-lexical-inline="true"]))
   + [data-lexical-decorator="true"]:not([data-lexical-inline="true"])
   .selection-box {
   padding-left: 0.375rem;
@@ -366,4 +393,93 @@ input[type="range"]:focus::-moz-range-thumb {
   margin-right: 0.2rem;
   position: relative;
   display: inline-block;
+}
+
+.block-node {
+  position: relative;
+  border-style: solid;
+  border-color: rgba(0, 150, 0, 0.12);
+  background-color: rgba(0, 255, 0, 0.04);
+  /* box-shadow: inset 0px 0px 0px 1px rgba(150, 0, 0, 0.12); */
+  /*
+  border-top-width: 2px;
+  border-bottom-width: 2px;
+  margin: -2px 0px;
+  */
+  pointer-events: none;
+  /*
+  margin: 0px -10px;
+  border-radius: 5px;
+  */
+}
+
+/*
+.block-node:before {
+  content: attr(data-function);
+  display: block;
+  padding: 10px;
+  font-weight: 500;
+  font-size: 0.875rem;
+  background-color: #f5f5f5;
+  border-radius: 6px 6px 0 0;
+}
+*/
+
+.block-node > * {
+  pointer-events: auto;
+  margin-left: 100px;
+}
+
+.block-node > *:not([data-lexical-cursor="true"]):before {
+  content: "-";
+  position: absolute;
+  margin-left: -100px;
+  font-weight: 700;
+  font-size: 0.675rem;
+  padding-top: 0.25rem;
+  opacity: 50%;
+  width: 100px;
+  text-transform: uppercase;
+  color: rgba(0, 100, 0, 1);
+}
+
+/*
+.block-node > .block-node:before {
+  padding-top: 0.875rem;
+}
+*/
+
+.block-node > *:not([data-lexical-cursor="true"]):nth-child(1):before {
+  content: var(--p1, "-");
+  opacity: 100%;
+}
+
+.block-node > *:not([data-lexical-cursor="true"]):nth-child(2):before {
+  content: var(--p2, "-");
+}
+
+.block-node > *:not([data-lexical-cursor="true"]):nth-child(3):before {
+  content: var(--p3, "-");
+}
+
+.block-node:after {
+  content: "";
+  position: absolute;
+  left: 0px;
+  right: 0px;
+  height: 10px;
+  top: -10px;
+  cursor: text;
+  pointer-events: auto;
+}
+
+.editor > .block-node:after {
+  content: "";
+  position: absolute;
+  left: 0px;
+  right: 0px;
+  height: 10px;
+  top: -10px;
+  cursor: text;
+  pointer-events: auto;
 }

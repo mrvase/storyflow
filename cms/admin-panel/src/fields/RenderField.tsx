@@ -15,28 +15,36 @@ const Components: { [K in FieldUI | "default"]: React.FC<FieldProps> } = {
 };
 
 export function RenderField({
-  id,
-  fieldConfig,
+  fieldId,
+  fieldConfig: fieldConfigFromProps,
   index,
   dragHandleProps,
 }: {
-  id: FieldId;
+  fieldId: FieldId;
   fieldConfig: FieldConfig;
   index: number;
   dragHandleProps?: any;
 }) {
+  const fieldConfig = React.useMemo(
+    () => ({
+      ...fieldConfigFromProps,
+      id: fieldId,
+    }),
+    [fieldId, fieldConfigFromProps]
+  );
+
   const Component = Components[fieldConfig.ui ?? "default"];
 
   return (
-    <FieldIdContext.Provider value={id}>
+    <FieldIdContext.Provider value={fieldId}>
       <FieldRestrictionsContext.Provider value={fieldConfig.type2 ?? null}>
         <FieldContainer
-          index={index}
           fieldConfig={fieldConfig}
+          index={index}
           dragHandleProps={dragHandleProps}
         >
           <NoList>
-            <Component id={id} />
+            <Component id={fieldId} />
           </NoList>
         </FieldContainer>
       </FieldRestrictionsContext.Provider>

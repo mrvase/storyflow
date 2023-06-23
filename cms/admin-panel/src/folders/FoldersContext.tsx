@@ -48,8 +48,6 @@ export function FoldersProvider({ children }: { children: React.ReactNode }) {
     query.admin.getFolders()
   );
 
-  console.log("DATA DATA", initialFoldersFromProps, error);
-
   const t = useTranslation();
 
   const initialFolders: DBFolderRecord = React.useMemo(() => {
@@ -124,8 +122,6 @@ export function FoldersProvider({ children }: { children: React.ReactNode }) {
               const space = newFolder.spaces[spaceIndex] as FolderSpace;
 
               if (!space) return;
-
-              console.log("SPACE", space);
 
               const newSpace = {
                 ...space,

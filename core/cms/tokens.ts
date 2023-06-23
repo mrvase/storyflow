@@ -8,8 +8,9 @@ import {
   ContextToken,
   Token,
   StateToken,
+  DateToken,
 } from "@storyflow/shared/types";
-import type { Parameter, NestedField, NestedCreator } from "./types";
+import type { Parameter, NestedField, NestedCreator, LineBreak } from "./types";
 
 function isObject(value: any): value is Record<string, any> {
   return value !== null && typeof value === "object";
@@ -19,7 +20,7 @@ function isNestedField(value: any): value is NestedField {
   return isObject(value) && "field" in value;
 }
 
-function isLineBreak(value: any): value is Parameter {
+function isLineBreak(value: any): value is LineBreak {
   return isObject(value) && "n" in value;
 }
 
@@ -75,20 +76,28 @@ function isStateToken(value: any): value is StateToken {
   return isObject(value) && "state" in value;
 }
 
+function isDateToken(value: any): value is DateToken {
+  return isObject(value) && "date" in value;
+}
+
 function isToken(value: any): value is Token {
   return (
     isFileToken(value) ||
     isColorToken(value) ||
     isCustomToken(value) ||
     isContextToken(value) ||
-    isStateToken(value)
+    isStateToken(value) ||
+    isDateToken(value)
   );
 }
 
-function isPrimitiveValue(
-  value: any
-): value is string | number | boolean | Date {
-  return typeof value !== "object" || value instanceof Date;
+function isPrimitiveValue(value: any): value is string | number | boolean {
+  return typeof value !== "object" || isToken(value) || isNestedDocument(value);
+  // || isNestedFolder(value) || isNestedElement(value) <-- I cannot include these, as they need to be calculated to get their nested references
+}
+
+function hasVariableLength(value: any): value is string | number {
+  return typeof value === "string" || typeof value === "number";
 }
 
 export const tokens = {
@@ -106,5 +115,7 @@ export const tokens = {
   isCustomToken,
   isContextToken,
   isStateToken,
+  isDateToken,
   isToken,
+  hasVariableLength,
 };

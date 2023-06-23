@@ -5,6 +5,8 @@ export const en = {
     accept: "Accept",
     title: "Title",
     noLabel: "No label",
+    show: "Show",
+    hide: "Hide",
   },
   folders: {
     folders: "Folders",
@@ -40,6 +42,9 @@ export const en = {
     chooseTemplate: "Choose template",
     chooseExistingTemplate: "Choose existing",
     createNewTemplate: "Add new",
+  },
+  fields: {
+    deleteFields: "Delete (field|fields)",
   },
   numerals: {
     1: "one",

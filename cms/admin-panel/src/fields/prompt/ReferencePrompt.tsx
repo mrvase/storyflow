@@ -118,9 +118,11 @@ function TemplateFieldPrompt({
     [replacePromptWithStream, generateDocumentId]
   );
 
+  /*
   if (getRawFieldId(path.slice(-1)[0] as FieldId) === getIdFromString("data")) {
     return null;
   }
+  */
 
   return (
     <>
@@ -324,7 +326,7 @@ function DocumentPrompt({
         <div className="px-1 py-2.5 text-gray-400 italic">Indtast søgning</div>
       )}
       {!isReady && (
-        <div className="px-1 py-2.5 h-10 flex items-center text-gray-400 italic">
+        <div className="px-1 h-10 flex items-center text-gray-400">
           <Loader size="md" />
         </div>
       )}

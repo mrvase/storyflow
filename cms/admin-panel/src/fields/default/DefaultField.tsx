@@ -34,6 +34,8 @@ import nodes from "../Editor/decorators/nodes";
 import { CreatorCircularImport } from "../Editor/decorators/CreatorNode";
 import { LayoutElementCircularImport } from "../Editor/decorators/LayoutElementNode";
 import { FolderCircularImport } from "../Editor/decorators/FolderNode";
+import useIsFocused from "../../utils/useIsFocused";
+import { useIsEmpty } from "../../editor/react/useIsEmpty";
 
 const isTextInsert = (
   transaction: Transaction<FieldTransactionEntry>
@@ -213,20 +215,8 @@ export function DefaultField({
         nodes={allNodes}
       >
         <div className={cl("relative")}>
-          <Placeholder />
-          <ContentEditable
-            className={cl(
-              "grow editor outline-none selection:bg-gray-200 dark:selection:bg-gray-700",
-              "text-base leading-6 p-2.5 pt-1.5"
-            )}
-            // data-value={!isPrimitive ? preview : ""}
-          />
-          {!isPrimitive && (
-            <div className="-ml-[1.675rem] preview hidden text-gray-400 rounded text-sm pb-2.5">
-              <Bars2Icon className="shrink-0 w-4 mt-0.5 h-4 mr-5 opacity-50" />
-              {preview || "[Tom]"}
-            </div>
-          )}
+          <ContentEditableWithPlaceholder />
+          <BottomSelectionArea />
           {showPromptButton && <PromptButton />}
           <PushOnBlurPlugin
             push={push}
@@ -234,15 +224,47 @@ export function DefaultField({
             hasLocalPush={hasLocalPush}
           />
           <OverlayWrapper />
-          <BottomSelectionArea />
           <div className="absolute right-2.5 top-0">
             {transforms.length ? (
               <VariableIcon className="w-4 h-4 my-1 opacity-50" />
             ) : null}
           </div>
         </div>
+        {!isPrimitive && (
+          <div className="-ml-[3.125rem] flex items-center text-gray-400 rounded text-sm px-2.5 pt-2.5">
+            <Bars2Icon className="shrink-0 w-5 h-5 mt-0.5 mr-5 opacity-50" />
+            {preview || "[Tom]"}
+          </div>
+        )}
       </Editor>
     </FieldTemplateIdContext.Provider>
+  );
+}
+
+function ContentEditableWithPlaceholder() {
+  //
+  const editor = useEditorContext();
+  const isFocused = useIsFocused();
+  const isEmpty = useIsEmpty(editor);
+
+  return (
+    <ContentEditable
+      className={cl(
+        "relative grow editor outline-none selection:bg-gray-200 dark:selection:bg-gray-700",
+        "text-base leading-6 px-2.5 rounded-lg border",
+        "border-gray-200 has-editor-focus:border-gray-200 hover:border-gray-250 focus:border-gray-300 dark:border-gray-700 dark:has-editor-focus:border-gray-700 dark:hover:border-gray-650 dark:focus:border-gray-550",
+        "transition-colors",
+        "bg-white dark:bg-gray-900",
+        "[&:before]:text-gray-400 [&:before]:dark:text-gray-500"
+      )}
+      data-placeholder={
+        isEmpty
+          ? isFocused
+            ? 'Skriv "/" for genveje'
+            : "Ikke udfyldt"
+          : undefined
+      }
+    />
   );
 }
 
@@ -257,7 +279,7 @@ function BottomSelectionArea() {
         ev.stopPropagation();
         editor.update(() => {
           editor.getRootElement()?.focus();
-          $getRoot().selectEnd();
+          $getRoot().select();
           /*
           if ($isTextBlockNode(node)) {
           } else if (node) {

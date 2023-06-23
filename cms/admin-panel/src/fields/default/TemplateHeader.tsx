@@ -53,7 +53,7 @@ export function TemplateHeader({
   if (!template && !isNested) return null;
 
   return (
-    <div className="px-2.5">
+    <div className="">
       <div
         className={cl(
           "w-full flex divide-x divide-gray-200 dark:divide-gray-700 rounded mt-1 mb-2.5 py-1",

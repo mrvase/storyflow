@@ -17,6 +17,8 @@ export const da = {
     accept: "Accepter",
     title: "Titel",
     noLabel: "Ingen label",
+    hide: "Skjul",
+    show: "Vis",
   },
   folders: {
     folders: "Mapper",
@@ -52,6 +54,9 @@ export const da = {
     chooseTemplate: "Vælg skabelon",
     chooseExistingTemplate: "Vælg eksisterende",
     createNewTemplate: "Tilføj ny",
+  },
+  fields: {
+    deleteFields: "Slet (felt|felter)",
   },
   numerals: {
     1: "en",

@@ -10,26 +10,22 @@ function forEach(
   let index = 0;
   for (let cIndex = 0; cIndex < stream.length; cIndex++) {
     let el = stream[cIndex];
-    if (!tokens.isPrimitiveValue(el)) {
+    if (!tokens.hasVariableLength(el)) {
       if (callback(el, index++)) return;
     } else {
-      if (typeof el === "boolean") {
-        if (callback(el, index++)) return;
-      } else {
-        if (splitText) {
-          if (el === "") {
-            if (callback(el, index++)) return;
-          } else {
-            let string = `${el}`;
-            let length = string.length;
-            for (let tIndex = 0; tIndex < length; tIndex++) {
-              if (callback(string[tIndex], index++)) return;
-            }
-          }
+      if (splitText) {
+        if (el === "") {
+          if (callback(el, index++)) return;
         } else {
-          if (callback(`${el}`, index)) return;
-          index += `${el}`.length;
+          let string = `${el}`;
+          let length = string.length;
+          for (let tIndex = 0; tIndex < length; tIndex++) {
+            if (callback(string[tIndex], index++)) return;
+          }
         }
+      } else {
+        if (callback(`${el}`, index)) return;
+        index += `${el}`.length;
       }
     }
   }
@@ -61,9 +57,7 @@ function forEach(
 function getLength(stream: TokenStream): number {
   return (stream as any).reduce(
     (sum: number, el: TokenStream[number]): number => {
-      if (!tokens.isPrimitiveValue(el)) {
-        return sum + 1;
-      } else if (typeof el === "boolean") {
+      if (!tokens.hasVariableLength(el)) {
         return sum + 1;
       } else {
         const length: number = `${el}`.length;
@@ -104,14 +98,10 @@ function slice(stream: TokenStream, _start: number, _end?: number) {
       return true;
     }
     let latest = array[array.length - 1];
-    if (!tokens.isPrimitiveValue(el)) {
-      push(el);
+    if (typeof el === "string" && typeof latest === "string") {
+      array[array.length - 1] = `${latest}${el}`;
     } else {
-      if (typeof el === "string" && typeof latest === "string") {
-        array[array.length - 1] = `${latest}${el}`;
-      } else {
-        push(el);
-      }
+      push(el);
     }
   });
   checkLatest();

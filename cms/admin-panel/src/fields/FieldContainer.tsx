@@ -4,15 +4,18 @@ import {
   ChevronRightIcon,
   ChevronUpDownIcon,
   EllipsisHorizontalIcon,
+  EyeIcon,
+  EyeSlashIcon,
   LinkIcon,
   LockClosedIcon,
+  TrashIcon,
   WindowIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import React from "react";
 import { useFieldFocus } from "../FieldFocusContext";
 import { addImport } from "../custom-events";
-import { useLabel } from "../documents/document-config";
+import { useFieldConfig, useLabel } from "../documents/document-config";
 import type {
   DocumentId,
   FieldId,
@@ -25,7 +28,7 @@ import { useIsFocused as useIsEditorFocused } from "../editor/react/useIsFocused
 import { getDefaultField, isDefaultField } from "@storyflow/cms/default-fields";
 import { getConfigFromType, useAppConfig } from "../AppConfigContext";
 import { getDocumentId, isTemplateField } from "@storyflow/cms/ids";
-import { FieldToolbarPortal } from "../documents/FieldToolbar";
+import { FieldToolbar } from "../documents/FieldToolbar";
 import { EditorFocusProvider } from "../editor/react/useIsFocused";
 import { Attributes, AttributesProvider } from "./Attributes";
 import { SelectedPathProvider, useNestedEntity, useSelectedPath } from "./Path";
@@ -39,6 +42,11 @@ import { DocumentTransactionEntry } from "../operations/actions";
 import { createTransaction } from "@storyflow/collab/utils";
 import { useTranslation } from "../translation/TranslationContext";
 import { InlineButton } from "../elements/InlineButton";
+import { Menu } from "../elements/Menu";
+import { useTopFieldIndex } from "../documents/FieldIndexContext";
+import { useDialog } from "../elements/Dialog";
+import { useTemplatePath } from "../documents/TemplatePathContext";
+import { DragIcon } from "../elements/DragIcon";
 
 type Props = {
   fieldConfig: FieldConfig;
@@ -47,7 +55,19 @@ type Props = {
   dragHandleProps?: any;
 };
 
-export function FieldContainer({
+export function FieldContainer(props: Props) {
+  return (
+    <EditorFocusProvider>
+      <AttributesProvider>
+        <SelectedPathProvider id={props.fieldConfig.id}>
+          <ContainerDiv {...props} />
+        </SelectedPathProvider>
+      </AttributesProvider>
+    </EditorFocusProvider>
+  );
+}
+
+function ContainerDiv({
   children,
   index,
   fieldConfig,
@@ -88,33 +108,41 @@ export function FieldContainer({
     id,
   });
 
-  const [isOpen] = useLocalStorage<boolean>("toolbar-open", true);
-
   return (
-    <EditorFocusProvider>
-      <AttributesProvider>
-        <SelectedPathProvider id={id}>
-          <FieldToolbarPortal show={isFocused} />
-          <div
-            {...props}
-            {...handlers}
-            className={cl(
-              "relative grow shrink basis-0 group/container px-2.5 mt-8"
-            )}
-          >
-            <FocusContainer isFocused={isFocused}>
-              <LabelBar
-                id={id}
-                dragHandleProps={dragHandleProps}
-                isFocused={isFocused}
-              />
-              <div className="pl-9">{children}</div>
-            </FocusContainer>
-          </div>
-        </SelectedPathProvider>
-      </AttributesProvider>
-    </EditorFocusProvider>
+    <VisibilityHandler fieldId={id}>
+      <div
+        {...props}
+        {...handlers}
+        className={cl(
+          "relative grow shrink basis-0 group/container px-2.5 py-4",
+          "bg-white dark:bg-gray-900 rounded"
+        )}
+      >
+        <LabelBar
+          id={id}
+          dragHandleProps={dragHandleProps}
+          isFocused={isFocused}
+        />
+        <div className="pl-[3.125rem] pr-2.5 pb-2.5">{children}</div>
+      </div>
+    </VisibilityHandler>
   );
+}
+
+function VisibilityHandler({
+  fieldId,
+  children,
+}: {
+  fieldId: FieldId;
+  children: React.ReactElement;
+}) {
+  const [isOpen] = useLocalStorage<boolean>("toolbar-open", true);
+  const [config] = useFieldConfig(fieldId);
+  const show = isOpen || !config?.hidden;
+
+  return React.cloneElement(children, {
+    className: cl(children.props.className, show ? "" : "hidden"),
+  });
 }
 
 function FocusContainer({
@@ -132,6 +160,7 @@ function FocusContainer({
 
   ring = "ring-transparent";
 
+  /*
   if (isOpen) {
     if (isEditorFocused) {
       ring = "ring-transparent";
@@ -142,6 +171,7 @@ function FocusContainer({
       ring = "ring-transparent group-hover/container:ring-gray-700/50";
     }
   }
+  */
 
   return (
     <div
@@ -167,56 +197,54 @@ function LabelBar({
 }) {
   const [{ selectedDocument }, setPath] = useSelectedPath();
 
-  const [isEditing] = [true]; //useLocalStorage<boolean>("editing-articles", false);
+  const [isOpen] = useLocalStorage<boolean>("toolbar-open", true);
 
   const specialFieldConfig = getDefaultField(id);
+
+  const templatePath = useTemplatePath();
+
+  const isNative = Boolean(
+    !isTemplateField(id) || (specialFieldConfig && templatePath.length === 2)
+  );
 
   return (
     <div
       className={cl(
-        "flex items-center sticky top-0 z-10",
+        "flex items-center sticky top-0",
+        isFocused ? "z-30" : "z-20",
         "h-11 p-2.5 rounded bg-white dark:bg-gray-900" /* -translate-y-2.5 */
       )}
     >
-      <Dot id={id} dragHandleProps={isEditing ? dragHandleProps : {}} />
+      <Dot
+        id={id}
+        isNative={isNative}
+        dragHandleProps={isOpen ? dragHandleProps : undefined}
+      />
       <div
         className={cl(
           "ml-5 mr-auto flex items-center gap-3 text-sm select-none whitespace-nowrap"
         )}
       >
-        <Label id={id} />
+        <Label id={id} isNative={isNative} />
+        <HiddenIcon fieldId={id} />
         <PathMap />
         <Attributes />
         <PreviewButton id={id} />
-        <ReferenceButton id={id} />
       </div>
-      {specialFieldConfig && (
-        <div
-          className={cl(
-            "flex-center text-xs h-6 -my-0.5 px-1.5 rounded whitespace-nowrap",
-            "bg-yellow-300 text-yellow-800/90 dark:bg-yellow-400/10 dark:text-yellow-200/75",
-            isFocused
-              ? "opacity-100"
-              : "opacity-0 group-hover/container:opacity-80",
-            "transition-opacity"
-          )}
-        >
-          {specialFieldConfig.label}
-        </div>
-      )}
-      <InlineButton icon={EllipsisHorizontalIcon} className="ml-2.5" />
-      {/*<button
-        className={cl(
-          "ml-2 shrink-0 text-xs flex-center gap-2 px-2 h-6 -my-0.5 bg-white/10 rounded",
-          isFocused
-            ? "opacity-50"
-            : "opacity-0 group-hover/container:opacity-20",
-          "group-hover/container:hover:opacity-100 transition-opacity"
+      <div className="flex items-center gap-3">
+        {specialFieldConfig && (
+          <div
+            className={cl(
+              "text-sm font-medium text-teal-600 bg-teal-100 rounded px-1.5 py-0.5 dark:text-teal-400 dark:bg-teal-950"
+            )}
+          >
+            {specialFieldConfig.label}
+          </div>
         )}
-        onClick={fullscreen}
-      >
-        <ComputerDesktopIcon className="w-3 h-3" /> Se preview
-      </button>*/}
+        {!specialFieldConfig && isNative && <FieldToolbar fieldId={id} />}
+        <ReferenceButton id={id} />
+        {isNative && <FieldMenu fieldId={id} />}
+      </div>
       {selectedDocument && (
         <button
           className="-my-1 ml-1 -mr-1 w-7 h-7 flex-center shrink-0"
@@ -228,6 +256,64 @@ function LabelBar({
         </button>
       )}
     </div>
+  );
+}
+
+function HiddenIcon({ fieldId }: { fieldId: FieldId }) {
+  const [config] = useFieldConfig(fieldId);
+
+  if (config?.hidden) {
+    return (
+      <span>
+        <EyeSlashIcon className="w-5 h-5" />
+      </span>
+    );
+  }
+  return null;
+}
+
+function FieldMenu({ fieldId }: { fieldId: FieldId }) {
+  const t = useTranslation();
+
+  const index = useTopFieldIndex();
+
+  const documentId = getDocumentId<DocumentId>(fieldId);
+  const push = usePush<DocumentTransactionEntry>(documentId, "config");
+
+  const { wrapInDialog, open } = useDialog({
+    title: "Slet felt",
+    description: "Er du sikker på at du vil slette feltet?",
+  });
+
+  const [config, setConfig] = useFieldConfig(fieldId);
+
+  return (
+    <>
+      {typeof index === "number" &&
+        wrapInDialog(
+          <button
+            onClick={() => {
+              push([["", [[index, 1]]]]);
+            }}
+          >
+            slet
+          </button>
+        )}
+      <Menu as={InlineButton} icon={EllipsisHorizontalIcon} align="right">
+        {typeof index === "number" && (
+          <Menu.Item
+            label={t.general[config?.hidden ? "show" : "hide"]()}
+            icon={EyeIcon}
+            onClick={() => setConfig("hidden", (value) => !value)}
+          />
+        )}
+        <Menu.Item
+          label={`${t.fields.deleteFields({ count: 1 })}...`}
+          icon={TrashIcon}
+          onClick={open}
+        />
+      </Menu>
+    </>
   );
 }
 
@@ -386,12 +472,24 @@ function ElementLabel(props: {
   return null;
 }
 
-function Dot({ id, dragHandleProps }: { id: FieldId; dragHandleProps: any }) {
-  const isNative = !isTemplateField(id);
-
-  const isDraggable = "draggable" in dragHandleProps;
-
+function Dot({
+  id,
+  isNative,
+  dragHandleProps,
+}: {
+  id: FieldId;
+  isNative: boolean;
+  dragHandleProps: any;
+}) {
   const Icon = isNative ? ChevronUpDownIcon : LockClosedIcon;
+
+  if (dragHandleProps) {
+    return (
+      <div className="w-7 h-7 p-1 -mx-1 cursor-grab" {...dragHandleProps}>
+        <DragIcon className="w-5 h-5" />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -399,7 +497,7 @@ function Dot({ id, dragHandleProps }: { id: FieldId; dragHandleProps: any }) {
         {...dragHandleProps}
         className={cl(
           "group w-7 h-7 p-1 -mx-1 -my-0.5",
-          isDraggable && "cursor-grab"
+          dragHandleProps && "cursor-grab"
         )}
       >
         <div
@@ -424,11 +522,10 @@ function Dot({ id, dragHandleProps }: { id: FieldId; dragHandleProps: any }) {
   );
 }
 
-function Label({ id }: { id: FieldId }) {
+function Label({ id, isNative }: { id: FieldId; isNative: boolean }) {
   const t = useTranslation();
 
   const [{ selectedPath }, setPath] = useSelectedPath();
-  const isNative = !isTemplateField(id);
 
   const label = useLabel(id);
 
@@ -447,7 +544,7 @@ function Label({ id }: { id: FieldId }) {
         "flex items-center gap-1 px-1.5 -mx-1.5 font-medium",
         isNative
           ? "text-gray-600 dark:text-gray-400"
-          : "text-teal-500 dark:text-teal-400/90",
+          : "text-teal-600 dark:text-teal-400/90",
         "cursor-default",
         selectedPath.length && "hover:underline"
       )}

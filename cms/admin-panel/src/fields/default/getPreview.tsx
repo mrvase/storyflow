@@ -1,5 +1,6 @@
 import { tokens } from "@storyflow/cms/tokens";
 import type { ClientSyntaxTree, ValueArray } from "@storyflow/shared/types";
+import { serializeDate } from "../../data/dates";
 
 const valueAsString = (value: any, placeholders: boolean) => {
   if (typeof value === "boolean") {
@@ -22,6 +23,9 @@ const valueAsString = (value: any, placeholders: boolean) => {
     }
     if (tokens.isNestedElement(value)) {
       return `${value.element.split(":").slice(-1)[0]}`;
+    }
+    if (tokens.isDateToken(value)) {
+      return serializeDate(new Date(value.date));
     }
     if (tokens.isNestedDocument(value)) return "[Dokument]";
     return "[Objekt]";

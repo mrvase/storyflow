@@ -72,10 +72,12 @@ export function getSortedValues(
   let computeWithDepth: (DBSyntaxStreamBlock & { depth: number })[] = [];
   let values: DBValueRecord = {};
 
-  const isPrimitive = (
+  const isPrimitiveStream = (
     computation: DBSyntaxStream
   ): computation is (string | boolean | number | Date)[] => {
-    return computation.every((el) => tokens.isPrimitiveValue(el));
+    return computation.every(
+      (el) => tokens.isPrimitiveValue(el) || el instanceof Date
+    );
   };
 
   const depthCache = new Map<FieldId, number>();
@@ -107,8 +109,9 @@ export function getSortedValues(
 
   getSyntaxTreeEntries(record).map(([fieldId, value]) => {
     const stream = createSyntaxStream(value, (id) => createObjectId(id));
+    console.log("TRANSFORMING", fieldId, value, stream);
     if (
-      isPrimitive(stream) &&
+      isPrimitiveStream(stream) &&
       getDocumentId(fieldId) === options.returnValuesForDocument
     ) {
       values[getRawFieldId(fieldId)] = stream;

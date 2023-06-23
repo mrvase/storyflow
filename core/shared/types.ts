@@ -17,7 +17,7 @@ export type FieldId = Brand<string, "field-id">;
 export type RawFolderId = Brand<string, "raw-folder-id">;
 export type FolderId = Brand<string, "folder-id">;
 
-export type PrimitiveValue = string | number | boolean | Date;
+export type PrimitiveValue = string | number | boolean;
 
 export type NestedElement = {
   id: NestedDocumentId;
@@ -55,6 +55,10 @@ export type ColorToken = {
   color: string;
 };
 
+export type DateToken = {
+  date: string;
+};
+
 export type CustomToken = {
   name: string;
 };
@@ -64,7 +68,8 @@ export type Token =
   | ContextToken
   | FileToken
   | ColorToken
-  | StateToken;
+  | StateToken
+  | DateToken;
 
 export type Value = PrimitiveValue | Token | NestedEntity;
 
@@ -86,23 +91,30 @@ export const operators = [
   "|",
 ] as const;
 
-export const functions = [
-  "in",
-  "concat",
-  "sum",
-  "filter",
-  "slug",
-  "url",
-  "select",
-  "loop",
-  "root",
-  "merge",
-  "template",
-  "fetch",
-] as const;
+export type Sorting = `${"-" | "+"}${RawFieldId}`;
+
+export type FunctionDataRecord = {
+  if: true;
+  in: true;
+  concat: true;
+  sum: true;
+  filter: true;
+  slug: true;
+  url: true;
+  root: true;
+  merge: true;
+  template: RawDocumentId;
+  select: RawFieldId;
+  loop: RawDocumentId;
+  fetch: [limit: number, ...sortings: Sorting[]];
+  to_date: true;
+  to_file: true;
+  to_boolean: true;
+  to_color: true;
+};
 
 export type Operator = (typeof operators)[number];
-export type FunctionName = (typeof functions)[number];
+export type FunctionName = keyof FunctionDataRecord;
 
 export type ClientSyntaxTree = {
   type: Operator | FunctionName | "array" | null;
@@ -157,6 +169,7 @@ type DefaultPropTypes = {
   number: number;
   boolean: boolean;
   children: (string | number | Element)[];
+  date: Date;
   data: any[];
 };
 

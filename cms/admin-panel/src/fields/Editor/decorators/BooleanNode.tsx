@@ -1,38 +1,25 @@
-import cl from "clsx";
-import { SwatchIcon } from "@heroicons/react/24/outline";
-import type { ColorToken, Option } from "@storyflow/shared/types";
-import { LexicalNode, NodeKey } from "lexical";
 import React from "react";
-import { colors, getColorName } from "../../../data/colors";
+import { LexicalNode, NodeKey } from "lexical";
+import { useIsSelected } from "./useIsSelected";
+import cl from "clsx";
 import { caretClasses } from "./caret";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
-import { useIsSelected } from "./useIsSelected";
-import useSWRImmutable from "swr/immutable";
+import { CalendarDaysIcon, CheckIcon } from "@heroicons/react/24/outline";
+import { useEditorContext } from "../../../editor/react/EditorProvider";
 
 function Decorator({
   nodeKey,
   value,
+  setToken,
 }: {
   nodeKey: string;
-  value: ColorToken | Option;
+  value: boolean;
+  setToken: (value: boolean) => void;
 }) {
+  const editor = useEditorContext();
+
   const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
   const selectClick = React.useRef(false);
-
-  const { data } = useSWRImmutable("colors", () => colors);
-
-  let label: string | undefined;
-  let color: string;
-
-  if (!("color" in value)) {
-    label = "label" in value ? value.label : value.alias;
-    color = "value" in value ? (value.value! as string) : "#ffffff";
-  } else {
-    color = value.color;
-    label = data
-      ? getColorName(color.slice(1), data[0], data[1]).split(" / ")[0]
-      : "";
-  }
 
   return (
     <div
@@ -49,21 +36,24 @@ function Decorator({
       }}
     >
       <span className="flex items-center gap-2">
-        <SwatchIcon className="w-4 h-4 inline" />
-        {label}
         <div
-          className="w-4 h-4 rounded ring-1 ring-inset ring-white/50"
-          style={{ backgroundColor: color }}
-        />
+          className="w-4 h-4 rounded-sm bg-white"
+          onClick={() => {
+            editor.update(() => {
+              setToken(!value);
+            });
+          }}
+        >
+          {value ? <CheckIcon className="w-4 h-4" /> : null}
+        </div>
+        {value ? "Ja" : "Nej"}
       </span>
     </div>
   );
 }
 
-export const ColorDecorator = Decorator;
-
-const type = "color-token";
-type TokenType = ColorToken;
+const type = "boolean";
+type TokenType = boolean;
 
 export default class ChildNode extends TokenStreamNode<typeof type, TokenType> {
   static getType(): string {
@@ -89,14 +79,20 @@ export default class ChildNode extends TokenStreamNode<typeof type, TokenType> {
   }
 
   decorate(): React.ReactNode {
-    return <Decorator nodeKey={this.__key} value={this.__token} />;
+    return (
+      <Decorator
+        nodeKey={this.__key}
+        value={this.__token}
+        setToken={(value) => this.setToken(value)}
+      />
+    );
   }
 }
 
-export function $createColorNode(value: TokenType): ChildNode {
+export function $createBooleanNode(value: boolean): ChildNode {
   return new ChildNode(value);
 }
 
-export function $isColorNode(node: LexicalNode): node is ChildNode {
+export function $isBooleanNode(node: LexicalNode): node is ChildNode {
   return node instanceof ChildNode;
 }

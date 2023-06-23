@@ -5,33 +5,63 @@ import { MenuTransition } from "./transitions/MenuTransition";
 import React from "react";
 import { useDragItem } from "@storyflow/dnd";
 
-function Menu<T extends { label: string; disabled?: boolean }>({
-  as,
-  icon,
-  label,
-  selected,
-  onClear,
-  align,
-  small,
-  secondary,
-  ...props
-}: {
-  as: any;
-  icon: React.FC<{ className: string }>;
-  label?: string;
-  selected?: T[] | T | null;
-  align?: "left" | "right";
-  onClear?: () => void;
-  small?: boolean;
-  secondary?: boolean;
-} & (
-  | {
-      options: T[];
-      onSelect: (value: T) => void;
-      multi?: boolean;
-    }
-  | { children: React.ReactNode }
-)) {
+type PropsOf<TTag extends ReactTag> = TTag extends React.ElementType
+  ? React.ComponentProps<TTag>
+  : {};
+
+type ReactTag =
+  | keyof JSX.IntrinsicElements
+  | React.JSXElementConstructor<{
+      active?: boolean;
+      icon?: React.FC<{ className?: string }>;
+      menu?: boolean;
+    }>;
+
+function Menu<
+  TTag extends ReactTag,
+  TOption extends { label: string; disabled?: boolean }
+>(
+  propsFromArg: {
+    as: TTag;
+    label?: string;
+    selected?: TOption[] | TOption | null;
+    align?: "left" | "right";
+    onClear?: () => void;
+    small?: boolean;
+  } & Omit<
+    PropsOf<TTag>,
+    | "as"
+    | "label"
+    | "selected"
+    | "align"
+    | "onClear"
+    | "small"
+    | "children"
+    | "options"
+    | "onSelect"
+    | "multi"
+  > &
+    (
+      | {
+          options: TOption[];
+          onSelect: (value: TOption) => void;
+          multi?: boolean;
+        }
+      | { children: React.ReactNode }
+    )
+) {
+  const { as, label, selected, onClear, align, small, ...props } = propsFromArg;
+
+  let {
+    options: _,
+    onSelect: __,
+    multi: ___,
+    children: ____,
+    ...restProps
+  } = "children" in props
+    ? { ...props, options: undefined, onSelect: undefined, multi: undefined }
+    : { ...props, children: undefined };
+
   const selectedArray = selected
     ? Array.isArray(selected)
       ? selected
@@ -43,12 +73,11 @@ function Menu<T extends { label: string; disabled?: boolean }>({
       {({ open }) => (
         <div className={cl("block text-sm", align === "right" && "relative")}>
           <HeadlessMenu.Button
-            as={as}
+            as={as as any}
             active={open}
             data-focus-remain="true"
-            icon={icon}
-            secondary={secondary}
             menu
+            {...restProps}
           >
             {selectedArray?.map((el) => el.label).join(", ") || label}
           </HeadlessMenu.Button>
@@ -97,7 +126,7 @@ const MenuItems = ({
   return (
     <MenuTransition
       show={open}
-      className={cl("absolute z-50", align === "right" && "right-0")}
+      className={cl("absolute z-[999]", align === "right" && "right-0")}
     >
       <HeadlessMenu.Items
         static

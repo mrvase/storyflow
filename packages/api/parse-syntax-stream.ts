@@ -11,6 +11,7 @@ import {
   WithSyntaxError,
   FunctionSymbol,
   FunctionData,
+  NestedField,
 } from "@storyflow/cms/types";
 import {
   operators,
@@ -18,15 +19,9 @@ import {
   NestedEntity,
   Operator,
   FunctionName,
+  DateToken,
 } from "@storyflow/shared/types";
-import {
-  DBId,
-  HasDBId,
-  DBSyntaxStream,
-  SyntaxStream,
-  SyntaxStreamSymbol,
-  DBValueArray,
-} from "./types";
+import { DBId, HasDBId, DBSyntaxStream, SyntaxStreamSymbol } from "./types";
 
 const returnToNullParent = (
   current: SyntaxNode<WithSyntaxError>,
@@ -88,12 +83,15 @@ export function createSyntaxStream(
     value.children.forEach((el) => {
       if (isObject(el) && "children" in el) {
         flattened.push(...flatten(el, value));
-      } else if (isObject(el) && "id" in el) {
-        // handle branded ids
-        flattened.push(addNestedObjectIds([el], transformId)[0]);
       } else if (Array.isArray(el)) {
         // handle branded ids
+        flattened.push(addNestedObjectIds(addNativeDate(el), transformId));
+      } else if (isObject(el) && "id" in el) {
+        // handle branded ids
         flattened.push(addNestedObjectIds(el, transformId));
+      } else if (isObject(el) && "date" in el) {
+        console.log("DATE FOUND", el);
+        flattened.push(addNativeDate(el));
       } else if (isObject(el) && "error" in el && el.error === ")") {
         flattened.push({ ")": false });
       } else if (isObject(el) && "error" in el) {
@@ -143,7 +141,7 @@ export function createSyntaxStream(
 }
 
 export function parseSyntaxStream(
-  stream: SyntaxStream | DBSyntaxStream
+  stream: DBSyntaxStream
 ): SyntaxTree<WithSyntaxError> {
   let root: SyntaxNode<WithSyntaxError> = { children: [], type: null };
 
@@ -156,7 +154,7 @@ export function parseSyntaxStream(
 
   let current: SyntaxNode<WithSyntaxError> = root;
 
-  (stream as DBSyntaxStream).forEach((token) => {
+  stream.forEach((token) => {
     if (isSymbol(token, "(") || isSymbol(token, "[")) {
       // An opening bracket always creates a group with operation null
       // and the operation stays null. So when we enter children groups,
@@ -231,10 +229,12 @@ export function parseSyntaxStream(
       // Replaced with { error: "missing" } if we turn out to be in operator.
       // We cannot have erroneous comma in operator.
       current.children.push({ error: "," });
-    } else if (isNestedEntityWithDBId(token)) {
-      current.children.push(removeNestedObjectIds([token])[0] as any);
     } else if (Array.isArray(token)) {
+      current.children.push(removeNativeDate(removeNestedObjectIds(token)));
+    } else if (isNestedEntityWithDBId(token)) {
       current.children.push(removeNestedObjectIds(token));
+    } else if (token instanceof Date) {
+      current.children.push(removeNativeDate(token));
     } else if (isObject(token) && "n" in token) {
       current.children.push(token);
     } else if (isObject(token) && "x" in token) {
@@ -270,49 +270,73 @@ export function parseSyntaxStream(
   return root;
 }
 
-function removeNestedObjectIds(value: DBSyntaxStream): SyntaxStream;
-function removeNestedObjectIds(value: DBValueArray): ValueArray;
+function removeNestedObjectIds(el: any[]): any[];
 function removeNestedObjectIds(
-  value: DBSyntaxStream | DBValueArray
-): SyntaxStream | ValueArray {
-  return (value as DBSyntaxStream).map((el) => {
-    if (el === null || typeof el !== "object") return el;
-    if (Array.isArray(el)) {
-      return removeNestedObjectIds(el);
-    }
-    if (!("id" in el)) return el;
-    return {
-      ...el,
-      id: unwrapObjectId(el.id),
-      ...("field" in el && { field: unwrapObjectId(el.field) }),
-      ...("folder" in el && { folder: unwrapObjectId(el.folder) }),
-    };
-  });
+  el: HasDBId<NestedEntity | NestedField>
+): NestedEntity | NestedField;
+function removeNestedObjectIds(
+  el: HasDBId<NestedEntity | NestedField | any[]>
+): NestedEntity | NestedField | any[] {
+  if (Array.isArray(el)) {
+    return el.map((x) => removeNestedObjectIds(x));
+  }
+  if (!isObject(el) || !("id" in el)) {
+    return el;
+  }
+  return {
+    ...el,
+    id: unwrapObjectId(el.id),
+    ...("field" in el && { field: unwrapObjectId(el.field) }),
+    ...("folder" in el && { folder: unwrapObjectId(el.folder) }),
+  };
 }
 
-export function addNestedObjectIds(
-  value: ValueArray,
+function addNestedObjectIds(
+  el: any[],
   transformId: <T extends string>(id: T) => DBId<T>
-): DBValueArray;
-export function addNestedObjectIds(
-  value: SyntaxStream,
+): any[];
+function addNestedObjectIds(
+  el: NestedEntity | NestedField,
   transformId: <T extends string>(id: T) => DBId<T>
-): DBSyntaxStream;
-export function addNestedObjectIds(
-  value: ValueArray | SyntaxStream,
+): HasDBId<NestedEntity | NestedField>;
+function addNestedObjectIds(
+  el: NestedEntity | NestedField | any[],
   transformId: <T extends string>(id: T) => DBId<T>
-): DBValueArray | DBSyntaxStream {
-  return value.map((el) => {
-    if (el === null || typeof el !== "object") return el;
-    if (Array.isArray(el)) {
-      return addNestedObjectIds(el, transformId);
-    }
-    if (!("id" in el)) return el;
-    return {
-      ...el,
-      id: transformId(el.id),
-      ...("field" in el && { field: transformId(el.field) }),
-      ...("folder" in el && { folder: transformId(el.folder) }),
-    };
-  });
+): HasDBId<NestedEntity | NestedField | any[]> {
+  if (Array.isArray(el)) {
+    return el.map((x) => addNestedObjectIds(x, transformId));
+  }
+  if (!isObject(el) || !("id" in el)) {
+    return el;
+  }
+  return {
+    ...el,
+    id: transformId(el.id),
+    ...("field" in el && { field: transformId(el.field) }),
+    ...("folder" in el && { folder: transformId(el.folder) }),
+  };
+}
+
+function addNativeDate(el: any[]): any[];
+function addNativeDate(el: DateToken): Date;
+function addNativeDate(el: DateToken | any[]): Date | any[] {
+  if (Array.isArray(el)) {
+    return el.map((x) => addNativeDate(x));
+  }
+  if (!isObject(el) || !("date" in el)) {
+    return el;
+  }
+  return new Date(el.date);
+}
+
+function removeNativeDate(el: any[]): any[];
+function removeNativeDate(el: Date): DateToken;
+function removeNativeDate(el: Date | any[]): DateToken | any[] {
+  if (Array.isArray(el)) {
+    return el.map((x) => removeNativeDate(x));
+  }
+  if (!(el instanceof Date)) {
+    return el;
+  }
+  return { date: el.toISOString() };
 }

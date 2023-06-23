@@ -4,6 +4,7 @@ import { addContext } from "../custom-events";
 import { DocumentId } from "@storyflow/shared/types";
 import { useGlobalContext } from "../state/context";
 import { useDocumentPageContext } from "../documents/DocumentPageContext";
+import { XMarkIcon } from "@heroicons/react/24/outline";
 
 type ImportState =
   | { state: "open" }
@@ -37,6 +38,36 @@ function parseCSV(file: File) {
     (resolve, reject) => {
       const reader = new FileReader();
 
+      const split = (string: string) => {
+        const result: string[] = [];
+        let opened = false;
+        let current = "";
+        let i = 0;
+        while (i < string.length) {
+          let char = string[i];
+          if (char === "," && !opened) {
+            result.push(current);
+            current = "";
+            i++;
+          } else if (char === '"' && string[i + 1] === '"') {
+            if (current === "") {
+              // do nothing
+            } else {
+              current += '"';
+            }
+            i += 2;
+          } else if (char === '"') {
+            opened = !opened;
+            i++;
+          } else {
+            current += string[i];
+            i++;
+          }
+        }
+        if (current !== "") result.push(current);
+        return result;
+      };
+
       reader.onload = function (event) {
         if (!event.target) {
           reject("No target");
@@ -45,12 +76,12 @@ function parseCSV(file: File) {
 
         const csvData = event.target.result as string;
         const lines = csvData.split(/\r\n|\n/);
-        const labels = lines[0].split(",");
+        const labels = split(lines[0]);
         const rows = [];
 
         for (let i = 1; i < lines.length; i++) {
           if (lines[i]) {
-            const row = lines[i].split(",");
+            const row = split(lines[i]);
             rows.push(row);
           }
         }
@@ -86,16 +117,23 @@ export function ImportData() {
   const [selected_, setSelected] = React.useState<number>(0);
   const selected =
     imports.state === "data" ? selected_ % imports.rows.length : 0;
-  const [values, setValues] = useGlobalContext(documentId, {});
+
+  const importContext = React.useMemo(() => {
+    if (imports.state !== "data") return {};
+    return Object.fromEntries(
+      imports.rows[selected].map((el, index) => [`import:${index}`, el])
+    );
+  }, [imports, selected]);
+
+  /*
+  we need the second parameter to have the latest keys to make sure
+  the state is subscribed to in some location in order to not disappear.
+  */
+  const [values, setValues] = useGlobalContext(documentId, importContext);
 
   React.useEffect(() => {
-    if (imports.state === "data") {
-      const values = Object.fromEntries(
-        imports.rows[selected].map((el, index) => [`import:${index}`, el])
-      );
-      setValues(values);
-    }
-  }, [imports.state === "data" ? imports.rows : undefined, selected]);
+    setValues(importContext);
+  }, [importContext]);
 
   if (imports.state === "closed") {
     return null;
@@ -121,13 +159,16 @@ export function ImportData() {
   }
 
   return (
-    <div className="sticky top-0 z-20 mx-5 mb-8 ">
+    <div className="sticky top-0 z-50 mx-5 mb-8 ">
       <div className="w-full rounded bg-teal-50 border border-teal-400 text-teal-800 p-5">
         <div className="flex gap-5">
           {imports.rows.length} dokumenter
           <button onClick={() => setSelected((ps) => ps - 1)}>&lt;</button>
           <div>{selected}</div>
           <button onClick={() => setSelected((ps) => ps + 1)}>&gt;</button>
+          <button onClick={() => setState({ state: "open" })}>
+            <XMarkIcon className="w-4 h-4" />
+          </button>
         </div>
         <div className="flex flex-wrap gap-2">
           {imports.labels.map((label, index) => (

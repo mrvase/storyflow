@@ -82,6 +82,7 @@ export const pushDefaultValues = (
     record: SyntaxTreeRecord;
   }
 ) => {
+  console.log("RECORD", data.record);
   Object.entries(data.record).forEach((entry) => {
     const [fieldId, tree] = entry as [FieldId, SyntaxTree];
     /* only care about native fields */

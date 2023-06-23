@@ -65,15 +65,18 @@ export function useGlobalContext<
     };
 
     return [subscribe, getSnapshot] as State<T>["sync"];
-  }, []);
+  }, [documentId, values]);
 
-  const setState = (values: Partial<T>) => {
-    batch(() => {
-      Object.entries(values).forEach(([key, value]) => {
-        context.use(`${documentId}/${key}`).set(() => value);
+  const setState = React.useCallback(
+    (values: Partial<T>) => {
+      batch(() => {
+        Object.entries(values).forEach(([key, value]) => {
+          context.use(`${documentId}/${key}`).set(() => value);
+        });
       });
-    });
-  };
+    },
+    [documentId]
+  );
 
   const state = React.useSyncExternalStore(...sync);
 

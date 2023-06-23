@@ -1,4 +1,5 @@
 import React from "react";
+import cl from "clsx";
 import { DropShadow, Sortable, useSortableItem } from "@storyflow/dnd";
 import { createTemplateFieldId } from "@storyflow/cms/ids";
 import type { DocumentId } from "@storyflow/shared/types";
@@ -11,7 +12,7 @@ import { getTranslateDragEffect } from "../utils/dragEffects";
 import { RenderField } from "../fields/RenderField";
 import { collab, usePush } from "../collab/CollabContext";
 import { GetDocument } from "./GetDocument";
-import { ExtendTemplatePath } from "./TemplatePathContext";
+import { ExtendTemplatePath, useTemplatePath } from "./TemplatePathContext";
 import { TopFieldIndexProvider } from "./FieldIndexContext";
 import { useDocumentIdGenerator } from "../id-generator";
 import {
@@ -22,6 +23,7 @@ import {
   DocumentSpliceOperation,
   DocumentTransactionEntry,
 } from "../operations/actions";
+import { useLocalStorage } from "../state/useLocalStorage";
 
 export function RenderTemplate({
   id,
@@ -141,11 +143,10 @@ export function RenderTemplate({
       return (
         <TopFieldIndexProvider index={index} key={fieldId}>
           <RenderField
-            id={fieldId}
-            fieldConfig={{
-              ...fieldConfig,
-              id: fieldId,
-            }}
+            fieldId={fieldId}
+            fieldConfig={
+              fieldConfig
+            } /* this does not have the correct id, but this is fixed in RenderField */
             index={index}
             dragHandleProps={dragHandleProps}
           />
@@ -154,9 +155,17 @@ export function RenderTemplate({
     }
   };
 
+  const depth = useTemplatePath().length;
+  const [isOpen] = useLocalStorage<boolean>("toolbar-open", true);
+
+  const isDraggableUnit = depth === 1 && isOpen;
+
   return (
     <ExtendTemplatePath template={id}>
-      <div {...containerProps}>
+      <div {...containerProps} className="relative">
+        {isDraggableUnit && (
+          <div className="absolute z-50 inset-0 border border-sky-100 rounded m-2.5 pointer-events-none" />
+        )}
         <Sortable
           type="fields"
           id={id}

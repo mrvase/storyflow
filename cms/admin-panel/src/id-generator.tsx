@@ -12,7 +12,7 @@ import {
   USER_TEMPLATE_OFFSET,
 } from "@storyflow/cms/ids";
 import { useOrganization } from "./clients/auth";
-import { query } from "./clients/client";
+import { mutate, query } from "./clients/client";
 import { isError } from "@nanorpc/client";
 import { z } from "./utils/parse";
 
@@ -60,19 +60,35 @@ const getNextValue = (
   offsets: [500, 0]
   should return: 500
   */
+
+  // NOTE
+  // it does not use the exact offset value. The first value returned is always the counter + 1.
+  // (and the counter begins at the first offset).
+  // and it is only when the counter *surpasses* (and not when it equals) the offset + batchSize
+  // that it continues to the next offset + 1. That is, the exact offset value belongs to the previous
+  // batch.
+
   const next = counter + 1;
 
-  const base = Math.floor(next / batchSize) * batchSize;
-
-  const offsetIndex = offsets.findIndex((offset) => base >= offset);
+  const offsetIndex = offsets.findIndex((offset) => next >= offset);
   const offset = offsets[offsetIndex];
 
-  if (base !== offset) {
-    if (offsetIndex <= 0) {
+  if (offsetIndex < 0) {
+    // this is technically not possible if there is at minimum one offset
+    return [null, true];
+  }
+
+  if (next > offset + batchSize) {
+    // it should use the next offset
+
+    if (offsetIndex === 0) {
+      // we have reached the end of the latest batch and we must fetch the next batch
       return [null, true];
     }
-    const nextOffset = offsets[offsetIndex - 1];
-    return [nextOffset + (next % batchSize), nextOffset === 0];
+
+    // the next batch is available so we use its offset + 1
+    const nextOffset = offsets[offsetIndex - 1] + 1;
+    return [nextOffset, nextOffset === 1];
   }
 
   return [next, offsetIndex === 0];
@@ -101,7 +117,7 @@ const createIdManager = ({
   let initialized: boolean = false;
 
   const fetchOffset = async (name: "id" | "template" | "field") => {
-    return query.admin
+    return mutate.admin
       .getOffset({
         name,
         size: batchSizes[name],

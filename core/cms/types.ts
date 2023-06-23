@@ -3,6 +3,7 @@ import {
   DocumentId,
   FieldId,
   FolderId,
+  FunctionDataRecord,
   FunctionName,
   NestedDocumentId,
   Operator,
@@ -35,38 +36,20 @@ export type OperatorSymbol = RecursivelyGenerateSymbolsFromArray<
   typeof operators
 >;
 
-export type Sorting = `${"-" | "+"}${RawFieldId}`;
+export type FunctionSymbol = {
+  [Key in keyof FunctionDataRecord]: { [K in Key]: FunctionDataRecord[Key] };
+}[keyof FunctionDataRecord];
 
-export type FunctionSymbol =
-  | { in: true }
-  | { concat: true }
-  | { sum: true }
-  | { filter: true }
-  | { slug: true }
-  | { url: true }
-  | { root: true }
-  | { merge: true }
-  | { template: RawDocumentId }
-  | { select: RawFieldId }
-  | { loop: RawDocumentId }
-  | { fetch: [limit: number, ...sortings: Sorting[]] };
-
+/*
 type KeysOfUnion<T> = T extends T ? keyof T : never;
 type ValuesOfUnion<T> = T extends T ? T[keyof T] : never;
+*/
 
-export type FunctionData = ValuesOfUnion<FunctionSymbol>;
+export type FunctionData = FunctionDataRecord[keyof FunctionDataRecord];
 export type GetFunctionData<T extends FunctionName> = Extract<
   FunctionSymbol,
   { [P in T]: any }
 >[T];
-
-/* TEST */
-
-type Assert<T extends true> = T;
-type Keys = KeysOfUnion<FunctionSymbol>;
-type AssertFunctionEquality = Assert<
-  Keys extends FunctionName ? (FunctionName extends Keys ? true : false) : false
->;
 
 /* SYNTAX TREE */
 
@@ -138,13 +121,10 @@ export type FieldConfig = {
   ui?: FieldUI;
   type2?: FieldType2;
   template?: DocumentId;
+  hidden?: boolean;
 };
 
-export type DefaultFieldConfig = {
-  id: FieldId;
-  label: string;
-  ui?: FieldUI;
-  type2?: FieldType2;
+export type DefaultFieldConfig = FieldConfig & {
   initialValue?: {
     transforms?: FieldTransform[];
     children?: SyntaxTree["children"];

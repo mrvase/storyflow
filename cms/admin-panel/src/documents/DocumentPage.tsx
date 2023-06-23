@@ -228,26 +228,39 @@ export function DocumentPage({ children }: { children?: React.ReactNode }) {
   const parsed = parseMatch<"document" | "template">(route);
   let { doc, error } = useDocumentWithTimeline(parsed.id);
 
+  const ctx = React.useMemo(
+    () =>
+      doc
+        ? {
+            id: doc._id,
+            record: doc.record,
+            versions: doc.versions,
+          }
+        : null,
+    [doc]
+  );
+
   return (
-    <>
-      {!error && doc && (
-        <Page type={parsed.type} doc={doc}>
-          {children}
-        </Page>
-      )}
-      {!error && !doc && <div className=""></div>}
-    </>
+    <FieldToolbarPortalProvider>
+      <DocumentPageContext.Provider value={ctx}>
+        <FocusOrchestrator>
+          <Content hasSidebar>
+            {!error && doc && <Page type={parsed.type} doc={doc} />}
+            {!error && !doc && <div className=""></div>}
+          </Content>
+        </FocusOrchestrator>
+        {doc ? children : null}
+      </DocumentPageContext.Provider>
+    </FieldToolbarPortalProvider>
   );
 }
 
 const Page = ({
   type,
   doc,
-  children,
 }: {
   type: "template" | "document";
   doc: DBDocument;
-  children: React.ReactNode;
 }) => {
   const id = doc._id;
 
@@ -268,83 +281,63 @@ const Page = ({
 
   const { label } = useDocumentLabel(doc);
 
-  const ctx = React.useMemo(
-    () => ({
-      id,
-      record: doc.record,
-      versions: doc.versions,
-    }),
-    [id, doc.record, doc.versions]
-  );
-
   const isModified = useIsModified(id);
 
   return (
-    <FieldToolbarPortalProvider>
-      <DocumentPageContext.Provider value={ctx}>
-        <FocusOrchestrator>
-          <Content hasSidebar>
-            <Content.Header>
-              {type === "template" ? (
-                <EditableTemplateLabel documentId={id} />
-              ) : (
-                <span className="text-3xl font-medium">
-                  {label || "Unavngivet dokument"}
-                </span>
+    <>
+      <Content.Header>
+        {type === "template" ? (
+          <EditableTemplateLabel documentId={id} />
+        ) : (
+          <span className="text-3xl font-medium">
+            {label || "Unavngivet dokument"}
+          </span>
+        )}
+        <Content.Toolbar>
+          {folder && isModified && <SaveButton id={id} folderId={folder._id} />}
+        </Content.Toolbar>
+      </Content.Header>
+      <SecondaryToolbar id={id} />
+      <ImportData />
+      <div className="pb-96 flex flex-col -mt-8">
+        {folderData.type === "app" &&
+          !templateId &&
+          config.filter(
+            (el) =>
+              "template" in el &&
+              el.template &&
+              [
+                DEFAULT_TEMPLATES.staticPage,
+                DEFAULT_TEMPLATES.dynamicPage,
+                DEFAULT_TEMPLATES.redirectPage,
+              ]
+                .map((el) => el._id)
+                .includes(el.template)
+          ).length === 0 && <TemplateSelect documentId={doc._id} />}
+        {!isTemplate && templateId && (
+          <ExtendTemplatePath template={owner._id}>
+            <GetDocument id={templateId}>
+              {(doc) => (
+                <RenderTemplate
+                  id={doc._id}
+                  config={doc.config}
+                  owner={owner._id}
+                  versions={owner.versions}
+                  index={null}
+                />
               )}
-              <Content.Toolbar>
-                {folder && isModified && (
-                  <SaveButton id={id} folderId={folder._id} />
-                )}
-              </Content.Toolbar>
-            </Content.Header>
-            <SecondaryToolbar id={id} />
-            <ImportData />
-            <div className="pb-96 flex flex-col -mt-8">
-              {folderData.type === "app" &&
-                !templateId &&
-                config.filter(
-                  (el) =>
-                    "template" in el &&
-                    el.template &&
-                    [
-                      DEFAULT_TEMPLATES.staticPage,
-                      DEFAULT_TEMPLATES.dynamicPage,
-                      DEFAULT_TEMPLATES.redirectPage,
-                    ]
-                      .map((el) => el._id)
-                      .includes(el.template)
-                ).length === 0 && <TemplateSelect documentId={doc._id} />}
-              {!isTemplate && (
-                <ExtendTemplatePath template={owner._id}>
-                  {templateId && (
-                    <GetDocument id={templateId}>
-                      {(doc) => (
-                        <RenderTemplate
-                          id={doc._id}
-                          config={doc.config}
-                          owner={owner._id}
-                          versions={owner.versions}
-                          index={null}
-                        />
-                      )}
-                    </GetDocument>
-                  )}
-                </ExtendTemplatePath>
-              )}
-              <RenderTemplate
-                id={owner._id}
-                config={config}
-                owner={owner._id}
-                versions={owner.versions}
-                index={null}
-              />
-            </div>
-          </Content>
-        </FocusOrchestrator>
-        {children}
-      </DocumentPageContext.Provider>
-    </FieldToolbarPortalProvider>
+            </GetDocument>
+          </ExtendTemplatePath>
+        )}
+        <RenderTemplate
+          id={owner._id}
+          config={config}
+          owner={owner._id}
+          versions={owner.versions}
+          index={null}
+        />
+      </div>
+    </>
   );
 };
 

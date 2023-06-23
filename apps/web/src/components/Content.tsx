@@ -15,10 +15,11 @@ const ContentContext = createServerContext<{
 export const Content = ({
   content,
   style,
+  date,
   useServerContext,
 }: Props<typeof props>) => {
   const result = useServerContext!(ContentContext);
-  console.log("PARENT CONTEXT", style, result);
+  console.log("DATE", date);
 
   return (
     <cms.div
@@ -30,6 +31,14 @@ export const Content = ({
           : undefined,
       }}
     >
+      {Intl.DateTimeFormat("da-DK", {
+        dateStyle: "long",
+        ...([date.getHours(), date.getMinutes(), date.getSeconds()].some(
+          Boolean
+        )
+          ? { timeStyle: "short" }
+          : {}),
+      }).format(date)}
       {content}
     </cms.div>
   );
@@ -60,6 +69,10 @@ const props = {
         ],
       },
     },
+  },
+  date: {
+    type: "date",
+    label: "Dato",
   },
 } satisfies PropConfigRecord;
 

@@ -8,7 +8,7 @@
 
 import { $getNodeByKey, LexicalEditor } from "lexical";
 
-import { useEffect, useMemo, useState } from "react";
+import { ReactPortal, useEffect, useMemo, useState } from "react";
 import ReactDOM from "react-dom";
 import { ErrorBoundary } from "react-error-boundary";
 import useLayoutEffect from "./useLayoutEffect";
@@ -25,13 +25,13 @@ export function useDecorators(editor: LexicalEditor): Array<JSX.Element> {
   // Subscribe to changes
   useLayoutEffect(() => {
     return editor.registerDecoratorListener<JSX.Element>((nextDecorators) => {
-      ReactDOM.flushSync(() => {
-        setDecorators(nextDecorators);
-      });
+      // ReactDOM.flushSync(() => {
+      setDecorators(nextDecorators);
+      // });
     });
   }, [editor]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     // If the content editable mounts before the subscription is added, then
     // nothing will be rendered on initial pass. We can get around that by
     // ensuring that we set the value.
@@ -40,17 +40,16 @@ export function useDecorators(editor: LexicalEditor): Array<JSX.Element> {
 
   // Return decorators defined as React Portals
   return useMemo(() => {
-    const decoratedPortals = [];
-    const decoratorKeys = Object.keys(decorators);
+    const decoratedPortals: ReactPortal[] = [];
+    const decoratorEntries = Object.entries(decorators);
 
-    for (let i = 0; i < decoratorKeys.length; i++) {
-      const nodeKey = decoratorKeys[i];
+    decoratorEntries.forEach(([nodeKey, decorator]) => {
       const reactDecorator = (
         <ErrorBoundary
           FallbackComponent={ErrorFallback}
           onError={(e) => editor._onError(e)}
         >
-          {decorators[nodeKey]}
+          {decorator}
         </ErrorBoundary>
       );
       const element = editor.getElementByKey(nodeKey);
@@ -58,7 +57,7 @@ export function useDecorators(editor: LexicalEditor): Array<JSX.Element> {
       if (element !== null) {
         decoratedPortals.push(ReactDOM.createPortal(reactDecorator, element));
       }
-    }
+    });
 
     return decoratedPortals;
   }, [decorators, editor]);

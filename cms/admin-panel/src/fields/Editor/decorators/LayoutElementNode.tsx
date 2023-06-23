@@ -118,7 +118,7 @@ function Decorator({
             }}
           >
             <InterSelectionArea nodeKey={nodeKey} />
-            <Icon className="w-4 h-4 mr-5 shrink-0" />
+            <Icon className="w-5 h-5 mr-5 shrink-0" />
             {config?.label ?? value.element}
             <div className="overflow-x-auto no-scrollbar mx-3">
               <Attributes
@@ -204,9 +204,9 @@ function FocusContainer({
   } else if (isSelected) {
     ring = "ring-1 ring-gray-800 dark:ring-gray-200";
   } else if (isFocused) {
-    ring = "ring-1 ring-gray-300 dark:ring-gray-600";
+    ring = "ring-1 ring-yellow-600/50 dark:ring-yellow-400/50";
   } else {
-    ring = "ring-1 ring-gray-200 dark:ring-gray-700";
+    ring = "ring-1 ring-yellow-600/30 dark:ring-yellow-400/30";
   }
 
   return (
@@ -215,7 +215,7 @@ function FocusContainer({
         "relative cursor-default",
         "rounded",
         ring,
-        "bg-white dark:bg-gray-850", // isFocused ? "bg-gray-50 dark:bg-gray-800" :
+        "bg-stone-50 dark:bg-gray-850", // isFocused ? "bg-gray-50 dark:bg-gray-800" :
         "transition-[background-color,box-shadow]"
       )}
     >
@@ -310,7 +310,7 @@ function NestedDefaultField({
   return (
     <ExtendPath id={documentId} type="document">
       <ExtendPath id={propId} type="field">
-        <div className="cursor-auto pl-[2.375rem] pr-2.5">
+        <div className="cursor-auto pl-[3.125rem] pr-2.5 pb-2.5">
           <Field
             id={propId}
             showPromptButton

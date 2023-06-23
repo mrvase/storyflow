@@ -3,8 +3,11 @@ import { z } from "zod";
 import type { DBDocumentRaw } from "../types";
 import type { DBDocument, SyntaxTree } from "@storyflow/cms/types";
 import type {
+  ColorToken,
+  DateToken,
   DocumentId,
   FieldId,
+  FileToken,
   FolderId,
   NestedDocumentId,
   StoryflowConfig,
@@ -29,6 +32,7 @@ import { procedure } from "@storyflow/server/rpc";
 import { copyRecord } from "@storyflow/cms/copy-record-async";
 import { getSyntaxTreeEntries, isSyntaxTree } from "@storyflow/cms/syntax-tree";
 import { tokens } from "@storyflow/cms/tokens";
+import { calculate } from "@storyflow/cms/calculate-server";
 
 export const documents = (config: StoryflowConfig) => {
   const dbName = undefined; // config.workspaces[0].db;
@@ -230,24 +234,83 @@ export const documents = (config: StoryflowConfig) => {
 
             /* COPY RECORD ER IKKE NOK! ÆNDRER IKKE ROOT KEYS */
 
-            // TODO replace contexts with values
-            const modifyNode = (node: SyntaxTree): SyntaxTree => {
-              return {
+            const modifyNode = (
+              node: SyntaxTree
+            ): SyntaxTree | boolean | FileToken | DateToken | ColorToken => {
+              const newNode = {
                 ...node,
-                children: node.children.map((child) => {
-                  if (isSyntaxTree(child)) {
-                    return modifyNode(child);
-                  } else if (tokens.isContextToken(child)) {
-                    if (child.ctx.startsWith("import:")) {
-                      const index = parseInt(child.ctx.split(":")[1], 10);
-                      const value = row[index];
-                      return value || "";
+                children: node.children.reduce(
+                  (acc: typeof node.children, child) => {
+                    if (isSyntaxTree(child)) {
+                      acc.push(modifyNode(child));
+                      return acc;
                     }
-                    return child;
-                  }
-                  return child;
-                }),
+                    if (
+                      !tokens.isContextToken(child) ||
+                      !child.ctx.startsWith("import:")
+                    ) {
+                      acc.push(child);
+                      return acc;
+                    }
+
+                    const index = parseInt(child.ctx.split(":")[1], 10);
+                    const value = row[index];
+
+                    if (typeof value === "string" && value !== "") {
+                      if (`${Number(value)}` === value) {
+                        acc.push(Number(value));
+                      } else {
+                        acc.push(value);
+                      }
+                    }
+
+                    return acc;
+                  },
+                  []
+                ),
               };
+
+              if (
+                ["to_boolean", "to_file", "to_date", "to_color"].includes(
+                  node.type as string
+                )
+              ) {
+                const result = calculate(newNode, () => undefined);
+                if (!Array.isArray(result)) return newNode;
+                return result[0] as
+                  | boolean
+                  | FileToken
+                  | DateToken
+                  | ColorToken;
+              }
+
+              /*
+              const child = newNode.children[0];
+              
+              if (node.type === "to_boolean") {
+                return child === "true";
+              }
+              if (node.type === "to_file") {
+                const src = typeof child === "string" ? child : "";
+                return { src };
+              }
+              if (node.type === "to_date") {
+                const dateString = typeof child === "string" ? child : "";
+                const date = new Date(dateString);
+                const validDate =
+                  date.toString() !== "Invalid Date" ? date : new Date();
+                return { date: validDate.toISOString() };
+              }
+              if (node.type === "to_color") {
+                const color =
+                  typeof child === "string" && child.match(/^#[A-Fa-f0-9]{6}$/)
+                    ? child
+                    : "#ffffff";
+                return { color };
+              }
+              */
+
+              return newNode;
             };
 
             let record = Object.fromEntries(
@@ -255,10 +318,10 @@ export const documents = (config: StoryflowConfig) => {
                 if (getDocumentId(key) === documentId) {
                   return [
                     replaceDocumentId(key, newDocumentId),
-                    modifyNode(value),
+                    modifyNode(value) as SyntaxTree,
                   ];
                 }
-                return [key, modifyNode(value)];
+                return [key, modifyNode(value) as SyntaxTree];
               })
             );
 

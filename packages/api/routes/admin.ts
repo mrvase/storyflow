@@ -110,7 +110,7 @@ export const admin = (config: StoryflowConfig) => {
           size: z.number(),
         })
       )
-      .query(async ({ name, size }) => {
+      .mutate(async ({ name, size }) => {
         const db = await client.get(dbName);
 
         const counter = await db

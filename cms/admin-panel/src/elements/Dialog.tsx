@@ -73,3 +73,30 @@ export default function Dialog({
     </Transition>
   );
 }
+
+export const useDialog = ({
+  title,
+  description,
+}: {
+  title: string;
+  description?: string;
+}) => {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const open = () => setIsOpen(true);
+  const close = () => setIsOpen(false);
+
+  const wrapInDialog = (children: React.ReactNode) => {
+    return (
+      <Dialog
+        isOpen={isOpen}
+        close={close}
+        title={title}
+        description={description}
+      >
+        {children}
+      </Dialog>
+    );
+  };
+
+  return { isOpen, open, close, wrapInDialog };
+};

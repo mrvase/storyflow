@@ -10,6 +10,7 @@ import {
 } from "@storyflow/cms/types";
 import {
   Brand,
+  DateToken,
   DocumentId,
   ExtractBrandedType,
   FieldId,
@@ -61,10 +62,15 @@ export type HasDBId<T> = T extends {
   ? Omit<T, "id"> & { id: DBId<DocumentId | NestedDocumentId> }
   : T;
 
-export type DBValue = HasDBId<Value>;
+export type HasDate<T> = Exclude<T, DateToken> | Date;
+
+export type DBValue = HasDate<HasDBId<Exclude<Value, DateToken>>>;
+
 export type DBValueArray = Nested<DBValue>[];
 
-export type DBSyntaxStream = HasDBId<StreamEntity<SyntaxStreamSymbol>>[];
+export type DBSyntaxStream = HasDate<
+  HasDBId<StreamEntity<SyntaxStreamSymbol>>
+>[];
 
 export type DBSyntaxStreamBlock = {
   k: DBId<FieldId>;
@@ -85,7 +91,7 @@ export type SyntaxStreamSymbol =
   | FunctionSymbol
   | null;
 
-export type SyntaxStream = StreamEntity<SyntaxStreamSymbol>[];
+// export type SyntaxStream = StreamEntity<SyntaxStreamSymbol>[];
 
 /* raw objects */
 

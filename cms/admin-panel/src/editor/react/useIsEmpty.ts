@@ -1,5 +1,6 @@
 import { useLayoutEffect, useState } from "react";
-import { $getRoot, LexicalEditor } from "lexical";
+import { $getRoot, $isParagraphNode, LexicalEditor } from "lexical";
+import { $isHeadingNode } from "./HeadingNode";
 
 export function $canShowPlaceholder(
   isComposing: boolean,
@@ -54,7 +55,16 @@ export function $canShowPlaceholder(
 
 export function isEditorEmpty(editor: LexicalEditor) {
   return editor.getEditorState().read(() => {
-    return !editor.isComposing() && $getRoot().getTextContent() === "";
+    const root = $getRoot();
+    const rootChildren = root.getChildren();
+    return (
+      !editor.isComposing() &&
+      (rootChildren.length === 0 ||
+        (rootChildren.length === 1 &&
+          ($isHeadingNode(rootChildren[0]) ||
+            $isParagraphNode(rootChildren[0])) &&
+          rootChildren[0].getTextContent() === ""))
+    );
   });
 }
 

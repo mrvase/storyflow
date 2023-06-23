@@ -89,9 +89,10 @@ export default function FolderPage({
   const { pathname } = usePath();
 
   const isSelected = (pathname || "/") === (route.accumulated || "/");
-  const nextIsDocument = pathname
-    .slice(route.accumulated.length)
-    .startsWith("/d");
+
+  const nextIsDocument = Boolean(
+    pathname.slice(route.accumulated.length).match(/\/(d|t)/)
+  );
 
   const push = usePush<FolderTransactionEntry>("folders");
   const mutateProp = <T extends "label" | "domains">(
@@ -468,7 +469,7 @@ export function DomainsButton({
   if (!organization?.apps.length) return null;
 
   return (
-    <Menu<{ id: string; label: string }>
+    <Menu
       as={Content.ToolbarButton}
       icon={GlobeAltIcon}
       label={t.folders.websites()}

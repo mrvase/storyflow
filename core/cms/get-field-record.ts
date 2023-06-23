@@ -173,7 +173,7 @@ export const createFieldRecordGetter = (
       if (newFetches.length > 0) {
         console.log("NEW FETCHES NEW FETCHES NEW FETCHES NEW FETCHES");
         await resolveFetches(newFetches);
-        calculateAsync();
+        await calculateAsync();
       }
     };
 

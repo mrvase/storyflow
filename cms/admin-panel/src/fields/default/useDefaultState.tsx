@@ -49,6 +49,7 @@ export function useDefaultStateCore(id: FieldId) {
   const setState = React.useCallback(
     (stream: TokenStream, transforms: FieldTransform[]) => {
       const tree = parseTokenStream(stream, transforms);
+      console.log("TREE!!", tree);
       setTree(() => tree);
       setValue(() =>
         calculateFn(tree, {

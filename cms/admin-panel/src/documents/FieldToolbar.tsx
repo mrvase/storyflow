@@ -24,6 +24,7 @@ import { useTopFieldIndex } from "./FieldIndexContext";
 import { DocumentTransactionEntry } from "../operations/actions";
 import { getDocumentLabel } from "./useDocumentLabel";
 import { useTranslation } from "../translation/TranslationContext";
+import { useDialog } from "../elements/Dialog";
 
 const FieldToolbarPortalContext = React.createContext<
   [HTMLDivElement | null, React.Dispatch<HTMLDivElement | null>] | null
@@ -49,6 +50,7 @@ export function useFieldToolbarPortal() {
   )?.[1];
 }
 
+/*
 export function FieldToolbarPortal({ show }: { show: boolean }) {
   const portal = useContextWithError(
     FieldToolbarPortalContext,
@@ -59,23 +61,20 @@ export function FieldToolbarPortal({ show }: { show: boolean }) {
     ? ReactDOM.createPortal(<FieldToolbar />, portal)
     : null;
 }
+*/
 
 const restrictToOptions = [
   { id: "children" as "children", label: "Rich Text" },
   { id: "number" as "number", label: "Tal" },
   { id: "image" as "image", label: "Billede" },
   { id: "color" as "color", label: "Farve" },
+  { id: "data" as "data", label: "Dokumenter" },
 ];
 
-export function FieldToolbar() {
+export function FieldToolbar({ fieldId }: { fieldId: FieldId }) {
   const t = useTranslation();
-  const fieldId = useFieldId();
-  const topIndex = useTopFieldIndex();
-  const documentId = getDocumentId<DocumentId>(fieldId);
 
   const [config, setConfig] = useFieldConfig(fieldId);
-
-  const push = usePush<DocumentTransactionEntry>(documentId, "config");
 
   const templateFolder = useTemplateFolder()?._id;
   const { documents: templates } = useDocumentList(templateFolder);
@@ -94,23 +93,10 @@ export function FieldToolbar() {
   return (
     <>
       {/*<FieldLabel id={fieldId} label={config?.label ?? ""} />*/}
-      <Menu<{ id: DocumentId; label: string }>
+      <Menu
         as={Content.ToolbarButton}
-        icon={ListBulletIcon}
-        label="Vælg skabelon"
-        onSelect={(el) => setConfig("template", el.id)}
-        onClear={() => setConfig("template", undefined)}
-        selected={
-          config?.template
-            ? templateOptions.find((el) => el.id === config.template)
-            : undefined
-        }
-        options={templateOptions}
-      />
-      <Menu<{ id: FieldType2; label: string }>
-        as={Content.ToolbarButton}
-        icon={FunnelIcon}
-        label="Begræns til"
+        // icon={FunnelIcon}
+        label="Type"
         onSelect={(el) => setConfig("type2", el.id)}
         onClear={() => setConfig("type2", undefined)}
         selected={
@@ -119,16 +105,25 @@ export function FieldToolbar() {
             : undefined
         }
         options={restrictToOptions}
+        dimmed={!config?.type2}
+        align="right"
       />
-      {typeof topIndex === "number" && (
-        <Content.ToolbarButton
-          data-focus-remain="true"
-          onClick={() => {
-            push([["", [[topIndex, 1]]]]);
-          }}
-        >
-          <TrashIcon className="w-4 h-4" />
-        </Content.ToolbarButton>
+      {config?.type2 === "data" && (
+        <Menu
+          as={Content.ToolbarButton}
+          // icon={ListBulletIcon}
+          label="Vælg skabelon"
+          onSelect={(el) => setConfig("template", el.id)}
+          onClear={() => setConfig("template", undefined)}
+          selected={
+            config?.template
+              ? templateOptions.find((el) => el.id === config.template)
+              : undefined
+          }
+          options={templateOptions}
+          dimmed={!config?.template}
+          align="right"
+        />
       )}
     </>
   );

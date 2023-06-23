@@ -70,6 +70,36 @@ export function compute(
           }),
         ];
       }
+    case "to_boolean": {
+      return [[value[0]?.[0] === "true"]];
+    }
+    case "to_file": {
+      const src = typeof value[0]?.[0] === "string" ? value[0][0] : "";
+      return [[{ src }]];
+    }
+    case "to_color": {
+      const color =
+        typeof value[0]?.[0] === "string" &&
+        value[0][0].match(/^#[A-Fa-f0-9]{6}$/)
+          ? value[0][0]
+          : "";
+      return [[{ color }]];
+    }
+    case "to_date": {
+      const dateString = typeof value[0]?.[0] === "string" ? value[0][0] : "";
+      const date = new Date(dateString);
+      const validDate = date.toString() !== "Invalid Date" ? date : new Date();
+      return [[{ date: validDate.toISOString() }]];
+    }
+    case "if":
+      if (value[0]?.[0]) {
+        return Array.isArray(value[1]) && value[1].length > 0
+          ? [[value[1][0]]]
+          : [];
+      }
+      return Array.isArray(value[2]) && value[2].length > 0
+        ? [[value[2][0]]]
+        : [];
     case "sum":
       return [
         [

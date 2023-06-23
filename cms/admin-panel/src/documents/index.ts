@@ -5,8 +5,8 @@ import {
   RawFieldId,
   ValueArray,
   RawDocumentId,
+  Sorting,
 } from "@storyflow/shared/types";
-import type { Sorting } from "@storyflow/cms/types";
 import type { DBDocument } from "@storyflow/cms/types";
 import { normalizeDocumentId } from "@storyflow/cms/ids";
 import { collab } from "../collab/CollabContext";

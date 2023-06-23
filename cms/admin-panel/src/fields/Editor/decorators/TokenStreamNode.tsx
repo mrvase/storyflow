@@ -23,6 +23,7 @@ export type SerializedTokenStreamNode<
 >;
 
 export type ObjectToken =
+  | boolean
   | Token
   | NestedEntity
   | NestedField

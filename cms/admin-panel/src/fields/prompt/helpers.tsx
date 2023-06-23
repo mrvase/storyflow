@@ -18,6 +18,6 @@ export const markMatchingString = (
       <span className="whitespace-pre opacity-80">{string.substring(i)}</span>
     </>
   ) : (
-    <span className="whitespace-pre opacity-80">{string}</span>
+    <span className="whitespace-pre">{string}</span>
   );
 };

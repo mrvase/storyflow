@@ -78,7 +78,7 @@ export function AddDocumentDialog({
               createRecord: (id) => ({
                 [createTemplateFieldId(id, DEFAULT_FIELDS.creation_date.id)]: {
                   ...DEFAULT_SYNTAX_TREE,
-                  children: [new Date()],
+                  children: [{ date: new Date().toISOString() }],
                 },
                 ...(parentUrl
                   ? {

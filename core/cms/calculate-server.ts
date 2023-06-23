@@ -9,14 +9,10 @@ import {
   NestedDocument,
   StateToken,
   ClientSyntaxTree,
+  Sorting,
 } from "@storyflow/shared/types";
 import { spreadImplicitArrays, compute } from "@storyflow/shared/calculate";
-import {
-  SyntaxTree,
-  SyntaxTreeRecord,
-  GetFunctionData,
-  Sorting,
-} from "./types";
+import { SyntaxTree, SyntaxTreeRecord, GetFunctionData } from "./types";
 import { isSyntaxTree } from "./syntax-tree";
 
 /*

@@ -26,6 +26,7 @@ import {
   splitByNonEscapedCharacter,
 } from "../../operations/escaped-characters";
 import type {
+  FunctionName,
   LibraryConfigRecord,
   NestedElement,
 } from "@storyflow/shared/types";
@@ -63,6 +64,11 @@ import { $createFileNode } from "./decorators/FileNode";
 import { $createColorNode } from "./decorators/ColorNode";
 import { $createCommaNode } from "./decorators/CommaNode";
 import { $createBracketNode } from "./decorators/BracketNode";
+import { $createDateNode } from "./decorators/DateNode";
+import { $createBooleanNode } from "./decorators/BooleanNode";
+import { $createBlockNode, $isBlockNode } from "./decorators/BlockNode";
+import { isFunctionSymbol } from "@storyflow/cms/symbols";
+import { FunctionSymbol } from "@storyflow/cms/types";
 
 export const isInlineElement = (
   configs: LibraryConfigRecord,
@@ -199,6 +205,10 @@ export const $getComputation = (node: LexicalNode, endAt?: string) => {
           }
           content = tools.concat(content, newContent);
         }
+      }
+      if ($isBlockNode(node)) {
+        const func = node.__func;
+        content = tools.concat([{ "(": true }], content, [func]);
       }
     } else if ($isPromptNode(node)) {
       content = node.getTokenStream();
@@ -430,7 +440,10 @@ export const $createInlinesFromStream = (
         }
       });
     } else if (typeof el === "boolean") {
-      const node = $createTextNode(el ? "SAND" : "FALSK");
+      const node = $createBooleanNode(el);
+      acc.push(node);
+    } else if (tokens.isDateToken(el)) {
+      const node = $createDateNode(el);
       acc.push(node);
     } else if (tokens.isNestedField(el)) {
       const node = $createImportNode(el);
@@ -494,13 +507,20 @@ const isBlockElement = (
   configs: LibraryConfigRecord
 ) => {
   return (
+    typeof el === "boolean" ||
     (tokens.isNestedElement(el) && !isInlineElement(configs, el)) ||
     tokens.isNestedDocument(el) ||
     tokens.isNestedFolder(el) ||
     tokens.isFileToken(el) ||
+    tokens.isColorToken(el) ||
+    tokens.isDateToken(el) ||
+    tokens.isCustomToken(el) ||
     tokens.isNestedCreator(el)
   );
 };
+
+const isComma = (el: unknown): el is { ",": true } =>
+  typeof el === "object" && el !== null && "," in el;
 
 export function splitStreamByBlocks(
   stream: TokenStream,
@@ -528,52 +548,119 @@ export function splitStreamByBlocks(
   return blocks;
 }
 
+function splitStreamByFunctions(stream: TokenStream) {
+  const result: (TokenStream | { func: FunctionSymbol; group: TokenStream })[] =
+    [];
+
+  let group: TokenStream = [];
+  let level = 0;
+
+  stream.forEach((el) => {
+    if (isSymbol(el, "(")) {
+      if (level === 0) {
+        result.push(group);
+        group = [];
+      } else {
+        group.push(el);
+      }
+      level++;
+    } else if (isFunctionSymbol(el)) {
+      if (level === 1) {
+        result.push({ func: el, group });
+        group = [];
+      } else {
+        group.push(el);
+      }
+      level--;
+    } else {
+      group.push(el);
+    }
+  });
+
+  result.push(group);
+
+  const filtered = result.filter((el) => !Array.isArray(el) || el.length > 0);
+
+  if (filtered.length === 0) {
+    return [[]];
+  }
+
+  return filtered;
+}
+
 export function $createBlocksFromStream(
   initialState: TokenStream,
   configs: LibraryConfigRecord
 ) {
   const blocks: LexicalNode[] = [];
 
-  const streamBlocks = splitStreamByBlocks(initialState, configs);
+  const streamFunctions = splitStreamByFunctions(initialState);
 
-  if (!streamBlocks.length) {
-    const paragraphNode = $createParagraphNode();
-    blocks.push(paragraphNode);
-    return blocks;
-  }
+  streamFunctions.map((el) => {
+    if (typeof el === "object" && el !== null && "group" in el) {
+      const childrenBlocks = $createBlocksFromStream(el.group, configs);
+      const node = $createBlockNode(el.func);
+      node.append(...childrenBlocks);
+      blocks.push(node);
+    } else {
+      const streamBlocks = splitStreamByBlocks(el, configs);
 
-  streamBlocks.forEach((stream, index) => {
-    if (stream.length === 1 && isBlockElement(stream[0], configs)) {
-      if (tokens.isNestedElement(stream[0])) {
-        blocks.push($createLayoutElementNode(stream[0]));
-      } else if (tokens.isNestedFolder(stream[0])) {
-        blocks.push($createFolderNode(stream[0] as any));
-      } else if (tokens.isNestedCreator(stream[0])) {
-        blocks.push($createCreatorNode(stream[0] as any));
-      } else if (tokens.isFileToken(stream[0])) {
-        blocks.push($createFileNode(stream[0] as any));
-      } else {
-        blocks.push($createDocumentNode(stream[0] as any));
-      }
-    } else if (tokens.isLineBreak(stream[0])) {
-      if (
-        index === streamBlocks.length - 1 ||
-        tokens.isLineBreak(streamBlocks[index + 1]?.[0])
-      ) {
+      if (!streamBlocks.length) {
         const paragraphNode = $createParagraphNode();
         blocks.push(paragraphNode);
+        return blocks;
       }
-    } else {
-      const isHeading: false | string =
-        typeof stream[0] === "string" &&
-        (stream[0].match(/^(\#+)\s/)?.[1] ?? false);
-      const paragraphNode = isHeading
-        ? $createHeadingNode(`h${isHeading.length}` as "h1")
-        : $createParagraphNode();
-      stream = isHeading ? tools.slice(stream, 1 + isHeading.length) : stream;
-      const nodes = $createInlinesFromStream(stream, configs);
-      paragraphNode.append(...nodes);
-      blocks.push(paragraphNode);
+
+      streamBlocks.forEach((stream, index) => {
+        if (stream.length === 1 && isBlockElement(stream[0], configs)) {
+          const el = stream[0];
+          if (typeof el === "boolean") {
+            blocks.push($createBooleanNode(el));
+          } else if (tokens.isNestedElement(el)) {
+            blocks.push($createLayoutElementNode(el));
+          } else if (tokens.isNestedFolder(el)) {
+            blocks.push($createFolderNode(el));
+          } else if (tokens.isNestedCreator(el)) {
+            blocks.push($createCreatorNode(el));
+          } else if (tokens.isColorToken(el)) {
+            blocks.push($createColorNode(el));
+          } else if (tokens.isCustomToken(el)) {
+            blocks.push($createCustomTokenNode(el));
+          } else if (tokens.isDateToken(el)) {
+            blocks.push($createDateNode(el));
+          } else if (tokens.isFileToken(el)) {
+            blocks.push($createFileNode(el));
+          } else {
+            blocks.push($createDocumentNode(el as any));
+          }
+        } else if (tokens.isLineBreak(stream[0])) {
+          if (index === 0) {
+            const paragraphNode = $createParagraphNode();
+            blocks.push(paragraphNode);
+          }
+          if (tokens.isLineBreak(streamBlocks[index + 1]?.[0])) {
+            const paragraphNode = $createParagraphNode();
+            blocks.push(paragraphNode);
+          }
+          if (index === streamBlocks.length - 1) {
+            const paragraphNode = $createParagraphNode();
+            blocks.push(paragraphNode);
+          }
+        } else {
+          const isHeading: false | string =
+            typeof stream[0] === "string" &&
+            (stream[0].match(/^(\#+)\s/)?.[1] ?? false);
+          const paragraphNode = isHeading
+            ? $createHeadingNode(`h${isHeading.length}` as "h1")
+            : $createParagraphNode();
+          stream = isHeading
+            ? tools.slice(stream, 1 + isHeading.length)
+            : stream;
+          const nodes = $createInlinesFromStream(stream, configs);
+          paragraphNode.append(...nodes);
+          blocks.push(paragraphNode);
+        }
+      });
     }
   });
 

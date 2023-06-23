@@ -10,7 +10,12 @@ import {
   getRawFieldId,
 } from "@storyflow/cms/ids";
 import { usePush } from "../collab/CollabContext";
-import { HomeIcon, LinkIcon, StarIcon } from "@heroicons/react/24/outline";
+import {
+  ArrowTopRightOnSquareIcon,
+  HomeIcon,
+  LinkIcon,
+  StarIcon,
+} from "@heroicons/react/24/outline";
 import { Link, useNavigate, usePath, useRoute } from "@nanokit/router";
 import { useDocumentList } from "../documents";
 import cl from "clsx";
@@ -32,6 +37,8 @@ import {
 } from "../folders/AddDocumentDialog";
 import { createSlug } from "../utils/createSlug";
 import { getDocumentLabel } from "../documents/useDocumentLabel";
+import { useFolderDomains } from "../folders/FolderDomainsContext";
+import { useAppConfig } from "../AppConfigContext";
 
 const getUrlStringFromValue = (value: ValueArray | SyntaxTree) => {
   const getString = (val: any[]) => {
@@ -44,6 +51,12 @@ const getUrlStringFromValue = (value: ValueArray | SyntaxTree) => {
       : calculate(value, () => undefined, { ignoreClientState: true })
     // it should not be possible to have client state here anyway
   );
+};
+
+const initialParams = {
+  param0: "",
+  param1: "",
+  param2: "",
 };
 
 const useRelatedPages = (initialUrl: string) => {
@@ -141,11 +154,10 @@ export default function UrlField({ id }: FieldProps) {
     );
   };
 
-  const [values, setValues] = useGlobalContext(getDocumentId(id), {
-    param0: "",
-    param1: "",
-    param2: "",
-  });
+  const [values, setValues] = useGlobalContext(
+    getDocumentId(id),
+    initialParams
+  );
 
   const [parents, children] = useRelatedPages(
     getUrlStringFromValue(calculateRootFieldFromRecord(id, record))
@@ -193,8 +205,10 @@ export default function UrlField({ id }: FieldProps) {
   const [dialogUrl, addDocumentWithUrl, close] = useAddDocumentDialog();
   const folder = useCurrentFolder();
 
+  const baseURL = useAppConfig().baseURL;
+
   return (
-    <div className="pt-0.5 px-2.5 pb-2.5">
+    <div className="pt-0.5 pb-2.5">
       {folder && (
         <AddDocumentDialog
           isOpen={Boolean(dialogUrl)}
@@ -205,19 +219,20 @@ export default function UrlField({ id }: FieldProps) {
         />
       )}
       <div className="outline-none rounded flex items-center px-3 mb-2.5 bg-gray-50 dark:bg-gray-850 ring-button">
-        <Link
-          to={replacePage(parents[0]?._id ?? "")}
+        <a
+          href={`${baseURL}${url}`}
+          target="_blank"
           className="mr-5 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100 transition-colors"
           data-focus-ignore="true"
         >
-          <HomeIcon className="w-4 h-4" />
-        </Link>
+          <ArrowTopRightOnSquareIcon className="w-4 h-4" />
+        </a>
         <Link
           to={replacePage(parents[0]?._id ?? "")}
           className="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100 transition-colors"
           data-focus-ignore="true"
         >
-          www.kfs.dk
+          {baseURL.replace(/https?:\/\//, "")}
         </Link>
         <div className="px-2 text-gray-400 dark:text-gray-600 text-sm">/</div>
         {parentSlugs.slice(1).map((el, index) => (
@@ -259,7 +274,7 @@ export default function UrlField({ id }: FieldProps) {
         <input
           type="text"
           className={cl(
-            "w-full py-1.5 bg-transparent outline-none placeholder:text-gray-500"
+            "w-full py-2.5 bg-transparent outline-none placeholder:text-gray-500"
           )}
           value={slug === "*" ? "" : slug}
           onChange={(ev) => handleChange(ev.target.value)}

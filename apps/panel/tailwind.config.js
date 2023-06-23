@@ -71,6 +71,10 @@ module.exports = {
       addVariant("child", "& > *");
       addVariant("child-hover", "& > *:hover");
       addVariant("checked-label", "&:checked + label");
+      addVariant(
+        "has-editor-focus",
+        "&:hover:has(.editor:hover), &:focus:has(.editor:focus)"
+      );
     },
   ],
   darkMode: "class",

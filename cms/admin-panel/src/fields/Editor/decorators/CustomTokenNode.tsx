@@ -50,7 +50,7 @@ function CustomDecorator({
   let label = option && "label" in option ? option.label : value.name;
 
   return (
-    <span
+    <div
       className={cl(
         "bg-gray-50 dark:bg-sky-400/20 text-sky-100/90 rounded-sm selection:bg-transparent relative px-2",
         isSelected ? "ring-1 ring-white" : "dark:ring-gray-600",
@@ -63,11 +63,11 @@ function CustomDecorator({
         }
       }}
     >
-      <span className="flex-center gap-2">
+      <span className="flex items-center gap-2">
         <TagIcon className="w-4 h-4 inline" />
         {label}
       </span>
-    </span>
+    </div>
   );
 }
 
@@ -85,10 +85,6 @@ export default class ChildNode extends TokenStreamNode<typeof type, TokenType> {
 
   constructor(token: TokenType, key?: NodeKey) {
     super(type, token, key);
-  }
-
-  isInline(): true {
-    return true;
   }
 
   exportJSON(): SerializedTokenStreamNode<typeof type, TokenType> {

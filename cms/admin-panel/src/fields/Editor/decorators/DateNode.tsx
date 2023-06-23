@@ -1,38 +1,26 @@
-import cl from "clsx";
-import { SwatchIcon } from "@heroicons/react/24/outline";
-import type { ColorToken, Option } from "@storyflow/shared/types";
-import { LexicalNode, NodeKey } from "lexical";
 import React from "react";
-import { colors, getColorName } from "../../../data/colors";
-import { caretClasses } from "./caret";
-import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
+import { LexicalNode, NodeKey } from "lexical";
 import { useIsSelected } from "./useIsSelected";
-import useSWRImmutable from "swr/immutable";
+import cl from "clsx";
+import { caretClasses } from "./caret";
+import type {
+  DateToken,
+  NestedElement,
+  ValueArray,
+} from "@storyflow/shared/types";
+import { getConfigFromType, useAppConfig } from "../../../AppConfigContext";
+import { useGlobalState } from "../../../state/state";
+import { computeFieldId, getIdFromString } from "@storyflow/cms/ids";
+import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
+import { usePath, useSelectedPath } from "../../Path";
+import { CalendarDaysIcon } from "@heroicons/react/24/outline";
+import { serializeDate } from "../../../data/dates";
 
-function Decorator({
-  nodeKey,
-  value,
-}: {
-  nodeKey: string;
-  value: ColorToken | Option;
-}) {
+function Decorator({ nodeKey, value }: { nodeKey: string; value: DateToken }) {
   const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
   const selectClick = React.useRef(false);
 
-  const { data } = useSWRImmutable("colors", () => colors);
-
-  let label: string | undefined;
-  let color: string;
-
-  if (!("color" in value)) {
-    label = "label" in value ? value.label : value.alias;
-    color = "value" in value ? (value.value! as string) : "#ffffff";
-  } else {
-    color = value.color;
-    label = data
-      ? getColorName(color.slice(1), data[0], data[1]).split(" / ")[0]
-      : "";
-  }
+  const date = new Date(value.date);
 
   return (
     <div
@@ -49,21 +37,20 @@ function Decorator({
       }}
     >
       <span className="flex items-center gap-2">
-        <SwatchIcon className="w-4 h-4 inline" />
-        {label}
-        <div
-          className="w-4 h-4 rounded ring-1 ring-inset ring-white/50"
-          style={{ backgroundColor: color }}
-        />
+        <CalendarDaysIcon className="w-4 h-4 inline" />
+        {Intl.DateTimeFormat("da-DK", {
+          weekday: "long",
+        })
+          .format(date)
+          .slice(0, 3)}{" "}
+        {serializeDate(date)}
       </span>
     </div>
   );
 }
 
-export const ColorDecorator = Decorator;
-
-const type = "color-token";
-type TokenType = ColorToken;
+const type = "date";
+type TokenType = DateToken;
 
 export default class ChildNode extends TokenStreamNode<typeof type, TokenType> {
   static getType(): string {
@@ -93,10 +80,10 @@ export default class ChildNode extends TokenStreamNode<typeof type, TokenType> {
   }
 }
 
-export function $createColorNode(value: TokenType): ChildNode {
+export function $createDateNode(value: DateToken): ChildNode {
   return new ChildNode(value);
 }
 
-export function $isColorNode(node: LexicalNode): node is ChildNode {
+export function $isDateNode(node: LexicalNode): node is ChildNode {
   return node instanceof ChildNode;
 }

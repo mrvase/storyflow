@@ -23,17 +23,21 @@ function isObject(value: any): value is Record<string, any> {
 }
 
 const isInline = (token: SyntaxNode<WithSyntaxError>["children"][number]) => {
-  if (typeof token !== "object") return true;
-  if ("id" in token) {
+  if (isObject(token) && "id" in token) {
     return Boolean(token.inline);
   }
+  /*
   if ("type" in token) {
     // syntax node
     return true;
   }
+  */
   return (
-    tokens.isPrimitiveValue(token) ||
-    tokens.isToken(token) ||
+    typeof token === "string" ||
+    typeof token === "number" ||
+    tokens.isContextToken(token) ||
+    tokens.isStateToken(token) ||
+    // tokens.isToken(token) ||
     tokens.isParameter(token)
   );
 };
@@ -282,7 +286,11 @@ export function parseTokenStream(
       mergePush(token);
     } else if (tokens.isParameter(token)) {
       mergePush(token);
-    } else if (tokens.isPrimitiveValue(token)) {
+    } else if (tokens.isLineBreak(token)) {
+      // do nothing
+    } else if (Array.isArray(token)) {
+      // ??
+    } else {
       mergePush(token);
     }
 

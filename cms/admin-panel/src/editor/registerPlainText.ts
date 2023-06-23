@@ -50,6 +50,7 @@ import {
 import { CAN_USE_BEFORE_INPUT, IS_IOS, IS_SAFARI } from "./utils/environment";
 import { mergeRegister } from "./utils/mergeRegister";
 import type { LibraryConfigRecord } from "@storyflow/shared/types";
+import { $isBlockNode } from "../fields/Editor/decorators/BlockNode";
 
 /**
  * Tre scenarier for tekst
@@ -331,6 +332,53 @@ export function registerPlainText(
         }
 
         event.preventDefault();
+
+        const getEmptyFunction = () => {
+          if (!selection.isCollapsed()) return false;
+          console.log("sel", selection);
+          let par = selection.getNodes()[0];
+          if ($isTextNode(par)) par = par.getParent()!;
+          const node = par.getParent();
+          if (!$isBlockNode(node)) return false;
+          if (selection.anchor.type === "element") {
+            const selectedNode = selection.anchor.getNode();
+            console.log("SELECTED NODE", selectedNode);
+            if (
+              selectedNode.getParent() === node &&
+              selectedNode.getIndexWithinParent() === 0
+            ) {
+              // if function node is empty
+              return node;
+            }
+            const selectedChild = selectedNode.getChildAtIndex(
+              selection.anchor.offset - 1
+            );
+            if (selectedChild === node) {
+              return node;
+            }
+            return false;
+          }
+          const isFirstChild = node.getFirstChild() === par;
+          console.log(
+            "HERE",
+            par,
+            node,
+            isFirstChild,
+            selection.clone(),
+            selection.getNodes()
+          );
+          if (!isFirstChild || selection.anchor.offset > 0) return false;
+          return node;
+        };
+
+        const func = getEmptyFunction();
+
+        if (func) {
+          func.insertBefore($createParagraphNode());
+          func.remove();
+          return true;
+        }
+
         return editor.dispatchCommand(DELETE_CHARACTER_COMMAND, true);
       },
       COMMAND_PRIORITY_EDITOR

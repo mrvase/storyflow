@@ -81,7 +81,9 @@ export function LocationBar({
   );
 
   const { pathname } = usePath();
-  const route = useRoute();
+  const parallelRoute = useRoute();
+
+  const nestedRoute = matches[matches.length - 1];
 
   const isSystemWindow = pathname !== "/~" && !pathname.match(/^\/~\/\w\//);
 
@@ -95,7 +97,7 @@ export function LocationBar({
       >
         <div className="flex">
           <Link
-            to={route.accumulated.split("/").slice(0, -1).join("/")}
+            to={nestedRoute.accumulated.split("/").slice(0, -2).join("/")}
             className={cl(
               "group h-20 flex-center ml-2.5 w-10 transition-colors",
               matches.length === 1 && "opacity-0 pointer-events-none"
@@ -112,7 +114,7 @@ export function LocationBar({
             )}
             onMouseDown={(ev) => ev.stopPropagation()} // prevent focus
             onClick={(ev) => {
-              actions.open({ path: pathname, index: route.index + 1 });
+              actions.open({ path: pathname, index: parallelRoute.index + 1 });
             }}
           >
             <Square2StackIcon className="w-5 h-5" />
@@ -125,7 +127,7 @@ export function LocationBar({
             onMouseDown={(ev) => ev.stopPropagation()} // prevent focus
             onClick={(ev) => {
               ev.stopPropagation();
-              actions.close(route.index);
+              actions.close(parallelRoute.index);
             }}
           >
             <XMarkIcon className="w-5 h-5" />
@@ -154,7 +156,7 @@ export function LocationBar({
       >
         <div className="flex">
           <Link
-            to={route.accumulated.split("/").slice(0, -2).join("/")}
+            to={nestedRoute.accumulated.split("/").slice(0, -2).join("/")}
             className={cl(
               "group h-20 flex-center ml-2.5 w-10 transition-colors",
               matches.length === 1 && "opacity-0 pointer-events-none"
@@ -172,7 +174,7 @@ export function LocationBar({
                 <LocationBarItem
                   match={match}
                   isCurrent={index === matches.length - 1}
-                  panelIndex={route.index}
+                  panelIndex={parallelRoute.index}
                 />
               </React.Fragment>
             ))}
@@ -195,7 +197,7 @@ export function LocationBar({
             )}
             onMouseDown={(ev) => ev.stopPropagation()} // prevent focus
             onClick={(ev) => {
-              actions.open({ path: pathname, index: route.index + 1 });
+              actions.open({ path: pathname, index: parallelRoute.index + 1 });
             }}
           >
             <Square2StackIcon className="w-5 h-5" />
@@ -208,7 +210,7 @@ export function LocationBar({
             onMouseDown={(ev) => ev.stopPropagation()} // prevent focus
             onClick={(ev) => {
               ev.stopPropagation();
-              actions.close(route.index);
+              actions.close(parallelRoute.index);
             }}
           >
             <XMarkIcon className="w-5 h-5" />

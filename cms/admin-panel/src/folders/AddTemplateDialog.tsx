@@ -47,7 +47,7 @@ export function AddTemplateDialog({
             return {
               [createTemplateFieldId(id, DEFAULT_FIELDS.creation_date.id)]: {
                 ...DEFAULT_SYNTAX_TREE,
-                children: [new Date()],
+                children: [{ date: new Date().toISOString() }],
               },
               [createTemplateFieldId(id, DEFAULT_FIELDS.template_label.id)]: {
                 ...DEFAULT_SYNTAX_TREE,

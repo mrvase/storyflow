@@ -103,7 +103,7 @@ export function Reconciler({
 
         const operations = getComputationDiff(prev, next);
 
-        console.log("DIFF", operations);
+        console.log("DIFF", { prev, next, operations });
 
         if (!operations) {
           return;

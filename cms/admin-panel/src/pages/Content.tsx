@@ -44,18 +44,12 @@ function useIsCurrentPage() {
 
 function Content({
   children,
-  buttons,
-  header,
-  toolbar,
   className,
   icon: Icon,
   small,
   hasSidebar,
 }: {
   children: React.ReactNode;
-  header?: React.ReactNode;
-  buttons?: React.ReactNode;
-  toolbar?: React.ReactNode;
   icon?: React.FC<{ className: string }>;
   className?: string;
   small?: boolean;
@@ -81,13 +75,14 @@ function Content({
           : "translate-x-0",
         hasSidebar &&
           "@3xl:ml-64 @3xl:border-l @3xl:border-gray-100 @3xl:dark:border-gray-750",
-        !isCurrentPage && !small && "pointer-events-none"
+        !isCurrentPage && "pointer-events-none",
+        small && "@3xl:pointer-events-auto"
       )}
     >
       <div
         className={cl(
           className ?? "min-h-full max-w-6xl",
-          small && "@container w-64"
+          small && "@container @3xl:w-64"
         )}
       >
         {children}
@@ -133,7 +128,7 @@ const SecondaryToolbar = ({ children }: { children: React.ReactNode }) => {
       />
       <div
         className={cl(
-          "flex gap-5 -mt-7 mx-2.5 rounded p-2.5 sticky z-20 top-0 transition-opacity bg-white dark:bg-gray-900",
+          "flex gap-5 -mt-7 mx-2.5 rounded p-2.5 sticky z-30 top-0 transition-opacity bg-white dark:bg-gray-900",
           isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         )}
       >
@@ -194,8 +189,9 @@ const ToolbarButton = React.forwardRef<
     active?: boolean;
     secondary?: boolean;
     menu?: boolean;
+    dimmed?: boolean;
   }
->(({ icon: Icon, active, secondary, menu, ...props }, ref) => {
+>(({ icon: Icon, active, secondary, menu, dimmed, ...props }, ref) => {
   return (
     <button
       ref={ref}
@@ -222,7 +218,14 @@ const ToolbarButton = React.forwardRef<
           )}
         />
       )}
-      <span className={Icon ? "hidden @lg:block" : ""}>{props.children}</span>
+      <span
+        className={cl(
+          Icon ? "hidden @lg:block" : "",
+          dimmed && !active && "opacity-75"
+        )}
+      >
+        {props.children}
+      </span>
       {menu &&
         (active ? (
           <ChevronUpIcon className="w-3 h-3" />

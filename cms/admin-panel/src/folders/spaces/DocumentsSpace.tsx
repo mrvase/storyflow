@@ -36,6 +36,7 @@ import { EditableLabel } from "../../elements/EditableLabel";
 import { InlineButton } from "../../elements/InlineButton";
 import { useImportContext } from "../ImportContext";
 import Dialog from "../../elements/Dialog";
+import { TEMPLATE_FOLDER } from "@storyflow/cms/constants";
 
 export function DocumentsSpace({
   space,
@@ -124,14 +125,14 @@ export function DocumentsSpace({
             <ImportButton folderId={folderId} />
             <ExportButton />
             <Menu.Item
-              label={t.folders.deleteSpace()}
-              icon={TrashIcon}
-              onClick={handleDeleteSpace}
-            />
-            <Menu.Item
               label={t.documents.deleteDocuments()}
               icon={TrashIcon}
               onClick={handleDelete}
+            />
+            <Menu.Item
+              label={t.folders.deleteSpace()}
+              icon={TrashIcon}
+              onClick={handleDeleteSpace}
             />
           </Menu>
         </>
@@ -191,7 +192,10 @@ function LinkableLabel({
 function ImportButton({ folderId }: { folderId: FolderId }) {
   const [, setImportState] = useImportContext();
   const template = useCurrentFolder()?.template;
-  const addDocument = useAddDocument({ navigate: true });
+  const addDocument = useAddDocument({
+    navigate: true,
+    type: folderId === TEMPLATE_FOLDER ? "template" : "document",
+  });
 
   const t = useTranslation();
 
@@ -253,7 +257,10 @@ function ExportButton() {
 function AddDocumentButton({ folderId }: { folderId: FolderId }) {
   const t = useTranslation();
   const template = useCurrentFolder()?.template;
-  const addDocument = useAddDocument({ navigate: true });
+  const addDocument = useAddDocument({
+    navigate: true,
+    type: folderId === TEMPLATE_FOLDER ? "template" : "document",
+  });
 
   return (
     <InlineButton

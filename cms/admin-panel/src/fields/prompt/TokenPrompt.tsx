@@ -6,9 +6,20 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import type { TokenStream } from "../../operations/types";
-import { useOption } from "./OptionsContext";
 import React from "react";
-import { parseDateFromString } from "../../data/dates";
+import { parseDateFromString, serializeDate } from "../../data/dates";
+import { Option } from "./Option";
+import { DocumentId, Option as OptionType } from "@storyflow/shared/types";
+import { useFieldId } from "../FieldIdContext";
+import { NestedField } from "@storyflow/cms/types";
+import { createTemplateFieldId, getDocumentId } from "@storyflow/cms/ids";
+import { useDocumentIdGenerator } from "../../id-generator";
+import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
+import { $getPromptNode } from "./utils";
+import { $replaceWithBlocks } from "../Editor/insertComputation";
+import { $createBlockNode } from "../Editor/decorators/BlockNode";
+import { $createParagraphNode, $createTextNode } from "lexical";
+import { useEditorContext } from "../../editor/react/EditorProvider";
 
 export function TokenPrompt({
   prompt,
@@ -17,12 +28,89 @@ export function TokenPrompt({
   prompt: string;
   replacePromptWithStream: (stream: TokenStream) => void;
 }) {
-  const [isSelected, ref] = useOption();
-
+  const now = React.useMemo(() => new Date(), []);
   const date = React.useMemo(() => {
-    return parseDateFromString(prompt);
+    return parseDateFromString(prompt, now);
   }, [prompt]);
 
+  const generateDocumentId = useDocumentIdGenerator();
+
+  const documentId = getDocumentId(useFieldId()) as DocumentId;
+
+  const editor = useEditorContext();
+
+  const options = [
+    {
+      id: "date",
+      label: (
+        <>
+          Indsæt dato:{" "}
+          {Intl.DateTimeFormat("da-DK", {
+            weekday: "long",
+          })
+            .format(date)
+            .slice(0, 3)}{" "}
+          {serializeDate(date)}
+        </>
+      ),
+      icon: CalendarDaysIcon,
+      onEnter: React.useCallback(() => {
+        replacePromptWithStream([{ date: date.toISOString() }]);
+      }, [date, replacePromptWithStream]),
+      match:
+        prompt === "" ||
+        date.getTime() !== parseDateFromString("", now).getTime(),
+    },
+    {
+      label: "Indsæt oprettelsesdato",
+      icon: CalendarDaysIcon,
+      onEnter: React.useCallback(() => {
+        const nestedField: NestedField = {
+          id: generateDocumentId(documentId),
+          field: createTemplateFieldId(
+            documentId,
+            DEFAULT_FIELDS.creation_date.id
+          ),
+        };
+        replacePromptWithStream([nestedField]);
+      }, [documentId, generateDocumentId, replacePromptWithStream]),
+      match: "Indsæt oprettelsesdato"
+        .toLowerCase()
+        .includes(prompt.toLowerCase()),
+    },
+    {
+      label: "Indsæt farve",
+      icon: SwatchIcon,
+      onEnter: React.useCallback(() => {
+        replacePromptWithStream([true]);
+      }, [replacePromptWithStream]),
+      match: "Indsæt farve".toLowerCase().includes(prompt.toLowerCase()),
+    },
+    {
+      label: "Indsæt checkboks",
+      icon: CheckIcon,
+      onEnter: React.useCallback(() => {
+        replacePromptWithStream([true]);
+      }, [replacePromptWithStream]),
+      match: "Indsæt checkboks".toLowerCase().includes(prompt.toLowerCase()),
+    },
+  ];
+
+  const filteredOptions = options.filter(({ match }) => match);
+
+  return (
+    <div className={cl("p-2.5", filteredOptions.length === 0 && "hidden")}>
+      <div className="font-medium text-gray-400 mb-1 ml-1">Indsæt værdier</div>
+      {filteredOptions.map(({ id, label, icon, onEnter }) => (
+        <Option key={id ?? label} value="" onEnter={onEnter} Icon={icon}>
+          {label}
+        </Option>
+      ))}
+    </div>
+  );
+
+  /*
+  const [isSelected, ref] = useOption();
   return (
     <div className="p-2.5">
       <div
@@ -73,4 +161,5 @@ export function TokenPrompt({
       </div>
     </div>
   );
+  */
 }

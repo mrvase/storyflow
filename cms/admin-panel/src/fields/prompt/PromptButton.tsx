@@ -30,7 +30,7 @@ export function PromptButton() {
 
   const offset = 0;
 
-  const [y, setY] = React.useState<number | null>(0);
+  const [y, setY] = React.useState<number | null>(11);
 
   const normalize = (value: number) => value;
 
@@ -70,7 +70,7 @@ export function PromptButton() {
     <>
       <div
         className={cl(
-          "absolute top-0 -left-[2.375rem] w-8 h-8 p-2 -m-1 mx-1 hover:opacity-100",
+          "absolute top-0 -left-[3.25rem] w-8 h-8 p-2 -m-1 mx-1 hover:opacity-100",
           isEmpty && !isFocused ? "opacity-25" : "opacity-50"
         )}
         style={{ transform: `translateY(${y}px)` }}
@@ -113,7 +113,7 @@ export function PromptButton() {
           });
         }}
       >
-        <Icon className="w-4 h-4" />
+        <Icon className="w-5 h-5" />
       </div>
     </>
   ) : null;

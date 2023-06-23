@@ -50,7 +50,7 @@ function Decorator({
   const hasTemplate = Boolean(template);
 
   const color = cl(
-    "bg-gradient-to-b from-pink-800/90 to-pink-900/90 text-pink-200",
+    "bg-gradient-to-b from-pink-100 to-pink-100 dark:from-pink-800 dark:to-pink-900 dark:text-pink-200",
     !isSelected && "ring-1 ring-pink-200 dark:ring-pink-800",
     hasTemplate &&
       "child:divide-x child:divide-pink-200 child:dark:divide-pink-800"

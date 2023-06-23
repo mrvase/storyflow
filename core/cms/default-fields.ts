@@ -70,10 +70,12 @@ export const DEFAULT_FIELDS = {
   published: {
     id: generateTemplateFieldId(),
     label: "Offentlig",
+    type2: "boolean",
   },
   released: {
     id: generateTemplateFieldId(),
     label: "Udgivelsesdato",
+    type2: "date",
   },
   user: {
     id: generateTemplateFieldId(),

@@ -62,7 +62,7 @@ function Decorator({
           "child:divide-x child:divide-sky-200 child:dark:divide-sky-800"
       )
     : cl(
-        "bg-gradient-to-b from-teal-800/90 to-teal-900/90 text-teal-200",
+        "bg-gradient-to-b from-teal-100 to-teal-100 dark:from-teal-800 dark:to-teal-900",
         !isSelected && "ring-1 ring-teal-200 dark:ring-teal-800",
         hasTemplate &&
           "child:divide-x child:divide-teal-200 child:dark:divide-teal-800"
