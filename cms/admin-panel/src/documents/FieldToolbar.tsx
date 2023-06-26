@@ -1,67 +1,12 @@
-import cl from "clsx";
-import {
-  CheckIcon,
-  FunnelIcon,
-  ListBulletIcon,
-  PencilSquareIcon,
-  TrashIcon,
-  XMarkIcon,
-} from "@heroicons/react/24/outline";
-import type { DocumentId, FieldId } from "@storyflow/shared/types";
-import type { FieldType2 } from "@storyflow/cms/types";
+import type { FieldId } from "@storyflow/shared/types";
 import React from "react";
-import ReactDOM from "react-dom";
 import { useDocumentList } from ".";
 import { useTemplateFolder } from "../folders/FoldersContext";
 import Content from "../pages/Content";
-import { usePush } from "../collab/CollabContext";
 import { useFieldConfig } from "./document-config";
-import { useContextWithError } from "../utils/contextError";
-import { useFieldId } from "../fields/FieldIdContext";
-import { getDocumentId } from "@storyflow/cms/ids";
 import { Menu } from "../elements/Menu";
-import { useTopFieldIndex } from "./FieldIndexContext";
-import { DocumentTransactionEntry } from "../operations/actions";
 import { getDocumentLabel } from "./useDocumentLabel";
 import { useTranslation } from "../translation/TranslationContext";
-import { useDialog } from "../elements/Dialog";
-
-const FieldToolbarPortalContext = React.createContext<
-  [HTMLDivElement | null, React.Dispatch<HTMLDivElement | null>] | null
->(null);
-
-export function FieldToolbarPortalProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const state = React.useState<HTMLDivElement | null>(null);
-  return (
-    <FieldToolbarPortalContext.Provider value={state}>
-      {children}
-    </FieldToolbarPortalContext.Provider>
-  );
-}
-
-export function useFieldToolbarPortal() {
-  return useContextWithError(
-    FieldToolbarPortalContext,
-    "FieldToolbarPortal"
-  )?.[1];
-}
-
-/*
-export function FieldToolbarPortal({ show }: { show: boolean }) {
-  const portal = useContextWithError(
-    FieldToolbarPortalContext,
-    "FieldToolbarPortal"
-  )?.[0];
-
-  return portal && show
-    ? ReactDOM.createPortal(<FieldToolbar />, portal)
-    : null;
-}
-*/
 
 const restrictToOptions = [
   { id: "children" as "children", label: "Rich Text" },

@@ -164,7 +164,7 @@ export function RenderTemplate({
     <ExtendTemplatePath template={id}>
       <div {...containerProps} className="relative">
         {isDraggableUnit && (
-          <div className="absolute z-50 inset-0 border border-sky-100 rounded m-2.5 pointer-events-none" />
+          <div className="absolute z-30 inset-0 border border-teal-300 dark:border-teal-600 rounded m-2.5 pointer-events-none" />
         )}
         <Sortable
           type="fields"

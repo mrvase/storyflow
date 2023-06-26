@@ -10,7 +10,7 @@ import {
   COMMAND_PRIORITY_HIGH,
   LexicalNode,
 } from "lexical";
-import React from "react";
+import React, { useId } from "react";
 import { tools } from "../../operations/stream-methods";
 import { useEditorContext } from "../../editor/react/EditorProvider";
 import ColorNode, { $isColorNode } from "../Editor/decorators/ColorNode";
@@ -39,6 +39,9 @@ import CustomTokenNode, {
   $isCustomTokenNode,
 } from "../Editor/decorators/CustomTokenNode";
 import { OptionsPrompt } from "./OptionsPrompt";
+import { $exitPromptNode } from "./utils";
+import { $createAICompletionNode } from "../Editor/decorators/AICompletionNode";
+import { createKey } from "../../utils/createKey";
 
 const matchers: ((
   node: LexicalNode
@@ -80,21 +83,43 @@ const matchers: ((
 export function Overlay({ children }: { children?: React.ReactNode }) {
   const editor = useEditorContext();
 
+  const generatorId = React.useState(() => createKey())[0];
+
   const [type, setType] = React.useState<string | null>(null);
 
   const [node, setNode] = React.useState<LexicalNode | null>(null);
-  const [prompt, setPrompt] = React.useState<string>("");
+  const [prompt, setPrompt] = React.useState("");
   const [position, setPosition] = React.useState<{
     y: number;
     x: number;
   } | null>(null);
 
-  const reset = () => {
+  const { configs } = useAppConfig();
+
+  const reset = React.useCallback(() => {
+    if ($isPromptNode(node)) {
+      if (editor.getEditorState()._nodeMap.has(node.__key)) {
+        // we check if the node is still in the editor state.
+        // If not, it has probably been removed with registerNodeTransform
+        // in PromptOverlay. If we did not do this check, we would enter
+        // an infinite loop.
+        editor.update(() => {
+          // if AI is generating, we replace the node with AI node
+          if (node.getIsGenerating()) {
+            node.replace(
+              $createAICompletionNode(generatorId, node.getTokenStream())
+            );
+          } else {
+            $exitPromptNode(configs, node);
+          }
+        });
+      }
+    }
     setType(null);
     setNode(null);
     setPosition(null);
     setPrompt("");
-  };
+  }, [editor, node]);
 
   const [isHolded, holdActions] = useRestorableSelection();
 
@@ -182,7 +207,7 @@ export function Overlay({ children }: { children?: React.ReactNode }) {
         }
       });
     });
-  }, [editor, isHolded, restrictTo, isFocused]);
+  }, [reset, editor, isHolded, restrictTo, isFocused]);
 
   React.useEffect(() => {
     return mergeRegister(
@@ -196,7 +221,7 @@ export function Overlay({ children }: { children?: React.ReactNode }) {
         COMMAND_PRIORITY_HIGH
       )
     );
-  }, [editor, isHolded]);
+  }, [reset, editor, isHolded]);
 
   const promptIsOpen = type === "prompt";
 
@@ -250,6 +275,7 @@ export function Overlay({ children }: { children?: React.ReactNode }) {
         <PromptOverlay
           node={node as PromptNode}
           prompt={prompt!}
+          generatorId={generatorId}
           holdActions={holdActions}
         >
           {children}

@@ -139,6 +139,7 @@ export default function useIsFocused({
             noDeselect = true;
           }
         });
+        console.log("REGISTERED MOUSE DOWN", noSelect, noDeselect);
 
         if (noSelect) return;
 

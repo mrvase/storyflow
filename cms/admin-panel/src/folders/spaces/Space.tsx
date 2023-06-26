@@ -53,7 +53,7 @@ function Space({
       )}
       {...(isOpen ? handlers : {})}
     >
-      <div className="flex items-center mb-3.5 h-6">
+      <div className="flex items-center h-11 py-2.5">
         <div
           className={cl(
             "cursor-grab transition-opacity w-4 mr-5 hidden @sm:block",

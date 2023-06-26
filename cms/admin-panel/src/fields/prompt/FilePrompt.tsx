@@ -160,7 +160,9 @@ function UploadOption({
               isUploading ? "opacity-100" : "opacity-0"
             )}
           >
-            {isUploading && <Spinner />}
+            {isUploading && (
+              <Spinner className="-ml-1 mr-3 text-white h-5 w-5" />
+            )}
           </div>
         </div>
         <div className="truncate w-full">

@@ -82,7 +82,7 @@ export function FolderItem({
       ref={ref as any}
       to={to}
       className={cl(
-        "group flex items-center px-4 py-5 rounded-lg text-lg transition-[border] border",
+        "group flex items-center px-4 py-5 rounded-lg transition-[border] border",
         colors
       )}
       style={style}

@@ -60,7 +60,7 @@ const LevelProvider = ({ children }: { children?: React.ReactNode }) => {
   );
 };
 
-function Decorator({
+export function LayoutElement({
   value,
   nodeKey,
 }: {
@@ -161,19 +161,18 @@ function InterSelectionArea({ nodeKey }: { nodeKey: string }) {
         ev.preventDefault();
         ev.stopPropagation();
         editor.update(() => {
-          const node = $getRoot();
-          const offset = node
-            .getChildren()
-            .findIndex((el) => el.getKey() === nodeKey);
+          const node = editor.getEditorState()._nodeMap.get(nodeKey)!;
+          const parent = node.getParent()!;
+          const offset = node.getIndexWithinParent();
           if (offset < 0) return;
           const selection = $createRangeSelection(
             {
-              node,
+              node: parent,
               offset,
               type: "element",
             },
             {
-              node,
+              node: parent,
               offset,
               type: "element",
             }
@@ -204,7 +203,8 @@ function FocusContainer({
   } else if (isSelected) {
     ring = "ring-1 ring-gray-800 dark:ring-gray-200";
   } else if (isFocused) {
-    ring = "ring-1 ring-yellow-600/50 dark:ring-yellow-400/50";
+    // ring = "ring-1 ring-yellow-600/50 dark:ring-yellow-400/50";
+    ring = "ring-1 ring-yellow-600/30 dark:ring-yellow-400/30";
   } else {
     ring = "ring-1 ring-yellow-600/30 dark:ring-yellow-400/30";
   }
@@ -356,7 +356,7 @@ export default class ChildNode extends TokenStreamNode<typeof type, TokenType> {
   }
 
   decorate(): React.ReactNode {
-    return <Decorator nodeKey={this.__key} value={this.__token} />;
+    return <LayoutElement nodeKey={this.__key} value={this.__token} />;
   }
 }
 

@@ -12,6 +12,7 @@ import {
   $createTextNode,
   $getRoot,
   $isNodeSelection,
+  $isParagraphNode,
   $isRootNode,
   $isTextNode,
   $setSelection,
@@ -338,37 +339,30 @@ export function registerPlainText(
           console.log("sel", selection);
           let par = selection.getNodes()[0];
           if ($isTextNode(par)) par = par.getParent()!;
-          const node = par.getParent();
-          if (!$isBlockNode(node)) return false;
+          const blockNode = par.getParent();
+          if (!$isBlockNode(blockNode)) return false;
+          const isEmpty = blockNode.getTextContent().length === 0;
+          if (!isEmpty) return false;
           if (selection.anchor.type === "element") {
             const selectedNode = selection.anchor.getNode();
-            console.log("SELECTED NODE", selectedNode);
             if (
-              selectedNode.getParent() === node &&
+              selectedNode.getParent() === blockNode &&
               selectedNode.getIndexWithinParent() === 0
             ) {
               // if function node is empty
-              return node;
+              return blockNode;
             }
             const selectedChild = selectedNode.getChildAtIndex(
               selection.anchor.offset - 1
             );
-            if (selectedChild === node) {
-              return node;
+            if (selectedChild === blockNode) {
+              return blockNode;
             }
             return false;
           }
-          const isFirstChild = node.getFirstChild() === par;
-          console.log(
-            "HERE",
-            par,
-            node,
-            isFirstChild,
-            selection.clone(),
-            selection.getNodes()
-          );
+          const isFirstChild = blockNode.getFirstChild() === par;
           if (!isFirstChild || selection.anchor.offset > 0) return false;
-          return node;
+          return blockNode;
         };
 
         const func = getEmptyFunction();
@@ -441,6 +435,28 @@ export function registerPlainText(
           }
 
           if (resolved) {
+            return true;
+          }
+
+          if (!$isRangeSelection(selection)) {
+            return false;
+          }
+
+          const element =
+            selection.isCollapsed() && selection.anchor.type === "element"
+              ? selection.anchor
+                  .getNode()
+                  .getChildAtIndex(selection.anchor.offset)
+              : null;
+
+          if (element && !$isParagraphNode(element)) {
+            const p = $createParagraphNode();
+            p.append($createTextNode());
+            element.insertBefore(p, false);
+            p.select();
+            return true;
+          } else {
+            selection.insertParagraph();
             return true;
           }
 

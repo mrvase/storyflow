@@ -97,7 +97,7 @@ const Header = ({ children }: { children: React.ReactNode }) => {
   return (
     <div
       className={cl(
-        "ml-5 @sm:ml-[3.75rem] py-8 flex justify-between",
+        "ml-5 @sm:ml-[3.75rem] h-24 py-8 flex items-center justify-between",
         !isFocused && "opacity-50"
       )}
     >
@@ -124,31 +124,16 @@ const SecondaryToolbar = ({ children }: { children: React.ReactNode }) => {
   return (
     <>
       <div
-        className={cl("w-full transition-[height]", isOpen ? "h-7" : "h-0")}
-      />
-      <div
         className={cl(
-          "flex gap-5 -mt-7 mx-2.5 rounded p-2.5 sticky z-30 top-0 transition-opacity bg-white dark:bg-gray-900",
+          "flex gap-5 py-2.5 px-5 sticky z-30 bottom-0 transition-opacity bg-white dark:bg-gray-900",
           isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         )}
       >
         <div className="self-center" onClick={() => setIsOpen(false)}>
-          <XMarkIcon className="w-5 h-5 text-yellow-600/75 dark:text-yellow-200/50" />
+          <XMarkIcon className="w-5 h-5 text-gray-600/75 dark:text-gray-200/50" />
         </div>
-        <button
-          className={cl(
-            "relative overflow-hidden",
-            "shrink-0 h-7 rounded text-sm transition-all px-3.5",
-            "mx-0 bg-yellow-400/25 text-yellow-600 dark:text-yellow-200"
-          )}
-        >
-          Tilføj
-        </button>
         {children}
       </div>
-      <div
-        className={cl("w-full transition-[height]", isOpen ? "h-8" : "h-0")}
-      />
     </>
   );
 };
@@ -192,17 +177,25 @@ const ToolbarButton = React.forwardRef<
     dimmed?: boolean;
   }
 >(({ icon: Icon, active, secondary, menu, dimmed, ...props }, ref) => {
+  /*
+  secondary
+    ? active
+      ? "text-yellow-600 dark:text-yellow-200"
+      : "text-yellow-600/75 dark:text-yellow-200/75 hover:text-yellow-600 dark:hover:text-yellow-200"
+    : */
+  /*
+  ICON
+  secondary
+              ? "text-yellow-600/60 group-hover:text-yellow-600 dark:text-yellow-200/50 dark:group-hover:text-yellow-200"
+              : 
+  */
   return (
     <button
       ref={ref}
       {...props}
       className={cl(
         "group h-7 flex-center gap-2 transition-colors rounded font-medium text-sm",
-        secondary
-          ? active
-            ? "text-yellow-600 dark:text-yellow-200"
-            : "text-yellow-600/75 dark:text-yellow-200/75 hover:text-yellow-600 dark:hover:text-yellow-200"
-          : active
+        active
           ? "text-gray-800 dark:text-white"
           : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white",
         props.className
@@ -212,9 +205,7 @@ const ToolbarButton = React.forwardRef<
         <Icon
           className={cl(
             "w-5 h-5 transition-colors",
-            secondary
-              ? "text-yellow-600/60 group-hover:text-yellow-600 dark:text-yellow-200/50 dark:group-hover:text-yellow-200"
-              : "text-gray-400 group-hover:text-gray-500 dark:text-gray-600 dark:group-hover:text-gray-400"
+            "text-gray-400 group-hover:text-gray-500 dark:text-gray-600 dark:group-hover:text-gray-400"
           )}
         />
       )}
@@ -271,8 +262,13 @@ function ToolbarDragButton({
   );
 }
 
+function Body({ children }: { children: React.ReactNode }) {
+  return <div className="min-h-screen pb-96">{children}</div>;
+}
+
 export default Object.assign(Content, {
   Header,
+  Body,
   Toolbar,
   SecondaryToolbar,
   ToolbarButton,

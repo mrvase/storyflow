@@ -18,7 +18,7 @@ import type { DocumentId, FolderId, RawFieldId } from "@storyflow/shared/types";
 import type { DBDocument } from "@storyflow/cms/types";
 import { NoList, useDragItem } from "@storyflow/dnd";
 import cl from "clsx";
-import React from "react";
+import React, { use } from "react";
 import { useDocumentList, useDocumentWithTimeline } from ".";
 import { DEFAULT_TEMPLATES } from "./templates";
 import { useSaveDocument } from "./useSaveDocument";
@@ -32,10 +32,6 @@ import { DocumentPageContext } from "./DocumentPageContext";
 import { GetDocument } from "./GetDocument";
 import { RenderTemplate } from "./RenderTemplate";
 import { useFieldIdGenerator } from "../id-generator";
-import {
-  FieldToolbarPortalProvider,
-  useFieldToolbarPortal,
-} from "./FieldToolbar";
 import { ExtendTemplatePath } from "./TemplatePathContext";
 import { Menu } from "../elements/Menu";
 import {
@@ -54,6 +50,8 @@ import { EditableLabel } from "../elements/EditableLabel";
 import { useDefaultState } from "../fields/default/useDefaultState";
 import { createTransaction } from "@storyflow/collab/utils";
 import { ImportData, useImportContext } from "../folders/ImportContext";
+import { useLocalStorage } from "../state/useLocalStorage";
+import { BlockButton } from "../elements/BlockButton";
 
 function useIsModified(id: DocumentId) {
   const [isModified, setIsModified] = React.useState(false);
@@ -130,6 +128,7 @@ function SecondaryToolbar({ id }: { id: DocumentId }) {
           label="Specialfelter"
           icon={BoltIcon}
           secondary
+          align="bottom-left"
         >
           {fields.map((el) => (
             <Menu.DragItem
@@ -201,6 +200,7 @@ export function TemplateMenu({ id }: { id?: DocumentId }) {
       label={"Skabeloner"}
       icon={DocumentDuplicateIcon}
       secondary
+      align="bottom-left"
     >
       {(templates ?? [])
         .filter((el) => el.folder)
@@ -241,17 +241,15 @@ export function DocumentPage({ children }: { children?: React.ReactNode }) {
   );
 
   return (
-    <FieldToolbarPortalProvider>
-      <DocumentPageContext.Provider value={ctx}>
-        <FocusOrchestrator>
-          <Content hasSidebar>
-            {!error && doc && <Page type={parsed.type} doc={doc} />}
-            {!error && !doc && <div className=""></div>}
-          </Content>
-        </FocusOrchestrator>
-        {doc ? children : null}
-      </DocumentPageContext.Provider>
-    </FieldToolbarPortalProvider>
+    <DocumentPageContext.Provider value={ctx}>
+      {/*<FocusOrchestrator>*/}
+      <Content hasSidebar>
+        {!error && doc && <Page type={parsed.type} doc={doc} />}
+        {!error && !doc && <div className=""></div>}
+      </Content>
+      {/*</FocusOrchestrator>*/}
+      {doc ? children : null}
+    </DocumentPageContext.Provider>
   );
 }
 
@@ -297,9 +295,8 @@ const Page = ({
           {folder && isModified && <SaveButton id={id} folderId={folder._id} />}
         </Content.Toolbar>
       </Content.Header>
-      <SecondaryToolbar id={id} />
-      <ImportData />
-      <div className="pb-96 flex flex-col -mt-8">
+      <Content.Body>
+        <ImportData />
         {folderData.type === "app" &&
           !templateId &&
           config.filter(
@@ -314,54 +311,123 @@ const Page = ({
                 .map((el) => el._id)
                 .includes(el.template)
           ).length === 0 && <TemplateSelect documentId={doc._id} />}
-        {!isTemplate && templateId && (
-          <ExtendTemplatePath template={owner._id}>
-            <GetDocument id={templateId}>
-              {(doc) => (
-                <RenderTemplate
-                  id={doc._id}
-                  config={doc.config}
-                  owner={owner._id}
-                  versions={owner.versions}
-                  index={null}
-                />
-              )}
-            </GetDocument>
-          </ExtendTemplatePath>
-        )}
-        <RenderTemplate
-          id={owner._id}
-          config={config}
-          owner={owner._id}
-          versions={owner.versions}
-          index={null}
-        />
-      </div>
+        <div className="flex flex-col">
+          {!isTemplate && templateId && (
+            <ExtendTemplatePath template={owner._id}>
+              <GetDocument id={templateId}>
+                {(doc) => (
+                  <RenderTemplate
+                    id={doc._id}
+                    config={doc.config}
+                    owner={owner._id}
+                    versions={owner.versions}
+                    index={null}
+                  />
+                )}
+              </GetDocument>
+            </ExtendTemplatePath>
+          )}
+          <RenderTemplate
+            id={owner._id}
+            config={config}
+            owner={owner._id}
+            versions={owner.versions}
+            index={null}
+          />
+          <AddFieldButton documentId={owner._id} index={config.length} />
+        </div>
+      </Content.Body>
+      <SecondaryToolbar id={id} />
     </>
   );
 };
 
+function AddFieldButton({
+  documentId,
+  index,
+}: {
+  documentId: DocumentId;
+  index: number;
+}) {
+  const [isOpen, setIsOpen] = useLocalStorage<boolean>("toolbar-open", true);
+
+  const push = usePush<DocumentTransactionEntry>(documentId, "config");
+
+  const generateFieldId = useFieldIdGenerator();
+
+  // if (!isOpen) return null;
+
+  return (
+    <BlockButton
+      icon={PlusIcon}
+      onClick={() => {
+        push(
+          createTransaction((t) =>
+            t.target("").splice({
+              index,
+              insert: [
+                {
+                  id: generateFieldId(documentId),
+                  label: "",
+                },
+              ],
+            })
+          )
+        );
+      }}
+    >
+      Tilføj felt
+    </BlockButton>
+  );
+}
+
 function TemplateSelect({ documentId }: { documentId: DocumentId }) {
   const push = usePush<DocumentTransactionEntry>(documentId, "config");
 
-  return (
+  /*
     <div className="py-5 px-14 grid grid-cols-3 gap-5">
+  <button
+    key={doc._id}
+    className="rounded bg-gray-100 dark:bg-gray-800 ring-button p-5 text-center"
+    onClick={() => {
+      push(
+        createTransaction((t) =>
+          t
+            .target("")
+            .splice({ index: 0, insert: [{ template: doc._id }] })
+        )
+      );
+    }}
+  >
+    {getDocumentLabel(doc)}
+  </button>
+  </div>
+  */
+
+  return (
+    <>
       {[
         DEFAULT_TEMPLATES.staticPage,
         DEFAULT_TEMPLATES.dynamicPage,
         DEFAULT_TEMPLATES.redirectPage,
       ].map((doc) => (
-        <button
+        <BlockButton
           key={doc._id}
-          className="rounded bg-gray-100 dark:bg-gray-800 ring-button p-5 text-center"
           onClick={() => {
-            push([["", [[0, 0, [{ template: doc._id }]]]]]);
+            push(
+              createTransaction((t) =>
+                t
+                  .target("")
+                  .splice({ index: 0, insert: [{ template: doc._id }] })
+              )
+            );
           }}
+          icon={PlusIcon}
         >
-          {getDocumentLabel(doc)}
-        </button>
+          Tilføj {getDocumentLabel(doc)?.toLowerCase()}
+        </BlockButton>
       ))}
-    </div>
+    </>
   );
 }
 

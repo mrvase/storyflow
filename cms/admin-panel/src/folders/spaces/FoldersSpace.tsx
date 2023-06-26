@@ -151,7 +151,7 @@ function FolderGrid({
     >
       <div
         className={cl(
-          "grid grid-cols-1 @lg:grid-cols-2 @2xl:grid-cols-3 @4xl:grid-cols-4 gap-2 @md:pl-9 min-h-[1.5rem]"
+          "grid grid-cols-1 @lg:grid-cols-2 @2xl:grid-cols-3 @4xl:grid-cols-4 gap-5 @sm:pl-9 min-h-[1.5rem]"
         )}
       >
         {space.items.length === 0 && (

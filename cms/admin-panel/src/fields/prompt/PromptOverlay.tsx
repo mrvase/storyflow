@@ -40,6 +40,7 @@ import { UrlPrompt } from "./UrlPrompt";
 import { HoldActions } from "./useRestorableSelection";
 import { $exitPromptNode, $getPromptNode } from "./utils";
 import { FunctionPrompt } from "./FunctionPrompt";
+import { AIPrompt } from "./AIPrompt";
 
 const panes = [
   {
@@ -74,11 +75,13 @@ export function PromptOverlay({
   prompt,
   children,
   holdActions,
+  generatorId,
 }: {
   node: PromptNode;
   prompt: string;
   children?: React.ReactNode;
   holdActions: HoldActions;
+  generatorId: string;
 }) {
   const editor = useEditorContext();
 
@@ -212,7 +215,9 @@ export function PromptOverlay({
           return true;
         },
         COMMAND_PRIORITY_HIGH
-      ),
+      )
+      /*
+      // handled in Overlay
       editor.registerCommand(
         BLUR_COMMAND,
         () => {
@@ -224,6 +229,7 @@ export function PromptOverlay({
         },
         COMMAND_PRIORITY_HIGH
       )
+      */
     );
   }, [editor, configs]);
 
@@ -298,58 +304,63 @@ export function PromptOverlay({
         </div>
       )}
       <div className="max-h-52 overflow-y-auto no-scrollbar m-[1px]">
-        {stream && stream.length > 0 ? (
+        {stream && stream.length > 0 && (
           <div className="p-2.5">
-            <div className="bg-yellow-500/20 text-yellow-200 rounded p-2.5">
+            <div className="bg-yellow-100 dark:bg-yellow-500/20 text-yellow-900 dark:text-yellow-200 rounded p-2.5">
               {JSON.stringify(stream)}
             </div>
           </div>
-        ) : (
+        )}
+        {currentPane === "actions" && (
           <>
-            {currentPane === "actions" && (
-              <>
-                {restrictTo === "children" && (
-                  <ParagraphStylePrompt prompt={prompt} />
-                )}
-                {restrictTo === "data" && <TemplatePrompt prompt={prompt} />}
-                <TokenPrompt
-                  prompt={prompt}
-                  replacePromptWithStream={replacePromptWithStream}
-                />
-                <FunctionPrompt prompt={prompt} />
-                {options && ["string", "number"].includes(restrictTo!) && (
-                  <OptionsPrompt options={options} />
-                )}
-                {children}
-              </>
+            {restrictTo === "children" && (
+              <ParagraphStylePrompt prompt={prompt} />
             )}
-            {currentPane === "elements" && (
-              <ElementPrompt
-                prompt={prompt}
-                options={restrictTo === "children" ? options : undefined}
-                replacePromptWithStream={replacePromptWithStream}
-              />
+            {restrictTo === "data" && <TemplatePrompt prompt={prompt} />}
+            <TokenPrompt
+              prompt={prompt}
+              replacePromptWithStream={replacePromptWithStream}
+            />
+            <FunctionPrompt prompt={prompt} />
+            <AIPrompt
+              node={node}
+              generatorId={generatorId}
+              prompt={prompt}
+              stream={stream}
+              replacePromptWithStream={replacePromptWithStream}
+            />
+            {options && ["string", "number"].includes(restrictTo!) && (
+              <OptionsPrompt options={options} />
             )}
-            {currentPane === "documents" && (
-              <ReferencePrompt
-                prompt={prompt}
-                replacePromptWithStream={replacePromptWithStream}
-              />
-            )}
-            {currentPane === "urls" && (
-              <UrlPrompt
-                prompt={prompt}
-                replacePromptWithStream={replacePromptWithStream}
-              />
-            )}
-            {currentPane === "images" && (
-              <FilePrompt
-                prompt={prompt}
-                replacePromptWithStream={replacePromptWithStream}
-                holdActions={holdActions}
-              />
-            )}
+            {children}
           </>
+        )}
+        {currentPane === "elements" && (
+          <ElementPrompt
+            prompt={prompt}
+            stream={stream}
+            options={restrictTo === "children" ? options : undefined}
+            replacePromptWithStream={replacePromptWithStream}
+          />
+        )}
+        {currentPane === "documents" && (
+          <ReferencePrompt
+            prompt={prompt}
+            replacePromptWithStream={replacePromptWithStream}
+          />
+        )}
+        {currentPane === "urls" && (
+          <UrlPrompt
+            prompt={prompt}
+            replacePromptWithStream={replacePromptWithStream}
+          />
+        )}
+        {currentPane === "images" && (
+          <FilePrompt
+            prompt={prompt}
+            replacePromptWithStream={replacePromptWithStream}
+            holdActions={holdActions}
+          />
         )}
       </div>
     </Options>

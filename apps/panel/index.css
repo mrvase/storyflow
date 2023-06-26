@@ -128,14 +128,15 @@ a {
 
 [data-lexical-cursor="true"] {
   position: absolute;
+  z-index: 999;
   height: 0px;
   width: 100%;
   margin: 0px !important;
-  margin-top: -10px !important;
+  margin-top: -5px !important;
 }
 
 .editor [data-lexical-cursor="true"]:first-child {
-  margin-top: 0px !important;
+  margin-top: 5px !important;
 }
 
 .editor:before {
@@ -154,8 +155,8 @@ a {
 .editor:focus [data-lexical-cursor="true"]:after {
   content: "";
   position: absolute;
-  top: 5px;
   width: 40px;
+  top: 0px;
   left: 0px;
   animation: blink 1000ms steps(1) infinite;
 }
@@ -364,9 +365,8 @@ input[type="range"]:focus::-moz-range-thumb {
   color: rgba(255, 255, 255, 0.65);
 }
 
+.magic-bg,
 .prompt-container {
-  padding: 0.125rem 0.4rem 0.125rem 0.2rem;
-  margin: -0.125rem 0.25rem;
   background: linear-gradient(
     60deg,
     #f79533,
@@ -384,6 +384,11 @@ input[type="range"]:focus::-moz-range-thumb {
   color: white;
 }
 
+.prompt-container {
+  padding: 0.125rem 0.4rem 0.125rem 0.2rem;
+  margin: -0.125rem 0.25rem;
+}
+
 .prompt-container:before {
   content: attr(data-initializer);
   opacity: 0.5;
@@ -397,9 +402,7 @@ input[type="range"]:focus::-moz-range-thumb {
 
 .block-node {
   position: relative;
-  border-style: solid;
-  border-color: rgba(0, 150, 0, 0.12);
-  background-color: rgba(0, 255, 0, 0.04);
+  background-color: hsla(175, 70%, 80%, 0.1);
   /* box-shadow: inset 0px 0px 0px 1px rgba(150, 0, 0, 0.12); */
   /*
   border-top-width: 2px;
@@ -440,7 +443,11 @@ input[type="range"]:focus::-moz-range-thumb {
   opacity: 50%;
   width: 100px;
   text-transform: uppercase;
-  color: rgba(0, 100, 0, 1);
+  color: hsl(175, 80%, 30%);
+}
+
+.block-node > [data-lexical-cursor="true"] {
+  left: 100px;
 }
 
 /*
@@ -459,6 +466,22 @@ input[type="range"]:focus::-moz-range-thumb {
 }
 
 .block-node > *:not([data-lexical-cursor="true"]):nth-child(3):before {
+  content: var(--p3, "-");
+}
+
+/*
+these corrects for cursor.
+if there is a cursor before e.g. the first parameter,
+then the first parameter is really the second element
+*/
+.block-node > [data-lexical-cursor="true"] ~ *:nth-child(2):before {
+  content: var(--p1, "-");
+  opacity: 100%;
+}
+.block-node > [data-lexical-cursor="true"] ~ *:nth-child(3):before {
+  content: var(--p2, "-");
+}
+.block-node > [data-lexical-cursor="true"] ~ *:nth-child(4):before {
   content: var(--p3, "-");
 }
 

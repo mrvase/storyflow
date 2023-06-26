@@ -139,7 +139,7 @@ export function DocumentsSpace({
       }
     >
       {!documents && (
-        <div className="ml-9">
+        <div className="ml-9 mt-2.5">
           <Loader size="md" />
         </div>
       )}

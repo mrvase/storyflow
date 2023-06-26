@@ -75,7 +75,7 @@ export function Option<T>({
     <div
       ref={ref}
       className={cl(
-        "group h-10 shrink-0 rounded text-sm cursor-default",
+        "group shrink-0 rounded text-sm cursor-default",
         isSelected && "bg-gray-100 dark:bg-gray-800",
         "hover:ring-1 hover:ring-inset hover:ring-gray-200 dark:hover:ring-gray-700",
         "flex items-center justify-between"
@@ -93,11 +93,11 @@ export function Option<T>({
         )}
       >
         {Icon && (
-          <div className="m-1 mr-0 h-8 w-8 rounded border border-gray-200 dark:border-gray-750 flex-center">
+          <div className="self-start shrink-0 m-1 mr-0 h-8 w-8 rounded border border-gray-200 dark:border-gray-750 flex-center">
             <Icon className="w-4 h-4" />
           </div>
         )}
-        <div className="px-2.5">
+        <div className="px-2.5 py-2.5">
           {children}
           {secondaryText && (
             <div
@@ -111,33 +111,33 @@ export function Option<T>({
           )}
         </div>
       </div>
-      {isSelected && (
-        <div className="flex">
-          {onArrowRight && (
-            <button
-              className={cl(
-                "text-xs flex gap-2 py-1.5 px-3 rounded",
-                "peer hover:bg-gray-600 transition-colors",
-                !style && "text-gray-300 text-opacity-50"
-              )}
-            >
-              {onArrowRightLabel ?? "indsæt"}
-              <ArrowRightIcon className="w-4 h-4" />
-            </button>
-          )}
+      <div className="flex">
+        {onArrowRight && (
           <button
             className={cl(
+              !isSelected && "invisible",
               "text-xs flex gap-2 py-1.5 px-3 rounded",
-              !style && "text-gray-300 text-opacity-50",
-              onArrowRight &&
-                "group-hover:bg-gray-600 peer-hover:bg-transparent transition-colors"
+              "peer hover:bg-gray-600 transition-colors",
+              !style && "text-gray-300 text-opacity-50"
             )}
           >
-            {onEnterLabel ?? "indsæt"}
-            <ArrowUturnRightIcon className="w-4 h-4 rotate-180" />
+            {onArrowRightLabel ?? "indsæt"}
+            <ArrowRightIcon className="w-4 h-4" />
           </button>
-        </div>
-      )}
+        )}
+        <button
+          className={cl(
+            !isSelected && "invisible",
+            "text-xs flex gap-2 py-1.5 px-3 rounded",
+            !style && "text-gray-700 dark:text-gray-300 text-opacity-50",
+            onArrowRight &&
+              "group-hover:bg-gray-600 peer-hover:bg-transparent transition-colors"
+          )}
+        >
+          {onEnterLabel ?? "indsæt"}
+          <ArrowUturnRightIcon className="w-4 h-4 rotate-180" />
+        </button>
+      </div>
     </div>
   );
 }

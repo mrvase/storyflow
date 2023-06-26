@@ -185,7 +185,7 @@ function Row({
               ev.stopPropagation();
               button.onClick(doc);
             }}
-            className="whitespace-nowrap"
+            className="whitespace-nowrap ml-auto"
           >
             <span className="hidden @md:inline">{button.label}</span>
           </InlineButton>

@@ -29,7 +29,7 @@ export function ContentPlugin() {
   useEditorEvents();
 
   useLayoutEffect(() => {
-    return registerPlainText(editor, { allowLineBreaks: true });
+    return registerPlainText(editor);
   }, [editor]);
 
   return null;

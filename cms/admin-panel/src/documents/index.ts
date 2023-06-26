@@ -6,15 +6,26 @@ import {
   ValueArray,
   RawDocumentId,
   Sorting,
+  ClientSyntaxTree,
+  FieldId,
 } from "@storyflow/shared/types";
 import type { DBDocument } from "@storyflow/cms/types";
-import { normalizeDocumentId } from "@storyflow/cms/ids";
+import {
+  createTemplateFieldId,
+  getDocumentId,
+  normalizeDocumentId,
+} from "@storyflow/cms/ids";
 import { collab } from "../collab/CollabContext";
 import { createDocumentTransformer } from "../operations/apply";
 import { TEMPLATES } from "./templates";
 import { query } from "../clients/client";
 import { cache, useImmutableQuery } from "@nanorpc/client/swr";
 import { isError } from "@nanorpc/client";
+import { getFolder } from "../folders/FoldersContext";
+import { configs } from "./document-config";
+import { getTemplateFieldsAsync } from "./template-fields";
+import { store } from "../state/state";
+import { ValueRecord } from "../fields/FieldPage";
 
 export async function fetchDocument(
   id: string
@@ -198,3 +209,30 @@ export function useDocumentList(
 
   return { documents: data, error };
 }
+
+export const getUpdatedValueRecord = async (
+  documentId: DocumentId
+): Promise<Record<FieldId, { label: string; value: ValueArray }>> => {
+  const folderId = (await fetchDocument(documentId))?.folder;
+  const templateId = folderId ? getFolder(folderId)?.template : undefined;
+  const ownConfig = configs.get(documentId);
+  const templateConfig = templateId
+    ? configs.get(templateId) ?? (await fetchDocument(templateId))?.config
+    : undefined;
+  const fields = await getTemplateFieldsAsync([
+    ...(ownConfig ?? []),
+    ...(templateConfig ?? []),
+  ]);
+  const entries = fields.map(
+    ({ id, label }): [FieldId, { label: string; value: ValueArray }] => {
+      const ownId =
+        getDocumentId(id) === documentId
+          ? id
+          : createTemplateFieldId(documentId, id);
+      const value = store.use<ValueArray | ClientSyntaxTree>(ownId).value;
+      return [ownId, { label, value: Array.isArray(value) ? value : [] }];
+    }
+  );
+
+  return Object.fromEntries(entries);
+};

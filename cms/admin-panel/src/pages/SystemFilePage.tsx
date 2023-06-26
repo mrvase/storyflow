@@ -89,50 +89,55 @@ export function SystemFilePage({ params }: { params: Record<string, string> }) {
         )}
       </Dialog>
       <Content icon={FolderIcon}>
-        <div className="p-5 flex-center">
-          {page > 0 && <Link to={`/~/files/${page}`}>&lt;</Link>}
-          <div className="mx-5">
-            Side {page + 1} af {maxPage}
-          </div>
-          {page < maxPage && <Link to={`/~/files/${page + 2}`}>&gt;</Link>}
-        </div>
-        <div className="px-5 gap-5 grid grid-cols-1 @sm:grid-cols-2 @xl:grid-cols-3 @4xl:grid-cols-4">
-          {paginatedFiles.map((file) => (
-            <div key={file.name} className="group relative">
-              <div className="absolute -top-2.5 -right-2.5">
-                <Menu
-                  as={Button}
-                  icon={EllipsisHorizontalIcon}
-                  align="right"
-                  small
-                >
-                  <Menu.Item
-                    label="Ændr navn..."
-                    icon={PencilSquareIcon}
-                    onClick={() => {
-                      setAction({ action: "rename", file: file.name });
-                    }}
-                  />
-                  <Menu.Item
-                    label="Slet fil..."
-                    icon={TrashIcon}
-                    onClick={() => {
-                      setAction({ action: "delete", file: file.name });
-                    }}
-                  />
-                </Menu>
-              </div>
-              <FileContainer
-                src={`https://cdn.storyflow.dk/${slug}/${file.name}`}
-                label={file.label}
-                onMouseDown={(ev) => {
-                  ev.preventDefault();
-                  addFile.dispatch(file.name);
-                }}
-              />
+        <Content.Header>
+          <span className="text-3xl font-medium">Filer</span>
+        </Content.Header>
+        <Content.Body>
+          <div className="p-5 pl-[3.75rem] flex-center">
+            {page > 0 && <Link to={`/~/files/${page}`}>&lt;</Link>}
+            <div className="mx-5">
+              Side {page + 1} af {maxPage}
             </div>
-          ))}
-        </div>
+            {page < maxPage && <Link to={`/~/files/${page + 2}`}>&gt;</Link>}
+          </div>
+          <div className=" pl-[3.75rem] pr-5 gap-5 grid grid-cols-1 @sm:grid-cols-2 @xl:grid-cols-3 @4xl:grid-cols-4">
+            {paginatedFiles.map((file) => (
+              <div key={file.name} className="group relative">
+                <div className="absolute -top-2.5 -right-2.5">
+                  <Menu
+                    as={Button}
+                    icon={EllipsisHorizontalIcon}
+                    align="right"
+                    small
+                  >
+                    <Menu.Item
+                      label="Ændr navn..."
+                      icon={PencilSquareIcon}
+                      onClick={() => {
+                        setAction({ action: "rename", file: file.name });
+                      }}
+                    />
+                    <Menu.Item
+                      label="Slet fil..."
+                      icon={TrashIcon}
+                      onClick={() => {
+                        setAction({ action: "delete", file: file.name });
+                      }}
+                    />
+                  </Menu>
+                </div>
+                <FileContainer
+                  src={`https://cdn.storyflow.dk/${slug}/${file.name}`}
+                  label={file.label}
+                  onMouseDown={(ev) => {
+                    ev.preventDefault();
+                    addFile.dispatch(file.name);
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        </Content.Body>
       </Content>
     </>
   );

@@ -72,9 +72,12 @@ export function useIsEmpty(editor: LexicalEditor) {
   const [isEmpty, setIsEmpty] = useState(() => isEditorEmpty(editor));
 
   useLayoutEffect(() => {
-    const reset = () => setIsEmpty(isEditorEmpty(editor));
-    reset();
-    return editor.registerUpdateListener(reset);
+    const update = () => {
+      const newValue = isEditorEmpty(editor);
+      setIsEmpty(newValue);
+    };
+    update();
+    return editor.registerUpdateListener(update);
     /*
     return mergeRegister(
       editor.registerUpdateListener(reset),

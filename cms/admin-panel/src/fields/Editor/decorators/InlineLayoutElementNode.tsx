@@ -9,6 +9,8 @@ import { useGlobalState } from "../../../state/state";
 import { computeFieldId, getIdFromString } from "@storyflow/cms/ids";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 import { usePath, useSelectedPath } from "../../Path";
+import { LayoutElement } from "./LayoutElementNode";
+import useIsFocused from "../../../utils/useIsFocused";
 
 function Decorator({
   value,
@@ -17,8 +19,7 @@ function Decorator({
   value: NestedElement;
   nodeKey: string;
 }) {
-  const path = usePath();
-  const [{ selectedPath, selectedDocument }, setPath] = useSelectedPath();
+  const { isFocused, handlers } = useIsFocused();
 
   const pathToLabel = computeFieldId(value.id, getIdFromString("label"));
 
@@ -38,26 +39,35 @@ function Decorator({
 
   return (
     <span
+      {...handlers}
       className={cl(
-        "rounded-sm selection:bg-transparent relative z-0 bg-gray-100 dark:bg-gray-400/20",
+        "rounded-sm bg-gray-100 dark:bg-gray-400/20",
         "after:absolute after:-z-10 after:w-full after:left-0 after:-bottom-0.5 after:border-b-2 after:border-b-green-300/50 after:rounded-b-sm",
         isSelected ? "ring-1 ring-white" : "dark:ring-gray-600",
         isPseudoSelected && caretClasses
       )}
-      onMouseDown={() => {
+      onMouseDown={(ev) => {
         if (!isSelected) {
           select();
           selectClick.current = true;
         }
+        handlers.onMouseDown(ev);
       }}
       onClick={() => {
+        /*
         if (isSelected && !selectClick.current) {
           setPath((ps) => [...selectedPath, ...path, value.id]);
         }
         selectClick.current = false;
+        */
       }}
     >
-      {text}
+      <span className="selection:bg-transparent">{text}</span>
+      {isFocused && (
+        <div className="w-[calc(100%-0.5rem)] bg-gray-900 absolute z-50 left-0 m-1 p-1.5 rounded">
+          <LayoutElement value={value} nodeKey={nodeKey} />
+        </div>
+      )}
     </span>
   );
 }

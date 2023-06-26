@@ -32,7 +32,7 @@ export default class BlockNode extends ElementNode {
     // Define the DOM element here
     const el = document.createElement("div");
     const name = getFunctionName(this.__func);
-    const signature = name in SIGNATURES ? SIGNATURES[name] : [name];
+    const signature = SIGNATURES[name];
 
     signature.forEach((param, index) => {
       el.style.setProperty(`--p${index + 1}`, `" ${param}"`);

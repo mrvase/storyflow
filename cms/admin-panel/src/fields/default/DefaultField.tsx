@@ -315,7 +315,7 @@ function OverlayWrapper() {
 
   return (
     <Overlay>
-      <div className="p-2.5">
+      {/*<div className="p-2.5">
         <div className="font-medium text-gray-400 mb-1 ml-1">Tilstand</div>
         <Option
           value={null}
@@ -325,7 +325,7 @@ function OverlayWrapper() {
         >
           {mathMode ? "Deaktiver" : "Aktiver"} listetilstand
         </Option>
-      </div>
+      </div>*/}
     </Overlay>
   );
 }

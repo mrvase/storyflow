@@ -88,9 +88,11 @@ export function Reconciler({
   }, [editor, configs]);
 
   React.useEffect(() => {
+    let prev = initialValue;
     return editor.registerUpdateListener(
       ({ editorState, prevEditorState, tags, dirtyElements }) => {
         if (tags.has(INITIALIZATION_TAG) || tags.has(RECONCILIATION_TAG)) {
+          prev = editorState.read(() => $getComputation($getRoot()));
           return;
         }
 
@@ -98,12 +100,14 @@ export function Reconciler({
           return;
         }
 
-        const prev = prevEditorState.read(() => $getComputation($getRoot()));
+        // const prev = prevEditorState.read(() => $getComputation($getRoot()));
         const next = editorState.read(() => $getComputation($getRoot()));
 
         const operations = getComputationDiff(prev, next);
 
         console.log("DIFF", { prev, next, operations });
+
+        prev = next;
 
         if (!operations) {
           return;

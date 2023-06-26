@@ -69,6 +69,7 @@ import { $createBooleanNode } from "./decorators/BooleanNode";
 import { $createBlockNode, $isBlockNode } from "./decorators/BlockNode";
 import { isFunctionSymbol } from "@storyflow/cms/symbols";
 import { FunctionSymbol } from "@storyflow/cms/types";
+import { $isAICompletionNode } from "./decorators/AICompletionNode";
 
 export const isInlineElement = (
   configs: LibraryConfigRecord,
@@ -87,82 +88,94 @@ export const $isTextBlockNode = (
 const $getTextContent = (node: LexicalNode, endAt?: string) => {
   const recursivelyGetTextContent = (
     node: LexicalNode,
-    textContent = ""
-  ): { content: string; ended: boolean } => {
-    if (node.__key === endAt) {
-      return { content: "", ended: true };
+    prevContent: string[] = []
+  ): { content: string[]; ended: boolean } => {
+    if (node.getKey() === endAt) {
+      return { content: [], ended: true };
     }
+    let content: string[] = [];
     if ($isElementNode(node)) {
       const children = node.getChildren?.();
       if (children) {
         for (let i = 0; i < children.length; i++) {
           const child = children[i];
-          if (child.__key === endAt) {
-            return { content: textContent, ended: true };
+          if (child.getKey() === endAt) {
+            return { content, ended: true };
           }
           if (
             i > 0 &&
             $isTextBlockNode(child) &&
             $isTextBlockNode(children[i - 1])
           ) {
-            textContent += "\n";
+            content.push("\n");
           }
-          if ($isHeadingNode(child)) {
-            const level = parseInt(child.__tag.slice(1), 10);
-            textContent += "#".repeat(level) + " ";
-          }
-          const { content, ended } = recursivelyGetTextContent(
+          const { content: newContent, ended } = recursivelyGetTextContent(
             child,
-            textContent
+            content
           );
+          if ($isHeadingNode(child) && newContent.length > 0) {
+            const level = parseInt(child.__tag.slice(1), 10);
+            content.push("#".repeat(level) + " ");
+          }
+          content.push(...newContent);
           if (ended) {
             return {
               ended: true,
               content,
             };
           }
-          textContent = content;
         }
       }
-    } else if ($isPromptNode(node)) {
+    } else if ($isPromptNode(node) || $isAICompletionNode(node)) {
       // do nothing
     } else if ($isTextNode(node)) {
-      let content = node.getTextContent();
-      const stars = matchNonEscapedCharacter(textContent, "\\*+$")?.[0]?.value
-        ?.length;
-      const formerIsItalic = stars === 1 || stars === 3;
-      const formerIsBold = stars === 2 || stars === 3;
-      if (node.hasFormat("bold")) {
-        if (formerIsBold) {
-          textContent = textContent.slice(0, -2);
-        } else {
-          content = `**${content}`;
+      let text = node.getTextContent();
+      let last = prevContent[prevContent.length - 1];
+      if (typeof last === "string") {
+        const stars = matchNonEscapedCharacter(last, "\\*+$")?.[0]?.value
+          ?.length;
+        const formerIsItalic = stars === 1 || stars === 3;
+        const formerIsBold = stars === 2 || stars === 3;
+        if (node.hasFormat("bold")) {
+          if (formerIsBold) {
+            last = last.slice(0, -2);
+          } else {
+            text = `**${text}`;
+          }
+          text = `${text}**`;
         }
-        content = `${content}**`;
-      }
-      if (node.hasFormat("italic")) {
-        if (formerIsItalic) {
-          textContent = textContent.slice(0, -1);
-        } else {
-          content = `*${content}`;
+        if (node.hasFormat("italic")) {
+          if (formerIsItalic) {
+            last = last.slice(0, -1);
+          } else {
+            text = `*${text}`;
+          }
+          text = `${text}*`;
         }
-        content = `${content}*`;
+        prevContent[prevContent.length - 1] = last;
+      } else {
+        if (node.hasFormat("bold")) {
+          text = `**${text}**`;
+        }
+        if (node.hasFormat("italic")) {
+          text = `*${text}*`;
+        }
       }
-      textContent += content;
+      content.push(text);
     } else if ($isLineBreakNode(node)) {
-      textContent += "\n";
+      content.push("\n");
     } else if ($isTokenStreamNode(node)) {
-      textContent += node.getTextContent();
+      content.push(node.getTextContent());
     }
     return {
-      content: textContent,
+      content,
       ended: false,
     };
   };
 
   let { content } = recursivelyGetTextContent(node);
 
-  return content;
+  return content.join("");
 };
 
 export const $getComputation = (node: LexicalNode, endAt?: string) => {
@@ -170,7 +183,7 @@ export const $getComputation = (node: LexicalNode, endAt?: string) => {
     node: LexicalNode,
     prevContent: TokenStream = []
   ): { content: TokenStream; ended: boolean } => {
-    if (node.__key === endAt) {
+    if (node.getKey() === endAt) {
       return { content: [], ended: true };
     }
     let content: TokenStream = [];
@@ -179,7 +192,7 @@ export const $getComputation = (node: LexicalNode, endAt?: string) => {
       if (children) {
         for (let i = 0; i < children.length; i++) {
           const child = children[i];
-          if (child.__key === endAt) {
+          if (child.getKey() === endAt) {
             return { content, ended: true };
           }
           if (
@@ -189,28 +202,28 @@ export const $getComputation = (node: LexicalNode, endAt?: string) => {
           ) {
             content = tools.concat(content, [{ n: true }]);
           }
-          if ($isHeadingNode(child)) {
-            const level = parseInt(child.__tag.slice(1), 10);
-            content = tools.concat(content, [`${"#".repeat(level)} `]);
-          }
           const { content: newContent, ended } = recursivelyGetContent(
             child,
             content
           );
+          if ($isHeadingNode(child) && newContent.length > 0) {
+            const level = parseInt(child.__tag.slice(1), 10);
+            content = tools.concat(content, [`${"#".repeat(level)} `]);
+          }
+          content = tools.concat(content, newContent);
           if (ended) {
             return {
               ended: true,
               content,
             };
           }
-          content = tools.concat(content, newContent);
         }
       }
       if ($isBlockNode(node)) {
         const func = node.__func;
         content = tools.concat([{ "(": true }], content, [func]);
       }
-    } else if ($isPromptNode(node)) {
+    } else if ($isPromptNode(node) || $isAICompletionNode(node)) {
       content = node.getTokenStream();
     } else if ($isTextNode(node)) {
       let text = node.getTextContent();
@@ -230,7 +243,7 @@ export const $getComputation = (node: LexicalNode, endAt?: string) => {
         }
         if (node.hasFormat("italic")) {
           if (formerIsItalic) {
-            last = last.slice(0, -2);
+            last = last.slice(0, -1);
           } else {
             text = `*${text}`;
           }
@@ -268,6 +281,11 @@ const getTextContent = (editor: LexicalEditor) => {
   return editor.getEditorState().read(() => $getTextContent($getRoot()));
 };
 */
+
+export const $getStartIndexFromNodeKey = (key: string): number => {
+  const textBefore = $getContentLength($getRoot(), key);
+  return textBefore;
+};
 
 export const $getIndexFromPoint = (anchor: PointType): number => {
   if (anchor.type === "text") {
@@ -307,6 +325,47 @@ export const $getStartAndEnd = (
   const endPoint = isBefore ? focus : anchor;
 
   return [startPoint, endPoint];
+};
+
+type CustomPointType = {
+  type: "text" | "element";
+  offset: number;
+  node: LexicalNode;
+};
+
+export const $getStartAndEndExtended = (
+  selection: RangeSelection | NodeSelection
+): [CustomPointType, CustomPointType] => {
+  if ($isRangeSelection(selection)) {
+    const [start, end] = $getStartAndEnd(selection);
+    const point: CustomPointType = {
+      type: start.type,
+      offset: start.offset,
+      node: start.getNode(),
+    };
+
+    if (selection.isCollapsed()) {
+      return [point, point];
+    }
+    return [
+      point,
+      {
+        type: end.type,
+        offset: end.offset,
+        node: end.getNode(),
+      },
+    ];
+  } else {
+    const node = selection.getNodes()[0];
+    const offset = node.getIndexWithinParent();
+    const parent: LexicalNode = node.getParent()!;
+    const point: CustomPointType = {
+      type: "element",
+      offset,
+      node: parent,
+    };
+    return [point, point];
+  }
 };
 
 export const $isSelection = (

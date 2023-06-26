@@ -13,7 +13,8 @@ import {
   PhotoIcon,
   PlusIcon,
   SunIcon,
-  UserIcon,
+  ArrowsUpDownIcon,
+  ComputerDesktopIcon,
 } from "@heroicons/react/24/solid";
 import React from "react";
 import { useLocalStorage } from "../../state/useLocalStorage";
@@ -23,7 +24,33 @@ import { DropShadow, Sortable } from "@storyflow/dnd";
 import { actions } from "../../pages/routes";
 import { TEMPLATE_FOLDER } from "@storyflow/cms/constants";
 import { navigateFocusedPanel } from "../../custom-events";
-import { ArrowsUpDownIcon } from "@heroicons/react/24/outline";
+import { useOrganization } from "../../clients/auth";
+import { useFolder } from "../../folders/FoldersContext";
+import { DocumentId, FolderId } from "@storyflow/shared/types";
+import { getFolderData } from "../../folders/getFolderData";
+
+export const useNav = () => {
+  const { slug } = useOrganization()!;
+  return useLocalStorage<
+    ({ type: "document"; id: DocumentId } | { type: "folder"; id: FolderId })[]
+  >(`${slug}:nav`, []);
+};
+
+const navigateProps = (pathname: string, to: string) => {
+  if (pathname.indexOf("/~") < 0) {
+    return {
+      onClick() {
+        actions.open({
+          path: to,
+          index: 0,
+        });
+      },
+    };
+  }
+  return {
+    to,
+  };
+};
 
 export default function Nav() {
   const [isOpen, setIsOpen] = useLocalStorage<boolean>("nav-is-open", true);
@@ -37,21 +64,7 @@ export default function Nav() {
 
   const { pathname } = useLocation();
 
-  const navigateProps = (to: string) => {
-    if (pathname.indexOf("/~") < 0) {
-      return {
-        onClick() {
-          actions.open({
-            path: to,
-            index: 0,
-          });
-        },
-      };
-    }
-    return {
-      to,
-    };
-  };
+  const [nav, setNav] = useNav();
 
   return (
     <>
@@ -72,7 +85,7 @@ export default function Nav() {
         )}
       >
         <div className="h-full flex flex-col pl-2 w-60">
-          <div className="flex flex-col border-b border-gray-200 dark:border-gray-800 py-8">
+          <div className="flex flex-col border-b border-gray-200 dark:border-gray-800 pt-8 pb-6">
             <NavButton
               onClick={() => {
                 actions.open({ path: "/~", index: 0 });
@@ -99,9 +112,12 @@ export default function Nav() {
             >
               Dine mapper
             </div>*/}
-            <NavButton {...navigateProps("/~")} icon={FolderIcon}>
+            <NavButton {...navigateProps(pathname, "/~")} icon={FolderIcon}>
               Hjem
             </NavButton>
+            {nav.map((item) => (
+              <CustomNavButton key={item.id} item={item} />
+            ))}
             <Sortable
               type="nav"
               id="nav"
@@ -125,20 +141,21 @@ export default function Nav() {
             </NavButton>*/}
             <NavButton
               {...navigateProps(
+                pathname,
                 `/~/f/${parseInt(TEMPLATE_FOLDER, 16).toString(16)}`
               )}
               icon={DocumentDuplicateIcon}
             >
               Skabeloner
             </NavButton>
-            <NavButton {...navigateProps("/~/files")} icon={PhotoIcon}>
+            <NavButton
+              {...navigateProps(pathname, "/~/files")}
+              icon={PhotoIcon}
+            >
               Filer
             </NavButton>
           </div>
           <div className="py-3 border-b border-gray-200 dark:border-gray-800">
-            <ArrangeButton />
-          </div>
-          <div className="py-3">
             <div className="flex justify-between gap-8">
               <NavButton
                 onClick={() => {
@@ -155,9 +172,47 @@ export default function Nav() {
               <StatusButton />
             </div>
           </div>
+          <div className="pt-3 pb-3.5">
+            <ArrangeButton />
+          </div>
         </div>
       </div>
     </>
+  );
+}
+
+function CustomNavButton({
+  item,
+}: {
+  item: { type: "document"; id: DocumentId } | { type: "folder"; id: FolderId };
+}) {
+  const { pathname } = useLocation();
+
+  let label = "Ingen label";
+  let Icon = FolderIcon;
+
+  if (item.type === "folder") {
+    const folder = useFolder(item.id);
+    label = folder?.label ?? label;
+    Icon =
+      folder && getFolderData(folder).type === "app"
+        ? ComputerDesktopIcon
+        : Icon;
+  }
+
+  return (
+    <NavButton
+      {...navigateProps(
+        pathname,
+        `/~/${item.type === "document" ? "d" : "f"}/${parseInt(
+          item.id,
+          16
+        ).toString(16)}`
+      )}
+      icon={Icon}
+    >
+      {label}
+    </NavButton>
   );
 }
 
@@ -195,7 +250,7 @@ function NavButton({
 
   const content = (
     <>
-      <Icon className="w-5 h-5 text-gray-400 group-hover:text-gray-500 dark:text-gray-600 dark:group-hover:text-gray-400 transition-colors" />
+      <Icon className="shrink-0 w-5 h-5 text-gray-400 group-hover:text-gray-500 dark:text-gray-600 dark:group-hover:text-gray-400 transition-colors" />
       {children && <div>{children}</div>}
     </>
   );

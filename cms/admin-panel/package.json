@@ -34,6 +34,7 @@
     "@tailwindcss/container-queries": "^0.1.1",
     "@types/react": "^18.2.1",
     "@types/react-dom": "^18.2.2",
+    "ai": "^2.1.8",
     "services-api": "workspace:*",
     "eslint": "^7.32.0",
     "eslint-config-custom": "workspace:*",
@@ -46,5 +47,8 @@
     "vite": "^4.3.7",
     "vitest": "^0.31.0",
     "zod": "^3.20.2"
+  },
+  "peerDependencies": {
+    "ai": "^2.1.8"
   }
 }

@@ -79,7 +79,12 @@ export function FunctionPrompt({ prompt }: { prompt: string }) {
           Indsæt funktion
         </div>
         {filteredOptions.map(({ value, label }) => (
-          <Option value={value} onEnter={onEnter} Icon={CalendarDaysIcon}>
+          <Option
+            key={label}
+            value={value}
+            onEnter={onEnter}
+            Icon={CalendarDaysIcon}
+          >
             {label}
           </Option>
         ))}
@@ -89,7 +94,12 @@ export function FunctionPrompt({ prompt }: { prompt: string }) {
           Lav konvertering
         </div>
         {filteredConverters.map(({ value, label }) => (
-          <Option value={value} onEnter={onEnter} Icon={CalendarDaysIcon}>
+          <Option
+            key={label}
+            value={value}
+            onEnter={onEnter}
+            Icon={CalendarDaysIcon}
+          >
             {label}
           </Option>
         ))}

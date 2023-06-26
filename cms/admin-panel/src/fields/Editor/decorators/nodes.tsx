@@ -17,6 +17,7 @@ import PromptNode from "./PromptNode";
 import DateNode from "./DateNode";
 import BooleanNode from "./BooleanNode";
 import BlockNode from "./BlockNode";
+import AICompletionNode from "./AICompletionNode";
 
 export default [
   LayoutElementNode,
@@ -38,4 +39,5 @@ export default [
   DateNode,
   BooleanNode,
   BlockNode,
+  AICompletionNode,
 ];

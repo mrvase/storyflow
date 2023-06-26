@@ -17,8 +17,17 @@ import { useFieldFocus } from "../../FieldFocusContext";
 import { useFieldId } from "../FieldIdContext";
 import { CopyPastePlugin } from "./CopyPastePlugin";
 import { StreamOperation, TransformOperation } from "../../operations/actions";
-import { $getRoot, $setSelection, Klass, LexicalNode } from "lexical";
+import {
+  $getRoot,
+  $isParagraphNode,
+  $setSelection,
+  Klass,
+  LexicalNode,
+} from "lexical";
 import $createRangeSelection from "../../editor/createRangeSelection";
+import BlockNode from "./decorators/BlockNode";
+import { getFunctionName } from "@storyflow/cms/symbols";
+import { SIGNATURES } from "@storyflow/cms/constants";
 
 const editorConfig = {
   namespace: "EDITOR",
@@ -45,7 +54,6 @@ function BlockNodePlugin() {
             key = nodeKey;
           }
         });
-        console.log("BLOCK NODE KEY", key);
         if (!key) return;
         const node = editor.getEditorState()._nodeMap.get(key);
         if (!node) return;
@@ -74,6 +82,25 @@ function BlockNodePlugin() {
       root.removeEventListener("mousedown", listener);
     };
   }, [editor]);
+
+  React.useEffect(() => {
+    return editor.registerNodeTransform(BlockNode, (node) => {
+      const name = getFunctionName(node.__func);
+      const paramsLength = SIGNATURES[name].length;
+      const size = node.getChildrenSize();
+      if (size > paramsLength) {
+        const children = node.getChildren().slice(paramsLength, size);
+        children.reverse().forEach((child) => {
+          child.remove();
+          node.insertAfter(child);
+        });
+        // select last child
+        if ($isParagraphNode(children[0])) {
+          children[0].select(0, 0);
+        }
+      }
+    });
+  }, []);
 
   return null;
 }

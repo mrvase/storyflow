@@ -17,6 +17,7 @@ type Initializer = "/" | "@" | "<";
 export default class PromptNode extends TextNode {
   __stream: TokenStream;
   __initializer: Initializer;
+  __isGenerating: boolean = false;
 
   static getType(): string {
     return "prompt";
@@ -48,6 +49,16 @@ export default class PromptNode extends TextNode {
 
   getInitializer(): Initializer {
     return this.getLatest().__initializer;
+  }
+
+  getIsGenerating() {
+    const self = this.getLatest();
+    return self.__isGenerating;
+  }
+
+  setIsGenerating(isGenerating: boolean): void {
+    const self = this.getWritable();
+    self.__isGenerating = isGenerating;
   }
 
   createDOM(): HTMLSpanElement {

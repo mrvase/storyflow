@@ -105,7 +105,7 @@ function ContainerDiv({
 
   const { isFocused, handlers } = useIsFocused({
     multiple: true,
-    id,
+    // id,
   });
 
   return (
@@ -114,7 +114,7 @@ function ContainerDiv({
         {...props}
         {...handlers}
         className={cl(
-          "relative grow shrink basis-0 group/container px-2.5 py-4",
+          "relative grow shrink basis-0 group/container p-2.5",
           "bg-white dark:bg-gray-900 rounded"
         )}
       >
@@ -243,7 +243,7 @@ function LabelBar({
         )}
         {!specialFieldConfig && isNative && <FieldToolbar fieldId={id} />}
         <ReferenceButton id={id} />
-        {isNative && <FieldMenu fieldId={id} />}
+        <FieldMenu fieldId={id} isNative={isNative} />
       </div>
       {selectedDocument && (
         <button
@@ -272,7 +272,13 @@ function HiddenIcon({ fieldId }: { fieldId: FieldId }) {
   return null;
 }
 
-function FieldMenu({ fieldId }: { fieldId: FieldId }) {
+function FieldMenu({
+  fieldId,
+  isNative,
+}: {
+  fieldId: FieldId;
+  isNative: boolean;
+}) {
   const t = useTranslation();
 
   const index = useTopFieldIndex();

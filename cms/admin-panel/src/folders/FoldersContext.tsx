@@ -168,6 +168,10 @@ export const useFolders = () => {
   return folders.useStore();
 };
 
+export const getFolder = (folderId: FolderId) => {
+  return folders.get(folderId);
+};
+
 export const useFolder = (folderId: FolderId) => {
   return folders.useKey(folderId)[0] ?? createDefaultFolder(folderId);
 };

@@ -25,7 +25,7 @@ function Menu<
     as: TTag;
     label?: string;
     selected?: TOption[] | TOption | null;
-    align?: "left" | "right";
+    align?: "left" | "right" | "bottom-left" | "bottom-right";
     onClear?: () => void;
     small?: boolean;
   } & Omit<
@@ -71,7 +71,7 @@ function Menu<
   return (
     <HeadlessMenu>
       {({ open }) => (
-        <div className={cl("block text-sm", align === "right" && "relative")}>
+        <div className={cl("block text-sm", align !== "left" && "relative")}>
           <HeadlessMenu.Button
             as={as as any}
             active={open}
@@ -118,7 +118,7 @@ const MenuItems = ({
   small,
 }: {
   open: boolean;
-  align?: "left" | "right";
+  align?: "left" | "right" | "bottom-left" | "bottom-right";
   children: React.ReactNode;
   marginTop?: `mt-${number}`;
   small?: boolean;
@@ -126,7 +126,11 @@ const MenuItems = ({
   return (
     <MenuTransition
       show={open}
-      className={cl("absolute z-[999]", align === "right" && "right-0")}
+      className={cl(
+        "absolute z-[999]",
+        ["right", "bottom-right"].includes(align!) && "right-0",
+        ["bottom-left", "bottom-right"].includes(align!) && "bottom-8"
+      )}
     >
       <HeadlessMenu.Items
         static

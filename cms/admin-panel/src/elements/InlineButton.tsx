@@ -18,10 +18,10 @@ export const InlineButton = React.forwardRef<
       ref={ref}
       {...props}
       className={cl(
-        "shrink-0 h-6 flex-center rounded-full",
+        "shrink-0 h-6 flex-center gap-1 rounded-full",
         "text-xs font-medium",
         "ring-1 duration-75 transition-shadow",
-        props.children ? "py-1 pl-2 pr-2.5 gap-1" : "p-1",
+        props.children ? "p-1 @md:px-2" : "p-1",
         colorClasses,
         active && "ring-gray-300 dark:ring-gray-600",
         props.className

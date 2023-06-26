@@ -15,7 +15,7 @@ import {
 } from "@heroicons/react/24/solid";
 import { EditableLabel } from "../elements/EditableLabel";
 import cl from "clsx";
-import type { DocumentId } from "@storyflow/shared/types";
+import type { DocumentId, FolderId } from "@storyflow/shared/types";
 import type {
   DBFolder,
   FolderSpace,
@@ -55,8 +55,10 @@ import { isError } from "@nanorpc/client";
 import { useNavigate, usePath, useRoute } from "@nanokit/router";
 import { DragIcon } from "../elements/DragIcon";
 import { InlineButton } from "../elements/InlineButton";
-import { LinkIcon } from "@heroicons/react/24/outline";
+import { Bars3Icon, LinkIcon } from "@heroicons/react/24/outline";
 import { ImportContextProvider } from "./ImportContext";
+import { BlockButton } from "../elements/BlockButton";
+import { useNav } from "../layout/components/Nav";
 
 const spaces: { label: string; item: Omit<Space, "id"> }[] = [
   {
@@ -209,15 +211,13 @@ export default function FolderPage({
           <FocusOrchestrator>
             <Content small={!isSelected && nextIsDocument}>
               <Content.Header>
-                <div>
-                  <FolderLabel
-                    isApp={type === "app"}
-                    folder={folder}
-                    onChange={(value) => {
-                      mutateProp("label", value);
-                    }}
-                  />
-                </div>
+                <FolderLabel
+                  isApp={type === "app"}
+                  folder={folder}
+                  onChange={(value) => {
+                    mutateProp("label", value);
+                  }}
+                />
                 <Content.Toolbar>
                   {type === "data" && (
                     <FolderTemplateButton
@@ -250,6 +250,62 @@ export default function FolderPage({
                   ) : undefined}
                 </Content.Toolbar>
               </Content.Header>
+              <Content.Body>
+                {folder && (
+                  <>
+                    <AddTemplateDialog
+                      isOpen={templateDialogIsOpen}
+                      close={() => setTemplateDialogIsOpen(false)}
+                      folderId={folder._id}
+                      currentTemplate={folder.template}
+                    />
+                    <Sortable
+                      type="spaces"
+                      id={`${folder._id}-spaces`}
+                      onChange={onChange}
+                      canReceive={{
+                        link: () => "ignore",
+                        move: ({ type, item }) =>
+                          type === "spaces" ? "accept" : "ignore",
+                      }}
+                      disabled={!isSelected}
+                    >
+                      <div className="flex flex-col gap-8">
+                        {(folder.spaces ?? []).map(renderSpace)}
+                        <DropShadow>
+                          {(item) =>
+                            renderSpace(item, (folder.spaces ?? []).length)
+                          }
+                        </DropShadow>
+                      </div>
+                    </Sortable>
+                  </>
+                )}
+                {folder.spaces.length === 0 &&
+                  spaces.slice(0, 3).map((space) => (
+                    <BlockButton
+                      key={space.label}
+                      icon={PlusIcon}
+                      onClick={() => {
+                        push(
+                          createTransaction((t) =>
+                            t.target(folder._id).splice({
+                              index: 0,
+                              insert: [
+                                {
+                                  ...space.item,
+                                  id: createKey() as SpaceId,
+                                } as Space,
+                              ],
+                            })
+                          )
+                        );
+                      }}
+                    >
+                      Tilføj {space.label.toLowerCase()}
+                    </BlockButton>
+                  ))}
+              </Content.Body>
               <Content.SecondaryToolbar>
                 <Content.ToolbarDragButton
                   id={`nyt-space-mapper`}
@@ -272,6 +328,7 @@ export default function FolderPage({
                   label="Andre spaces"
                   icon={StopIcon}
                   secondary
+                  align="bottom-left"
                 >
                   {spaces.slice(2).map((el) => (
                     <Menu.DragItem
@@ -284,43 +341,36 @@ export default function FolderPage({
                     />
                   ))}
                 </Menu>
+                <AddToNavButton id={folder._id} />
               </Content.SecondaryToolbar>
-              {folder && (
-                <>
-                  <AddTemplateDialog
-                    isOpen={templateDialogIsOpen}
-                    close={() => setTemplateDialogIsOpen(false)}
-                    folderId={folder._id}
-                    currentTemplate={folder.template}
-                  />
-                  <Sortable
-                    type="spaces"
-                    id={`${folder._id}-spaces`}
-                    onChange={onChange}
-                    canReceive={{
-                      link: () => "ignore",
-                      move: ({ type, item }) =>
-                        type === "spaces" ? "accept" : "ignore",
-                    }}
-                    disabled={!isSelected}
-                  >
-                    <div className="flex flex-col gap-8">
-                      {(folder.spaces ?? []).map(renderSpace)}
-                      <DropShadow>
-                        {(item) =>
-                          renderSpace(item, (folder.spaces ?? []).length)
-                        }
-                      </DropShadow>
-                    </div>
-                  </Sortable>
-                </>
-              )}
             </Content>
           </FocusOrchestrator>
           {children}
         </FolderDomainsProvider>
       </ImportContextProvider>
     </FolderContext.Provider>
+  );
+}
+
+function AddToNavButton({ id }: { id: FolderId }) {
+  const [nav, setNav] = useNav();
+
+  if (nav.some((el) => el.id === id)) return null;
+
+  return (
+    <Content.ToolbarButton
+      icon={Bars3Icon}
+      onClick={() => {
+        setNav((ps) => {
+          if (ps.some((el) => el.id === id)) {
+            return ps;
+          }
+          return [...ps, { id, type: "folder" }];
+        });
+      }}
+    >
+      Tilføj mappe til menu
+    </Content.ToolbarButton>
   );
 }
 

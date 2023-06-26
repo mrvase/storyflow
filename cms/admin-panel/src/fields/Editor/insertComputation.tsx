@@ -1,5 +1,6 @@
 import {
   $createParagraphNode,
+  $createTextNode,
   $getRoot,
   $getSelection,
   $isNodeSelection,
@@ -26,6 +27,7 @@ import type {
 } from "@storyflow/shared/types";
 import { $isPromptNode } from "./decorators/PromptNode";
 import { $isHeadingNode, HeadingNode } from "../../editor/react/HeadingNode";
+import React from "react";
 
 const $isMergeableTextNode = (node: LexicalNode | null | undefined) =>
   $isTextNode(node) && !$isPromptNode(node);
@@ -126,6 +128,12 @@ export function $replaceWithBlocks(newBlocks: LexicalNode[]) {
     // to make methods not consider selection for performance
     $setSelection(null);
 
+    let leftBlock: LexicalNode | null = null;
+    let rightBlock: LexicalNode | null = null;
+
+    let blockLeftMerge = false;
+    let blockRightMerge = false;
+
     if ($isRangeSelection(selection)) {
       const [startPoint, endPoint] = $getStartAndEnd(selection);
       let startNode = startPoint.getNode();
@@ -143,12 +151,6 @@ export function $replaceWithBlocks(newBlocks: LexicalNode[]) {
         startNode.append(...newBlocks);
         return;
       }
-
-      let leftBlock: LexicalNode | null = null;
-      let rightBlock: LexicalNode | null = null;
-
-      let blockLeftMerge = false;
-      let blockRightMerge = false;
 
       if (selection.isCollapsed()) {
         console.log("$ COLLAPSED");
@@ -252,7 +254,7 @@ export function $replaceWithBlocks(newBlocks: LexicalNode[]) {
         if (endPoint.offset === endNode.getTextContent().length) {
           // we start with this to block right merge even if we are also at the start of the block
 
-          /* tekst|(possible decorator) */
+          /* text|(possible decorator) */
           const textNode = endNode as TextNode;
           const nextChildren = textNode.getNextSiblings();
 
@@ -280,7 +282,7 @@ export function $replaceWithBlocks(newBlocks: LexicalNode[]) {
           }
         } else if (endPoint.type === "text") {
           if (endPoint.offset === 0) {
-            /* (possible decorator)|tekst */
+            /* (possible decorator)|text */
             const textNode = endNode as TextNode;
             const prevChildren = textNode.getPreviousSiblings();
 
@@ -479,8 +481,72 @@ export function $replaceWithBlocks(newBlocks: LexicalNode[]) {
           toBeRemoved.remove();
         }
       }
+    } else if ($isNodeSelection(selection)) {
+      const node = selection.getNodes()[0] as DecoratorNode<React.ReactNode>;
+      if (node.isInline()) {
+        const parent = node.getParentOrThrow() as LexicalNode;
 
-      console.log("$ RESULT", {
+        const prevChildren = [...node.getPreviousSiblings()];
+        const nextChildren = node.getNextSiblings();
+
+        if (!prevChildren.length && !nextChildren.length) {
+          leftBlock = parent.getPreviousSibling();
+          rightBlock = parent.getNextSibling();
+          parent.remove();
+          blockLeftMerge = true;
+          blockRightMerge = true;
+        } else if (prevChildren.length && !nextChildren.length) {
+          leftBlock = parent;
+          rightBlock = parent.getNextSibling();
+          blockRightMerge = true;
+          node.remove();
+        } else if (!prevChildren.length && nextChildren.length) {
+          leftBlock = parent.getPreviousSibling();
+          rightBlock = parent;
+          blockLeftMerge = true;
+          node.remove();
+        } else {
+          rightBlock = parent;
+          rightBlock.splice(0, prevChildren.length + 1, []);
+          leftBlock = $createSimilarNode(parent as ParagraphNode);
+          leftBlock.append(...prevChildren);
+          rightBlock!.insertBefore(leftBlock);
+        }
+      } else {
+        leftBlock = node.getPreviousSibling();
+        rightBlock = node.getNextSibling();
+        blockLeftMerge = true;
+        blockRightMerge = true;
+      }
+    }
+
+    console.log("$ RESULT", {
+      left: {
+        block: leftBlock,
+        inlines: leftBlock?.getChildren?.(),
+      },
+      right: {
+        block: rightBlock,
+        inlines: rightBlock?.getChildren?.(),
+      },
+      root: $getRoot().getChildren(),
+    });
+
+    let select = {
+      type: "element",
+      offset: -1,
+      node: newBlocks[newBlocks.length - 1],
+    };
+
+    if (
+      !blockLeftMerge &&
+      $isTextBlockNode(leftBlock) &&
+      $isTextBlockNode(newBlocks[0])
+    ) {
+      select = merge(leftBlock, newBlocks[0], { cursor: "right" });
+      newBlocks.shift();
+
+      console.log("$ MERGE LEFT", {
         left: {
           block: leftBlock,
           inlines: leftBlock?.getChildren?.(),
@@ -491,22 +557,25 @@ export function $replaceWithBlocks(newBlocks: LexicalNode[]) {
         },
         root: $getRoot().getChildren(),
       });
+    }
 
-      let select = {
-        type: "element",
-        offset: -1,
-        node: newBlocks[newBlocks.length - 1],
-      };
+    if (!blockRightMerge && $isTextBlockNode(rightBlock)) {
+      let lastNewParagraph: ParagraphNode | null = null;
+      let lastNew = newBlocks[newBlocks.length - 1]; // possibly undefined
 
-      if (
-        !blockLeftMerge &&
-        $isTextBlockNode(leftBlock) &&
-        $isTextBlockNode(newBlocks[0])
-      ) {
-        select = merge(leftBlock, newBlocks[0], { cursor: "right" });
-        newBlocks.shift();
+      if ($isTextBlockNode(lastNew)) {
+        lastNewParagraph = lastNew;
+        newBlocks.pop();
+      } else if (lastNew === undefined && $isTextBlockNode(leftBlock)) {
+        lastNewParagraph = leftBlock;
+      }
 
-        console.log("$ MERGE LEFT", {
+      if (lastNewParagraph) {
+        select = merge(lastNewParagraph, rightBlock, {
+          keep: "right",
+        });
+
+        console.log("$ MERGE RIGHT", {
           left: {
             block: leftBlock,
             inlines: leftBlock?.getChildren?.(),
@@ -518,77 +587,54 @@ export function $replaceWithBlocks(newBlocks: LexicalNode[]) {
           root: $getRoot().getChildren(),
         });
       }
+    }
 
-      if (!blockRightMerge && $isTextBlockNode(rightBlock)) {
-        let lastNewParagraph: ParagraphNode | null = null;
-        let lastNew = newBlocks[newBlocks.length - 1]; // possibly undefined
-
-        if ($isTextBlockNode(lastNew)) {
-          lastNewParagraph = lastNew;
-          newBlocks.pop();
-        } else if (lastNew === undefined && $isTextBlockNode(leftBlock)) {
-          lastNewParagraph = leftBlock;
-        }
-
-        if (lastNewParagraph) {
-          select = merge(lastNewParagraph, rightBlock, {
-            keep: "right",
-          });
-
-          console.log("$ MERGE RIGHT", {
-            left: {
-              block: leftBlock,
-              inlines: leftBlock?.getChildren?.(),
-            },
-            right: {
-              block: rightBlock,
-              inlines: rightBlock?.getChildren?.(),
-            },
-            root: $getRoot().getChildren(),
-          });
-        }
-      }
-
-      if (newBlocks.length > 0) {
-        if (leftBlock) {
-          console.log("$ inserting after left block");
-          insertAfter(leftBlock, newBlocks);
-        } else if (rightBlock) {
-          console.log("$ inserting before right block");
-          insertBefore(rightBlock, newBlocks);
-        } else {
-          console.log("$ inserting in root");
-          $getRoot().append(...newBlocks);
-        }
+    if (newBlocks.length > 0) {
+      if (leftBlock) {
+        console.log("$ inserting after left block");
+        insertAfter(leftBlock, newBlocks);
+      } else if (rightBlock) {
+        console.log("$ inserting before right block");
+        insertBefore(rightBlock, newBlocks);
       } else {
-        console.log("$ no new blocks");
+        console.log("$ inserting in root");
+        $getRoot().append(...newBlocks);
       }
+    } else {
+      console.log("$ no new blocks");
+    }
 
-      if (leftBlock && leftBlock.getChildrenSize?.() === 0) {
-        leftBlock.remove();
-      }
-      if (rightBlock && rightBlock.getChildrenSize?.() === 0) {
-        rightBlock.remove();
-      }
+    if (leftBlock && leftBlock.getChildrenSize?.() === 0) {
+      leftBlock.remove();
+    }
+    if (rightBlock && rightBlock.getChildrenSize?.() === 0) {
+      rightBlock.remove();
+    }
 
-      if (select.type === "element") {
-        const next = select.node.getNextSibling();
-        const parent = select.node.getParent();
-        if ($isTextNode(next)) {
-          next.select(0, 0);
-        } else if ($isTextBlockNode(parent)) {
-          const index = (
-            select.node as DecoratorNode<any>
-          ).getIndexWithinParent();
-          parent.select(index + 1, index + 1);
-        } else {
-          select.node.selectNext(0, 0);
-        }
+    if ($getRoot().getChildrenSize() === 0) {
+      const textNode = $createTextNode();
+      const p = $createParagraphNode();
+      p.append(textNode);
+      $getRoot().append(p);
+      textNode.select();
+      return;
+    }
+
+    if (select.type === "element") {
+      const next = select.node.getNextSibling();
+      const parent = select.node.getParent();
+      if ($isTextNode(next)) {
+        next.select(0, 0);
+      } else if ($isTextBlockNode(parent)) {
+        const index = (
+          select.node as DecoratorNode<any>
+        ).getIndexWithinParent();
+        parent.select(index + 1, index + 1);
       } else {
-        (select.node as TextNode).select(select.offset, select.offset);
+        select.node.selectNext(0, 0);
       }
-    } else if ($isNodeSelection(selection)) {
-      console.log("$ NODE SELECTION", selection);
+    } else {
+      (select.node as TextNode).select(select.offset, select.offset);
     }
   } catch (err) {
     console.log("$ ERROR");

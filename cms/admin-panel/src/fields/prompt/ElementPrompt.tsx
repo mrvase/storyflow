@@ -1,5 +1,10 @@
 import { CubeIcon } from "@heroicons/react/24/outline";
-import { getDocumentId } from "@storyflow/cms/ids";
+import {
+  computeFieldId,
+  getDocumentId,
+  getIdFromString,
+  getRawFieldId,
+} from "@storyflow/cms/ids";
 import type { DocumentId } from "@storyflow/shared/types";
 import type { TokenStream } from "../../operations/types";
 import React from "react";
@@ -9,14 +14,19 @@ import { createComponent } from "../Editor/createComponent";
 import { useFieldId } from "../FieldIdContext";
 import { markMatchingString } from "./helpers";
 import { Option } from "./Option";
+import { usePush } from "../../collab/CollabContext";
+import { FieldTransactionEntry } from "../../operations/actions";
+import { createTransaction } from "@storyflow/collab/utils";
 
 export function ElementPrompt({
   prompt,
   options: optionsFromProps = [],
+  stream,
   replacePromptWithStream,
 }: {
   prompt: string;
   options?: { value: string | number }[];
+  stream: TokenStream;
   replacePromptWithStream: (stream: TokenStream) => void;
 }) {
   const id = useFieldId();
@@ -54,16 +64,34 @@ export function ElementPrompt({
       )
     : options;
 
+  const push = usePush<FieldTransactionEntry>(
+    getDocumentId<DocumentId>(id),
+    getRawFieldId(id)
+  );
+
   const onEnter = React.useCallback(
     (config: (typeof filtered)[number]) => {
+      const nestedId = generateDocumentId(documentId);
+      const firstPropKey = Object.keys(config.props)[0];
+      if (stream.length > 0 && firstPropKey) {
+        const fieldId = computeFieldId(nestedId, getIdFromString(firstPropKey));
+        push(
+          createTransaction((t) =>
+            t.target(fieldId).splice({
+              index: 0,
+              insert: stream,
+            })
+          )
+        );
+      }
       replacePromptWithStream([
-        createComponent(generateDocumentId(documentId), config.name, {
+        createComponent(nestedId, config.name, {
           library: config.libraryName,
           configs,
         }),
       ]);
     },
-    [generateDocumentId]
+    [stream, push, generateDocumentId]
   );
 
   return (
