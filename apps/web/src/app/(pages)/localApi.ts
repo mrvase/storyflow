@@ -9,7 +9,7 @@ const api = createLocalAPI(appConfig, apiConfig);
 export const getPage = cache(async (url: string) => {
   console.log("CACHED PAGE REQUEST", url);
   try {
-    const result = await api.app.getPage(url);
+    const result = await api.getPage(url);
     if (isError(result)) {
       return null;
     }
@@ -22,7 +22,7 @@ export const getPage = cache(async (url: string) => {
 export const getPaths = cache(async () => {
   console.log("CACHED PATHS REQUEST");
   try {
-    const result = await api.app.getPaths();
+    const result = await api.getPaths();
     if (isError(result)) {
       return [];
     }

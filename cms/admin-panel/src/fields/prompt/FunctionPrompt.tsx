@@ -19,11 +19,15 @@ const options: {
 }[] = [
   {
     value: "if",
-    label: "Indsæt betingelse",
+    label: "Betingelse",
   },
   {
     value: "in",
-    label: "Indsæt in",
+    label: "In",
+  },
+  {
+    value: "insert",
+    label: "Handling: indsæt",
   },
 ];
 

@@ -66,7 +66,7 @@ export const useDocumentLabel = <T extends DBDocument | undefined>(
       setOutput(() =>
         calculateFn(tree, {
           record: doc.record,
-          documentId: doc._id,
+          contextDocumentId: doc._id,
         })
       );
       setIsModified(isModified);

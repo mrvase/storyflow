@@ -4,7 +4,6 @@ import {
 } from "@storyflow/shared/events";
 import cl from "clsx";
 import React from "react";
-import { calculateFn } from "./default/calculateFn";
 import { tools } from "../operations/stream-methods";
 import { store, useGlobalState } from "../state/state";
 import {
@@ -12,26 +11,16 @@ import {
   FieldId,
   ValueArray,
   ClientSyntaxTree,
-  LibraryConfigRecord,
-  Config,
 } from "@storyflow/shared/types";
-import type { SyntaxTreeRecord, SyntaxTree } from "@storyflow/cms/types";
+import type { SyntaxTree } from "@storyflow/cms/types";
 import Content from "../pages/Content";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { useAppConfig } from "../AppConfigContext";
 import { createComponent } from "./Editor/createComponent";
 import { useDocumentPageContext } from "../documents/DocumentPageContext";
-import { fetchDocumentSync } from "../documents";
-import {
-  computeFieldId,
-  getDocumentId,
-  getIdFromString,
-  getParentDocumentId,
-  getRawFieldId,
-} from "@storyflow/cms/ids";
+import { getDocumentId, getRawFieldId } from "@storyflow/cms/ids";
 import { useDocumentIdGenerator } from "../id-generator";
 import { tokens } from "@storyflow/cms/tokens";
-import { DEFAULT_SYNTAX_TREE } from "@storyflow/cms/constants";
 import { createTokenStream } from "../operations/parse-token-stream";
 import {
   Attributes,
@@ -45,13 +34,13 @@ import { DefaultField } from "./default/DefaultField";
 import { FieldIdContext } from "./FieldIdContext";
 import { EditorFocusProvider } from "../editor/react/useIsFocused";
 import { splitStreamByBlocks } from "./Editor/transforms";
-import { extendPath } from "../utils/extendPath";
 import { usePush } from "../collab/CollabContext";
 import { FieldTransactionEntry } from "../operations/actions";
 import { Transaction } from "@storyflow/collab/types";
 import { createTransaction } from "@storyflow/collab/utils";
 import { useRoute } from "@nanokit/router";
 import { parseMatch } from "../layout/components/parseSegment";
+import { getRecordSnapshot } from "./traverse";
 
 const useBuilderRendered = ({
   listeners,
@@ -457,157 +446,6 @@ function FieldOverlay({ id }: { id: FieldId }) {
 
 export type ValueRecord = Record<string, ValueArray | ClientSyntaxTree>;
 
-const getRecordSnapshot = (
-  entry: FieldId,
-  {
-    record = {},
-    configs,
-  }: {
-    record?: SyntaxTreeRecord;
-    configs: LibraryConfigRecord;
-  }
-) => {
-  const finalRecord: ValueRecord = {};
-
-  const documentId = getDocumentId(entry) as DocumentId;
-
-  const recursivelyGetRecordFromComputation = (
-    fieldId: FieldId,
-    propDocumentId: DocumentId
-  ) => {
-    // calculating prop and its children
-
-    const prop = store.use<ValueArray | ClientSyntaxTree>(fieldId);
-
-    if (!prop.initialized()) {
-      let initialValue = record[fieldId];
-
-      if (!initialValue && propDocumentId !== documentId) {
-        fetchDocumentSync(propDocumentId).then((doc) => {
-          if (!doc) return undefined;
-          const value = doc.record[fieldId];
-          if (!value) return undefined;
-          prop.set(() => {
-            return calculateFn(value, {
-              record: doc.record,
-              documentId: propDocumentId,
-            });
-          });
-        });
-        if (!prop.initialized()) {
-          // if not sync, we need to set it to empty array
-          prop.set(() => []);
-        }
-      } else {
-        prop.set(() =>
-          calculateFn(initialValue ?? DEFAULT_SYNTAX_TREE, {
-            record,
-            documentId,
-          })
-        );
-      }
-    }
-
-    const value = prop.value!;
-
-    const children = getChildren(value);
-
-    Object.assign(finalRecord, {
-      [fieldId]: value,
-      ...children,
-    });
-
-    function getChildren(value: ValueArray | ClientSyntaxTree): {} {
-      let array: ValueArray = [];
-
-      if (!Array.isArray(value)) {
-        const traverseNode = (node: ClientSyntaxTree) => {
-          node.children.forEach((el) => {
-            if (Array.isArray(el)) {
-              el.forEach((token) => {
-                if (tokens.isNestedElement(token)) {
-                  array.push(token);
-                }
-              });
-            } else {
-              traverseNode(el);
-            }
-          });
-        };
-
-        traverseNode(value);
-      } else {
-        array = value;
-      }
-
-      return array.reduce((acc, element) => {
-        if (Array.isArray(element)) {
-          // this should propably just flat it infinitely out
-          return Object.assign(acc, getChildren(element));
-        } else if (tokens.isNestedElement(element)) {
-          const components = Object.entries(configs)
-            .reduce(
-              (acc: (Config & { name: string })[], [libraryName, library]) =>
-                acc.concat(
-                  Object.entries(library.configs).map(([name, config]) => ({
-                    ...config,
-                    name: extendPath(
-                      libraryName,
-                      name.replace(/Config$/, ""),
-                      ":"
-                    ),
-                  }))
-                ),
-              []
-            )
-            .flat(1);
-
-          const propConfigRecord = components.find(
-            (el) => el.name === element.element
-          )?.props;
-
-          const propKeys =
-            Object.entries(propConfigRecord ?? {}).reduce(
-              (acc: string[], [name, el]) => {
-                if (el.type === "group") {
-                  acc.push(
-                    ...Object.keys(el.props).map(
-                      (childName) => `${name}#${childName}`
-                    )
-                  );
-                  return acc;
-                }
-                acc.push(name);
-                return acc;
-              },
-              []
-            ) ?? [];
-
-          propKeys.push("key");
-
-          const props = propKeys.reduce((acc, key) => {
-            return Object.assign(
-              acc,
-              recursivelyGetRecordFromComputation(
-                computeFieldId(element.id, getIdFromString(key)),
-                getParentDocumentId(element.id)
-              )
-            );
-          }, {});
-
-          return Object.assign(acc, props);
-        } else {
-          return acc;
-        }
-      }, {});
-    }
-  };
-
-  recursivelyGetRecordFromComputation(entry, documentId);
-
-  return finalRecord;
-};
-
 function PropagateStatePlugin({
   id,
   rendered,
@@ -622,11 +460,21 @@ function PropagateStatePlugin({
   const { configs } = useAppConfig();
 
   // state initialized in ComponentField
-  const [tree, setTree] = useGlobalState<ValueRecord>(`${id}/record`, () => {
-    return getRecordSnapshot(id, {
-      record,
-      configs,
-    });
+  const [tree] = useGlobalState(`${id}/record`, () => {
+    const finalRecord: ValueRecord = {};
+
+    getRecordSnapshot(
+      id,
+      (value, fieldId) => {
+        finalRecord[fieldId] = value;
+      },
+      {
+        record,
+        configs,
+      }
+    );
+
+    return finalRecord;
   });
 
   let oldValue = React.useRef({ ...tree });

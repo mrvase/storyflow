@@ -17,3 +17,6 @@ export const useFieldRestriction = () =>
 
 export const FieldOptionsContext = React.createContext<Option[] | null>(null);
 export const useFieldOptions = () => React.useContext(FieldOptionsContext);
+
+export const ActionFieldIdContext = React.createContext<FieldId | null>(null);
+export const useActionFieldId = () => React.useContext(ActionFieldIdContext);

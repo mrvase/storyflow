@@ -6,9 +6,11 @@ import {
   ConfigRecord,
   Context,
   ContextProvider,
+  NestedDocumentId,
   PropConfig,
   PropConfigRecord,
   PropGroup,
+  PropInput,
   ValueArray,
   context,
 } from "@storyflow/shared/types";
@@ -31,6 +33,7 @@ import {
   resolveStatefulProp,
   splitProps,
 } from "../utils/splitProps";
+import { IdContextProvider } from "../src/IdContext";
 
 type LoopIndexRecord = Record<string, number>;
 
@@ -72,7 +75,7 @@ export default function RenderElement({
   const { configs, libraries } = useConfig();
 
   const path = usePath();
-  const elementId = path.slice(-1)[0];
+  const elementId = path.slice(-1)[0] as NestedDocumentId;
 
   let { config, component } = getConfigByType(type, {
     configs,
@@ -84,19 +87,35 @@ export default function RenderElement({
     return null;
   }
 
+  const getFieldId = (key: string) =>
+    `${elementId.slice(12, 24)}${getIdFromString(key)}`;
+
   const uncomputedProps = Object.fromEntries(
     Object.entries(config.props).reduce((acc, [name, cur]) => {
       if (cur.type === "group") {
         const groupName = name;
         Object.entries(cur.props).forEach(([name, el]) => {
-          const id = `${elementId.slice(12, 24)}${getIdFromString(
-            extendPath(groupName, name, "#")
-          )}`;
+          const id = getFieldId(extendPath(groupName, name, "#"));
           acc.push([id, useValue(id) ?? []]);
         });
-      } else {
-        const id = `${elementId.slice(12, 24)}${getIdFromString(name)}`;
+      } else if (cur.type === "input") {
+        const id = getFieldId(extendPath(name, "label", "#"));
         acc.push([id, useValue(id) ?? []]);
+
+        if (cur.props) {
+          const groupName = name;
+          Object.entries(cur.props).forEach(([name, el]) => {
+            const id = getFieldId(extendPath(groupName, name, "#"));
+            acc.push([id, useValue(id) ?? []]);
+          });
+        }
+      } else {
+        const id = getFieldId(name);
+        if (cur.type === "action") {
+          acc.push([id, [id]]);
+        } else {
+          acc.push([id, useValue(id) ?? []]);
+        }
       }
       return acc;
     }, [] as [string, ValueArray | ClientSyntaxTree][])
@@ -171,7 +190,7 @@ function RenderElementWithProps({
   createComponentContext,
   parentOptions,
 }: {
-  id: string;
+  id: NestedDocumentId;
   record: Record<string, ValueArray | ClientSyntaxTree>;
   props: Config["props"];
   component: Component<PropConfigRecord>;
@@ -191,13 +210,28 @@ function RenderElementWithProps({
 
   const regularProps = React.useMemo(() => {
     const resolveProps = (
-      entries: [string, PropConfig | PropGroup][],
+      entries: [string, PropConfig | PropGroup | PropInput][],
       group: string = ""
     ) => {
       return Object.fromEntries(
         entries.map(([name, config]): [string, any] => {
           if (config.type === "group") {
             return [name, resolveProps(Object.entries(config.props), name)];
+          }
+          if (config.type === "input") {
+            return [
+              name,
+              {
+                name,
+                ...resolveProps(
+                  [
+                    ["label", { type: "string", label: "Label" }],
+                    ...(config.props ? Object.entries(config.props) : []),
+                  ],
+                  name
+                ),
+              },
+            ];
           }
           const key = extendPath(group ?? "", name, "#");
           const fieldId = `${id.slice(12, 24)}${getIdFromString(key)}`;
@@ -257,8 +291,10 @@ function RenderElementWithProps({
   log("PROPS PROPS", resolvedProps);
 
   return (
-    <NoEditor>
-      <Component {...resolvedProps} />
-    </NoEditor>
+    <IdContextProvider id={id}>
+      <NoEditor>
+        <Component {...resolvedProps} />
+      </NoEditor>
+    </IdContextProvider>
   );
 }

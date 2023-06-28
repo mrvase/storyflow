@@ -10,6 +10,7 @@ import {
   StateToken,
   ClientSyntaxTree,
   Sorting,
+  NestedDocumentId,
 } from "@storyflow/shared/types";
 import { spreadImplicitArrays, compute } from "@storyflow/shared/calculate";
 import { SyntaxTree, SyntaxTreeRecord, GetFunctionData } from "./types";
@@ -64,24 +65,33 @@ filter([0, imp, 4, 5], [1, 2, 3]=1);
 parameters are: [[0, 1, 2, 3, 4, 5], [true, false, false]] (since square brackets spreads the implicit array from the import)
 */
 
+export type Importer<TType extends string, TValue> = {
+  type: TType;
+  value: TValue;
+};
+
 export type FolderFetch = {
   folder: NestedFolder;
   limit: number;
   sort?: Sorting[];
 };
 
-type Importer = FieldId | FolderFetch | ContextToken;
+type AnyImporter =
+  | Importer<"field", FieldId>
+  | Importer<"fetch", FolderFetch>
+  | Importer<"context", ContextToken>
+  | Importer<"nested", NestedDocumentId>;
 
 export type StateGetter = {
-  (id: Importer, options: { tree: true; external?: boolean }):
+  (importer: AnyImporter, options: { tree: true; external?: boolean }):
     | SyntaxTree
     | undefined;
-  (id: Importer, options: { tree: boolean; external?: boolean }):
+  (importer: AnyImporter, options: { tree: boolean; external?: boolean }):
     | SyntaxTree
     | ClientSyntaxTree
     | ValueArray
     | undefined;
-  (id: Importer, options: { tree?: undefined; external?: boolean }):
+  (importer: AnyImporter, options: { tree?: undefined; external?: boolean }):
     | ClientSyntaxTree
     | ValueArray
     | undefined;
@@ -122,7 +132,10 @@ const resolveChildren = (
                 index,
                 child.id as unknown as DocumentId
               );
-              return getState(fieldId, { external: false });
+              return getState(
+                { type: "field", value: fieldId },
+                { external: false }
+              );
             })
           : []; // not the case when resulting from select
 
@@ -130,10 +143,13 @@ const resolveChildren = (
         (el) => el !== undefined && (!Array.isArray(el) || el.length > 0)
       );
 
-      const state = getState(child.field, {
-        tree: hasArgs,
-        external: true,
-      });
+      const state = getState(
+        { type: "field", value: child.field },
+        {
+          tree: hasArgs,
+          external: true,
+        }
+      );
 
       if (state) {
         if (hasArgs) {
@@ -155,7 +171,10 @@ const resolveChildren = (
         acc.push([child]);
       }
     } else if (tokens.isContextToken(child)) {
-      const state = getState(child, { external: false });
+      const state = getState(
+        { type: "context", value: child },
+        { external: false }
+      );
       if (state) {
         acc.push(state);
       }
@@ -184,17 +203,17 @@ const resolveChildren = (
 export function calculate(
   node: SyntaxTree,
   getState: StateGetter,
-  options: { ignoreClientState: true }
+  options: { ignoreClientState: true; createActions?: boolean }
 ): ValueArray;
 export function calculate(
   node: SyntaxTree,
   getState: StateGetter,
-  options?: { ignoreClientState?: false }
+  options?: { ignoreClientState?: false; createActions?: boolean }
 ): ValueArray | ClientSyntaxTree;
 export function calculate(
   node: SyntaxTree,
   getState: StateGetter,
-  options?: { ignoreClientState?: boolean }
+  options?: { ignoreClientState?: boolean; createActions?: boolean }
 ): ValueArray | ClientSyntaxTree {
   const calculateNode = (
     node: SyntaxTree,
@@ -230,7 +249,36 @@ export function calculate(
 
     let values = children as ValueArray[];
 
-    if (node.type === "fetch") {
+    if (node.type === "insert" && options?.createActions) {
+      values = [
+        spreadImplicitArrays(values).reduce((acc: NestedDocument[], el) => {
+          if (tokens.isNestedFolder(el)) {
+            const state = getState(
+              {
+                type: "nested",
+                value: el.id,
+              },
+              {
+                external: true,
+              }
+            );
+            if (state) {
+              acc.push(
+                ...(state as NestedDocument[]).map(
+                  (values) =>
+                    ({
+                      values,
+                      action: "insert",
+                      folder: el.folder,
+                    } as any)
+                )
+              );
+            }
+          }
+          return acc;
+        }, []),
+      ];
+    } else if (node.type === "fetch") {
       const [limit, ...sort] = node.data as GetFunctionData<"fetch">;
 
       let docs = spreadImplicitArrays(values).reduce(
@@ -238,9 +286,12 @@ export function calculate(
           if (tokens.isNestedFolder(el)) {
             const state = getState(
               {
-                folder: el,
-                limit,
-                ...(sort.length ? { sort } : {}),
+                type: "fetch",
+                value: {
+                  folder: el,
+                  limit,
+                  ...(sort.length ? { sort } : {}),
+                },
               },
               {
                 external: true,
@@ -272,9 +323,12 @@ export function calculate(
         spreadImplicitArrays(
           spreadImplicitArrays(values).reduce((acc: ValueArray[], el) => {
             if (tokens.isNestedDocument(el)) {
-              const state = getState(computeFieldId(el.id, select), {
-                external: true,
-              });
+              const state = getState(
+                { type: "field", value: computeFieldId(el.id, select) },
+                {
+                  external: true,
+                }
+              );
 
               if (state) {
                 /*
@@ -323,10 +377,12 @@ export function calculateField(
   tree: SyntaxTree,
   getRecord: (id: DocumentId) => SyntaxTreeRecord | undefined
 ) {
-  const getter: StateGetter = (id, { external, tree }): any => {
-    if (typeof id === "object") {
+  const getter: StateGetter = (importer, { external, tree }): any => {
+    if (importer.type !== "field") {
       return [];
     }
+    const id = importer.value;
+
     const importedDocumentId = getDocumentId<DocumentId>(id);
 
     const externalRecord = getRecord(importedDocumentId);
@@ -350,10 +406,12 @@ export function calculateRootFieldFromRecord(
   fieldId: FieldId,
   record: SyntaxTreeRecord
 ) {
-  const getter: StateGetter = (id, { external, tree }): any => {
-    if (typeof id === "object") {
+  const getter: StateGetter = (importer, { external, tree }): any => {
+    if (importer.type !== "field") {
       return [];
     }
+    const id = importer.value;
+
     const value: SyntaxTree | undefined = record[id];
 
     if (!value) return;
@@ -373,69 +431,4 @@ export function calculateRootFieldFromRecord(
     );
   }
   return result;
-}
-
-const resolveClientChildren = (
-  children: ClientSyntaxTree["children"],
-  getState: (token: StateToken) => ValueArray[number],
-  calculateNode: (node: ClientSyntaxTree) => ValueArray[]
-) => {
-  let acc: ValueArray[] = [];
-
-  children.forEach((child) => {
-    if (isSyntaxTree(child)) {
-      // håndterer noget i paranteser
-      const result = calculateNode(child);
-      if (Array.isArray(result)) {
-        acc.push(...result);
-      } else {
-        acc.push(result);
-      }
-    } else if (tokens.isStateToken(child)) {
-      const state = getState(child);
-      acc.push([state]);
-    } else {
-      acc.push([child]);
-    }
-  });
-
-  return acc;
-};
-
-export function calculateClient(
-  node: ClientSyntaxTree,
-  getState: (token: StateToken) => ValueArray[number]
-): ValueArray {
-  const calculateNode = (node: ClientSyntaxTree): ValueArray[] => {
-    let values = resolveClientChildren(node.children, getState, calculateNode);
-
-    if (node.type === "fetch") {
-      // find out what to do here!
-      values = [];
-    } else if (node.type === "select") {
-      // and here
-      values = [];
-    } else if (node.type === "root") {
-      // do nothing
-    } else if (node.type === null) {
-      // brackets
-      values = [spreadImplicitArrays(values)];
-    } else if (node.type === "array") {
-      values = [[spreadImplicitArrays(values)]];
-    } else {
-      values = compute(
-        node.type as Exclude<
-          typeof node.type,
-          "select" | "fetch" | "array" | "root" | null
-        >,
-        values
-      );
-    }
-
-    return values;
-  };
-
-  const value = calculateNode(node);
-
-  return value.reduce((acc, cur) => [...acc, ...cur], []);
 }

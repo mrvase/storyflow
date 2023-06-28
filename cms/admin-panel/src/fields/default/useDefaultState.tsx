@@ -42,7 +42,7 @@ export function useDefaultStateCore(id: FieldId) {
     () =>
       calculateFn(initialValue, {
         record,
-        documentId: getDocumentId(rootId),
+        contextDocumentId: getDocumentId(rootId),
       })
   );
 
@@ -54,7 +54,7 @@ export function useDefaultStateCore(id: FieldId) {
       setValue(() =>
         calculateFn(tree, {
           record,
-          documentId: getDocumentId(rootId),
+          contextDocumentId: getDocumentId(rootId),
         })
       );
     },

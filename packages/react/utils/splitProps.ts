@@ -8,6 +8,8 @@ import {
   PropConfig,
   PropConfigRecord,
   PropGroup,
+  PropInput,
+  PropTypeKey,
   Transforms,
   ValueArray,
 } from "@storyflow/shared/types";
@@ -16,12 +18,7 @@ export const splitProps = (props: PropConfigRecord) => {
   const entries = Object.entries(props);
   const regularProps: [
     string,
-    (
-      | PropConfig<
-          "string" | "color" | "image" | "video" | "number" | "boolean" | "data"
-        >
-      | PropGroup
-    )
+    PropConfig<Exclude<PropTypeKey, "children">> | PropGroup | PropInput
   ][] = [];
   const childrenProps: [string, PropConfig<"children">][] = [];
   for (const [key, value] of entries) {

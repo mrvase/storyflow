@@ -99,25 +99,63 @@ export const getImportIds = (value: SyntaxTree, pool: SyntaxTreeRecord) => {
   return imports;
 };
 
-export const getChildrenDocuments = (value: SyntaxTree | ClientSyntaxTree) => {
+export function getChildrenDocuments(
+  value: SyntaxTree | ClientSyntaxTree,
+  type: "field"
+): NestedField[];
+export function getChildrenDocuments(
+  value: SyntaxTree | ClientSyntaxTree,
+  type: "document"
+): NestedDocument[];
+export function getChildrenDocuments(
+  value: SyntaxTree | ClientSyntaxTree,
+  type: "folder"
+): NestedFolder[];
+export function getChildrenDocuments(
+  value: SyntaxTree | ClientSyntaxTree,
+  type: "element"
+): NestedElement[];
+export function getChildrenDocuments(
+  value: SyntaxTree | ClientSyntaxTree
+): (NestedField | NestedElement | NestedFolder | NestedDocument)[];
+export function getChildrenDocuments(
+  value: SyntaxTree | ClientSyntaxTree,
+  type?: "element" | "document" | "field" | "folder"
+) {
   const children = new Set<
     NestedField | NestedElement | NestedFolder | NestedDocument
   >();
 
-  const traverseNode = (node: SyntaxTree) => {
-    node.children.forEach((token) => {
+  const tester = {
+    default: tokens.isNestedEntity,
+    element: tokens.isNestedElement,
+    document: tokens.isNestedDocument,
+    field: tokens.isNestedField,
+    folder: tokens.isNestedFolder,
+  }[type ?? "default"];
+
+  const traverseNode = (node: SyntaxTree | ClientSyntaxTree) => {
+    const check = (
+      token:
+        | SyntaxTree["children"][number]
+        | ClientSyntaxTree["children"][number]
+    ) => {
       if (isSyntaxTree(token)) {
         traverseNode(token);
-      } else if (tokens.isNestedEntity(token) && isNestedDocumentId(token.id)) {
+      } else if (Array.isArray(token)) {
+        token.forEach(check);
+      } else if (tester(token) && isNestedDocumentId(token.id)) {
         children.add(token);
       }
-    });
+    };
+
+    node.children.forEach(check);
   };
 
   traverseNode(value);
 
   return Array.from(children);
-};
+}
 
 export type FieldGraph = {
   imports: Map<FieldId, FieldId[]>;

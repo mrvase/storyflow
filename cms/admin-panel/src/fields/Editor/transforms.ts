@@ -85,108 +85,58 @@ export const $isTextBlockNode = (
 ): node is ParagraphNode | HeadingNode =>
   $isHeadingNode(node) || $isParagraphNode(node);
 
-const $getTextContent = (node: LexicalNode, endAt?: string) => {
-  const recursivelyGetTextContent = (
-    node: LexicalNode,
-    prevContent: string[] = []
-  ): { content: string[]; ended: boolean } => {
-    if (node.getKey() === endAt) {
-      return { content: [], ended: true };
-    }
-    let content: string[] = [];
-    if ($isElementNode(node)) {
-      const children = node.getChildren?.();
-      if (children) {
-        for (let i = 0; i < children.length; i++) {
-          const child = children[i];
-          if (child.getKey() === endAt) {
-            return { content, ended: true };
-          }
-          if (
-            i > 0 &&
-            $isTextBlockNode(child) &&
-            $isTextBlockNode(children[i - 1])
-          ) {
-            content.push("\n");
-          }
-          const { content: newContent, ended } = recursivelyGetTextContent(
-            child,
-            content
-          );
-          if ($isHeadingNode(child) && newContent.length > 0) {
-            const level = parseInt(child.__tag.slice(1), 10);
-            content.push("#".repeat(level) + " ");
-          }
-          content.push(...newContent);
-          if (ended) {
-            return {
-              ended: true,
-              content,
-            };
-          }
-        }
-      }
-    } else if ($isPromptNode(node) || $isAICompletionNode(node)) {
-      // do nothing
-    } else if ($isTextNode(node)) {
-      let text = node.getTextContent();
-      let last = prevContent[prevContent.length - 1];
-      if (typeof last === "string") {
-        const stars = matchNonEscapedCharacter(last, "\\*+$")?.[0]?.value
-          ?.length;
-        const formerIsItalic = stars === 1 || stars === 3;
-        const formerIsBold = stars === 2 || stars === 3;
-        if (node.hasFormat("bold")) {
-          if (formerIsBold) {
-            last = last.slice(0, -2);
-          } else {
-            text = `**${text}`;
-          }
-          text = `${text}**`;
-        }
-        if (node.hasFormat("italic")) {
-          if (formerIsItalic) {
-            last = last.slice(0, -1);
-          } else {
-            text = `*${text}`;
-          }
-          text = `${text}*`;
-        }
-        prevContent[prevContent.length - 1] = last;
-      } else {
-        if (node.hasFormat("bold")) {
-          text = `**${text}**`;
-        }
-        if (node.hasFormat("italic")) {
-          text = `*${text}*`;
-        }
-      }
-      content.push(text);
-    } else if ($isLineBreakNode(node)) {
-      content.push("\n");
-    } else if ($isTokenStreamNode(node)) {
-      content.push(node.getTextContent());
-    }
-    return {
-      content,
-      ended: false,
-    };
-  };
-
-  let { content } = recursivelyGetTextContent(node);
-
-  return content.join("");
+type StreamContent = {
+  type: "stream";
+  value: TokenStream;
+  returnValue: TokenStream;
 };
 
-export const $getComputation = (node: LexicalNode, endAt?: string) => {
+type TextContent = {
+  type: "text";
+  value: string[];
+  returnValue: string;
+};
+
+type Content = TextContent | StreamContent;
+
+type Methods<TValue extends TokenStream | string[]> = {
+  getContent: (node: LexicalNode) => TValue;
+  concat: (arg: TValue, ...args: TValue[]) => TValue;
+  linebreak: TValue[number];
+};
+
+const streamMethods: Methods<TokenStream> = {
+  getContent: (node: LexicalNode) => node.getTokenStream(),
+  concat: (arg: TokenStream, ...args: TokenStream[]) =>
+    tools.concat(arg, ...args),
+  linebreak: { n: true },
+};
+
+const textMethods: Methods<string[]> = {
+  getContent: (node: LexicalNode) => [node.getTextContent()],
+  concat: (arg: string[], ...args: string[][]) => arg.concat(...args),
+  linebreak: "\n",
+};
+
+const $getNodeContent = <TContent extends Content>(
+  node: LexicalNode,
+  type: TContent["type"],
+  endAt?: string
+): TContent["returnValue"] => {
+  type TValue = TContent["value"];
+
+  const methods = (
+    type === "stream" ? streamMethods : textMethods
+  ) as Methods<TValue>;
+
   const recursivelyGetContent = (
     node: LexicalNode,
-    prevContent: TokenStream = []
-  ): { content: TokenStream; ended: boolean } => {
+    prevContent: TValue = []
+  ): { content: TValue; ended: boolean } => {
     if (node.getKey() === endAt) {
       return { content: [], ended: true };
     }
-    let content: TokenStream = [];
+    let content: TValue = [];
     if ($isElementNode(node)) {
       const children = node.getChildren?.();
       if (children) {
@@ -200,7 +150,7 @@ export const $getComputation = (node: LexicalNode, endAt?: string) => {
             $isTextBlockNode(child) &&
             $isTextBlockNode(children[i - 1])
           ) {
-            content = tools.concat(content, [{ n: true }]);
+            content = methods.concat(content, [methods.linebreak]);
           }
           const { content: newContent, ended } = recursivelyGetContent(
             child,
@@ -208,9 +158,9 @@ export const $getComputation = (node: LexicalNode, endAt?: string) => {
           );
           if ($isHeadingNode(child) && newContent.length > 0) {
             const level = parseInt(child.__tag.slice(1), 10);
-            content = tools.concat(content, [`${"#".repeat(level)} `]);
+            content = methods.concat(content, [`${"#".repeat(level)} `]);
           }
-          content = tools.concat(content, newContent);
+          content = methods.concat(content, newContent);
           if (ended) {
             return {
               ended: true,
@@ -219,12 +169,12 @@ export const $getComputation = (node: LexicalNode, endAt?: string) => {
           }
         }
       }
-      if ($isBlockNode(node)) {
+      if ($isBlockNode(node) && type === "stream") {
         const func = node.__func;
-        content = tools.concat([{ "(": true }], content, [func]);
+        content = methods.concat([{ "(": true }], content, [func]);
       }
     } else if ($isPromptNode(node) || $isAICompletionNode(node)) {
-      content = node.getTokenStream();
+      content = methods.getContent(node);
     } else if ($isTextNode(node)) {
       let text = node.getTextContent();
       let last = prevContent[prevContent.length - 1];
@@ -262,25 +212,27 @@ export const $getComputation = (node: LexicalNode, endAt?: string) => {
     } else if ($isLineBreakNode(node)) {
       content = ["\n"];
     } else if ($isTokenStreamNode(node)) {
-      content = node.getTokenStream();
+      content = methods.getContent(node);
     }
     return { content, ended: false };
   };
 
   let { content } = recursivelyGetContent(node);
 
-  return content;
+  return type === "text" ? content.join("") : content;
+};
+
+const $getTextContent = (node: LexicalNode, endAt?: string) => {
+  return $getNodeContent<TextContent>(node, "text", endAt);
+};
+
+export const $getComputation = (node: LexicalNode, endAt?: string) => {
+  return $getNodeContent<StreamContent>(node, "stream", endAt);
 };
 
 export const $getContentLength = (node: LexicalNode, endAt?: string) => {
   return $getTextContent(node, endAt).length;
 };
-
-/*
-const getTextContent = (editor: LexicalEditor) => {
-  return editor.getEditorState().read(() => $getTextContent($getRoot()));
-};
-*/
 
 export const $getStartIndexFromNodeKey = (key: string): number => {
   const textBefore = $getContentLength($getRoot(), key);

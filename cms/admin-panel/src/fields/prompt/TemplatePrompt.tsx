@@ -33,9 +33,7 @@ export function TemplatePrompt({ prompt }: { prompt: string }) {
   const { documents: templates = [] } = useDocumentList(TEMPLATE_FOLDER);
 
   const path = usePath();
-  const dataFieldId = path.slice(-1)[0];
-
-  console.log("ELEMENT ID", dataFieldId);
+  const dataFieldId = path.slice(-1)[0] as FieldId;
 
   const editor = useEditorContext();
   const { configs } = useAppConfig();
@@ -47,7 +45,7 @@ export function TemplatePrompt({ prompt }: { prompt: string }) {
       });
       push(
         createTransaction((t) =>
-          t.target(dataFieldId as FieldId).toggle({
+          t.target(dataFieldId).toggle({
             name: "template",
             value: id === null ? null : getRawDocumentId(id),
           })

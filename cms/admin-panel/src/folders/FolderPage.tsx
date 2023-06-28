@@ -579,7 +579,7 @@ function RefreshButton({
               if (isError(paths)) {
                 return;
               }
-              const result = await appMutate.app.revalidate(paths, {
+              const result = await appMutate.revalidate(paths, {
                 baseURL: config.baseURL,
               });
               if (!isError(result)) {

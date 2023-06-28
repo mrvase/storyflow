@@ -37,6 +37,7 @@ export const SIGNATURES = {
   to_file: ["til fil"],
   to_boolean: ["til boolean"],
   to_color: ["til farve"],
+  insert: ["indsæt"],
   /*
   add: ["number", "+ (plus)"],
   subtract: ["number", "- (minus)"],

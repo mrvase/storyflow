@@ -16,10 +16,10 @@ export const Content = ({
   content,
   style,
   date,
+  input,
   useServerContext,
 }: Props<typeof props>) => {
   const result = useServerContext!(ContentContext);
-  console.log("DATE", date);
 
   return (
     <cms.div
@@ -31,6 +31,8 @@ export const Content = ({
           : undefined,
       }}
     >
+      {input.label}
+      <cms.input name={input.name} className="bg-gray-100 p-3" />
       {Intl.DateTimeFormat("da-DK", {
         dateStyle: "long",
         ...([date.getHours(), date.getMinutes(), date.getSeconds()].some(
@@ -40,6 +42,7 @@ export const Content = ({
           : {}),
       }).format(date)}
       {content}
+      <button type="submit">Submit</button>
     </cms.div>
   );
 };
@@ -69,6 +72,10 @@ const props = {
         ],
       },
     },
+  },
+  input: {
+    label: "Input",
+    type: "input",
   },
   date: {
     type: "date",

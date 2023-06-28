@@ -8,7 +8,6 @@ import { usePush } from "../../collab/CollabContext";
 import { ContentEditable } from "../../editor/react/ContentEditable";
 import Editor from "../Editor/Editor";
 import { getPreview } from "./getPreview";
-import { Placeholder } from "./Placeholder";
 import { PromptButton } from "../prompt/PromptButton";
 import { TemplateHeader } from "./TemplateHeader";
 import { tools } from "../../operations/stream-methods";
@@ -17,7 +16,6 @@ import { useEditorContext } from "../../editor/react/EditorProvider";
 import { $getRoot, BLUR_COMMAND, COMMAND_PRIORITY_EDITOR } from "lexical";
 import { mergeRegister } from "../../editor/utils/mergeRegister";
 import { Overlay } from "../prompt/Overlay";
-import { Option } from "../prompt/Option";
 import { useMathMode } from "../Editor/useMathMode";
 import { Bars2Icon, VariableIcon } from "@heroicons/react/24/outline";
 import { FieldTemplateIdContext } from "./FieldTemplateContext";
@@ -26,8 +24,8 @@ import {
   StreamOperation,
   TransformOperation,
 } from "../../operations/actions";
-import { SpliceOperation, Transaction } from "@storyflow/collab/types";
-import { createTransaction, isSpliceOperation } from "@storyflow/collab/utils";
+import { Transaction } from "@storyflow/collab/types";
+import { createTransaction } from "@storyflow/collab/utils";
 import { PushFunction } from "@storyflow/collab/Queue";
 import { HeadingNode } from "../../editor/react/HeadingNode";
 import nodes from "../Editor/decorators/nodes";
@@ -36,73 +34,34 @@ import { LayoutElementCircularImport } from "../Editor/decorators/LayoutElementN
 import { FolderCircularImport } from "../Editor/decorators/FolderNode";
 import useIsFocused from "../../utils/useIsFocused";
 import { useIsEmpty } from "../../editor/react/useIsEmpty";
-
-const isTextInsert = (
-  transaction: Transaction<FieldTransactionEntry>
-): transaction is [[FieldId, [[number, number, [string]]]]] => {
-  if (!isSingleSpliceTransaction(transaction)) return false;
-  const op = transaction[0][1][0];
-  return (
-    Array.isArray(op[2]) &&
-    op[2].length === 1 &&
-    typeof op[2][0] === "string" &&
-    !op[1]
-  );
-};
-
-const isTextDeletion = (
-  transaction: Transaction<FieldTransactionEntry>
-): transaction is [[FieldId, [[number, number]]]] => {
-  if (!isSingleSpliceTransaction(transaction)) return false;
-  const op = transaction[0][1][0];
-  return Boolean((!op[2] || !op[2].length) && op[1]);
-};
-
-const isSingleSpliceTransaction = (
-  value: Transaction<FieldTransactionEntry>
-): value is [[FieldId, [SpliceOperation]]] => {
-  return (
-    value.length === 1 &&
-    value[0][1].length === 1 &&
-    isSpliceOperation(value[0][1][0])
-  );
-};
-
-const createObjectKey = (() => {
-  const ids = new WeakMap();
-
-  return function createObjectKey(object: object) {
-    let key = ids.get(object);
-    if (!key) {
-      key = Math.random().toString(36).slice(2, 10);
-      ids.set(object, key);
-    }
-    return key;
-  };
-})();
-
-const isAdjacent = (
-  prev: Transaction<FieldTransactionEntry>,
-  next: Transaction<FieldTransactionEntry>
-): boolean => {
-  if (!isSingleSpliceTransaction(prev) || !isSingleSpliceTransaction(next)) {
-    return false;
-  }
-
-  const prevOp = prev[0][1][0];
-  const nextOp = next[0][1][0];
-
-  const prevEndingIndex = prevOp[0] + tools.getLength(prevOp[2] ?? []); // - (prevOp[1] ?? 0);
-  const nextStartingIndex = nextOp[0] + (nextOp[1] ?? 0);
-
-  return prevEndingIndex === nextStartingIndex;
-};
+import { createObjectKeyMap } from "../../utils/createObjectKey";
+import { isAdjacent, isTextInsert, isTextDeletion } from "./merge";
+import { FieldProps } from "../types";
+import { ExtendPath } from "../Path";
+import { PreloadFieldState } from "./PreloadFieldState";
+import { useAttributesContext } from "../Attributes";
 
 CreatorCircularImport.DefaultField = DefaultField;
 LayoutElementCircularImport.DefaultField = DefaultField;
 FolderCircularImport.DefaultField = DefaultField;
 
 const allNodes = [HeadingNode, ...nodes];
+
+const objectKeys = createObjectKeyMap();
+
+export function DefaultFieldRoot({ id }: FieldProps) {
+  const [currentProp] = useAttributesContext();
+  const currentId = currentProp ?? id;
+
+  return (
+    <>
+      <PreloadFieldState id={id} />
+      <ExtendPath id={currentId} type="field">
+        <DefaultField key={currentId} id={currentId} showPromptButton />
+      </ExtendPath>
+    </>
+  );
+}
 
 export function DefaultField({
   id,
@@ -207,7 +166,7 @@ export function DefaultField({
         />
       )}
       <Editor
-        key={createObjectKey(initialEditorValue)}
+        key={objectKeys.get(initialEditorValue)}
         target={target}
         push={mergePush}
         tracker={tracker}
@@ -280,30 +239,6 @@ function BottomSelectionArea() {
         editor.update(() => {
           editor.getRootElement()?.focus();
           $getRoot().select();
-          /*
-          if ($isTextBlockNode(node)) {
-          } else if (node) {
-            const offset =
-              root
-                .getChildren()
-                .findIndex((el) => el.getKey() === node!.getKey()) + 1;
-            console.log("HERE", node, offset);
-            if (offset < 1) return;
-            const selection = $createRangeSelection(
-              {
-                node: root,
-                offset,
-                type: "element",
-              },
-              {
-                node: root,
-                offset,
-                type: "element",
-              }
-            );
-            $setSelection(selection);
-          }
-          */
         });
       }}
     />

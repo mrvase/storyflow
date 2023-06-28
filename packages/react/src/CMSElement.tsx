@@ -1,5 +1,6 @@
 import * as React from "react";
 import { useRenderContext } from "./RenderContext";
+import { Form, Input } from "./Input";
 
 type RegularProps<Type extends keyof JSX.IntrinsicElements> =
   React.PropsWithoutRef<React.ComponentProps<Type>> & React.RefAttributes<any>;
@@ -12,9 +13,12 @@ type Component<Props> = React.ForwardRefExoticComponent<
     : Props
 >;
 
-type CMSComponentType = {
-  [K in keyof JSX.IntrinsicElements]: Component<RegularProps<K>>;
-} & {
+type CMSComponentType = Omit<
+  {
+    [K in keyof JSX.IntrinsicElements]: Component<RegularProps<K>>;
+  },
+  "form" | "input"
+> & { form: typeof Form; input: typeof Input } & {
   element: Component<{ as: keyof JSX.IntrinsicElements }>;
 };
 
@@ -27,11 +31,18 @@ export const CMSElement = ({ children }: { children: React.ReactElement }) => {
   return React.cloneElement(children, props);
 };
 
-export const cms = new Proxy({} as CMSComponentType, {
-  get(target, prop: string) {
-    if (!(prop in target)) {
-      target[prop as "div"] = React.forwardRef<any, React.ComponentProps<any>>(
-        (props, ref) => {
+export const cms = new Proxy(
+  {
+    form: Form,
+    input: Input,
+  } as CMSComponentType,
+  {
+    get(target, prop: string) {
+      if (!(prop in target)) {
+        target[prop as "div"] = React.forwardRef<
+          any,
+          React.ComponentProps<any>
+        >((props, ref) => {
           const builderCtx = useRenderContextServer?.();
           const { as, children, contentEditable, ...rest } =
             builderCtx?.(props) ?? props;
@@ -54,9 +65,9 @@ export const cms = new Proxy({} as CMSComponentType, {
               children={children}
             />
           );
-        }
-      );
-    }
-    return target[prop as "div"];
-  },
-});
+        });
+      }
+      return target[prop as "div"];
+    },
+  }
+);

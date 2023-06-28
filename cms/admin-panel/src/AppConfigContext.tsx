@@ -55,7 +55,7 @@ export const fetchConfigs = async (apps: AppReference[]) => {
   const fetchedConfigs = await Promise.all(
     apps.map(async ({ name, baseURL }) => {
       const normalizedBaseURL = normalizeProtocol(baseURL);
-      const config = await appQuery.app.config(undefined, {
+      const config = await appQuery.config(undefined, {
         baseURL: normalizedBaseURL,
       });
 

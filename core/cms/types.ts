@@ -115,7 +115,8 @@ export type FieldType2 =
   | "video"
   | "file"
   | "children"
-  | "data";
+  | "data"
+  | "action";
 
 export type FieldConfig = {
   id: FieldId;

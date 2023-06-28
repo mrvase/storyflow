@@ -5,21 +5,6 @@ import { ExtendPath } from "../Path";
 import type { FieldProps } from "../types";
 
 export function DefaultFieldRoot({ id }: FieldProps) {
-  /*
-  const collab = useDocumentCollab();
-  const { record } = useDocumentPageContext();
-
-  React.useLayoutEffect(() => {
-    // MUST be useLayoutEffect to run before children useEffects that use the queue
-    collab
-      .getOrAddQueue<FieldOperation>(getDocumentId(id), getRawFieldId(id), {
-        transform: createTokenStreamTransformer(id, record),
-        mergeableNoop: ["", []],
-      })
-      .initialize(version, history ?? []);
-  }, [collab, version]);
-  */
-
   const [currentProp] = useAttributesContext();
   const currentId = currentProp ?? id;
 

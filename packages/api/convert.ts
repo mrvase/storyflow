@@ -27,7 +27,7 @@ export const getSyntaxTreeRecord = (
 };
 
 export const parseDocument = (raw: DBDocumentRaw): DBDocument => {
-  const { _id, folder, ids, cached, fields, ...rest } = raw;
+  const { _id, folder, cached, fields, ...rest } = raw;
   const id = unwrapObjectId(raw._id);
   return {
     _id: id,
@@ -44,4 +44,13 @@ export const parseFolder = (raw: DBFolderRaw): DBFolder => {
     ...(template && { template: unwrapObjectId(template) }),
     ...rest,
   };
+};
+
+export const getUrlParams = (url: string): Record<string, string[]> => {
+  return Object.fromEntries(
+    url
+      .split("/")
+      .reverse()
+      .map((el, index) => [`param${index}`, [el]])
+  );
 };

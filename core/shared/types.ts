@@ -32,6 +32,12 @@ export type NestedFolder = {
   inline?: true;
 };
 
+export type NestedAction = {
+  id: NestedDocumentId;
+  folder: FolderId;
+  inline?: true;
+};
+
 export type NestedDocument = {
   id: DocumentId | NestedDocumentId;
   inline?: true;
@@ -111,6 +117,7 @@ export type FunctionDataRecord = {
   to_file: true;
   to_boolean: true;
   to_color: true;
+  insert: true;
 };
 
 export type Operator = (typeof operators)[number];
@@ -172,9 +179,12 @@ type DefaultPropTypes = {
   children: (string | number | Element)[];
   date: Date;
   data: any[];
+  action: string;
 };
 
-type GetPropType<T extends keyof DefaultPropTypes> = T extends keyof PropTypes
+export type PropTypeKey = keyof DefaultPropTypes;
+
+type GetPropType<T extends PropTypeKey> = T extends keyof PropTypes
   ? PropTypes[T]
   : DefaultPropTypes[T];
 
@@ -208,10 +218,29 @@ export type PropGroup = {
   searchable?: boolean;
 };
 
-export type PropConfigRecord = Record<string, PropConfig | PropGroup>;
+export type PropInput = {
+  type: "input";
+  label: string;
+  props?: Record<
+    string,
+    PropConfig<Exclude<keyof DefaultPropTypes, "children">>
+  >;
+};
 
-type Type<T extends PropConfig | PropGroup> = T extends { type: "group" }
+export type PropConfigRecord = Record<
+  string,
+  PropConfig | PropGroup | PropInput
+>;
+
+type Type<T extends PropConfig | PropGroup | PropInput> = T extends {
+  type: "group";
+}
   ? NestedProps<T["props"]>
+  : T extends { type: "input" }
+  ? {
+      name: string;
+      label: string;
+    } & (T extends { props: {} } ? NestedProps<T["props"]> : {})
   : T["type"] extends keyof DefaultPropTypes
   ? GetPropType<T["type"]>
   : never;
@@ -239,7 +268,9 @@ type Placeholders<T extends PropConfigRecord> = string extends keyof T
         : Placeholder<Type<T[Key]>>;
     };
 
-type PartialType<T extends PropConfig | PropGroup> = T extends { type: "group" }
+type PartialType<T extends PropConfig | PropGroup | PropInput> = T extends {
+  type: "group";
+}
   ? PartialProps<T["props"]>
   : T["type"] extends keyof DefaultPropTypes
   ? GetPropType<T["type"]>

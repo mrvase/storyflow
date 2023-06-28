@@ -3,6 +3,7 @@ import { useEditorContext } from "../../editor/react/EditorProvider";
 import { useIsEmpty } from "../../editor/react/useIsEmpty";
 import { useIsFocused } from "../../editor/react/useIsFocused";
 
+/*
 export function Placeholder() {
   const editor = useEditorContext();
   const isFocused = useIsFocused();
@@ -13,3 +14,4 @@ export function Placeholder() {
     </div>
   ) : null;
 }
+*/

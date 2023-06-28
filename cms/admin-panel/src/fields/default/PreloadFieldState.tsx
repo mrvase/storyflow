@@ -25,6 +25,7 @@ import { useDefaultState } from "./useDefaultState";
 import { splitTransformsAndRoot } from "@storyflow/cms/transform";
 import { useLoopTemplate } from "./LoopTemplateContext";
 import { extendPath } from "../../utils/extendPath";
+import { getPropIds } from "../../utils/flattenProps";
 
 const noTemplate: FieldConfig[] = [];
 
@@ -108,27 +109,7 @@ function PreloadNestedState({
     const props = config?.props ?? {};
 
     ids = React.useMemo(() => {
-      const keyId = computeFieldId(entity.id, getIdFromString("key"));
-
-      return Object.entries(props).reduce(
-        (acc: FieldId[], [name, prop]) => {
-          if (prop.type === "group") {
-            const nestedIds = Object.entries(prop.props).map(([innerName]) => {
-              const id = computeFieldId(
-                entity.id,
-                getIdFromString(extendPath(name, innerName, "#"))
-              );
-              return id;
-            });
-            acc.push(...nestedIds);
-          } else {
-            const id = computeFieldId(entity.id, getIdFromString(name));
-            acc.push(id);
-          }
-          return acc;
-        },
-        [keyId] as FieldId[]
-      );
+      return getPropIds(props, entity.id);
     }, [props, record]);
 
     if (entity.element === "Loop") {

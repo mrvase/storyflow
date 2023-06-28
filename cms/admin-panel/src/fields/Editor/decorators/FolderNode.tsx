@@ -8,7 +8,7 @@ import {
   NestedDocumentId,
   FieldId,
 } from "@storyflow/shared/types";
-import type { SyntaxTreeRecord } from "@storyflow/cms/types";
+import type { FieldConfig, SyntaxTreeRecord } from "@storyflow/cms/types";
 import { FolderIcon } from "@heroicons/react/24/outline";
 import { useTemplate } from "../../default/useFieldTemplate";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
@@ -21,6 +21,7 @@ import {
 import { useFieldTemplateId } from "../../default/FieldTemplateContext";
 import { EditorFocusProvider } from "../../../editor/react/useIsFocused";
 import { useFolder } from "../../../folders/FoldersContext";
+import { FieldRestrictionsContext } from "../../FieldIdContext";
 
 export const FolderCircularImport = {
   DefaultField: null as React.FC<{
@@ -45,9 +46,8 @@ function Decorator({
   const selectClick = React.useRef(false);
 
   let templateId = useFieldTemplateId();
-  const template = useTemplate(templateId);
 
-  const hasTemplate = Boolean(template);
+  const hasTemplate = Boolean(templateId);
 
   const color = cl(
     "bg-gradient-to-b from-pink-100 to-pink-100 dark:from-pink-800 dark:to-pink-900 dark:text-pink-200",
@@ -56,7 +56,10 @@ function Decorator({
       "child:divide-x child:divide-pink-200 child:dark:divide-pink-800"
   );
 
-  let docs: (NestedDocument & { record: SyntaxTreeRecord })[] = [];
+  const template = useTemplate(templateId);
+
+  const getFieldConfig = (id: FieldId) =>
+    template?.find((field) => field.id === id);
 
   const folder = useFolder(value.folder);
 
@@ -96,7 +99,12 @@ function Decorator({
             </div>
             <div className="px-2 shrink-0">{folder.label}</div>
             <div className="pl-2">
-              <Attributes entity={value} hideAsDefault color="red" />
+              <Attributes
+                entity={value}
+                templateId={folder.template}
+                hideAsDefault
+                color="red"
+              />
             </div>
           </div>
           {/*docs.length === 0 && (
@@ -123,10 +131,34 @@ function Decorator({
             })}
           </div>
         ))*/}
-          <NestedDefaultField documentId={value.id} />
+          <FieldSpecification props={template}>
+            <NestedDefaultField documentId={value.id} />
+          </FieldSpecification>
         </div>
       </EditorFocusProvider>
     </AttributesProvider>
+  );
+}
+
+function FieldSpecification({
+  props,
+  children,
+}: {
+  props?: FieldConfig[];
+  children: React.ReactNode;
+}) {
+  const [propId] = useAttributesContext();
+
+  if (!propId) {
+    return <>{children}</>;
+  }
+
+  const config = props?.find((el) => el.id === propId)!;
+
+  return (
+    <FieldRestrictionsContext.Provider value={config?.type2 ?? null}>
+      {children}
+    </FieldRestrictionsContext.Provider>
   );
 }
 

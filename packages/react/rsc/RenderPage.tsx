@@ -32,6 +32,7 @@ import {
   resolveStatefulProp,
   splitProps,
 } from "../utils/splitProps";
+import { IdContextProvider } from "../src/IdContext";
 
 type ComponentContext = {
   element: symbol;
@@ -261,6 +262,9 @@ function RenderElementWithProps({
   index: number;
   parentOptions?: ConfigRecord;
 }) {
+  const getFieldId = (key: string) =>
+    `${id.slice(12, 24)}${getIdFromString(key)}`;
+
   const resolveProps = (props: PropConfigRecord, group: string = "") => {
     const [regularEntries, childrenEntries] = splitProps(props);
     const regularProps = Object.fromEntries(
@@ -269,8 +273,30 @@ function RenderElementWithProps({
           return [name, resolveProps(config.props, name)];
         }
 
-        const key = extendPath(group, name, "#");
-        const fieldId = `${id.slice(12, 24)}${getIdFromString(key)}`;
+        if (config.type === "input") {
+          const labelFieldId = getFieldId(extendPath(name, "label", "#"));
+          const label = resolveStatefulProp(
+            record[labelFieldId] ?? [],
+            ctx.loop
+          );
+
+          return [
+            name,
+            {
+              name,
+              ...resolveProps(
+                { label: { type: "string", label: "Label" }, ...config.props },
+                name
+              ),
+            },
+          ];
+        }
+
+        const fieldId = getFieldId(extendPath(group, name, "#"));
+
+        if (config.type === "action") {
+          return [name, fieldId];
+        }
 
         const prop = resolveStatefulProp(record[fieldId] ?? [], ctx.loop);
 
@@ -339,7 +365,11 @@ function RenderElementWithProps({
 
   const resolvedProps = resolveProps(props);
 
-  return <Component {...resolvedProps} />;
+  return (
+    <IdContextProvider id={id}>
+      <Component {...resolvedProps} />
+    </IdContextProvider>
+  );
 }
 
 export const RenderPage = <T extends LibraryConfigRecord>({

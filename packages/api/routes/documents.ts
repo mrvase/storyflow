@@ -33,6 +33,35 @@ import { copyRecord } from "@storyflow/cms/copy-record-async";
 import { getSyntaxTreeEntries, isSyntaxTree } from "@storyflow/cms/syntax-tree";
 import { tokens } from "@storyflow/cms/tokens";
 import { calculate } from "@storyflow/cms/calculate-server";
+import { Db } from "mongodb";
+
+export const createDocumentIdGenerator = (db: Db, batchSize: number) => {
+  const ids: number[] = [];
+
+  const fetchIds = async () => {
+    const counter = await db
+      .collection<{ name: string; counter: number }>("counters")
+      .findOneAndUpdate({ name: "id" }, { $inc: { counter: batchSize } });
+    const number = (counter.value ?? { counter: 0 }).counter;
+    const first = number + USER_DOCUMENT_OFFSET + 1;
+    ids.push(...Array.from({ length: batchSize - 1 }, (_, i) => first + 1 + i));
+    return first;
+  };
+
+  async function generateDocumentId(): Promise<DocumentId>;
+  async function generateDocumentId(
+    documentId: DocumentId
+  ): Promise<NestedDocumentId>;
+  async function generateDocumentId(
+    documentId?: DocumentId
+  ): Promise<DocumentId | NestedDocumentId> {
+    const number = ids.pop() ?? (await fetchIds());
+    if (documentId) return createDocumentId(number, documentId);
+    return createDocumentId(number);
+  }
+
+  return generateDocumentId;
+};
 
 export const documents = (config: StoryflowConfig) => {
   const dbName = undefined; // config.workspaces[0].db;
@@ -197,33 +226,8 @@ export const documents = (config: StoryflowConfig) => {
         // update versions
         const versions = Object.assign(doc.versions, input.versions);
 
-        const ids: number[] = [];
-
         const size = input.rows.length;
-
-        const fetchIds = async () => {
-          const counter = await db
-            .collection<{ name: string; counter: number }>("counters")
-            .findOneAndUpdate({ name: "id" }, { $inc: { counter: size } });
-          const number = (counter.value ?? { counter: 0 }).counter;
-          const first = number + USER_DOCUMENT_OFFSET + 1;
-          ids.push(
-            ...Array.from({ length: size - 1 }, (_, i) => first + 1 + i)
-          );
-          return first;
-        };
-
-        async function generateDocumentId(): Promise<DocumentId>;
-        async function generateDocumentId(
-          documentId: DocumentId
-        ): Promise<NestedDocumentId>;
-        async function generateDocumentId(
-          documentId?: DocumentId
-        ): Promise<DocumentId | NestedDocumentId> {
-          const number = ids.pop() ?? (await fetchIds());
-          if (documentId) return createDocumentId(number, documentId);
-          return createDocumentId(number);
-        }
+        const generateDocumentId = createDocumentIdGenerator(db, size);
 
         const sharedRecord = record;
 

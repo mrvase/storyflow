@@ -27,7 +27,11 @@ import type { TokenStream } from "../../operations/types";
 import PromptNode, { $isPromptNode } from "../Editor/decorators/PromptNode";
 import { $replaceWithBlocks } from "../Editor/insertComputation";
 import { $createBlocksFromStream } from "../Editor/transforms";
-import { useFieldOptions, useFieldRestriction } from "../FieldIdContext";
+import {
+  useActionFieldId,
+  useFieldOptions,
+  useFieldRestriction,
+} from "../FieldIdContext";
 import { ElementPrompt } from "./ElementPrompt";
 import { FilePrompt } from "./FilePrompt";
 import { OptionEventsPlugin, Options } from "./OptionsContext";
@@ -41,6 +45,7 @@ import { HoldActions } from "./useRestorableSelection";
 import { $exitPromptNode, $getPromptNode } from "./utils";
 import { FunctionPrompt } from "./FunctionPrompt";
 import { AIPrompt } from "./AIPrompt";
+import { FormPrompt } from "./FormPrompt";
 
 const panes = [
   {
@@ -130,6 +135,7 @@ export function PromptOverlay({
   }, [editor]);
   */
   const restrictTo = useFieldRestriction();
+  const actionFieldId = useActionFieldId();
 
   React.useEffect(() => {
     return mergeRegister(
@@ -315,6 +321,13 @@ export function PromptOverlay({
           <>
             {restrictTo === "children" && (
               <ParagraphStylePrompt prompt={prompt} />
+            )}
+            {actionFieldId && (
+              <FormPrompt
+                actionFieldId={actionFieldId}
+                prompt={prompt}
+                replacePromptWithStream={replacePromptWithStream}
+              />
             )}
             {restrictTo === "data" && <TemplatePrompt prompt={prompt} />}
             <TokenPrompt

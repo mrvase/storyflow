@@ -205,9 +205,9 @@ export function useDocumentList(
     );
   };
 
-  const { data, error } = useImmutableQuery(getPromise());
+  const { data, ...rest } = useImmutableQuery(getPromise());
 
-  return { documents: data, error };
+  return { documents: data, ...rest };
 }
 
 export const getUpdatedValueRecord = async (

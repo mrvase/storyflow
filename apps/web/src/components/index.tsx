@@ -12,6 +12,7 @@ import { HeaderConfig } from "./Header/Header";
 import { NavConfig } from "./Nav";
 import Image from "next/image";
 import { OpenGraphConfig } from "./OpenGraph";
+import { FormConfig } from "./Form";
 
 const parseFileString = (value: string) => {
   if (!value) {
@@ -53,6 +54,7 @@ declare module "@storyflow/react" {
 const kfs = {
   label: "KFS UI",
   configs: {
+    FormConfig,
     ContentConfig,
     LinkConfig,
     HeaderConfig,

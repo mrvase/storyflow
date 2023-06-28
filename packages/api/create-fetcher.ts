@@ -3,6 +3,50 @@ import { parseDocument } from "./convert";
 import { createObjectId } from "./mongo";
 import { client } from "./mongo";
 import { DBDocumentRaw } from "./types";
+import { createRawTemplateFieldId } from "@storyflow/cms/ids";
+import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
+
+export const findDocumentByUrl = async ({
+  dbName,
+  url,
+  namespaces,
+}: {
+  dbName?: string;
+  url: string;
+  namespaces?: string[];
+}) => {
+  const db = await client.get(dbName);
+
+  const regex = `^${url
+    .split("/")
+    .map((el, index) => (index === 0 ? el : `(${el}|\\*)`))
+    .join("/")}$`;
+
+  const docRaw = await db.collection("documents").findOne<DBDocumentRaw>({
+    ...(namespaces &&
+      namespaces.length > 0 && {
+        folder: {
+          $in: namespaces.map((el) =>
+            createObjectId(`${el}`.padStart(24, "0"))
+          ),
+        },
+      }),
+    [`values.${createRawTemplateFieldId(DEFAULT_FIELDS.url.id)}`]:
+      url.indexOf("/") < 0
+        ? url
+        : {
+            $regex: regex,
+          },
+  });
+
+  if (!docRaw) {
+    return null;
+  }
+
+  const doc = parseDocument(docRaw);
+
+  return doc;
+};
 
 export const createFetcher =
   (dbName: string | undefined) =>

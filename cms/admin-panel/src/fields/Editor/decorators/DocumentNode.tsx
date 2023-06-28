@@ -160,7 +160,7 @@ export function ValueDisplay({
     [output] = useGlobalState(id, () =>
       calculateFn(initialValue, {
         record,
-        documentId: getDocumentId(id),
+        contextDocumentId: getDocumentId(id),
       })
     );
   } else {

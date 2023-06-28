@@ -25,17 +25,17 @@ export const calculateFn = (
   value: SyntaxTree,
   {
     record = {},
-    documentId,
+    contextDocumentId,
   }: {
-    documentId: DocumentId;
+    contextDocumentId: DocumentId;
     record?: SyntaxTreeRecord;
   }
 ): ValueArray | ClientSyntaxTree => {
-  const getter: StateGetter = (importId, { tree, external }): any => {
-    if (typeof importId === "object" && "folder" in importId) {
+  const getter: StateGetter = (importer, { tree, external }): any => {
+    if (importer.type === "fetch") {
       // we want it to react to updates in the template so that new fields are found
       const template = store.use<FieldId[]>(
-        `${importId.folder.id}#template`,
+        `${importer.value.folder.id}#template`,
         () => []
       ).value;
 
@@ -43,11 +43,11 @@ export const calculateFn = (
 
       const filters = Object.fromEntries(
         template.map((id) => {
-          const fieldId = createTemplateFieldId(importId.folder.id, id);
+          const fieldId = createTemplateFieldId(importer.value.folder.id, id);
           const state = store.use<ValueArray | ClientSyntaxTree>(fieldId, () =>
             calculateFn(record[id as FieldId] ?? DEFAULT_SYNTAX_TREE, {
               record,
-              documentId: getParentDocumentId(importId.folder.id),
+              contextDocumentId: getParentDocumentId(importer.value.folder.id),
             })
           );
           return [getRawFieldId(fieldId), state.value] as [
@@ -58,9 +58,9 @@ export const calculateFn = (
       );
 
       const string = JSON.stringify({
-        folder: importId.folder.folder,
-        limit: importId.limit,
-        sort: importId.sort ?? {},
+        folder: importer.value.folder.folder,
+        limit: importer.value.limit,
+        sort: importer.value.sort ?? {},
         filters,
       });
 
@@ -69,12 +69,12 @@ export const calculateFn = (
       if (!state.initialized()) {
         const promise = fetchDocumentList(
           {
-            folder: importId.folder.folder,
-            limit: importId.limit,
-            sort: importId.sort ?? [],
+            folder: importer.value.folder.folder,
+            limit: importer.value.limit,
+            sort: importer.value.sort ?? [],
             filters,
           },
-          importId.folder.id
+          importer.value.folder.id
         ); // fetcherStore.get(importId.folder.id, string, client);
         promise.then((result) =>
           state.set(() => {
@@ -87,12 +87,18 @@ export const calculateFn = (
       return state.value?.map(({ _id }) => ({ id: _id })) ?? [];
     }
 
-    if (typeof importId === "object" && "ctx" in importId) {
+    if (importer.type === "context") {
       const value = context.use<ValueArray>(
-        getContextKey(documentId, importId.ctx)
+        getContextKey(contextDocumentId, importer.value.ctx)
       ).value;
       return value ? [value] : [];
     }
+
+    if (importer.type === "nested") {
+      return [{}];
+    }
+
+    const importId = importer.value;
 
     const stateId = tree ? `${importId}#tree` : importId;
 
@@ -105,7 +111,7 @@ export const calculateFn = (
               ? value
               : calculateFn(value, {
                   record,
-                  documentId: getDocumentId(importId),
+                  contextDocumentId: getDocumentId(importId),
                 })
         : undefined;
 
@@ -127,7 +133,7 @@ export const calculateFn = (
           ? value
           : calculateFn(value, {
               record: doc.record,
-              documentId: getDocumentId(importId),
+              contextDocumentId: getDocumentId(importId),
             });
       return fn;
     });

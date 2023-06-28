@@ -37,7 +37,7 @@ function Decorator({
     >
       <span className="flex items-center gap-2">
         <div
-          className="w-4 h-4 rounded-sm bg-white"
+          className="w-4 h-4 rounded-sm bg-white dark:bg-gray-800"
           onClick={() => {
             editor.update(() => {
               setToken(!value);

@@ -20,6 +20,7 @@ import {
 import {
   FieldRestrictionsContext,
   FieldOptionsContext,
+  ActionFieldIdContext,
 } from "../../FieldIdContext";
 import {
   EditorFocusProvider,
@@ -279,12 +280,29 @@ function FieldSpecification({
 
   return (
     <LevelProvider key={propId}>
-      <FieldRestrictionsContext.Provider value={config.type}>
-        <FieldOptionsContext.Provider value={options ?? null}>
-          {children}
-        </FieldOptionsContext.Provider>
-      </FieldRestrictionsContext.Provider>
+      <ActionFieldIdProvider id={config.type === "action" ? propId : null}>
+        <FieldRestrictionsContext.Provider value={config.type}>
+          <FieldOptionsContext.Provider value={options ?? null}>
+            {children}
+          </FieldOptionsContext.Provider>
+        </FieldRestrictionsContext.Provider>
+      </ActionFieldIdProvider>
     </LevelProvider>
+  );
+}
+
+function ActionFieldIdProvider({
+  children,
+  id,
+}: {
+  children: React.ReactNode;
+  id: FieldId | null;
+}) {
+  if (!id) return <>{children}</>;
+  return (
+    <ActionFieldIdContext.Provider value={id}>
+      {children}
+    </ActionFieldIdContext.Provider>
   );
 }
 

@@ -1,7 +1,9 @@
 import cl from "clsx";
 import React from "react";
 import {
+  DocumentId,
   FieldId,
+  FolderId,
   NestedDocumentId,
   NestedEntity,
 } from "@storyflow/shared/types";
@@ -51,16 +53,18 @@ export function Attributes({
   hideChildrenProps,
   hideAsDefault,
   color,
+  templateId: templateIdProp,
 }: {
   hideChildrenProps?: boolean;
   hideAsDefault?: boolean;
   entity?: NestedEntity;
   color?: "gray" | "red" | "pink" | "yellow";
+  templateId?: DocumentId;
 }) {
   const [currentProp, setCurrentProp] = useAttributesContext();
   const { configs } = useAppConfig();
 
-  let templateId = useFieldTemplateId();
+  let templateId = templateIdProp ?? useFieldTemplateId();
   const template = useTemplate(templateId) ?? noTemplate;
 
   if (!entity) {
@@ -138,7 +142,7 @@ function PropPreview({
   const [output] = useGlobalState(prop.id, () =>
     calculateFn(initialValue, {
       record,
-      documentId: getDocumentId(rootId),
+      contextDocumentId: getDocumentId(rootId),
     })
   );
 

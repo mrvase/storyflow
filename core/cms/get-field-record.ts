@@ -9,6 +9,7 @@ import {
   DocumentId,
   FolderId,
   Sorting,
+  NestedDocumentId,
 } from "@storyflow/shared/types";
 import { FolderFetch, calculate, StateGetter } from "./calculate-server";
 import { DEFAULT_SYNTAX_TREE } from "./constants";
@@ -26,7 +27,10 @@ export const createFieldRecordGetter = (
     filters: Record<RawFieldId, ValueArray>;
     limit: number;
     sort?: Sorting[];
-  }) => Promise<{ _id: DocumentId; record: SyntaxTreeRecord }[]>
+  }) => Promise<{ _id: DocumentId; record: SyntaxTreeRecord }[]>,
+  options: {
+    createActions?: boolean;
+  } = {}
 ) => {
   const superRecord = { ...docRecord };
 
@@ -42,10 +46,7 @@ export const createFieldRecordGetter = (
 
     let fetchRequests: FolderFetch[] = [];
     let fetched = new Set<NestedFolder>();
-    let fetchFilters = new Map<
-      NestedFolder,
-      Record<RawFieldId, ValueArray>[]
-    >();
+    let fetchFilters = new Map<NestedFolder, Record<RawFieldId, ValueArray>>();
     let fetchResults = new Map<NestedFolder, NestedDocument[]>();
 
     const resolveFetches = async (fetches: FolderFetch[]) => {
@@ -85,19 +86,25 @@ export const createFieldRecordGetter = (
       );
     };
 
+    const getNestedValues = (
+      id: NestedDocumentId
+    ): Record<RawFieldId, ValueArray> => {
+      return Object.fromEntries(
+        Object.entries(docRecord)
+          .filter(([key]) => key.startsWith(getRawDocumentId(id)))
+          .map(([key, value]) => [
+            getRawFieldId(key as FieldId),
+            calculate(value, getState, options),
+          ])
+          .filter(([, value]) => Array.isArray(value) && value.length > 0)
+      );
+    };
+
     const calculateFilters = async (fetches: FolderFetch[]) => {
       const oldFetches = [...fetchRequests];
 
       fetches.forEach((el) => {
-        const filters = Object.fromEntries(
-          Object.entries(docRecord)
-            .filter(([key]) => key.startsWith(getRawDocumentId(el.folder.id)))
-            .map(([key, value]) => [
-              getRawFieldId(key as FieldId),
-              calculate(value, getState),
-            ])
-            .filter(([, value]) => Array.isArray(value) && value.length > 0)
-        );
+        const filters = getNestedValues(el.folder.id);
         fetchFilters.set(el.folder, filters);
       });
 
@@ -114,18 +121,21 @@ export const createFieldRecordGetter = (
     };
 
     const getState: StateGetter = (importer, { tree, external }): any => {
-      if (typeof importer === "object" && "folder" in importer) {
-        const { folder, limit, sort } = importer;
+      if (importer.type === "fetch") {
+        const { folder, limit, sort } = importer.value;
         if (!fetchResults.has(folder)) {
           fetchRequests.push({ folder, limit, ...(sort && { sort }) });
           return [];
         }
         return fetchResults.get(folder);
-      } else if (typeof importer === "object" && "ctx" in importer) {
-        return context[importer.ctx] ?? [];
+      } else if (importer.type === "context") {
+        console.log("CONTEXT LOOKUP", importer.value.ctx, context);
+        return context[importer.value.ctx] ?? [];
+      } else if (importer.type === "nested") {
+        return [getNestedValues(importer.value)];
       } else {
-        if (importer in superRecord) {
-          return calculate(superRecord[importer], getState);
+        if (importer.value in superRecord) {
+          return calculate(superRecord[importer.value], getState, options);
         }
         return [];
       }
@@ -163,7 +173,7 @@ export const createFieldRecordGetter = (
       let i = 0;
       while (i < relevantEntries.length) {
         const [key, tree] = relevantEntries[i];
-        const result = calculate(tree, getState);
+        const result = calculate(tree, getState, options);
         addNestedElementProps(result);
         newRecord[key] = result;
         i++;

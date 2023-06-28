@@ -44,7 +44,7 @@ export function TokenPrompt({
       id: "date",
       label: (
         <>
-          Indsæt dato:{" "}
+          Dato:{" "}
           {Intl.DateTimeFormat("da-DK", {
             weekday: "long",
           })
@@ -62,7 +62,7 @@ export function TokenPrompt({
         date.getTime() !== parseDateFromString("", now).getTime(),
     },
     {
-      label: "Indsæt oprettelsesdato",
+      label: "Oprettelsesdato",
       icon: CalendarDaysIcon,
       onEnter: React.useCallback(() => {
         const nestedField: NestedField = {
@@ -74,26 +74,24 @@ export function TokenPrompt({
         };
         replacePromptWithStream([nestedField]);
       }, [documentId, generateDocumentId, replacePromptWithStream]),
-      match: "Indsæt oprettelsesdato"
-        .toLowerCase()
-        .includes(prompt.toLowerCase()),
+      match: "Oprettelsesdato".toLowerCase().includes(prompt.toLowerCase()),
     },
     {
-      label: "Indsæt farve",
+      label: "Farve",
       icon: SwatchIcon,
       onEnter: React.useCallback(() => {
         replacePromptWithStream([true]);
       }, [replacePromptWithStream]),
-      match: "Indsæt farve".toLowerCase().includes(prompt.toLowerCase()),
+      match: "Farve".toLowerCase().includes(prompt.toLowerCase()),
     },
     {
-      label: "Indsæt checkboks",
+      label: "Checkboks",
       icon: CheckIcon,
       onEnter: React.useCallback(() => {
         replacePromptWithStream([true]);
       }, [replacePromptWithStream]),
       match:
-        "Indsæt checkboks".toLowerCase().includes(prompt.toLowerCase()) ||
+        "Checkboks".toLowerCase().includes(prompt.toLowerCase()) ||
         prompt.toLowerCase() === "ja" ||
         prompt.toLowerCase() === "true" ||
         prompt.toLowerCase() === "nej" ||

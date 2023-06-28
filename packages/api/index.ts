@@ -19,13 +19,11 @@ const createAPI = (config: StoryflowConfig) => ({
 
 export type DefaultAPI = ReturnType<typeof createAPI>;
 
-export type AppAPI = { app: ReturnType<typeof app> };
+export type AppAPI = ReturnType<typeof app>;
 
 export const createLocalAPI = (appConfig: AppConfig, apiConfig: ApiConfig) => {
   client.set(apiConfig.mongoURL);
-  return {
-    app: app(appConfig, apiConfig),
-  };
+  return app(appConfig, apiConfig);
 };
 
 export type {

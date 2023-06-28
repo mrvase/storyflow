@@ -11,6 +11,7 @@ import {
 export { ParseRichText } from "./src/ParseRichText";
 export { cms, CMSElement } from "./src/CMSElement";
 export { createServerContext } from "./src/createServerContext";
+export { useFormStatus } from "./src/Input";
 
 export type {
   LibraryConfig,

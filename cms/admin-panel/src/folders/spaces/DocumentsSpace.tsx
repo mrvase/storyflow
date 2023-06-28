@@ -1,6 +1,7 @@
 import cl from "clsx";
 import {
   ArrowDownTrayIcon,
+  ArrowPathIcon,
   ArrowUpTrayIcon,
   EllipsisHorizontalIcon,
   PlusIcon,
@@ -51,7 +52,7 @@ export function DocumentsSpace({
 }) {
   const t = useTranslation();
 
-  const { documents } = useDocumentList(folderId);
+  const { documents, revalidate, isValidating } = useDocumentList(folderId);
 
   const newDocuments = useNewDocuments(folderId);
   const { form, handleDelete } = useDeleteForm({
@@ -121,6 +122,11 @@ export function DocumentsSpace({
       }
       buttons={
         <>
+          <InlineButton
+            icon={ArrowPathIcon}
+            onClick={() => revalidate()}
+            className={cl("ml-2", isValidating && "animate-spin")}
+          />
           <Menu as={Space.Button} icon={EllipsisHorizontalIcon} align="right">
             <ImportButton folderId={folderId} />
             <ExportButton />

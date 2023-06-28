@@ -6,12 +6,14 @@ import { calculateRootFieldFromRecord } from "@storyflow/cms/calculate-server";
 import type {
   ApiConfig,
   AppConfig,
+  FieldId,
+  FolderId,
   LibraryConfig,
   PropConfigRecord,
   PropGroup,
 } from "@storyflow/shared/types";
-import type { DBDocumentRaw } from "../types";
-import { parseDocument } from "../convert";
+import type { DBDocumentRaw, DBValueRecord } from "../types";
+import { getUrlParams, parseDocument } from "../convert";
 import { getPaths } from "../paths";
 import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
 import {
@@ -19,9 +21,11 @@ import {
   createTemplateFieldId,
 } from "@storyflow/cms/ids";
 import { createObjectId } from "../mongo";
-import { createFetcher } from "../create-fetcher";
+import { createFetcher, findDocumentByUrl } from "../create-fetcher";
 import { globals } from "../globals";
 import { cors, procedure } from "@storyflow/server/rpc";
+import { createDocumentIdGenerator } from "./documents";
+import util from "util";
 
 const modifyValues = <Input, Output>(
   obj: Record<string, Input>,
@@ -141,51 +145,23 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
             message: "Invalid url",
           });
         }
-        console.log("REQUESTING PAGE", dbName, url);
 
-        const db = await client.get(dbName);
-
-        const regex = `^${url
-          .split("/")
-          .map((el, index) => (index === 0 ? el : `(${el}|\\*)`))
-          .join("/")}$`;
-
-        const docRaw = await db.collection("documents").findOne<DBDocumentRaw>({
-          ...(appConfig.namespaces &&
-            appConfig.namespaces.length > 0 && {
-              folder: {
-                $in: appConfig.namespaces.map((el) =>
-                  createObjectId(`${el}`.padStart(24, "0"))
-                ),
-              },
-            }),
-          [`values.${createRawTemplateFieldId(DEFAULT_FIELDS.url.id)}`]:
-            url.indexOf("/") < 0
-              ? url
-              : {
-                  $regex: regex,
-                },
+        const doc = await findDocumentByUrl({
+          url,
+          namespaces: appConfig.namespaces,
+          dbName,
         });
 
-        if (!docRaw) {
+        if (!doc) {
           console.log("NO PAGE");
           return null;
         }
 
-        const doc = parseDocument(docRaw);
-
-        const params = Object.fromEntries(
-          url
-            .split("/")
-            .reverse()
-            .map((el, index) => [`param${index}`, [el]])
-        );
+        const params = getUrlParams(url);
 
         const getFieldRecord = createFieldRecordGetter(
           doc.record,
-          {
-            ...params,
-          },
+          params,
           createFetcher(dbName)
         );
 
@@ -252,5 +228,119 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
 
       return paths;
     }),
+
+    submit: procedure
+      .use(cors(apiConfig.cors))
+      .schema(
+        z.object({
+          id: z.string(),
+          action: z.string(),
+          data: z.record(z.array(z.string())),
+        })
+      )
+      .mutate(async ({ action, id, data }, { req }) => {
+        const url =
+          "/" +
+            req!.headers
+              .get("referer")
+              ?.replace(/https?:\/\//, "")
+              .split("/")
+              .slice(1)
+              .join("/") ?? "";
+        const doc = await findDocumentByUrl({
+          url,
+          namespaces: appConfig.namespaces,
+          dbName,
+        });
+
+        if (!doc) {
+          console.log("NO PAGE");
+          return false;
+        }
+
+        const params = getUrlParams(url);
+
+        const getFieldRecord = createFieldRecordGetter(
+          doc.record,
+          { ...params, ...data },
+          createFetcher(dbName),
+          {
+            createActions: true,
+          }
+        );
+
+        const pageRecord = await getFieldRecord(
+          createTemplateFieldId(doc._id, DEFAULT_FIELDS.page.id)
+        );
+
+        if (!pageRecord) {
+          console.log("NO PAGE RECORD");
+          return false;
+        }
+
+        const db = await client.get(dbName);
+
+        const actionValue = pageRecord.record[action as FieldId];
+
+        if (!action || !Array.isArray(actionValue) || action.length === 0) {
+          return false;
+        }
+
+        const inserts = (actionValue as any[]).filter(
+          (
+            el
+          ): el is {
+            values: DBValueRecord;
+            action: "insert";
+            folder: FolderId;
+          } => typeof el === "object" && el !== null && el.action === "insert"
+        );
+
+        if (!inserts.length) {
+          return false;
+        }
+
+        const generateDocumentId = createDocumentIdGenerator(
+          db,
+          inserts.length
+        );
+
+        console.log(
+          "RESULT",
+          util.inspect(pageRecord.record[action as FieldId], {
+            depth: null,
+            colors: true,
+          })
+        );
+
+        const docs = await Promise.all(
+          inserts.map(async ({ folder, values }): Promise<DBDocumentRaw> => {
+            const documentId = await generateDocumentId();
+
+            const timestamp = Date.now();
+
+            const updated = Object.fromEntries(
+              Object.entries(values).map(([key, value]) => [key, timestamp])
+            );
+
+            return {
+              _id: createObjectId(documentId),
+              folder: createObjectId(folder),
+              values,
+              fields: [],
+              config: [],
+              versions: { config: [0] },
+              updated,
+              cached: [],
+            };
+          })
+        );
+
+        const result1 = await db
+          .collection<DBDocumentRaw>("documents")
+          .insertMany(docs);
+
+        return result1.acknowledged;
+      }),
   };
 };
