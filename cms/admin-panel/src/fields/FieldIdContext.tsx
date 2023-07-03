@@ -1,6 +1,5 @@
 import React from "react";
-import type { FieldId } from "@storyflow/shared/types";
-import type { FieldType2 } from "@storyflow/cms/types";
+import type { FieldId, FieldType } from "@storyflow/shared/types";
 import { useContextWithError } from "../utils/contextError";
 import type { Option } from "@storyflow/shared/types";
 
@@ -9,7 +8,7 @@ export const useFieldId = (): FieldId =>
   useContextWithError(FieldIdContext, "FieldId");
 export const useFieldIdUnsafe = () => React.useContext(FieldIdContext);
 
-export const FieldRestrictionsContext = React.createContext<FieldType2 | null>(
+export const FieldRestrictionsContext = React.createContext<FieldType | null>(
   null
 );
 export const useFieldRestriction = () =>

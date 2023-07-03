@@ -2,13 +2,13 @@ import {
   Brand,
   DocumentId,
   FieldId,
+  FieldType,
   FolderId,
   FunctionDataRecord,
   FunctionName,
   NestedDocumentId,
   Operator,
   PrimitiveValue,
-  RawDocumentId,
   RawFieldId,
   RawFolderId,
   Value,
@@ -105,24 +105,11 @@ export type FieldTransform<T extends FunctionName = FunctionName> = {
 
 export type FieldUI = "url";
 
-export type FieldType2 =
-  | "string"
-  | "number"
-  | "boolean"
-  | "date"
-  | "color"
-  | "image"
-  | "video"
-  | "file"
-  | "children"
-  | "data"
-  | "action";
-
 export type FieldConfig = {
   id: FieldId;
   label: string;
+  type?: FieldType;
   ui?: FieldUI;
-  type2?: FieldType2;
   template?: DocumentId;
   hidden?: boolean;
 };

@@ -13,7 +13,7 @@ import { tokens } from "@storyflow/cms/tokens";
 
 export async function getPaths(
   docs: DBDocumentRaw[],
-  fetcher: (fetchObject: {
+  fetcher?: (fetchObject: {
     folder: FolderId;
     filters: Record<RawFieldId, ValueArray>;
     limit: number;
@@ -39,6 +39,15 @@ export async function getPaths(
       }
       return 0;
     });
+
+  if (!fetcher) {
+    return urls.map((el) =>
+      el.url
+        .split("/")
+        .map((el, index) => (el === "*" ? `[${index}]` : el))
+        .join("/")
+    );
+  }
 
   const dynamicUrls = urls.filter((el) => el.url.indexOf("*") > 0);
   const ordinaryUrls = urls.filter((el) => el.url.indexOf("*") < 0);

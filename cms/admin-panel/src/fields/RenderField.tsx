@@ -37,7 +37,7 @@ export function RenderField({
 
   return (
     <FieldIdContext.Provider value={fieldId}>
-      <FieldRestrictionsContext.Provider value={fieldConfig.type2 ?? null}>
+      <FieldRestrictionsContext.Provider value={fieldConfig.type ?? null}>
         <FieldContainer
           fieldConfig={fieldConfig}
           index={index}

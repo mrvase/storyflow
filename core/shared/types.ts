@@ -353,185 +353,6 @@ export type LibraryRecord<T extends LibraryConfigRecord = LibraryConfigRecord> =
     [Key in keyof LibraryConfigRecord]: Library<T[Key]>;
   };
 
-/*
-type PropTypes = {
-  string: string;
-  color: string;
-  image: {
-    src: string;
-    width: number;
-    height: number;
-  };
-  video: {
-    src: string;
-    width: number;
-    height: number;
-  };
-  number: number;
-  boolean: boolean;
-  children: (string | number | Element)[];
-  data: any[];
-};
-
-export type Option =
-  | string
-  | number
-  | ({
-      label?: string;
-    } & (
-      | {
-          value: string | number;
-          name?: string;
-        }
-      | {
-          name: string;
-        }
-    ));
-
-export type PropConfig<Options extends AnyOptions = AnyOptions> = {
-  name: string;
-  type: keyof PropTypes;
-  label: string;
-  defaultValue?: any;
-  searchable?: boolean;
-  options?: Options;
-};
-
-export type RegularOptions = Option[] | readonly Option[];
-
-export type ExtendedOptions =
-  | Option[]
-  | readonly Option[]
-  | Record<string, { typespace?: string }>;
-
-export type AnyOptions = RegularOptions | ExtendedOptions;
-
-export type PropGroup<Options extends AnyOptions = AnyOptions> = {
-  name: string;
-  type: "group";
-  label: string;
-  props: readonly PropConfig<Options>[];
-  searchable?: boolean;
-};
-
-export type PropConfigArray<Options extends AnyOptions = AnyOptions> =
-  readonly (PropConfig<Options> | PropGroup<Options>)[];
-
-type NameToType<
-  Ps extends PropConfigArray,
-  Prop extends Ps[number],
-  Name extends Ps[number]["name"]
-> = Prop extends { type: "group"; name: Name }
-  ? Props<Prop["props"]>
-  : Prop extends { type: keyof PropTypes; name: Name }
-  ? PropTypes[Prop["type"]]
-  : never;
-
-type PartialNameToType<
-  Ps extends PropConfigArray,
-  Prop extends Ps[number],
-  Name extends Ps[number]["name"]
-> = Prop extends { type: "group"; name: Name }
-  ? Partial<Props<Prop["props"]>>
-  : Prop extends { type: keyof PropTypes; name: Name }
-  ? PropTypes[Prop["type"]]
-  : never;
-
-type AddConfigAsChild<A> = A extends PropTypes["children"]
-  ? (
-      | A[number]
-      | ExtendedPartialConfig<any>
-      | {
-          config: ExtendedPartialConfig<any>;
-          story: StoryConfig<any>;
-        }
-    )[]
-  : A;
-
-type Props<T extends PropConfigArray> = {
-  [Key in T[number]["name"]]: NameToType<T, T[number], Key>;
-};
-
-export type StoryProps<T extends PropConfigArray> = {
-  [Key in T[number]["name"]]?: AddConfigAsChild<
-    PartialNameToType<T, T[number], Key>
-  >;
-};
-
-export type StoryConfig<T extends PropConfigArray> = {
-  label?: string;
-  canvas?: string;
-  props: StoryProps<T>;
-};
-
-export type Story = {
-  name: string;
-  label: string;
-  canvas: string;
-  page: any[];
-};
-
-export type ComponentConfig<T extends PropConfigArray = PropConfigArray> = {
-  name: string;
-  label: string;
-  inline?: boolean;
-  hidden?: boolean;
-  props: T;
-  stories?: StoryConfig<T>[];
-};
-
-export type PartialConfig<T extends PropConfigArray = PropConfigArray> = {
-  name?: string;
-  label?: string;
-  typespace?: string;
-  inline?: boolean;
-  hidden?: boolean;
-  props: T;
-  stories?: StoryConfig<T>[];
-};
-
-export type ExtendedPartialConfig<T extends PropConfigArray = PropConfigArray> =
-  PartialConfig<T> & {
-    component: ComponentType<Props<T>>;
-  };
-
-export type ExtendedLibraryConfig = {
-  name: string;
-  label: string;
-  components: Record<string, ExtendedPartialConfig<PropConfigArray>>;
-};
-
-export type LibraryConfig = {
-  name: string;
-  label: string;
-  components: Record<string, ComponentConfig<PropConfigArray<RegularOptions>>>;
-};
-
-export type Library<Config extends LibraryConfig = LibraryConfig> = {
-  name: Config["name"];
-  components: {
-    [Key in keyof Config["components"]]: Component<Config["components"][Key]>;
-  };
-};
-
-export type StoryLibrary = {
-  name: string;
-  components: Record<string, Story[]>;
-};
-
-export type ComponentProps<C extends PartialConfig> = {
-  [Key in C["props"][number]["name"]]: NameToType<
-    C["props"],
-    C["props"][number],
-    Key
-  >;
-};
-
-export type Component<C extends PartialConfig> = ComponentType<
-  ComponentProps<C>
->;
-*/
-
 /* PATH */
 
 export type PathSegment = string;
@@ -544,6 +365,87 @@ type BasicApiConfig = {
   storyflowKey: string;
   publicKey: string;
   cors?: string[];
+};
+
+export type FieldType =
+  | "string"
+  | "number"
+  | "boolean"
+  | "date"
+  | "color"
+  | "image"
+  | "video"
+  | "file"
+  | "children"
+  | "data"
+  | "action";
+
+type Prettify<T> = { [K in keyof T]: T[K] } & {};
+
+export type CollectionField = {
+  name: string;
+  label: string;
+  type: FieldType;
+  hidden?: boolean;
+};
+
+type CollectionRecord<TFields extends TemplateFields | undefined> =
+  TFields extends TemplateFields
+    ? {
+        [Key in TFields[number]["name"]]: DefaultPropTypes[Extract<
+          TFields[number],
+          { name: Key }
+        >["type"]];
+      }
+    : any;
+
+export type Template = {
+  name: string;
+  fields: TemplateFields;
+};
+
+export type TemplateFields = readonly CollectionField[];
+
+export type Collection<TFields extends TemplateFields | undefined = undefined> =
+  CollectionInner<TFields, CollectionRecord<TFields>>;
+
+export type CollectionInner<
+  TFields extends TemplateFields | undefined = undefined,
+  TData = any
+> = {
+  name: string;
+  label: string;
+  template?: TFields extends TemplateFields
+    ? TFields
+    : TemplateFields | undefined;
+  hooks?: {
+    onCreate?: (
+      options: { id: string; data: TData },
+      create: () => void
+    ) => void;
+    onUpdate?: (
+      options: {
+        id: string;
+        data: Partial<TData>;
+        doc: TData;
+      },
+      update: () => void
+    ) => void;
+    onDelete?: (input: { id: string }, remove: () => void) => void;
+    onRead?: (
+      options: { id: string },
+      read: () => Promise<TData>
+    ) => Promise<TData>;
+    onReadMany?: (
+      options: {
+        filters: Partial<TData>;
+        limit: number;
+        offset: number;
+        sort: Record<string, 1 | -1>;
+      },
+      read: () => Promise<TData[]>
+    ) => Promise<TData[]>;
+  };
 };
 
 export type StoryflowConfig = {
@@ -559,6 +461,8 @@ export type StoryflowConfig = {
   api: BasicApiConfig;
   workspaces: [WorkspaceReference, ...WorkspaceReference[]];
   apps: AppReference[];
+  collections?: Collection[];
+  templates?: Template[];
 };
 
 export type WorkspaceReference = {

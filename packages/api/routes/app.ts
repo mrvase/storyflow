@@ -247,6 +247,7 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
               .split("/")
               .slice(1)
               .join("/") ?? "";
+
         const doc = await findDocumentByUrl({
           url,
           namespaces: appConfig.namespaces,
@@ -254,8 +255,11 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
         });
 
         if (!doc) {
-          console.log("NO PAGE");
-          return false;
+          return new RPCError({
+            code: "NOT_FOUND",
+            status: 404,
+            message: "No server action found [1]",
+          });
         }
 
         const params = getUrlParams(url);
@@ -274,8 +278,11 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
         );
 
         if (!pageRecord) {
-          console.log("NO PAGE RECORD");
-          return false;
+          return new RPCError({
+            code: "NOT_FOUND",
+            status: 404,
+            message: "No server action found [2]",
+          });
         }
 
         const db = await client.get(dbName);
@@ -283,7 +290,11 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
         const actionValue = pageRecord.record[action as FieldId];
 
         if (!action || !Array.isArray(actionValue) || action.length === 0) {
-          return false;
+          return new RPCError({
+            code: "NOT_FOUND",
+            status: 404,
+            message: "No server action found [3]",
+          });
         }
 
         const inserts = (actionValue as any[]).filter(
@@ -297,20 +308,16 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
         );
 
         if (!inserts.length) {
-          return false;
+          return new RPCError({
+            code: "NOT_FOUND",
+            status: 404,
+            message: "No server action found [4]",
+          });
         }
 
         const generateDocumentId = createDocumentIdGenerator(
           db,
           inserts.length
-        );
-
-        console.log(
-          "RESULT",
-          util.inspect(pageRecord.record[action as FieldId], {
-            depth: null,
-            colors: true,
-          })
         );
 
         const docs = await Promise.all(
@@ -340,6 +347,13 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
           .collection<DBDocumentRaw>("documents")
           .insertMany(docs);
 
+        if (!result1.acknowledged) {
+          return new RPCError({
+            code: "SERVER_ERROR",
+            status: 500,
+            message: "Could not save document",
+          });
+        }
         return result1.acknowledged;
       }),
   };

@@ -56,12 +56,12 @@ export const DEFAULT_FIELDS = {
   page: {
     id: generateTemplateFieldId(),
     label: "Side",
-    type2: "children",
+    type: "children",
   },
   layout: {
     id: generateTemplateFieldId(),
     label: "Layout",
-    type2: "children",
+    type: "children",
   },
   redirect: {
     id: generateTemplateFieldId(),
@@ -70,12 +70,12 @@ export const DEFAULT_FIELDS = {
   published: {
     id: generateTemplateFieldId(),
     label: "Offentlig",
-    type2: "boolean",
+    type: "boolean",
   },
   released: {
     id: generateTemplateFieldId(),
     label: "Udgivelsesdato",
-    type2: "date",
+    type: "date",
   },
   user: {
     id: generateTemplateFieldId(),
@@ -92,7 +92,7 @@ export const DEFAULT_FIELDS = {
   og_image: {
     id: generateTemplateFieldId(),
     label: "Open Graph-billede",
-    type2: "children",
+    type: "children",
   },
 } satisfies Record<string, DefaultFieldConfig>;
 

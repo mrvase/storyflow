@@ -42,18 +42,18 @@ export function FieldToolbar({ fieldId }: { fieldId: FieldId }) {
         as={Content.ToolbarButton}
         // icon={FunnelIcon}
         label="Type"
-        onSelect={(el) => setConfig("type2", el.id)}
-        onClear={() => setConfig("type2", undefined)}
+        onSelect={(el) => setConfig("type", el.id)}
+        onClear={() => setConfig("type", undefined)}
         selected={
-          config?.type2
-            ? restrictToOptions.find((el) => el.id === config.type2)
+          config?.type
+            ? restrictToOptions.find((el) => el.id === config.type)
             : undefined
         }
         options={restrictToOptions}
-        dimmed={!config?.type2}
+        dimmed={!config?.type}
         align="right"
       />
-      {config?.type2 === "data" && (
+      {config?.type === "data" && (
         <Menu
           as={Content.ToolbarButton}
           // icon={ListBulletIcon}

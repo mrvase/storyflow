@@ -465,7 +465,7 @@ export const documents = (config: StoryflowConfig) => {
           return acc;
         }, []);
 
-        const paths = await getPaths(docsFiltered, createFetcher(dbName!));
+        const paths = await getPaths(docsFiltered); // createFetcher(dbName!)
 
         console.log("REVALIDATE", paths);
 

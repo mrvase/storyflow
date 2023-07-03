@@ -443,7 +443,7 @@ function SaveButton({ id, folderId }: { id: DocumentId; folderId: FolderId }) {
     rows: imports.state === "data" ? imports.rows : undefined,
   });
 
-  const updatedUrlsQuery = useImmutableQuery(
+  const { revalidate } = useImmutableQuery(
     query.documents.getUpdatedPaths({
       namespace: folderId,
     })
@@ -489,7 +489,7 @@ function SaveButton({ id, folderId }: { id: DocumentId; folderId: FolderId }) {
           if (isLoading) return;
           setIsLoading(true);
           await collab.saveTimeline(id, saveDocument);
-          updatedUrlsQuery.revalidate();
+          revalidate();
           setIsLoading(false);
         }}
       >
