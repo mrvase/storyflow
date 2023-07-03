@@ -18,26 +18,31 @@ const setFormStatus = (action: string, status: FormStatus) => {
 };
 
 export const useFormStatus = (action: string) => {
-  const status = React.useSyncExternalStore(
-    (callback) => {
-      let subs = subscribers.get(action);
-      if (!subs) {
-        subs = new Set();
-        subscribers.set(action, subs);
-      }
-      subs.add(callback);
-      return () => {
-        subs!.delete(callback);
-      };
-    },
-    () => {
-      let status = formStatuses.get(action);
-      if (!status) {
-        status = { isLoading: false, error: undefined, success: undefined };
-        formStatuses.set(action, status);
-      }
-      return status;
+  const getSnapshot = () => {
+    let status = formStatuses.get(action);
+    if (!status) {
+      status = { isLoading: false, error: undefined, success: undefined };
+      formStatuses.set(action, status);
     }
+    return status;
+  };
+
+  const subscribe = (callback: () => void) => {
+    let subs = subscribers.get(action);
+    if (!subs) {
+      subs = new Set();
+      subscribers.set(action, subs);
+    }
+    subs.add(callback);
+    return () => {
+      subs!.delete(callback);
+    };
+  };
+
+  const status = React.useSyncExternalStore(
+    subscribe,
+    getSnapshot,
+    getSnapshot
   );
 
   return React.useMemo(

@@ -15,7 +15,7 @@
     "@storyflow/react": "workspace:*",
     "clsx": "^1.2.1",
     "mongodb": "^4.13.0",
-    "next": "^13.4.1",
+    "next": "13.4.7",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "server-only": "^0.0.1"

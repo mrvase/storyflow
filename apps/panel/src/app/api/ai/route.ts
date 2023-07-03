@@ -75,21 +75,23 @@ export async function POST(req: Request) {
   system += "\n\n";
   system += "Here are the rules:";
 
-  let i = 1;
+  let i_ = 1;
+  // have to do it like this to prevent some bundler inlining bug where it replaces i with 1;
+  const i = () => i_++;
 
   system +=
-    `\n${i++})` +
+    `\n${i()})` +
     "When responding to a command, do not include any additional text. E.g., do not say: 'Here is a reponse to your command'. Just do what the command says.";
   if (hasDocContext) {
     system +=
-      `\n${i++})` +
+      `\n${i()})` +
       "ONLY edit the text in the edited field. Do not add text to any other empty fields.";
     system +=
-      `\n${i++})` +
+      `\n${i()})` +
       "Do NOT add labels in your response. Do NOT add the label of the currently edited field. Do not add quote marks around your response.";
   }
   system +=
-    `\n${i++})` +
+    `\n${i()})` +
     `It is very important that your response does not include any markers like ~~~${
       contextBefore || contextAfter
         ? selection
@@ -99,17 +101,17 @@ export async function POST(req: Request) {
     }. These markers exist to help you understand the prompt, but DO NOT INCLUDE THEM IN YOUR RESPONSE.`;
 
   system +=
-    `\n${i++})` +
+    `\n${i()})` +
     "If you think you cannot do what the command says, YOU MUST TRY. Do not ask for more context or more specific instructions. Trust your assumptions and do what the command says.";
 
   if (contextBefore || contextAfter) {
     if (selection) {
       system +=
-        `\n${i++})` +
+        `\n${i()})` +
         "Do not include the whole text in your response. E.g. if the command is 'Make this piece of text happier', then your response should be a happier version of the SELECTED text, not the whole text.";
     } else {
       system +=
-        `\n${i++})` +
+        `\n${i()})` +
         "Do not include the text in your response. E.g. if the command is 'Add a comma here', then your response should simply be ',' and not all the text with the comma added on the cursor position.";
     }
   }

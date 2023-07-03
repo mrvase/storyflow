@@ -24,7 +24,9 @@
         "S3_BUCKET_NAME",
         "OPEN_API_KEY",
         "UPSTASH_TOKEN",
-        "PGCONNECTION"
+        "PGCONNECTION",
+        "OPENAI_API_KEY",
+        "MONGO_URL"
       ],
       "outputs": [".next/**"]
     },
