@@ -26,12 +26,14 @@ const isInline = (token: SyntaxNode<WithSyntaxError>["children"][number]) => {
   if (isObject(token) && "id" in token) {
     return Boolean(token.inline);
   }
-  /*
-  if ("type" in token) {
+  if (
+    isObject(token) &&
+    "type" in token &&
+    ["select", "loop"].includes(token.type!)
+  ) {
     // syntax node
     return true;
   }
-  */
   return (
     typeof token === "string" ||
     typeof token === "number" ||
