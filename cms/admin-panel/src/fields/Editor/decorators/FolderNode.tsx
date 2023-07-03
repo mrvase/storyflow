@@ -70,7 +70,7 @@ function Decorator({
           className={cl(
             "relative",
             "rounded",
-            isSelected && "ring-1 ring-white",
+            isSelected && "ring-1 ring-gray-800 dark:ring-gray-200",
             color
           )}
           onMouseDown={() => {
@@ -156,7 +156,7 @@ function FieldSpecification({
   const config = props?.find((el) => el.id === propId)!;
 
   return (
-    <FieldRestrictionsContext.Provider value={config?.type2 ?? null}>
+    <FieldRestrictionsContext.Provider value={config?.type ?? null}>
       {children}
     </FieldRestrictionsContext.Provider>
   );

@@ -166,27 +166,27 @@ function PropPreview({
       ring: "ring-pink-700",
     },
     red: {
-      textA400: "text-red-200/80",
-      textA500: "text-red-300/60",
-      textB500: "text-red-200/80",
-      textB600: "text-red-300/40",
+      textA400: "text-red-800 dark:text-red-200/80",
+      textA500: "text-red-800/70 dark:text-red-300/60",
+      textB500: "text-red-800 dark:text-red-200/80",
+      textB600: "text-red-800/50 dark:text-red-300/40",
       bg: "bg-red-400/20",
       ring: "ring-red-400/30",
     },
     yellow: {
-      textA400: "text-yellow-600 dark:text-yellow-200/80",
-      textA500: "text-yellow-600/70 dark:text-yellow-200/50",
-      textB500: "text-yellow-600 dark:text-yellow-200/80",
-      textB600: "text-yellow-600/50 dark:text-yellow-200/40",
+      textA400: "text-yellow-700 dark:text-yellow-200/80",
+      textA500: "text-yellow-700/70 dark:text-yellow-200/50",
+      textB500: "text-yellow-700 dark:text-yellow-200/80",
+      textB600: "text-yellow-700/50 dark:text-yellow-200/40",
       bg: "bg-yellow-100/50 dark:bg-yellow-100/10",
-      ring: "ring-yellow-300/30",
+      ring: "ring-yellow-500/30 dark:ring-yellow-300/30",
     },
   }[color ?? "gray"];
 
   return (
     <div
       className={cl(
-        "rounded-full flex items-center px-2 py-0.5 text-xs transition-colors ring-inset",
+        "rounded-full flex items-center px-2 py-0.5 text-xs ring-inset",
         colors.ring,
         selected ? cl(colors.bg, "ring-0") : cl("hover:ring-1")
       )}

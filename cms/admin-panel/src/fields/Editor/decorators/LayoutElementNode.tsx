@@ -68,7 +68,7 @@ export function LayoutElement({
   value: NestedElement;
   nodeKey: string;
 }) {
-  const isDeep = React.useContext(LevelContext) > 0;
+  const isDeep = React.useContext(LevelContext) >= 0;
 
   const isFocused = useIsFocused();
 
@@ -95,15 +95,15 @@ export function LayoutElement({
   const hide = isDeep && firstIsChildren;
 
   return (
-    <AttributesProvider defaultId={props[0]?.id}>
+    <AttributesProvider defaultId={hide ? undefined : props[0]?.id}>
       <EditorFocusProvider>
         <FocusContainer isOpen={isOpen} isSelected={isSelected}>
           <div
             className={cl(
               "flex items-center font-medium text-sm p-2.5 whitespace-nowrap",
               value.element.indexOf(":") > 0
-                ? "text-yellow-600 dark:text-yellow-400"
-                : "text-red-500 dark:text-red-400"
+                ? "text-yellow-700 dark:text-yellow-400"
+                : "text-red-700 dark:text-red-400"
             )}
             onMouseDown={(ev) => {
               // preventDefault added because it prevents a conflict with lexical

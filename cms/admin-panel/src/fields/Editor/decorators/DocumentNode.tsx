@@ -78,7 +78,7 @@ function Decorator({
         className={cl(
           "relative",
           "rounded text-sm selection:bg-transparent",
-          isSelected && "ring-1 ring-white",
+          isSelected && "ring-1 ring-gray-800 dark:ring-gray-200",
           color
         )}
         onMouseDown={() => {

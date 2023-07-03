@@ -43,7 +43,9 @@ function Decorator({
       className={cl(
         "rounded-sm bg-gray-100 dark:bg-gray-400/20",
         "after:absolute after:-z-10 after:w-full after:left-0 after:-bottom-0.5 after:border-b-2 after:border-b-green-300/50 after:rounded-b-sm",
-        isSelected ? "ring-1 ring-white" : "dark:ring-gray-600",
+        isSelected
+          ? "ring-1 ring-gray-800 dark:ring-gray-200"
+          : "dark:ring-gray-600",
         isPseudoSelected && caretClasses
       )}
       onMouseDown={(ev) => {
@@ -64,7 +66,7 @@ function Decorator({
     >
       <span className="selection:bg-transparent">{text}</span>
       {isFocused && (
-        <div className="w-[calc(100%-0.5rem)] bg-gray-900 absolute z-50 left-0 m-1 p-1.5 rounded">
+        <div className="w-[calc(100%-0.5rem)] bg-white dark:bg-gray-900 absolute z-50 left-0 m-1 p-1.5 rounded">
           <LayoutElement value={value} nodeKey={nodeKey} />
         </div>
       )}
