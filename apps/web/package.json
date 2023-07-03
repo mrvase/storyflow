@@ -3,8 +3,8 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "dev": "next dev --port 4000",
-    "build": "next build",
+    "dev": "storyflow setup && next dev --port 4000",
+    "build": "storyflow setup && next build",
     "start": "next start --port 4000",
     "lint": "next lint"
   },
@@ -29,6 +29,7 @@
     "autoprefixer": "^10.4.13",
     "eslint": "7.32.0",
     "eslint-config-custom": "workspace:*",
+    "minimist": "^1.2.7",
     "postcss": "^8.4.24",
     "tailwindcss": "^3.3.2",
     "tsconfig": "workspace:*",

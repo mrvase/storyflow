@@ -28,6 +28,9 @@ export const createLocalAPI = (appConfig: AppConfig, apiConfig: ApiConfig) => {
 
 export type {
   StoryflowConfig,
+  Collection,
+  Template,
+  TemplateFields,
   AppReference,
   AppConfig,
   ApiConfig,

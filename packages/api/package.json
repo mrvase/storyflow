@@ -7,7 +7,11 @@
   "license": "MIT",
   "scripts": {
     "lint": "eslint *.ts*",
-    "test": "vitest"
+    "test": "vitest",
+    "configure": "storyflow configure"
+  },
+  "bin": {
+    "storyflow": "./bin/index.js"
   },
   "dependencies": {
     "@nanorpc/server": "^0.0.20",
@@ -17,6 +21,8 @@
     "zod": "^3.20.2"
   },
   "devDependencies": {
+    "@swc/core": "^1.3.67",
+    "@swc/register": "^0.1.10",
     "eslint": "^7.32.0",
     "eslint-config-custom": "workspace:*",
     "mongodb": "^4.13.0",

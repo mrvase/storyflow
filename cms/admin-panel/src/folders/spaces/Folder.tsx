@@ -59,7 +59,7 @@ export function FolderItem({
         : "border-gray-100 hover:border-gray-300 dark:border-gray-800 hover:dark:border-gray-600"
     ),
     app: cl(
-      "bg-amber-100 text-yellow-800 dark:text-yellow-200 dark:bg-yellow-400/5",
+      "bg-yellow-50 text-yellow-800 dark:text-yellow-200 dark:bg-yellow-400/5",
       isOpen
         ? "border-gray-300 dark:border-gray-600"
         : "border-yellow-200 hover:border-yellow-400 dark:border-yellow-400/10 hover:dark:border-yellow-400/40"
