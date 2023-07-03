@@ -48,6 +48,7 @@ type RSCContext = {
   transforms: CustomTransforms;
   children?: React.ReactNode;
   contexts: ComponentContext[];
+  isOpenGraph: boolean;
 };
 
 const RenderChildren = ({
@@ -365,10 +366,14 @@ function RenderElementWithProps({
 
   const resolvedProps = resolveProps(props);
 
+  const IdContextProvider_ = !ctx.isOpenGraph
+    ? IdContextProvider
+    : React.Fragment;
+
   return (
-    <IdContextProvider id={id}>
+    <IdContextProvider_ id={id}>
       <Component {...resolvedProps} />
-    </IdContextProvider>
+    </IdContextProvider_>
   );
 }
 
@@ -377,6 +382,7 @@ export const RenderPage = <T extends LibraryConfigRecord>({
   configs: configsFromProps,
   libraries: librariesFromProps,
   transforms = {} as any,
+  isOpenGraph,
 }: {
   data:
     | {
@@ -387,6 +393,7 @@ export const RenderPage = <T extends LibraryConfigRecord>({
     | undefined;
   configs: T;
   libraries: LibraryRecord<T>;
+  isOpenGraph?: boolean;
 } & ({} extends CustomTransforms
   ? { transforms?: CustomTransforms }
   : { transforms: CustomTransforms })) => {
@@ -409,6 +416,7 @@ export const RenderPage = <T extends LibraryConfigRecord>({
         libraries,
         transforms,
         contexts: [],
+        isOpenGraph: Boolean(isOpenGraph),
       }}
     />
   ) : null;
@@ -452,6 +460,7 @@ export const RenderLayout = <T extends LibraryConfigRecord>({
         libraries,
         transforms,
         contexts: [],
+        isOpenGraph: false,
       }}
     />
   ) : (

@@ -6,6 +6,7 @@ import { IdContext } from "./IdContext";
 type FormStatus = {
   isLoading: boolean;
   error: "FETCH_ERROR" | "SERVER_ERROR" | undefined;
+  success: true | undefined;
 };
 
 const formStatuses = new Map<string, FormStatus>();
@@ -17,7 +18,7 @@ const setFormStatus = (action: string, status: FormStatus) => {
 };
 
 export const useFormStatus = (action: string) => {
-  return React.useSyncExternalStore(
+  const status = React.useSyncExternalStore(
     (callback) => {
       let subs = subscribers.get(action);
       if (!subs) {
@@ -32,11 +33,24 @@ export const useFormStatus = (action: string) => {
     () => {
       let status = formStatuses.get(action);
       if (!status) {
-        status = { isLoading: false, error: undefined };
+        status = { isLoading: false, error: undefined, success: undefined };
         formStatuses.set(action, status);
       }
       return status;
     }
+  );
+
+  return React.useMemo(
+    () => ({
+      ...status,
+      reset: () =>
+        setFormStatus(action, {
+          isLoading: false,
+          error: undefined,
+          success: undefined,
+        }),
+    }),
+    [status]
   );
 };
 
@@ -58,7 +72,11 @@ export const Form = React.forwardRef<
       if (isLoading) return;
 
       // set loading state
-      setFormStatus(props.action, { isLoading: true, error: undefined });
+      setFormStatus(props.action, {
+        isLoading: true,
+        error: undefined,
+        success: undefined,
+      });
 
       if (props.onSubmit) props.onSubmit(ev);
 
@@ -90,7 +108,11 @@ export const Form = React.forwardRef<
       }
 
       // set error state
-      setFormStatus(props.action, { isLoading: false, error });
+      setFormStatus(props.action, {
+        isLoading: false,
+        error,
+        success: !error ? true : undefined,
+      });
     },
     [props.action, isLoading]
   );
@@ -119,4 +141,17 @@ export const Input = React.forwardRef<
   }
 
   return <input ref={ref} {...props} name={`${id}/${props.name}`} />;
+});
+
+export const TextArea = React.forwardRef<
+  HTMLTextAreaElement,
+  Omit<React.ComponentProps<"textarea">, "name"> & { name: string }
+>((props, ref) => {
+  const id = React.useContext(IdContext);
+
+  if (!props.name) {
+    throw new Error("No name specified for textarea");
+  }
+
+  return <textarea ref={ref} {...props} name={`${id}/${props.name}`} />;
 });

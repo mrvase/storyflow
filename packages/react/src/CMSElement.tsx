@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useRenderContext } from "./RenderContext";
-import { Form, Input } from "./Input";
+import { Form, Input, TextArea } from "./Input";
 
 type RegularProps<Type extends keyof JSX.IntrinsicElements> =
   React.PropsWithoutRef<React.ComponentProps<Type>> & React.RefAttributes<any>;
@@ -17,8 +17,8 @@ type CMSComponentType = Omit<
   {
     [K in keyof JSX.IntrinsicElements]: Component<RegularProps<K>>;
   },
-  "form" | "input"
-> & { form: typeof Form; input: typeof Input } & {
+  "form" | "input" | "textarea"
+> & { form: typeof Form; input: typeof Input; textarea: typeof TextArea } & {
   element: Component<{ as: keyof JSX.IntrinsicElements }>;
 };
 
@@ -35,6 +35,7 @@ export const cms = new Proxy(
   {
     form: Form,
     input: Input,
+    textarea: TextArea,
   } as CMSComponentType,
   {
     get(target, prop: string) {
