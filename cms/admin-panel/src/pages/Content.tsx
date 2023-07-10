@@ -16,6 +16,8 @@ import { useDragItem } from "@storyflow/dnd";
 import { useRouteTransition } from "@nanokit/router/routes/nested-transition";
 import { Link, usePath, useRoute } from "@nanokit/router";
 import { ToolbarPortal } from "../layout/components/LocationBar";
+import { ErrorBoundary } from "react-error-boundary";
+import { ErrorFallback } from "../elements/ErrorFallback";
 
 const spaces: { label: string; item: Omit<Space, "id"> }[] = [
   {
@@ -85,7 +87,9 @@ function Content({
           small && "@container @3xl:w-64"
         )}
       >
-        {children}
+        <ErrorBoundary FallbackComponent={ErrorFallback}>
+          {children}
+        </ErrorBoundary>
       </div>
     </div>
   );

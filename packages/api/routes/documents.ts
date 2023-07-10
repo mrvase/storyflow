@@ -1,7 +1,13 @@
 import { RPCError, isError } from "@nanorpc/server";
-import { z } from "zod";
-import type { DBDocumentRaw } from "../types";
-import type { DBDocument, SyntaxTree } from "@storyflow/cms/types";
+import { custom, z } from "zod";
+import type { DBDocumentRaw, DBValueRecord } from "../types";
+import type {
+  DBDocument,
+  DocumentConfig,
+  DocumentVersionRecord,
+  SyntaxTree,
+  SyntaxTreeRecord,
+} from "@storyflow/cms/types";
 import type {
   ColorToken,
   DateToken,
@@ -10,6 +16,7 @@ import type {
   FileToken,
   FolderId,
   NestedDocumentId,
+  RawFieldId,
   StoryflowConfig,
   ValueArray,
 } from "@storyflow/shared/types";
@@ -19,21 +26,37 @@ import {
   USER_DOCUMENT_OFFSET,
   createDocumentId,
   createRawTemplateFieldId,
+  createTemplateFieldId,
   getDocumentId,
   replaceDocumentId,
 } from "@storyflow/cms/ids";
-import { parseDocument } from "../convert";
+import { getSyntaxTreeRecord, getUrlParams, parseDocument } from "../convert";
 import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
 import { getPaths } from "../paths";
 import { createObjectId } from "../mongo";
-import { saveResult, updateRecord } from "../fields/save";
-import { createFetcher } from "../create-fetcher";
+import { saveDocument, updateRecord } from "../fields/save";
+import { createFetcher, findDocumentByUrl } from "../create-fetcher";
 import { procedure } from "@storyflow/server/rpc";
 import { copyRecord } from "@storyflow/cms/copy-record-async";
 import { getSyntaxTreeEntries, isSyntaxTree } from "@storyflow/cms/syntax-tree";
 import { tokens } from "@storyflow/cms/tokens";
 import { calculate } from "@storyflow/cms/calculate-server";
 import { Db } from "mongodb";
+import { TEMPLATE_FOLDER } from "@storyflow/cms/constants";
+import {
+  convertDataToDocument,
+  convertDataToRecord,
+  convertRecordToData,
+  createRecordToDocumentMapFn,
+  getCustomCollection,
+  getCustomCollectionFromField,
+  getCustomTemplateIds,
+  getCustomTemplates,
+} from "../collections/convert";
+import { modifyKeys, modifyObject } from "../utils";
+import { dataFromDb } from "../data";
+import { createFieldRecordGetter } from "@storyflow/cms/get-field-record";
+import util from "util";
 
 export const createDocumentIdGenerator = (db: Db, batchSize: number) => {
   const ids: number[] = [];
@@ -65,6 +88,7 @@ export const createDocumentIdGenerator = (db: Db, batchSize: number) => {
 
 export const documents = (config: StoryflowConfig) => {
   const dbName = undefined; // config.workspaces[0].db;
+
   return {
     find: procedure
       .use(globals(config.api))
@@ -83,16 +107,99 @@ export const documents = (config: StoryflowConfig) => {
           return new RPCError({ code: "SERVER_ERROR" });
         }
       })
-      .query(async ({ folder, filters, limit, sort }) => {
-        const documents = await createFetcher(dbName!)({
+      .query(async ({ folder, filters, limit, sort: sort_ }) => {
+        let sort: Record<RawFieldId, 1 | -1> | undefined = undefined;
+
+        if (sort_) {
+          sort = Object.fromEntries(
+            sort_.map((el): [string, 1 | -1] => [
+              el.slice(1) as RawFieldId,
+              el.slice(0, 1) === "+" ? 1 : -1,
+            ])
+          );
+        }
+
+        const customCollection = getCustomCollection(
+          folder as FolderId,
+          config
+        );
+
+        if (customCollection?.externalData) {
+          const { fieldNames } = getCustomTemplateIds(customCollection.name);
+          const namedFilters = filters
+            ? modifyObject(filters, ([key, value]) => [
+                fieldNames[key as RawFieldId],
+                value[0],
+              ])
+            : {};
+
+          const namedSort = sort
+            ? modifyKeys(sort, (key) => fieldNames[key])
+            : undefined;
+
+          const data = await customCollection.externalData.readMany({
+            sort: namedSort,
+            filters: namedFilters,
+            limit,
+            offset: 0,
+          });
+
+          return data.map(createRecordToDocumentMapFn(customCollection));
+        }
+
+        /*
+        const isCustom = parseInt(folder, 16) < 256 ** 2;
+        if (isCustom) {
+          const custom = getCustomCollection(folder as FolderId, config);
+          const hook = custom?.hooks?.onReadMany;
+          if (hook && custom.template) {
+            const { fieldIds } = getCustomTemplateIds(custom.name);
+            const fieldNames = modifyObject(fieldIds, ([key, value]) => [
+              getRawFieldId(value),
+              key,
+            ]);
+
+            const namedFilters = filters
+              ? modifyObject(filters, ([key, value]) => [
+                  fieldNames[key as RawFieldId],
+                  value[0],
+                ])
+              : {};
+
+            const namedSort = modifyKeys(sort, (key) => fieldNames[key]);
+
+            const result = (
+              await hook(
+                { filters: namedFilters, limit, offset: 0, sort: namedSort },
+                read
+              )
+            ).map(createRecordToDocumentMapFn(custom));
+
+            console.log("RESULT", result);
+
+            return result;
+          }
+        }
+        */
+
+        return await dataFromDb.readMany({
           folder: folder as FolderId,
           filters: filters as Record<FieldId, ValueArray>,
           limit,
           sort,
+          offset: 0,
         });
-
-        return documents;
       }),
+
+    findTemplates: procedure.use(globals(config.api)).query(async () => {
+      const documents = await createFetcher(dbName!)({
+        folder: TEMPLATE_FOLDER,
+      });
+
+      documents.push(...getCustomTemplates(config));
+
+      return documents;
+    }),
 
     findByLabel: procedure
       .use(globals(config.api))
@@ -100,15 +207,17 @@ export const documents = (config: StoryflowConfig) => {
       .query(async (string) => {
         const db = await client.get(dbName);
 
+        const filters = {
+          [`values.${createRawTemplateFieldId(DEFAULT_FIELDS.label.id)}`]: {
+            $regex: string,
+            $options: "i",
+          },
+        };
+
         const articles = (
           (await db
             .collection<DBDocumentRaw>("documents")
-            .find({
-              [`values.${createRawTemplateFieldId(DEFAULT_FIELDS.label.id)}`]: {
-                $regex: string,
-                $options: "i",
-              },
-            })
+            .find(filters)
             .toArray()) ?? []
         ).map((el) => parseDocument(el));
 
@@ -119,27 +228,28 @@ export const documents = (config: StoryflowConfig) => {
       .use(globals(config.api))
       .schema(z.string())
       .query(async (id) => {
-        const db = await client.get(dbName);
+        const custom = getCustomTemplates(config).find((el) => el._id === id);
 
-        const documentRaw = await db
-          .collection<DBDocumentRaw>("documents")
-          .findOne({ _id: createObjectId(id) });
-
-        if (!documentRaw) {
-          const initialDoc: DBDocument = {
-            _id: id as DocumentId,
-            // folder: "" as FolderId,
-            versions: { config: [0] },
-            config: [],
-            record: {},
-          };
-          return initialDoc;
-          // return error({ message: "No article found" });
+        if (custom) {
+          return custom;
         }
 
-        const doc = parseDocument(documentRaw);
+        const customCollection = getCustomCollectionFromField(
+          id as FieldId,
+          config
+        );
 
-        return doc;
+        if (customCollection?.externalData) {
+          const data = await customCollection.externalData.readOne({
+            id: id as DocumentId,
+          });
+          return {
+            ...convertDataToDocument(data, customCollection),
+            _id: id as DocumentId,
+          };
+        }
+
+        return await dataFromDb.readOne({ id: id as DocumentId });
       }),
 
     update: procedure
@@ -147,49 +257,100 @@ export const documents = (config: StoryflowConfig) => {
       .schema(
         z.object({
           id: z.string(),
+          record: z.record(z.string(), z.any()),
           folder: z.string(),
           config: z.array(z.any()),
-          record: z.record(z.string(), z.any()),
           versions: z.record(z.string(), z.any()),
         })
       )
       .mutate(async (input) => {
         const documentId = input.id as DocumentId;
 
-        const db = await client.get(dbName);
+        const customCollection = getCustomCollection(
+          input.folder as FolderId,
+          config
+        );
 
-        const doc: Pick<
-          DBDocumentRaw,
-          "_id" | "fields" | "values" | "versions"
-        > = (await db
-          .collection<DBDocumentRaw>("documents")
-          .findOne({ _id: createObjectId(documentId) })) ?? {
-          _id: createObjectId(documentId),
-          fields: [],
-          values: {},
-          versions: { config: [0] },
-        };
+        let record: SyntaxTreeRecord = {};
+        let versions: DocumentVersionRecord = { config: [0] };
+        let action: "update" | "create" = "create";
+
+        if (customCollection?.externalData) {
+          const data = await customCollection.externalData.readOne({
+            id: documentId,
+          });
+          if (data) {
+            record = convertDataToRecord(data, customCollection, documentId);
+            action = "update";
+          }
+        } else {
+          const doc = await dataFromDb.readOne({ id: documentId });
+          if (doc) {
+            record = doc.record;
+            versions = doc.versions;
+            action = "update";
+          }
+        }
 
         // update record
-        const { record, derivatives } = await updateRecord({
+        const { record: newRecord, derivatives } = await updateRecord({
           documentId,
-          doc,
-          input,
+          oldRecord: record,
+          newRecord: input.record,
         });
 
         // update versions
-        const versions = Object.assign(doc.versions, input.versions);
+        const newVersions = Object.assign(versions, input.versions);
 
-        return await saveResult({
-          record,
-          derivatives,
-          versions,
-          documentId,
-          input,
-        });
+        if (customCollection?.externalData) {
+          if (action === "update") {
+            const data = await customCollection.externalData.update?.({
+              id: documentId,
+              data: convertRecordToData(newRecord, customCollection),
+              doc: convertRecordToData(record, customCollection),
+            });
+            return {
+              _id: documentId,
+              folder: input.folder as FolderId,
+              record: convertDataToRecord(data, customCollection, documentId),
+              versions: newVersions,
+              config: [],
+            } satisfies DBDocument;
+          } else {
+            const data = await customCollection.externalData.create?.({
+              id: documentId,
+              data: convertRecordToData(newRecord, customCollection),
+            });
+            return {
+              _id: documentId,
+              folder: input.folder as FolderId,
+              record: convertDataToRecord(data, customCollection, documentId),
+              versions: newVersions,
+              config: [],
+            } satisfies DBDocument;
+          }
+        } else {
+          if (action === "update") {
+            return await dataFromDb.update({
+              id: documentId,
+              derivatives,
+              record: newRecord,
+              versions: newVersions,
+              input,
+            });
+          } else {
+            return await dataFromDb.create({
+              id: documentId,
+              derivatives,
+              record: newRecord,
+              versions: newVersions,
+              input,
+            });
+          }
+        }
       }),
 
-    updateMany: procedure
+    import: procedure
       .use(globals(config.api))
       .schema(
         z.object({
@@ -206,25 +367,18 @@ export const documents = (config: StoryflowConfig) => {
 
         const documentId = input.id as DocumentId;
 
-        const doc: Pick<
-          DBDocumentRaw,
-          "_id" | "fields" | "values" | "versions"
-        > = {
-          _id: createObjectId(documentId),
-          fields: [],
-          values: {},
-          versions: { config: [0] },
-        };
-
         // update record
         let { record, derivatives } = await updateRecord({
           documentId,
-          doc,
-          input,
+          oldRecord: {},
+          newRecord: input.record,
         });
 
         // update versions
-        const versions = Object.assign(doc.versions, input.versions);
+        const versions = Object.assign(
+          { config: [0] } as DocumentVersionRecord,
+          input.versions
+        );
 
         const size = input.rows.length;
         const generateDocumentId = createDocumentIdGenerator(db, size);
@@ -288,32 +442,6 @@ export const documents = (config: StoryflowConfig) => {
                   | ColorToken;
               }
 
-              /*
-              const child = newNode.children[0];
-              
-              if (node.type === "to_boolean") {
-                return child === "true";
-              }
-              if (node.type === "to_file") {
-                const src = typeof child === "string" ? child : "";
-                return { src };
-              }
-              if (node.type === "to_date") {
-                const dateString = typeof child === "string" ? child : "";
-                const date = new Date(dateString);
-                const validDate =
-                  date.toString() !== "Invalid Date" ? date : new Date();
-                return { date: validDate.toISOString() };
-              }
-              if (node.type === "to_color") {
-                const color =
-                  typeof child === "string" && child.match(/^#[A-Fa-f0-9]{6}$/)
-                    ? child
-                    : "#ffffff";
-                return { color };
-              }
-              */
-
               return newNode;
             };
 
@@ -340,7 +468,7 @@ export const documents = (config: StoryflowConfig) => {
               });
             }
 
-            return saveResult({
+            return saveDocument({
               record,
               derivatives,
               versions,
@@ -364,22 +492,7 @@ export const documents = (config: StoryflowConfig) => {
       .use(globals(config.api))
       .schema(z.array(z.string()))
       .mutate(async (ids) => {
-        const db = await client.get(dbName);
-
-        const removes = ids.map((el) => createObjectId(el));
-
-        const result = await db
-          .collection<DBDocumentRaw>("documents")
-          .deleteMany({ _id: { $in: removes } });
-
-        if (!result.acknowledged) {
-          return new RPCError({
-            code: "SERVER_ERROR",
-            message: "Failed to delete",
-          });
-        }
-
-        return result.acknowledged;
+        return await dataFromDb.deleteMany({ ids: ids as DocumentId[] });
       }),
 
     getPaths: procedure
@@ -506,6 +619,141 @@ export const documents = (config: StoryflowConfig) => {
             }
           );
 
+        return null;
+      }),
+
+    submit: procedure
+      .schema(
+        z.object({
+          id: z.string(),
+          action: z.string(),
+          data: z.record(z.array(z.string())),
+          url: z.string(),
+          namespaces: z.array(z.string()).optional(),
+        })
+      )
+      .mutate(async ({ action, id, namespaces, url, data }) => {
+        console.log("IS SUBMITTING", action, url, data);
+        const doc = await findDocumentByUrl({
+          url,
+          namespaces,
+          dbName,
+        });
+
+        if (!doc) {
+          return new RPCError({
+            code: "NOT_FOUND",
+            status: 404,
+            message: "No server action found [1]",
+          });
+        }
+
+        const params = getUrlParams(url);
+
+        const getFieldRecord = createFieldRecordGetter(
+          doc.record,
+          { ...params, ...data },
+          createFetcher(dbName),
+          {
+            createActions: true,
+          }
+        );
+
+        const pageRecord = await getFieldRecord(
+          createTemplateFieldId(doc._id, DEFAULT_FIELDS.page.id)
+        );
+
+        if (!pageRecord) {
+          return new RPCError({
+            code: "NOT_FOUND",
+            status: 404,
+            message: "No server action found [2]",
+          });
+        }
+
+        const db = await client.get(dbName);
+
+        const actionValue = pageRecord.record[action as FieldId];
+
+        if (!action || !Array.isArray(actionValue) || action.length === 0) {
+          return new RPCError({
+            code: "NOT_FOUND",
+            status: 404,
+            message: "No server action found [3]",
+          });
+        }
+
+        const inserts = (actionValue as any[]).filter(
+          (
+            el
+          ): el is {
+            values: DBValueRecord;
+            action: "insert";
+            folder: FolderId;
+          } => typeof el === "object" && el !== null && el.action === "insert"
+        );
+
+        if (!inserts.length) {
+          return new RPCError({
+            code: "NOT_FOUND",
+            status: 404,
+            message: "No server action found [4]",
+          });
+        }
+
+        const generateDocumentId = createDocumentIdGenerator(
+          db,
+          inserts.length
+        );
+
+        await Promise.all(
+          inserts.map(async ({ folder, values }): Promise<DBDocument> => {
+            const documentId = await generateDocumentId();
+
+            const customCollection = getCustomCollection(folder, config);
+
+            const record = getSyntaxTreeRecord(documentId, {
+              values,
+              fields: [],
+            });
+
+            console.log(
+              "RECORD",
+              util.inspect({ record }, { depth: null, colors: true })
+            );
+
+            const versions: DocumentVersionRecord = { config: [0] };
+
+            if (customCollection?.externalData) {
+              const data = await customCollection.externalData.create?.({
+                id: documentId,
+                data: convertRecordToData(record, customCollection),
+              });
+              return {
+                _id: documentId,
+                folder,
+                record: convertDataToRecord(data, customCollection, documentId),
+                versions,
+                config: [],
+              } satisfies DBDocument;
+            } else {
+              const result = await dataFromDb.create({
+                id: documentId,
+                derivatives: [],
+                record,
+                versions,
+                input: {
+                  folder,
+                  versions: {},
+                  config: [],
+                },
+                isCreatedFromValues: true,
+              });
+
+              return result;
+            }
+          })
+        );
         return null;
       }),
   };

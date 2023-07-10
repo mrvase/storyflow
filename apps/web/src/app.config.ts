@@ -4,6 +4,7 @@ import { configs } from "./components";
 
 export const appConfig: AppConfig = {
   baseURL: process.env.BASE_URL as string,
+  mainBaseURL: process.env.MAIN_BASE_URL as string,
   label: "storyflow.dk",
   configs,
   // namespaces: process.env.NAMESPACES?.split(",") ?? [],

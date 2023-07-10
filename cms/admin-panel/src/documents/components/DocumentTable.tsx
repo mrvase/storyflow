@@ -12,6 +12,7 @@ import { useTranslation } from "../../translation/TranslationContext";
 import { useNavigate, useRoute } from "@nanokit/router";
 import { TEMPLATE_FOLDER } from "@storyflow/cms/constants";
 import { InlineButton } from "../../elements/InlineButton";
+import { shortenUrlId } from "../../utils/shortenUrlId";
 
 export default function Table({
   columns,
@@ -59,7 +60,7 @@ export default function Table({
         </thead>
       )}
       <tbody>
-        {documents.map((doc, index) => (
+        {documents.map((doc) => (
           <Row
             key={doc._id}
             columns={columns}
@@ -105,14 +106,10 @@ function Row({
   const { index: panelIndex } = useRoute("parallel");
   const navigate = useNavigate();
 
-  const type = route.accumulated.endsWith(
-    `/${parseInt(TEMPLATE_FOLDER, 16).toString(16)}`
-  )
+  const type = route.accumulated.endsWith(`/${shortenUrlId(TEMPLATE_FOLDER)}`)
     ? "t"
     : "d";
-  const to = `${route.accumulated}/${type}/${parseInt(doc._id, 16).toString(
-    16
-  )}`;
+  const to = `${route.accumulated}/${type}/${shortenUrlId(doc._id)}`;
 
   const { dragHandleProps } = useDragItem({
     type: `link:${panelIndex}`,

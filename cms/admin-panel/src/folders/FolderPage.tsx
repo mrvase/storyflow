@@ -59,6 +59,7 @@ import { Bars3Icon, LinkIcon } from "@heroicons/react/24/outline";
 import { ImportContextProvider } from "./ImportContext";
 import { BlockButton } from "../elements/BlockButton";
 import { useNav } from "../layout/components/Nav";
+import { shortenUrlId } from "../utils/shortenUrlId";
 
 const spaces: { label: string; item: Omit<Space, "id"> }[] = [
   {
@@ -454,9 +455,7 @@ export function FolderTemplateButton({
         label={t.folders.editTemplate({ label: label ?? "" })}
         onClick={() => {
           if (template) {
-            navigate(
-              `${route.accumulated}/t/${parseInt(template, 16).toString(16)}`
-            );
+            navigate(`${route.accumulated}/t/${shortenUrlId(template)}`);
             return;
           }
         }}

@@ -95,7 +95,7 @@ export const useSaveDocument = ({
     onSuccess,
   });
 
-  const updateMany = useMutation(mutate.documents.updateMany, {
+  const updateMany = useMutation(mutate.documents.import, {
     onSuccess,
   });
 

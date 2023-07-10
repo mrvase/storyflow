@@ -103,7 +103,7 @@ export interface DBDocumentRaw {
   versions: DocumentVersionRecord;
   /* compute */
   // ids: DBId<NestedDocumentId>[];
-  cached: ValueArray[];
+  cached: { k: DBId<FieldId>; v: ValueArray }[];
   fields: DBSyntaxStreamBlock[];
   values: DBValueRecord;
   updated: Record<RawFieldId, number>;

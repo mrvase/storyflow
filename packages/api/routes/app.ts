@@ -1,4 +1,4 @@
-import { RPCError } from "@nanorpc/server";
+import { RPCError, isError } from "@nanorpc/server";
 import { client } from "../mongo";
 import { z } from "zod";
 import { createFieldRecordGetter } from "@storyflow/cms/get-field-record";
@@ -6,14 +6,11 @@ import { calculateRootFieldFromRecord } from "@storyflow/cms/calculate-server";
 import type {
   ApiConfig,
   AppConfig,
-  FieldId,
-  FolderId,
   LibraryConfig,
   PropConfigRecord,
-  PropGroup,
 } from "@storyflow/shared/types";
-import type { DBDocumentRaw, DBValueRecord } from "../types";
-import { getUrlParams, parseDocument } from "../convert";
+import type { DBDocumentRaw } from "../types";
+import { getUrlParams } from "../convert";
 import { getPaths } from "../paths";
 import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
 import {
@@ -24,8 +21,6 @@ import { createObjectId } from "../mongo";
 import { createFetcher, findDocumentByUrl } from "../create-fetcher";
 import { globals } from "../globals";
 import { cors, procedure } from "@storyflow/server/rpc";
-import { createDocumentIdGenerator } from "./documents";
-import util from "util";
 
 const modifyValues = <Input, Output>(
   obj: Record<string, Input>,
@@ -248,113 +243,32 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
               .slice(1)
               .join("/") ?? "";
 
-        const doc = await findDocumentByUrl({
-          url,
-          namespaces: appConfig.namespaces,
-          dbName,
+        const body = JSON.stringify({
+          input: {
+            id,
+            action,
+            data,
+            url,
+            ...(appConfig.namespaces && {
+              namespaces: appConfig.namespaces,
+            }),
+          },
         });
 
-        if (!doc) {
-          return new RPCError({
-            code: "NOT_FOUND",
-            status: 404,
-            message: "No server action found [1]",
-          });
-        }
-
-        const params = getUrlParams(url);
-
-        const getFieldRecord = createFieldRecordGetter(
-          doc.record,
-          { ...params, ...data },
-          createFetcher(dbName),
+        const response = await fetch(
+          `${appConfig.mainBaseURL}/api/documents/submit`,
           {
-            createActions: true,
+            method: "POST",
+            body,
           }
         );
+        const json = await response.json();
 
-        const pageRecord = await getFieldRecord(
-          createTemplateFieldId(doc._id, DEFAULT_FIELDS.page.id)
-        );
-
-        if (!pageRecord) {
+        if (isError(json)) {
           return new RPCError({
-            code: "NOT_FOUND",
-            status: 404,
-            message: "No server action found [2]",
+            code: json.error,
           });
         }
-
-        const db = await client.get(dbName);
-
-        const actionValue = pageRecord.record[action as FieldId];
-
-        if (!action || !Array.isArray(actionValue) || action.length === 0) {
-          return new RPCError({
-            code: "NOT_FOUND",
-            status: 404,
-            message: "No server action found [3]",
-          });
-        }
-
-        const inserts = (actionValue as any[]).filter(
-          (
-            el
-          ): el is {
-            values: DBValueRecord;
-            action: "insert";
-            folder: FolderId;
-          } => typeof el === "object" && el !== null && el.action === "insert"
-        );
-
-        if (!inserts.length) {
-          return new RPCError({
-            code: "NOT_FOUND",
-            status: 404,
-            message: "No server action found [4]",
-          });
-        }
-
-        const generateDocumentId = createDocumentIdGenerator(
-          db,
-          inserts.length
-        );
-
-        const docs = await Promise.all(
-          inserts.map(async ({ folder, values }): Promise<DBDocumentRaw> => {
-            const documentId = await generateDocumentId();
-
-            const timestamp = Date.now();
-
-            const updated = Object.fromEntries(
-              Object.entries(values).map(([key, value]) => [key, timestamp])
-            );
-
-            return {
-              _id: createObjectId(documentId),
-              folder: createObjectId(folder),
-              values,
-              fields: [],
-              config: [],
-              versions: { config: [0] },
-              updated,
-              cached: [],
-            };
-          })
-        );
-
-        const result1 = await db
-          .collection<DBDocumentRaw>("documents")
-          .insertMany(docs);
-
-        if (!result1.acknowledged) {
-          return new RPCError({
-            code: "SERVER_ERROR",
-            status: 500,
-            message: "Could not save document",
-          });
-        }
-        return result1.acknowledged;
       }),
   };
 };

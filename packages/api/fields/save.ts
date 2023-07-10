@@ -17,7 +17,7 @@ import type {
   SyntaxTree,
   NestedField,
 } from "@storyflow/cms/types";
-import { getSyntaxTreeRecord, parseDocument } from "../convert";
+import { parseDocument, unwrapObjectId } from "../convert";
 import { client } from "../mongo";
 import { isSyntaxTree } from "@storyflow/cms/syntax-tree";
 import {
@@ -85,13 +85,13 @@ a different value now that it is imported back into the article.
 */
 
 const getFirstImportSet = ({
-  documentId,
   record,
   updatedFieldIds,
+  documentId,
 }: {
-  documentId: DocumentId;
   record: SyntaxTreeRecord;
   updatedFieldIds: Set<FieldId>;
+  documentId: DocumentId;
 }) => {
   let graph = getGraph(record);
 
@@ -184,20 +184,15 @@ const getSecondImportSet = ({
 };
 
 export const updateRecord = async ({
-  doc,
+  oldRecord: record,
+  newRecord,
   documentId,
-  input,
 }: {
-  doc: Pick<DBDocumentRaw, "_id" | "fields" | "values" | "versions">;
+  oldRecord: SyntaxTreeRecord;
+  newRecord: SyntaxTreeRecord;
   documentId: DocumentId;
-  input: { record: SyntaxTreeRecord };
 }) => {
-  const db = await client.get();
-
-  const updatedFieldIds = new Set(Object.keys(input.record) as FieldId[]);
-
-  // create record from database
-  let record = getSyntaxTreeRecord(documentId, doc);
+  const updatedFieldIds = new Set(Object.keys(newRecord) as FieldId[]);
 
   // is this needed?
   record = extractRootRecord(documentId, record, {
@@ -205,7 +200,7 @@ export const updateRecord = async ({
   });
 
   // UPDATE RECORD
-  Object.assign(record, input.record);
+  Object.assign(record, newRecord);
 
   // trim to not include removed nested fields
   record = extractRootRecord(documentId, record, {
@@ -217,6 +212,8 @@ export const updateRecord = async ({
   // BUT! template fields can be nested and therefore hidden!!
   // - possible solution: Include ids of nested template fields in request.
   // I should also delete them from the "versions" and "updated" objects.
+
+  const db = await client.get();
 
   const importedDocuments: (DBDocument & { values: DBValueRecord })[] = [];
   const getImportedDocuments = (externalDocumentIds: Set<DocumentId>) => {
@@ -291,22 +288,96 @@ export const updateRecord = async ({
   return { record, derivatives };
 };
 
-export async function saveResult({
+async function propagateResult({
+  doc,
+  derivatives,
+  input,
+}: {
+  doc: DBDocumentRaw;
+  derivatives: Update[];
+  input: {
+    versions: Partial<DocumentVersionRecord>;
+  };
+}) {
+  const db = await client.get();
+
+  const updatedRawFieldIdsAtRoot = Object.keys(input.versions).filter(
+    (el) => el !== "config"
+  ) as RawFieldId[];
+
+  // includes imports by default
+  const documentId = unwrapObjectId(doc._id);
+
+  const record = parseDocument(doc).record;
+  const cachedRecord: Record<FieldId, ValueArray> = Object.fromEntries(
+    doc.cached.map(({ k, v }) => [unwrapObjectId(k), v])
+  );
+
+  console.log(
+    util.inspect({ savedRecord: record }, { depth: null, colors: true })
+  );
+
+  // create updates
+
+  const updates: Update[] = Array.from(updatedRawFieldIdsAtRoot, (rawId) => {
+    const id = computeFieldId(documentId, rawId);
+    console.log("UPDATING", id);
+    const value = createSyntaxStream(record[id], (id) => createObjectId(id));
+    const objectId = createObjectId(id);
+    const _imports = getFieldBlocksWithDepths(id, record).filter(
+      (el) => el.k.toHexString() !== id
+    );
+    return {
+      k: objectId,
+      v: value,
+      depth: 0,
+      result: doc.values[rawId] ?? cachedRecord[id] ?? [],
+      _imports,
+      // imports: [], // should just be empty
+      // nested: [],
+      updated: true,
+    };
+  });
+
+  console.log(util.inspect({ updates }, { depth: null, colors: true }));
+
+  /*
+  I could first find the articles and in the update stage use the article ids
+  then I could send urls back to the client for revalidation.
+  */
+
+  const stages = createStages(updates, derivatives);
+
+  await db.collection<DBDocumentRaw>("documents").updateMany(
+    {
+      "fields.k": { $in: updates.map((el) => el.k) },
+      _id: { $ne: createObjectId(documentId) },
+    },
+    stages,
+    {
+      writeConcern: { w: "majority" },
+    }
+  );
+}
+
+export async function saveDocument({
   input,
   versions,
   record,
   derivatives,
   documentId,
+  isCreatedFromValues,
 }: {
   input: {
     folder: string;
-    versions: Record<string, number>;
+    versions: Partial<DocumentVersionRecord>;
     config: DocumentConfig;
   };
-  versions: Record<string, number>;
+  versions: DocumentVersionRecord;
   record: SyntaxTreeRecord;
   derivatives: Update[];
   documentId: DocumentId;
+  isCreatedFromValues?: boolean;
 }) {
   const db = await client.get();
 
@@ -325,17 +396,23 @@ export async function saveResult({
   const timestamp = Date.now();
   const updated: Record<string, number> = {};
 
-  const updatedRawFieldIdsAtRoot = Object.keys(input.versions).filter(
-    (el) => el !== "config"
-  ) as RawFieldId[];
+  if (isCreatedFromValues) {
+    Object.entries(values).forEach(([rawId, value]) => {
+      updated[`updated.${rawId}`] = timestamp;
+    });
+  } else {
+    const updatedRawFieldIdsAtRoot = Object.keys(input.versions).filter(
+      (el) => el !== "config"
+    ) as RawFieldId[];
 
-  updatedRawFieldIdsAtRoot.forEach((rawId) => {
-    updated[`updated.${rawId}`] = timestamp;
-    const id = computeFieldId(documentId, rawId);
-    if (!(id in values) && !isTemplateField(id)) {
-      cached.push(createObjectId(id));
-    }
-  });
+    updatedRawFieldIdsAtRoot.forEach((rawId) => {
+      updated[`updated.${rawId}`] = timestamp;
+      const id = computeFieldId(documentId, rawId);
+      if (!(id in values) && !isTemplateField(id)) {
+        cached.push(createObjectId(id));
+      }
+    });
+  }
 
   const stages: any = [
     {
@@ -349,10 +426,15 @@ export async function saveResult({
         ...updated,
       },
     },
-    ...createStages([], derivatives, { cache: Boolean(cached.length) }),
   ];
 
-  const result1 = await db
+  if (fields.length > 0) {
+    stages.push(
+      ...createStages([], derivatives, { cache: Boolean(cached.length) })
+    );
+  }
+
+  const result = await db
     .collection<DBDocumentRaw>("documents")
     .findOneAndUpdate({ _id: createObjectId(documentId) }, stages, {
       upsert: true,
@@ -360,68 +442,59 @@ export async function saveResult({
       writeConcern: { w: "majority" },
     });
 
-  if (result1.ok) {
-    const doc = result1.value!;
-    // includes imports by default
-    const record = parseDocument(doc).record;
-    const cachedValues = doc!.cached;
-    const cachedRecord: Record<FieldId, ValueArray> = Object.fromEntries(
-      cached.map((id, index) => [id, cachedValues[index]])
-    );
+  const doc = result.value;
 
-    console.log(
-      util.inspect({ savedRecord: record }, { depth: null, colors: true })
-    );
-
-    // create updates
-
-    const updates: Update[] = Array.from(updatedRawFieldIdsAtRoot, (rawId) => {
-      const id = computeFieldId(documentId, rawId);
-      console.log("UPDATING", id);
-      const value = createSyntaxStream(record[id], (id) => createObjectId(id));
-      const objectId = createObjectId(id);
-      const _imports = getFieldBlocksWithDepths(id, record).filter(
-        (el) => el.k.toHexString() !== id
-      );
-      return {
-        k: objectId,
-        v: value,
-        depth: 0,
-        result: doc.values[rawId] ?? cachedRecord[id] ?? [],
-        _imports,
-        // imports: [], // should just be empty
-        // nested: [],
-        updated: true,
-      };
+  if (!doc) {
+    throw new RPCError({
+      code: "SERVER_ERROR",
+      message: "Save failed.",
     });
-
-    console.log(util.inspect({ updates }, { depth: null, colors: true }));
-
-    /*
-    I could first find the articles and in the update stage use the article ids
-    then I could send urls back to the client for revalidation.
-    */
-
-    const stages = createStages(updates, derivatives);
-
-    await db.collection<DBDocumentRaw>("documents").updateMany(
-      {
-        "fields.k": { $in: updates.map((el) => el.k) },
-        _id: { $ne: createObjectId(documentId) },
-      },
-      stages,
-      {
-        writeConcern: { w: "majority" },
-      }
-    );
-
-    return parseDocument(result1.value!);
   }
 
-  return new RPCError({
-    code: "SERVER_ERROR",
-    message: "Save failed.",
-  });
+  if (!isCreatedFromValues) {
+    await propagateResult({ doc, derivatives, input });
+  }
+
+  return parseDocument(doc);
+}
+
+export async function createDocument({
+  folderId,
+  values,
+  documentId,
+}: {
+  values: DBValueRecord;
+  documentId: DocumentId;
+  folderId: FolderId;
+}) {
+  const db = await client.get();
+
+  const timestamp = Date.now();
+
+  const updated = Object.fromEntries(
+    Object.keys(values).map((key) => [key, timestamp])
+  );
+
+  const doc: DBDocumentRaw = {
+    _id: createObjectId(documentId),
+    folder: createObjectId(folderId),
+    values,
+    fields: [],
+    config: [],
+    versions: { config: [0] },
+    updated,
+    cached: [],
+  };
+
+  const result = await db.collection<DBDocumentRaw>("documents").insertOne(doc);
+
+  if (!result.acknowledged) {
+    return new RPCError({
+      code: "SERVER_ERROR",
+      status: 500,
+      message: "Could not save document",
+    });
+  }
 }
 
 const getFieldBlocksWithDepths = (

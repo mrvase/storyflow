@@ -8,6 +8,8 @@ import UrlField from "./UrlField";
 import { FieldIdContext } from "./FieldIdContext";
 import { FieldRestrictionsContext } from "./FieldIdContext";
 import type { FieldProps } from "./types";
+import { useIsCustomFolder } from "../folders/FolderPageContext";
+import { ReadOnlyField } from "./ReadonlyField";
 
 const Components: { [K in FieldUI | "default"]: React.FC<FieldProps> } = {
   default: DefaultFieldRoot,
@@ -33,7 +35,12 @@ export function RenderField({
     [fieldId, fieldConfigFromProps]
   );
 
-  const Component = Components[fieldConfig.ui ?? "default"];
+  let Component = Components[fieldConfig.ui ?? "default"];
+
+  const isCustom = useIsCustomFolder();
+  if (isCustom) {
+    Component = ReadOnlyField;
+  }
 
   return (
     <FieldIdContext.Provider value={fieldId}>

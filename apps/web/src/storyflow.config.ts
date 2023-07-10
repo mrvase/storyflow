@@ -1,5 +1,6 @@
 import { StoryflowConfig } from "@storyflow/api";
 import { Mailchimp } from "./collections/Mailchimp";
+import { MailchimpLists } from "./collections/MailchimpLists";
 
 export const storyflowConfig: StoryflowConfig = {
   baseURL: process.env.BASE_URL as string,
@@ -31,7 +32,7 @@ export const storyflowConfig: StoryflowConfig = {
       name: "w080",
     },
   ],
-  collections: [Mailchimp],
+  collections: [MailchimpLists, Mailchimp],
   templates: [],
 };
 

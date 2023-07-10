@@ -14,6 +14,8 @@ import { DEFAULT_SYNTAX_TREE } from "@storyflow/cms/constants";
 import { createTemplateFieldId } from "@storyflow/cms/ids";
 import { getDocumentLabel } from "../documents/useDocumentLabel";
 import { useTranslation } from "../translation/TranslationContext";
+import { query } from "../clients/client";
+import { useImmutableQuery } from "@nanorpc/client/swr";
 
 export function AddTemplateDialog({
   isOpen,
@@ -70,7 +72,9 @@ export function AddTemplateDialog({
     [push, folderId, addDocument, templateFolderId, close]
   );
 
-  const { documents: templates } = useDocumentList(templateFolderId);
+  const { data: templates } = useImmutableQuery(
+    query.documents.findTemplates()
+  );
 
   const templateOptions = (templates ?? []).map((el) => ({
     value: el._id,

@@ -10,7 +10,7 @@ import { StoryflowConfig } from "@storyflow/shared/types";
 import { createRawTemplateFieldId } from "@storyflow/cms/ids";
 import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
 import { procedure } from "@storyflow/server/rpc";
-import { getFolderFromCollection } from "../collections/convert";
+import { getCustomFolders } from "../collections/convert";
 
 const validate = async (email: string, admin: string) => {
   console.log("validate", email, admin);
@@ -134,8 +134,6 @@ export const admin = (config: StoryflowConfig) => {
     getFolders: procedure.use(globals(config.api)).query(async () => {
       const db = await client.get(dbName);
 
-      // const customFolders = config.collections.map(getFolderFromCollection);
-
       const folders = await db
         .collection<{
           name: "folders";
@@ -144,8 +142,12 @@ export const admin = (config: StoryflowConfig) => {
         }>("counters")
         .findOne({ name: "folders" });
 
+      const record = folders?.value ?? {};
+
+      Object.assign(record, getCustomFolders(config));
+
       return {
-        record: folders?.value ?? {},
+        record,
         version: folders?.version ?? ([0] as [0]),
       };
     }),

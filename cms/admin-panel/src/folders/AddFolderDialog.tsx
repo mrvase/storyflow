@@ -16,6 +16,8 @@ import {
   SpaceTransactionEntry,
 } from "../operations/actions";
 import { useAddDocument } from "../documents/useAddDocument";
+import { useTranslation } from "../translation/TranslationContext";
+import { useFolders } from "./FoldersContext";
 
 export function AddFolderDialog({
   isOpen,
@@ -28,6 +30,8 @@ export function AddFolderDialog({
   folderId: FolderId;
   spaceId: SpaceId;
 }) {
+  const t = useTranslation();
+
   const generateFolderId = useFolderIdGenerator();
   const generateDocumentId = useDocumentIdGenerator();
 
@@ -39,6 +43,19 @@ export function AddFolderDialog({
 
   const onSubmit = React.useCallback(
     async (type: string, data: FormData) => {
+      if (type === "existing") {
+        const id = data.get("value") as FolderId;
+        push(
+          createTransaction((t) =>
+            t.target(`${folderId}:${spaceId}`).splice({
+              index: 0,
+              insert: [id],
+            })
+          )
+        );
+        return;
+      }
+
       const label = (data.get("value") as string) ?? "";
       if (!label) return;
       const newFolderId = generateFolderId();
@@ -94,6 +111,11 @@ export function AddFolderDialog({
     ]
   );
 
+  const folderOptions = Array.from(useFolders().values()).map((el) => ({
+    value: el._id,
+    label: el.label,
+  }));
+
   return (
     <Dialog isOpen={isOpen} close={close} title="Tilføj mappe">
       <div className="flex flex-col gap-2">
@@ -108,6 +130,17 @@ export function AddFolderDialog({
           icon={ComputerDesktopIcon}
           type="app"
           label="App"
+          onSubmit={onSubmit}
+        />
+        <DialogOption
+          icon={FolderIcon}
+          type="existing"
+          label="Eksisterende mappe"
+          input={{
+            options: folderOptions,
+            label: "Mapper",
+            button: t.general.accept(),
+          }}
           onSubmit={onSubmit}
         />
       </div>

@@ -14,6 +14,7 @@ import { DragIcon } from "../../elements/DragIcon";
 import { useFolder } from "../FoldersContext";
 import { getFolderData } from "../getFolderData";
 import { useLocalStorage } from "../../state/useLocalStorage";
+import { isCustomFolder } from "@storyflow/cms/ids";
 
 export function FolderItem({
   index,
@@ -51,6 +52,8 @@ export function FolderItem({
 
   const style = getTranslateDragEffect(state);
 
+  const isCustom = isCustomFolder(folder._id);
+
   const colors = {
     data: cl(
       "bg-gray-50 dark:bg-gray-850",
@@ -59,12 +62,16 @@ export function FolderItem({
         : "border-gray-100 hover:border-gray-300 dark:border-gray-800 hover:dark:border-gray-600"
     ),
     app: cl(
-      "bg-yellow-50 text-yellow-800 dark:text-yellow-200 dark:bg-yellow-400/5",
+      "bg-yellow-50 text-yellow-800 dark:text-yellow-200 dark:bg-yellow-800/10",
       isOpen
         ? "border-gray-300 dark:border-gray-600"
         : "border-yellow-200 hover:border-yellow-400 dark:border-yellow-400/10 hover:dark:border-yellow-400/40"
     ),
-  }[type];
+    custom: cl(
+      "bg-purple-50 text-purple-800 dark:text-purple-200 dark:bg-purple-800/10",
+      "border-purple-200 hover:border-purple-400 dark:border-purple-400/10 hover:dark:border-purple-400/40"
+    ),
+  }[isCustom ? "custom" : type];
 
   const { index: panelIndex } = useRoute("parallel");
 

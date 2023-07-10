@@ -206,16 +206,13 @@ const routes: Route[] = [
         },
       });
 
-      const documents = query.documents.find(
-        { folder: TEMPLATE_FOLDER, limit: 50 },
-        {
-          onSuccess(result) {
-            result.forEach((doc) => {
-              cache.set(query.documents.findById(doc._id), doc);
-            });
-          },
-        }
-      );
+      const documents = query.documents.findTemplates(undefined, {
+        onSuccess(result) {
+          result.forEach((doc) => {
+            cache.set(query.documents.findById(doc._id), doc);
+          });
+        },
+      });
 
       cancelSync?.();
       cancelSync = collab.syncOnInterval();

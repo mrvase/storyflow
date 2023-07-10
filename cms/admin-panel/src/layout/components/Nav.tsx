@@ -28,6 +28,7 @@ import { useOrganization } from "../../clients/auth";
 import { useFolder } from "../../folders/FoldersContext";
 import { DocumentId, FolderId } from "@storyflow/shared/types";
 import { getFolderData } from "../../folders/getFolderData";
+import { shortenUrlId } from "../../utils/shortenUrlId";
 
 export const useNav = () => {
   const { slug } = useOrganization()!;
@@ -142,7 +143,7 @@ export default function Nav() {
             <NavButton
               {...navigateProps(
                 pathname,
-                `/~/f/${parseInt(TEMPLATE_FOLDER, 16).toString(16)}`
+                `/~/f/${shortenUrlId(TEMPLATE_FOLDER)}`
               )}
               icon={DocumentDuplicateIcon}
             >

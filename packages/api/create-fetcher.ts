@@ -5,6 +5,7 @@ import { client } from "./mongo";
 import { DBDocumentRaw } from "./types";
 import { createRawTemplateFieldId } from "@storyflow/cms/ids";
 import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
+import { modifyKeys, modifyObject } from "./utils";
 
 export const findDocumentByUrl = async ({
   dbName,
@@ -52,37 +53,36 @@ export const createFetcher =
   (dbName: string | undefined) =>
   async (fetchObject: {
     folder: FolderId;
-    filters: Record<RawFieldId, ValueArray>;
-    limit: number;
-    sort?: string[];
+    filters?: Record<RawFieldId, ValueArray>;
+    limit?: number;
+    sort?: Record<RawFieldId, 1 | -1>;
   }) => {
-    const filters = Object.fromEntries(
-      Object.entries(fetchObject.filters ?? {})
-        .filter(([, value]) => Array.isArray(value) && value.length > 0)
-        .map(([key, value]) => {
-          return [`values.${key}`, { $elemMatch: { $in: value } }];
-        })
-    );
+    let filters: object = {};
 
-    const sort = fetchObject.sort?.length
-      ? Object.fromEntries(
-          fetchObject.sort.map((el): [string, 1 | -1] => [
-            `values.${el.slice(1)}`,
-            el.slice(0, 1) === "+" ? 1 : -1,
-          ])
-        )
+    if (fetchObject.filters) {
+      filters = modifyObject(fetchObject.filters, ([key, value]) => {
+        if (!Array.isArray(value) || value.length === 0) return;
+        return [`values.${key}`, { $elemMatch: { $in: value } }];
+      });
+    }
+
+    const sort = fetchObject.sort
+      ? modifyKeys(fetchObject.sort, (el) => `values.${el}`)
       : { _id: -1 as -1 };
 
     const db = await client.get(dbName);
-    const result = await db
+
+    let cursor = db
       .collection<DBDocumentRaw>("documents")
       .find({
         folder: createObjectId(fetchObject.folder),
         ...filters,
       })
-      .sort(sort)
-      .limit(fetchObject.limit)
-      .toArray();
+      .sort(sort);
 
-    return result.map(parseDocument);
+    if (fetchObject.limit) {
+      cursor = cursor.limit(fetchObject.limit);
+    }
+
+    return (await cursor.toArray()).map(parseDocument);
   };

@@ -26,7 +26,7 @@ export const createFieldRecordGetter = (
     folder: FolderId;
     filters: Record<RawFieldId, ValueArray>;
     limit: number;
-    sort?: Sorting[];
+    sort?: Record<RawFieldId, 1 | -1>;
   }) => Promise<{ _id: DocumentId; record: SyntaxTreeRecord }[]>,
   options: {
     createActions?: boolean;
@@ -63,11 +63,20 @@ export const createFieldRecordGetter = (
 
           console.log("FILTERS FILTERS FILTERS");
 
+          const sort = el.sort
+            ? (Object.fromEntries(
+                el.sort.map((el) => [
+                  el.slice(1) as RawFieldId,
+                  el.slice(0, 1) === "+" ? 1 : -1,
+                ])
+              ) as Record<RawFieldId, 1 | -1>)
+            : undefined;
+
           const articles = await fetch({
             folder: el.folder.folder,
             filters,
             limit: el.limit,
-            ...(el.sort && { sort: el.sort }),
+            ...(sort && { sort }),
           });
 
           let list: NestedDocument[] = [];

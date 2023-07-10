@@ -113,6 +113,10 @@ export const getFieldNumber = (id: FieldId | RawFieldId) => {
   return parseInt(id.slice(-6), 16);
 };
 
+export const getFolderNumber = (id: FolderId) => {
+  return parseInt(id.slice(-12), 16);
+};
+
 export const replaceDocumentId = (
   id: FieldId,
   newDocumentId: DocumentId | NestedDocumentId
@@ -191,6 +195,10 @@ export const getTemplateDocumentId = (id: RawFieldId | FieldId) => {
 
 export const isTemplateField = (id: FieldId) => {
   return getTemplateDocumentId(id) !== getDocumentId(id);
+};
+
+export const isCustomFolder = (id: FolderId) => {
+  return getFolderNumber(id) < 256 ** 2;
 };
 
 export const createRawTemplateFieldId = (fieldId: FieldId) => {

@@ -190,8 +190,9 @@ const createCalculationStage = (
       ? [
           {
             $set: {
-              cached: $.map($doc.cached, (id) =>
-                $.getField(
+              cached: $.map($doc.cached, (id) => ({
+                k: id,
+                v: $.getField(
                   $.ifNull(
                     $.find(
                       $doc.fields as (DBSyntaxStreamBlock & {
@@ -202,8 +203,8 @@ const createCalculationStage = (
                     { result: [] as Value[] }
                   ),
                   "result"
-                )
-              ),
+                ),
+              })),
             },
           },
         ]

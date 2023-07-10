@@ -11,6 +11,8 @@ export type * from "@nanorpc/server";
 
 export { isError } from "@nanorpc/server";
 
+export { createFilterFn, createSortFn } from "./collections/helpers";
+
 const createAPI = (config: StoryflowConfig) => ({
   admin: admin(config),
   documents: documents(config),

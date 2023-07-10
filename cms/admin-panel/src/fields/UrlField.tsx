@@ -37,8 +37,8 @@ import {
 } from "../folders/AddDocumentDialog";
 import { createSlug } from "../utils/createSlug";
 import { getDocumentLabel } from "../documents/useDocumentLabel";
-import { useFolderDomains } from "../folders/FolderDomainsContext";
 import { useAppConfig } from "../AppConfigContext";
+import { shortenUrlId } from "../utils/shortenUrlId";
 
 const getUrlStringFromValue = (value: ValueArray | SyntaxTree) => {
   const getString = (val: any[]) => {
@@ -191,11 +191,10 @@ export default function UrlField({ id }: FieldProps) {
   const navigate = useNavigate();
   const route = useRoute();
 
-  const replacePage = (id: string) =>
-    `${route.accumulated.split("/").slice(0, -1).join("/")}/${parseInt(
-      id,
-      16
-    ).toString(16)}`;
+  const replacePage = (id: DocumentId) =>
+    `${route.accumulated.split("/").slice(0, -1).join("/")}/${shortenUrlId(
+      id
+    )}`;
 
   let parentSlugs = parentUrl.split("/");
   if (parentSlugs[0] !== "") {

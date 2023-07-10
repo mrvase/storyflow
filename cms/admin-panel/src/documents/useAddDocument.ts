@@ -17,6 +17,7 @@ import {
 } from "./template-fields";
 import { createDocumentTransformer } from "../operations/apply";
 import { useNavigate, useRoute } from "@nanokit/router";
+import { shortenUrlId } from "../utils/shortenUrlId";
 
 export const useAddDocument = (
   options: { type?: "template" | "document"; navigate?: boolean } = {}
@@ -77,7 +78,7 @@ export const useAddDocument = (
         navigate(
           `${route.accumulated}/${
             options.type === "template" ? "t" : "d"
-          }/${parseInt(id, 16).toString(16)}`
+          }/${shortenUrlId(id)}`
         );
       }
       return id;

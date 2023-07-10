@@ -171,9 +171,9 @@ export type DocumentVersionRecord = Record<
 
 export interface DBDocument {
   _id: DocumentId;
+  record: SyntaxTreeRecord;
   folder?: FolderId; // not defined on new document generated entirely from id
   config: DocumentConfig;
-  record: SyntaxTreeRecord;
   versions: DocumentVersionRecord;
 }
 

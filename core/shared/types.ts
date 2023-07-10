@@ -380,13 +380,12 @@ export type FieldType =
   | "data"
   | "action";
 
-type Prettify<T> = { [K in keyof T]: T[K] } & {};
-
 export type CollectionField = {
   name: string;
   label: string;
   type: FieldType;
   hidden?: boolean;
+  useAsTitle?: boolean;
 };
 
 type CollectionRecord<TFields extends TemplateFields | undefined> =
@@ -401,6 +400,7 @@ type CollectionRecord<TFields extends TemplateFields | undefined> =
 
 export type Template = {
   name: string;
+  label: string;
   fields: TemplateFields;
 };
 
@@ -418,33 +418,66 @@ export type CollectionInner<
   template?: TFields extends TemplateFields
     ? TFields
     : TemplateFields | undefined;
+  externalData?: {
+    readOne: (input: { id: string }) => Promise<TData>;
+    readMany: (input: {
+      filters: Partial<TData>;
+      limit: number;
+      offset: number;
+      sort?: Record<string, 1 | -1>;
+    }) => Promise<TData[]>;
+    create?: (input: { id: string; data: TData }) => Promise<TData>;
+    update?: (input: {
+      id: string;
+      data: Partial<TData>;
+      doc: TData;
+    }) => Promise<TData>;
+    deleteMany?: (input: { ids: string[] }) => Promise<void>;
+  };
   hooks?: {
     onCreate?: (
       options: { id: string; data: TData },
-      create: () => void
-    ) => void;
+      create: (options: {
+        id: string;
+        data: TData;
+      }) => Promise<{ id: string; data: TData; metadata: any }>
+    ) => Promise<{ id: string; data: TData; metadata: any }>;
     onUpdate?: (
       options: {
         id: string;
         data: Partial<TData>;
+      } & {
         doc: TData;
       },
-      update: () => void
-    ) => void;
-    onDelete?: (input: { id: string }, remove: () => void) => void;
-    onRead?: (
+      update: (options: {
+        id: string;
+        data: Partial<TData>;
+      }) => Promise<{ id: string; data: TData; metadata: any }>
+    ) => Promise<{ id: string; data: TData; metadata: any }>;
+    onDelete?: (
       options: { id: string },
-      read: () => Promise<TData>
-    ) => Promise<TData>;
+      remove: (options: { id: string }) => Promise<void>
+    ) => Promise<void>;
+    onReadOne?: (
+      options: { id: string },
+      read: (options: {
+        id: string;
+      }) => Promise<{ id: string; data: TData; metadata: any }>
+    ) => Promise<{ id: string; data: TData; metadata: any }>;
     onReadMany?: (
       options: {
         filters: Partial<TData>;
         limit: number;
         offset: number;
-        sort: Record<string, 1 | -1>;
+        sort?: Record<string, 1 | -1>;
       },
-      read: () => Promise<TData[]>
-    ) => Promise<TData[]>;
+      read: (options: {
+        filters: Partial<TData>;
+        limit: number;
+        offset: number;
+        sort?: Record<string, 1 | -1>;
+      }) => Promise<{ id: string; data: TData; metadata: any }[]>
+    ) => Promise<{ id: string; data: TData; metadata: any }[]>;
   };
 };
 
@@ -476,6 +509,7 @@ export type AppReference = {
 
 export type AppConfig = {
   baseURL: string;
+  mainBaseURL: string;
   label: string;
   builderPath?: string;
   configs: Record<string, LibraryConfig>;
