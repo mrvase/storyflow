@@ -31,7 +31,12 @@ import { SIGNATURES } from "@storyflow/cms/constants";
 
 const editorConfig = {
   namespace: "EDITOR",
-  theme: {},
+  theme: {
+    text: {
+      bold: "font-bold",
+      italic: "italic",
+    },
+  },
   onError: () => {},
 };
 

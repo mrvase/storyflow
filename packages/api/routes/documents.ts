@@ -1,9 +1,8 @@
-import { RPCError, isError } from "@nanorpc/server";
-import { custom, z } from "zod";
+import { RPCError } from "@nanorpc/server";
+import { z } from "zod";
 import type { DBDocumentRaw, DBValueRecord } from "../types";
 import type {
   DBDocument,
-  DocumentConfig,
   DocumentVersionRecord,
   SyntaxTree,
   SyntaxTreeRecord,

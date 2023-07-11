@@ -208,7 +208,7 @@ function LabelColumn({ doc }: { doc: DBDocument }) {
       {isModified && (
         <div
           className={cl(
-            "w-2 h-2 rounded ml-2",
+            "w-2 h-2 rounded ml-2 shrink-0",
             !doc.folder ? "bg-yellow-600 dark:bg-yellow-200" : "bg-teal-400"
           )}
         />

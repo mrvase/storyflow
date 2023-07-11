@@ -22,8 +22,16 @@ const options: {
     label: "Betingelse",
   },
   {
+    value: "equals",
+    label: "Er lig med",
+  },
+  {
     value: "in",
     label: "In",
+  },
+  {
+    value: "filter",
+    label: "Filtrer",
   },
   {
     value: "insert",

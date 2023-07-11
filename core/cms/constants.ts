@@ -24,7 +24,7 @@ export const SIGNATURES = {
   in: ["element", "is in"],
   concat: [],
   fetch: ["url"],
-  filter: ["elements", "where"],
+  filter: ["filter", "where"],
   loop: ["element", "loop"],
   merge: ["element", "with"],
   root: ["root"],
@@ -37,7 +37,8 @@ export const SIGNATURES = {
   to_file: ["til fil"],
   to_boolean: ["til boolean"],
   to_color: ["til farve"],
-  insert: ["indsæt"],
+  insert: ["insert"],
+  equals: ["value", "equals"],
   /*
   add: ["number", "+ (plus)"],
   subtract: ["number", "- (minus)"],

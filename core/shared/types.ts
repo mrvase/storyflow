@@ -118,6 +118,7 @@ export type FunctionDataRecord = {
   to_boolean: true;
   to_color: true;
   insert: true;
+  equals: true;
 };
 
 export type Operator = (typeof operators)[number];

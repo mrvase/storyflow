@@ -111,8 +111,8 @@ export function compute(
     case "filter":
       const parameters = levelImplicitAndExplicitArrays(value);
       return [
-        parameters[0].reduce((a: ValueArray, el, index) => {
-          if (parameters[1][index]) {
+        (parameters[0] ?? []).reduce((a: ValueArray, el, index) => {
+          if ((parameters[1] ?? [])[index]) {
             a.push(el);
           }
           return a;
@@ -220,6 +220,7 @@ export function compute(
         }, [] as any[]),
       ];
     case "=":
+    case "equals":
       return [
         combinations.map((op) => {
           return op[0] === op[1];

@@ -5,15 +5,21 @@ import {
   $getIndexesFromSelection,
 } from "./transforms";
 import {
+  $createParagraphNode,
+  $createTextNode,
   $getRoot,
   $getSelection,
   $isNodeSelection,
+  $isParagraphNode,
   $isRangeSelection,
+  $isTextNode,
   COMMAND_PRIORITY_CRITICAL,
   COMMAND_PRIORITY_EDITOR,
   COPY_COMMAND,
   LexicalEditor,
   PASTE_COMMAND,
+  ParagraphNode,
+  TextNode,
 } from "lexical";
 import { mergeRegister } from "../../editor/utils/mergeRegister";
 import { useEditorContext } from "../../editor/react/EditorProvider";
@@ -45,6 +51,10 @@ import { $replaceWithBlocks } from "./insertComputation";
 import { createTransaction } from "@storyflow/collab/utils";
 import { FieldTransactionEntry } from "../../operations/actions";
 import { getSyntaxTreeEntries } from "@storyflow/cms/syntax-tree";
+import {
+  $createHeadingNode,
+  HeadingNode,
+} from "../../editor/react/HeadingNode";
 
 const EVENT_LATENCY = 50;
 let clipboardEventTimeout: null | number = null;
@@ -316,6 +326,139 @@ export function CopyPastePlugin() {
             () => {
               if (clipboardData !== null && $isRangeSelection(selection)) {
                 const text = clipboardData.getData("text/plain");
+                let html = clipboardData.getData("text/html");
+
+                html = html.replace(
+                  /<(?!\/?(h[1-6]|strong|em|b|i|br|p|span)\b)[^>]*>/g,
+                  ""
+                );
+
+                html = html.replace(/\r?\n/g, "<p></p>");
+
+                html = html.replace(/\&nbsp\;/g, " ");
+
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, "text/html");
+                const blocks: {
+                  content: {
+                    text: string;
+                    modifier?: number;
+                  }[];
+                  tag: string;
+                }[] = [
+                  {
+                    content: [],
+                    tag: "p",
+                  },
+                ];
+
+                const getContent = (node: HTMLElement) => {
+                  let el = node.firstChild;
+
+                  if (!el) return;
+
+                  const hasCSS = (property: string, value: string) => {
+                    return (
+                      el instanceof HTMLElement &&
+                      el.tagName === "SPAN" &&
+                      el.computedStyleMap().get(property) === value
+                    );
+                  };
+
+                  while (el) {
+                    const block = blocks[blocks.length - 1];
+                    if (el instanceof Text) {
+                      block.content.push({
+                        text: el.textContent || "",
+                      });
+                    } else if (el instanceof HTMLElement) {
+                      if (el.tagName === "BR") {
+                        blocks.push({ content: [], tag: "p" });
+                      } else if (el.tagName === "P") {
+                        blocks.push({ content: [], tag: "p" });
+                        getContent(el);
+                        blocks.push({ content: [], tag: `p` });
+                      } else if (
+                        el.tagName === "STRONG" ||
+                        el.tagName === "B" ||
+                        hasCSS("font-style", "bold")
+                      ) {
+                        block.content.push({
+                          text: el.textContent || "",
+                          modifier: 1,
+                        });
+                      } else if (
+                        el.tagName === "EM" ||
+                        el.tagName === "I" ||
+                        hasCSS("font-style", "italic")
+                      ) {
+                        block.content.push({
+                          text: el.textContent || "",
+                          modifier: 2,
+                        });
+                      } else if (el.tagName.match(/H\d/)) {
+                        const level = parseInt(el.tagName[1]);
+                        blocks.push({ content: [], tag: `h${level}` });
+                        getContent(el);
+                        blocks.push({ content: [], tag: `p` });
+                      } else {
+                        block.content.push({
+                          text: el.textContent || "",
+                        });
+                      }
+                    }
+                    el = el.nextSibling;
+                  }
+                };
+
+                try {
+                  getContent(doc.body);
+                  const hasContent = blocks.some((el) => el.content.length > 0);
+                  let node = $isRangeSelection(selection)
+                    ? selection.anchor.getNode()
+                    : null;
+                  node = node && $isTextNode(node) ? node.getParent() : node;
+                  if (
+                    hasContent &&
+                    $isParagraphNode(node) &&
+                    node.getTextContent() === ""
+                  ) {
+                    console.log("PASTED", { blocks, html });
+
+                    const newNodes: (ParagraphNode | HeadingNode)[] = [];
+                    blocks.forEach((block) => {
+                      if (!block.content.length) return;
+                      const newNode = block.tag
+                        ? $createHeadingNode(block.tag as "h1")
+                        : $createParagraphNode();
+
+                      let node: TextNode | null = null;
+                      block.content.forEach((el) => {
+                        const newTextNode = $createTextNode(el.text);
+                        if (el.modifier === 1) {
+                          newTextNode.setFormat("bold");
+                        } else if (el.modifier === 2) {
+                          newTextNode.setFormat("italic");
+                        }
+                        if (!node) {
+                          newNode.append(newTextNode);
+                        } else {
+                          node.insertAfter(newTextNode);
+                        }
+                        node = newTextNode;
+                      });
+                      newNodes.push(newNode);
+                    });
+                    let [newNode] = newNodes.splice(0, 1);
+                    node.replace(newNode);
+                    newNodes.forEach((el) => {
+                      newNode.insertAfter(el);
+                      newNode = el;
+                    });
+                    newNode.select();
+                    return true;
+                  }
+                } catch (err) {}
 
                 if (text != null) {
                   if ($isRangeSelection(selection)) {

@@ -268,7 +268,7 @@ const compute = (
                 )
               ),
             ])
-            .case($.eq(operator, "="), () => [
+            .case($.in(operator, ["=", "equals"]), () => [
               $.map(combinations, (values) =>
                 $.eq($.at(values, 0), $.at(values, 1))
               ),
