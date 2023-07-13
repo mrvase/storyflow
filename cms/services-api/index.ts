@@ -15,7 +15,7 @@ import {
 export { collab } from "./routes/collab";
 
 export type AuthAPI = { auth: ReturnType<typeof auth> };
-export type BucketAPI = { bucket: typeof bucket };
+export type BucketAPI = { bucket: ReturnType<typeof bucket> };
 export type CollabAPI = { collab: typeof collab };
 
 export const createRouteHandler = (

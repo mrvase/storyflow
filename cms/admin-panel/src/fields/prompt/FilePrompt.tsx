@@ -115,19 +115,18 @@ function UploadOption({
             const type = getFileType(file.type);
             if (!type) return;
             setIsUploading(true);
-            let size: {
+            let metadata: {
               width?: number;
               height?: number;
               size?: number;
             } | null = {
               size: file.size,
             };
-
             if (["image", "video"].includes(type)) {
               const measure = type === "image" ? getImageSize : getVideoSize;
-              size = await measure(preview);
+              metadata = await measure(preview);
             }
-            const success = await upload(file, prompt || label, size);
+            const success = await upload(file, prompt || label, metadata);
             if (success) {
               resetFile();
             }

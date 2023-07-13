@@ -61,23 +61,29 @@ export const useFormStatus = (action: string) => {
 
 export const Form = React.forwardRef<
   HTMLFormElement,
-  Omit<React.ComponentProps<"form">, "action"> & { action: string }
+  Omit<React.ComponentProps<"form">, "action"> & {
+    action: string;
+    uploadFile?: (file: File) => string | Promise<string>;
+  }
 >((props, ref) => {
-  const { isLoading } = useFormStatus(props.action);
+  const { action, uploadFile, ...rest } = props;
+
+  const { isLoading } = useFormStatus(action);
 
   const id = React.useContext(IdContext);
 
-  if (!props.action) {
+  if (!action) {
     throw new Error("No action specified for form");
   }
 
   const onSubmit = React.useCallback(
     async (ev: React.FormEvent<HTMLFormElement>) => {
+      console.log("SUBMITTED");
       ev.preventDefault();
       if (isLoading) return;
 
       // set loading state
-      setFormStatus(props.action, {
+      setFormStatus(action, {
         isLoading: true,
         error: undefined,
         success: undefined,
@@ -86,19 +92,30 @@ export const Form = React.forwardRef<
       if (props.onSubmit) props.onSubmit(ev);
 
       const entries = new FormData(ev.target as HTMLFormElement).entries();
-      const data = Object.fromEntries(
-        Array.from(entries).map((el) => [
-          `form:${el[0]}`,
-          typeof el[1] === "string" ? [el[1]] : [],
-        ])
+      const dataEntries = await Promise.all(
+        Array.from(entries).map(async (el) => {
+          const key = `form:${el[0]}`;
+          if (typeof el[1] === "string") {
+            return [key, [el[1]]];
+          }
+
+          if (uploadFile) {
+            const src = await uploadFile(el[1]);
+            return [key, [{ src }]];
+          }
+          return [key, [el[1].name]];
+        })
       );
+
+      const data = Object.fromEntries(dataEntries);
+      console.log("DATA", data);
 
       let error: FormStatus["error"] = undefined;
 
       const body = JSON.stringify({
         input: {
           id,
-          action: props.action,
+          action,
           data,
         },
       });
@@ -113,13 +130,13 @@ export const Form = React.forwardRef<
       }
 
       // set error state
-      setFormStatus(props.action, {
+      setFormStatus(action, {
         isLoading: false,
         error,
         success: !error ? true : undefined,
       });
     },
-    [props.action, isLoading]
+    [action, isLoading]
   );
 
   const className = React.useMemo(
@@ -130,9 +147,7 @@ export const Form = React.forwardRef<
     [props.className, isLoading]
   );
 
-  return (
-    <form ref={ref} {...props} onSubmit={onSubmit} className={className} />
-  );
+  return <form ref={ref} {...rest} onSubmit={onSubmit} className={className} />;
 });
 
 export const Input = React.forwardRef<

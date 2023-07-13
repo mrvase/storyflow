@@ -626,7 +626,9 @@ export const documents = (config: StoryflowConfig) => {
         z.object({
           id: z.string(),
           action: z.string(),
-          data: z.record(z.array(z.string())),
+          data: z.record(
+            z.array(z.union([z.string(), z.object({ src: z.string() })]))
+          ),
           url: z.string(),
           namespaces: z.array(z.string()).optional(),
         })

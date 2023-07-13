@@ -21,27 +21,29 @@ type LinkPayload = {
   date: string;
 };
 
+type OrganizationOptions = {
+  insertUser: (email: string) => Promise<void>;
+  getOrganizationUrl: (slug: string) => Promise<string | undefined>;
+  addNewOrganizationToUser: (
+    email: string,
+    organization: { slug: string; url: string }
+  ) => Promise<void>;
+  addExistingOrganizationToUser: (
+    email: string,
+    organization: { slug: string }
+  ) => Promise<void>;
+  getUserWithOrganizations: (email: string) => Promise<
+    | {
+        email: string;
+        organizations: { url: string; slug: string }[];
+      }
+    | undefined
+  >;
+};
+
 export type AuthOptions = {
   sendEmail: (link: string, payload: LinkPayload) => Promise<void>;
-  organizations: {
-    insertUser: (email: string) => Promise<void>;
-    getOrganizationUrl: (slug: string) => Promise<string | undefined>;
-    addNewOrganizationToUser: (
-      email: string,
-      organization: { slug: string; url: string }
-    ) => Promise<void>;
-    addExistingOrganizationToUser: (
-      email: string,
-      organization: { slug: string }
-    ) => Promise<void>;
-    getUserWithOrganizations: (email: string) => Promise<
-      | {
-          email: string;
-          organizations: { url: string; slug: string }[];
-        }
-      | undefined
-    >;
-  };
+  organizations: OrganizationOptions;
 };
 
 export const auth = ({ sendEmail, organizations }: AuthOptions) => {

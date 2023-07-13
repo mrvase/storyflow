@@ -230,7 +230,9 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
         z.object({
           id: z.string(),
           action: z.string(),
-          data: z.record(z.array(z.string())),
+          data: z.record(
+            z.array(z.union([z.string(), z.object({ src: z.string() })]))
+          ),
         })
       )
       .mutate(async ({ action, id, data }, { req }) => {

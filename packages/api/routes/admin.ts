@@ -24,28 +24,30 @@ const validate = async (email: string, admin: string) => {
   return Boolean(result);
 };
 
+const httpOnly = procedure.middleware(async (input, ctx, next) => {
+  const req = ctx.req;
+  const res = ctx.res;
+  if (!req || !res) {
+    return new RPCError({
+      code: "SERVER_ERROR",
+      message: "This endpoint should only be used with an API request",
+    });
+  }
+  return await next(input, { ...ctx, req, res });
+});
+
 export const admin = (config: StoryflowConfig) => {
   const dbName = undefined; // config.workspaces[0].db;
   return {
     authenticate: procedure
       .use(corsFactory(config.api.cors))
+      .use(httpOnly)
       .schema(
         z.object({
           key: z.boolean(),
           config: z.boolean(),
         })
       )
-      .middleware(async (input, ctx, next) => {
-        const req = ctx.req;
-        const res = ctx.res;
-        if (!req || !res) {
-          return new RPCError({
-            code: "SERVER_ERROR",
-            message: "This endpoint should only be used with an API request",
-          });
-        }
-        return await next(input, { ...ctx, req, res });
-      })
       .mutate(async (include, { req }) => {
         try {
           console.log("authenticating");
@@ -97,6 +99,13 @@ export const admin = (config: StoryflowConfig) => {
             message: "Lykkedes ikke",
           });
         }
+      }),
+
+    allowUploads: procedure
+      .use(corsFactory(config.api.cors))
+      .use(httpOnly)
+      .mutate(async () => {
+        return config.allowUploads ?? false;
       }),
 
     getOffset: procedure

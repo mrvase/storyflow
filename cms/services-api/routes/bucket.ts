@@ -2,8 +2,8 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { globals } from "../globals";
 import { z } from "zod";
-import { procedure } from "@storyflow/server/rpc";
-import { RPCError } from "@nanorpc/server";
+import { procedure, cors as corsFactory } from "@storyflow/server/rpc";
+import { RPCError, isError } from "@nanorpc/server";
 
 const settingNumber = {
   private: 0,
@@ -54,30 +54,37 @@ const createFileName = ({
   return name;
 };
 
-export const bucket = {
+const schema = z.object({
+  type: z.string(),
+  size: z.number(),
+  name: z.string(),
+  metadata: z
+    .object({
+      width: z.number().optional(),
+      height: z.number().optional(),
+      size: z.number().optional(),
+    })
+    .optional(),
+  access: z.union([z.literal("private"), z.literal("public")]).optional(),
+});
+
+export const bucket = ({
+  organizations,
+}: {
+  organizations?: {
+    getOrganizationUrl: (slug: string) => Promise<string | undefined>;
+  };
+} = {}) => ({
   getUploadLink: procedure
     .use(globals)
-    .schema(
-      z.object({
-        type: z.string(),
-        label: z.string(),
-        size: z.number(),
-        extension: z.string(),
-        metadata: z
-          .object({
-            width: z.number().optional(),
-            height: z.number().optional(),
-            size: z.number().optional(),
-          })
-          .optional(),
-        access: z.union([z.literal("private"), z.literal("public")]).optional(),
-      })
-    )
+    .schema(schema)
     .query(
       async (
-        { type, label, size, extension, metadata = {}, access = "public" },
+        { type, size, name: originalName, metadata = {}, access = "public" },
         { slug }
       ) => {
+        const extension = (originalName ?? "").replace(/.*(\.[^.]+)$/, "$1");
+
         const name = createFileName({
           type,
           extension,
@@ -120,4 +127,45 @@ export const bucket = {
         }
       }
     ),
-};
+
+  getUploadLinkForForm: procedure
+    .schema(schema.extend({ slug: z.string() }))
+    .use(corsFactory("allow-all"))
+    .middleware(async (input, ctx, next) => {
+      const url = await organizations?.getOrganizationUrl(input.slug);
+
+      if (!url) {
+        return new RPCError({ code: "UNAUTHORIZED" });
+      }
+
+      try {
+        const protocol = url.startsWith("localhost") ? "http://" : "https://";
+        const data = await fetch(`${protocol}${url}/api/admin/allowUploads`, {
+          method: "GET",
+        }).then((res) => {
+          return res.json() as Promise<boolean>;
+        });
+
+        if (isError(data)) {
+          console.log("auth error: from remote server:", data.error);
+          throw "";
+        }
+
+        if (data !== true) {
+          console.error(
+            "auth error: invalid response from remote server [1]",
+            data
+          );
+          throw "";
+        }
+      } catch (err) {
+        console.error(err);
+        return new RPCError({ code: "UNAUTHORIZED" });
+      }
+
+      return await next(input, ctx);
+    })
+    .query(({}) => {
+      return "";
+    }),
+});

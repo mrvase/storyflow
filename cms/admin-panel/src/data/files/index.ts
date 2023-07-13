@@ -51,10 +51,9 @@ export function useFiles() {
   ) => {
     const newState = await setData(async (ps) => {
       const response = await servicesQuery.bucket.getUploadLink({
-        label,
         type: file.type,
         size: file.size,
-        extension: (file.name ?? "").replace(/.*(\.[^.]+)$/, "$1"),
+        name: file.name,
         metadata,
       });
 

@@ -1,3 +1,4 @@
+/*
 type ImageData = {
   width: number;
   height: number;
@@ -46,10 +47,8 @@ function stringify(
 
   const isPrivate = true;
   flags |= isPrivate ? 0 : 1;
-  /*
-  flags |= something ? 0 : 2;
-  flags |= something ? 0 : 4;
-  */
+  // flags |= something ? 0 : 2;
+  // flags |= something ? 0 : 4;
 
   name += flags.toString(36).padStart(2, "0");
 
@@ -86,23 +85,29 @@ export const fileName = {
   stringify,
   parse,
 };
+*/
 
 export const getImageSize = (src: string) => {
   if (typeof document === "undefined") {
     throw new Error("getImageSize only works in a browser/DOM environment.");
   }
+
   return new Promise<{ width: number; height: number }>((resolve, reject) => {
     const img = new Image();
+
     const timer = setTimeout(() => {
       reject("image load timed out");
     }, 10000);
-    img.onload = () => {
+
+    function onLoad() {
       clearTimeout(timer);
       resolve({
         width: img.naturalWidth,
         height: img.naturalHeight,
       });
-    };
+    }
+
+    img.onload = onLoad;
     img.src = src;
   });
 };
@@ -111,18 +116,21 @@ export const getVideoSize = (src: string) => {
   if (typeof document === "undefined") {
     throw new Error("getVideoSize only works in a browser/DOM environment.");
   }
+
   return new Promise<{ width: number; height: number }>((resolve, reject) => {
     const video = document.createElement("video");
-    let timer: ReturnType<typeof setTimeout>;
-    const onLoad = () => {
-      video.removeEventListener("loadedmetadata", onLoad);
-      clearTimeout(timer);
-      resolve({ width: video.videoWidth, height: video.videoHeight });
-    };
-    timer = setTimeout(() => {
+
+    const timer = setTimeout(() => {
       video.removeEventListener("loadedmetadata", onLoad);
       reject("image load timed out");
     }, 10000);
+
+    function onLoad() {
+      video.removeEventListener("loadedmetadata", onLoad);
+      clearTimeout(timer);
+      resolve({ width: video.videoWidth, height: video.videoHeight });
+    }
+
     video.addEventListener("loadedmetadata", onLoad, false);
     video.src = src;
   });

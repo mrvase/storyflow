@@ -59,7 +59,7 @@ export const { GET, POST, OPTIONS } = createRouteHandler(
       sendEmail,
       organizations,
     }),
-    bucket,
+    bucket: bucket(),
     collab,
   },
   { secret: process.env.SECRET_KEY as string }

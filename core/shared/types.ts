@@ -497,6 +497,7 @@ export type StoryflowConfig = {
   apps: AppReference[];
   collections?: Collection[];
   templates?: Template[];
+  allowUploads?: boolean;
 };
 
 export type WorkspaceReference = {

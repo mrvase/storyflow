@@ -12,7 +12,7 @@ import { HeaderConfig } from "./Header/Header";
 import { NavConfig } from "./Nav";
 import Image from "next/image";
 import { OpenGraphConfig } from "./OpenGraph";
-import { FormConfig } from "./Form";
+import { FileFieldConfig, FormConfig, TextFieldConfig } from "./Form";
 
 const parseFileString = (value: string) => {
   if (!value) {
@@ -60,6 +60,8 @@ const kfs = {
     HeaderConfig,
     NavConfig,
     OpenGraphConfig,
+    TextFieldConfig,
+    FileFieldConfig,
     ImageConfig: {
       label: "Billede",
       props: {
