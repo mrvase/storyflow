@@ -276,7 +276,9 @@ export const auth = ({ sendEmail, organizations }: AuthOptions) => {
           );
 
           try {
-            const protocol = url.startsWith("localhost")
+            const protocol = url.startsWith("http")
+              ? ""
+              : url.startsWith("localhost")
               ? "http://"
               : "https://";
             console.log("FETCHING", `${protocol}${url}/api/admin/authenticate`);

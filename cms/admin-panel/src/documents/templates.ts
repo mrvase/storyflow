@@ -48,12 +48,18 @@ export const DEFAULT_TEMPLATES = {
     DEFAULT_FIELDS.url,
     DEFAULT_FIELDS.layout,
     DEFAULT_FIELDS.page,
+    DEFAULT_FIELDS.seo_title,
+    DEFAULT_FIELDS.seo_description,
+    DEFAULT_FIELDS.og_image,
   ]),
   dynamicPage: generateTemplateFromDefaultFields("Dynamisk side", [
     DEFAULT_FIELDS.url,
     DEFAULT_FIELDS.params,
     DEFAULT_FIELDS.layout,
     DEFAULT_FIELDS.page,
+    DEFAULT_FIELDS.seo_title,
+    DEFAULT_FIELDS.seo_description,
+    DEFAULT_FIELDS.og_image,
   ]),
   redirectPage: generateTemplateFromDefaultFields("Viderestilling", [
     DEFAULT_FIELDS.url,

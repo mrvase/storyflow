@@ -94,6 +94,14 @@ export const DEFAULT_FIELDS = {
     label: "Open Graph-billede",
     type: "children",
   },
+  seo_title: {
+    id: generateTemplateFieldId(),
+    label: "SEO-titel",
+  },
+  seo_description: {
+    id: generateTemplateFieldId(),
+    label: "SEO-beskrivelse",
+  },
 } satisfies Record<string, DefaultFieldConfig>;
 
 export const getDefaultValue = (field: DefaultFieldConfig) => {
