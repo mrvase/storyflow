@@ -2,7 +2,6 @@ import { RPCError, isError } from "@nanorpc/server";
 import { client } from "../mongo";
 import { z } from "zod";
 import { createFieldRecordGetter } from "@storyflow/cms/get-field-record";
-import { calculateRootFieldFromRecord } from "@storyflow/cms/calculate-server";
 import type {
   ApiConfig,
   AppConfig,
@@ -160,7 +159,14 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
           createFetcher(dbName)
         );
 
-        const [pageRecord, layoutRecord, opengraphRecord] = await Promise.all([
+        const [
+          pageRecord,
+          layoutRecord,
+          opengraphRecord,
+          titleRecord,
+          seoTitleRecord,
+          seoDescriptionRecord,
+        ] = await Promise.all([
           getFieldRecord(
             createTemplateFieldId(doc._id, DEFAULT_FIELDS.page.id)
           ),
@@ -170,19 +176,48 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
           getFieldRecord(
             createTemplateFieldId(doc._id, DEFAULT_FIELDS.og_image.id)
           ),
+          getFieldRecord(
+            createTemplateFieldId(doc._id, DEFAULT_FIELDS.label.id)
+          ),
+          getFieldRecord(
+            createTemplateFieldId(doc._id, DEFAULT_FIELDS.seo_title.id)
+          ),
+          getFieldRecord(
+            createTemplateFieldId(doc._id, DEFAULT_FIELDS.seo_description.id)
+          ),
         ]);
 
-        const titleArray = calculateRootFieldFromRecord(
-          createTemplateFieldId(doc._id, DEFAULT_FIELDS.label.id),
-          doc.record
-        );
+        const titleArray =
+          titleRecord && Array.isArray(titleRecord?.entry)
+            ? titleRecord.entry
+            : [];
+        const seoTitleArray =
+          seoTitleRecord && Array.isArray(seoTitleRecord?.entry)
+            ? seoTitleRecord.entry
+            : [];
+        const seoDescriptionArray =
+          seoDescriptionRecord && Array.isArray(seoDescriptionRecord?.entry)
+            ? seoDescriptionRecord.entry
+            : [];
+
+        const title =
+          typeof seoTitleArray[0] === "string"
+            ? seoTitleArray[0]
+            : typeof titleArray[0] === "string"
+            ? titleArray[0]
+            : undefined;
+        const description =
+          typeof seoDescriptionArray[0] === "string"
+            ? seoDescriptionArray[0]
+            : undefined;
 
         const result = {
           page: pageRecord,
           layout: layoutRecord,
           opengraph: opengraphRecord,
           head: {
-            ...(typeof titleArray[0] === "string" && { title: titleArray[0] }),
+            title,
+            description,
           },
         };
 

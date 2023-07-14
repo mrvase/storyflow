@@ -26,9 +26,13 @@ export const metadata: Metadata = {
   themeColor: "#ffffff",
 };
 
-export async function generateMetadata({ params }: { params: any }) {
+export async function generateMetadata({
+  params,
+}: {
+  params: any;
+}): Promise<Metadata> {
   const url = Object.values(params).join("/");
   const data = await getPage(`/${url}`);
 
-  return { title: data?.head?.title };
+  return { title: data?.head?.title, description: data?.head?.description };
 }
