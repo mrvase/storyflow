@@ -78,15 +78,17 @@ const getInitializedProp = (
 };
 
 export const getRecordSnapshot = <T>(
-  entry: FieldId,
+  entry: FieldId | NestedElement,
   map: (value: ValueArray | ClientSyntaxTree, fieldId: FieldId) => T,
   {
     record = {},
     configs,
     transform,
+    documentId,
   }: {
-    record?: SyntaxTreeRecord;
+    documentId: DocumentId;
     configs: LibraryConfigRecord;
+    record?: SyntaxTreeRecord;
     transform?: (
       el: NestedElement,
       props: Record<string, T>,
@@ -94,12 +96,14 @@ export const getRecordSnapshot = <T>(
     ) => any;
   }
 ) => {
-  const documentId = getDocumentId(entry) as DocumentId;
+  function getPropConfigRecord(element: NestedElement) {
+    return getConfigFromType(element.element, configs)?.props ?? {};
+  }
 
-  const recursivelyGetRecordFromStream = (
+  function recursivelyGetRecordFromStream(
     fieldId: FieldId,
     propDocumentId: DocumentId
-  ) => {
+  ) {
     // calculating prop and its children
     const value = getInitializedProp(fieldId, record, {
       isNative: propDocumentId === documentId,
@@ -115,7 +119,19 @@ export const getRecordSnapshot = <T>(
     const result = map(value, fieldId);
     getChildren(value);
     return result;
-  };
+  }
+
+  function getProps(element: NestedElement) {
+    const config = getPropConfigRecord(element);
+    const propKeys = getPropIds(config, element.id);
+    const propDocumentId = getParentDocumentId(element.id);
+    const props = Object.fromEntries(
+      propKeys.map((id) => {
+        return [id, recursivelyGetRecordFromStream(id, propDocumentId)];
+      })
+    );
+    return props;
+  }
 
   function getChildren(value: ValueArray | ClientSyntaxTree) {
     let array: ValueArray = [];
@@ -129,16 +145,9 @@ export const getRecordSnapshot = <T>(
       if (Array.isArray(element)) {
         return getChildren(element);
       } else if (tokens.isNestedElement(element)) {
-        const config = getConfigFromType(element.element, configs)?.props ?? {};
-        const propKeys = getPropIds(config, element.id);
-        const propDocumentId = getParentDocumentId(element.id);
-        const props = Object.fromEntries(
-          propKeys.map((id) => {
-            return [id, recursivelyGetRecordFromStream(id, propDocumentId)];
-          })
-        );
+        const props = getProps(element);
         if (transform) {
-          return transform(element, props, config);
+          return transform(element, props, getPropConfigRecord(element));
         }
         return element;
       }
@@ -146,5 +155,12 @@ export const getRecordSnapshot = <T>(
     });
   }
 
-  return recursivelyGetRecordFromStream(entry, documentId);
+  if (typeof entry === "string") {
+    return recursivelyGetRecordFromStream(entry, documentId);
+  }
+  const props = getProps(entry);
+  if (transform) {
+    return transform(entry, props, getPropConfigRecord(entry));
+  }
+  return entry;
 };

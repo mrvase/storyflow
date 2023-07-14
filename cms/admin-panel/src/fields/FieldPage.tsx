@@ -471,6 +471,7 @@ function PropagateStatePlugin({
       {
         record,
         configs,
+        documentId: getDocumentId(id),
       }
     );
 

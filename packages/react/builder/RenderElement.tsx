@@ -224,10 +224,9 @@ function RenderElementWithProps({
               {
                 name,
                 ...resolveProps(
-                  [
-                    ["label", { type: "string", label: "Label" }],
-                    ...(config.props ? Object.entries(config.props) : []),
-                  ],
+                  config.props
+                    ? Object.entries(config.props)
+                    : [["label", { type: "string", label: "Label" }]],
                   name
                 ),
               },

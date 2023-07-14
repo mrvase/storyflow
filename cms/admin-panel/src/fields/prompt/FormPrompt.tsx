@@ -66,6 +66,7 @@ export function FormPrompt({
     throw new Error("Cannot find parent element for form propmt");
   }
 
+  /*
   const config = getConfigFromType(element.element, configs);
 
   if (!config) {
@@ -84,10 +85,12 @@ export function FormPrompt({
     elementId,
     getIdFromString(childrenPropName)
   );
+  */
 
   const [inputs] = useGlobalState(`${actionFieldId}/inputs`, () => {
     const inputs: { value: string; label: string }[] = [];
-    getRecordSnapshot(childFieldId, (value) => value, {
+
+    getRecordSnapshot(element, (value) => value, {
       configs,
       transform: (el, props, config) => {
         Object.entries(config).forEach(([key, config]) => {
@@ -101,13 +104,13 @@ export function FormPrompt({
             Array.isArray(labelValue) && typeof labelValue[0] === "string"
               ? labelValue[0]
               : config.label;
-          console.log("PROPS", labelId, props);
           inputs.push({
             value: `${el.id}/${key}`,
             label,
           });
         });
       },
+      documentId: getDocumentId(fieldId),
     });
     return inputs;
     /*

@@ -24,12 +24,15 @@ export function flattenProps<T = PropConfig & { name: string }>(
       );
     } else if (el.type === "input") {
       const group = { ...el, name };
+
+      const defaultProps = {
+        label: { type: "string" as "string", label: "Label" },
+      };
+
       acc.push(
-        ...Object.entries({
-          label: { type: "string" as "string", label: "Label" },
-          ...el.props,
-        }).map(([nestedName, nested]) =>
-          transform({ ...nested, name: nestedName }, group)
+        ...Object.entries(el.props ?? defaultProps).map(
+          ([nestedName, nested]) =>
+            transform({ ...nested, name: nestedName }, group)
         )
       );
     } else {

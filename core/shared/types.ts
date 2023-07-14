@@ -240,8 +240,7 @@ type Type<T extends PropConfig | PropGroup | PropInput> = T extends {
   : T extends { type: "input" }
   ? {
       name: string;
-      label: string;
-    } & (T extends { props: {} } ? NestedProps<T["props"]> : {})
+    } & (T extends { props: {} } ? NestedProps<T["props"]> : { label: string })
   : T["type"] extends keyof DefaultPropTypes
   ? GetPropType<T["type"]>
   : never;

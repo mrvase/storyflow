@@ -286,7 +286,7 @@ function RenderElementWithProps({
             {
               name,
               ...resolveProps(
-                { label: { type: "string", label: "Label" }, ...config.props },
+                config.props ?? { label: { type: "string", label: "Label" } },
                 name
               ),
             },

@@ -75,8 +75,6 @@ function PreloadNestedState({
   entity: NestedFolder | NestedField | NestedElement | NestedDocument;
   templateId?: DocumentId | RawDocumentId | null | undefined;
 }) {
-  const id = useFieldId();
-
   let ids: FieldId[] = [];
 
   let createTemplateContext = false;
