@@ -31,3 +31,21 @@ export const getPaths = cache(async () => {
     return [];
   }
 });
+
+export const getLoopWithOffset = async ({
+  url,
+  id,
+}: {
+  url: string;
+  id: string;
+}) => {
+  try {
+    const result = await api.getLoopWithOffset({ url, id });
+    if (isError(result)) {
+      return null;
+    }
+    return result;
+  } catch (err) {
+    return null;
+  }
+};

@@ -1,6 +1,7 @@
 import { AppConfig, ApiConfig } from "@storyflow/api";
 import { revalidatePath } from "next/cache";
-import { configs } from "./components";
+import { configs, libraries, transforms } from "./components";
+import { createLoopComponent } from "@storyflow/react/rsc";
 
 export const appConfig: AppConfig = {
   baseURL: process.env.BASE_URL as string,
@@ -21,4 +22,5 @@ export const apiConfig: ApiConfig = {
   revalidate: (path: string) => {
     revalidatePath(path);
   },
+  createLoopComponent: createLoopComponent({ configs, libraries, transforms }),
 };

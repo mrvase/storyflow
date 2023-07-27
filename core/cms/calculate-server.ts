@@ -74,6 +74,7 @@ export type FolderFetch = {
   folder: NestedFolder;
   limit: number;
   sort?: Sorting[];
+  offset?: number;
 };
 
 type AnyImporter =
@@ -203,17 +204,29 @@ const resolveChildren = (
 export function calculate(
   node: SyntaxTree,
   getState: StateGetter,
-  options: { ignoreClientState: true; createActions?: boolean }
+  options: {
+    ignoreClientState: true;
+    createActions?: boolean;
+    offset?: number;
+  }
 ): ValueArray;
 export function calculate(
   node: SyntaxTree,
   getState: StateGetter,
-  options?: { ignoreClientState?: false; createActions?: boolean }
+  options?: {
+    ignoreClientState?: false;
+    createActions?: boolean;
+    offset?: number;
+  }
 ): ValueArray | ClientSyntaxTree;
 export function calculate(
   node: SyntaxTree,
   getState: StateGetter,
-  options?: { ignoreClientState?: boolean; createActions?: boolean }
+  options?: {
+    ignoreClientState?: boolean;
+    createActions?: boolean;
+    offset?: number;
+  }
 ): ValueArray | ClientSyntaxTree {
   const calculateNode = (
     node: SyntaxTree,
@@ -290,7 +303,8 @@ export function calculate(
                 value: {
                   folder: el,
                   limit,
-                  ...(sort.length ? { sort } : {}),
+                  ...(options?.offset && { offset: options.offset }),
+                  ...(sort.length && { sort }),
                 },
               },
               {

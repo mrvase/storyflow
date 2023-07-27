@@ -519,4 +519,9 @@ export type AppConfig = {
 
 export type ApiConfig = BasicApiConfig & {
   revalidate?: (path: string) => void;
+  createLoopComponent?: (arg: {
+    id: NestedDocumentId;
+    record: Record<string, ValueArray | ClientSyntaxTree> | null;
+    options: string[];
+  }) => object | null;
 };

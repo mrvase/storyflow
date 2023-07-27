@@ -1,12 +1,16 @@
 import { RPCError, isError } from "@nanorpc/server";
 import { client } from "../mongo";
 import { z } from "zod";
-import { createFieldRecordGetter } from "@storyflow/cms/get-field-record";
+import { createSharedFieldCalculator } from "@storyflow/cms/get-field-record";
 import type {
   ApiConfig,
   AppConfig,
+  ClientSyntaxTree,
+  FieldId,
   LibraryConfig,
+  NestedDocumentId,
   PropConfigRecord,
+  ValueArray,
 } from "@storyflow/shared/types";
 import type { DBDocumentRaw } from "../types";
 import { getUrlParams } from "../convert";
@@ -15,11 +19,14 @@ import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
 import {
   createRawTemplateFieldId,
   createTemplateFieldId,
+  getIdFromString,
 } from "@storyflow/cms/ids";
 import { createObjectId } from "../mongo";
 import { createFetcher, findDocumentByUrl } from "../create-fetcher";
 import { globals } from "../globals";
 import { cors, procedure } from "@storyflow/server/rpc";
+import { promiseFromEntries } from "../utils";
+import util from "util";
 
 const modifyValues = <Input, Output>(
   obj: Record<string, Input>,
@@ -31,6 +38,18 @@ const modifyValues = <Input, Output>(
       callback(value, key, index),
     ])
   );
+
+const getUrl = (headers: Headers) => {
+  return (
+    "/" +
+      headers
+        .get("referer")
+        ?.replace(/https?:\/\//, "")
+        .split("/")
+        .slice(1)
+        .join("/") ?? ""
+  );
+};
 
 export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
   const dbName = undefined; // config.workspaces[0].db;
@@ -153,82 +172,178 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
 
         const params = getUrlParams(url);
 
-        const getFieldRecord = createFieldRecordGetter(
+        const calculateField = createSharedFieldCalculator(
           doc.record,
           params,
           createFetcher(dbName)
         );
 
-        const [
-          pageRecord,
-          layoutRecord,
-          opengraphRecord,
-          titleRecord,
-          seoTitleRecord,
-          seoDescriptionRecord,
-        ] = await Promise.all([
-          getFieldRecord(
-            createTemplateFieldId(doc._id, DEFAULT_FIELDS.page.id)
-          ),
-          getFieldRecord(
-            createTemplateFieldId(doc._id, DEFAULT_FIELDS.layout.id)
-          ),
-          getFieldRecord(
-            createTemplateFieldId(doc._id, DEFAULT_FIELDS.og_image.id)
-          ),
-          getFieldRecord(
-            createTemplateFieldId(doc._id, DEFAULT_FIELDS.label.id)
-          ),
-          getFieldRecord(
-            createTemplateFieldId(doc._id, DEFAULT_FIELDS.seo_title.id)
-          ),
-          getFieldRecord(
-            createTemplateFieldId(doc._id, DEFAULT_FIELDS.seo_description.id)
-          ),
-        ]);
+        const fields = [
+          "page",
+          "layout",
+          "og_image",
+          "label",
+          "seo_title",
+          "seo_description",
+        ] as const satisfies readonly (keyof typeof DEFAULT_FIELDS)[];
 
-        const titleArray =
-          titleRecord && Array.isArray(titleRecord?.entry)
-            ? titleRecord.entry
-            : [];
-        const seoTitleArray =
-          seoTitleRecord && Array.isArray(seoTitleRecord?.entry)
-            ? seoTitleRecord.entry
-            : [];
-        const seoDescriptionArray =
-          seoDescriptionRecord && Array.isArray(seoDescriptionRecord?.entry)
-            ? seoDescriptionRecord.entry
-            : [];
+        const entries = fields.map(
+          (field): [typeof field, ReturnType<typeof calculateField>] => [
+            field,
+            calculateField(
+              createTemplateFieldId(doc._id, DEFAULT_FIELDS[field].id)
+            ),
+          ]
+        );
 
-        const title =
-          typeof seoTitleArray[0] === "string"
-            ? seoTitleArray[0]
-            : typeof titleArray[0] === "string"
-            ? titleArray[0]
-            : undefined;
-        const description =
-          typeof seoDescriptionArray[0] === "string"
-            ? seoDescriptionArray[0]
-            : undefined;
+        const records = await promiseFromEntries(entries);
+
+        const toString = (record: (typeof records)[keyof typeof records]) => {
+          if (!record || !Array.isArray(record.entry)) return;
+          if (typeof record.entry[0] !== "string") return;
+          return record.entry[0];
+        };
 
         const result = {
-          page: pageRecord,
-          layout: layoutRecord,
-          opengraph: opengraphRecord,
+          page: records.page,
+          layout: records.layout,
+          opengraph: records.og_image,
           head: {
-            title,
-            description,
+            title: toString(records.seo_title) ?? toString(records.label),
+            description: toString(records.seo_description),
           },
         };
 
-        /*
-      console.log(
-        "RESULT",
-        util.inspect(result, { depth: null, colors: true })
-      );
-      */
-
         return result;
+      }),
+
+    getLoopWithOffset: procedure
+      .use(cors(apiConfig.cors))
+      .schema(z.object({ url: z.string(), id: z.string() }))
+      .query(async ({ url, id }) => {
+        const doc = await findDocumentByUrl({
+          url,
+          namespaces: appConfig.namespaces,
+          dbName,
+        });
+
+        if (!doc) {
+          console.log("NO PAGE");
+          return null;
+        }
+
+        const params = getUrlParams(url);
+
+        const calculateField = createSharedFieldCalculator(
+          doc.record,
+          params,
+          createFetcher(dbName)
+        );
+
+        const getPropId = (name: string) => {
+          const rawDocumentId = id.slice(12, 24);
+          return `${rawDocumentId}${getIdFromString(name)}` as FieldId;
+        };
+
+        const childrenId = getPropId("children");
+        const dataId = getPropId("data");
+
+        const records = await promiseFromEntries([
+          ["children", calculateField(childrenId)],
+          ["data", calculateField(dataId)],
+        ]);
+
+        if (!records.children || !records.data) {
+          return new RPCError({ code: "NOT_FOUND" });
+        }
+
+        const record: Record<FieldId, ValueArray | ClientSyntaxTree> = {
+          ...records.children.record,
+          ...records.data.record,
+          [childrenId]: records.children.entry,
+          [dataId]: records.data.entry,
+        };
+
+        return record;
+      }),
+
+    getLoopComponent: procedure
+      .use(cors(apiConfig.cors))
+      .schema(
+        z.object({
+          id: z.string(),
+          options: z.array(z.string()),
+          offset: z.number(),
+        })
+      )
+      .query(async ({ id: id_, options, offset }, { req }) => {
+        const id = id_ as NestedDocumentId;
+        const url = getUrl(req!.headers);
+
+        const doc = await findDocumentByUrl({
+          url,
+          namespaces: appConfig.namespaces,
+          dbName,
+        });
+
+        if (!doc) {
+          console.log("NO PAGE");
+          return null;
+        }
+
+        const getPropId = (name: string) => {
+          const rawDocumentId = id.slice(12, 24);
+          return `${rawDocumentId}${getIdFromString(name)}` as FieldId;
+        };
+
+        const params = getUrlParams(url);
+
+        const calculateField = createSharedFieldCalculator(
+          doc.record,
+          params,
+          createFetcher(dbName),
+          {
+            offsets: {
+              [getPropId("data")]: offset,
+            },
+          }
+        );
+
+        const childrenId = getPropId("children");
+        const dataId = getPropId("data");
+
+        const records = await promiseFromEntries([
+          ["data", calculateField(dataId)],
+          ["children", calculateField(childrenId)],
+        ]);
+
+        if (!records.children || !records.data) {
+          return new RPCError({ code: "NOT_FOUND" });
+        }
+
+        const record: Record<FieldId, ValueArray | ClientSyntaxTree> = {
+          ...records.children.record,
+          ...records.data.record,
+          [childrenId]: records.children.entry,
+          [dataId]: records.data.entry,
+        };
+
+        const component =
+          apiConfig.createLoopComponent?.({ id, options, record }) ?? null;
+
+        console.log(
+          util.inspect(records.data.entry, { depth: null, colors: true })
+        );
+
+        try {
+          const {
+            renderToReadableStream,
+          } = require(`react-server-dom-webpack/server.edge`);
+          const result = renderToReadableStream(component);
+          return result;
+        } catch (err) {
+          return null;
+        }
       }),
 
     getPaths: procedure.use(cors(apiConfig.cors)).query(async () => {
@@ -271,14 +386,7 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
         })
       )
       .mutate(async ({ action, id, data }, { req }) => {
-        const url =
-          "/" +
-            req!.headers
-              .get("referer")
-              ?.replace(/https?:\/\//, "")
-              .split("/")
-              .slice(1)
-              .join("/") ?? "";
+        const url = getUrl(req!.headers);
 
         const body = JSON.stringify({
           input: {

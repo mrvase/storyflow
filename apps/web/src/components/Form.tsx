@@ -9,6 +9,8 @@ export const FormConfig = withComponent(
         <cms.form
           action={action}
           uploadFile={async (file: File) => {
+            "use server";
+
             const { name, url } = {
               name: "633bea103d9da929d79e9cfd-1-1-0-1308-e4d.png",
               url: "",

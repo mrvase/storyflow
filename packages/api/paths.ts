@@ -3,7 +3,7 @@ import {
   createTemplateFieldId,
 } from "@storyflow/cms/ids";
 import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
-import { createFieldRecordGetter } from "@storyflow/cms/get-field-record";
+import { createSharedFieldCalculator } from "@storyflow/cms/get-field-record";
 import { parseDocument } from "./convert";
 import { DBDocument } from "@storyflow/cms/types";
 import { DBDocumentRaw } from "./types";
@@ -84,9 +84,9 @@ export async function getPaths(
           data: createRawTemplateFieldId(DEFAULT_FIELDS.slug.id),
         };
 
-        const getFieldRecord = createFieldRecordGetter(record, {}, fetcher);
+        const calculateField = createSharedFieldCalculator(record, {}, fetcher);
 
-        const slugs = (await getFieldRecord(paramsFieldId))?.entry ?? [];
+        const slugs = (await calculateField(paramsFieldId))?.entry ?? [];
 
         if (!Array.isArray(slugs)) {
           throw new Error("Slugs cannot rely on client state");

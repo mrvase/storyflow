@@ -56,6 +56,7 @@ export const createFetcher =
     filters?: Record<RawFieldId, ValueArray>;
     limit?: number;
     sort?: Record<RawFieldId, 1 | -1>;
+    offset?: number;
   }) => {
     let filters: object = {};
 
@@ -80,9 +81,16 @@ export const createFetcher =
       })
       .sort(sort);
 
+    if (fetchObject.offset) {
+      const skip = fetchObject.offset * (fetchObject.limit ?? 1);
+      cursor = cursor.skip(skip);
+    }
+
     if (fetchObject.limit) {
       cursor = cursor.limit(fetchObject.limit);
     }
 
-    return (await cursor.toArray()).map(parseDocument);
+    const result = (await cursor.toArray()).map(parseDocument);
+
+    return result;
   };

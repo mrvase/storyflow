@@ -54,7 +54,7 @@ import {
 } from "../collections/convert";
 import { modifyKeys, modifyObject } from "../utils";
 import { dataFromDb } from "../data";
-import { createFieldRecordGetter } from "@storyflow/cms/get-field-record";
+import { createSharedFieldCalculator } from "@storyflow/cms/get-field-record";
 import util from "util";
 
 export const createDocumentIdGenerator = (db: Db, batchSize: number) => {
@@ -111,7 +111,7 @@ export const documents = (config: StoryflowConfig) => {
 
         if (sort_) {
           sort = Object.fromEntries(
-            sort_.map((el): [string, 1 | -1] => [
+            sort_.map((el) => [
               el.slice(1) as RawFieldId,
               el.slice(0, 1) === "+" ? 1 : -1,
             ])
@@ -651,7 +651,7 @@ export const documents = (config: StoryflowConfig) => {
 
         const params = getUrlParams(url);
 
-        const getFieldRecord = createFieldRecordGetter(
+        const calculateField = createSharedFieldCalculator(
           doc.record,
           { ...params, ...data },
           createFetcher(dbName),
@@ -660,7 +660,7 @@ export const documents = (config: StoryflowConfig) => {
           }
         );
 
-        const pageRecord = await getFieldRecord(
+        const pageRecord = await calculateField(
           createTemplateFieldId(doc._id, DEFAULT_FIELDS.page.id)
         );
 

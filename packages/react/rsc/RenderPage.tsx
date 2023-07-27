@@ -2,14 +2,10 @@ import { createRenderArray } from "@storyflow/client/render";
 import {
   ClientSyntaxTree,
   Component,
-  Config,
   ConfigRecord,
   Context,
   ContextProvider,
   CustomTransforms,
-  FileToken,
-  Library,
-  LibraryConfig,
   LibraryConfigRecord,
   LibraryRecord,
   NestedDocumentId,
@@ -33,23 +29,8 @@ import {
   splitProps,
 } from "../utils/splitProps";
 import { IdContextProvider } from "../src/IdContext";
-
-type ComponentContext = {
-  element: symbol;
-  index: number;
-  serverContexts: Context[];
-};
-
-type RSCContext = {
-  spread: boolean;
-  loop: Record<string, number>;
-  configs: Record<string, LibraryConfig>;
-  libraries: Record<string, Library>;
-  transforms: CustomTransforms;
-  children?: React.ReactNode;
-  contexts: ComponentContext[];
-  isOpenGraph: boolean;
-};
+import { RSCContext } from "./types";
+import { Pagination } from "./Pagination";
 
 const RenderChildren = ({
   value,
@@ -190,12 +171,11 @@ const RenderElement = ({
     symbol = (config as any).symbol;
   }
 
-  let props = {
+  const props = {
     props: config.props,
     component,
     record,
     id,
-    type,
     createComponentContext: getComponentContextCreator(config?.provideContext),
   };
 
@@ -204,29 +184,38 @@ const RenderElement = ({
     const dataId = `${rawDocumentId}${getIdFromString("data")}`;
 
     return (
-      <>
+      <Pagination
+        id={id}
+        options={Object.keys(options ?? {})}
+        /*
+        action={async () => {
+          "use server";
+          return await ctx.action(id, Object.keys(options ?? {}));
+        }}
+        */
+      >
         {(record[dataId] as ValueArray).map((_, newIndex) => {
           const newCtx = {
             ...ctx,
-            loop: {
-              ...ctx.loop,
+            loopIndexRecord: {
+              ...ctx.loopIndexRecord,
               [rawDocumentId]: newIndex,
             },
-            spread: true,
+            // spread: true,
           };
           return (
             <RenderElementWithProps
-              // not really the accurate block index - this creates its own order
-              index={newIndex}
               key={newIndex}
               ctx={newCtx}
               symbol={symbol}
+              // not really the accurate block index - this creates its own order
+              index={newIndex}
               parentOptions={options}
               {...props}
             />
           );
         })}
-      </>
+      </Pagination>
     );
   }
 
@@ -240,9 +229,8 @@ const RenderElement = ({
   );
 };
 
-function RenderElementWithProps({
+export function RenderElementWithProps({
   id,
-  type,
   symbol,
   record,
   ctx,
@@ -253,7 +241,7 @@ function RenderElementWithProps({
   parentOptions,
 }: {
   id: NestedDocumentId;
-  type: string;
+  // type: string;
   symbol: symbol;
   record: Record<string, ValueArray | ClientSyntaxTree>;
   ctx: RSCContext;
@@ -278,7 +266,7 @@ function RenderElementWithProps({
           const labelFieldId = getFieldId(extendPath(name, "label", "#"));
           const label = resolveStatefulProp(
             record[labelFieldId] ?? [],
-            ctx.loop
+            ctx.loopIndexRecord
           );
 
           return [
@@ -299,7 +287,10 @@ function RenderElementWithProps({
           return [name, fieldId];
         }
 
-        const prop = resolveStatefulProp(record[fieldId] ?? [], ctx.loop);
+        const prop = resolveStatefulProp(
+          record[fieldId] ?? [],
+          ctx.loopIndexRecord
+        );
 
         return [name, normalizeProp(config, prop, ctx.transforms)];
       })
@@ -323,7 +314,10 @@ function RenderElementWithProps({
     const childrenProps = Object.fromEntries(
       childrenEntries.map(([name, config]): [string, any] => {
         const fieldId = `${id.slice(12, 24)}${getIdFromString(name)}`;
-        const value = resolveStatefulProp(record[fieldId] ?? [], ctx.loop);
+        const value = resolveStatefulProp(
+          record[fieldId] ?? [],
+          ctx.loopIndexRecord
+        );
 
         const children = (
           <RenderChildren
@@ -366,15 +360,13 @@ function RenderElementWithProps({
 
   const resolvedProps = resolveProps(props);
 
-  const IdContextProvider_ = !ctx.isOpenGraph
-    ? IdContextProvider
-    : React.Fragment;
-
-  return (
-    <IdContextProvider_ id={id}>
+  if (!ctx.isOpenGraph) {
+    <IdContextProvider id={id}>
       <Component {...resolvedProps} />
-    </IdContextProvider_>
-  );
+    </IdContextProvider>;
+  }
+
+  return <Component {...resolvedProps} />;
 }
 
 export const RenderPage = <T extends LibraryConfigRecord>({
@@ -382,6 +374,7 @@ export const RenderPage = <T extends LibraryConfigRecord>({
   configs: configsFromProps,
   libraries: librariesFromProps,
   transforms = {} as any,
+  action,
   isOpenGraph,
 }: {
   data:
@@ -393,6 +386,10 @@ export const RenderPage = <T extends LibraryConfigRecord>({
     | undefined;
   configs: T;
   libraries: LibraryRecord<T>;
+  action?: (
+    id: NestedDocumentId,
+    options: string[]
+  ) => Promise<React.ReactElement[] | null>;
   isOpenGraph?: boolean;
 } & ({} extends CustomTransforms
   ? { transforms?: CustomTransforms }
@@ -409,14 +406,15 @@ export const RenderPage = <T extends LibraryConfigRecord>({
       value={data.entry as ValueArray}
       record={data.record}
       ctx={{
-        spread: false,
-        loop: {},
-        children: undefined,
+        // spread: false,
+        loopIndexRecord: {},
+        contexts: [],
         configs,
         libraries,
         transforms,
-        contexts: [],
+        action,
         isOpenGraph: Boolean(isOpenGraph),
+        children: null,
       }}
     />
   ) : null;
@@ -427,6 +425,7 @@ export const RenderLayout = <T extends LibraryConfigRecord>({
   configs: configsFromProps,
   libraries: librariesFromProps,
   transforms = {} as any,
+  action,
 }: {
   data:
     | {
@@ -438,6 +437,10 @@ export const RenderLayout = <T extends LibraryConfigRecord>({
   children: React.ReactNode;
   configs: T;
   libraries: LibraryRecord<T>;
+  action?: (
+    id: NestedDocumentId,
+    options: string[]
+  ) => Promise<React.ReactElement[] | null>;
 } & ({} extends CustomTransforms
   ? { transforms?: CustomTransforms }
   : { transforms: CustomTransforms })) => {
@@ -453,14 +456,15 @@ export const RenderLayout = <T extends LibraryConfigRecord>({
       value={data.entry as ValueArray}
       record={data.record}
       ctx={{
-        spread: false,
-        loop: {},
-        children,
+        // spread: false,
+        loopIndexRecord: {},
+        contexts: [],
         configs,
         libraries,
         transforms,
-        contexts: [],
+        action,
         isOpenGraph: false,
+        children,
       }}
     />
   ) : (

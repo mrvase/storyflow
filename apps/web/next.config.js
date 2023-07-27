@@ -19,6 +19,7 @@ module.exports = {
   */
   experimental: {
     appDir: true,
+    serverActions: true,
   },
   reactStrictMode: true,
   transpilePackages: [],

@@ -15,7 +15,7 @@
     "@lexical/selection": "^0.9.1",
     "@lexical/utils": "^0.9.1",
     "@nanokit/router": "0.0.13",
-    "@nanorpc/client": "^0.0.20",
+    "@nanorpc/client": "^0.0.21",
     "@storyflow/collab": "workspace:*",
     "@storyflow/dnd": "workspace:*",
     "@storyflow/cms": "workspace:*",
@@ -30,7 +30,7 @@
   },
   "devDependencies": {
     "@storyflow/api": "workspace:*",
-    "@nanorpc/server": "^0.0.20",
+    "@nanorpc/server": "^0.0.21",
     "@tailwindcss/container-queries": "^0.1.1",
     "@types/react": "^18.2.1",
     "@types/react-dom": "^18.2.2",

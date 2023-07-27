@@ -41,3 +41,16 @@ export const modifyKeys = <
 ): Record<TOutputKey, TInputValue> => {
   return modifyObject(object, ([key, value]) => [modifier(key), value]);
 };
+
+export const promiseFromEntries = <
+  Key extends string,
+  Value extends Promise<unknown>
+>(
+  entries: [Key, Value][]
+) => {
+  return Promise.all(entries.map(([, value]) => value)).then((values) => {
+    return Object.fromEntries(
+      entries.map(([key], index) => [key, values[index]])
+    ) as Record<Key, Awaited<Value>>;
+  });
+};
