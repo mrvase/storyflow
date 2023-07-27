@@ -35,13 +35,15 @@
       "env": [
         "NODE_ENV",
         "BASE_URL",
+        "MAIN_BASE_URL",
         "SECRET_KEY",
         "MONGO_URL",
         "NAMESPACES",
         "STORYFLOW_PUBLIC_KEY",
         "PUBLIC_KEY",
         "PRIVATE_KEY",
-        "NEXT_PUBLIC_IMAGE_URL"
+        "NEXT_PUBLIC_IMAGE_URL",
+        "MAILCHIMP_API_KEY"
       ],
       "outputs": [".next/**"]
     },

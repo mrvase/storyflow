@@ -8,9 +8,8 @@ export const FormConfig = withComponent(
         Status: <FormStatus action={action} />
         <cms.form
           action={action}
+          /*
           uploadFile={async (file: File) => {
-            "use server";
-
             const { name, url } = {
               name: "633bea103d9da929d79e9cfd-1-1-0-1308-e4d.png",
               url: "",
@@ -18,6 +17,7 @@ export const FormConfig = withComponent(
 
             return name;
           }}
+          */
         >
           {children}
           <button type="submit">submit</button>

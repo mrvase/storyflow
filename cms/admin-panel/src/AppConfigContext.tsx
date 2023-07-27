@@ -88,6 +88,7 @@ export const fetchConfigs = async (apps: AppReference[]) => {
 
 const defaultClientConfig: AppConfig = {
   baseURL: "",
+  mainBaseURL: "",
   label: "",
   configs: { "": defaultLibraryConfig },
 };
@@ -120,6 +121,7 @@ export function useAppConfig(key?: string): AppConfig {
   if (!main) {
     return {
       baseURL: "",
+      mainBaseURL: "",
       label: "",
       builderPath: undefined,
       configs: defaultLibraries,
@@ -128,6 +130,7 @@ export function useAppConfig(key?: string): AppConfig {
 
   return {
     baseURL: main.baseURL,
+    mainBaseURL: main.mainBaseURL,
     label: main.label,
     builderPath: main.builderPath,
     configs: main.configs,

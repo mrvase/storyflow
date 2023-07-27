@@ -361,7 +361,7 @@ export function CopyPastePlugin() {
                     return (
                       el instanceof HTMLElement &&
                       el.tagName === "SPAN" &&
-                      el.computedStyleMap().get(property) === value
+                      (el as any).computedStyleMap().get(property) === value
                     );
                   };
 
