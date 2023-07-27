@@ -9,7 +9,7 @@ import { FieldIdContext } from "./FieldIdContext";
 import { FieldRestrictionsContext } from "./FieldIdContext";
 import type { FieldProps } from "./types";
 import { useIsCustomFolder } from "../folders/FolderPageContext";
-import { ReadOnlyField } from "./ReadonlyField";
+import { ReadOnlyField } from "./ReadOnlyField";
 
 const Components: { [K in FieldUI | "default"]: React.FC<FieldProps> } = {
   default: DefaultFieldRoot,
