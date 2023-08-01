@@ -1,8 +1,12 @@
 import { RPCError } from "@nanorpc/server";
 import { cors as corsFactory } from "@storyflow/server/rpc";
-import { serializeAuthToken } from "@storyflow/server/auth";
+import {
+  AuthCookies,
+  TOKEN_HTTP_COOKIE,
+  serializeAuthToken,
+} from "@storyflow/server/auth";
 import { GLOBAL_TOKEN, parseAuthToken } from "@storyflow/server/auth";
-import { globals } from "../globals";
+import { globals, httpOnly } from "../middleware";
 import { z } from "zod";
 import { client } from "../mongo";
 import { CollabVersion, DBFolderRecord } from "@storyflow/cms/types";
@@ -24,18 +28,6 @@ const validate = async (email: string, admin: string) => {
   return Boolean(result);
 };
 
-const httpOnly = procedure.middleware(async (input, ctx, next) => {
-  const req = ctx.req;
-  const res = ctx.res;
-  if (!req || !res) {
-    return new RPCError({
-      code: "SERVER_ERROR",
-      message: "This endpoint should only be used with an API request",
-    });
-  }
-  return await next(input, { ...ctx, req, res });
-});
-
 export const admin = (config: StoryflowConfig) => {
   const dbName = undefined; // config.workspaces[0].db;
   return {
@@ -48,7 +40,7 @@ export const admin = (config: StoryflowConfig) => {
           config: z.boolean(),
         })
       )
-      .mutate(async (include, { req }) => {
+      .mutate(async (include, { res, req }) => {
         try {
           console.log("authenticating");
 

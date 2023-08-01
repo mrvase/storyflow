@@ -1,7 +1,7 @@
 export const KEY_COOKIE = "key";
 export const LINK_COOKIE = "verify";
-export const GLOBAL_SESSION_COOKIE = "session";
-export const LOCAL_SESSION_COOKIE = "local-session";
+export const EMAIL_HTTP_COOKIE = "session";
+export const TOKEN_HTTP_COOKIE = "server-token";
 
 export const GLOBAL_TOKEN = "token";
 export const LOCAL_TOKEN = "local-token";
@@ -14,19 +14,15 @@ export type KeyCookie = {
   key: string;
 };
 
-export type GlobalAuthSession = {
-  email: string;
-};
-
-export type LocalAuthSession = {
+export type EmailAuthCookie = {
   email: string;
 };
 
 export type AuthCookies = {
   [KEY_COOKIE]: KeyCookie;
   [LINK_COOKIE]: LinkCookie;
-  [GLOBAL_SESSION_COOKIE]: GlobalAuthSession;
-  [LOCAL_SESSION_COOKIE]: LocalAuthSession;
+  [EMAIL_HTTP_COOKIE]: EmailAuthCookie;
+  [TOKEN_HTTP_COOKIE]: string;
   [GLOBAL_TOKEN]: string;
   [LOCAL_TOKEN]: string;
 };

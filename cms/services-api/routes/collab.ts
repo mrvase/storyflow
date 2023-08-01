@@ -1,4 +1,4 @@
-import { globals } from "../globals";
+import { globals } from "../middleware";
 import { z } from "zod";
 import { TimelineEntry, ToggleOperation } from "@storyflow/collab/types";
 import { getId, read } from "@storyflow/collab/utils";

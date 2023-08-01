@@ -20,7 +20,7 @@ import type {
   ValueArray,
 } from "@storyflow/shared/types";
 import { client } from "../mongo";
-import { globals } from "../globals";
+import { globals } from "../middleware";
 import {
   USER_DOCUMENT_OFFSET,
   createDocumentId,

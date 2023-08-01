@@ -1,6 +1,6 @@
 import { z } from "zod";
 import {
-  GLOBAL_SESSION_COOKIE,
+  EMAIL_HTTP_COOKIE,
   GLOBAL_TOKEN,
   LINK_COOKIE,
   KEY_COOKIE,
@@ -8,8 +8,9 @@ import {
   serializeAuthToken,
   parseAuthToken,
   LOCAL_TOKEN,
+  TOKEN_HTTP_COOKIE,
 } from "@storyflow/server/auth";
-import { cors } from "../globals";
+import { cors } from "../middleware";
 import { AppReference } from "@storyflow/shared/types";
 import { emailAuth, procedure } from "@storyflow/server/rpc";
 import { RPCError, isError } from "@nanorpc/server";
@@ -181,7 +182,7 @@ export const auth = ({ sendEmail, organizations }: AuthOptions) => {
         res!
           .cookies<AuthCookies>()
           .set(
-            GLOBAL_SESSION_COOKIE,
+            EMAIL_HTTP_COOKIE,
             { email },
             { path: "/", sameSite: "lax", secure: true, httpOnly: true }
           );
@@ -259,7 +260,7 @@ export const auth = ({ sendEmail, organizations }: AuthOptions) => {
           res: res!.cookies<AuthCookies>(),
         };
 
-        const user = cookies.req.get(GLOBAL_SESSION_COOKIE)?.value;
+        const user = cookies.req.get(EMAIL_HTTP_COOKIE)?.value;
 
         if (!user) {
           return new RPCError({
@@ -419,6 +420,13 @@ export const auth = ({ sendEmail, organizations }: AuthOptions) => {
           secure: true,
         });
 
+        cookies.res.set(TOKEN_HTTP_COOKIE, data.token, {
+          path: "/",
+          sameSite: "lax",
+          secure: true,
+          httpOnly: true,
+        });
+
         return {
           user: { email: user.email },
           config: data.config ?? null,
@@ -427,7 +435,7 @@ export const auth = ({ sendEmail, organizations }: AuthOptions) => {
       }),
 
     logout: procedure.use(cors).mutate(async (_, { res }) => {
-      res!.cookies<AuthCookies>().delete(GLOBAL_SESSION_COOKIE, {
+      res!.cookies<AuthCookies>().delete(EMAIL_HTTP_COOKIE, {
         path: "/",
         sameSite: "lax",
         secure: true,

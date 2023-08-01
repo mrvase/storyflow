@@ -1,7 +1,8 @@
 import {
   AuthCookies,
-  GLOBAL_SESSION_COOKIE,
+  EMAIL_HTTP_COOKIE,
   LOCAL_TOKEN,
+  TOKEN_HTTP_COOKIE,
   parseAuthToken,
 } from "../auth";
 import { procedure } from "./procedure";
@@ -17,13 +18,18 @@ export const auth = (keyFromArg?: string) =>
     if (!ctx.req || ctx.req.method === "OPTIONS") {
       return next(input, { ...ctx, email: "" });
     }
-
-    const tokenHeader = ctx.req.headers.get("x-storyflow-token");
     const key = keyFromArg ?? (ctx as any).key;
     if (!key) {
       return UNAUTHORIZED_ERROR;
     }
-    const token = parseAuthToken(LOCAL_TOKEN, tokenHeader, key);
+    const tokenHeader = ctx.req.headers.get("x-storyflow-token");
+    let token = parseAuthToken(LOCAL_TOKEN, tokenHeader, key);
+    if (!token) {
+      const tokenCookie = ctx.req
+        .cookies<AuthCookies>()
+        .get(TOKEN_HTTP_COOKIE)?.value;
+      token = parseAuthToken(LOCAL_TOKEN, tokenCookie, key);
+    }
     if (!token) {
       return UNAUTHORIZED_ERROR;
     }
@@ -33,7 +39,7 @@ export const auth = (keyFromArg?: string) =>
 export const emailAuth = procedure.middleware(async (input, ctx, next) => {
   if (!ctx.req || ctx.req.method === "OPTIONS")
     return next(input, { ...ctx, email: "" });
-  const user = ctx.req.cookies<AuthCookies>().get(GLOBAL_SESSION_COOKIE)?.value;
+  const user = ctx.req.cookies<AuthCookies>().get(EMAIL_HTTP_COOKIE)?.value;
   if (!user) {
     return UNAUTHORIZED_ERROR;
   }

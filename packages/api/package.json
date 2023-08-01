@@ -14,7 +14,7 @@
     "storyflow": "./bin/index.js"
   },
   "dependencies": {
-    "@nanorpc/server": "^0.0.21",
+    "@nanorpc/server": "^0.0.22",
     "@storyflow/cms": "workspace:*",
     "@storyflow/server": "workspace:*",
     "@storyflow/shared": "workspace:*",

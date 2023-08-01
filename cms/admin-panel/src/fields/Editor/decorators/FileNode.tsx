@@ -6,6 +6,7 @@ import { useFileLabel } from "../../../data/files";
 import { SerializedTokenStreamNode, TokenStreamNode } from "./TokenStreamNode";
 import { useIsSelected } from "./useIsSelected";
 import { useOrganization } from "../../../clients/auth";
+import { ArrowDownOnSquareIcon } from "@heroicons/react/24/outline";
 
 function Decorator({ nodeKey, value }: { nodeKey: string; value: FileToken }) {
   const { isSelected, isPseudoSelected, select } = useIsSelected(nodeKey);
@@ -33,6 +34,13 @@ function Decorator({ nodeKey, value }: { nodeKey: string; value: FileToken }) {
     >
       <Image src={value.src} />
       <div>{label}</div>
+      <a
+        href={`/api/bucket/file/${value.src}`}
+        download
+        className="ml-auto mr-1.5 flex items-center hover:bg-gray-200 px-2 py-1 rounded text-sm"
+      >
+        <ArrowDownOnSquareIcon className="w-4 h-4" /> Download
+      </a>
     </div>
   );
 }

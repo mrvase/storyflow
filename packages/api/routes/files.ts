@@ -1,5 +1,5 @@
 import { client } from "../mongo";
-import { globals } from "../globals";
+import { globals } from "../middleware";
 import { StoryflowConfig } from "@storyflow/shared/types";
 import { procedure } from "@storyflow/server/rpc";
 import { z } from "zod";

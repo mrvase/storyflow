@@ -1,6 +1,10 @@
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import {
+  S3Client,
+  GetObjectCommand,
+  PutObjectCommand,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl as getSignedUrlAWS } from "@aws-sdk/s3-request-presigner";
-import { globals } from "../globals";
+import { globals, httpOnly } from "../middleware";
 import { z } from "zod";
 import { procedure, cors as corsFactory } from "@storyflow/server/rpc";
 import { RPCError, isError } from "@nanorpc/server";
@@ -128,27 +132,66 @@ export const bucket = ({
     getOrganizationUrl: (slug: string) => Promise<string | undefined>;
   };
 } = {}) => ({
-  /*
-  media: {
-    "[id]": procedure.use(globals).query(async (_, { params }) => {
-      const client = new S3Client({
-        // apiVersion: "2006-03-01",
-        credentials: {
-          accessKeyId: process.env.S3_ACCESS_KEY ?? "",
-          secretAccessKey: process.env.S3_SECRET_KEY ?? "",
-        },
-        region: process.env.NEXT_PUBLIC_S3_REGION,
-      });
+  file: {
+    "[name]": procedure
+      .use(globals)
+      .use(httpOnly)
+      .query(async (_, { params, slug, res }) => {
+        const client = new S3Client({
+          region: "auto",
+          endpoint: `https://${process.env.S3_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+          credentials: {
+            accessKeyId: process.env.S3_ACCESS_KEY ?? "",
+            secretAccessKey: process.env.S3_SECRET_KEY ?? "",
+          },
+        });
 
-      const data = await client.send(
-        new GetObjectCommand({
-          Key: `${process.env.NEXT_PUBLIC_DOMAIN}/${key}`,
-          Bucket: process.env.NEXT_PUBLIC_S3_BUCKET_NAME as string,
-        })
-      );
-    }),
+        try {
+          const data = await client.send(
+            new GetObjectCommand({
+              Bucket: process.env.S3_BUCKET_NAME_PRIVATE as string,
+              Key: `${slug}/${params.name}`,
+            })
+          );
+
+          if (!data.Body) {
+            return new RPCError({
+              code: "NOT_FOUND",
+              status: 404,
+              message: "File not found.",
+            });
+          }
+
+          /*
+          res.headers.set("Content-Type", data.ContentType ?? "");
+          res.headers.set(
+            "Content-Length",
+            data.ContentLength?.toString() ?? ""
+          );
+          */
+
+          return data.Body.transformToWebStream();
+        } catch (err) {
+          if (
+            err &&
+            typeof err === "object" &&
+            "Code" in err &&
+            err.Code === "NoSuchKey"
+          ) {
+            return new RPCError({
+              code: "NOT_FOUND",
+              status: 404,
+              message: "File not found.",
+            });
+          }
+          console.error(err);
+          return new RPCError({
+            code: "SERVER_ERROR",
+            message: "Failed getting file.",
+          });
+        }
+      }),
   },
-  */
 
   getUploadLink: procedure
     .use(globals)
@@ -183,7 +226,6 @@ export const bucket = ({
     .middleware(async (input, ctx, next) => {
       const url = await organizations?.getOrganizationUrl(input.slug);
 
-      console.log("HERE 2", input.slug, url);
       if (!url) {
         return new RPCError({ code: "UNAUTHORIZED" });
       }
@@ -197,7 +239,7 @@ export const bucket = ({
         });
 
         if (isError(data)) {
-          console.log("auth error: from remote server:", data.error);
+          console.error("auth error: from remote server:", data.error);
           throw "";
         }
 

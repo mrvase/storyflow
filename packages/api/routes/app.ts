@@ -23,7 +23,7 @@ import {
 } from "@storyflow/cms/ids";
 import { createObjectId } from "../mongo";
 import { createFetcher, findDocumentByUrl } from "../create-fetcher";
-import { globals } from "../globals";
+import { globals } from "../middleware";
 import { cors, procedure } from "@storyflow/server/rpc";
 import { promiseFromEntries } from "../utils";
 import util from "util";
