@@ -34,6 +34,7 @@ export const storyflowConfig: StoryflowConfig = {
   ],
   collections: [MailchimpLists, Mailchimp],
   templates: [],
+  allowUploads: true,
 };
 
 export default storyflowConfig;

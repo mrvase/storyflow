@@ -1,5 +1,5 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { getSignedUrl as getSignedUrlAWS } from "@aws-sdk/s3-request-presigner";
 import { globals } from "../globals";
 import { z } from "zod";
 import { procedure, cors as corsFactory } from "@storyflow/server/rpc";
@@ -68,6 +68,59 @@ const schema = z.object({
   access: z.union([z.literal("private"), z.literal("public")]).optional(),
 });
 
+const getExtension = (name: string) => name.replace(/.*(\.[^.]+)$/, "$1");
+
+const getSignedUrl = async ({
+  type,
+  size,
+  name,
+  slug,
+  access,
+}: {
+  type: string;
+  size: number;
+  name: string;
+  slug: string;
+  access: keyof typeof settingNumber;
+}) => {
+  const client = new S3Client({
+    region: "auto",
+    endpoint: `https://${process.env.S3_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+    credentials: {
+      accessKeyId: process.env.S3_ACCESS_KEY ?? "",
+      secretAccessKey: process.env.S3_SECRET_KEY ?? "",
+    },
+  });
+
+  try {
+    const command = new PutObjectCommand({
+      Bucket:
+        access === "private"
+          ? process.env.S3_BUCKET_NAME_PRIVATE
+          : process.env.S3_BUCKET_NAME,
+      Key: `${slug}/${name}`,
+      ContentLength: size,
+      ContentType: type,
+    });
+
+    const url = await getSignedUrlAWS(client, command, {
+      expiresIn: 60,
+    });
+
+    return {
+      name,
+      url,
+      headers: {},
+    };
+  } catch (err) {
+    console.error(err);
+    return new RPCError({
+      code: "SERVER_ERROR",
+      message: "Failed getting upload link.",
+    });
+  }
+};
+
 export const bucket = ({
   organizations,
 }: {
@@ -75,6 +128,28 @@ export const bucket = ({
     getOrganizationUrl: (slug: string) => Promise<string | undefined>;
   };
 } = {}) => ({
+  /*
+  media: {
+    "[id]": procedure.use(globals).query(async (_, { params }) => {
+      const client = new S3Client({
+        // apiVersion: "2006-03-01",
+        credentials: {
+          accessKeyId: process.env.S3_ACCESS_KEY ?? "",
+          secretAccessKey: process.env.S3_SECRET_KEY ?? "",
+        },
+        region: process.env.NEXT_PUBLIC_S3_REGION,
+      });
+
+      const data = await client.send(
+        new GetObjectCommand({
+          Key: `${process.env.NEXT_PUBLIC_DOMAIN}/${key}`,
+          Bucket: process.env.NEXT_PUBLIC_S3_BUCKET_NAME as string,
+        })
+      );
+    }),
+  },
+  */
+
   getUploadLink: procedure
     .use(globals)
     .schema(schema)
@@ -83,7 +158,7 @@ export const bucket = ({
         { type, size, name: originalName, metadata = {}, access = "public" },
         { slug }
       ) => {
-        const extension = (originalName ?? "").replace(/.*(\.[^.]+)$/, "$1");
+        const extension = getExtension(originalName ?? "");
 
         const name = createFileName({
           type,
@@ -92,39 +167,13 @@ export const bucket = ({
           access,
         });
 
-        const client = new S3Client({
-          region: "auto",
-          endpoint: `https://${process.env.S3_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-          credentials: {
-            accessKeyId: process.env.S3_ACCESS_KEY ?? "",
-            secretAccessKey: process.env.S3_SECRET_KEY ?? "",
-          },
+        return getSignedUrl({
+          type,
+          size,
+          name,
+          slug,
+          access,
         });
-
-        try {
-          const command = new PutObjectCommand({
-            Bucket: process.env.S3_BUCKET_NAME,
-            Key: `${slug}/${name}`,
-            ContentLength: size,
-            ContentType: type,
-          });
-
-          const url = await getSignedUrl(client, command, {
-            expiresIn: 60,
-          });
-
-          return {
-            name,
-            url,
-            headers: {},
-          };
-        } catch (err) {
-          console.error(err);
-          return new RPCError({
-            code: "SERVER_ERROR",
-            message: "Failed getting upload link.",
-          });
-        }
       }
     ),
 
@@ -134,6 +183,7 @@ export const bucket = ({
     .middleware(async (input, ctx, next) => {
       const url = await organizations?.getOrganizationUrl(input.slug);
 
+      console.log("HERE 2", input.slug, url);
       if (!url) {
         return new RPCError({ code: "UNAUTHORIZED" });
       }
@@ -165,7 +215,31 @@ export const bucket = ({
 
       return await next(input, ctx);
     })
-    .query(({}) => {
-      return "";
-    }),
+    .query(
+      ({
+        name: originalName,
+        type,
+        size,
+        slug,
+        metadata = {},
+        access = "public",
+      }) => {
+        const extension = getExtension(originalName ?? "");
+
+        const name = createFileName({
+          type,
+          extension,
+          metadata,
+          access,
+        });
+
+        return getSignedUrl({
+          type,
+          size,
+          name,
+          slug,
+          access,
+        });
+      }
+    ),
 });

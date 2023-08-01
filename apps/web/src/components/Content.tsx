@@ -32,7 +32,7 @@ export const Content = ({
       }}
     >
       {input.label}
-      {/*<cms.input name={input.name} className="bg-gray-100 p-3" />*/}
+      <cms.input type="file" name={input.name} className="bg-gray-100 p-3" />
       {Intl.DateTimeFormat("da-DK", {
         dateStyle: "long",
         ...([date.getHours(), date.getMinutes(), date.getSeconds()].some(

@@ -339,6 +339,7 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
           const {
             renderToReadableStream,
           } = require(`react-server-dom-webpack/server.edge`);
+          // second argument: JSON.parse((globalThis as any).__RSC_MANIFEST["/(pages)/[1]/page"]).clientModules
           const result = renderToReadableStream(component);
           return result;
         } catch (err) {

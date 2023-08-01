@@ -361,9 +361,11 @@ export function RenderElementWithProps({
   const resolvedProps = resolveProps(props);
 
   if (!ctx.isOpenGraph) {
-    <IdContextProvider id={id}>
-      <Component {...resolvedProps} />
-    </IdContextProvider>;
+    return (
+      <IdContextProvider id={id}>
+        <Component {...resolvedProps} />
+      </IdContextProvider>
+    );
   }
 
   return <Component {...resolvedProps} />;

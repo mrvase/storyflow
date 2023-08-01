@@ -8,6 +8,8 @@ export const FormConfig = withComponent(
         Status: <FormStatus action={action} />
         <cms.form
           action={action}
+          slug="dashboard"
+          privateFiles
           /*
           uploadFile={async (file: File) => {
             const { name, url } = {

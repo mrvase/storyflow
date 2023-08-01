@@ -59,8 +59,12 @@ export const { GET, POST, OPTIONS } = createRouteHandler(
       sendEmail,
       organizations,
     }),
-    bucket: bucket(),
+    bucket: bucket({
+      organizations,
+    }),
     collab,
   },
   { secret: process.env.SECRET_KEY as string }
 );
+
+export const dynamic = "force-dynamic";

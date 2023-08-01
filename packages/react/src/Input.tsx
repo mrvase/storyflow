@@ -59,14 +59,53 @@ export const useFormStatus = (action: string) => {
   );
 };
 
+const uploadFile = async (
+  file: File,
+  options: { slug: string; private?: boolean }
+) => {
+  const response = await fetch(
+    `${
+      process.env.NODE_ENV === "production"
+        ? "https://www.app.storyflow.dk"
+        : "http://localhost:3000"
+    }/api/bucket/getUploadLinkForForm?input=${JSON.stringify({
+      type: file.type,
+      size: file.size,
+      name: file.name,
+      slug: options.slug,
+      access: options.private ? "private" : "public",
+    })}`
+  ).then((res) => res.json());
+
+  if ("error" in response) {
+    throw new Error("Generating presigned link failed.");
+  }
+
+  const { name, url, headers } = response;
+
+  const upload = await fetch(url, {
+    method: "PUT",
+    body: file,
+    mode: "cors",
+  });
+
+  if (!upload.ok) {
+    console.error("Upload failed.");
+  }
+
+  return name;
+};
+
 export const Form = React.forwardRef<
   HTMLFormElement,
   Omit<React.ComponentProps<"form">, "action"> & {
     action: string;
-    uploadFile?: (file: File) => string | Promise<string>;
+    slug?: string;
+    privateFiles?: boolean;
+    // uploadFile?: (file: File) => string | Promise<string>;
   }
 >((props, ref) => {
-  const { action, uploadFile, ...rest } = props;
+  const { action, slug, privateFiles, ...rest } = props;
 
   const { isLoading } = useFormStatus(action);
 
@@ -75,6 +114,14 @@ export const Form = React.forwardRef<
   if (!action) {
     throw new Error("No action specified for form");
   }
+
+  const setError = (error: FormStatus["error"]) => {
+    setFormStatus(action, {
+      isLoading: false,
+      error,
+      success: undefined,
+    });
+  };
 
   const onSubmit = React.useCallback(
     async (ev: React.FormEvent<HTMLFormElement>) => {
@@ -92,25 +139,36 @@ export const Form = React.forwardRef<
       if (props.onSubmit) props.onSubmit(ev);
 
       const entries = new FormData(ev.target as HTMLFormElement).entries();
-      const dataEntries = await Promise.all(
-        Array.from(entries).map(async (el) => {
-          const key = `form:${el[0]}`;
-          if (typeof el[1] === "string") {
-            return [key, [el[1]]];
-          }
 
-          if (uploadFile) {
-            const src = await uploadFile(el[1]);
-            return [key, [{ src }]];
-          }
-          return [key, [el[1].name]];
-        })
-      );
+      let dataEntries = [];
+
+      try {
+        dataEntries = await Promise.all(
+          Array.from(entries).map(async (el) => {
+            const key = `form:${el[0]}`;
+            if (typeof el[1] === "string") {
+              return [key, [el[1]]];
+            }
+
+            if (el[1].size === 0) {
+              return [key, []];
+            } else if (slug) {
+              const src = await uploadFile(el[1], {
+                slug,
+                private: privateFiles,
+              });
+              return [key, [{ src }]];
+            }
+            return [key, [el[1].name]];
+          })
+        );
+      } catch (err) {
+        setError("FETCH_ERROR");
+        return;
+      }
 
       const data = Object.fromEntries(dataEntries);
       console.log("DATA", data);
-
-      let error: FormStatus["error"] = undefined;
 
       const body = JSON.stringify({
         input: {
@@ -123,17 +181,18 @@ export const Form = React.forwardRef<
       try {
         const result = await fetch("/api/submit", { method: "POST", body });
         if (result.status !== 200) {
-          error = "SERVER_ERROR";
+          setError("SERVER_ERROR");
+          return;
         }
       } catch (err) {
-        error = "FETCH_ERROR";
+        setError("FETCH_ERROR");
+        return;
       }
 
-      // set error state
       setFormStatus(action, {
         isLoading: false,
-        error,
-        success: !error ? true : undefined,
+        error: undefined,
+        success: true,
       });
     },
     [action, isLoading]
@@ -155,6 +214,8 @@ export const Input = React.forwardRef<
   Omit<React.ComponentProps<"input">, "name"> & { name: string }
 >((props, ref) => {
   const id = React.useContext(IdContext);
+
+  console.log("ID", id);
 
   if (!props.name) {
     throw new Error("No name specified for input");
