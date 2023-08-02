@@ -282,7 +282,6 @@ export const auth = ({ sendEmail, organizations }: AuthOptions) => {
               : url.startsWith("localhost")
               ? "http://"
               : "https://";
-            console.log("FETCHING", `${protocol}${url}/api/admin/authenticate`);
             const data = await fetch(
               `${protocol}${url}/api/admin/authenticate`,
               {

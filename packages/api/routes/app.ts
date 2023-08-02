@@ -385,8 +385,16 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
           },
         });
 
+        const mainBaseUrl = appConfig.mainBaseURL;
+
+        const protocol = mainBaseUrl.startsWith("http")
+          ? ""
+          : mainBaseUrl.startsWith("localhost")
+          ? "http://"
+          : "https://";
+
         const response = await fetch(
-          `${appConfig.mainBaseURL}/api/documents/submit`,
+          `${protocol}${mainBaseUrl}/api/documents/submit`,
           {
             method: "POST",
             body,
