@@ -31,10 +31,8 @@ import {
 } from "@storyflow/cms/ids";
 import { getSyntaxTreeRecord, getUrlParams, parseDocument } from "../convert";
 import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
-import { getPaths } from "../paths";
-import { createObjectId } from "../mongo";
 import { saveDocument, updateRecord } from "../fields/save";
-import { createFetcher, findDocumentByUrl } from "../create-fetcher";
+import { createFetcher, findDocumentByUrl, getPaths } from "../queries";
 import { procedure } from "@storyflow/server/rpc";
 import { copyRecord } from "@storyflow/cms/copy-record-async";
 import { getSyntaxTreeEntries, isSyntaxTree } from "@storyflow/cms/syntax-tree";
@@ -502,23 +500,7 @@ export const documents = (config: StoryflowConfig) => {
         })
       )
       .query(async ({ namespace }) => {
-        const db = await client.get(dbName);
-
-        const docs = await db
-          .collection<DBDocumentRaw>("documents")
-          .find({
-            ...(namespace
-              ? { folder: createObjectId(namespace) }
-              : {
-                  [`values.${createRawTemplateFieldId(DEFAULT_FIELDS.url.id)}`]:
-                    {
-                      $exists: true,
-                    },
-                }),
-          })
-          .toArray();
-
-        return await getPaths(docs, createFetcher(dbName));
+        return await getPaths([namespace], dbName);
       }),
 
     getUpdatedPaths: procedure
@@ -540,20 +522,6 @@ export const documents = (config: StoryflowConfig) => {
               })
           )?.counter ?? 0;
 
-        const docs = await db
-          .collection<DBDocumentRaw>("documents")
-          .find({
-            ...(namespace
-              ? { folder: createObjectId(namespace) }
-              : {
-                  [`values.${createRawTemplateFieldId(DEFAULT_FIELDS.url.id)}`]:
-                    {
-                      $exists: true,
-                    },
-                }),
-          })
-          .toArray();
-
         const fields = [
           DEFAULT_FIELDS.layout.id,
           DEFAULT_FIELDS.url.id,
@@ -561,40 +529,36 @@ export const documents = (config: StoryflowConfig) => {
           DEFAULT_FIELDS.label.id,
         ].map((el) => createRawTemplateFieldId(el));
 
-        const layoutUpdates = docs
-          .filter((el) => el.updated[fields[0]] > lastBuildCounter)
-          .map((el) => el.values[fields[1]][0] as string);
+        const layoutId = fields[0];
+        const urlId = fields[1];
 
-        const docsFiltered = docs.reduce((acc: DBDocumentRaw[], el) => {
-          const url = el.values[fields[1]]?.[0] as string | undefined;
-          if (!url) return acc;
-          const shouldUpdate =
-            fields.some((field) => el.updated[field] > lastBuildCounter) ||
-            layoutUpdates.some((el) => url.startsWith(el));
-          if (shouldUpdate) {
-            acc.push(el);
+        // we cache this to not run its computation on each path
+        let urlsWithLayoutUpdate: string[] | null = null;
+
+        const filter = (
+          el: DBDocumentRaw,
+          _: number,
+          docs: DBDocumentRaw[]
+        ) => {
+          if (urlsWithLayoutUpdate === null) {
+            urlsWithLayoutUpdate = docs
+              .filter((el) => el.updated[layoutId] > lastBuildCounter)
+              .map((el) => el.values[urlId][0] as string);
           }
-          return acc;
-        }, []);
+          const url = el.values[urlId]?.[0] as string | undefined;
+          if (!url) return false;
+          const hasFieldUpdate = fields.some(
+            (field) => el.updated[field] > lastBuildCounter
+          );
+          const hasParentLayoutUpdate = urlsWithLayoutUpdate.some((el) =>
+            url.startsWith(el)
+          );
+          return hasFieldUpdate || hasParentLayoutUpdate;
+        };
 
-        const paths = await getPaths(docsFiltered); // createFetcher(dbName!)
-
-        console.log("REVALIDATE", paths);
-
-        // const paths = urls.map((el) => `/${el.replace("://", "").split("/")[1]}`);
-
-        /*
-      const result = await fetch(revalidateUrl, {
-        body: JSON.stringify(urls),
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-      });
-      */
+        const paths = await getPaths([namespace], dbName, filter);
 
         return paths;
-
-        // check update timestamp
       }),
 
     registerRevalidation: procedure
@@ -657,6 +621,7 @@ export const documents = (config: StoryflowConfig) => {
           createFetcher(dbName),
           {
             createActions: true,
+            filterUnpublished: true,
           }
         );
 

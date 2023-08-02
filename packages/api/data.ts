@@ -12,7 +12,7 @@ import {
   ValueArray,
 } from "@storyflow/shared/types";
 import { parseDocument } from "./convert";
-import { createFetcher } from "./create-fetcher";
+import { createFetcher } from "./queries";
 import { saveDocument } from "./fields/save";
 import { Update } from "./fields/stages";
 import { client, createObjectId } from "./mongo";
@@ -89,6 +89,7 @@ export const dataFromDb: Data = {
       filters,
       limit,
       sort,
+      offset,
     });
   },
   async create({

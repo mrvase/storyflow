@@ -1,5 +1,4 @@
 import { RPCError, isError } from "@nanorpc/server";
-import { client } from "../mongo";
 import { z } from "zod";
 import { createSharedFieldCalculator } from "@storyflow/cms/get-field-record";
 import type {
@@ -12,17 +11,10 @@ import type {
   PropConfigRecord,
   ValueArray,
 } from "@storyflow/shared/types";
-import type { DBDocumentRaw } from "../types";
 import { getUrlParams } from "../convert";
-import { getPaths } from "../paths";
 import { DEFAULT_FIELDS } from "@storyflow/cms/default-fields";
-import {
-  createRawTemplateFieldId,
-  createTemplateFieldId,
-  getIdFromString,
-} from "@storyflow/cms/ids";
-import { createObjectId } from "../mongo";
-import { createFetcher, findDocumentByUrl } from "../create-fetcher";
+import { createTemplateFieldId, getIdFromString } from "@storyflow/cms/ids";
+import { createFetcher, findDocumentByUrl, getPaths } from "../queries";
 import { globals } from "../middleware";
 import { cors, procedure } from "@storyflow/server/rpc";
 import { promiseFromEntries } from "../utils";
@@ -175,7 +167,10 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
         const calculateField = createSharedFieldCalculator(
           doc.record,
           params,
-          createFetcher(dbName)
+          createFetcher(dbName),
+          {
+            filterUnpublished: true,
+          }
         );
 
         const fields = [
@@ -237,7 +232,10 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
         const calculateField = createSharedFieldCalculator(
           doc.record,
           params,
-          createFetcher(dbName)
+          createFetcher(dbName),
+          {
+            filterUnpublished: true,
+          }
         );
 
         const getPropId = (name: string) => {
@@ -306,6 +304,7 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
             offsets: {
               [getPropId("data")]: offset,
             },
+            filterUnpublished: true,
           }
         );
 
@@ -335,12 +334,19 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
           util.inspect(records.data.entry, { depth: null, colors: true })
         );
 
+        let modules: any = undefined;
+
+        try {
+          modules = JSON.parse(
+            (globalThis as any).__RSC_MANIFEST["/(pages)/[1]/page"]
+          ).clientModules;
+        } catch (err) {}
+
         try {
           const {
             renderToReadableStream,
           } = require(`react-server-dom-webpack/server.edge`);
-          // second argument: JSON.parse((globalThis as any).__RSC_MANIFEST["/(pages)/[1]/page"]).clientModules
-          const result = renderToReadableStream(component);
+          const result = renderToReadableStream(component, modules);
           return result;
         } catch (err) {
           return null;
@@ -350,29 +356,7 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
     getPaths: procedure.use(cors(apiConfig.cors)).query(async () => {
       console.log("REQUESTING PATHS");
 
-      const db = await client.get(dbName);
-      const docs = await db
-        .collection<DBDocumentRaw>("documents")
-        .find({
-          ...(appConfig.namespaces
-            ? {
-                folder: {
-                  $in: appConfig.namespaces.map((n) =>
-                    createObjectId(`${n}`.padStart(24, "0"))
-                  ),
-                },
-              }
-            : {
-                [`values.${createRawTemplateFieldId(DEFAULT_FIELDS.url.id)}`]: {
-                  $exists: true,
-                },
-              }),
-        })
-        .toArray();
-
-      const paths = await getPaths(docs, createFetcher(dbName));
-
-      return paths;
+      return await getPaths(appConfig.namespaces, dbName);
     }),
 
     submit: procedure

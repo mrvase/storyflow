@@ -22,16 +22,20 @@ type ValueRecord = Record<RawFieldId, ValueArray>;
 export const createSharedFieldCalculator = (
   docRecord: SyntaxTreeRecord,
   context: Record<string, ValueArray>,
-  fetch: (fetchObject: {
-    folder: FolderId;
-    filters: ValueRecord;
-    limit: number;
-    offset?: number;
-    sort?: Record<RawFieldId, 1 | -1>;
-  }) => Promise<{ _id: DocumentId; record: SyntaxTreeRecord }[]>,
+  fetch: (
+    fetchObject: {
+      folder: FolderId;
+      filters: ValueRecord;
+      limit: number;
+      offset?: number;
+      sort?: Record<RawFieldId, 1 | -1>;
+    },
+    options?: { filterUnpublished?: boolean }
+  ) => Promise<{ _id: DocumentId; record: SyntaxTreeRecord }[]>,
   options: {
     createActions?: boolean;
     offsets?: Record<FieldId, number>;
+    filterUnpublished?: boolean;
   } = {}
 ) => {
   // this is a lookup table for all fields from docRecord as well as all fetched fields
@@ -66,13 +70,18 @@ export const createSharedFieldCalculator = (
             )
           : undefined;
 
-        const articles = await fetch({
-          folder: el.folder.folder,
-          filters,
-          limit: el.limit,
-          ...(sort && { sort }),
-          ...(el.offset && { offset: el.offset }),
-        });
+        const articles = await fetch(
+          {
+            folder: el.folder.folder,
+            filters,
+            limit: el.limit,
+            ...(sort && { sort }),
+            ...(el.offset && { offset: el.offset }),
+          },
+          {
+            filterUnpublished: options.filterUnpublished,
+          }
+        );
 
         let list: NestedDocument[] = [];
 
