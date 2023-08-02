@@ -118,6 +118,7 @@ export type FunctionDataRecord = {
   to_boolean: true;
   to_color: true;
   insert: true;
+  email: true;
   equals: true;
 };
 
@@ -497,6 +498,17 @@ export type StoryflowConfig = {
   collections?: Collection[];
   templates?: Template[];
   allowUploads?: boolean;
+  sendEmail?: (options: {
+    from: string;
+    to: string;
+    subject: string;
+    body:
+      | string
+      | {
+          entry: ValueArray | ClientSyntaxTree;
+          record: Record<FieldId, ValueArray | ClientSyntaxTree>;
+        };
+  }) => Promise<void>;
 };
 
 export type WorkspaceReference = {

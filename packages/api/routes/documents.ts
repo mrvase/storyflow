@@ -8,6 +8,7 @@ import type {
   SyntaxTreeRecord,
 } from "@storyflow/cms/types";
 import type {
+  ClientSyntaxTree,
   ColorToken,
   DateToken,
   DocumentId,
@@ -15,6 +16,7 @@ import type {
   FileToken,
   FolderId,
   NestedDocumentId,
+  NestedElement,
   RawFieldId,
   StoryflowConfig,
   ValueArray,
@@ -89,21 +91,14 @@ export const documents = (config: StoryflowConfig) => {
   return {
     find: procedure
       .use(globals(config.api))
-      .schema((input) => {
-        try {
-          return z
-            .object({
-              folder: z.string(),
-              limit: z.number(),
-              sort: z.array(z.string()).optional(),
-              filters: z.record(z.string(), z.array(z.any())).optional(),
-            })
-            .parse(input);
-        } catch (e) {
-          console.log("HERE IS THE ERROR:", input, e);
-          return new RPCError({ code: "SERVER_ERROR" });
-        }
-      })
+      .schema(
+        z.object({
+          folder: z.string(),
+          limit: z.number(),
+          sort: z.array(z.string()).optional(),
+          filters: z.record(z.string(), z.array(z.any())).optional(),
+        })
+      )
       .query(async ({ folder, filters, limit, sort: sort_ }) => {
         let sort: Record<RawFieldId, 1 | -1> | undefined = undefined;
 
@@ -653,13 +648,24 @@ export const documents = (config: StoryflowConfig) => {
           (
             el
           ): el is {
-            values: DBValueRecord;
             action: "insert";
             folder: FolderId;
+            values: DBValueRecord;
           } => typeof el === "object" && el !== null && el.action === "insert"
         );
 
-        if (!inserts.length) {
+        const emails = (actionValue as any[]).filter(
+          (
+            el
+          ): el is {
+            action: "email";
+            to: string;
+            subject: string;
+            body: string | NestedElement;
+          } => typeof el === "object" && el !== null && el.action === "email"
+        );
+
+        if (!inserts.length && !emails.length) {
           return new RPCError({
             code: "NOT_FOUND",
             status: 404,
@@ -672,8 +678,8 @@ export const documents = (config: StoryflowConfig) => {
           inserts.length
         );
 
-        await Promise.all(
-          inserts.map(async ({ folder, values }): Promise<DBDocument> => {
+        const insertPromises = inserts.map(
+          async ({ folder, values }): Promise<DBDocument> => {
             const documentId = await generateDocumentId();
 
             const customCollection = getCustomCollection(folder, config);
@@ -682,11 +688,6 @@ export const documents = (config: StoryflowConfig) => {
               values,
               fields: [],
             });
-
-            console.log(
-              "RECORD",
-              util.inspect({ record }, { depth: null, colors: true })
-            );
 
             const versions: DocumentVersionRecord = { config: [0] };
 
@@ -718,8 +719,39 @@ export const documents = (config: StoryflowConfig) => {
 
               return result;
             }
-          })
+          }
         );
+
+        const emailPromises = emails.map(async ({ to, subject, body }) => {
+          if (config.sendEmail) {
+            let evaluatedBody:
+              | string
+              | {
+                  entry: ValueArray | ClientSyntaxTree;
+                  record: Record<FieldId, ValueArray | ClientSyntaxTree>;
+                }
+              | null;
+
+            if (typeof body === "string") {
+              evaluatedBody = body;
+            } else {
+              evaluatedBody = await calculateField([body]);
+            }
+
+            if (evaluatedBody === null) {
+              return;
+            }
+
+            config.sendEmail({
+              from: "Storyflow <noreply@storyflow.dk>",
+              to,
+              subject,
+              body: evaluatedBody,
+            });
+          }
+        });
+
+        await Promise.all([...insertPromises, ...emailPromises]);
         return null;
       }),
   };

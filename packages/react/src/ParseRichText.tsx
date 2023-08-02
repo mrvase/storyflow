@@ -7,17 +7,17 @@ export const markdownToHTML = (string: string) => {
   let bold = false;
   let italic = false;
 
-  let result = "";
+  let result: React.ReactNode[] = [];
 
-  const addText = (text: string) => {
+  const addText = (text: React.ReactNode) => {
     if (italic) {
-      text = `<em>${text}</em>`;
+      text = <em>{text}</em>;
     }
     if (bold) {
-      text = `<strong>${text}</strong>`;
+      text = <strong>{text}</strong>;
     }
 
-    result += text;
+    result.push(text);
   };
 
   Array.from(matches).forEach((el) => {
@@ -51,7 +51,5 @@ export const markdownToHTML = (string: string) => {
 
 export const ParseRichText = ({ children }: { children: string }) => {
   if (children === "") return <span>&nbsp;</span>;
-  return (
-    <span dangerouslySetInnerHTML={{ __html: markdownToHTML(children) }} />
-  );
+  return <>{markdownToHTML(children)}</>;
 };

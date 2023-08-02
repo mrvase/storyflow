@@ -14,6 +14,7 @@ import Image from "next/image";
 import { OpenGraphConfig } from "./OpenGraph";
 import { FileFieldConfig, FormConfig, TextFieldConfig } from "./Form";
 import { PaginationConfig } from "./Pagination";
+import { EmailConfig } from "./Email";
 
 const parseFileString = (value: string) => {
   if (!value) {
@@ -64,6 +65,7 @@ const kfs = {
     TextFieldConfig,
     FileFieldConfig,
     PaginationConfig,
+    EmailConfig,
     ImageConfig: {
       label: "Billede",
       props: {

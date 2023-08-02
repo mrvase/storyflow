@@ -41,7 +41,7 @@ export const createSharedFieldCalculator = (
   // this is a lookup table for all fields from docRecord as well as all fetched fields
   const superRecord = { ...docRecord };
 
-  return async (fieldId: FieldId) => {
+  return async (fieldId: FieldId | ValueArray) => {
     const fetchRequests: FolderFetch[] = [];
     const fetchResults = new Map<NestedFolder, NestedDocument[]>();
     const fetchFilters = new Map<NestedFolder, ValueRecord>();
@@ -167,9 +167,18 @@ export const createSharedFieldCalculator = (
     > => {
       const oldFetches = [...fetchRequests];
 
-      const entry = docRecord[fieldId] ?? DEFAULT_SYNTAX_TREE;
+      const entryId = typeof fieldId === "string" ? fieldId : "";
+      const entryValueArray =
+        typeof fieldId === "string"
+          ? docRecord[fieldId] ?? DEFAULT_SYNTAX_TREE
+          : {
+              ...DEFAULT_SYNTAX_TREE,
+              children: fieldId,
+            };
 
-      const relevantEntries = [[fieldId, entry]] as typeof superEntries;
+      const relevantEntries = [
+        [entryId, entryValueArray],
+      ] as typeof superEntries;
       const superEntries = getSyntaxTreeEntries(superRecord);
 
       const addNestedElementProps = (tree: ValueArray | ClientSyntaxTree) => {
@@ -219,8 +228,9 @@ export const createSharedFieldCalculator = (
 
     const record = await calculateAsync();
 
-    const entry = record[fieldId];
-    delete record[fieldId];
+    const entryId = typeof fieldId === "string" ? fieldId : ("" as FieldId);
+    const entry = record[entryId];
+    delete record[entryId];
 
     if (!entry || (Array.isArray(entry) && entry.length === 0)) {
       return null;

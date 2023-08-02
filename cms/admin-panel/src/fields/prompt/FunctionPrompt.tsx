@@ -37,6 +37,10 @@ const options: {
     value: "insert",
     label: "Handling: indsæt",
   },
+  {
+    value: "email",
+    label: "Handling: email",
+  },
 ];
 
 const converters: {

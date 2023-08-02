@@ -280,9 +280,9 @@ export function calculate(
                 ...(state as NestedDocument[]).map(
                   (values) =>
                     ({
-                      values,
                       action: "insert",
                       folder: el.folder,
+                      values,
                     } as any)
                 )
               );
@@ -291,6 +291,28 @@ export function calculate(
           return acc;
         }, []),
       ];
+    } else if (node.type === "email" && options?.createActions) {
+      const [to, subject, body] = spreadImplicitArrays(values);
+      if (
+        typeof to !== "string" ||
+        !to ||
+        typeof subject !== "string" ||
+        !subject ||
+        !(tokens.isNestedElement(body) || typeof body === "string")
+      ) {
+        values = [];
+      } else {
+        values = [
+          [
+            {
+              action: "email",
+              to,
+              subject,
+              body,
+            } ?? "",
+          ] as any,
+        ];
+      }
     } else if (node.type === "fetch") {
       const [limit, ...sort] = node.data as GetFunctionData<"fetch">;
 

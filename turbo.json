@@ -43,7 +43,8 @@
         "PUBLIC_KEY",
         "PRIVATE_KEY",
         "NEXT_PUBLIC_IMAGE_URL",
-        "MAILCHIMP_API_KEY"
+        "MAILCHIMP_API_KEY",
+        "RESEND_API_KEY"
       ],
       "outputs": [".next/**"]
     },
