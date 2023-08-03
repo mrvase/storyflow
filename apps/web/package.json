@@ -3,8 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "scripts": {
-    "dev": "storyflow setup && next dev --port 4000",
-    "build": "storyflow setup && next build",
+    "dev": "storyflow dev && next dev --port 4000",
+    "build": "storyflow build && next build",
+    "keys": "storyflow keys",
     "start": "next start --port 4000",
     "lint": "next lint"
   },

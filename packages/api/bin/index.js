@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 
 const swcRegister = require("@swc/register");
-const path = require("path");
-const fs = require("fs");
+const path = require("node:path");
+const createIds = require("./create-ids");
+const createKeys = require("./create-keys");
 
 const swcOptions = {
   sourceMaps: "inline",
@@ -25,47 +26,20 @@ const swcOptions = {
 swcRegister(swcOptions);
 
 const configPath = path.join(process.cwd(), "src", "storyflow.config.ts");
-
 const config = require(configPath).default;
 
-function createIds() {
-  const filename = path.join(process.cwd(), "./storyflow-ids.json");
-
-  let ids = [];
-
-  try {
-    ids = require(filename);
-  } catch (err) {
-    console.log("No id file exists. Will create file");
-  }
-
-  config.collections.forEach((coll) => {
-    const folderExists = ids.some(
-      (el) => typeof el === "string" && el === coll.name
+const runCommand = (command) => {
+  if (command === "dev") {
+    createIds(config);
+  } else if (command === "build") {
+    createIds(config);
+  } else if (command === "keys") {
+    createKeys(config);
+  } else {
+    throw new Error(
+      `Command "storyflow ${command}" does not exist. You can use "dev", "build", or "keys" instead.\n\n`
     );
-    if (!folderExists) {
-      ids.push(coll.name);
-    }
-    if (coll.template) {
-      const template = ids.find(
-        (el) => Array.isArray(el) && el[0] === coll.name
-      );
-      if (template) {
-        coll.template.forEach((field) => {
-          const fieldExists = template.some(
-            (el, index) => index > 0 && el === field.name
-          );
-          if (!fieldExists) {
-            template.push(field.name);
-          }
-        });
-      } else {
-        ids.push([coll.name, ...coll.template.map((field) => field.name)]);
-      }
-    }
-  });
+  }
+};
 
-  fs.writeFileSync(filename, JSON.stringify(ids));
-}
-
-createIds();
+runCommand(process.argv[2]);

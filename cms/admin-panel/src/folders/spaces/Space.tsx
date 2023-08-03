@@ -63,7 +63,7 @@ function Space({
           )}
           {...dragHandleProps}
         >
-          <DragIcon className="w-5 h-5 -ml-0.5 text-yellow-200" />
+          <DragIcon className="w-5 h-5 -ml-0.5 text-yellow-600 dark:text-yellow-200" />
         </div>
         <h2 className="text-sm text-gray-600 dark:text-gray-400 flex-center font-medium">
           {label}
