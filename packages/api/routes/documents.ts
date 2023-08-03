@@ -590,9 +590,10 @@ export const documents = (config: StoryflowConfig) => {
           ),
           url: z.string(),
           namespaces: z.array(z.string()).optional(),
+          isInLayout: z.boolean(),
         })
       )
-      .mutate(async ({ action, id, namespaces, url, data }) => {
+      .mutate(async ({ action, id, namespaces, url, data, isInLayout }) => {
         console.log("IS SUBMITTING", action, url, data);
         const doc = await findDocumentByUrl({
           url,
@@ -621,7 +622,10 @@ export const documents = (config: StoryflowConfig) => {
         );
 
         const pageRecord = await calculateField(
-          createTemplateFieldId(doc._id, DEFAULT_FIELDS.page.id)
+          createTemplateFieldId(
+            doc._id,
+            isInLayout ? DEFAULT_FIELDS.layout.id : DEFAULT_FIELDS.page.id
+          )
         );
 
         if (!pageRecord) {

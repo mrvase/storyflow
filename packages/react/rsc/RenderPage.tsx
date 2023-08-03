@@ -31,6 +31,7 @@ import {
 import { IdContextProvider } from "../src/IdContext";
 import { RSCContext } from "./types";
 import { Pagination } from "./Pagination";
+import { FormUrlProvider } from "../src/Input";
 
 const RenderChildren = ({
   value,
@@ -422,13 +423,15 @@ export const RenderPage = <T extends LibraryConfigRecord>({
   ) : null;
 };
 export const RenderLayout = <T extends LibraryConfigRecord>({
+  url,
   data,
-  children,
+  children: childrenFromProps,
   configs: configsFromProps,
   libraries: librariesFromProps,
   transforms = {} as any,
   action,
 }: {
+  url: string;
   data:
     | {
         entry: ValueArray | ClientSyntaxTree;
@@ -453,22 +456,28 @@ export const RenderLayout = <T extends LibraryConfigRecord>({
     ...configsFromProps,
   };
 
+  const children = (
+    <FormUrlProvider url={undefined}>{childrenFromProps}</FormUrlProvider>
+  );
+
   return data ? (
-    <RenderChildren
-      value={data.entry as ValueArray}
-      record={data.record}
-      ctx={{
-        // spread: false,
-        loopIndexRecord: {},
-        contexts: [],
-        configs,
-        libraries,
-        transforms,
-        action,
-        isOpenGraph: false,
-        children,
-      }}
-    />
+    <FormUrlProvider url={url}>
+      <RenderChildren
+        value={data.entry as ValueArray}
+        record={data.record}
+        ctx={{
+          // spread: false,
+          loopIndexRecord: {},
+          contexts: [],
+          configs,
+          libraries,
+          transforms,
+          action,
+          isOpenGraph: false,
+          children,
+        }}
+      />
+    </FormUrlProvider>
   ) : (
     <>{children}</>
   );

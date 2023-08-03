@@ -3,6 +3,18 @@
 import React from "react";
 import { IdContext } from "./IdContext";
 
+const FormUrlContext = React.createContext<string | undefined>(undefined);
+
+export const FormUrlProvider = ({
+  children,
+  url,
+}: {
+  children: React.ReactNode;
+  url: string | undefined;
+}) => <FormUrlContext.Provider value={url}>{children}</FormUrlContext.Provider>;
+
+const FieldSetNameContext = React.createContext<string | undefined>(undefined);
+
 type FormStatus = {
   isLoading: boolean;
   error: "FETCH_ERROR" | "SERVER_ERROR" | undefined;
@@ -123,6 +135,8 @@ export const Form = React.forwardRef<
     });
   };
 
+  const formUrl = React.useContext(FormUrlContext);
+
   const onSubmit = React.useCallback(
     async (ev: React.FormEvent<HTMLFormElement>) => {
       ev.preventDefault();
@@ -186,6 +200,7 @@ export const Form = React.forwardRef<
           id,
           action,
           data,
+          ...(formUrl && { url: formUrl }),
         },
       });
 
@@ -255,8 +270,6 @@ export const TextArea = React.forwardRef<
 
   return <textarea ref={ref} {...props} name={`${id}/${props.name}`} />;
 });
-
-const FieldSetNameContext = React.createContext<string | undefined>(undefined);
 
 export const FieldSet = React.forwardRef<
   HTMLFieldSetElement,

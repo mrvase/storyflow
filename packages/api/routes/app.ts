@@ -369,10 +369,11 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
           data: z.record(
             z.array(z.union([z.string(), z.object({ src: z.string() })]))
           ),
+          url: z.string().optional(),
         })
       )
-      .mutate(async ({ action, id, data }, { req }) => {
-        const url = getUrl(req!.headers);
+      .mutate(async ({ action, id, data, url: urlFromArg }, { req }) => {
+        const url = urlFromArg ?? getUrl(req!.headers);
 
         const body = JSON.stringify({
           input: {
@@ -383,6 +384,7 @@ export const app = (appConfig: AppConfig, apiConfig: ApiConfig) => {
             ...(appConfig.namespaces && {
               namespaces: appConfig.namespaces,
             }),
+            isInLayout: Boolean(urlFromArg),
           },
         });
 

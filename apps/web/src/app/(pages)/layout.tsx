@@ -10,11 +10,12 @@ export default async function Layout({
   children: React.ReactNode;
   params: any;
 }) {
-  const url = Object.values(params).join("/");
-  const data = await getPage(`/${url}`);
+  const url = `/${Object.values(params).join("/")}`;
+  const data = await getPage(url);
 
   return (
     <RenderLayout
+      url={url}
       data={data?.layout ?? null}
       configs={configs}
       libraries={libraries}
