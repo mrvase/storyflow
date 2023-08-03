@@ -37,6 +37,7 @@ const getUrl = (headers: Headers) => {
       headers
         .get("referer")
         ?.replace(/https?:\/\//, "")
+        .split("?")[0]
         .split("/")
         .slice(1)
         .join("/") ?? ""

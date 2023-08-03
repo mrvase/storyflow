@@ -125,7 +125,6 @@ export const Form = React.forwardRef<
 
   const onSubmit = React.useCallback(
     async (ev: React.FormEvent<HTMLFormElement>) => {
-      console.log("SUBMITTED");
       ev.preventDefault();
       if (isLoading) return;
 
@@ -138,37 +137,49 @@ export const Form = React.forwardRef<
 
       if (props.onSubmit) props.onSubmit(ev);
 
-      const entries = new FormData(ev.target as HTMLFormElement).entries();
+      const formDataEntries = Array.from(
+        new FormData(ev.target as HTMLFormElement).entries()
+      );
 
-      let dataEntries = [];
+      let dataEntries: [string, string | { src: string }][] = [];
+
+      const transformFormData = async (
+        el: (typeof formDataEntries)[number]
+      ): Promise<(typeof dataEntries)[number]> => {
+        const key = `form:${el[0]}`;
+        if (typeof el[1] === "string") {
+          return [key, el[1]];
+        }
+        if (el[1].size === 0) {
+          return [key, ""];
+        } else if (slug) {
+          const src = await uploadFile(el[1], {
+            slug,
+            private: privateFiles,
+          });
+          return [key, { src }];
+        }
+        return [key, el[1].name];
+      };
 
       try {
-        dataEntries = await Promise.all(
-          Array.from(entries).map(async (el) => {
-            const key = `form:${el[0]}`;
-            if (typeof el[1] === "string") {
-              return [key, [el[1]]];
-            }
-
-            if (el[1].size === 0) {
-              return [key, []];
-            } else if (slug) {
-              const src = await uploadFile(el[1], {
-                slug,
-                private: privateFiles,
-              });
-              return [key, [{ src }]];
-            }
-            return [key, [el[1].name]];
-          })
-        );
+        dataEntries = await Promise.all(formDataEntries.map(transformFormData));
       } catch (err) {
         setError("FETCH_ERROR");
         return;
       }
 
-      const data = Object.fromEntries(dataEntries);
-      console.log("DATA", data);
+      dataEntries = dataEntries.filter((el) => el[1] !== "");
+
+      const data: Record<string, (string | { src: string })[]> = {};
+
+      dataEntries.forEach(([key, value]) => {
+        if (key in data) {
+          data[key].push(value);
+        } else {
+          data[key] = [value];
+        }
+      });
 
       const body = JSON.stringify({
         input: {
@@ -211,17 +222,25 @@ export const Form = React.forwardRef<
 
 export const Input = React.forwardRef<
   HTMLInputElement,
-  Omit<React.ComponentProps<"input">, "name"> & { name: string }
+  Omit<React.ComponentProps<"input">, "name"> & { name?: string }
 >((props, ref) => {
   const id = React.useContext(IdContext);
 
-  console.log("ID", id);
+  let name: string | undefined;
 
-  if (!props.name) {
-    throw new Error("No name specified for input");
+  if (props.name) {
+    name = `${id}/${props.name}`;
+  } else {
+    name = React.useContext(FieldSetNameContext);
   }
 
-  return <input ref={ref} {...props} name={`${id}/${props.name}`} />;
+  if (!name) {
+    throw new Error(
+      "No name specified for input. Either specify a name or wrap the input in a `cms.fieldset` element with a name."
+    );
+  }
+
+  return <input ref={ref} {...props} name={name} />;
 });
 
 export const TextArea = React.forwardRef<
@@ -235,4 +254,25 @@ export const TextArea = React.forwardRef<
   }
 
   return <textarea ref={ref} {...props} name={`${id}/${props.name}`} />;
+});
+
+const FieldSetNameContext = React.createContext<string | undefined>(undefined);
+
+export const FieldSet = React.forwardRef<
+  HTMLFieldSetElement,
+  React.ComponentProps<"fieldset">
+>((props, ref) => {
+  const id = React.useContext(IdContext);
+
+  const { name: rawName, ...rest } = props;
+
+  if (rawName) {
+    return (
+      <FieldSetNameContext.Provider value={`${id}/${rawName}`}>
+        <fieldset ref={ref} {...rest} />
+      </FieldSetNameContext.Provider>
+    );
+  }
+
+  return <fieldset ref={ref} {...rest} />;
 });
