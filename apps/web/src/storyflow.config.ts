@@ -4,7 +4,6 @@ import { MailchimpLists } from "./collections/MailchimpLists";
 import { createEmailComponent } from "@storyflow/react/rsc";
 import { configs, libraries, transforms } from "./components";
 import { Resend } from "resend";
-import util from "util";
 
 const resend =
   typeof process.env.RESEND_API_KEY === "string"
