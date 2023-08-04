@@ -18,9 +18,10 @@ const MailchimpTemplate = [
     type: "string",
   },
   {
-    name: "type",
+    name: "lists",
     label: "Type",
     type: "string",
+    isArray: true,
   },
 ] as const satisfies TemplateFields;
 
@@ -28,7 +29,7 @@ const data = [
   {
     email: "martin@rvase.dk",
     name: "Martin Rugager Vase",
-    type: "test",
+    lists: ["test"],
   },
 ];
 
@@ -55,11 +56,7 @@ export const Mailchimp = {
       return input.data;
     },
     async update() {
-      return {
-        email: "martin@rvase.dk",
-        name: "Martin Rugager Vase",
-        type: "test",
-      };
+      return data[0];
     },
   },
   hooks: {

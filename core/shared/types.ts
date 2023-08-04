@@ -385,17 +385,23 @@ export type CollectionField = {
   name: string;
   label: string;
   type: FieldType;
+  isArray?: boolean;
   hidden?: boolean;
   useAsTitle?: boolean;
 };
 
+type CollectionFieldToType<T extends CollectionField> = T extends {
+  isArray: true;
+}
+  ? DefaultPropTypes[T["type"]][]
+  : DefaultPropTypes[T["type"]];
+
 type CollectionRecord<TFields extends TemplateFields | undefined> =
   TFields extends TemplateFields
     ? {
-        [Key in TFields[number]["name"]]: DefaultPropTypes[Extract<
-          TFields[number],
-          { name: Key }
-        >["type"]];
+        [Key in TFields[number]["name"]]: CollectionFieldToType<
+          Extract<TFields[number], { name: Key }>
+        >;
       }
     : any;
 

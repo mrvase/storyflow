@@ -186,9 +186,12 @@ export const convertRecordToData = (
         boolean: false,
         date: new Date().toISOString(),
       };
-      const type = template.find((el) => el.name === name)
-        ?.type as keyof typeof defaults;
+      const field = template.find((el) => el.name === name);
+      const type = field?.type as keyof typeof defaults;
       const rawId = createRawTemplateFieldId(id);
+      if (field?.isArray) {
+        return [name, rawRecord[rawId]?.children ?? []];
+      }
       return [name, rawRecord[rawId]?.children?.[0] ?? defaults[type] ?? null];
     })
   );
