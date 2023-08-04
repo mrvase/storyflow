@@ -63,7 +63,6 @@ export const getCustomTemplateIds = (name: string) => {
   const ids = getIdConfig();
   const index = ids.findIndex((el) => Array.isArray(el) && el[0] === name);
   if (index === -1) {
-    console.log("NAME", name, ids);
     throw new Error(
       `Missing template id for "${name}". It is likely that Storyflow has not been preconfigured.`
     );
@@ -171,6 +170,9 @@ export const convertRecordToData = (
       `Collection "${collection.name}" does not have a template.`
     );
   }
+
+  const template = collection.template ?? [];
+
   const { fieldIds } = getCustomTemplateIds(collection.name);
 
   const rawRecord = modifyKeys(record, (key) => getRawFieldId(key));
@@ -178,8 +180,16 @@ export const convertRecordToData = (
   const data = Object.fromEntries(
     collection.template.map(({ name }) => {
       const id = fieldIds[name];
+      const defaults = {
+        string: "",
+        number: 0,
+        boolean: false,
+        date: new Date().toISOString(),
+      };
+      const type = template.find((el) => el.name === name)
+        ?.type as keyof typeof defaults;
       const rawId = createRawTemplateFieldId(id);
-      return [name, rawRecord[rawId].children[0]];
+      return [name, rawRecord[rawId]?.children?.[0] ?? defaults[type] ?? null];
     })
   );
   return data;

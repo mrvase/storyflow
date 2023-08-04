@@ -292,7 +292,7 @@ export function calculate(
         }, []),
       ];
     } else if (node.type === "email" && options?.createActions) {
-      const [to, subject, body] = spreadImplicitArrays(values);
+      const [to, subject, body, from] = spreadImplicitArrays(values);
       if (
         typeof to !== "string" ||
         !to ||
@@ -309,6 +309,7 @@ export function calculate(
               to,
               subject,
               body,
+              from: from || undefined,
             } ?? "",
           ] as any,
         ];

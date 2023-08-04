@@ -38,7 +38,7 @@ export const SIGNATURES = {
   to_boolean: ["til boolean"],
   to_color: ["til farve"],
   insert: ["insert"],
-  email: ["to", "subject", "body"],
+  email: ["email to", "subject", "body", "from"],
   equals: ["value", "equals"],
   /*
   add: ["number", "+ (plus)"],

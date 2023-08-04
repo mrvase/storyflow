@@ -469,6 +469,10 @@ input[type="range"]:focus::-moz-range-thumb {
   content: var(--p3, "-");
 }
 
+.block-node > *:not([data-lexical-cursor="true"]):nth-child(4):before {
+  content: var(--p4, "-");
+}
+
 /*
 these corrects for cursor.
 if there is a cursor before e.g. the first parameter,
@@ -483,6 +487,9 @@ then the first parameter is really the second element
 }
 .block-node > [data-lexical-cursor="true"] ~ *:nth-child(4):before {
   content: var(--p3, "-");
+}
+.block-node > [data-lexical-cursor="true"] ~ *:nth-child(5):before {
+  content: var(--p4, "-");
 }
 
 .block-node:after {

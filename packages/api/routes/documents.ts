@@ -666,6 +666,7 @@ export const documents = (config: StoryflowConfig) => {
             to: string;
             subject: string;
             body: string | NestedElement;
+            from: string | undefined;
           } => typeof el === "object" && el !== null && el.action === "email"
         );
 
@@ -726,34 +727,40 @@ export const documents = (config: StoryflowConfig) => {
           }
         );
 
-        const emailPromises = emails.map(async ({ to, subject, body }) => {
-          if (config.sendEmail) {
-            let evaluatedBody:
-              | string
-              | {
-                  entry: ValueArray | ClientSyntaxTree;
-                  record: Record<FieldId, ValueArray | ClientSyntaxTree>;
-                }
-              | null;
+        const emailPromises = emails.map(
+          async ({ to, subject, body, from }) => {
+            if (config.sendEmail) {
+              let evaluatedBody:
+                | string
+                | {
+                    entry: ValueArray | ClientSyntaxTree;
+                    record: Record<FieldId, ValueArray | ClientSyntaxTree>;
+                  }
+                | null;
 
-            if (typeof body === "string") {
-              evaluatedBody = body;
-            } else {
-              evaluatedBody = await calculateField([body]);
+              if (typeof body === "string") {
+                evaluatedBody = body;
+              } else {
+                evaluatedBody = await calculateField([body]);
+              }
+
+              if (evaluatedBody === null) {
+                return;
+              }
+
+              try {
+                await config.sendEmail({
+                  from: from || "Storyflow <noreply@storyflow.dk>",
+                  to,
+                  subject,
+                  body: evaluatedBody,
+                });
+              } catch (err) {
+                console.error("Failed to send email:", err);
+              }
             }
-
-            if (evaluatedBody === null) {
-              return;
-            }
-
-            config.sendEmail({
-              from: "Storyflow <noreply@storyflow.dk>",
-              to,
-              subject,
-              body: evaluatedBody,
-            });
           }
-        });
+        );
 
         await Promise.all([...insertPromises, ...emailPromises]);
         return null;
