@@ -8,7 +8,7 @@ const baseFetcher = async (
   options: Options & AuthOptions & { baseURL: string }
 ) => {
   const { baseURL, token, ...rest } = options;
-  return await fetch(`${baseURL}/api${key}`, {
+  return await fetch(key, {
     credentials: "include",
     ...rest,
     headers: {
@@ -19,5 +19,6 @@ const baseFetcher = async (
 
 const fetcher = middleware(baseFetcher);
 
-export const { query: appQuery, mutate: appMutate } =
-  createClient<AppAPI>()(fetcher);
+export const { query: appQuery, mutate: appMutate } = createClient<AppAPI>({
+  getUrl: (options) => (options.baseURL ? `${options.baseURL}/api` : "/api"),
+})(fetcher);
