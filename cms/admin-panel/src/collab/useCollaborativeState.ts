@@ -10,7 +10,7 @@ export function useCollaborativeState<Data, TE extends TransactionEntry>(
     initialState: () => Data
   ) => [state: Data, setState: (value: Data) => void],
   operator: (
-    forEach: Queue<TE>["forEach"],
+    forEach: Queue<TE>["forEach"] | undefined,
     origin: "initial" | "update"
   ) => Data,
   {
@@ -23,29 +23,23 @@ export function useCollaborativeState<Data, TE extends TransactionEntry>(
     target?: string;
   }
 ) {
-  const singular = useSingular(
-    ["collab", timelineId, queueId, target ?? ""].filter(Boolean).join("-")
-  );
+  const singularId = ["collab", timelineId, queueId, target ?? ""]
+    .filter(Boolean)
+    .join("-");
+
+  const singular = useSingular(singularId);
+
+  const getQueue = () => collab.getTimeline(timelineId)?.getQueue<TE>(queueId);
 
   React.useEffect(() => {
-    const queue = collab.getTimeline(timelineId)!.getQueue<TE>(queueId);
+    const queue = getQueue()!;
     return queue.register(() =>
-      singular(() => {
-        setState(operator(queue.forEach, "update"));
-      })
+      singular(() => setState(operator(queue.forEach, "update")))
     );
   }, [collab, operator]);
 
   const [state, setState] = stateInitializer(() => {
-    return operator((callback: (entry: QueueEntry<TE>) => void) => {
-      const queue = collab.getTimeline(timelineId)?.getQueue<TE>(queueId);
-      console.log("HAS QUEUE READY", queue);
-      if (queue) {
-        queue.forEach((entry) => {
-          callback(entry);
-        });
-      }
-    }, "initial");
+    return operator(getQueue()?.forEach, "initial");
   });
 
   return state;

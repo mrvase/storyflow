@@ -52,10 +52,10 @@ export const useDocumentConfig = (
   }
 ) => {
   const operator = React.useCallback(
-    (forEach: QueueForEach<DocumentTransactionEntry>) => {
+    (forEach: QueueForEach<DocumentTransactionEntry> | undefined) => {
       let newConfig = [...data.config];
 
-      forEach(({ transaction }) => {
+      forEach?.(({ transaction }) => {
         transaction.forEach((entry) => {
           newConfig = applyConfigTransaction(newConfig, entry);
         });

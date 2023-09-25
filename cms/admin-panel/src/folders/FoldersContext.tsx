@@ -81,7 +81,9 @@ export function FoldersProvider({ children }: { children: React.ReactNode }) {
 
   const operator = React.useCallback(
     (
-      forEach: QueueForEach<FolderTransactionEntry | SpaceTransactionEntry>,
+      forEach:
+        | QueueForEach<FolderTransactionEntry | SpaceTransactionEntry>
+        | undefined,
       origin: "initial" | "update"
     ) => {
       const updates: Record<FolderId, DBFolder> =
@@ -106,7 +108,7 @@ export function FoldersProvider({ children }: { children: React.ReactNode }) {
         );
       };
 
-      forEach(({ transaction }) => {
+      forEach?.(({ transaction }) => {
         transaction.forEach((entry) => {
           const [folderId, spaceId] = entry[0].split(":") as [
             FolderId,
