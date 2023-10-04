@@ -59,7 +59,7 @@ const ordinaryRoutes: Record<string, Route> = {
     loader: async ({ id }) => {
       await awaitToken();
       return await query.documents.find(
-        { folder: id.padStart(24, "0"), limit: 50 },
+        { folder: id.padStart(24, "0"), limit: 100 },
         {
           onSuccess(result) {
             result.forEach((doc) => {

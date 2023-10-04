@@ -186,7 +186,7 @@ export function useDocumentList(
     if (!arg) return;
 
     return query.documents.find(
-      typeof arg === "object" ? arg : { folder: arg, limit: 50 },
+      typeof arg === "object" ? arg : { folder: arg, limit: 100 },
       {
         onSuccess(result) {
           result.forEach((doc) => {

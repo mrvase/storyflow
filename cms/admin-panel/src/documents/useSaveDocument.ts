@@ -73,19 +73,22 @@ export const useSaveDocument = ({
   const onSuccess = (result: DBDocument | DBDocument[]) => {
     const array = Array.isArray(result) ? result : [result];
     array.map((result) => {
-      cache.set(query.documents.find({ folder: folderId, limit: 50 }), (ps) => {
-        if (!ps) {
-          return ps;
+      cache.set(
+        query.documents.find({ folder: folderId, limit: 100 }),
+        (ps) => {
+          if (!ps) {
+            return ps;
+          }
+          const index = ps.findIndex((el) => el._id === result._id);
+          const newDocuments = [...ps];
+          if (index >= 0) {
+            newDocuments[index] = { ...newDocuments[index], ...result };
+          } else {
+            newDocuments.unshift(result);
+          }
+          return newDocuments;
         }
-        const index = ps.findIndex((el) => el._id === result._id);
-        const newDocuments = [...ps];
-        if (index >= 0) {
-          newDocuments[index] = { ...newDocuments[index], ...result };
-        } else {
-          newDocuments.unshift(result);
-        }
-        return newDocuments;
-      });
+      );
 
       cache.set(query.documents.findById(result._id), result);
     });

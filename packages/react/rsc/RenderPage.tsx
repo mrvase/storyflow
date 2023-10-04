@@ -53,93 +53,86 @@ const RenderChildren = ({
 
   const renderArray = createRenderArray(value, getDisplayType);
 
-  return (
-    <>
-      {renderArray.reduce((acc, block, arrayIndex) => {
-        const renderChildren = "$children" in block ? block.$children : [block];
+  return renderArray.reduce((acc, block, arrayIndex) => {
+    const renderChildren = "$children" in block ? block.$children : [block];
 
-        let blockIndex = 0;
+    let blockIndex = 0;
 
-        acc.push(
-          ...renderChildren.map((block, childIndex) => {
-            if ("element" in block && block.element === "Outlet") {
-              blockIndex++;
-              return (
-                <React.Fragment key="Outlet">{ctx.children}</React.Fragment>
-              );
-            } else if ("$heading" in block) {
-              blockIndex++;
-              const type = `H${block.$heading[0]}`;
-              const Component = getDefaultComponent(type, libraries)!;
-              const string = String(block.$heading[1]);
-              return (
-                <Component key={`${arrayIndex}-${childIndex}`}>
-                  <ParseRichText>{string}</ParseRichText>
-                </Component>
-              );
-            } else if ("src" in block) {
-              blockIndex++;
-              const type = "Image";
-              const Component = getDefaultComponent(type, libraries)!;
-              const config =
-                defaultLibraryConfig.configs.ImageConfig.props.image;
-              return (
-                <Component
-                  key={`${arrayIndex}-${childIndex}`}
-                  image={normalizeProp(config, [block], ctx.transforms)}
-                />
-              );
-            } else if ("$text" in block) {
-              blockIndex++;
-              const type = "Text";
-              const Component = getDefaultComponent(type, libraries)!;
-              return (
-                <Component key={`${arrayIndex}-${childIndex}`}>
-                  {block.$text.map((el, textElementIndex) => {
-                    if (typeof el === "object") {
-                      return (
-                        <RenderElement
-                          key={`${arrayIndex}-${childIndex}-${textElementIndex}`}
-                          id={el.id}
-                          type={el.element}
-                          record={record}
-                          options={options}
-                          index={blockIndex}
-                          ctx={ctx}
-                        />
-                      );
-                    }
-                    return (
-                      <ParseRichText
-                        key={`${arrayIndex}-${childIndex}-${textElementIndex}`}
-                      >
-                        {String(el)}
-                      </ParseRichText>
-                    );
-                  })}
-                </Component>
-              );
-            } else {
-              blockIndex++;
-              return (
-                <RenderElement
-                  key={`${arrayIndex}-${childIndex}`}
-                  id={block.id}
-                  type={block.element}
-                  record={record}
-                  options={options}
-                  index={blockIndex}
-                  ctx={ctx}
-                />
-              );
-            }
-          })
-        );
+    acc.push(
+      ...renderChildren.map((block, childIndex) => {
+        if ("element" in block && block.element === "Outlet") {
+          blockIndex++;
+          return <React.Fragment key="Outlet">{ctx.children}</React.Fragment>;
+        } else if ("$heading" in block) {
+          blockIndex++;
+          const type = `H${block.$heading[0]}`;
+          const Component = getDefaultComponent(type, libraries)!;
+          const string = String(block.$heading[1]);
+          return (
+            <Component key={`${arrayIndex}-${childIndex}`}>
+              <ParseRichText>{string}</ParseRichText>
+            </Component>
+          );
+        } else if ("src" in block) {
+          blockIndex++;
+          const type = "Image";
+          const Component = getDefaultComponent(type, libraries)!;
+          const config = defaultLibraryConfig.configs.ImageConfig.props.image;
+          return (
+            <Component
+              key={`${arrayIndex}-${childIndex}`}
+              image={normalizeProp(config, [block], ctx.transforms)}
+            />
+          );
+        } else if ("$text" in block) {
+          blockIndex++;
+          const type = "Text";
+          const Component = getDefaultComponent(type, libraries)!;
+          return (
+            <Component key={`${arrayIndex}-${childIndex}`}>
+              {block.$text.map((el, textElementIndex) => {
+                if (typeof el === "object") {
+                  return (
+                    <RenderElement
+                      key={`${arrayIndex}-${childIndex}-${textElementIndex}`}
+                      id={el.id}
+                      type={el.element}
+                      record={record}
+                      options={options}
+                      index={blockIndex}
+                      ctx={ctx}
+                    />
+                  );
+                }
+                return (
+                  <ParseRichText
+                    key={`${arrayIndex}-${childIndex}-${textElementIndex}`}
+                  >
+                    {String(el)}
+                  </ParseRichText>
+                );
+              })}
+            </Component>
+          );
+        } else {
+          blockIndex++;
+          return (
+            <RenderElement
+              key={`${arrayIndex}-${childIndex}`}
+              id={block.id}
+              type={block.element}
+              record={record}
+              options={options}
+              index={blockIndex}
+              ctx={ctx}
+            />
+          );
+        }
+      })
+    );
 
-        return acc;
-      }, [] as React.ReactNode[])}
-    </>
-  );
+    return acc;
+  }, [] as React.ReactNode[]);
 };
 
 const RenderElement = ({
@@ -320,20 +313,21 @@ export function RenderElementWithProps({
           ctx.loopIndexRecord
         );
 
-        const children = (
-          <RenderChildren
-            value={Array.isArray(value[0]) ? value[0] : value}
-            record={record}
-            options={
-              parentOptions ??
-              ((config as PropConfig).options as ConfigRecord | undefined)
-            } // WE ARE USING PARENT OPTIONS ON PURPOSE!
-            ctx={{
-              ...ctx,
-              contexts,
-            }}
-          />
-        );
+        const array = Array.isArray(value[0]) ? value[0] : value;
+
+        if (array.length === 0) return [name, []];
+
+        const children = RenderChildren({
+          value: array,
+          record,
+          options:
+            parentOptions ??
+            ((config as PropConfig).options as ConfigRecord | undefined), // WE ARE USING PARENT OPTIONS ON PURPOSE!
+          ctx: {
+            ...ctx,
+            contexts,
+          },
+        });
 
         return [name, children];
       })
@@ -405,21 +399,23 @@ export const RenderPage = <T extends LibraryConfigRecord>({
   };
 
   return data ? (
-    <RenderChildren
-      value={data.entry as ValueArray}
-      record={data.record}
-      ctx={{
-        // spread: false,
-        loopIndexRecord: {},
-        contexts: [],
-        configs,
-        libraries,
-        transforms,
-        action,
-        isOpenGraph: Boolean(isOpenGraph),
-        children: null,
-      }}
-    />
+    <>
+      {RenderChildren({
+        value: data.entry as ValueArray,
+        record: data.record,
+        ctx: {
+          // spread: false,
+          loopIndexRecord: {},
+          contexts: [],
+          configs,
+          libraries,
+          transforms,
+          action,
+          isOpenGraph: Boolean(isOpenGraph),
+          children: null,
+        },
+      })}
+    </>
   ) : null;
 };
 export const RenderLayout = <T extends LibraryConfigRecord>({
@@ -462,21 +458,23 @@ export const RenderLayout = <T extends LibraryConfigRecord>({
 
   return data ? (
     <FormUrlProvider url={url}>
-      <RenderChildren
-        value={data.entry as ValueArray}
-        record={data.record}
-        ctx={{
-          // spread: false,
-          loopIndexRecord: {},
-          contexts: [],
-          configs,
-          libraries,
-          transforms,
-          action,
-          isOpenGraph: false,
-          children,
-        }}
-      />
+      <>
+        {RenderChildren({
+          value: data.entry as ValueArray,
+          record: data.record,
+          ctx: {
+            // spread: false,
+            loopIndexRecord: {},
+            contexts: [],
+            configs,
+            libraries,
+            transforms,
+            action,
+            isOpenGraph: false,
+            children,
+          },
+        })}
+      </>
     </FormUrlProvider>
   ) : (
     <>{children}</>
