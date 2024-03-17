@@ -8,9 +8,11 @@ import {
 import { createTransport } from "nodemailer";
 import { organizations } from "./organizations_mongo";
 import { client } from "../../../mongo";
+import type SMTPTransport from "nodemailer/lib/smtp-transport";
 
-const options = {
+const options: { server: SMTPTransport.Options; from: string } = {
   server: {
+    service: "gmail",
     host: process.env.EMAIL_SERVER_HOST as string,
     port: parseInt(process.env.EMAIL_SERVER_PORT ?? "587", 10),
     auth: {
