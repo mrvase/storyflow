@@ -210,7 +210,7 @@ export async function getPaths(
             {
               type: "fetch",
               children: [tree],
-              data: [100],
+              data: [150],
             },
           ],
           data: createRawTemplateFieldId(DEFAULT_FIELDS.slug.id),

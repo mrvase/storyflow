@@ -11,7 +11,7 @@ export const useDeleteManyMutation = (folderId: string) => {
   const { revalidate } = useImmutableQuery(
     query.documents.find({
       folder: folderId,
-      limit: 100,
+      limit: 150,
     })
   );
 

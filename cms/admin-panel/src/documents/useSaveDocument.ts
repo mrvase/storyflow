@@ -74,7 +74,7 @@ export const useSaveDocument = ({
     const array = Array.isArray(result) ? result : [result];
     array.map((result) => {
       cache.set(
-        query.documents.find({ folder: folderId, limit: 100 }),
+        query.documents.find({ folder: folderId, limit: 150 }),
         (ps) => {
           if (!ps) {
             return ps;
